@@ -2,7 +2,7 @@
 
 在已有智能体宿主（Agent Host）中，与 AI 一起澄清、查看、修改并继续设计。如果方案需要符合你的习惯、业务情况或判断，这里介绍如何把这些信息带进设计，并在后续讨论中保留下来。本 Wiki 是开发仓和公开源码共用的文档入口；安装与使用以所选候选版本及宿主指南为准。
 
-[项目首页](../../README.md) · [开始使用](getting-started.md) · [宿主兼容](hosts.md) · [使用指南](usage.md) · [反馈](support.md)
+[项目首页](../../README.md) · [文档总览](../README.md) · [开始使用](getting-started.md) · [宿主兼容](hosts.md) · [使用指南](usage.md) · [反馈](support.md)
 
 ## 从哪里读起
 

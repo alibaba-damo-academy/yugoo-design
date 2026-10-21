@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": "ff02e1228061f4f701fc68e873f1f9864c587af3",
-  "policySha256": "a95d5d1810cdf1ea4c9c7c3c0c08e54338ba05589adfc3764f06739dd5c1734d",
+  "revision": "719459490cbc79215f2041a52060b4346da2e198",
+  "policySha256": "4943ab8b704691c8dee7b532b62b04df2e7962e7a30caf3f02d62015440201ac",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
       "sha256": "3145f8cadf2abb2ccf5ebd3d12ab65b903d1fed9cf87fd7c4c29b306e67cacd0",
@@ -100,11 +100,11 @@
       "mode": "100644"
     },
     "README.en.md": {
-      "sha256": "36701f6a0ab1dfe7405592c85d06c19d8cf4fe1645b48f8be64bfb6c958b34fb",
+      "sha256": "788023bf925dc467b330501690d88b71d04abd2c2d4500d6c4494ac2e51255dd",
       "mode": "100644"
     },
     "README.md": {
-      "sha256": "374cde73f1f4089b8daa2704c1903440a3c2055d9ab84497cb87c7e81fc14913",
+      "sha256": "0da82ba92dd9565cb18c70ca5fd5e78abf9d52de8f218b3d571df46f0be78291",
       "mode": "100644"
     },
     "SECURITY.md": {
@@ -113,6 +113,10 @@
     },
     "THIRD_PARTY_NOTICES.md": {
       "sha256": "bfcab921c6c15ccc47f9b1a6cc5941675c95962de5ea5b0edc50fbfa2aef136a",
+      "mode": "100644"
+    },
+    "docs/README.md": {
+      "sha256": "098a23f0ea68b657d59beb422dabf0c971172ef9a8b55899751695c12e12b314",
       "mode": "100644"
     },
     "docs/a2ui-component-catalog-contract.md": {
@@ -216,7 +220,7 @@
       "mode": "100644"
     },
     "docs/public-document-sync.md": {
-      "sha256": "b6d25de016cac17011817bc898b86ec3d662f885c0e524f20bd7e9f70bb8e051",
+      "sha256": "751b696fade04602153e07499a88264978c80c9253b1ef2767be4042c07cbfbd",
       "mode": "100644"
     },
     "docs/standalone-roadmap.md": {
@@ -232,7 +236,7 @@
       "mode": "100644"
     },
     "docs/wiki/README.md": {
-      "sha256": "9319ef61b72e0c8d816a3b0aafd960b0dca5829d9022d3b43a9ceef49f235112",
+      "sha256": "704dffd758a1776dfb587ef9bcd0f3e05d5735f6879d26d486305d8ba4c2d0c2",
       "mode": "100644"
     },
     "docs/wiki/concepts.md": {
@@ -8192,7 +8196,7 @@
       "mode": "100644"
     },
     "release/public-source-policy.json": {
-      "sha256": "1106a4d751d68d0efdb79a278a71c6dbddbdfc3648b5f7003041e43ebc4d487f",
+      "sha256": "a65d733f26a31b43d057575f54bcd6c7581608829f453155077ef1a412bcf547",
       "mode": "100644"
     },
     "release/public-source-test-selection.json": {

@@ -1,7 +1,5 @@
 # Yugoo Design
 
-**See your ideas. Shape the details.**
-
 [简体中文](README.md) · English
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
@@ -11,6 +9,8 @@
 [![Qoder CLI: preview](https://img.shields.io/badge/Qoder_CLI-preview-2563eb)](docs/wiki/hosts.md#qoder-cli)
 [![千问办公 QwenWork: preview](https://img.shields.io/badge/%E5%8D%83%E9%97%AE%E5%8A%9E%E5%85%AC_QwenWork-preview-2563eb)](docs/wiki/hosts.md#千问办公-qwenwork)
 [![WorkBuddy: preview](https://img.shields.io/badge/WorkBuddy-preview-2563eb)](docs/wiki/hosts.md#workbuddy)
+
+**See your ideas. Shape the details.**
 
 Yugoo Design (语构设计系统) is an open-source plugin for leading AI agent applications that adds interactive Design Panels to professional skills. AI helps develop a proposal; you examine the details and express your judgment through diagrams, tables, cards, and prototypes. Saved designs give you and AI a shared basis for the next discussion and revision.
 
@@ -22,12 +22,10 @@ Start with the **Web App Kit**, included with the plugin by default, to design a
 
 ## Quick start
 
-**Requirements:** The current npm preview requires Node.js `>=22.19.0 <23` and a compatible agent host with a configured generative model. KAG's local text embeddings run on CPU, with no GPU required; see the [installation guide](docs/wiki/getting-started.md) for dependencies and model preparation. The versioning runtime is bundled, so normal Design operations need no separate Git installation; see [preview status](docs/wiki/preview-status.md) for platform and tested scope.
+You need **Node.js `>=22.19.0 <23`** and a compatible Agent Host with a configured model. The plugin uses your host's existing model, conversation, and tools; see the [installation guide](docs/wiki/getting-started.md) for environment and model setup.
 
-> **Release preview:** The most recently recorded public version is `@yugoo-design/companion@0.1.0-beta.3` (2026-10-17 UTC). Web App is the current default Kit. Historical npm releases, later local candidates, and per-host acceptance are recorded separately in [preview status](docs/wiki/preview-status.md). Resolve the selected channel to an exact version and follow its bundled instructions; see [host compatibility](docs/wiki/hosts.md) for integration scope.
-
-1. **Ask the agent in your current host to install the plugin.** Copy the [shared installation prompt](packages/companion/HOSTS.md#default-prompt-any-supported-host). The agent acquires an exact npm version and installs the components needed by your host; you do not install DSH and Companion separately. Supply only a missing host choice or a required human authorization, import, or activation step. Follow any required restart or new-session instruction. See the [installation guide](docs/wiki/getting-started.md) for prerequisites, host-specific entries, and the manual fallback.
-2. **Create or open a design project and describe your goal.** Start from your host's installed `yugoo` entry. For example:
+1. **Install the plugin.** Give the agent in your current host the [shared installation prompt](packages/companion/HOSTS.md#default-prompt-any-supported-host). It installs the components needed by that host and tells you when authorization, import, or activation is required. Follow its instructions if you need to restart or begin a new session.
+2. **Start designing.** Once installed, use your host's `yugoo` entry to create or open a Design Project, then describe your goal. For example:
 
    ```text
    We are a six-person design studio. Client requests and revision feedback
@@ -36,9 +34,11 @@ Start with the **Web App Kit**, included with the plugin by default, to design a
    Help us think through what should happen when a client requests a change.
    ```
 
-3. **Inspect the Panel, give feedback, and save.** Change editable content in the Panel or ask for revisions in conversation. Save, then ask AI to continue from those changes. See the [usage guide](docs/wiki/usage.md) for the full workflow.
+3. **Review and edit in the Panel.** AI opens questions or design panels according to what you need next. Inspect and edit the content, or ask for revisions in conversation. Save, then continue designing with AI from those changes. See the [usage guide](docs/wiki/usage.md) for the full workflow.
 
-The plugin uses your host's existing generative model, conversation, and tools. Integrations include Codex CLI, Claude Code CLI, and Qoder CLI, with coverage continuing to expand. Hosts with customizable interfaces, such as **DeepSeek Harness**, can bring the conversation, panels, and **Studio** into one workspace; other hosts use panels in a browser. **Among desktop hosts, only DeepSeek Harness (DSH) can currently accommodate the full feature set and integrated interaction experience**; other desktop integrations retain their individually verified scope. ChatGPT desktop app integration in Codex mode is a second-round development goal; Claude Code desktop has not been tested. See the [host guide](docs/wiki/hosts.md) for versions and capabilities.
+> **Currently available as a beta preview, with the Web App Kit included by default.** See [preview status](docs/wiki/preview-status.md) for version information and verified scope.
+
+Integrations include Codex CLI, Claude Code CLI, and Qoder CLI, with coverage continuing to expand. Hosts with customizable interfaces, such as **DeepSeek Harness**, can bring the conversation, panels, and **Studio** into one workspace; other hosts use panels in a browser. **Among desktop hosts, only DeepSeek Harness (DSH) can currently accommodate the full feature set and integrated interaction experience**; other desktop integrations retain their individually verified scope. ChatGPT desktop app integration in Codex mode is a second-round development goal; Claude Code desktop has not been tested. See the [host guide](docs/wiki/hosts.md) for versions and capabilities.
 
 ## Why use it
 
@@ -168,6 +168,7 @@ Start by reusing a professional method you know, define its structured output an
 
 | Entry | What it covers |
 | --- | --- |
+| [Documentation overview (中文)](docs/README.md) | Entry points for usage, Kit authoring, architecture, and technical reference |
 | [Wiki (中文)](docs/wiki/README.md) | Installation, usage, host compatibility, and troubleshooting |
 | [Core concepts](docs/wiki/concepts.md) · [Terminology](docs/wiki/terminology.md) | Projects, Kits, Bundles, panels, and bilingual naming |
 | [Product principles](docs/product-vision.md) | Professional methods, human–AI alignment, and interaction principles |

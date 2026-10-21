@@ -1,7 +1,5 @@
 # 语构设计系统（Yugoo Design）
 
-**让构思看得见，让细节有把握。**
-
 简体中文 · [English](README.en.md)
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
@@ -11,6 +9,8 @@
 [![Qoder CLI: preview](https://img.shields.io/badge/Qoder_CLI-preview-2563eb)](docs/wiki/hosts.md#qoder-cli)
 [![千问办公 QwenWork: preview](https://img.shields.io/badge/%E5%8D%83%E9%97%AE%E5%8A%9E%E5%85%AC_QwenWork-preview-2563eb)](docs/wiki/hosts.md#千问办公-qwenwork)
 [![WorkBuddy: preview](https://img.shields.io/badge/WorkBuddy-preview-2563eb)](docs/wiki/hosts.md#workbuddy)
+
+**让构思看得见，让细节有把握。**
 
 语构设计系统（Yugoo Design）是一款兼容主流 AI 智能体（Agent）应用的开源插件，为专业技能配上可交互的设计面板（Design Panel）。AI 帮你展开方案，你在图、表、卡片与原型中看清细节、表达判断；保存后的设计成为继续讨论和完善的共同依据。
 
@@ -22,12 +22,10 @@
 
 ## 快速开始
 
-**环境要求：** 当前 npm 预览版需要 Node.js `>=22.19.0 <23`，以及已配置生成模型的兼容 Agent 宿主。KAG 的本地文本向量化（Embedding）使用 CPU，无需 GPU；依赖安装与模型准备见[安装指南](docs/wiki/getting-started.md)。版本管理运行库随包提供，正常设计操作无需另装 Git；平台与验证范围见[预览状态](docs/wiki/preview-status.md)。
+准备好 **Node.js `>=22.19.0 <23`**，以及一个已配置模型的兼容智能体宿主（Agent Host）。插件沿用宿主已有的模型、会话与工具；环境与模型准备见[安装指南](docs/wiki/getting-started.md)。
 
-> **发行预览：** 最近一次登记的公开版本为 `@yugoo-design/companion@0.1.0-beta.3`（2026-10-17 UTC）。当前默认套件为 Web App；历史 npm 发行、后续本地候选和逐宿主验收分别记录于[预览状态](docs/wiki/preview-status.md)。安装时解析所选渠道的精确版本，并遵循其随包说明；接入范围见[宿主兼容](docs/wiki/hosts.md)。
-
-1. **让当前宿主中的 Agent 安装插件。** 复制[通用安装提示词](packages/companion/HOSTS.md#default-prompt-any-supported-host)，由 Agent 获取精确 npm 版本，再按当前宿主安装所需组件；无需分别安装 DSH 与 Companion。只有无法确认宿主或必须人工授权、导入、启用时才补充必要操作。宿主要求的重启或新会话按提示完成。环境准备、专用入口与人工兜底见[安装指南](docs/wiki/getting-started.md)。
-2. **创建或打开设计项目，描述你的目标。** 通过宿主中已安装的 `yugoo` 入口开始。例如：
+1. **安装插件。** 把[通用安装提示词](packages/companion/HOSTS.md#default-prompt-any-supported-host)复制给当前宿主中的智能体（Agent）。它会按当前宿主安装所需组件，并提示你完成必要的授权、导入或启用操作。如需重启或新建会话，按安装结果的提示操作。
+2. **开始设计。** 安装完成后，通过宿主中的 `yugoo` 入口创建或打开设计项目，再直接描述你的目标。例如：
 
    ```text
    我们是六人的设计工作室，客户需求和修改意见都在聊天里。
@@ -35,9 +33,11 @@
    关键承诺由我们决定。先一起想清楚客户提出修改后应该怎样处理。
    ```
 
-3. **查看面板，反馈并保存。** 在面板中检查和修改可编辑内容，也可以通过对话提出调整。保存后，让 AI 接着这些修改继续设计。完整操作见[使用指南](docs/wiki/usage.md)。
+3. **在面板中查看和修改。** AI 会根据当前需要展开提问或设计面板。你可以在面板中检查和修改内容，也可以通过对话提出调整。保存后，让 AI 以这些修改为依据继续设计。完整操作见[使用指南](docs/wiki/usage.md)。
 
-插件沿用宿主的生成模型、会话与工具。接入范围涵盖 Codex CLI、Claude Code CLI、Qoder CLI 等环境，并在持续扩展。**DeepSeek Harness** 这类支持界面定制的宿主，可以把对话、面板与设计工作室（Studio）放在同一工作区；其他宿主通过浏览器使用面板。**桌面端目前只有 DeepSeek Harness（DSH）能够承载完整功能与一体化交互体验**；其他桌面宿主按各自已验证的能力范围使用。ChatGPT 桌面应用（Codex 模式）接入列为第二轮开发目标，Claude Code 桌面端尚未测试。具体版本和能力范围见[宿主指南](docs/wiki/hosts.md)。
+> **当前为 Beta 预览版，默认包含 Web App Kit。** 版本信息与已验证范围见[预览状态](docs/wiki/preview-status.md)。
+
+接入范围涵盖 Codex CLI、Claude Code CLI、Qoder CLI 等环境，并在持续扩展。**DeepSeek Harness** 这类支持界面定制的宿主，可以把对话、面板与设计工作室（Studio）放在同一工作区；其他宿主通过浏览器使用面板。**桌面端目前只有 DeepSeek Harness（DSH）能够承载完整功能与一体化交互体验**；其他桌面宿主按各自已验证的能力范围使用。ChatGPT 桌面应用（Codex 模式）接入列为第二轮开发目标，Claude Code 桌面端尚未测试。具体版本和能力范围见[宿主指南](docs/wiki/hosts.md)。
 
 ## 为什么需要它
 
@@ -167,6 +167,7 @@ AI 展开**业务流程面板**，用泳道图区分客户、设计师与负责�
 
 | 入口 | 内容 |
 | --- | --- |
+| [文档总览](docs/README.md) | 按安装使用、套件创作、架构与技术参考选择入口 |
 | [Wiki](docs/wiki/README.md) | 安装、使用、宿主兼容与排障 |
 | [核心概念](docs/wiki/concepts.md) · [术语规范](docs/wiki/terminology.md) | 项目、套件、技能包、面板及中英文命名 |
 | [产品理念](docs/product-vision.md) | 专业方法、人机对齐与交互原则 |
