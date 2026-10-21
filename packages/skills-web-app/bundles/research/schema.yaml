@@ -1,0 +1,61 @@
+# research Design Files data contract (write-time validation).
+# Adapted from the sdk-pilot research model for DSH file-backed execution.
+# Canonical state keeps durable plan confirmation only; Host attempts and file
+# refs project live/result status.
+#
+# Multi-round shape: `rounds` keyed by round_id, each with its own topic and
+# directions; `round_order` is chronological and `current_round_id` names the
+# round being extended or executed.
+#
+# Disk-as-truth: findings markdown lives at
+# design_files/research/{round}/{dir}-{title}.md and conclusions at
+# {round}/conclusion.html. Directions and rounds carry their direct artifact
+# references after accepted bytes have landed in the current worktree.
+#
+# Collection-level invariants (pending directions need title + >=1 point;
+# all-pending rounds need every direction_order id materialized) live in
+# validation.yaml, exactly as the Pydantic model_validators did.
+#
+# `nullable: true` marks fields the Pydantic model types `str | None`;
+# the write-time validator accepts null for them.
+type: object
+properties:
+  skill_name: { knowledge: { role: metadata }, type: string }
+  rounds:
+    type: map
+    value:
+      type: object
+      required: [round_id, stage]
+      properties:
+        round_id: { type: string }
+        topic: { type: string }
+        # Durable user-decision phase only. The Panel derives researching,
+        # completed, and partial from Host attempts plus accepted file refs.
+        stage: { type: enum, values: [identified, confirmed] }
+        directions:
+          type: map
+          value:
+            type: object
+            required: [direction_id, title]
+            properties:
+              direction_id: { type: string }
+              title: { type: string }
+              source: { type: enum, values: [prerequisites, analysis, user] }  # default analysis
+              research_points: { type: array, items: { type: string } }
+              findings_file: { type: string, nullable: true }
+              findings_sha256: { knowledge: { role: metadata }, type: string, nullable: true }
+              source_urls: { type: array, items: { type: string } }
+        direction_order:
+          knowledge: { role: metadata }
+          type: array
+          items: { type: string }
+        conclusion_file: { type: string, nullable: true }
+        conclusion_sha256: { knowledge: { role: metadata }, type: string, nullable: true }
+        created_at: { knowledge: { role: metadata }, type: number }
+        updated_at: { knowledge: { role: metadata }, type: number }
+  round_order:
+    knowledge: { role: metadata }
+    type: array
+    items: { type: string }
+  current_round_id: { type: string, nullable: true, knowledge: { role: reference, target: '#/rounds' } }
+  epoch: { knowledge: { role: metadata }, type: number }

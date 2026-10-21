@@ -1,0 +1,42 @@
+version: 1
+panel_kind: evidence_workbook
+i18n:
+  default_locale: zh-CN
+  locales: {zh-CN: locales/zh-CN.json, en-US: locales/en-US.json}
+sections: []
+fields: []
+empty_description: $t:empty
+ui:
+  component: document_workspace
+  guidance: "$t:guidance"
+  sidebar_icon: file-text
+  id: prd-document
+  title: $t:contents
+  description: $t:empty
+  document:
+    path: html_file
+    title_path: title
+    allowed_files: [web_app_prd_assembly/prd.html]
+    aliases: {prd.html: web_app_prd_assembly/prd.html}
+    source_attribute: data-prd-sources
+    references_attribute: data-prd-provenance-ids
+    references_path: ai_provenance
+    references_id_field: id
+    references_label: $t:pending
+    legend: $t:legend
+    sources:
+      - {value: smart_questions, label: '$t:questions', navigable: true}
+      - {value: research, label: '$t:research', navigable: true}
+      - {value: function_modules, label: '$t:functions', navigable: true}
+      - {value: flow_design, label: '$t:flows', navigable: true}
+      - {value: design_style, label: '$t:style', navigable: true}
+      - {value: business_data, label: '$t:data', navigable: true}
+      - {value: business_rules, label: '$t:rules', navigable: true}
+      - {value: role_access, label: '$t:access', navigable: true}
+      - {value: integration_design, label: '$t:integration', navigable: true}
+      - {value: notification_design, label: '$t:notifications', navigable: true}
+      - {value: quality_acceptance, label: '$t:quality', navigable: true}
+      - {value: page_design, label: '$t:pages', navigable: true}
+      - {value: whiteboard, label: '$t:whiteboard', navigable: true}
+      - {value: user, label: '$t:user'}
+      - {value: upload, label: '$t:upload'}

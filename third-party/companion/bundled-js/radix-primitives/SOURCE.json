@@ -1,0 +1,399 @@
+{
+  "repository": "radix-ui/primitives",
+  "sharedOriginal": "../@radix-ui/react-compose-refs@1.1.5/LICENSE",
+  "licenseSha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+  "scope": "shared original repository license, not exact stable source proof for entries marked RC context",
+  "packages": [
+    {
+      "name": "@radix-ui/primitive",
+      "version": "1.1.1",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Fprimitive/1.1.1",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "3c5e05fab070dfa68212230e85baf0879269c57d",
+      "correspondence": "npm version metadata gitHead",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/3c5e05fab070dfa68212230e85baf0879269c57d/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-compose-refs",
+      "version": "1.1.1",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-compose-refs/1.1.1",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "3c5e05fab070dfa68212230e85baf0879269c57d",
+      "correspondence": "npm version metadata gitHead",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/3c5e05fab070dfa68212230e85baf0879269c57d/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-context",
+      "version": "1.1.1",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-context/1.1.1",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "157415ed1f34c53b5afbf53a047895ed6a7f957f",
+      "correspondence": "npm version metadata gitHead",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/157415ed1f34c53b5afbf53a047895ed6a7f957f/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-slot",
+      "version": "1.1.2",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-slot/1.1.2",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "e1bdb77ea2445407b239558f2902c2e1950586fe",
+      "correspondence": "npm version metadata gitHead",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/e1bdb77ea2445407b239558f2902c2e1950586fe/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-primitive",
+      "version": "2.0.2",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-primitive/2.0.2",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "e1bdb77ea2445407b239558f2902c2e1950586fe",
+      "correspondence": "npm version metadata gitHead",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/e1bdb77ea2445407b239558f2902c2e1950586fe/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-use-callback-ref",
+      "version": "1.1.0",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-use-callback-ref/1.1.0",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "704069ee4c40c3b6f342c104dff5ad873ee39c43",
+      "correspondence": "npm version metadata gitHead",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-use-escape-keydown",
+      "version": "1.1.0",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-use-escape-keydown/1.1.0",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "704069ee4c40c3b6f342c104dff5ad873ee39c43",
+      "correspondence": "npm version metadata gitHead",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-dismissable-layer",
+      "version": "1.1.5",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-dismissable-layer/1.1.5",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "e1bdb77ea2445407b239558f2902c2e1950586fe",
+      "correspondence": "npm version metadata gitHead",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/e1bdb77ea2445407b239558f2902c2e1950586fe/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-focus-guards",
+      "version": "1.1.1",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-focus-guards/1.1.1",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "157415ed1f34c53b5afbf53a047895ed6a7f957f",
+      "correspondence": "npm version metadata gitHead",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/157415ed1f34c53b5afbf53a047895ed6a7f957f/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-focus-scope",
+      "version": "1.1.2",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-focus-scope/1.1.2",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "e1bdb77ea2445407b239558f2902c2e1950586fe",
+      "correspondence": "npm version metadata gitHead",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/e1bdb77ea2445407b239558f2902c2e1950586fe/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-use-layout-effect",
+      "version": "1.1.0",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-use-layout-effect/1.1.0",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "704069ee4c40c3b6f342c104dff5ad873ee39c43",
+      "correspondence": "npm version metadata gitHead",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-id",
+      "version": "1.1.0",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-id/1.1.0",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "704069ee4c40c3b6f342c104dff5ad873ee39c43",
+      "correspondence": "npm version metadata gitHead",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-arrow",
+      "version": "1.1.2",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-arrow/1.1.2",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "e1bdb77ea2445407b239558f2902c2e1950586fe",
+      "correspondence": "npm version metadata gitHead",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/e1bdb77ea2445407b239558f2902c2e1950586fe/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-use-size",
+      "version": "1.1.0",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-use-size/1.1.0",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "704069ee4c40c3b6f342c104dff5ad873ee39c43",
+      "correspondence": "npm version metadata gitHead",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-popper",
+      "version": "1.2.2",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-popper/1.2.2",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "e1bdb77ea2445407b239558f2902c2e1950586fe",
+      "correspondence": "npm version metadata gitHead",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/e1bdb77ea2445407b239558f2902c2e1950586fe/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-portal",
+      "version": "1.1.4",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-portal/1.1.4",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "e1bdb77ea2445407b239558f2902c2e1950586fe",
+      "correspondence": "npm version metadata gitHead",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/e1bdb77ea2445407b239558f2902c2e1950586fe/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-presence",
+      "version": "1.1.2",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-presence/1.1.2",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "3c5e05fab070dfa68212230e85baf0879269c57d",
+      "correspondence": "npm version metadata gitHead",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/3c5e05fab070dfa68212230e85baf0879269c57d/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-use-controllable-state",
+      "version": "1.1.0",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-use-controllable-state/1.1.0",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "704069ee4c40c3b6f342c104dff5ad873ee39c43",
+      "correspondence": "npm version metadata gitHead",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-popover",
+      "version": "1.1.6",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-popover/1.1.6",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "e1bdb77ea2445407b239558f2902c2e1950586fe",
+      "correspondence": "npm version metadata gitHead",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/e1bdb77ea2445407b239558f2902c2e1950586fe/LICENSE"
+    },
+    {
+      "name": "@radix-ui/primitive",
+      "version": "1.0.0",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Fprimitive/1.0.0",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "511ca883b41f63ab99b135c6f29d0937ff0cbef0",
+      "sourceManifestVersion": "1.0.0-rc.1",
+      "correspondence": "repository license context at latest package manifest commit before npm publish; stable/RC source versions differ",
+      "exactStableSourceVerified": false,
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/511ca883b41f63ab99b135c6f29d0937ff0cbef0/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-context",
+      "version": "1.0.0",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-context/1.0.0",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "511ca883b41f63ab99b135c6f29d0937ff0cbef0",
+      "sourceManifestVersion": "1.0.0-rc.1",
+      "correspondence": "repository license context at latest package manifest commit before npm publish; stable/RC source versions differ",
+      "exactStableSourceVerified": false,
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/511ca883b41f63ab99b135c6f29d0937ff0cbef0/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-compose-refs",
+      "version": "1.0.0",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-compose-refs/1.0.0",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "511ca883b41f63ab99b135c6f29d0937ff0cbef0",
+      "sourceManifestVersion": "1.0.0-rc.1",
+      "correspondence": "repository license context at latest package manifest commit before npm publish; stable/RC source versions differ",
+      "exactStableSourceVerified": false,
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/511ca883b41f63ab99b135c6f29d0937ff0cbef0/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-slot",
+      "version": "1.0.1",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-slot/1.0.1",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "3ead2147159bf81a100376079b4ab04ccc381cd1",
+      "sourceManifestVersion": "1.0.1-rc.3",
+      "correspondence": "repository license context at latest package manifest commit before npm publish; stable/RC source versions differ",
+      "exactStableSourceVerified": false,
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/3ead2147159bf81a100376079b4ab04ccc381cd1/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-collection",
+      "version": "1.0.1",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-collection/1.0.1",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "3ead2147159bf81a100376079b4ab04ccc381cd1",
+      "sourceManifestVersion": "1.0.1-rc.16",
+      "correspondence": "repository license context at latest package manifest commit before npm publish; stable/RC source versions differ",
+      "exactStableSourceVerified": false,
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/3ead2147159bf81a100376079b4ab04ccc381cd1/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-use-layout-effect",
+      "version": "1.0.0",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-use-layout-effect/1.0.0",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "511ca883b41f63ab99b135c6f29d0937ff0cbef0",
+      "sourceManifestVersion": "1.0.0-rc.1",
+      "correspondence": "repository license context at latest package manifest commit before npm publish; stable/RC source versions differ",
+      "exactStableSourceVerified": false,
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/511ca883b41f63ab99b135c6f29d0937ff0cbef0/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-id",
+      "version": "1.0.0",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-id/1.0.0",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "511ca883b41f63ab99b135c6f29d0937ff0cbef0",
+      "sourceManifestVersion": "1.0.0-rc.1",
+      "correspondence": "repository license context at latest package manifest commit before npm publish; stable/RC source versions differ",
+      "exactStableSourceVerified": false,
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/511ca883b41f63ab99b135c6f29d0937ff0cbef0/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-primitive",
+      "version": "1.0.1",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-primitive/1.0.1",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "3ead2147159bf81a100376079b4ab04ccc381cd1",
+      "sourceManifestVersion": "1.0.1-rc.16",
+      "correspondence": "repository license context at latest package manifest commit before npm publish; stable/RC source versions differ",
+      "exactStableSourceVerified": false,
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/3ead2147159bf81a100376079b4ab04ccc381cd1/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-use-callback-ref",
+      "version": "1.0.0",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-use-callback-ref/1.0.0",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "511ca883b41f63ab99b135c6f29d0937ff0cbef0",
+      "sourceManifestVersion": "1.0.0-rc.1",
+      "correspondence": "repository license context at latest package manifest commit before npm publish; stable/RC source versions differ",
+      "exactStableSourceVerified": false,
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/511ca883b41f63ab99b135c6f29d0937ff0cbef0/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-use-controllable-state",
+      "version": "1.0.0",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-use-controllable-state/1.0.0",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "511ca883b41f63ab99b135c6f29d0937ff0cbef0",
+      "sourceManifestVersion": "1.0.0-rc.1",
+      "correspondence": "repository license context at latest package manifest commit before npm publish; stable/RC source versions differ",
+      "exactStableSourceVerified": false,
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/511ca883b41f63ab99b135c6f29d0937ff0cbef0/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-direction",
+      "version": "1.0.0",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-direction/1.0.0",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "511ca883b41f63ab99b135c6f29d0937ff0cbef0",
+      "sourceManifestVersion": "1.0.0-rc.1",
+      "correspondence": "repository license context at latest package manifest commit before npm publish; stable/RC source versions differ",
+      "exactStableSourceVerified": false,
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/511ca883b41f63ab99b135c6f29d0937ff0cbef0/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-roving-focus",
+      "version": "1.0.2",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-roving-focus/1.0.2",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "f85d5e98d65bc05e1c05651dc728e6142e8864a5",
+      "sourceManifestVersion": "1.0.2-rc.3",
+      "correspondence": "repository license context at latest package manifest commit before npm publish; stable/RC source versions differ",
+      "exactStableSourceVerified": false,
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/f85d5e98d65bc05e1c05651dc728e6142e8864a5/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-presence",
+      "version": "1.0.0",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-presence/1.0.0",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "511ca883b41f63ab99b135c6f29d0937ff0cbef0",
+      "sourceManifestVersion": "1.0.0-rc.1",
+      "correspondence": "repository license context at latest package manifest commit before npm publish; stable/RC source versions differ",
+      "exactStableSourceVerified": false,
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/511ca883b41f63ab99b135c6f29d0937ff0cbef0/LICENSE"
+    },
+    {
+      "name": "@radix-ui/react-tabs",
+      "version": "1.0.2",
+      "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-tabs/1.0.2",
+      "emittedMembers": [
+        "package/payload/shared/web/client.js"
+      ],
+      "sourceCommit": "f85d5e98d65bc05e1c05651dc728e6142e8864a5",
+      "sourceManifestVersion": "1.0.2-rc.3",
+      "correspondence": "repository license context at latest package manifest commit before npm publish; stable/RC source versions differ",
+      "exactStableSourceVerified": false,
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/f85d5e98d65bc05e1c05651dc728e6142e8864a5/LICENSE"
+    }
+  ]
+}

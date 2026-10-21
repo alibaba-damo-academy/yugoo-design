@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 1,
+  "package": "@napi-rs/simple-git",
+  "version": "1.2.0",
+  "integrity": "sha512-lsUGiHAJmdijXhHCR8d8W931mguJqV7QqXvBTS82BxYadBpW/ot8tXKObQ+c1N31H0Mz0h6mLm2MIBqRInuXWg==",
+  "repository": "https://github.com/Brooooooklyn/simple-git",
+  "npmGitHead": "0cdb713269151a7af05718c745a718f0f2bd37f9",
+  "sourceArchive": {
+    "url": "https://codeload.github.com/Brooooooklyn/simple-git/tar.gz/0cdb713269151a7af05718c745a718f0f2bd37f9",
+    "bytes": 2013876,
+    "sha256": "e3dd0f7085f85f6a0eebaa72f7cb3d66c5d31aada09f92f9e5c7b8abce810b83"
+  },
+  "wrapperLicense": {
+    "path": "LICENSE",
+    "sha256": "12384818b94f58917086c0c64ef570cff3c6abb1ce0bf2abe59114f3df9dbc01",
+    "origin": "Exact independently SRI-verified npm 1.2.0 tarball"
+  },
+  "retainedBindingSource": [
+    {
+      "path": "binding-source/Cargo.toml",
+      "bytes": 896,
+      "sha256": "5a87836f0757f891f7e8eda2a5269b02dbdd043533d7ed98494673f5a9f21987"
+    },
+    {
+      "path": "binding-source/build.rs",
+      "bytes": 658,
+      "sha256": "5724a93efb3e9a3e1a8906d22d2627321b398288421a34f3dee4fa26dac67a3a"
+    },
+    {
+      "path": "binding-source/src/blame.rs",
+      "bytes": 6789,
+      "sha256": "af24af292e1b274d8f552df48b25615bcbcb0b5610934c064763068396794a47"
+    },
+    {
+      "path": "binding-source/src/blob.rs",
+      "bytes": 1636,
+      "sha256": "8fbbff65d3a2702b784417c7701496b215bbd984fa8f6ea15a07888477851ead"
+    },
+    {
+      "path": "binding-source/src/branch.rs",
+      "bytes": 4181,
+      "sha256": "1561a5cc7fdc4ddf437be1c1b179676da7f2bb69024438f4159d4477aa9e05c4"
+    },
+    {
+      "path": "binding-source/src/buffer_diff.rs",
+      "bytes": 6019,
+      "sha256": "dbbdc99455b5d14c0957c4e97e1fab9251de15744120b4b18589ce5c4e7d446c"
+    },
+    {
+      "path": "binding-source/src/checkout.rs",
+      "bytes": 2032,
+      "sha256": "1e11f3d68092c14721d258cac74e0f377ee0eb96da28baab27571b1a1549931d"
+    },
+    {
+      "path": "binding-source/src/commit.rs",
+      "bytes": 10036,
+      "sha256": "357b4d8f7f97f4d7f2b25112e0db85a1cec001fc60eb5fe0a10a364f061b6028"
+    },
+    {
+      "path": "binding-source/src/config.rs",
+      "bytes": 8979,
+      "sha256": "77197fd33a279697372f48e839eb9934cad498a9c6a483654889ca98365bee22"
+    },
+    {
+      "path": "binding-source/src/deltas.rs",
+      "bytes": 8174,
+      "sha256": "9aa4a02b8cd7fb38a9b46c9a7873e11094da87caba6b72d52ef33e13f4cc2c68"
+    },
+    {
+      "path": "binding-source/src/diff.rs",
+      "bytes": 3186,
+      "sha256": "f325d33a77f0f68cd0408595098149f082bb9c85b15b6d029df16765382b84c4"
+    },
+    {
+      "path": "binding-source/src/error.rs",
+      "bytes": 14840,
+      "sha256": "910513aa579833b0155295869a6b1785cd80ae8756cbddf0fef2e47993eb5e4b"
+    },
+    {
+      "path": "binding-source/src/file_modification.rs",
+      "bytes": 31658,
+      "sha256": "c2e9c1c949010ed55b38fdf174f4c0ede9c4a530c4d90bfeec202407436cc4a6"
+    },
+    {
+      "path": "binding-source/src/index.rs",
+      "bytes": 3513,
+      "sha256": "5b28be8d09e40db08db454d9524a2c859f90e0064809eeea24635880c022adaa"
+    },
+    {
+      "path": "binding-source/src/lib.rs",
+      "bytes": 757,
+      "sha256": "6c13c4495794ba12c7145c718a609a3f9aae7d757b4c8cb92717ca3bbe41c8f4"
+    },
+    {
+      "path": "binding-source/src/object.rs",
+      "bytes": 3362,
+      "sha256": "ae0c9cce50389046c7517ac99da4d5765d7803da4156c27432caf7023ff06951"
+    },
+    {
+      "path": "binding-source/src/reference.rs",
+      "bytes": 6228,
+      "sha256": "495ecdf569778bf209ed37579e8b4e09c20be2b03f7255924fd2f8fb62420df7"
+    },
+    {
+      "path": "binding-source/src/remote.rs",
+      "bytes": 47994,
+      "sha256": "397f77a688c2a745aa71c6830dab784884b32c2cbbd7308b767f37041e795a8a"
+    },
+    {
+      "path": "binding-source/src/repo.rs",
+      "bytes": 87859,
+      "sha256": "c4b116dc0846f342a5e8bd23d51072d625201eb6b5ec372db17b6e5a4828dcaa"
+    },
+    {
+      "path": "binding-source/src/repo_builder.rs",
+      "bytes": 4174,
+      "sha256": "24d5983154c3412db8b1c8501fe87c301d59f3adb0cf4f5f8b8e9e84292bb3bb"
+    },
+    {
+      "path": "binding-source/src/rev_walk.rs",
+      "bytes": 7494,
+      "sha256": "00bb3dd8100018a727905326f5916d4bc8a775439cb5085dcde84161a126bedc"
+    },
+    {
+      "path": "binding-source/src/signature.rs",
+      "bytes": 3891,
+      "sha256": "523434fb9bb7aa5064fd6b630768232fea4dc59627139e076ac504b9f1e9d3c9"
+    },
+    {
+      "path": "binding-source/src/status.rs",
+      "bytes": 4679,
+      "sha256": "4e310b53d36aa473ec58572dc11c78a4af3abbe8baae48ac37a0b6d4d50ac682"
+    },
+    {
+      "path": "binding-source/src/tag.rs",
+      "bytes": 2258,
+      "sha256": "622ec181ecb6115bddbc700578a42177ecdc8f16c10f3ca694d69b311d756480"
+    },
+    {
+      "path": "binding-source/src/tree.rs",
+      "bytes": 8452,
+      "sha256": "b2a2b2c3e1bfc9241b93081ec1a041cd434bd9a570359dc8117f7c73dad8d3d2"
+    },
+    {
+      "path": "binding-source/src/tree_builder.rs",
+      "bytes": 4074,
+      "sha256": "58f81912334baeb81b7bed1cc8a044f65ef1e85377ef14eb4986fee5e5e8a2e2"
+    },
+    {
+      "path": "binding-source/src/util.rs",
+      "bytes": 454,
+      "sha256": "2b007507c9ce63d0a9f9cad89dd0585efb7488a07fa79df78f580e98b2e0535e"
+    }
+  ],
+  "retainedLicenseReferences": [
+    {
+      "path": "libgit2-v1.9.2-COPYING",
+      "url": "https://raw.githubusercontent.com/libgit2/libgit2/v1.9.2/COPYING",
+      "bytes": 70580,
+      "sha256": "e3712465634e97cfd850822a4eb5ac7d2f8a10f753189366d5a2060046f28288",
+      "scope": "Verbatim libgit2 GPLv2 with linking exception and included third-party texts. Reference text; the published native binary exact libgit2 revision is unverified."
+    },
+    {
+      "path": "git2-0.21.0-LICENSE-MIT",
+      "url": "https://raw.githubusercontent.com/rust-lang/git2-rs/git2-0.21.0/LICENSE-MIT",
+      "bytes": 1057,
+      "sha256": "378f5840b258e2779c39418f3f2d7b2ba96f1c7917dd6be0713f88305dbda397",
+      "scope": "Verbatim MIT alternative for the wrapper-declared git2 0.21 source family; the exact binary build closure is unverified."
+    },
+    {
+      "path": "git2-0.21.0-LICENSE-APACHE",
+      "url": "https://raw.githubusercontent.com/rust-lang/git2-rs/git2-0.21.0/LICENSE-APACHE",
+      "bytes": 10847,
+      "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+      "scope": "Verbatim Apache-2.0 alternative, retained without relicensing the dependency."
+    }
+  ],
+  "testedNativePackages": {
+    "@napi-rs/simple-git-win32-x64-msvc": {
+      "integrity": "sha512-eEj9P8mXyRKzug+7ENehPXnaYAFU7w7CwCRrMPIH0DKoXbm/timiTtdNAOhfLnNp/ZMJVa3gXcl9hfLy3kFPDw==",
+      "nativeBytes": 3698688,
+      "nativeSha256": "7082a891e672e67d805a06c622cf4a306f87f5ca8aac43928791d851592a47e9"
+    },
+    "@napi-rs/simple-git-linux-x64-gnu": {
+      "integrity": "sha512-E2PKw0ZRQ0RH1odOmW+92dkJg705YTeIhdAr6Tml5lFxRlwvupsxhiXEIPhd5q+S7iYnb8jdI5C+Ye8iNbsFNw==",
+      "nativeBytes": 8606984,
+      "nativeSha256": "fe23ab77ff051ae848fb597883a24704c833c855d0c83ee443529816411b3eb4"
+    }
+  },
+  "nativeBinaryRebuilt": false,
+  "exactCargoLockAvailable": false,
+  "completeNativeBuildCorrespondenceVerified": false,
+  "completeVendoredSourceAndLicenseClosureVerified": false,
+  "limits": [
+    "Binding sources are retained unchanged from the npm gitHead; no Rust compiler is needed by the user.",
+    "Upstream has no Cargo.lock and uses non-exact git2/libgit2-sys constraints. Exact published native build revisions and complete embedded components remain unresolved.",
+    "Reference license versions are explicit and are not represented as proven versions in the published native binary.",
+    "Wrapper MIT does not license all embedded native code. Known license texts do not establish a complete source or licensing closure.",
+    "Internal opt-in comparison candidate only; no public publication or complete distribution-compliance acceptance."
+  ]
+}

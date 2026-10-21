@@ -1,0 +1,160 @@
+{
+  "name": "dsh-design-core",
+  "version": "0.0.0",
+  "license": "Apache-2.0",
+  "type": "module",
+  "description": "Design System capability seam for dsh: Mindset and Bundle catalog state, Producer publication, DesignJournal handoffs, and design_state projection.",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    "./source-reference": {
+      "types": "./lib/design-source-reference.d.ts",
+      "default": "./lib/design-source-reference.js"
+    },
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./kit-loader": {
+      "types": "./lib/kit-loader-plugin.d.ts",
+      "default": "./lib/kit-loader-plugin.js"
+    },
+    "./kit": {
+      "types": "./lib/kit-loader.d.ts",
+      "default": "./lib/kit-loader.js"
+    },
+    "./dsl": {
+      "types": "./lib/panel-dsl.d.ts",
+      "default": "./lib/panel-dsl.js"
+    },
+    "./panel-remote": {
+      "types": "./lib/panel-remote.d.ts",
+      "default": "./lib/panel-remote.js"
+    },
+    "./advisory-scheduler": {
+      "types": "./lib/dsh-advisory-plugin.d.ts",
+      "default": "./lib/dsh-advisory-plugin.js"
+    },
+    "./execution": {
+      "types": "./lib/dsh-design-execution-plugin.d.ts",
+      "default": "./lib/dsh-design-execution-plugin.js"
+    },
+    "./design-continuation": {
+      "types": "./lib/design-continuation.d.ts",
+      "default": "./lib/design-continuation.js"
+    },
+    "./experience-view": {
+      "types": "./lib/experience-view.d.ts",
+      "default": "./lib/experience-view.js"
+    },
+    "./remote-client": {
+      "types": "./lib/typert.remote-client.d.ts",
+      "default": "./lib/typert.remote-client.js"
+    },
+    "./typert": {
+      "types": "./lib/typert.host.d.ts",
+      "default": "./lib/typert.host.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-api-gateway"
+      ]
+    }
+  },
+  "scripts": {
+    "test:advisory-readonly": "node --import tsx --test test/advisory-evidence.test.mjs test/dsh-advisory-agent-sdk.test.mjs",
+    "test:dsh-message-source": "node --import tsx --test test/dsh-message-source.test.mjs test/dsh-message-source-lifecycle.test.mjs",
+    "test:dsh-message-source-v4": "node --import tsx --test test/dsh-message-source-v4.test.mjs",
+    "test:dependency-baseline": "node --test test/dsh-dependency-baseline.test.mjs",
+    "test:consumer-dependency-baseline": "node --test test/dsh-dependency-baseline.test.mjs test/dsh-consumer-dependency-baseline.test.mjs",
+    "test:workspace-navigation": "node --import tsx --test test/record-workspace-navigation-groups.test.mjs",
+    "build": "tsdown",
+    "test:sidebar-icons": "node --import tsx --test test/sidebar-icon-contract.test.mjs",
+    "test:bundle-contributions": "node --test smoke-bundle-contributions.mjs",
+    "test:execution-delegation": "node smoke-dsh-design-execution-delegation.mjs",
+    "test:execution-provenance": "node --import tsx --test test/dsh-execution-provenance.test.mjs test/dsh-run-design-skill-session.test.mjs",
+    "test:session-compat": "node --test --test-concurrency=1 test/dsh-child-session-meta.test.mjs test/dsh-session-events.test.mjs test/dsh-design-resume.test.mjs test/dsh-run-design-skill-session.test.mjs test/knowledge-recovery-progress.test.mjs test/advisory-knowledge-warmup.test.mjs test/execution-log-session-api.test.mjs test/file-worker-delegation.test.mjs",
+    "test:panel-handoff": "node --test --test-concurrency=1 test/design-execution-handoff-authority.test.mjs test/panel-must-edit-save.test.mjs test/auto-panel-remote-save.test.mjs",
+    "test:git-versioning": "node smoke-git-versioning.mjs",
+    "test:publication-integrity": "node --test test/git-publication-integrity.test.mjs",
+    "test:workspace-refresh": "node --test test/workspace-refresh-cost.test.mjs test/workspace-poll.test.mjs test/display-files.test.mjs test/panel-worktree-presentation.test.mjs test/experience-view.test.mjs",
+    "test:project-recovery": "node smoke-design-project-recovery.mjs",
+    "test:project-reconstruction": "node smoke-design-project-reconstruction.mjs",
+    "test:skill-script-port": "node smoke-skill-script-port.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/schemastery": "^3.18.1",
+    "@deepseek-ai/dsh-agent": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-api-gateway": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-brand": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-commands": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-jobs": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-llm": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-scope": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-session": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-session-projection": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-settings": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-subagent": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-subprocess": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-subprocess-local": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.2"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-subprocess-local": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.0.5",
+    "@deepseek-ai/dsh-agent": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-api-gateway": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-brand": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-commands": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-jobs": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-llm": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-scope": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-session": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-session-projection": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-settings": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-subagent": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-subprocess": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-subprocess-local": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.2",
+    "@types/node": "^22.20.0",
+    "@deepseek-ai/schemastery": "3.18.4",
+    "tsdown": "^0.22.2",
+    "typescript": "^6.0.3"
+  },
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "lib/client.js",
+    "LICENSE",
+    "NOTICE",
+    "THIRD_PARTY_NOTICES.md",
+    "third-party/dsh-json/**",
+    "third-party/simple-git/**",
+    "third-party/git-js/**"
+  ],
+  "dependencies": {
+    "chokidar": "^5.0.0",
+    "iconv-lite": "0.7.3",
+    "isomorphic-git": "1.44.2",
+    "yaml": "^2.9.0",
+    "yugoo-design-git-native": "workspace:*",
+    "zod": "^4.4.3"
+  }
+}

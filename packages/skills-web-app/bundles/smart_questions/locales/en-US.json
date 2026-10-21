@@ -1,0 +1,9 @@
+{
+  "guidance": "Answer the current round. Explain uncertainty or leave an answer empty; previous rounds are read-only.",
+  "bundleDescription": "- **Capability**: maintain coherent product background and evolving context through editable questions and answers.\n- **Resolves**: understanding of users, needs, value, scenarios and boundaries, plus relevant context not owned by another design facet.\n- **Candidate when**: exploring requirements, reconstructing product background, revising existing understanding or clarifying context necessary for the current result; not a technical inventory or fixed questionnaire.\n- **Do not infer**: a short request, low score, or missing detail alone does not authorize questioning when a useful draft or grounded default is what the user requested.\n- **Output**: `smart_questions` panel — editable question cards with rendered options and answers.",
+  "configuration": "Application Development Configuration",
+  "empty": "There are no questions to answer.",
+  "questions": "Questions", "prompt": "Question", "answer": "Answer", "detail": "Additional context",
+  "skip": "Skip question", "rounds": "Question rounds",
+  "roundTitle": "Round title", "roundDescription": "Round description"
+}

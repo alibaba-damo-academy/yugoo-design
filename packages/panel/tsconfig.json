@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node", "react", "react-dom"],
+    "jsx": "react-jsx",
+    "resolveJsonModule": true
+  },
+  "include": ["src"]
+}

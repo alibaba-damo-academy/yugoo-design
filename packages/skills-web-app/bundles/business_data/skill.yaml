@@ -1,0 +1,36 @@
+# Skill manifest. Repository authoring guide: docs/bundle-contract.md.
+name: business_data
+version: "1.0"
+
+title:
+  zh: 业务对象
+  en: Business Objects
+
+label:
+  zh: 梳理业务事项和信息
+  en: Define business things and information
+
+
+order: 10
+icon: database
+
+execution:
+  handoff: must_edit
+
+presentation:
+  mode: declarative
+
+# Optional model-facing summary; omission does not block design work.
+# 摘要保持对象和关系的稳定身份。信息、状态和继承来源请读取 canonical 或面板；
+# 没有填写的数量仍为未知，不推断默认数量，也不复制父类型字段到子类型。
+summary:
+  collections:
+    - source: objects
+      title: 业务对象
+      order: object_order
+      title_fields: [name]
+      fields: [description]
+    - source: relations
+      title: 对象关系
+      title_fields: [name]
+      fields: [kind, source, target, description, source_count, target_count]

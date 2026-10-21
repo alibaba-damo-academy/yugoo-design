@@ -1,0 +1,147 @@
+# Declarative rules enforce material catalogs, required fields, and order
+# references. Rich cross-collection permission semantics remain Producer
+# self-checks in SKILL.md.
+skill: role_access
+
+rules:
+  # Rich permission-quality checks remain Producer self-checks in SKILL.md.
+  # Optional inheritance is structural, not a natural-language ACL evaluator.
+  - id: inheritance_ids_match_keys
+    scope: [state, completion]
+    code: role_access.invalid_inheritance_id
+    message: "inheritance mapping key {key} must equal inheritance.id"
+    repair_hint: "Preserve each stable edge ID and keep its map key identical."
+    check: { map_keys_match_field: { map: inheritances, field: id } }
+
+  - id: inheritance_title
+    scope: [state, completion]
+    code: role_access.incomplete_inheritance
+    message: "inheritance {key}: title is empty"
+    repair_hint: "Give the inheritance edge a readable label."
+    check: { for_each_in_map: inheritances, non_empty_string: title }
+
+  - id: inheritance_source
+    scope: [state, completion]
+    code: role_access.invalid_inheritance_endpoint
+    message: "inheritance {key}: source must be an existing child role"
+    repair_hint: "Connect existing role IDs; do not invent a role to repair an edge."
+    check: { for_each_in_map: inheritances, member_of_map: { value: source, map: roles } }
+
+  - id: inheritance_target
+    scope: [state, completion]
+    code: role_access.invalid_inheritance_endpoint
+    message: "inheritance {key}: target must be an existing parent role"
+    repair_hint: "Connect existing role IDs; do not invent a role to repair an edge."
+    check: { for_each_in_map: inheritances, member_of_map: { value: target, map: roles } }
+
+  - id: inheritance_acyclic
+    scope: [state, completion]
+    code: role_access.cyclic_inheritance
+    message: "inheritance {key}: self-inheritance or a role cycle is not allowed"
+    repair_hint: "Remove the invalid edge while preserving grounded roles and policies."
+    check: { acyclic_record_edges: { map: inheritances, source: source, target: target } }
+
+  - id: inheritance_single_parent
+    scope: [state, completion]
+    code: role_access.multiple_parents
+    message: "inheritance {key}: a role must have at most one parent edge"
+    repair_hint: "Keep one evidenced parent, or report that the product needs an unsupported multi-parent model."
+    check: { single_parent_record_edges: { map: inheritances, source: source, target: target } }
+
+  - id: empty_roles
+    scope: [state]
+    code: role_access.empty_roles
+    message: "At least one role is required."
+    repair_hint: "Add the smallest grounded set of distinct permission roles."
+    check: { non_empty_map: roles }
+
+  - id: empty_policies
+    scope: [state]
+    code: role_access.empty_policies
+    message: "At least one permission decision is required."
+    repair_hint: "Add the material allow or explicit deny decisions owned by the roles."
+    check: { non_empty_map: policies }
+
+  - id: role_assignment_rule
+    scope: [state, completion]
+    code: role_access.incomplete_role
+    message: "role {key}: `assignment_rule` is empty"
+    repair_hint: "Explain who receives this role and when."
+    check: { for_each_in_map: roles, non_empty_string: assignment_rule }
+
+  - id: policy_role_ref
+    scope: [state, completion]
+    code: role_access.incomplete_policy
+    message: "policy {key}: `role_ref` is empty"
+    repair_hint: "Assign the policy to exactly one existing role."
+    check: { for_each_in_map: policies, non_empty_string: role_ref }
+
+  - id: policy_capability
+    scope: [state, completion]
+    code: role_access.incomplete_policy
+    message: "policy {key}: `capability` is empty"
+    repair_hint: "Name one user-visible operation for this permission decision."
+    check: { for_each_in_map: policies, non_empty_string: capability }
+
+  - id: policy_role_exists
+    scope: [state, completion]
+    code: role_access.invalid_policy_role
+    message: "policy {key}: role_ref must reference an existing role"
+    repair_hint: "Preserve the policy owner; resolve or remove a dangling reference explicitly."
+    check: { for_each_in_map: policies, member_of_map: { value: role_ref, map: roles } }
+
+  - id: role_order_refs
+    scope: [state, completion]
+    code: role_access.invalid_role_order
+    message: "role_order references missing role {key}"
+    repair_hint: "Keep each live role ID exactly once in role_order."
+    check: { order_refs_map: { order: role_order, map: roles } }
+
+  - id: role_order_empty
+    scope: [state, completion]
+    code: role_access.invalid_role_order
+    message: "role_order is empty"
+    repair_hint: "Keep each live role ID exactly once in role_order."
+    check: { non_empty_list: role_order }
+
+  - id: role_ids_match_keys
+    scope: [state, completion]
+    code: role_access.invalid_role_id
+    message: "role mapping key {key} must equal role.id"
+    repair_hint: "Keep the role mapping key equal to the record's stable id."
+    check: { map_keys_match_field: { map: roles, field: id } }
+
+  - id: role_order_exact
+    scope: [state, completion]
+    code: role_access.invalid_role_order
+    message: "role_order must contain role {key} exactly once"
+    repair_hint: "Keep each live role ID exactly once in role_order."
+    check: { order_exactly_covers_map: { order: role_order, map: roles } }
+
+  - id: policy_order_refs
+    scope: [state, completion]
+    code: role_access.invalid_policy_order
+    message: "policy_order references missing policy {key}"
+    repair_hint: "Keep each live policy ID exactly once in policy_order."
+    check: { order_refs_map: { order: policy_order, map: policies } }
+
+  - id: policy_order_empty
+    scope: [state, completion]
+    code: role_access.invalid_policy_order
+    message: "policy_order is empty"
+    repair_hint: "Keep each live policy ID exactly once in policy_order."
+    check: { non_empty_list: policy_order }
+
+  - id: policy_ids_match_keys
+    scope: [state, completion]
+    code: role_access.invalid_policy_id
+    message: "policy mapping key {key} must equal policy.id"
+    repair_hint: "Keep the policy mapping key equal to the record's stable id."
+    check: { map_keys_match_field: { map: policies, field: id } }
+
+  - id: policy_order_exact
+    scope: [state, completion]
+    code: role_access.invalid_policy_order
+    message: "policy_order must contain policy {key} exactly once"
+    repair_hint: "Keep each live policy ID exactly once in policy_order."
+    check: { order_exactly_covers_map: { order: policy_order, map: policies } }

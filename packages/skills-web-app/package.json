@@ -1,0 +1,34 @@
+{
+  "name": "dsh-design-skills-web-app",
+  "version": "0.0.0",
+  "license": "Apache-2.0",
+  "type": "module",
+  "description": "Self-contained web_app Design Kit: Mindset, Bundle manifests, references, and ordinary Agent-facing scripts.",
+  "designSystem": {
+    "kit": {
+      "root": "./kits/web_app",
+      "mindset": "./kits/web_app/mindset.md",
+      "manifest": "./kits/web_app/kit.yaml",
+      "bundles": "./bundles"
+    }
+  },
+  "scripts": {
+    "test": "node --test test/test-reading-order.mjs test/test-channel-spacing.mjs test/test-layout-policy.mjs && node test/smoke-page-design-script.mjs && node test/test-page-file-contract.mjs && node test/smoke-flow-design-script.mjs && node test/smoke-bpmn-routing.mjs && node test/smoke-design-style-script.mjs && node test/smoke-prd-script.mjs",
+    "test:layout-production": "node test/smoke-layout-production.mjs",
+    "test:page-file-contract": "node test/test-page-file-contract.mjs"
+  },
+  "dependencies": {
+    "bpmn-js": "^18.24.0",
+    "bpmn-moddle": "^9.0.1",
+    "elkjs": "^0.10.0",
+    "playwright": "^1.61.1"
+  },
+  "files": [
+    "README.md",
+    "kits",
+    "bundles",
+    "LICENSE",
+    "NOTICE",
+    "THIRD_PARTY_NOTICES.md"
+  ]
+}

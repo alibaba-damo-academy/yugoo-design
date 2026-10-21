@@ -1,0 +1,95 @@
+# Web App Kit 的 Bundle 挂载清单；各项按设计需要选用，不是固定执行流程。
+# Web App Kit Bundle mounts; select activities as needed, not as mandatory stages.
+# 详细方法见 ../../bundles/<name>/SKILL.md。
+# See ../../bundles/<name>/SKILL.md for each Bundle's full method.
+version: 1
+mounts:
+  # 智能提问：通过问题与回答澄清用户、目标、使用场景和产品边界。
+  # Clarify users, goals, scenarios and product scope through questions and answers.
+  - bindingKey: smart_questions
+    name: smart_questions
+    version: "1.0"
+
+  # 调研：查证市场、竞品与领域背景，整理来源及其对设计的启示。
+  # Research markets, competitors and domain context, with sources and design implications.
+  - bindingKey: research
+    name: research
+    version: "1.0"
+
+  # 功能模块：将产品目标与使用场景展开为可逐项推敲的功能卡片。
+  # Turn product goals and scenarios into function cards that can be reviewed individually.
+  - bindingKey: function_modules
+    name: function_modules
+    version: "1.0"
+
+  # AI 能力：设计应用内 AI 的职责，以及提示词、Skills、工具等协作关系。
+  # Design in-app AI responsibilities and relationships with prompts, Skills, tools and other collaborators.
+  - bindingKey: ai_agent_capabilities
+    name: ai_agent_capabilities
+    version: "1.0"
+
+  # 业务流程：用 BPMN 展开人和系统的职责、步骤、分支与交接。
+  # Map human and system responsibilities, steps, branches and handoffs with BPMN.
+  - bindingKey: flow_design
+    name: flow_design
+    version: "1.0"
+
+  # 视觉风格：定义配色、字体和组件语言，并用代表性界面展示视觉方向。
+  # Define colors, typography and component language, illustrated by a representative UI preview.
+  - bindingKey: design_style
+    name: design_style
+    version: "1.0"
+
+  # 业务数据：定义产品需要记住的业务对象、信息字段、状态及对象关系。
+  # Define persistent business objects, their information fields, states and relationships.
+  - bindingKey: business_data
+    name: business_data
+    version: "1.0"
+
+  # 业务规则：明确产品在特定条件或输入下应作出的判断、计算与约束。
+  # Specify product decisions, calculations and constraints for defined conditions or inputs.
+  - bindingKey: business_rules
+    name: business_rules
+    version: "1.0"
+
+  # 角色权限：定义产品角色、获得角色的条件，以及允许或禁止的操作。
+  # Define product roles, assignment rules, and permitted or prohibited operations.
+  - bindingKey: role_access
+    name: role_access
+    version: "1.0"
+
+  # 外部集成：设计产品需要连接的外部能力及其使用方式和业务影响。
+  # Design required external connections, how they are used and their product implications.
+  - bindingKey: integration_design
+    name: integration_design
+    version: "1.0"
+
+  # 通知设计：确定何时通知谁、通过什么渠道，以及需要传达的信息和后续动作。
+  # Decide when to notify whom, through which channel, with what message and next action.
+  - bindingKey: notification_design
+    name: notification_design
+    version: "1.0"
+
+  # 质量与验收：为已确定的产品行为和质量要求定义可观察的验收标准。
+  # Define observable acceptance criteria for established product behavior and quality needs.
+  - bindingKey: quality_acceptance
+    name: quality_acceptance
+    version: "1.0"
+
+  # 页面设计：组织页面地图与导航关系，并生成已确认页面的可交互 HTML 原型。
+  # Organize the page map and navigation, then generate interactive HTML prototypes for confirmed pages.
+  - bindingKey: page_design
+    name: page_design
+    version: "1.0"
+
+  # PRD 整合：将已有设计与用户材料组织为可指导开发的产品需求文档。
+  # Assemble existing designs and user materials into a PRD that can guide implementation.
+  - bindingKey: web_app_prd_assembly
+    name: web_app_prd_assembly
+    version: "1.0"
+
+  # 自由白板：通过文字、图形与连线，与用户共同探索和表达一个主题。
+  # Explore and explain a topic with the user using text, shapes and connectors.
+  - bindingKey: whiteboard
+    name: whiteboard
+    version: "1.0"

@@ -1,0 +1,26 @@
+name: ai_agent_capabilities
+version: "1.0"
+title: {zh: AI 能力, en: AI Capabilities}
+label: {zh: 设计 Agent 与模型直调, en: Design Agents and model calls}
+order: 15
+icon: functions
+execution: {handoff: must_edit}
+presentation: {mode: declarative}
+
+# Optional derived context, never a second design authority.
+# Full instructions and resources remain in canonical state, not abbreviated here.
+# Nested entries/actions/exceptions/collaborations are not scalar summary cells; read the canonical record
+# for their full conditions. Do not duplicate or serialize them into another field.
+# model_source_ref takes precedence over retained Agent connection fields; clearing restores fallback.
+# knowledge_resource_refs is a list: read the canonical Agent, not invented scalar summary text.
+summary:
+  collections:
+    - source: agents
+      title: AI design units
+      title_fields: [name]
+      fields: [model_source_ref, model_selection, description, context, memory_retention, model_connection, model_service, integration_ref, notes, result, result_adoption, failure_handling, usage_requirements, boundary, resource_policy, handoff, external_delegation, harness, model_access, execution_policy, evidence]
+    - {source: skills, title: Skills, title_fields: [name], fields: [purpose, activation, source, notes, evidence]}
+    - {source: tools, title: Tools, title_fields: [name], fields: [tool_kind, purpose, scope, approval, failure, notes, evidence]}
+    - {source: model_sources, title: Model entries, title_fields: [name], fields: [description, model_connection, integration_ref, notes]}
+    # kind determines which retained resource fields apply; read the canonical record for exact scope.
+    - {source: knowledge_resources, title: Knowledge and memory, title_fields: [name], fields: [kind, description, source_and_maintenance, formation_and_update, user_management, access_scope, notes]}

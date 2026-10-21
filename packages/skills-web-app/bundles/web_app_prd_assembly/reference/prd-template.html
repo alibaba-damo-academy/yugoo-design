@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{PRD_TITLE}}</title>
+  <style data-prd-document-style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    html { background: #ffffff; }
+    body.prd-document { margin: 0; background: #ffffff; color: #171717; font: 15px/1.7 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+    .prd-container { width: min(920px, calc(100% - 48px)); margin: 0 auto; padding: 48px 0 80px; }
+    .prd-header { margin: 0 0 40px; padding: 0 0 20px; border-bottom: 1px solid #d4d4d4; }
+    .prd-title { margin: 0 0 6px; color: #0a0a0a; font-size: 30px; line-height: 1.25; font-weight: 700; letter-spacing: -0.02em; }
+    .prd-subtitle, .prd-meta { margin: 0; color: #737373; font-size: 13px; }
+    h2 { margin: 42px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #d4d4d4; color: #0a0a0a; font-size: 21px; line-height: 1.35; font-weight: 700; }
+    h3 { margin: 28px 0 10px; color: #171717; font-size: 17px; line-height: 1.45; font-weight: 650; }
+    h4 { margin: 30px 0 10px; color: #262626; font-size: 15px; line-height: 1.5; font-weight: 650; }
+    p { margin: 0 0 12px; }
+    ul, ol { margin: 0 0 14px; padding-left: 24px; }
+    li { margin: 6px 0; }
+    .prd-function { margin: 0 0 30px; padding-bottom: 22px; border-bottom: 1px solid #eeeeee; }
+    .prd-function:last-child { border-bottom: 0; }
+    .prd-function-summary { margin-bottom: 12px; }
+    .prd-function-meta { margin-bottom: 12px; color: #404040; }
+    .prd-function-meta li::marker { color: #737373; }
+    .prd-function-flow { margin-bottom: 12px; }
+    .prd-function-notes { color: #404040; }
+    strong { color: #0a0a0a; }
+    a { color: #1d4ed8; text-decoration: underline; text-underline-offset: 2px; }
+    code { padding: 1px 4px; border: 1px solid #e5e5e5; border-radius: 3px; background: #fafafa; color: #171717; font: 0.9em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    table { width: 100%; margin: 16px 0 22px; border-collapse: collapse; table-layout: auto; font-size: 14px; }
+    th, td { padding: 9px 10px; border: 1px solid #d4d4d4; background: #ffffff; text-align: left; vertical-align: top; }
+    th { background: #f5f5f5; color: #171717; font-weight: 650; }
+    blockquote, .prd-note, .prd-warning, .ai-provenance { margin: 16px 0; padding: 10px 14px; border-left: 3px solid #737373; background: #fafafa; }
+    .prd-warning { border-left-color: #b45309; background: #fffbeb; }
+    .ai-provenance { border-left-color: #7c3aed; background: #faf5ff; }
+    .prd-visual-figure { margin: 24px 0 32px; }
+    .prd-visual-caption { margin: 0 0 10px; color: #525252; font-size: 13px; font-weight: 650; }
+    .prd-visual-svg { display: block; width: 100%; height: auto; max-height: 720px; border: 1px solid #d4d4d4; background: #ffffff; }
+    .prd-page-image { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: contain; border: 1px solid #d4d4d4; background: #ffffff; }
+    @media (max-width: 720px) { .prd-container { width: min(100% - 28px, 920px); padding-top: 28px; } .prd-title { font-size: 25px; } table { display: block; overflow-x: auto; } }
+    @media print { .prd-container { width: 100%; padding: 0; } a { color: inherit; } .prd-visual-figure { break-inside: avoid; } }
+  </style>
+</head>
+<body class="prd-document">
+<main class="prd-container">
+  <header class="prd-header">
+    <h1 class="prd-title">{{PRD_TITLE}}</h1>
+    <p class="prd-subtitle">产品需求文档</p>
+  </header>
+
+<!-- prd-section
+id: document_control
+policy: conditional
+sources: smart_questions, research, user
+-->
+<h2 data-prd-section-id="document_control" data-prd-sources="" data-prd-provenance-ids="">文档状态</h2>
+<!-- 仅在适用时填写：文档状态、审阅角色、待确认事项；历史由 Git 保存。 -->
+
+<!-- prd-section
+id: product_definition
+policy: required
+sources: smart_questions, research, function_modules, business_data, flow_design, business_rules, role_access, page_design, design_style, integration_design, notification_design, quality_acceptance, user, upload
+-->
+<h2 data-prd-section-id="product_definition" data-prd-sources="" data-prd-provenance-ids="">产品定义</h2>
+<!-- 先用连续正文说明背景、现状问题、产品判断、目标与非目标；表格只用于补充术语或目标口径，不得替代论述。 -->
+
+<!-- prd-section
+id: users_scope_release
+policy: required
+sources: smart_questions, research, function_modules, role_access, integration_design, user, upload
+-->
+<h2 data-prd-section-id="users_scope_release" data-prd-sources="" data-prd-provenance-ids="">用户、场景与范围</h2>
+<!-- 先叙述用户在什么情境下遇到什么问题、如何使用产品并获得什么结果，再用表格归纳人群、范围、优先级与发布边界。 -->
+
+<!-- prd-section
+id: capability_architecture
+policy: required
+sources: function_modules, smart_questions, flow_design, page_design, user
+-->
+<h2 data-prd-section-id="capability_architecture" data-prd-sources="" data-prd-provenance-ids="">产品方案与功能需求</h2>
+<!-- 先说明整体方案和功能优先级原则，再按 F-xxx 逐项写成可独立阅读的功能行为规格。每个功能使用 <section class="prd-function">：先用一小段普通正文说明用户价值和能力边界；随后用无序列表归纳角色、入口、前置、输入与输出；用有序列表描述主流程；最后用无序列表列出状态反馈、规则、异常、依赖、关联页面/流程与待确认缺口。不要把标签反复写进多个粗体段落，不要为了填满结构编造无证据细节。Epic 只负责分组和共同边界；表格只能作为摘要，禁止用一行功能清单替代详细规格。 -->
+<!-- prd-visual:function_scope_map:start -->
+<!-- prd-visual:function_scope_map:end -->
+
+<!-- prd-section
+id: business_information
+policy: required
+sources: business_data, smart_questions, function_modules, business_rules, flow_design, page_design, integration_design, user
+-->
+<h2 data-prd-section-id="business_information" data-prd-sources="" data-prd-provenance-ids="">业务对象与信息</h2>
+<!-- 先解释核心对象如何产生、变化并参与业务，再用数据字典或状态表补充身份、字段、关系、事实归属、历史与保留要求。读取 business_data 的显式关系：子类型到父类型的继承、关联两端的普通话数量说明；未确定数量保留待确认，不自动复制父类型字段。 -->
+
+<!-- prd-section
+id: journeys_processes
+policy: required
+sources: flow_design, function_modules, business_data, business_rules, role_access, integration_design, notification_design, user
+-->
+<h2 data-prd-section-id="journeys_processes" data-prd-sources="" data-prd-provenance-ids="">业务流程</h2>
+<!-- 每个流程使用独立 <section data-prd-entity-ref="flow_design/P-001.bpmn">。先用正文说明目标、触发、参与者、主路径、对象变化、关键分支、异常/补偿和完成结果，再紧邻放置该流程的 visual-item。 -->
+<!-- prd-visual:all_bpmn:start -->
+<!-- 在每个流程说明后放置该流程的 prd-visual-item:<bpmn_file>:start/end 引用对。 -->
+<!-- prd-visual:all_bpmn:end -->
+
+<!-- prd-section
+id: rules_controls
+policy: required
+sources: business_rules, business_data, smart_questions, flow_design, integration_design, quality_acceptance, user
+-->
+<h2 data-prd-section-id="rules_controls" data-prd-sources="" data-prd-provenance-ids="">业务规则与控制</h2>
+<!-- 先解释规则解决的风险、适用情境和执行方式；规则表用于精确列出条件、校验、判断、路由、阈值、失败反馈、例外与示例。 -->
+
+<!-- prd-section
+id: roles_security_audit
+policy: conditional
+sources: role_access, smart_questions, flow_design, page_design, quality_acceptance, user
+-->
+<h2 data-prd-section-id="roles_security_audit" data-prd-sources="" data-prd-provenance-ids="">角色、权限与安全</h2>
+<!-- 先说明角色如何参与业务、权限边界及主要风险，再用权限矩阵补充角色生命周期、数据范围、敏感信息、身份与审计要求。 -->
+
+<!-- prd-section
+id: pages_interactions
+policy: required
+sources: page_design, function_modules, business_data, business_rules, role_access, design_style, user
+-->
+<h2 data-prd-section-id="pages_interactions" data-prd-sources="" data-prd-provenance-ids="">页面与交互</h2>
+<!-- 先解释整体信息架构与导航原则，并结合页面关系图说明主入口、任务路径和跨模块跳转。每个页面使用独立 <section data-prd-entity-ref="page_design/pages/example.html">，正文说明页面目标、进入条件、信息层级、关键操作、系统反馈、状态/异常和离开路径，随后紧邻放置该页面 visual-item；禁止先集中写完页面再集中放图。 -->
+<!-- prd-visual:page_map:start -->
+<!-- prd-visual:page_map:end -->
+<!-- prd-visual:all_page_prototypes:start -->
+<!-- 在每个页面说明后放置该页面的 prd-visual-item:<artifact_file>:start/end 引用对。 -->
+<!-- prd-visual:all_page_prototypes:end -->
+
+<!-- prd-section
+id: visual_experience
+policy: required
+sources: design_style, page_design, user
+-->
+<h2 data-prd-section-id="visual_experience" data-prd-sources="" data-prd-provenance-ids="">视觉与体验规范</h2>
+<!-- 说明设计语言如何服务产品目标，以及布局、反馈、可访问性和跨页面一致性原则；token 与组件表只作为可执行规范的补充。 -->
+<!-- prd-visual:design_preview:start -->
+<!-- prd-visual:design_preview:end -->
+
+<!-- prd-section
+id: integrations
+policy: conditional
+sources: integration_design, function_modules, flow_design, page_design, business_rules, quality_acceptance, user
+-->
+<h2 data-prd-section-id="integrations" data-prd-sources="" data-prd-provenance-ids="">系统集成</h2>
+<!-- 先按使用场景解释集成何时参与主流程、成功与失败时用户看到什么，再用接口表补充外部系统、认证、触发、输入输出、同步、重试、降级与责任方。 -->
+
+<!-- prd-section
+id: notifications_communications
+policy: conditional
+sources: notification_design, flow_design, role_access, page_design, integration_design, user
+-->
+<h2 data-prd-section-id="notifications_communications" data-prd-sources="" data-prd-provenance-ids="">通知与沟通</h2>
+<!-- 先说明通知要促成的用户行动和打扰边界，再用矩阵补充事件、接收者、渠道、内容、行动入口、去重与失败处理。 -->
+
+<!-- prd-section
+id: analytics_outputs
+policy: conditional
+sources: function_modules, page_design, business_data, business_rules, role_access, notification_design, quality_acceptance, user
+-->
+<h2 data-prd-section-id="analytics_outputs" data-prd-sources="" data-prd-provenance-ids="">指标、报表与输出</h2>
+<!-- 先说明用户通过指标或输出要回答什么问题、如何采取行动，再用定义表补充指标口径、报表、下钻、导出、访问控制和留存。 -->
+
+<!-- prd-section
+id: quality_acceptance
+policy: required
+sources: quality_acceptance, function_modules, flow_design, business_rules, role_access, page_design, integration_design, user
+-->
+<h2 data-prd-section-id="quality_acceptance" data-prd-sources="" data-prd-provenance-ids="">质量与验收</h2>
+<!-- 按关键用户场景说明验收目标和可观察结果，再列出 Given/When/Then 或等价标准、非功能目标、环境与数据、检查方法、退出条件和追溯关系。没有质量设计证据时，所有具体标准必须放入 AI 临时补全标记。 -->
+
+<!-- prd-section
+id: delivery_operations
+policy: conditional
+sources: smart_questions, research, integration_design, notification_design, quality_acceptance, user
+-->
+<h2 data-prd-section-id="delivery_operations" data-prd-sources="" data-prd-provenance-ids="">上线与运营</h2>
+<!-- 先说明上线策略、受影响用户和风险控制，再以运行清单补充迁移、初始化、灰度、回滚、培训、监控、支持与应急。 -->
+
+<!-- prd-section
+id: assembly_traceability
+policy: required
+sources: smart_questions, research, function_modules, flow_design, design_style, business_data, business_rules, role_access, page_design, integration_design, notification_design, quality_acceptance, user, upload
+-->
+<h2 data-prd-section-id="assembly_traceability" data-prd-sources="" data-prd-provenance-ids="">决策、待确认与追溯</h2>
+<!-- 填写：关键决策、临时补全、来源冲突、采用理由和跨产物追溯。 -->
+
+</main>
+</body>
+</html>

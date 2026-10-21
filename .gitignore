@@ -1,0 +1,29 @@
+node_modules/
+lib/
+dist/
+# Fixed upstream bytes required by the public pica source-verification test.
+# Keep every other generated dist file ignored, including neighboring fixtures.
+!/scripts/test-fixtures/pica-worker/source/pica/dist/
+/scripts/test-fixtures/pica-worker/source/pica/dist/*
+!/scripts/test-fixtures/pica-worker/source/pica/dist/pica.js
+*.log
+.DS_Store
+.env
+.env.local
+
+# Keep authoring skills portable; other local agent configuration stays private.
+!/.agents/
+/.agents/*
+!/.agents/skills/
+/.agents/skills/*
+!/.agents/skills/design-skill-creator/
+!/.agents/skills/design-bundle-creator/
+!/.agents/skills/design-kit-creator/
+
+# Local user exports and raw experiment runtime records are not source artifacts.
+/feedback/
+/docs/experiments/**/*.jsonl.zstd
+/docs/experiments/**/model.patch.yml
+/docs/experiments/**/*.request.json
+/docs/experiments/**/*.response.json
+/docs/experiments/**/*.events.json

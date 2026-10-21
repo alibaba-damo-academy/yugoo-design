@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design Skill Creator"
+  short_description: "Author executable Design Bundle methods"
+  default_prompt: "Use $design-skill-creator to create or repair this Bundle's method and readable output contract."

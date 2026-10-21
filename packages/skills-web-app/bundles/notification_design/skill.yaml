@@ -1,0 +1,31 @@
+# Skill manifest. Repository authoring guide: docs/bundle-contract.md.
+name: notification_design
+version: "1.0"
+
+title:
+  zh: 通知设计
+  en: Notification Design
+
+label:
+  zh: 设计提醒时机和内容
+  en: Design notification moments
+
+
+order: 16
+icon: notification
+
+execution:
+  handoff: none
+
+presentation:
+  mode: declarative
+
+# Optional model-facing summary; omission does not block design work.
+# 接收人与渠道为列表，完整值在面板或 canonical 文件中读取；摘要不将数组伪造为标量。
+summary:
+  collections:
+    - source: notifications
+      title: 通知设计
+      title_fields: [title]
+      order: notification_order
+      fields: [trigger, message, action_target]

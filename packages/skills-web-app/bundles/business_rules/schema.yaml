@@ -1,0 +1,20 @@
+# business_rules Design Files contract, translated from BusinessRulesState v4.
+type: object
+additional_properties: false
+required: [schema_version]
+properties:
+  skill_name: { knowledge: { role: metadata }, type: string }
+  schema_version: { knowledge: { role: metadata }, type: enum, values: [4] }
+  rules:
+    type: map
+    value:
+      type: object
+      additional_properties: false
+      required: [id, title]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        condition: { type: string }
+        outcome: { type: string }
+        notes: { type: string }
+  rule_order: { knowledge: { role: metadata }, type: array, items: { type: string } }

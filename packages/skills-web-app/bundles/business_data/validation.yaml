@@ -1,0 +1,92 @@
+# business_data semantic validation translated from schema.py and deliverables.py.
+skill: business_data
+
+rules:
+  - id: empty
+    scope: [state]
+    code: business_data.empty
+    message: "objects has no business things"
+    check: { non_empty_map: objects }
+
+  - id: empty_order
+    scope: [state]
+    code: business_data.empty_order
+    message: "object_order is empty, so no business thing can render."
+    check: { non_empty_list: object_order }
+
+  - id: object_key_mismatch
+    scope: [state]
+    code: business_data.object_key_mismatch
+    message: "business object mapping key {key} must equal its id"
+    check: { map_keys_match_field: { map: objects, field: id } }
+
+  - id: invalid_object_order
+    scope: [state]
+    code: business_data.invalid_object_order
+    message: "object_order must contain business object {key} exactly once"
+    check: { order_exactly_covers_map: { order: object_order, map: objects } }
+
+  - id: empty_name
+    scope: [completion]
+    code: business_data.empty_name
+    message: "business object {key} has no name"
+    check:
+      for_each_in_order: { order: object_order, map: objects }
+      non_empty_string: name
+
+  - id: empty_description
+    scope: [completion]
+    code: business_data.empty_description
+    message: "business object {key} has no description"
+    check:
+      for_each_in_order: { order: object_order, map: objects }
+      non_empty_string: description
+
+  - id: relation_key_mismatch
+    scope: [state]
+    code: business_data.relation_key_mismatch
+    message: "relation mapping key {key} must equal its id"
+    check: { map_keys_match_field: { map: relations, field: id } }
+
+  - id: relation_source
+    scope: [state]
+    code: business_data.relation_source
+    message: "relation {key} source must identify an existing business object"
+    check:
+      for_each_in_map: relations
+      member_of_map: { value: source, map: objects }
+
+  - id: relation_target
+    scope: [state]
+    code: business_data.relation_target
+    message: "relation {key} target must identify an existing business object"
+    check:
+      for_each_in_map: relations
+      member_of_map: { value: target, map: objects }
+
+  - id: inheritance_cycle
+    scope: [state]
+    code: business_data.inheritance_cycle
+    message: "inheritance relation {key} creates a cycle; a type cannot be its own ancestor"
+    check:
+      acyclic_record_edges:
+        map: relations
+        source: source
+        target: target
+        where: { field: kind, equals: generalization }
+
+  - id: relation_name
+    scope: [completion]
+    code: business_data.relation_name
+    message: "relation {key} needs a user-readable name"
+    check: { for_each_in_map: relations, non_empty_string: name }
+
+  - id: inheritance_counts
+    scope: [state]
+    code: business_data.inheritance_counts
+    message: "inheritance relation {key} must not declare instance quantities"
+    check:
+      for_each_in_map: relations
+      fields_absent_when: { field: kind, equals: generalization, fields: [source_count, target_count] }
+
+  # Rich design-quality checks remain executor self-checks in SKILL.md.

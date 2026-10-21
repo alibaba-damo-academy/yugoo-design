@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "skills": {
+    "S-A-reading-source_review": {
+      "id": "S-A-reading-source_review",
+      "name": "依据核对方法",
+      "purpose": "逐项核对回答里的断言与用户材料是否一致。",
+      "activation": "回答或整理材料时使用；缺少原文则停止相关判断。",
+      "body": "---\nname: source-review-example\ndescription: 核对材料断言，保留来源与未知。此为可编辑的合成示例。\n---\n\n# 依据核对\n\n1. 定位用户授权的原文与对应段落。\n2. 区分直接引文、解释和尚无依据的断言。\n3. 核对上下文、适用条件和例外；不截去会改变原意的限定。\n4. 返回断言、材料位置与缺口。原文不可读则保留定位并告知，不补造内容。\n\n不得覆盖原材料，不将本示例当成已安装或测试的 Skill。",
+      "source": "合成预览示例；用户可替换为自己的完整 Skill",
+      "resources": [],
+      "notes": "仅演示可配置的正文与参考资源，没有搜索、安装或执行。"
+    }
+  },
+  "tools": {
+    "T-scan-text": {
+      "id": "T-scan-text",
+      "name": "扫描文档识别",
+      "purpose": "将用户提供的扫描文档转为可阅读的文字，保留页码位置，并标出无法辨认的部分。",
+      "notes": "合成的待选型能力示例；尚未选择工具或接入方式，不代表已经支持。"
+    },
+    "T-A-reading-mcp-library": {
+      "id": "T-A-reading-mcp-library",
+      "tool_kind": "mcp",
+      "name": "材料检索连接",
+      "purpose": "从用户授权的材料库找到原文位置。",
+      "scope": "仅搜索和读取；不创建、删除或跨用户查询。",
+      "config_json": "{\n  \"mcpServers\": {\n    \"library\": {\n      \"url\": \"${LIBRARY_MCP_URL}\",\n      \"headers\": {\n        \"Authorization\": \"env:LIBRARY_TOKEN\"\n      },\n      \"allowedTools\": [\n        \"search\",\n        \"read\"\n      ],\n      \"custom\": {\n        \"preserve_unknown_fields\": true\n      }\n    }\n  }\n}",
+      "source": "待用户配置的示例模板，不是实际服务器推荐",
+      "notes": "未连接；环境/Secret 引用的实际语法需按目标客户端核对。"
+    },
+    "T-A-reading-tools-read": {
+      "id": "T-A-reading-tools-read",
+      "tool_kind": "function",
+      "name": "读取选定材料",
+      "scope": "当前用户授权的材料及其原文位置。",
+      "approval": "首次访问私有材料需用户授权；不扩展到整个文件系统。",
+      "failure": "保留材料定位，报告不可读，不推测原文。",
+      "interface": "read_material({ material_id, location }) → { text, source_location }",
+      "purpose": "读取用户选定的原文，为回答提供可核实的依据。"
+    }
+  },
+  "agents": {
+    "A-reading": {
+      "id": "A-reading",
+      "name": "阅读整理助手",
+      "model_connection": "runtime",
+      "description": "根据用户选定的材料回答问题、整理要点，并展示可核实的原文依据。\n一份带来源的回答或笔记；缺少依据时明确留下待确认项。",
+      "actions": {
+        "answer-with-evidence": {
+          "action": "读取选定材料，回答问题并标出原文位置与待确认项。",
+          "condition": "材料在用户授权范围且可读取；没有依据时不下确定结论。",
+          "result": "在对话中呈现有来源的回答，不修改原文。"
+        },
+        "draft-selected-notes": {
+          "action": "将用户选中的片段整理为可编辑笔记草稿。",
+          "condition": "用户发起整理；只使用本次选择，不覆盖已有笔记或原文。",
+          "result": "回答在对话中呈现；笔记先作为草稿预览，用户可修改后确认保存。已有笔记与随后用户编辑不被重新生成覆盖。"
+        }
+      },
+      "entries": {
+        "chat": {
+          "name": "材料对话",
+          "trigger": "conversation",
+          "location": "阅读工作区右侧的对话区域",
+          "auto_context": "当前打开且用户有权读取的材料及其原文位置。",
+          "input_modes": [
+            "text",
+            "files"
+          ],
+          "feedback": "先显示正在读取的材料范围，再逐段返回带来源的回答；不能读取的附件给出修复入口。"
+        },
+        "summarize": {
+          "name": "整理选中片段",
+          "trigger": "action",
+          "location": "材料选中菜单",
+          "auto_context": "本次选中的原文片段及来源位置；不要求用户再粘贴一遍。",
+          "input_modes": [
+            "text"
+          ],
+          "feedback": "在笔记草稿中预览；用户确认后才保存。"
+        }
+      },
+      "system_prompt": "你是用户的阅读整理助手。\n\n只根据用户授权的材料和本次问题工作。先确认要解决的问题，再定位相关原文，区分原文事实、解释与待核实内容。\n\n回答先给简洁结论，再给原文位置；不编造引文或因果关系。材料缺失或工具拒绝时说明限制，不假装读过。使用只读工具；分享、覆盖或删除均不在权限内。\n\n无法找到依据时保留未知并请求用户补充。用户取消后停止后续任务，已返回的草稿不等于已保存笔记。",
+      "context": "当前问题、选中材料、原文位置及这次对话里明确的用户选择。\n按本次任务定位相关段落，优先原文；旧笔记只能作为背景，不代替证据。\n只读取用户授权的材料，不将建议写回原文，不自动分享或删除材料。\n用户须有权读取选定材料；仅对实际可读取内容给出依据。示例检索连接需另行配置和授权，不是已经安装、连接或允许调用。",
+      "memory_retention": "会话上下文只在当前任务保留。长期笔记由用户确认后写入，支持删除，不跨用户共享。",
+      "notes": "合成示例，用于审查设计信息与手动配置体验。\n全部是预览样例，不是产品需求、用户决定、运行结果或已通过评测。\n本次回答按需加载依据核对方法。工具只读且限于当前用户授权材料；定义共享不扩大权限。",
+      "skill_refs": [
+        "S-A-reading-source_review"
+      ],
+      "tool_refs": [
+        "T-A-reading-mcp-library",
+        "T-A-reading-tools-read"
+      ],
+      "exceptions": {
+        "unavailable": {
+          "condition": "材料不可用、任务失败或用户取消",
+          "handling": "材料不可读或访问被拒时说明限制并保留来源定位；已返回内容保持未保存草稿，不冒充完整答案。用户取消后停止后续任务；重新发起需重新确认材料范围，不宣称断点续跑或自动安全重放。"
+        },
+        "recovery": {
+          "condition": "超时、重试或取消",
+          "handling": "工具有明确超时；读取失败不无限重试。用户取消停止后续调用，已经产生的草稿保留为未保存。预算与上下文上限按实际模型确认。"
+        }
+      },
+      "collaborations": {
+        "title": {
+          "agent_ref": "A-title",
+          "condition": "用户请求笔记标题",
+          "handoff": "已确认的短笔记",
+          "result": "用户请求笔记标题时交给标题生成；只传已确认的短笔记，返回可修改标题。调用失败保留现有标题。"
+        },
+        "external-review": {
+          "external_target": "团队现有的资料核对助手（合成示例）",
+          "condition": "用户明确要求交给团队助手复核时",
+          "handoff": "仅交接用户确认可共享的笔记与材料定位，不传整个资料库。",
+          "result": "返回核对意见供用户审阅；对方不可用时保留当前笔记并告知用户。这里只是设计示例，未建立实际连接。"
+        }
+      },
+      "model_source_ref": "M-product",
+      "model_selection": "材料理解模型（待产品选型）",
+      "knowledge_resource_refs": [
+        "K-material",
+        "K-memory"
+      ]
+    },
+    "A-title": {
+      "id": "A-title",
+      "name": "笔记标题生成",
+      "description": "对用户提供的短笔记生成一个可修改的简短标题。\n只返回一个标题供用户编辑，不直接替换已有标题。",
+      "entries": {
+        "rename": {
+          "name": "生成标题",
+          "trigger": "action",
+          "location": "笔记标题旁",
+          "auto_context": "当前笔记的正文与用户设定的语言。",
+          "input_modes": [
+            "text"
+          ],
+          "feedback": "返回可编辑建议；失败保留原标题。"
+        }
+      },
+      "system_prompt": "根据给定笔记生成一个清楚、简短的中文标题。不新增原文没有表达的事实，只返回标题。",
+      "context": "本次笔记文本与用户设定的语言。\n无需外部检索、工具或长期记忆。",
+      "model_connection": "other",
+      "model_service": "合成接入方案：沿用产品使用者本机已经配置的模型服务；未配置时引导其先完成配置。此示例没有读取本机认证或调用模型。",
+      "notes": "合成直调示例，未调用任何模型。接入说明仅演示可编辑的产品方案，不代表已经获得授权。",
+      "actions": {
+        "suggest": {
+          "action": "生成标题建议",
+          "condition": "用户主动请求",
+          "result": "显示可修改的标题建议；只有用户采用才替换当前标题，保留采用前及生成期间的用户编辑。"
+        }
+      },
+      "exceptions": {
+        "unavailable": {
+          "condition": "材料不可用、任务失败或用户取消",
+          "handling": "生成失败或用户取消时保留原标题，不将失败输出自动采用；用户可手动改名。"
+        }
+      },
+      "model_source_ref": "M-product",
+      "model_selection": "轻量标题模型（待产品选型）"
+    }
+  },
+  "model_sources": {
+    "M-product": {
+      "id": "M-product",
+      "name": "产品模型入口（合成示例）",
+      "model_connection": "runtime",
+      "description": "产品提供使用时设置；本示例未配置、未连接。"
+    }
+  },
+  "knowledge_resources": {
+    "K-material": {
+      "id": "K-material",
+      "name": "授权材料库（合成示例）",
+      "kind": "knowledge_base",
+      "description": "当前项目的文章、论文原文和阅读笔记，供助手查找依据与整理观点。",
+      "source_and_maintenance": "用户上传或选入已有材料，并可更新或移除；助手只读参考，不自动联网扩充。",
+      "access_scope": "当前用户获准读取的项目资料；跨项目使用需另行确认。"
+    },
+    "K-memory": {
+      "id": "K-memory",
+      "name": "用户长期笔记（合成示例）",
+      "kind": "long_term_memory",
+      "description": "用户确认的阅读偏好、长期关注点和项目约定；不将会话历史或全部笔记当成记忆。",
+      "formation_and_update": "用户主动保存或确认助手的记忆建议后更新；新旧偏好冲突时询问用户，不静默覆盖。",
+      "user_management": "提供查看、修改和清除入口；清除后停止后续使用，不从历史对话自动恢复。",
+      "access_scope": "个人私有，不跨用户共享；用户可按项目限制使用范围。"
+    }
+  }
+}

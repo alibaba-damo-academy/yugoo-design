@@ -1,0 +1,38 @@
+{
+  "scope": "exact upstream package byte correspondence, not release acceptance",
+  "metadataURL": "https://registry.npmjs.org/bpmn-font/0.12.1",
+  "archiveURL": "https://registry.npmjs.org/bpmn-font/-/bpmn-font-0.12.1.tgz",
+  "package": "bpmn-font",
+  "version": "0.12.1",
+  "archiveBytes": 231519,
+  "archiveIntegrity": "sha512-quQ47cFuFSZw3y5ta4J2eg+g/UG38pN9Uk8QzR988RyjFP7agdgwmVXPErCGqaFm4UyTTNGtx9jCFdcxw990vg==",
+  "integrityMatched": true,
+  "method": "Prior exact official npm archive correspondence: five font and three CSS SHA-256 values matched bpmn-js 18.24.0 assets. This material slice does not repeat installed-asset comparison.",
+  "license": {
+    "archivePath": "package/LICENSE",
+    "bytes": 4351,
+    "sha256": "e8b9c680806960866fef0bddc98903f61b0e4a53de59fb1e90c0c2723eb06c02",
+    "observedText": "SIL Open Font License Version 1.1; copyright 2014-present Camunda Services GmbH",
+    "materialDeliveryVerified": false
+  },
+  "assetSHA256": {
+    "bpmn.eot": "9178281a0695f79ff8bff8eca529231b67f896dc1c12c8dbaaad24b32dd3fc07",
+    "bpmn.svg": "b366faf39f6bcc48f10b10f2860e5ebe57091cb2a15beeed8a0977e24560bbba",
+    "bpmn.ttf": "7f909a44ec10c6e2c7afb707176f826edd21dc6923d608bac5c5eb6730ca307d",
+    "bpmn.woff": "9c7f85112c47ef358d97258a6f4dbeaec049ebcecbfd7de3ec95bc8fefd0a2ea",
+    "bpmn.woff2": "8336b83d627d619399abef1f4b5c0990fb2ed7ccb2d0cbaf5ba02037f21a7484",
+    "bpmn.css": "aae436b1017808030f51e3853df6949a2f2f477aeeaf969b63f301c43996f62e",
+    "bpmn-embedded.css": "28ee993466dd75dbbe50e761b69e9bf5c481408c47090bf878a8e86056bd45f8",
+    "bpmn-codes.css": "f192619485cd34ee90e2c3dace2665fea776ed251dc031798b51438abda0c133"
+  },
+  "remaining": [
+    "Carry exact font license material into the release payload with provenance.",
+    "Keep bpmn-js custom license and watermark requirements separate from font OFL.",
+    "Resolve emitted CSS relative fallback asset closure and verify browser behavior."
+  ],
+  "releaseValidated": false,
+  "schemaVersion": 1,
+  "releaseLicenseAcceptance": false,
+  "completeBundledInventory": false,
+  "bpmnWatermarkRuntimeVerified": false
+}

@@ -1,0 +1,118 @@
+# page_design Design Files data contract (write-time validation).
+# Faithful declarative translation of extend-design-skill
+# skills/page_design/schema.py (Pydantic, extra="forbid"), extended with
+# evidence_refs under DSH schema_version 7.
+#
+# Disk-as-truth: each page's generated HTML lives on disk at
+# design_files/page_design/pages/{page-id}.html. Canonical Page records carry
+# durable artifact refs only; Host execution events drive queued/running/failed
+# activity in the panel.
+type: object
+additional_properties: false   # PageDesignState extra="forbid"
+properties:
+  skill_name: { knowledge: { role: metadata }, type: string }
+  schema_version: { knowledge: { role: metadata }, type: enum, values: [7] }   # constant 7
+  stage: { type: enum, values: [mapped, generating, completed, needs_revision] }
+  pages:
+    type: map
+    value:
+      type: object
+      additional_properties: false   # PageNode extra="forbid"
+      required: [id, name, purpose]
+      properties:
+        id: { type: string }          # must equal the mapping key
+        name: { type: string }
+        purpose: { type: string }
+        uses_shared_layout: { type: boolean } # omitted in legacy files means true; false uses page-specific layout
+        parent_id: { type: string, nullable: true, knowledge: { role: reference, target: '#/pages' } }
+        page_type: { type: enum, values: [overview, list, detail, form, workspace, content, other] }  # default other
+        audience: { type: array, items: { type: string } }
+        key_content: { type: array, items: { type: string } }
+        key_actions: { type: array, items: { type: string } }
+        function_refs: { type: array, items: { type: string, knowledge: { role: reference, target: 'function_modules/function_modules.json#/functions' } } }
+        evidence_refs: { type: array, items: { type: string, knowledge: { role: reference } } } # stable skill:id evidence references
+        style_pattern_refs: { type: array, items: { type: string, knowledge: { role: reference, target: 'design_style/design_style.json#/config/component_patterns' } } }
+        canvas_position:
+          type: object
+          nullable: true
+          additional_properties: false   # CanvasPosition extra="forbid"
+          properties:
+            x: { type: number }
+            y: { type: number }
+        artifact_file: { type: string, nullable: true }
+  page_order: { knowledge: { role: metadata }, type: array, items: { type: string } }
+  entry_page_ids: { type: array, items: { type: string, knowledge: { role: reference, target: '#/pages' } } }
+  connections:
+    type: map
+    value:
+      type: object
+      additional_properties: false   # PageConnection extra="forbid"
+      required: [id, source_page_id, target_page_id]
+      properties:
+        id: { type: string }               # must equal the mapping key
+        source_page_id: { type: string, knowledge: { role: reference, target: '#/pages' } }
+        target_page_id: { type: string, knowledge: { role: reference, target: '#/pages' } }
+        label: { type: string }
+        source_element_id: { type: string }      # data-prototype-id hotspot binding
+        source_element_label: { type: string }
+        preview_context:
+          knowledge: { role: metadata }
+          type: map
+          value: { type: string }
+  connection_order: { knowledge: { role: metadata }, type: array, items: { type: string } }
+  canvas_sections:
+    type: map
+    value:
+      type: object
+      additional_properties: false
+      required: [id, label, page_ids, canvas_position, canvas_size]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        page_ids: { type: array, items: { type: string, knowledge: { role: reference, target: '#/pages' } } }
+        canvas_position:
+          type: object
+          additional_properties: false
+          required: [x, y]
+          properties:
+            x: { type: number }
+            y: { type: number }
+        canvas_size:
+          type: object
+          additional_properties: false
+          required: [width, height]
+          properties:
+            width: { type: number }
+            height: { type: number }
+  common_spec:
+    type: object
+    nullable: true
+    additional_properties: false
+    required: [layout, logo, navigation, shared_components]
+    properties:
+      layout: { type: string }
+      logo:
+        type: object
+        additional_properties: false
+        required: [description]
+        properties:
+          name: { type: string }
+          description: { type: string }
+          mark_ref: { type: string }
+      navigation:
+        type: array
+        items:
+          type: object
+          additional_properties: false
+          required: [id, label]
+          properties:
+            id: { type: string }
+            label: { type: string }
+            target_page_id: { type: string, knowledge: { role: reference, target: '#/pages' } }
+            group: { type: string }
+            icon_ref: { type: string, knowledge: { role: reference, target: 'design_style/design_style.json#/config/icons' } }
+      shared_components: { type: array, items: { type: string } }
+      visual_pattern_refs: { type: array, items: { type: string, knowledge: { role: reference, target: 'design_style/design_style.json#/config/component_patterns' } } }
+      source: { type: enum, values: [design_style] }
+  style_theme: { type: string }
+  style_epoch: { knowledge: { role: metadata }, type: number }

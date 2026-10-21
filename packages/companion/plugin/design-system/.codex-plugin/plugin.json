@@ -1,0 +1,24 @@
+{
+  "name": "yugoo-design",
+  "version": "0.1.0",
+  "description": "Yugoo Design: local Design Project Panels for an explicitly bound Codex conversation (development preview).",
+  "author": {
+    "name": "yugoo-design contributors"
+  },
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Yugoo Design",
+    "shortDescription": "yugoo-design: manage Design Projects and interactive Panels.",
+    "longDescription": "yugoo-design development preview: $yugoo project commands, shared Web App Panels, validated file saves, native Producer/Worker log binding and background review integration for an explicitly bound Codex conversation.",
+    "developerName": "yugoo-design contributors",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Use $yugoo to create or open my Design Project."
+    ]
+  }
+}

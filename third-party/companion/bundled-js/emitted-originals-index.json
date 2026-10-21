@@ -1,0 +1,2622 @@
+{
+  "scope": "original-license-files-copied-for-identified-emitted-code",
+  "archiveSha256": "395ee3db38ce8d715c79cfb7df0f978f5d542ee940c0fb9eeb5d97cb83173787",
+  "materials": [
+    {
+      "package": "rolldown",
+      "version": "1.2.12",
+      "path": "rolldown@1.2.12/LICENSE",
+      "sha256": "23ecfff35a5a2e80d92142f75228912c3b1abc4b5a8337a821ff4397e2f9f734",
+      "correspondence": "rolldown@1.2.12/SOURCE.json",
+      "scope": "observed-flow-runtime-helper-only",
+      "members": [
+        "package/payload/shared/kits/web_app/skills/flow_design/scripts/rolldown-runtime-CMFfr-1z.mjs",
+        "package/payload/shared/scripts/rolldown-runtime-CMFfr-1z.mjs"
+      ]
+    },
+    {
+      "package": "rolldown",
+      "version": "1.2.12",
+      "path": "rolldown@1.2.12/THIRD-PARTY-LICENSE",
+      "sha256": "a877291d800ed43692f3f9ae09d8e01cc6f7293ad39d43896059c188ffbb8b7c",
+      "correspondence": "rolldown@1.2.12/SOURCE.json",
+      "scope": "original-license-referenced-text-retained-with-flow-helper",
+      "members": [
+        "package/payload/shared/kits/web_app/skills/flow_design/scripts/rolldown-runtime-CMFfr-1z.mjs",
+        "package/payload/shared/scripts/rolldown-runtime-CMFfr-1z.mjs"
+      ]
+    },
+    {
+      "package": "three",
+      "version": "0.186.0",
+      "path": "three@0.186.0/LICENSE",
+      "sha256": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc",
+      "members": [
+        "package/payload/shared/web/3d-force-graph-B1G_z3gz.js",
+        "package/payload/shared/web/OrbitControls-tv_kxUMx.js",
+        "package/payload/shared/web/three.module-DxGispHw.js"
+      ]
+    },
+    {
+      "package": "d3-force-3d",
+      "version": "3.0.6",
+      "path": "d3-force-3d@3.0.6/LICENSE",
+      "sha256": "7262e566e874d1ce8cfadace01d4f635f8d704b6bdf7b4345cc028e5faeafded",
+      "members": [
+        "package/payload/shared/web/3d-force-graph-B1G_z3gz.js"
+      ]
+    },
+    {
+      "package": "d3-binarytree",
+      "version": "1.0.2",
+      "path": "d3-binarytree@1.0.2/LICENSE",
+      "sha256": "7262e566e874d1ce8cfadace01d4f635f8d704b6bdf7b4345cc028e5faeafded",
+      "members": [
+        "package/payload/shared/web/3d-force-graph-B1G_z3gz.js"
+      ]
+    },
+    {
+      "package": "d3-quadtree",
+      "version": "3.0.1",
+      "path": "d3-quadtree@3.0.1/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+      "members": [
+        "package/payload/shared/web/3d-force-graph-B1G_z3gz.js"
+      ]
+    },
+    {
+      "package": "d3-octree",
+      "version": "1.1.0",
+      "path": "d3-octree@1.1.0/LICENSE",
+      "sha256": "7262e566e874d1ce8cfadace01d4f635f8d704b6bdf7b4345cc028e5faeafded",
+      "members": [
+        "package/payload/shared/web/3d-force-graph-B1G_z3gz.js"
+      ]
+    },
+    {
+      "package": "ngraph.events",
+      "version": "1.4.0",
+      "path": "ngraph.events@1.4.0/LICENSE",
+      "sha256": "a70b73ddfbc2ce8a01e2f66a50fff4c37c052b8602a95842a54cbd1be2c463e6",
+      "members": [
+        "package/payload/shared/web/3d-force-graph-B1G_z3gz.js"
+      ]
+    },
+    {
+      "package": "ngraph.graph",
+      "version": "20.1.2",
+      "path": "ngraph.graph@20.1.2/LICENSE",
+      "sha256": "54dcd2d143f95c33650b436731c6119554f8e825f9efc5d500b6585cd6865719",
+      "members": [
+        "package/payload/shared/web/3d-force-graph-B1G_z3gz.js"
+      ]
+    },
+    {
+      "package": "ngraph.forcelayout",
+      "version": "3.3.1",
+      "path": "ngraph.forcelayout@3.3.1/LICENSE",
+      "sha256": "28b2d0a69b4f870bc9d181ddef39e117e2db3a64816d83db3a67669f65e7083d",
+      "members": [
+        "package/payload/shared/web/3d-force-graph-B1G_z3gz.js"
+      ]
+    },
+    {
+      "package": "ngraph.merge",
+      "version": "1.0.0",
+      "path": "ngraph.merge@1.0.0/LICENSE",
+      "sha256": "e9b1ba0cc96533c469b1c76b2769e8d92a6426d53237f87efa09d599af76a520",
+      "members": [
+        "package/payload/shared/web/3d-force-graph-B1G_z3gz.js"
+      ]
+    },
+    {
+      "package": "ngraph.random",
+      "version": "1.2.0",
+      "path": "ngraph.random@1.2.0/LICENSE",
+      "sha256": "3a3f33e4a8dae9e3b64430f4e207435a3169e8f48e54fddc5c9982ca32680977",
+      "members": [
+        "package/payload/shared/web/3d-force-graph-B1G_z3gz.js"
+      ]
+    },
+    {
+      "package": "lodash-es",
+      "version": "4.18.1",
+      "path": "lodash-es@4.18.1/LICENSE",
+      "sha256": "f71e8ed126b46346494aad5486874cd8f0aafe95092ed67d2e3cb6110f939abc",
+      "members": [
+        "package/payload/shared/web/3d-force-graph-B1G_z3gz.js",
+        "package/payload/shared/web/dagre-CXJTlf-l.js",
+        "package/payload/shared/web/graphlib-DuUWJd5J.js",
+        "package/payload/shared/web/isSymbol-Cn5iuWKu.js",
+        "package/payload/shared/web/toNumber-BinObIQF.js"
+      ]
+    },
+    {
+      "package": "kapsule",
+      "version": "1.16.3",
+      "path": "kapsule@1.16.3/LICENSE",
+      "sha256": "7262e566e874d1ce8cfadace01d4f635f8d704b6bdf7b4345cc028e5faeafded",
+      "members": [
+        "package/payload/shared/web/3d-force-graph-B1G_z3gz.js"
+      ]
+    },
+    {
+      "package": "accessor-fn",
+      "version": "1.5.3",
+      "path": "accessor-fn@1.5.3/LICENSE",
+      "sha256": "7262e566e874d1ce8cfadace01d4f635f8d704b6bdf7b4345cc028e5faeafded",
+      "members": [
+        "package/payload/shared/web/3d-force-graph-B1G_z3gz.js"
+      ]
+    },
+    {
+      "package": "data-bind-mapper",
+      "version": "1.0.3",
+      "path": "data-bind-mapper@1.0.3/LICENSE",
+      "sha256": "bbba7cb786b64e6b7f9d7cb6dacae5c78898752f7c60d3fc04c13ca67e4dc7f2",
+      "members": [
+        "package/payload/shared/web/3d-force-graph-B1G_z3gz.js"
+      ]
+    },
+    {
+      "package": "d3-scale-chromatic",
+      "version": "3.1.0",
+      "path": "d3-scale-chromatic@3.1.0/LICENSE",
+      "sha256": "0986d93944902cca9af86824b6a641b4b7c2d10602fc510c433a8bcd443919fe",
+      "members": [
+        "package/payload/shared/web/3d-force-graph-B1G_z3gz.js",
+        "package/payload/shared/web/colors-B-LF-VmE.js",
+        "package/payload/shared/web/sankeyDiagram-P5KCCOFB-CP8665hg.js"
+      ]
+    },
+    {
+      "package": "tinycolor2",
+      "version": "1.6.0",
+      "path": "tinycolor2@1.6.0/LICENSE",
+      "sha256": "c6cb470a9ba0a50d57611aeec1f31da609c5aefdbee8eac7f289bcb0e30625fa",
+      "members": [
+        "package/payload/shared/web/3d-force-graph-B1G_z3gz.js"
+      ]
+    },
+    {
+      "package": "three-forcegraph",
+      "version": "1.43.6",
+      "path": "three-forcegraph@1.43.6/LICENSE",
+      "sha256": "7262e566e874d1ce8cfadace01d4f635f8d704b6bdf7b4345cc028e5faeafded",
+      "members": [
+        "package/payload/shared/web/3d-force-graph-B1G_z3gz.js"
+      ]
+    },
+    {
+      "package": "@babel/runtime",
+      "version": "7.29.7",
+      "path": "@babel/runtime@7.29.7/LICENSE",
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76",
+      "members": [
+        "package/payload/shared/web/3d-force-graph-B1G_z3gz.js",
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "polished",
+      "version": "4.3.1",
+      "path": "polished@4.3.1/LICENSE.md",
+      "sha256": "671e164460e3edbb93c0e22813d45dd37c1c643c6a7cbddde0f70c8914aab294",
+      "members": [
+        "package/payload/shared/web/3d-force-graph-B1G_z3gz.js"
+      ]
+    },
+    {
+      "package": "@tweenjs/tween.js",
+      "version": "25.0.0",
+      "path": "@tweenjs/tween.js@25.0.0/LICENSE",
+      "sha256": "c95fecd88f2709bfc34e4d1f1ccc36d17048990e6ba26c283cfecdef0432936b",
+      "members": [
+        "package/payload/shared/web/3d-force-graph-B1G_z3gz.js"
+      ]
+    },
+    {
+      "package": "float-tooltip",
+      "version": "1.7.5",
+      "path": "float-tooltip@1.7.5/LICENSE",
+      "sha256": "07e7bf38169a0e26e088a0a6e6ba7f60704b2d0442c4433044169924c68ba732",
+      "members": [
+        "package/payload/shared/web/3d-force-graph-B1G_z3gz.js"
+      ]
+    },
+    {
+      "package": "three-render-objects",
+      "version": "1.43.0",
+      "path": "three-render-objects@1.43.0/LICENSE",
+      "sha256": "5b6dc9ce44c7b73620b191c567339212bd00537af46fdedaf98304c34214cc9c",
+      "members": [
+        "package/payload/shared/web/3d-force-graph-B1G_z3gz.js"
+      ]
+    },
+    {
+      "package": "3d-force-graph",
+      "version": "1.80.0",
+      "path": "3d-force-graph@1.80.0/LICENSE",
+      "sha256": "7262e566e874d1ce8cfadace01d4f635f8d704b6bdf7b4345cc028e5faeafded",
+      "members": [
+        "package/payload/shared/web/3d-force-graph-B1G_z3gz.js"
+      ]
+    },
+    {
+      "package": "mermaid",
+      "version": "11.17.2",
+      "path": "mermaid@11.17.2/LICENSE",
+      "sha256": "ec9fb67dcb25eccc416ed56e1aab819222c805a2a4bfe4cb19e7556bf2ffde80",
+      "members": [
+        "package/payload/shared/web/abnfDiagram-VCTEODGH-DTKdUHAW.js",
+        "package/payload/shared/web/architectureDiagram-5GKGNRK7-Caervec-.js",
+        "package/payload/shared/web/blockDiagram-I7D4REHJ-DU8K4vaq.js",
+        "package/payload/shared/web/c4Diagram-7LVT6UL2-DZaxP1D_.js",
+        "package/payload/shared/web/chunk-2Q5K7J3B-YlGOK0-5.js",
+        "package/payload/shared/web/chunk-4HAMMTFA-C-boSROC.js",
+        "package/payload/shared/web/chunk-5VM5RSS4-BzMMUAoo.js",
+        "package/payload/shared/web/chunk-75Z2AOVW-DMFBRCXt.js",
+        "package/payload/shared/web/chunk-DU6HZSFF-DAERSSxP.js",
+        "package/payload/shared/web/chunk-F27PBJKO-SltCLZUC.js",
+        "package/payload/shared/web/chunk-GMAD6QVW-DDWohi8K.js",
+        "package/payload/shared/web/chunk-GVQU2GXP-DCKvw9qc.js",
+        "package/payload/shared/web/chunk-IMKFNOWR-BNq1yJb1.js",
+        "package/payload/shared/web/chunk-JWPE2WC7-qj81hAf6.js",
+        "package/payload/shared/web/chunk-L3NEJ4N5-B40ngDdF.js",
+        "package/payload/shared/web/chunk-OSK3NFVY-DIw8KMW9.js",
+        "package/payload/shared/web/chunk-P2QGCYS3-DIZlJVU7.js",
+        "package/payload/shared/web/chunk-POPQ4Y6H-D_4rf-tD.js",
+        "package/payload/shared/web/chunk-PWAF6VOD-BMaUgtQW.js",
+        "package/payload/shared/web/chunk-SHT3W25Y-Y6pJjgI1.js",
+        "package/payload/shared/web/chunk-SVP7TREG-BB31Nxk2.js",
+        "package/payload/shared/web/chunk-TICWLB2K-CFeyebCP.js",
+        "package/payload/shared/web/chunk-XXDRQBXY-BGSUFoQp.js",
+        "package/payload/shared/web/chunk-Y2CYZVJY-Cs0fowS7.js",
+        "package/payload/shared/web/classDiagram-ZZMXUADV-BI9egWkS.js",
+        "package/payload/shared/web/classDiagram-v2-VYDZK3BY-B8EDndAx.js",
+        "package/payload/shared/web/cose-bilkent-JH36ORCC-mwdV-SUO.js",
+        "package/payload/shared/web/cynefinDiagram-5FMLGOSQ-xPUhwOM5.js",
+        "package/payload/shared/web/dagre-GXQ25YYZ-Bn1RJ35X.js",
+        "package/payload/shared/web/diagram-S7CK7UJ4-Bxfd5Wh7.js",
+        "package/payload/shared/web/diagram-UQ7AKVKN-BYup8vt4.js",
+        "package/payload/shared/web/diagram-VSXAHHWV-4toeKiFg.js",
+        "package/payload/shared/web/diagram-VX7I27RA-RcLO0bZm.js",
+        "package/payload/shared/web/diagram-Z3DM3KII-BWtnxcng.js",
+        "package/payload/shared/web/dist-MfPawoFp.js",
+        "package/payload/shared/web/ebnfDiagram-PWID7BFC-BzkeQslP.js",
+        "package/payload/shared/web/erDiagram-RLTQ6QDP-CffnhpgB.js",
+        "package/payload/shared/web/ganttDiagram-EL5Y4UJY-CSxAUlbS.js",
+        "package/payload/shared/web/gitGraphDiagram-WWUBYQGX-Bv7ZtjeV.js",
+        "package/payload/shared/web/infoDiagram-27XIBGKW-DPGW-V2I.js",
+        "package/payload/shared/web/ishikawaDiagram-5VMMS53U-BV0-nqma.js",
+        "package/payload/shared/web/journeyDiagram-3NMN7TZE-DE9zllha.js",
+        "package/payload/shared/web/kanban-definition-UXKFOSKX-B0yoVJSR.js",
+        "package/payload/shared/web/mindmap-definition-YA3MSWOX-C9BRHfZE.js",
+        "package/payload/shared/web/pegDiagram-XKGWAZYB-C24uWXQW.js",
+        "package/payload/shared/web/pieDiagram-E7YTZNPT-CjmS1OvU.js",
+        "package/payload/shared/web/quadrantDiagram-AXDQQJYC-Cn9JKaOn.js",
+        "package/payload/shared/web/railroadDiagram-O6MQD6OU-DuK-XMz3.js",
+        "package/payload/shared/web/requirementDiagram-BXWQKSXE-DiLX1Thc.js",
+        "package/payload/shared/web/sankeyDiagram-P5KCCOFB-CP8665hg.js",
+        "package/payload/shared/web/sequenceDiagram-WJ2MYXX4-BPoyG70r.js",
+        "package/payload/shared/web/sizeCapture-INFHLROL-1t8sFwV4.js",
+        "package/payload/shared/web/src-B7xP1jcD.js",
+        "package/payload/shared/web/stateDiagram-D77RDMKH-89NUz39H.js",
+        "package/payload/shared/web/stateDiagram-v2-MP3YSRHH-BESsfyts.js",
+        "package/payload/shared/web/swimlanes-42K2YHIH-Dylw8rxN.js",
+        "package/payload/shared/web/swimlanesDiagram-VR7AAH4N-RwPZpp4b.js",
+        "package/payload/shared/web/timeline-definition-24CTP7MA-BQnJDlHG.js",
+        "package/payload/shared/web/vennDiagram-4TSXK5OY-DvKr2Tkc.js",
+        "package/payload/shared/web/wardleyDiagram-VM6X3IG4-BPGJSbeB.js",
+        "package/payload/shared/web/xychartDiagram-S5SC5T6Z-Bvf_KDXi.js"
+      ]
+    },
+    {
+      "package": "d3-shape",
+      "version": "3.2.0",
+      "path": "d3-shape@3.2.0/LICENSE",
+      "sha256": "faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884",
+      "members": [
+        "package/payload/shared/web/arc-C82RTMwx.js",
+        "package/payload/shared/web/chunk-75Z2AOVW-DMFBRCXt.js",
+        "package/payload/shared/web/client.js",
+        "package/payload/shared/web/pieDiagram-E7YTZNPT-CjmS1OvU.js"
+      ]
+    },
+    {
+      "package": "layout-base",
+      "version": "2.0.1",
+      "path": "layout-base@2.0.1/LICENSE",
+      "sha256": "eabb762d8a95109a39c9be3247325529a5239a7aca327d909c3ccdc41f3a06bf",
+      "members": [
+        "package/payload/shared/web/architectureDiagram-5GKGNRK7-Caervec-.js"
+      ]
+    },
+    {
+      "package": "cose-base",
+      "version": "2.2.0",
+      "path": "cose-base@2.2.0/LICENSE",
+      "sha256": "5fb3cf4a14c3c5af6e473a192df8bca10c77754e3a0c6492c79fb92a76a5478a",
+      "members": [
+        "package/payload/shared/web/architectureDiagram-5GKGNRK7-Caervec-.js"
+      ]
+    },
+    {
+      "package": "khroma",
+      "version": "2.1.0",
+      "path": "khroma@2.1.0/license",
+      "sha256": "66b333b0f66759a0b710459e03f7029abe17f4358114a128d2c972e642961b49",
+      "members": [
+        "package/payload/shared/web/channel-BPGe359v.js",
+        "package/payload/shared/web/chunk-DU6HZSFF-DAERSSxP.js",
+        "package/payload/shared/web/vennDiagram-4TSXK5OY-DvKr2Tkc.js"
+      ]
+    },
+    {
+      "package": "@mermaid-js/parser",
+      "version": "1.2.1",
+      "path": "@mermaid-js/parser@1.2.1/LICENSE",
+      "sha256": "d374061c40bfb6f99c5033290caefda97a9b3e7e477e5ee02f487143ef2177e8",
+      "members": [
+        "package/payload/shared/web/chunk-FOHPRMQF-DX455qQw.js",
+        "package/payload/shared/web/mermaid-parser.core-DIOGPaK8.js"
+      ]
+    },
+    {
+      "package": "vscode-languageserver-types",
+      "version": "3.17.5",
+      "path": "vscode-languageserver-types@3.17.5/License.txt",
+      "sha256": "ec9ee83580841e8eb687aca9867f221503809ba6426c7f876ede17d91b9fcfd0",
+      "members": [
+        "package/payload/shared/web/chunk-FOHPRMQF-DX455qQw.js"
+      ]
+    },
+    {
+      "package": "vscode-jsonrpc",
+      "version": "8.2.0",
+      "path": "vscode-jsonrpc@8.2.0/License.txt",
+      "sha256": "ec9ee83580841e8eb687aca9867f221503809ba6426c7f876ede17d91b9fcfd0",
+      "members": [
+        "package/payload/shared/web/chunk-FOHPRMQF-DX455qQw.js"
+      ]
+    },
+    {
+      "package": "vscode-languageserver-protocol",
+      "version": "3.17.5",
+      "path": "vscode-languageserver-protocol@3.17.5/License.txt",
+      "sha256": "ec9ee83580841e8eb687aca9867f221503809ba6426c7f876ede17d91b9fcfd0",
+      "members": [
+        "package/payload/shared/web/chunk-FOHPRMQF-DX455qQw.js"
+      ]
+    },
+    {
+      "package": "marked",
+      "version": "16.4.2",
+      "path": "marked@16.4.2/LICENSE.md",
+      "sha256": "8e3a3f82f59a60958f56ca08f445647c32a4733dc7ca6c2c46f6eb898471ab9c",
+      "members": [
+        "package/payload/shared/web/chunk-GMAD6QVW-DDWohi8K.js"
+      ]
+    },
+    {
+      "package": "ts-dedent",
+      "version": "2.3.0",
+      "path": "ts-dedent@2.3.0/LICENSE",
+      "sha256": "eff13095d9d762c3bd9dda74370c81e2130c28f2691bc455603abf973bac25b9",
+      "members": [
+        "package/payload/shared/web/chunk-GMAD6QVW-DDWohi8K.js"
+      ]
+    },
+    {
+      "package": "@iconify/utils",
+      "version": "3.1.7",
+      "path": "@iconify/utils@3.1.7/license.txt",
+      "sha256": "a86793ac023162ce98b91899601c15f6712f44943163c4f92a0a4bf89152b3bf",
+      "members": [
+        "package/payload/shared/web/chunk-PWAF6VOD-BMaUgtQW.js"
+      ]
+    },
+    {
+      "package": "classcat",
+      "version": "5.0.5",
+      "path": "classcat@5.0.5/LICENSE.md",
+      "sha256": "f101c761d255d0dddc77dd8a9327733b03d381798ec54a1bb718367207b48a8e",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "d3-drag",
+      "version": "3.0.0",
+      "path": "d3-drag@3.0.0/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+      "members": [
+        "package/payload/shared/web/client.js",
+        "package/payload/shared/web/src-BW1NQh3d.js"
+      ]
+    },
+    {
+      "package": "d3-interpolate",
+      "version": "3.0.1",
+      "path": "d3-interpolate@3.0.1/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+      "members": [
+        "package/payload/shared/web/client.js",
+        "package/payload/shared/web/ganttDiagram-EL5Y4UJY-CSxAUlbS.js",
+        "package/payload/shared/web/src-BW1NQh3d.js"
+      ]
+    },
+    {
+      "package": "@xyflow/system",
+      "version": "0.0.83",
+      "path": "@xyflow/system@0.0.83/LICENSE",
+      "sha256": "023119ac20fb1c8c9930abe0bcd196989a1960388529a96fc43cebf96f07c9ff",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "use-sync-external-store",
+      "version": "1.7.0",
+      "path": "use-sync-external-store@1.7.0/LICENSE",
+      "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "zustand",
+      "version": "4.5.7",
+      "path": "zustand@4.5.7/LICENSE",
+      "sha256": "c1e6e266563517467b1bf874817d23e426f3149252bd7d42758cd697514b8417",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@xyflow/react",
+      "version": "12.12.0",
+      "path": "@xyflow/react@12.12.0/LICENSE",
+      "sha256": "023119ac20fb1c8c9930abe0bcd196989a1960388529a96fc43cebf96f07c9ff",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "comma-separated-tokens",
+      "version": "2.0.3",
+      "path": "comma-separated-tokens@2.0.3/license",
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "estree-util-is-identifier-name",
+      "version": "3.0.0",
+      "path": "estree-util-is-identifier-name@3.0.0/license",
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "hast-util-whitespace",
+      "version": "3.0.0",
+      "path": "hast-util-whitespace@3.0.0/license",
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "property-information",
+      "version": "7.2.0",
+      "path": "property-information@7.2.0/license",
+      "sha256": "5d0698266086f217bb11ea0499d33453e401fe479fb9126ad04e625e63d3557b",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "space-separated-tokens",
+      "version": "2.0.2",
+      "path": "space-separated-tokens@2.0.2/license",
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "inline-style-parser",
+      "version": "0.2.7",
+      "path": "inline-style-parser@0.2.7/LICENSE",
+      "sha256": "395c95f20598da653ff1eb1cb9d74947c7fac689697147f1d192fd0242a0e635",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "style-to-object",
+      "version": "1.0.14",
+      "path": "style-to-object@1.0.14/LICENSE",
+      "sha256": "896c9fd6b5fc48ac31800b9d29a6e3ffcb0c2d534ed077ebfa5c2fa388cc38b7",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "style-to-js",
+      "version": "1.1.21",
+      "path": "style-to-js@1.1.21/LICENSE",
+      "sha256": "bbb380e5c1a717079378d6ea4d33c8a5a81655d4612b749f882e34e46712aab5",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "unist-util-position",
+      "version": "5.0.0",
+      "path": "unist-util-position@5.0.0/license",
+      "sha256": "63cb98b3f6abfb3c3592c16f88253c1bdc834087bf52671e8ce5609e4eb693cf",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "unist-util-stringify-position",
+      "version": "4.0.0",
+      "path": "unist-util-stringify-position@4.0.0/license",
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "vfile-message",
+      "version": "4.0.3",
+      "path": "vfile-message@4.0.3/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "hast-util-to-jsx-runtime",
+      "version": "2.3.6",
+      "path": "hast-util-to-jsx-runtime@2.3.6/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "html-url-attributes",
+      "version": "3.0.1",
+      "path": "html-url-attributes@3.0.1/license",
+      "sha256": "e18cf5173e928f808f0cd208097fee8fbec9d28fc0255213938e4c559e29ff58",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "mdast-util-to-string",
+      "version": "4.0.0",
+      "path": "mdast-util-to-string@4.0.0/license",
+      "sha256": "63cb98b3f6abfb3c3592c16f88253c1bdc834087bf52671e8ce5609e4eb693cf",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "decode-named-character-reference",
+      "version": "1.3.0",
+      "path": "decode-named-character-reference@1.3.0/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-util-chunked",
+      "version": "2.0.1",
+      "path": "micromark-util-chunked@2.0.1/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-util-combine-extensions",
+      "version": "2.0.1",
+      "path": "micromark-util-combine-extensions@2.0.1/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-util-decode-numeric-character-reference",
+      "version": "2.0.2",
+      "path": "micromark-util-decode-numeric-character-reference@2.0.2/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-util-normalize-identifier",
+      "version": "2.0.1",
+      "path": "micromark-util-normalize-identifier@2.0.1/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-util-character",
+      "version": "2.1.1",
+      "path": "micromark-util-character@2.1.1/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-util-sanitize-uri",
+      "version": "2.0.1",
+      "path": "micromark-util-sanitize-uri@2.0.1/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-factory-space",
+      "version": "2.1.0",
+      "path": "micromark-factory-space@2.1.0/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark",
+      "version": "4.0.3",
+      "path": "micromark@4.0.3/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-util-edit-map",
+      "version": "1.0.0",
+      "path": "micromark-util-edit-map@1.0.0/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-util-classify-character",
+      "version": "2.0.1",
+      "path": "micromark-util-classify-character@2.0.1/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-util-resolve-all",
+      "version": "2.0.1",
+      "path": "micromark-util-resolve-all@2.0.1/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-core-commonmark",
+      "version": "2.0.4",
+      "path": "micromark-core-commonmark@2.0.4/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-util-subtokenize",
+      "version": "2.1.0",
+      "path": "micromark-util-subtokenize@2.1.0/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-factory-destination",
+      "version": "2.0.1",
+      "path": "micromark-factory-destination@2.0.1/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-factory-label",
+      "version": "2.0.1",
+      "path": "micromark-factory-label@2.0.1/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-factory-title",
+      "version": "2.0.1",
+      "path": "micromark-factory-title@2.0.1/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-factory-whitespace",
+      "version": "2.0.1",
+      "path": "micromark-factory-whitespace@2.0.1/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-util-html-tag-name",
+      "version": "2.0.1",
+      "path": "micromark-util-html-tag-name@2.0.1/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-util-decode-string",
+      "version": "2.0.1",
+      "path": "micromark-util-decode-string@2.0.1/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "mdast-util-from-markdown",
+      "version": "2.0.3",
+      "path": "mdast-util-from-markdown@2.0.3/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "remark-parse",
+      "version": "11.0.0",
+      "path": "remark-parse@11.0.0/license",
+      "sha256": "413654b0a78b98661dce96d2aff2e4d075603d220b8483e28b1aa010ccc138b4",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "mdast-util-to-hast",
+      "version": "13.2.1",
+      "path": "mdast-util-to-hast@13.2.1/license",
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "trim-lines",
+      "version": "3.0.1",
+      "path": "trim-lines@3.0.1/license",
+      "sha256": "9f084fac69d8cf1e6ce983ba5a3499c7695ed74a26ec625c38f0fd19fddd5e10",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@ungap/structured-clone",
+      "version": "1.4.0",
+      "path": "@ungap/structured-clone@1.4.0/LICENSE",
+      "sha256": "dc6d4961d8b6ee747231582ae9c53ce1d66bf76bc9f5a28f554c0e97210953bf",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "unist-util-is",
+      "version": "6.0.1",
+      "path": "unist-util-is@6.0.1/license",
+      "sha256": "82974dbf2639d13edab95c32ed9cb6c0867ede272cd2e07ce47ce8548fe55c05",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "unist-util-visit-parents",
+      "version": "6.0.2",
+      "path": "unist-util-visit-parents@6.0.2/license",
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "unist-util-visit",
+      "version": "5.1.0",
+      "path": "unist-util-visit@5.1.0/license",
+      "sha256": "63cb98b3f6abfb3c3592c16f88253c1bdc834087bf52671e8ce5609e4eb693cf",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "remark-rehype",
+      "version": "11.1.2",
+      "path": "remark-rehype@11.1.2/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "bail",
+      "version": "2.0.2",
+      "path": "bail@2.0.2/license",
+      "sha256": "63cb98b3f6abfb3c3592c16f88253c1bdc834087bf52671e8ce5609e4eb693cf",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "extend",
+      "version": "3.0.2",
+      "path": "extend@3.0.2/LICENSE",
+      "sha256": "97af7428f93afbab9bf79cd09254da1357161794f4255eb1b4599f04dd2d2e7c",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "is-plain-obj",
+      "version": "4.1.0",
+      "path": "is-plain-obj@4.1.0/license",
+      "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "trough",
+      "version": "2.2.0",
+      "path": "trough@2.2.0/license",
+      "sha256": "6c03fd41cfd7c92d8aa8a2fa521b94b2683f059123281dcf921ddea9216b6254",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "vfile",
+      "version": "6.0.3",
+      "path": "vfile@6.0.3/license",
+      "sha256": "05811400116ed61f1a7693b78fe8ca6598c155a12f3978e609db4df648a4cb3d",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "unified",
+      "version": "11.0.5",
+      "path": "unified@11.0.5/license",
+      "sha256": "05811400116ed61f1a7693b78fe8ca6598c155a12f3978e609db4df648a4cb3d",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "react-markdown",
+      "version": "10.1.0",
+      "path": "react-markdown@10.1.0/license",
+      "sha256": "f6196c64e144f9a6fa9154c3a80bc8b89615a9567934b83a8951879f06ba2aef",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "ccount",
+      "version": "2.0.1",
+      "path": "ccount@2.0.1/license",
+      "sha256": "63cb98b3f6abfb3c3592c16f88253c1bdc834087bf52671e8ce5609e4eb693cf",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "escape-string-regexp",
+      "version": "5.0.0",
+      "path": "escape-string-regexp@5.0.0/license",
+      "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "mdast-util-find-and-replace",
+      "version": "3.0.2",
+      "path": "mdast-util-find-and-replace@3.0.2/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "mdast-util-gfm-autolink-literal",
+      "version": "2.0.1",
+      "path": "mdast-util-gfm-autolink-literal@2.0.1/license",
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "mdast-util-gfm-footnote",
+      "version": "2.1.0",
+      "path": "mdast-util-gfm-footnote@2.1.0/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "mdast-util-gfm-strikethrough",
+      "version": "2.0.1",
+      "path": "mdast-util-gfm-strikethrough@2.0.1/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "markdown-table",
+      "version": "3.0.4",
+      "path": "markdown-table@3.0.4/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "mdast-util-phrasing",
+      "version": "4.1.0",
+      "path": "mdast-util-phrasing@4.1.0/license",
+      "sha256": "b6d1a4e1831b177acc96f22a817d4f0f4c18419355badc3125754445fc69e3a7",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "zwitch",
+      "version": "2.0.4",
+      "path": "zwitch@2.0.4/license",
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "mdast-util-to-markdown",
+      "version": "2.1.3",
+      "path": "mdast-util-to-markdown@2.1.3/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "longest-streak",
+      "version": "3.1.0",
+      "path": "longest-streak@3.1.0/license",
+      "sha256": "9f084fac69d8cf1e6ce983ba5a3499c7695ed74a26ec625c38f0fd19fddd5e10",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "mdast-util-gfm-table",
+      "version": "2.0.0",
+      "path": "mdast-util-gfm-table@2.0.0/license",
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "mdast-util-gfm-task-list-item",
+      "version": "2.0.0",
+      "path": "mdast-util-gfm-task-list-item@2.0.0/license",
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "mdast-util-gfm",
+      "version": "3.1.0",
+      "path": "mdast-util-gfm@3.1.0/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-extension-gfm-autolink-literal",
+      "version": "2.1.0",
+      "path": "micromark-extension-gfm-autolink-literal@2.1.0/license",
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-extension-gfm-footnote",
+      "version": "2.1.0",
+      "path": "micromark-extension-gfm-footnote@2.1.0/license",
+      "sha256": "807a88522a850092aece49486207c17c313c4d5708ac276524840fe1caa0b0fa",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-extension-gfm-strikethrough",
+      "version": "2.1.0",
+      "path": "micromark-extension-gfm-strikethrough@2.1.0/license",
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-extension-gfm-table",
+      "version": "2.1.2",
+      "path": "micromark-extension-gfm-table@2.1.2/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-extension-gfm-task-list-item",
+      "version": "2.1.0",
+      "path": "micromark-extension-gfm-task-list-item@2.1.0/license",
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "micromark-extension-gfm",
+      "version": "3.0.0",
+      "path": "micromark-extension-gfm@3.0.0/license",
+      "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "remark-gfm",
+      "version": "4.0.1",
+      "path": "remark-gfm@4.0.1/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "parse5",
+      "version": "7.3.0",
+      "path": "parse5@7.3.0/LICENSE",
+      "sha256": "8c535800331e1e4439835555b3f9edc7fe9dee2fab0d8bbbd5a982e8b8343d4d",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "entities",
+      "version": "6.0.1",
+      "path": "entities@6.0.1/LICENSE",
+      "sha256": "cb992345949ccd6e8394b2cd6c465f7b897c864f845937dbf64e8997f389e164",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "clsx",
+      "version": "2.1.1",
+      "path": "clsx@2.1.1/license",
+      "sha256": "9a9edad7baae52622bddf3c15b2ef8a33d2c89f2d25408ad13e8a7481c6b0c97",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "tailwind-merge",
+      "version": "3.7.0",
+      "path": "tailwind-merge@3.7.0/LICENSE.md",
+      "sha256": "d4c70c7ce38cea8778f0aed3fc0bef0a9dbd27f13bd8b6773cbd6d37941971e5",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-compose-refs",
+      "version": "1.1.5",
+      "path": "@radix-ui/react-compose-refs@1.1.5/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-slot",
+      "version": "1.3.3",
+      "path": "@radix-ui/react-slot@1.3.3/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "class-variance-authority",
+      "version": "0.7.1",
+      "path": "class-variance-authority@0.7.1/LICENSE",
+      "sha256": "0ccbf956cffc8dcf515809433cb5242ee67c94513d46e48c261d68d0880de406",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-context",
+      "version": "1.2.2",
+      "path": "@radix-ui/react-context@1.2.2/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/primitive",
+      "version": "1.1.7",
+      "path": "@radix-ui/primitive@1.1.7/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-use-layout-effect",
+      "version": "1.1.4",
+      "path": "@radix-ui/react-use-layout-effect@1.1.4/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-use-effect-event",
+      "version": "0.0.5",
+      "path": "@radix-ui/react-use-effect-event@0.0.5/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-use-controllable-state",
+      "version": "1.2.6",
+      "path": "@radix-ui/react-use-controllable-state@1.2.6/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-use-size",
+      "version": "1.1.4",
+      "path": "@radix-ui/react-use-size@1.1.4/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-presence",
+      "version": "1.1.10",
+      "path": "@radix-ui/react-presence@1.1.10/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-primitive",
+      "version": "2.1.10",
+      "path": "@radix-ui/react-primitive@2.1.10/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-checkbox",
+      "version": "1.3.11",
+      "path": "@radix-ui/react-checkbox@1.3.11/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-icons",
+      "version": "1.3.2",
+      "path": "@radix-ui/react-icons@1.3.2/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-collection",
+      "version": "1.1.15",
+      "path": "@radix-ui/react-collection@1.1.15/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-id",
+      "version": "1.1.4",
+      "path": "@radix-ui/react-id@1.1.4/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-use-callback-ref",
+      "version": "1.1.4",
+      "path": "@radix-ui/react-use-callback-ref@1.1.4/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-direction",
+      "version": "1.1.4",
+      "path": "@radix-ui/react-direction@1.1.4/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-use-is-hydrated",
+      "version": "0.1.3",
+      "path": "@radix-ui/react-use-is-hydrated@0.1.3/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-roving-focus",
+      "version": "1.1.19",
+      "path": "@radix-ui/react-roving-focus@1.1.19/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-radio-group",
+      "version": "1.4.7",
+      "path": "@radix-ui/react-radio-group@1.4.7/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-dismissable-layer",
+      "version": "1.1.19",
+      "path": "@radix-ui/react-dismissable-layer@1.1.19/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@floating-ui/utils",
+      "version": "0.2.12",
+      "path": "@floating-ui/utils@0.2.12/LICENSE",
+      "sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@floating-ui/core",
+      "version": "1.8.0",
+      "path": "@floating-ui/core@1.8.0/LICENSE",
+      "sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@floating-ui/dom",
+      "version": "1.8.0",
+      "path": "@floating-ui/dom@1.8.0/LICENSE",
+      "sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@floating-ui/react-dom",
+      "version": "2.1.9",
+      "path": "@floating-ui/react-dom@2.1.9/LICENSE",
+      "sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-popper",
+      "version": "1.3.7",
+      "path": "@radix-ui/react-popper@1.3.7/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-portal",
+      "version": "1.1.17",
+      "path": "@radix-ui/react-portal@1.1.17/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-visually-hidden",
+      "version": "1.2.11",
+      "path": "@radix-ui/react-visually-hidden@1.2.11/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-tooltip",
+      "version": "1.2.16",
+      "path": "@radix-ui/react-tooltip@1.2.16/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/number",
+      "version": "1.1.3",
+      "path": "@radix-ui/number@1.1.3/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-focus-guards",
+      "version": "1.1.6",
+      "path": "@radix-ui/react-focus-guards@1.1.6/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-focus-scope",
+      "version": "1.1.16",
+      "path": "@radix-ui/react-focus-scope@1.1.16/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-use-previous",
+      "version": "1.1.4",
+      "path": "@radix-ui/react-use-previous@1.1.4/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "aria-hidden",
+      "version": "1.2.6",
+      "path": "aria-hidden@1.2.6/LICENSE",
+      "sha256": "30f0cfddf483d1128e3610205020f2041a6c5e837aa999e0aa82e5576187d4a9",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "tslib",
+      "version": "2.8.1",
+      "path": "tslib@2.8.1/LICENSE.txt",
+      "sha256": "210b19e543130388c68654b7497e967119ce17145f66ab7d85688fbd70f08751",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "use-callback-ref",
+      "version": "1.3.3",
+      "path": "use-callback-ref@1.3.3/LICENSE",
+      "sha256": "30f0cfddf483d1128e3610205020f2041a6c5e837aa999e0aa82e5576187d4a9",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "use-sidecar",
+      "version": "1.1.3",
+      "path": "use-sidecar@1.1.3/LICENSE",
+      "sha256": "30f0cfddf483d1128e3610205020f2041a6c5e837aa999e0aa82e5576187d4a9",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "react-remove-scroll",
+      "version": "2.7.2",
+      "path": "react-remove-scroll@2.7.2/LICENSE",
+      "sha256": "30f0cfddf483d1128e3610205020f2041a6c5e837aa999e0aa82e5576187d4a9",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "react-style-singleton",
+      "version": "2.2.3",
+      "path": "react-style-singleton@2.2.3/LICENSE",
+      "sha256": "30f0cfddf483d1128e3610205020f2041a6c5e837aa999e0aa82e5576187d4a9",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-select",
+      "version": "2.3.7",
+      "path": "@radix-ui/react-select@2.3.7/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "mdast-util-newline-to-break",
+      "version": "2.0.0",
+      "path": "mdast-util-newline-to-break@2.0.0/license",
+      "sha256": "d8fc337aaf98fc7a0f5498edc18b47a9df8cdfcc1a0f013519105905722c7a4c",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "remark-breaks",
+      "version": "4.0.0",
+      "path": "remark-breaks@4.0.0/license",
+      "sha256": "d8fc337aaf98fc7a0f5498edc18b47a9df8cdfcc1a0f013519105905722c7a4c",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "hast-util-parse-selector",
+      "version": "4.0.0",
+      "path": "hast-util-parse-selector@4.0.0/license",
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "hastscript",
+      "version": "9.0.1",
+      "path": "hastscript@9.0.1/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "vfile-location",
+      "version": "5.0.3",
+      "path": "vfile-location@5.0.3/license",
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "web-namespaces",
+      "version": "2.0.1",
+      "path": "web-namespaces@2.0.1/license",
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "hast-util-from-parse5",
+      "version": "8.0.3",
+      "path": "hast-util-from-parse5@8.0.3/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "hast-util-to-parse5",
+      "version": "8.0.1",
+      "path": "hast-util-to-parse5@8.0.1/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "html-void-elements",
+      "version": "3.0.0",
+      "path": "html-void-elements@3.0.0/license",
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "hast-util-raw",
+      "version": "9.1.0",
+      "path": "hast-util-raw@9.1.0/license",
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "rehype-raw",
+      "version": "7.0.0",
+      "path": "rehype-raw@7.0.0/license",
+      "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "recharts",
+      "version": "3.5.1",
+      "path": "recharts@3.5.1/LICENSE",
+      "sha256": "2d3aa48a8d1d3b93093680e8e68d3a64cfb590c3ade377ffcaefc69dac7c2ce5",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "d3-path",
+      "version": "3.1.0",
+      "path": "d3-path@3.1.0/LICENSE",
+      "sha256": "a09b0d6d76e768fca2085fad05743ee81ddd11946bcda160a3cf5e1081a479aa",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "reselect",
+      "version": "5.1.1",
+      "path": "reselect@5.1.1/LICENSE",
+      "sha256": "0bb5035e49bf9b5661655b402bab3c3efccb8eab2a50e37392100139fe3280f2",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "redux",
+      "version": "5.0.1",
+      "path": "redux@5.0.1/LICENSE.md",
+      "sha256": "f2da73c752c6b87624755edacf927cbd915fa76555d383e74494bad4a5155ab3",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "immer",
+      "version": "11.1.18",
+      "path": "immer@11.1.18/LICENSE",
+      "sha256": "99cf22f6960a6fe228ec84ea9aefb0d75b27999ece83a3a9801e1c2081fa270b",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "redux-thunk",
+      "version": "3.1.0",
+      "path": "redux-thunk@3.1.0/LICENSE.md",
+      "sha256": "635da794c92d278f8355428be0f9922d643f556d4f75f33fe4aca6b98d27affe",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@reduxjs/toolkit",
+      "version": "2.13.0",
+      "path": "@reduxjs/toolkit@2.13.0/LICENSE",
+      "sha256": "49784961ec6c4941437b7a2c54d8977d0528076a9e7c73dd40f7d0942b8f106d",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "immer",
+      "version": "10.2.0",
+      "path": "immer@10.2.0/LICENSE",
+      "sha256": "99cf22f6960a6fe228ec84ea9aefb0d75b27999ece83a3a9801e1c2081fa270b",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "d3-array",
+      "version": "3.2.4",
+      "path": "d3-array@3.2.4/LICENSE",
+      "sha256": "3e6849627f74ff73c257a3ae1efb574015d94fc1035c05ec3c15805165efcbc4",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "internmap",
+      "version": "2.0.3",
+      "path": "internmap@2.0.3/LICENSE",
+      "sha256": "9ea8903938dab5f12c4572d60725069bec2d1b0dc3bcc210b09bae946a5ebb1f",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "d3-scale",
+      "version": "4.0.2",
+      "path": "d3-scale@4.0.2/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "d3-format",
+      "version": "3.1.2",
+      "path": "d3-format@3.1.2/LICENSE",
+      "sha256": "2a6d2d5f32ba0b755ddbc1c833f766e30cdbe6ebe9a6d4e3e24427721f0b63d3",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "d3-time",
+      "version": "3.1.0",
+      "path": "d3-time@3.1.0/LICENSE",
+      "sha256": "faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "d3-time-format",
+      "version": "4.1.0",
+      "path": "d3-time-format@4.1.0/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "decimal.js-light",
+      "version": "2.5.1",
+      "path": "decimal.js-light@2.5.1/LICENCE.md",
+      "sha256": "fc0397fbd5c128bec7edef4e8d3f45e15db5fd043cdd0a2edfc4f14d47fbc3e4",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "react-is",
+      "version": "19.3.0",
+      "path": "react-is@19.3.0/LICENSE",
+      "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "tiny-invariant",
+      "version": "1.3.3",
+      "path": "tiny-invariant@1.3.3/LICENSE",
+      "sha256": "b1c501095de70182748cb8e8d97ac5577701a4ef3b755ba30d59fd87b24bdb0f",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-dialog",
+      "version": "1.1.23",
+      "path": "@radix-ui/react-dialog@1.1.23/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "react-hook-form",
+      "version": "7.89.0",
+      "path": "react-hook-form@7.89.0/LICENSE",
+      "sha256": "e8eeb472f0a5889c2c51625b86a3f9b8630680adb9f49a125352e2e426392780",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-label",
+      "version": "2.1.15",
+      "path": "@radix-ui/react-label@2.1.15/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@hookform/resolvers",
+      "version": "5.9.1",
+      "path": "@hookform/resolvers@5.9.1/LICENSE",
+      "sha256": "e8eeb472f0a5889c2c51625b86a3f9b8630680adb9f49a125352e2e426392780",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "zod",
+      "version": "4.6.5",
+      "path": "zod@4.6.5/LICENSE",
+      "sha256": "3f1189b28e3866e0d979968d466b78f813f76827cfdca1fbb124cc0a5c8841f8",
+      "members": [
+        "package/payload/shared/scripts/design.mjs",
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "inherits-browser",
+      "version": "0.1.0",
+      "path": "inherits-browser@0.1.0/LICENSE",
+      "sha256": "5e46d1c918308e68ec3b9ca9d421f41248485eaed9fb8f10b80cb89c8574a7fb",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "min-dash",
+      "version": "5.1.0",
+      "path": "min-dash@5.1.0/LICENSE",
+      "sha256": "21b28e21af7e43fbdc4a77d166146024baacc509cf9c8c4986fb0248724fdd30",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "diagram-js",
+      "version": "15.28.0",
+      "path": "diagram-js@15.28.0/LICENSE",
+      "sha256": "39e5358fd556ba6cb3b7eb1ff69ff43766e2f29c4e1d67e43cab08ad74016632",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "tiny-svg",
+      "version": "4.1.4",
+      "path": "tiny-svg@4.1.4/LICENSE",
+      "sha256": "ee9092be4d5377d9aa640656edb7ee2a42991664b95c53a5e4a6abf071e27669",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "domify",
+      "version": "3.0.0",
+      "path": "domify@3.0.0/license",
+      "sha256": "68e112c272f0a1988f4014518abaaacdcfa9ced6830d734acfb6a28ff9172e3e",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "min-dom",
+      "version": "5.3.0",
+      "path": "min-dom@5.3.0/LICENSE",
+      "sha256": "ee9092be4d5377d9aa640656edb7ee2a42991664b95c53a5e4a6abf071e27669",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "ids",
+      "version": "3.0.2",
+      "path": "ids@3.0.2/LICENSE",
+      "sha256": "3082b548bd9c98364ebbed1cbd40bfe1721c7edf2376f26f25fb06c729cc077a",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "didi",
+      "version": "11.0.1",
+      "path": "didi@11.0.1/LICENSE",
+      "sha256": "d5146508218decaf27da594596f1356219e8d565ed10185892c2ab087f94a39f",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "object-refs",
+      "version": "0.4.0",
+      "path": "object-refs@0.4.0/LICENSE",
+      "sha256": "b61258f3cf6f02e872698a2b9c27c9177b1b4a28313012e750e8e416026ea962",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "moddle",
+      "version": "8.2.1",
+      "path": "moddle@8.2.1/LICENSE",
+      "sha256": "39e5358fd556ba6cb3b7eb1ff69ff43766e2f29c4e1d67e43cab08ad74016632",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "saxen",
+      "version": "11.2.0",
+      "path": "saxen@11.2.0/LICENSE",
+      "sha256": "dbda1f03cbd146adb0da20657a72432d83eae3134dffacdfeff6db4c5e32207a",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "moddle-xml",
+      "version": "12.3.1",
+      "path": "moddle-xml@12.3.1/LICENSE",
+      "sha256": "39e5358fd556ba6cb3b7eb1ff69ff43766e2f29c4e1d67e43cab08ad74016632",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "bpmn-moddle",
+      "version": "10.3.1",
+      "path": "bpmn-moddle@10.3.1/LICENSE",
+      "sha256": "3082b548bd9c98364ebbed1cbd40bfe1721c7edf2376f26f25fb06c729cc077a",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "preact",
+      "version": "10.29.8",
+      "path": "preact@10.29.8/LICENSE",
+      "sha256": "1fe6958409c8c257a70c587a18b6f7f412b179b456630790d30b2ec9a8e4b7d4",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "htm",
+      "version": "3.1.1",
+      "path": "htm@3.1.1/LICENSE",
+      "sha256": "740725f7252e750af735d0028cc534970772f513331e9f68150fede8fb3ce00f",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "diagram-js-direct-editing",
+      "version": "3.6.0",
+      "path": "diagram-js-direct-editing@3.6.0/LICENSE",
+      "sha256": "e3be82b4c193c835c3ba59c9a370cd8b2e593f8abdc80289a8364f48316c02a9",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-tabs",
+      "version": "1.1.21",
+      "path": "@radix-ui/react-tabs@1.1.21/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-menu",
+      "version": "2.1.24",
+      "path": "@radix-ui/react-menu@2.1.24/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@radix-ui/react-dropdown-menu",
+      "version": "2.1.24",
+      "path": "@radix-ui/react-dropdown-menu@2.1.24/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "crc-32",
+      "version": "0.3.0",
+      "path": "crc-32@0.3.0/LICENSE",
+      "sha256": "698c2f95f5be09d622189559a02e936c9db3e2bcb31413af58cef1688ad03efa",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "png-chunks-extract",
+      "version": "1.0.0",
+      "path": "png-chunks-extract@1.0.0/LICENSE.md",
+      "sha256": "82d4cd7899b219ef29e6bd30820b22d12fd8d95ca2a43a6dc675c72ea2a19cc7",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "png-chunk-text",
+      "version": "1.0.0",
+      "path": "png-chunk-text@1.0.0/LICENSE.md",
+      "sha256": "82d4cd7899b219ef29e6bd30820b22d12fd8d95ca2a43a6dc675c72ea2a19cc7",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "sliced",
+      "version": "1.0.1",
+      "path": "sliced@1.0.1/LICENSE",
+      "sha256": "601faae915be3661a9a6571550988fceafded0e3fc9ea7b020ad8d1ae824a573",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "png-chunks-encode",
+      "version": "1.0.0",
+      "path": "png-chunks-encode@1.0.0/LICENSE.md",
+      "sha256": "82d4cd7899b219ef29e6bd30820b22d12fd8d95ca2a43a6dc675c72ea2a19cc7",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "open-color",
+      "version": "1.9.1",
+      "path": "open-color@1.9.1/LICENSE",
+      "sha256": "62f1f7f590dd772b61fe8e07eff8c52de11d545f3ba079bc25b38a82a6ea4bae",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "nanoid",
+      "version": "3.3.3",
+      "path": "nanoid@3.3.3/LICENSE",
+      "sha256": "da4db1480d9beea3483a2eda5c53b22238d0827d57da162b48f122e04d2d9987",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "lodash.throttle",
+      "version": "4.1.1",
+      "path": "lodash.throttle@4.1.1/LICENSE",
+      "sha256": "ffd8b33b354585f4ce119f19c53728281e48a97b074491eb6bf6d5c5ff305272",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "es6-promise-pool",
+      "version": "2.5.0",
+      "path": "es6-promise-pool@2.5.0/LICENSE",
+      "sha256": "8a88310d41d5f3c8a9b0cb16a23f893f390c9c3b51bd2ceb69ebf9dca71f7759",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "hachure-fill",
+      "version": "0.5.2",
+      "path": "hachure-fill@0.5.2/LICENSE",
+      "sha256": "5e807b516a9be9229ed459880bf353a336e2d947867247290680d437017be391",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "roughjs",
+      "version": "4.6.4",
+      "path": "roughjs@4.6.4/LICENSE",
+      "sha256": "dca9a392272606ac748ac0976a2a1133f14eef841c27beaa51a844d53c56a09d",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "path-data-parser",
+      "version": "0.1.0",
+      "path": "path-data-parser@0.1.0/LICENSE",
+      "sha256": "e9754a00aebde654e80f40bcf41dab667d6a41dfbbd2912bcf14fb07d468bf71",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "points-on-curve",
+      "version": "0.2.0",
+      "path": "points-on-curve@0.2.0/LICENSE",
+      "sha256": "e9754a00aebde654e80f40bcf41dab667d6a41dfbbd2912bcf14fb07d468bf71",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "points-on-path",
+      "version": "0.2.1",
+      "path": "points-on-path@0.2.1/LICENSE",
+      "sha256": "b6fc1f7f1d96a48bc97176f3dcef959e364c5c17ba44167511de421500a86c6c",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "perfect-freehand",
+      "version": "1.2.0",
+      "path": "perfect-freehand@1.2.0/LICENSE",
+      "sha256": "6a5ac82b42ce0af6a1e5fe39b46f0b52f1368e81e437175e8d9ae21569c8688e",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "clsx",
+      "version": "1.1.1",
+      "path": "clsx@1.1.1/license",
+      "sha256": "9a9edad7baae52622bddf3c15b2ef8a33d2c89f2d25408ad13e8a7481c6b0c97",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "points-on-curve",
+      "version": "1.0.1",
+      "path": "points-on-curve@1.0.1/LICENSE",
+      "sha256": "e9754a00aebde654e80f40bcf41dab667d6a41dfbbd2912bcf14fb07d468bf71",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "fractional-indexing",
+      "version": "3.2.0",
+      "path": "fractional-indexing@3.2.0/LICENSE",
+      "sha256": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "jotai",
+      "version": "2.11.0",
+      "path": "jotai@2.11.0/LICENSE",
+      "sha256": "cea97f0609de01f9e17d7b6d5fb5716e7de6404662c56f8c286aef9c5b4ca09c",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "jotai-scope",
+      "version": "0.7.2",
+      "path": "jotai-scope@0.7.2/LICENSE",
+      "sha256": "3e089af182a9ab95945e88e54efe4c56fc166c5a0cc53b64538d4c3830b585e9",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "tunnel-rat",
+      "version": "0.1.2",
+      "path": "tunnel-rat@0.1.2/LICENSE",
+      "sha256": "cd14add33d47bcecae9fed5559224ae135c5ec41e1d3a126601f5fbd82291834",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "@excalidraw/laser-pointer",
+      "version": "1.3.1",
+      "path": "@excalidraw/laser-pointer@1.3.1/LICENSE",
+      "sha256": "96629b93f34c2d51a5c77a07bee6936b43eb9c3147051eb6dfd21f0a698097e6",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "layout-base",
+      "version": "1.0.2",
+      "path": "layout-base@1.0.2/LICENSE",
+      "sha256": "eabb762d8a95109a39c9be3247325529a5239a7aca327d909c3ccdc41f3a06bf",
+      "members": [
+        "package/payload/shared/web/cose-bilkent-JH36ORCC-mwdV-SUO.js"
+      ]
+    },
+    {
+      "package": "cose-base",
+      "version": "1.0.3",
+      "path": "cose-base@1.0.3/LICENSE",
+      "sha256": "5fb3cf4a14c3c5af6e473a192df8bca10c77754e3a0c6492c79fb92a76a5478a",
+      "members": [
+        "package/payload/shared/web/cose-bilkent-JH36ORCC-mwdV-SUO.js"
+      ]
+    },
+    {
+      "package": "cytoscape",
+      "version": "3.34.3",
+      "path": "cytoscape@3.34.3/LICENSE",
+      "sha256": "eb319c6e6f233607f71e8e2f450391751883cfc0eeb3ca7ef574c13d1d9c2203",
+      "members": [
+        "package/payload/shared/web/cytoscape.esm-CTuuUKtd.js"
+      ]
+    },
+    {
+      "package": "dagre-d3-es",
+      "version": "7.0.14",
+      "path": "dagre-d3-es@7.0.14/LICENSE.md",
+      "sha256": "d01eb84ccce437dbf5fd40853bceea0f287930920acea066597a4a25ead63858",
+      "members": [
+        "package/payload/shared/web/dagre-CXJTlf-l.js",
+        "package/payload/shared/web/graphlib-DuUWJd5J.js"
+      ]
+    },
+    {
+      "package": "d3-hierarchy",
+      "version": "3.1.2",
+      "path": "d3-hierarchy@3.1.2/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+      "members": [
+        "package/payload/shared/web/diagram-VX7I27RA-RcLO0bZm.js"
+      ]
+    },
+    {
+      "package": "@braintree/sanitize-url",
+      "version": "7.1.2",
+      "path": "@braintree/sanitize-url@7.1.2/LICENSE",
+      "sha256": "0984740e0c3d725c8044dec7edcefe1dbce180ef5a7bc710c251e19607000158",
+      "members": [
+        "package/payload/shared/web/dist-C0hIIK8s.js"
+      ]
+    },
+    {
+      "package": "@excalidraw/mermaid-to-excalidraw",
+      "version": "2.2.2",
+      "path": "@excalidraw/mermaid-to-excalidraw@2.2.2/LICENSE",
+      "sha256": "96629b93f34c2d51a5c77a07bee6936b43eb9c3147051eb6dfd21f0a698097e6",
+      "members": [
+        "package/payload/shared/web/dist-MfPawoFp.js"
+      ]
+    },
+    {
+      "package": "nanoid",
+      "version": "4.0.2",
+      "path": "nanoid@4.0.2/LICENSE",
+      "sha256": "da4db1480d9beea3483a2eda5c53b22238d0827d57da162b48f122e04d2d9987",
+      "members": [
+        "package/payload/shared/web/dist-MfPawoFp.js"
+      ]
+    },
+    {
+      "package": "stylis",
+      "version": "4.4.0",
+      "path": "stylis@4.4.0/LICENSE",
+      "sha256": "88c579c6ee44b41137a21321190d177982e5b17d4fa1b83a4a2e3ea325a8fc9a",
+      "members": [
+        "package/payload/shared/web/dist-MfPawoFp.js"
+      ]
+    },
+    {
+      "package": "d3-color",
+      "version": "3.1.0",
+      "path": "d3-color@3.1.0/LICENSE",
+      "sha256": "faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884",
+      "members": [
+        "package/payload/shared/web/ganttDiagram-EL5Y4UJY-CSxAUlbS.js",
+        "package/payload/shared/web/src-BW1NQh3d.js"
+      ]
+    },
+    {
+      "package": "d3-axis",
+      "version": "3.0.0",
+      "path": "d3-axis@3.0.0/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+      "members": [
+        "package/payload/shared/web/ganttDiagram-EL5Y4UJY-CSxAUlbS.js"
+      ]
+    },
+    {
+      "package": "dayjs",
+      "version": "1.11.23",
+      "path": "dayjs@1.11.23/LICENSE",
+      "sha256": "5faab7526d055651be3aab769d58897be6bd91f3d39d137f25f12dba1b31d5dc",
+      "members": [
+        "package/payload/shared/web/ganttDiagram-EL5Y4UJY-CSxAUlbS.js",
+        "package/payload/shared/web/src-B7xP1jcD.js"
+      ]
+    },
+    {
+      "package": "image-blob-reduce",
+      "version": "3.0.1",
+      "path": "image-blob-reduce@3.0.1/LICENSE",
+      "sha256": "23620d4179e5deb477db18c09c07f5bc2bd9ffd6ccd0839a3da79d156694b980",
+      "members": [
+        "package/payload/shared/web/image-blob-reduce.esm-DtM5sb8f.js"
+      ]
+    },
+    {
+      "package": "katex",
+      "version": "0.16.47",
+      "path": "katex@0.16.47/LICENSE",
+      "sha256": "766ccc1f306c885aa45542a9846bbd0a505b27a0374f146778171c2254ce18e3",
+      "members": [
+        "package/payload/shared/web/katex-B7IOdvh1.js"
+      ]
+    },
+    {
+      "package": "uuid",
+      "version": "14.0.2",
+      "path": "uuid@14.0.2/LICENSE.md",
+      "sha256": "beaa6b04fb82e41dd2ad679e19e27953afb5999b1abbb455b6564e78ebfeb332",
+      "members": [
+        "package/payload/shared/web/mindmap-definition-YA3MSWOX-C9BRHfZE.js"
+      ]
+    },
+    {
+      "package": "pica",
+      "version": "7.1.1",
+      "path": "pica@7.1.1/LICENSE",
+      "sha256": "55c3dde19ab8a9b9b23c576375fb7a48423124d76530a3ddeeb897a3c47223aa",
+      "members": [
+        "package/payload/shared/web/pica-Ce4_txmj.js"
+      ]
+    },
+    {
+      "package": "roughjs",
+      "version": "4.6.6",
+      "path": "roughjs@4.6.6/LICENSE",
+      "sha256": "dca9a392272606ac748ac0976a2a1133f14eef841c27beaa51a844d53c56a09d",
+      "members": [
+        "package/payload/shared/web/rough.esm-DcGvUDG0.js"
+      ]
+    },
+    {
+      "package": "canvas-roundrect-polyfill",
+      "version": "0.0.1",
+      "path": "canvas-roundrect-polyfill@0.0.1/LICENSE",
+      "sha256": "655f460b3b07c05b54674a6865490a4eea69194e6749d5158790a173776be412",
+      "members": [
+        "package/payload/shared/web/roundRect-DXi2bP1k.js"
+      ]
+    },
+    {
+      "package": "d3-array",
+      "version": "2.12.1",
+      "path": "d3-array@2.12.1/LICENSE",
+      "sha256": "0747bebeb06b10954913149be9b9a8bdf6fad3e6fdcbd9f9524e7a94c13d2cea",
+      "members": [
+        "package/payload/shared/web/sankeyDiagram-P5KCCOFB-CP8665hg.js"
+      ]
+    },
+    {
+      "package": "d3-sankey",
+      "version": "0.12.3",
+      "path": "d3-sankey@0.12.3/LICENSE",
+      "sha256": "2bf785e778d67a4f5266cffcd4f2cc5bb98cde73791666e7efeb8002ba32dfa5",
+      "members": [
+        "package/payload/shared/web/sankeyDiagram-P5KCCOFB-CP8665hg.js"
+      ]
+    },
+    {
+      "package": "d3-path",
+      "version": "1.0.9",
+      "path": "d3-path@1.0.9/LICENSE",
+      "sha256": "b8265327ab678f554800e71188b1cc6b1ff57522e292d2b1c0be66f27cf328b6",
+      "members": [
+        "package/payload/shared/web/sankeyDiagram-P5KCCOFB-CP8665hg.js"
+      ]
+    },
+    {
+      "package": "d3-shape",
+      "version": "1.3.7",
+      "path": "d3-shape@1.3.7/LICENSE",
+      "sha256": "7eea8533ea92bd8c32a901e89ecb0305890905bb12711449565ddff96891146d",
+      "members": [
+        "package/payload/shared/web/sankeyDiagram-P5KCCOFB-CP8665hg.js"
+      ]
+    },
+    {
+      "package": "d3-brush",
+      "version": "3.0.0",
+      "path": "d3-brush@3.0.0/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+      "members": [
+        "package/payload/shared/web/src-B7xP1jcD.js"
+      ]
+    },
+    {
+      "package": "d3-timer",
+      "version": "3.0.1",
+      "path": "d3-timer@3.0.1/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+      "members": [
+        "package/payload/shared/web/src-BW1NQh3d.js",
+        "package/payload/shared/web/timer-CqOeeB63.js"
+      ]
+    },
+    {
+      "package": "d3-transition",
+      "version": "3.0.1",
+      "path": "d3-transition@3.0.1/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+      "members": [
+        "package/payload/shared/web/src-BW1NQh3d.js"
+      ]
+    },
+    {
+      "package": "d3-ease",
+      "version": "3.0.1",
+      "path": "d3-ease@3.0.1/LICENSE",
+      "sha256": "b989d9085148d21ff64a75e14462aefa06b2589a55553b07b1460c70081c7d08",
+      "members": [
+        "package/payload/shared/web/src-BW1NQh3d.js"
+      ]
+    },
+    {
+      "package": "d3-zoom",
+      "version": "3.0.0",
+      "path": "d3-zoom@3.0.0/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+      "members": [
+        "package/payload/shared/web/src-BW1NQh3d.js"
+      ]
+    },
+    {
+      "package": "d3-dispatch",
+      "version": "3.0.1",
+      "path": "d3-dispatch@3.0.1/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+      "members": [
+        "package/payload/shared/web/timer-CqOeeB63.js"
+      ]
+    },
+    {
+      "package": "d3-selection",
+      "version": "3.0.0",
+      "path": "d3-selection@3.0.0/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+      "members": [
+        "package/payload/shared/web/timer-CqOeeB63.js"
+      ]
+    },
+    {
+      "package": "@upsetjs/venn.js",
+      "version": "2.0.0",
+      "path": "@upsetjs/venn.js@2.0.0/LICENSE",
+      "sha256": "6a3508febf2cfccfee96597394543a6154a4bb0b1f91f28404be42c09e9fcb54",
+      "members": [
+        "package/payload/shared/web/vennDiagram-4TSXK5OY-DvKr2Tkc.js"
+      ]
+    },
+    {
+      "package": "@modelcontextprotocol/sdk",
+      "version": "1.32.0",
+      "path": "@modelcontextprotocol/sdk@1.32.0/LICENSE",
+      "sha256": "5e13dbbc1d120fc2a03cecde7c91424ae2d7de11b63d58ded2f4431e261ee50d",
+      "members": [
+        "package/payload/shared/scripts/design.mjs"
+      ]
+    },
+    {
+      "package": "zod-to-json-schema",
+      "version": "3.25.2",
+      "path": "zod-to-json-schema@3.25.2/LICENSE",
+      "sha256": "80d3168ad2f70f6f5bb2ab22b23414707abf6f0a392034891481ae36a1a429d4",
+      "members": [
+        "package/payload/shared/scripts/design.mjs"
+      ]
+    },
+    {
+      "package": "ajv",
+      "version": "8.20.0",
+      "path": "ajv@8.20.0/LICENSE",
+      "sha256": "a05350a88e318e4f5f2c2a1ff1e2e88daa4dd38e6e78b71cccae422bdc762cc3",
+      "members": [
+        "package/payload/shared/scripts/design.mjs"
+      ]
+    },
+    {
+      "package": "fast-deep-equal",
+      "version": "3.1.3",
+      "path": "fast-deep-equal@3.1.3/LICENSE",
+      "sha256": "7bf9b2de73a6b356761c948d0e9eeb4be6c1270bd04c79cd489c1e400ffdfc1a",
+      "members": [
+        "package/payload/shared/scripts/design.mjs"
+      ]
+    },
+    {
+      "package": "json-schema-traverse",
+      "version": "1.0.0",
+      "path": "json-schema-traverse@1.0.0/LICENSE",
+      "sha256": "7bf9b2de73a6b356761c948d0e9eeb4be6c1270bd04c79cd489c1e400ffdfc1a",
+      "members": [
+        "package/payload/shared/scripts/design.mjs"
+      ]
+    },
+    {
+      "package": "fast-uri",
+      "version": "3.1.8",
+      "path": "fast-uri@3.1.8/LICENSE",
+      "sha256": "b010b0dfdfdb23d7396e03b82cd4621fc9bb8f95d6b0aea70b9c24e12074c786",
+      "members": [
+        "package/payload/shared/scripts/design.mjs"
+      ]
+    },
+    {
+      "package": "ajv-formats",
+      "version": "3.0.1",
+      "path": "ajv-formats@3.0.1/LICENSE",
+      "sha256": "9df3bb69929a3b650ed73b3bfa1756725aaff0ac296461605753547004eafeaf",
+      "members": [
+        "package/payload/shared/scripts/design.mjs"
+      ]
+    },
+    {
+      "package": "min-dash",
+      "version": "4.2.3",
+      "path": "min-dash@4.2.3/LICENSE",
+      "sha256": "21b28e21af7e43fbdc4a77d166146024baacc509cf9c8c4986fb0248724fdd30",
+      "members": [
+        "package/payload/shared/kits/web_app/skills/flow_design/scripts/layout-metrics.mjs",
+        "package/payload/shared/kits/web_app/skills/flow_design/scripts/layout-search.mjs",
+        "package/payload/shared/kits/web_app/skills/flow_design/scripts/layout.mjs"
+      ]
+    },
+    {
+      "package": "moddle",
+      "version": "7.2.0",
+      "path": "moddle@7.2.0/LICENSE",
+      "sha256": "39e5358fd556ba6cb3b7eb1ff69ff43766e2f29c4e1d67e43cab08ad74016632",
+      "members": [
+        "package/payload/shared/kits/web_app/skills/flow_design/scripts/layout-metrics.mjs",
+        "package/payload/shared/kits/web_app/skills/flow_design/scripts/layout-search.mjs",
+        "package/payload/shared/kits/web_app/skills/flow_design/scripts/layout.mjs"
+      ]
+    },
+    {
+      "package": "saxen",
+      "version": "10.0.0",
+      "path": "saxen@10.0.0/LICENSE",
+      "sha256": "dbda1f03cbd146adb0da20657a72432d83eae3134dffacdfeff6db4c5e32207a",
+      "members": [
+        "package/payload/shared/kits/web_app/skills/flow_design/scripts/layout-metrics.mjs",
+        "package/payload/shared/kits/web_app/skills/flow_design/scripts/layout-search.mjs",
+        "package/payload/shared/kits/web_app/skills/flow_design/scripts/layout.mjs"
+      ]
+    },
+    {
+      "package": "moddle-xml",
+      "version": "11.0.0",
+      "path": "moddle-xml@11.0.0/LICENSE",
+      "sha256": "39e5358fd556ba6cb3b7eb1ff69ff43766e2f29c4e1d67e43cab08ad74016632",
+      "members": [
+        "package/payload/shared/kits/web_app/skills/flow_design/scripts/layout-metrics.mjs",
+        "package/payload/shared/kits/web_app/skills/flow_design/scripts/layout-search.mjs",
+        "package/payload/shared/kits/web_app/skills/flow_design/scripts/layout.mjs"
+      ]
+    },
+    {
+      "package": "bpmn-moddle",
+      "version": "9.0.4",
+      "path": "bpmn-moddle@9.0.4/LICENSE",
+      "sha256": "3082b548bd9c98364ebbed1cbd40bfe1721c7edf2376f26f25fb06c729cc077a",
+      "members": [
+        "package/payload/shared/kits/web_app/skills/flow_design/scripts/layout-metrics.mjs",
+        "package/payload/shared/kits/web_app/skills/flow_design/scripts/layout-search.mjs",
+        "package/payload/shared/kits/web_app/skills/flow_design/scripts/layout.mjs"
+      ]
+    },
+    {
+      "package": "graceful-fs",
+      "version": "4.2.11",
+      "path": "graceful-fs@4.2.11/LICENSE",
+      "sha256": "f65c5d9f22a317b2a10803bd1868461ce6499c2ed7217bc80c0cc772a748789c",
+      "members": [
+        "package/payload/shared/knowledge/runtime.mjs"
+      ]
+    },
+    {
+      "package": "retry",
+      "version": "0.12.0",
+      "path": "retry@0.12.0/License",
+      "sha256": "01ad164273e8e095abc9dbd1c21e194594a671af7d528cb43ee7b4c903ba7da3",
+      "members": [
+        "package/payload/shared/knowledge/runtime.mjs"
+      ]
+    },
+    {
+      "package": "signal-exit",
+      "version": "3.0.7",
+      "path": "signal-exit@3.0.7/LICENSE.txt",
+      "sha256": "e05b1eaf5b5f99b7ad75cd1f38858ff9a311780b97715ead67936d60bf96aa7e",
+      "members": [
+        "package/payload/shared/knowledge/runtime.mjs"
+      ]
+    },
+    {
+      "package": "proper-lockfile",
+      "version": "4.1.2",
+      "path": "proper-lockfile@4.1.2/LICENSE",
+      "sha256": "aaa78451b6fecd1b9c4594c796c133c0e90cad100372ff8bc6de615e9ef9adf1",
+      "members": [
+        "package/payload/shared/knowledge/runtime.mjs"
+      ]
+    }
+  ],
+  "memberLocatorScope": {
+    "kind": "recorded-prior-build-output-locations",
+    "archiveSha256Meaning": "historical observation archive; entry-specific correspondence retains its own scope",
+    "currentOutputAssociationVerified": false,
+    "note": "Members preserve previously observed output locations and do not assert that those names or their package associations describe a later build. Reusing these license texts does not verify a new output mapping."
+  }
+}

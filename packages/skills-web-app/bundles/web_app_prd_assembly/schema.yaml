@@ -1,0 +1,38 @@
+# Stable state for the single canonical Web App PRD HTML document. Execution
+# lifecycle and failures belong to Host attempts; this record retains only the
+# accepted artifact reference and temporary completion ledger.
+type: object
+knowledge: { role: metadata, source_kind: derived }
+additional_properties: false
+required:
+  - schema_version
+  - title
+  - detail_level
+  - ai_provenance
+  - html_file
+properties:
+  schema_version: { knowledge: { role: metadata }, type: enum, values: [8] }
+  title: { type: string }
+  detail_level: { type: enum, values: [concise, detailed] }
+  ai_provenance:
+    type: array
+    items:
+      type: object
+      additional_properties: false
+      required: [id, section_ids, operation, description, source_refs, assumption]
+      properties:
+        id: { type: string }
+        section_ids: { type: array, items: { type: string } }
+        operation: { type: enum, values: [completion] }
+        description: { type: string }
+        source_refs: { type: array, items: { type: string, knowledge: { role: reference } } }
+        assumption:
+          type: object
+          additional_properties: false
+          required: [decision, reason, impact, decision_owner]
+          properties:
+            decision: { type: string }
+            reason: { type: string }
+            impact: { type: string }
+            decision_owner: { type: string }
+  html_file: { type: enum, values: [web_app_prd_assembly/prd.html], nullable: true }

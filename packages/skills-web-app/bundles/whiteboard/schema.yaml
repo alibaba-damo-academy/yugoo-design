@@ -1,0 +1,18 @@
+type: object
+additional_properties: false
+required: [boards, board_order]
+properties:
+  boards:
+    type: map
+    value:
+      type: object
+      additional_properties: false
+      required: [id, title, artifact_file]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        artifact_file: { type: string }
+  board_order:
+    knowledge: { role: metadata }
+    type: array
+    items: { type: string }

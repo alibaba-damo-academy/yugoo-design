@@ -1,0 +1,7 @@
+{
+  "guidance": "按目录查看 PRD，并通过来源标签返回原设计；生成或修订请在主对话提出。",
+  "bundleDescription": "- **能力**：从当前设计证据和用户材料生成或修改一份可直接用于研发的完整 Web App PRD。\n- **解决**：产品仍缺少一份各交付角色都能直接理解、审阅和实施的统一需求文档。\n- **适用时机**：用户要求生成、导出、修改或查看完整 PRD。\n- **不要推断**：PRD 整合是按需交付动作，不是必经设计关卡，也不允许修改证据所属 Bundle。\n- **输出**：唯一稳定的 canonical `prd.html`；Git 保留历史修订。",
+  "contents": "文档目录", "empty": "暂无 PRD。可以在对话中要求生成或修订完整 PRD。",
+  "pending": "待确认", "legend": "紫色左轨：为保持 PRD 结构完整而临时补全，尚待用户确认",
+  "questions": "需求问题", "research": "调研", "functions": "功能模块", "flows": "流程设计", "style": "设计风格", "data": "业务数据", "rules": "业务规则", "access": "角色权限", "integration": "集成设计", "notifications": "通知设计", "quality": "质量验收", "pages": "页面设计", "whiteboard": "自由白板", "user": "用户说明", "upload": "用户材料"
+}

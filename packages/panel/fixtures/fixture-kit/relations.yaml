@@ -1,0 +1,11 @@
+schema_version: 1
+relations:
+  - type: fixture_basis:corroborates
+    meaning: supports
+    direction: forward
+    label:
+      zh: 佐证
+      en: Corroborates
+    description:
+      zh: A 的证据佐证 B
+      en: Evidence from A corroborates B

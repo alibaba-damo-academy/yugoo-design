@@ -1,0 +1,64 @@
+# flow_design validation contract.
+# Issue codes and repair hints for the Bundle-owned Flow validators.
+#
+# Contract summary: each active process owes one direct `bpmn_file` reference.
+# A flow_design run is not done until every process in `process_order` points
+# to a non-empty validated BPMN artifact.
+skill: flow_design
+
+rules:
+  - id: referenced_files_present
+    scope: [state]
+    code: flow_design.referenced_artifact_invalid
+    check:
+      referenced_files: ["processes.*.bpmn_file"]
+
+  # ---- validate_state ----
+  - id: empty_plan
+    scope: [state]
+    code: flow_design.empty_plan
+    message: "The flow plan has no processes."
+    repair_hint: "Add at least one complete process before execution."
+    check: { non_empty_map: processes }
+
+  - id: empty_order
+    scope: [state]
+    code: flow_design.empty_order
+    message: "process_order is empty, so no process can be executed or rendered."
+    repair_hint: "List every active process id in process_order."
+    check: { non_empty_list: process_order }
+
+  - id: missing_process
+    scope: [state]
+    code: flow_design.missing_process
+    message: "process_order references missing process {pid}."
+    repair_hint: "Add the complete process entry or remove the dangling id."
+    check: { order_refs_map: { order: process_order, map: processes } }
+
+  - id: empty_title
+    scope: [state]
+    code: flow_design.empty_title
+    message: "Process {pid} has an empty title."
+    repair_hint: "Provide a concrete title before starting BPMN work."
+    check:
+      for_each_in_order: { order: process_order, map: processes }
+      non_empty_string: title
+
+  - id: empty_description
+    scope: [state]
+    code: flow_design.empty_description
+    message: "Process {pid} has an empty description."
+    repair_hint: "Provide a concrete description before starting BPMN work."
+    check:
+      for_each_in_order: { order: process_order, map: processes }
+      non_empty_string: description
+
+  # ---- validate_completion ----
+  - id: completed_artifact_ref
+    scope: [completion]
+    code: flow_design.incomplete
+    message: "Process {pid} has no BPMN artifact reference."
+    repair_hint: "Validate and lay out that process with the Bundle scripts, then publish the BPMN file and its direct ref atomically."
+    check:
+      for_each_in_order: { order: process_order, map: processes }
+      non_empty_string: bpmn_file

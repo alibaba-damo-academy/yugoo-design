@@ -1,0 +1,107 @@
+{
+  "scope": "nine-identified-rendered-components-in-normal-build",
+  "reportedOutputRecordSha256": {
+    "web": "e91f7c602c39d0810a337ad779c950f94f8ba757a98254e5e21a8e22680a7475",
+    "server": "9cc4281f3f5595dd7d0071e2edd9b7f5e12b20bc4b896ed62be00b0012fc4fee"
+  },
+  "materials": [
+    {
+      "package": "cytoscape-fcose",
+      "version": "2.2.0",
+      "license": "MIT",
+      "path": "cytoscape-fcose@2.2.0/LICENSE",
+      "sha256": "2837634f403949215760fcdd2fa1ed0c64875d02099ecc8318c704b852f1421d",
+      "members": [
+        "package/payload/shared/web/architectureDiagram-5GKGNRK7-Bhsk64Se.js"
+      ]
+    },
+    {
+      "package": "browser-fs-access",
+      "version": "0.29.1",
+      "license": "Apache-2.0",
+      "path": "browser-fs-access@0.29.1/LICENSE",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "members": [
+        "package/payload/shared/web/client.js",
+        "package/payload/shared/web/directory-open-01563666-DgsmVoRn.js",
+        "package/payload/shared/web/directory-open-4ed118d0-uxjnCHAX.js",
+        "package/payload/shared/web/file-open-002ab408-BXJcRiPv.js",
+        "package/payload/shared/web/file-open-7c801643-CDnNdXsC.js",
+        "package/payload/shared/web/file-save-3189631c-D61rGFEo.js",
+        "package/payload/shared/web/file-save-745eba88-CO2ghbb6.js"
+      ]
+    },
+    {
+      "package": "devlop",
+      "version": "1.1.0",
+      "license": "MIT",
+      "path": "devlop@1.1.0/license",
+      "sha256": "6f296a5eccc1dc96714bb94ebaa9cac25b0a1467d74cc5263ac4d0646ab01f62",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "eventemitter3",
+      "version": "5.0.4",
+      "license": "MIT",
+      "path": "eventemitter3@5.0.4/LICENSE",
+      "sha256": "3aecc12b1cb28832b5f65ab64291de96568c3f236a74d646281b4491f7bcadbf",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "fuzzy",
+      "version": "0.1.3",
+      "license": null,
+      "path": "fuzzy@0.1.3/LICENSE-MIT",
+      "sha256": "a4aca837172fb1f6188c426e38835202e96bc853e25b7029cc5c933964f8401e",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "get-nonce",
+      "version": "1.0.1",
+      "license": "MIT",
+      "path": "get-nonce@1.0.1/LICENSE",
+      "sha256": "acf3b087b348d2f2e731b9d4131af185aad694c1204ce14a46909483fd42da05",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "reselect",
+      "version": "5.2.0",
+      "license": "MIT",
+      "path": "reselect@5.2.0/LICENSE",
+      "sha256": "e98047a5dee068b33f82e8c4b7a63037b5108c93393198efd4097753004af5dd",
+      "members": [
+        "package/payload/shared/web/client.js"
+      ]
+    },
+    {
+      "package": "cytoscape-cose-bilkent",
+      "version": "4.1.0",
+      "license": "MIT",
+      "path": "cytoscape-cose-bilkent@4.1.0/LICENSE",
+      "sha256": "440fc58a56a12814e417d2b341da89b050da052dc75bdb235607d37ec5fe74ef",
+      "members": [
+        "package/payload/shared/web/cose-bilkent-JH36ORCC-D_0tWy2X.js"
+      ]
+    },
+    {
+      "package": "@excalidraw/markdown-to-text",
+      "version": "0.1.2",
+      "license": "MIT",
+      "path": "@excalidraw/markdown-to-text@0.1.2/LICENSE",
+      "sha256": "3acc8d9f13c242ce59c38e7f01eaa8d8af8bc6ba83571decc84f54664195aa8e",
+      "members": [
+        "package/payload/shared/web/dist-Cw9TdLrU.js"
+      ]
+    }
+  ],
+  "completeBundledInventory": false,
+  "note": "Member locations correspond to the recorded normal build. A later output or archive must be associated independently; this record is not a full SBOM."
+}

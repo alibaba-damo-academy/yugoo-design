@@ -1,0 +1,8 @@
+skill: "probe_records"
+rules:
+  - id: "records_present"
+    scope: ["completion"]
+    code: "probe_records.empty"
+    message: "请先保存至少一条测试记录。"
+    check:
+      non_empty_map: "functions"

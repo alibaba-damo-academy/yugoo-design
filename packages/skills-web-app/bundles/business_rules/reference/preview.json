@@ -1,0 +1,8 @@
+{
+  "schema_version": 4,
+  "rules": {
+    "BR-PREVIEW-001": {"id": "BR-PREVIEW-001", "title": "合成示例：完整请求才能提交", "condition": "请求缺少标题或说明", "outcome": "不提交请求，提示补充缺失内容", "notes": "仅用于 Studio 预览，不是用户确认的业务规则。"},
+    "BR-PREVIEW-002": {"id": "BR-PREVIEW-002", "title": "合成示例：退回请求可重提", "condition": "请求已被退回，且修改后的内容完整", "outcome": "允许重新提交，进入待审核状态", "notes": "仅演示独立规则及显示顺序。"}
+  },
+  "rule_order": ["BR-PREVIEW-001", "BR-PREVIEW-002"]
+}

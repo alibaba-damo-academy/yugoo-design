@@ -1,0 +1,132 @@
+{
+  "format": 1,
+  "fonts": [
+    {
+      "role": "regular",
+      "file": "fonts/SourceHanSansCN.woff2",
+      "bytes": 7711988,
+      "sha256": "f971e3bff46f76b49e1d5510556c2297c618ec4b491a295a4e741cdd38257799",
+      "licenseFile": "licenses/source-han-sans-LICENSE.txt",
+      "licenseSha256": "fcac737e761ec63dbfbdce11030a1780161920d80315edba9c8beff1c2bac5a2",
+      "metrics": {
+        "unitsPerEm": 1000,
+        "ascender": 1160,
+        "descender": -288,
+        "lineGap": 0
+      },
+      "cmapCount": 30926,
+      "names": [
+        {
+          "id": 0,
+          "value": "© 2014-2025 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'."
+        },
+        {
+          "id": 1,
+          "value": "Source Han Sans CN VF"
+        },
+        {
+          "id": 2,
+          "value": "Regular"
+        },
+        {
+          "id": 4,
+          "value": "Source Han Sans CN VF"
+        },
+        {
+          "id": 5,
+          "value": "Version 2.005;addfeatures 5.0.0b21"
+        },
+        {
+          "id": 6,
+          "value": "SourceHanSansCNVF-ExtraLight"
+        },
+        {
+          "id": 13,
+          "value": "This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software."
+        },
+        {
+          "id": 14,
+          "value": "http://scripts.sil.org/OFL"
+        },
+        {
+          "id": 1,
+          "value": "思源黑体 CN VF"
+        },
+        {
+          "id": 4,
+          "value": "思源黑体 CN VF"
+        }
+      ],
+      "variableAxes": [
+        {
+          "tag": "wght",
+          "min": 250.0,
+          "default": 250.0,
+          "max": 900.0
+        }
+      ],
+      "requiredCharacters": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~设计系统白板明确需求探索方案验证交付中文标签编辑保存导出常规代码协作产品用户体验功能美观数字项目复杂想法清晰",
+      "sourceCommit": "6c709ca72d3d7c46ab42ebecc1a26e7d69595a37",
+      "sourceUrl": "https://raw.githubusercontent.com/adobe-fonts/source-han-sans/6c709ca72d3d7c46ab42ebecc1a26e7d69595a37/Variable/WOFF2/TTF/Subset/SourceHanSansCN-VF.ttf.woff2",
+      "exportPolicy": "unchanged-original-bytes",
+      "licenseUrl": "https://raw.githubusercontent.com/adobe-fonts/source-han-sans/6c709ca72d3d7c46ab42ebecc1a26e7d69595a37/LICENSE.txt",
+      "licenseBytes": 4463
+    },
+    {
+      "role": "code",
+      "file": "fonts/JetBrainsMono.woff2",
+      "bytes": 92164,
+      "sha256": "a9cb1cd82332b23a47e3a1239d25d13c86d16c4220695e34b243effa999f45f2",
+      "licenseFile": "licenses/JetBrainsMono-OFL.txt",
+      "licenseSha256": "30f0c136e3c88e422d0791acd97238870f9054a9729bc34cf2ff0d4ed8cac4ad",
+      "metrics": {
+        "unitsPerEm": 1000,
+        "ascender": 1020,
+        "descender": -300,
+        "lineGap": 0
+      },
+      "cmapCount": 1363,
+      "names": [
+        {
+          "id": 0,
+          "value": "Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)"
+        },
+        {
+          "id": 1,
+          "value": "JetBrains Mono"
+        },
+        {
+          "id": 2,
+          "value": "Regular"
+        },
+        {
+          "id": 4,
+          "value": "JetBrains Mono Regular"
+        },
+        {
+          "id": 5,
+          "value": "Version 2.304; ttfautohint (v1.8.4.7-5d5b)"
+        },
+        {
+          "id": 6,
+          "value": "JetBrainsMono-Regular"
+        },
+        {
+          "id": 13,
+          "value": "This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: https://scripts.sil.org/OFL"
+        },
+        {
+          "id": 14,
+          "value": "https://scripts.sil.org/OFL"
+        }
+      ],
+      "variableAxes": [],
+      "requiredCharacters": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~",
+      "sourceCommit": "cd5227bd1f61dff3bbd6c814ceaf7ffd95e947d9",
+      "sourceUrl": "https://raw.githubusercontent.com/JetBrains/JetBrainsMono/cd5227bd1f61dff3bbd6c814ceaf7ffd95e947d9/fonts/webfonts/JetBrainsMono-Regular.woff2",
+      "exportPolicy": "unchanged-original-bytes",
+      "licenseUrl": "https://raw.githubusercontent.com/JetBrains/JetBrainsMono/cd5227bd1f61dff3bbd6c814ceaf7ffd95e947d9/OFL.txt",
+      "licenseBytes": 4399
+    }
+  ]
+}

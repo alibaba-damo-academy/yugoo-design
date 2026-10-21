@@ -1,0 +1,38 @@
+/* Content states are scoped to the affected region, never the whole host page. */
+.dsh-panel-content-state {
+  display: flex;
+  flex: 1;
+  align-self: stretch;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 160px;
+  padding: 24px;
+  color: var(--ds-text-secondary, #555);
+  text-align: center;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.dsh-panel-content-state-icon { flex-shrink: 0; width: 28px; height: 28px; color: var(--ds-text-tertiary, #777); }
+.dsh-panel-content-state-message { max-width: 42ch; margin: 0; font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
+.dsh-panel-content-state-actions { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; }
+.dsh-panel-content-state[data-content-state="loading"] .dsh-panel-content-state-icon {
+  color: var(--ds-brand-text-primary, #7c3aed);
+  animation: dsh-panel-content-spin 1s linear infinite;
+}
+.dsh-panel-content-state[data-content-state="error"] { color: var(--ds-error-text-primary, #d03050); }
+.dsh-panel-content-state[data-content-state="error"] .dsh-panel-content-state-icon { color: inherit; }
+.dsh-panel-content-state.is-compact { min-height: 0; height: 100%; padding: 16px; gap: 8px; font-size: 12px; }
+.dsh-panel-content-state.is-compact .dsh-panel-content-state-icon { width: 24px; height: 24px; }
+.dsh-panel-content-state.is-inline { flex: none; flex-direction: row; min-height: 0; padding: 8px 12px; gap: 8px; text-align: left; }
+.dsh-panel-content-state.is-inline .dsh-panel-content-state-icon { width: 16px; height: 16px; }
+.dsh-panel-content-state.is-inline .dsh-panel-content-state-message { max-width: none; }
+@keyframes dsh-panel-content-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .dsh-panel-content-state[data-content-state="loading"] .dsh-panel-content-state-icon { animation: none; }
+}

@@ -1,0 +1,20 @@
+{
+  "skill_name": "flow_design",
+  "topic": "合成请求审批流程",
+  "roles": [{"id": "requester", "name": "申请人"}, {"id": "reviewer", "name": "审核人"}],
+  "processes": {
+    "P-001": {
+      "process_id": "P-001",
+      "title": "请求提交与审批",
+      "description": "用于独立面板测试的合成流程，不包含用户项目内容。申请人提交请求，系统校验后由审核人决定通过或退回修改。",
+      "tier": "core",
+      "process_type": "approval",
+      "stakeholders": ["申请人", "审核人"],
+      "system_responsibilities": ["校验请求", "记录审批结果"],
+      "business_rules": ["未通过审批的请求返回申请人修改后再次提交"],
+      "exception_handling": [{"scenario": "审批未通过", "handling": "退回申请人修改"}],
+      "bpmn_file": "flow_design/P-001.bpmn"
+    }
+  },
+  "process_order": ["P-001"]
+}

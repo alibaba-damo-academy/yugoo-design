@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "distribution": "Unmodified external npm dependencies; not copied implementation, not compiled into browser clients. Installed dependency trees retain their own transitive notices.",
+  "components": [
+    {
+      "name": "isomorphic-git",
+      "version": "1.44.2",
+      "repository": {
+        "url": "git+https://github.com/isomorphic-git/isomorphic-git.git",
+        "type": "git"
+      },
+      "npmGitHead": "b75230ae87bcee1977b02288067b5c5bf40c1ecf",
+      "tarball": "https://registry.npmjs.org/isomorphic-git/-/isomorphic-git-1.44.2.tgz",
+      "integrity": "sha512-RORfhiNxaHRkGXvTiIW1SU6ngH/jW7UnKndvIToGxrGja7s317CUcZ5chENyinnyCPz7Z4vAefA75Ty1Zsyc8w==",
+      "tarballSha256": "be66aea2877274ee0ead9d5d4f3f1d678aa70c2ebcb5fc1b82010b6f0dfe5042",
+      "license": "MIT",
+      "licensePath": "isomorphic-git-1.44.2-LICENSE",
+      "licenseSha256": "b916888fb16893c3a1df138543f994b96bb6892d74b6777c3a080d9cd2520c48"
+    },
+    {
+      "name": "iconv-lite",
+      "version": "0.7.3",
+      "repository": {
+        "url": "git+https://github.com/pillarjs/iconv-lite.git",
+        "type": "git"
+      },
+      "npmGitHead": "43694e28291d3b0cb3a452c77be40c4fd3a4bd85",
+      "tarball": "https://registry.npmjs.org/iconv-lite/-/iconv-lite-0.7.3.tgz",
+      "integrity": "sha512-IKXpvIzjnC9XTAUbVBcMfGS0EPaIXtW6v+zr+RRp+hqULEpo0owZax6wyRwPOJbWbzjYspQwusTsfVr0ifh4uQ==",
+      "tarballSha256": "40789b7733e230a0439e07075fe2f37819f4a47ee7115fe17188451fab8e3941",
+      "license": "MIT",
+      "licensePath": "iconv-lite-0.7.3-LICENSE",
+      "licenseSha256": "ac779f7314c74f232ef847ea86e714abe25cf6eeb5cc97b69451b74e2af6492d"
+    }
+  ],
+  "scope": "isomorphic-git exported GitIndexManager codec only; caller owns all real filesystem access and locking. iconv-lite decodes declared commit encodings. These JS materials do not close any separate native binary provenance gap."
+}

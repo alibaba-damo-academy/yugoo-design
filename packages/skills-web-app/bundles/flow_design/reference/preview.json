@@ -1,0 +1,22 @@
+{
+  "topic": "合成预览示例：请求审核计划（尚无 BPMN 产物）",
+  "roles": [{"id": "Applicant", "name": "申请人"}, {"id": "Reviewer", "name": "审核人"}, {"id": "System", "name": "系统"}],
+  "processes": {
+    "P-PREVIEW-001": {
+      "process_id": "P-PREVIEW-001",
+      "title": "合成请求审核",
+      "description": "仅用于预览：申请人提交请求，系统保存内容，审核人决定通过或退回；不是已确认流程，未生成 BPMN。",
+      "tier": "core",
+      "process_type": "approval",
+      "stakeholders": ["申请人", "审核人", "系统"],
+      "system_responsibilities": ["保存请求及审核结果", "向申请人展示处理结果"],
+      "key_features": ["提交请求", "审核决定", "查看结果"],
+      "business_rules": ["示例中退回请求可修改后重新提交"],
+      "trigger_hints": [],
+      "exception_handling": [{"scenario": "提交内容不完整", "handling": "提示缺失内容，保留已填写的请求"}],
+      "deleted": false,
+      "bpmn_file": null
+    }
+  },
+  "process_order": ["P-PREVIEW-001"]
+}

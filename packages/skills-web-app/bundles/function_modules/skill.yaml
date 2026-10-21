@@ -1,0 +1,40 @@
+# Skill manifest. Repository authoring guide: docs/bundle-contract.md.
+
+# Stable internal id; must equal this directory name.
+name: function_modules
+version: "1.0"
+
+# Bilingual FE heading and progress title.
+title:
+  zh: 功能模块
+  en: Function Modules
+
+# Bilingual picker fallback label.
+label:
+  zh: 梳理功能模块
+  en: Map out the modules
+
+
+# FE display order only; never selects a skill.
+order: 3
+
+# FE icon name.
+icon: apps
+
+# The foreground Producer maintains, validates, and publishes the complete
+# function-module state.
+execution:
+  handoff: none
+
+# Shared grouped-card workspace; local purpose/situation use one scenario.
+presentation:
+  mode: declarative
+
+# Optional model-facing summary; omission does not block design work.
+# 摘要覆盖功能概览。嵌套详情和版本固定的来源引用保留在 canonical JSON，完整内容请在面板或设计文件中阅读；摘要不将来源视为用户确认。
+summary:
+  collections:
+    - source: functions
+      title: 功能
+      title_fields: [function_name]
+      fields: [function_epic, function_description, priority, rejected, reason]

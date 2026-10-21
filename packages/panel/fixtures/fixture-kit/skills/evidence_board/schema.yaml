@@ -1,0 +1,56 @@
+# evidence_board fixture data contract.
+# Storage truth: `items` is root-stored (record_form) with durable order in
+# `items_order`; `enhancements` is the rowview_workbench add region — records
+# live at `add.enhancements.records`, edited fields under each record's
+# `details`, durable order at `add.enhancements.record_order`. `add` is a
+# map keyed by section id (upstream envelope shape); schemaAt traverses the
+# dynamic key into the section value.
+type: object
+properties:
+  summary: { type: string }
+  items_order: { type: array, items: { type: string } }
+  items:
+    type: map
+    value:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        weight: { type: number }
+        kind: { type: enum, values: [alpha, beta] }
+        mode: { type: enum, values: [solo, team] }
+        active: { type: boolean }
+        tags: { type: array, items: { type: string } }
+        flags: { type: array, items: { type: string } }
+        rels: { type: array, items: { type: string } }
+        sources: { type: array, items: { type: string } }
+        meta: { type: map, value: { type: string } }
+        doc: { type: string }
+        enh_ref: { type: string }
+        parts:
+          type: array
+          items:
+            type: object
+            required: [label]
+            properties:
+              label: { type: string }
+              note: { type: string }
+  add:
+    type: map
+    value:
+      type: object
+      properties:
+        records:
+          type: map
+          value:
+            type: object
+            properties:
+              id: { type: string }
+              title: { type: string }
+              summary: { type: string }
+              details:
+                type: object
+                properties:
+                  enh_kind: { type: enum, values: [param, sub] }
+                  note: { type: string }
+        record_order: { type: array, items: { type: string } }

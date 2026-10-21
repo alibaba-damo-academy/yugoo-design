@@ -1,0 +1,15 @@
+name: "probe_report"
+version: "1.0"
+title:
+  zh: "结构与产物测试"
+  en: "Structured Artifact Panel Test"
+label:
+  zh: "查看测试报告"
+  en: "View Test Report"
+order: 3
+icon: "document"
+execution:
+  mode: "main"
+  handoff: "must_edit"
+presentation:
+  mode: "auto"

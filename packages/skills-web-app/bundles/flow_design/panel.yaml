@@ -1,0 +1,76 @@
+version: 1
+panel_kind: evidence_workbook
+i18n:
+  default_locale: zh-CN
+  locales: {zh-CN: locales/zh-CN.json, en-US: locales/en-US.json}
+empty_description: $t:empty
+sections:
+  - id: processes
+    title: $t:processes
+    item_name: $t:process
+    order: process_order
+    add_mode: none
+fields:
+  - {key: title, label: '$t:title', control: text, readonly: true, applies_to: [processes]}
+  - {key: description, label: '$t:description', control: textarea, readonly: true, applies_to: [processes]}
+  - key: tier
+    label: $t:tier
+    control: select
+    readonly: true
+    options: [{value: core, label: '$t:core'}, {value: business, label: '$t:business'}, {value: auxiliary, label: '$t:auxiliary'}]
+    applies_to: [processes]
+  - key: process_type
+    label: $t:type
+    control: select
+    readonly: true
+    options: [{value: linear, label: '$t:linear'}, {value: approval, label: '$t:approval'}, {value: parallel, label: '$t:parallel'}, {value: event_driven, label: '$t:event'}]
+    applies_to: [processes]
+  - {key: stakeholders, label: '$t:actors', control: token_list, readonly: true, applies_to: [processes]}
+  - {key: system_responsibilities, label: '$t:responsibilities', control: token_list, readonly: true, applies_to: [processes]}
+  - {key: key_features, label: '$t:features', control: token_list, readonly: true, applies_to: [processes]}
+  - {key: business_rules, label: '$t:rules', control: token_list, readonly: true, applies_to: [processes]}
+  - key: trigger_hints
+    label: $t:triggers
+    control: rows
+    readonly: true
+    row_name: $t:trigger
+    applies_to: [processes]
+    columns:
+      - key: kind
+        label: $t:kind
+        control: select
+        options: [{value: timer, label: '$t:timer'}, {value: message, label: '$t:message'}, {value: error, label: '$t:error'}, {value: conditional, label: '$t:conditional'}, {value: signal, label: '$t:signal'}]
+      - {key: trigger, label: '$t:trigger', control: text}
+      - {key: expected_outcome, label: '$t:outcome', control: text}
+  - key: exception_handling
+    label: $t:exceptions
+    control: rows
+    readonly: true
+    row_name: $t:exception
+    applies_to: [processes]
+    columns:
+      - {key: scenario, label: '$t:scenario', control: text}
+      - {key: handling, label: '$t:handling', control: text}
+  - {key: bpmn_file, label: '$t:diagram', control: artifact_ref, hidden: true, readonly: true, applies_to: [processes]}
+ui:
+  component: diagram_workspace
+  guidance: "$t:guidance"
+  sidebar_icon: workflow
+  id: process-diagrams
+  title: $t:processes
+  source: processes
+  diagram:
+    format: bpmn
+    file_field: bpmn_file
+    label_field: title
+    artifact_kind: flow_bpmn
+    order_only: true
+    summary_fields: [description, stakeholders]
+    tags:
+      - field: tier
+        labels: {core: '$t:priorityHigh', business: '$t:priorityMedium', auxiliary: '$t:priorityLow'}
+        tones: {core: danger, business: warning, auxiliary: success}
+      - {field: process_type}
+    detail_rows: [[description], [stakeholders], [system_responsibilities, trigger_hints], [key_features, business_rules], [exception_handling]]
+    chip_fields: [stakeholders]
+    detail_hint_fields: [key_features, business_rules, exception_handling]

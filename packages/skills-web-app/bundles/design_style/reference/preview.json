@@ -1,0 +1,16 @@
+{
+  "config": {
+    "theme": "合成预览示例：清晰、安静的阅读界面",
+    "layout": {"mode": "minimal", "content_width": "medium", "density": "comfortable"},
+    "colors": {"primary": "#7c5af6", "background": "#f8f7fc", "surface": "#ffffff", "text": "#24212e", "textSecondary": "#696374", "border": "#e4dfed"},
+    "semantic_colors": {"success": "#24865e", "warning": "#a76b12", "error": "#bc3f4a", "info": "#4166b0"},
+    "typography": {"headingFont": "system-ui, sans-serif", "bodyFont": "system-ui, sans-serif", "baseFontSize": "14px", "headingWeight": "600", "lineHeight": "1.6"},
+    "hierarchy": {"page_title": "阅读材料列表的标题", "section_title": "材料分组标题", "supporting_text": "链接与保存时间等辅助信息"},
+    "components": {"borderRadius": "8px", "shadowDepth": "subtle", "buttonStyle": "filled", "inputStyle": "bordered", "cardStyle": "flat"},
+    "component_patterns": {"reading_card": {"description": "合成示例中承载材料标题与阅读入口的卡片", "anatomy": ["标题", "链接", "阅读操作"], "variants": ["默认", "紧凑"], "states": ["default", "hover", "focus"]}},
+    "iconography": {"library": "Lucide", "style": "outline", "view_box": "0 0 24 24", "stroke_width": "2", "size_sm": "16px", "size_md": "20px", "size_lg": "24px"},
+    "spacing": {"base": "4px", "scale": ["4px", "8px", "12px", "16px", "24px", "32px"]},
+    "preview_page": {"name": "reading_list", "title": "合成阅读列表示例", "rationale": "仅演示配置控件；没有生成 HTML，也不代表已完成或已确认的视觉方案。", "html_file": null},
+    "notes": "仅用于 Studio 预览，不是用户项目内容；无 HTML、tokens.css 或 DESIGN.md 产物。"
+  }
+}

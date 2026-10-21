@@ -1,0 +1,23 @@
+# Fixture skill manifest (domain-neutral declarative basis acceptance).
+
+name: evidence_board
+version: "1.0"
+
+title:
+  zh: 证据板
+  en: Evidence Board
+
+label:
+  zh: 领域无关的证据记录
+  en: Domain-neutral evidence records
+
+order: 1
+icon: list
+
+execution:
+  handoff: must_edit
+
+# Explicitly declarative: no native renderer; panel.yaml is the surface.
+presentation:
+  mode: declarative
+  renderer: pilot-design/v2

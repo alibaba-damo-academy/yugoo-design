@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "elkjsVersion": "0.10.2",
+  "wrapperCommit": "f64a4813dcab63c30fe67a32470cd1c05f4f7031",
+  "upstreamJavaCommit": "28e5173243cab0cf4e2c9816c803bc0d5c47ab24",
+  "sourceIdentityEvidenceKind": "upstream-official-release-declaration",
+  "releaseUrl": "https://github.com/kieler/elkjs/releases/tag/0.10.2",
+  "releaseApiUrl": "https://api.github.com/repos/kieler/elkjs/releases/tags/0.10.2",
+  "observedReleasePayloadSha256": "b94ab1c264c78dab2bc517e2fae48292c4e217bff567f9d40eda3f32a19b51c9",
+  "javaCommitApiUrl": "https://api.github.com/repos/eclipse-elk/elk/commits/28e5173243cab0cf4e2c9816c803bc0d5c47ab24",
+  "observedJavaCommitPayloadSha256": "50c0696ca5442a02110b0ab86036b13bbfdabd38f45a57ec3e7dd24976eedf8f",
+  "officialWrapperTreeApiUrl": "https://api.github.com/repos/kieler/elkjs/git/trees/f64a4813dcab63c30fe67a32470cd1c05f4f7031?recursive=1",
+  "observedWrapperTreePayloadSha256": "3f8c042dc2bf95deab7713ae16ef0b353e8f26a187575de535179acf6372770b",
+  "artifactComparisons": [
+    {
+      "path": "lib/elk-worker.js",
+      "bytes": 4721895,
+      "installedSha256": "42a5ef0e02fc01c55b74322b31cf63a034123db3b244c44251765adb1c919822",
+      "gitBlobSha1": "6a1f3e23587e363be1b6bd07c3a91cf04024e94c",
+      "officialTreeBlobSha1": "6a1f3e23587e363be1b6bd07c3a91cf04024e94c",
+      "matchesOfficialFixedCommit": true
+    },
+    {
+      "path": "lib/elk-worker.min.js",
+      "bytes": 1575180,
+      "installedSha256": "dcf0d14eb86fe86636a2df413b401fe3cf5dde8f8fcd9c285070ce0c5e376e12",
+      "gitBlobSha1": "27fc14a6282e2f99a0c11d4b0097dfb844aff324",
+      "officialTreeBlobSha1": "27fc14a6282e2f99a0c11d4b0097dfb844aff324",
+      "matchesOfficialFixedCommit": true
+    },
+    {
+      "path": "lib/elk.bundled.js",
+      "bytes": 1588934,
+      "installedSha256": "88f7753e5b41af205d56ee4edaf6eea4fceabe0115b76c9495e5a2cee95c31d1",
+      "gitBlobSha1": "bf168c6685517ef4f0ae273a320184712a6e83c9",
+      "officialTreeBlobSha1": "bf168c6685517ef4f0ae273a320184712a6e83c9",
+      "matchesOfficialFixedCommit": true
+    },
+    {
+      "path": "LICENSE.md",
+      "bytes": 14480,
+      "installedSha256": "89591d4578fb1ebd91501312a3d25f021bd865a2e436641c1cf7b1bc7e3c1617",
+      "gitBlobSha1": "2849d27f5b829e3106a0fe4db9dcf2508e6b9855",
+      "officialTreeBlobSha1": "2849d27f5b829e3106a0fe4db9dcf2508e6b9855",
+      "matchesOfficialFixedCommit": true
+    },
+    {
+      "path": "package.json",
+      "bytes": 1665,
+      "installedSha256": "c6b0154cf890fde4c3db3426f7b60ee7853a89764d3c42652a846eb985417642",
+      "gitBlobSha1": "99952da94fea7457265bfd74e4e280f8224beec0",
+      "officialTreeBlobSha1": "99952da94fea7457265bfd74e4e280f8224beec0",
+      "matchesOfficialFixedCommit": true
+    }
+  ],
+  "sourceArchiveAcquisition": {
+    "retrievedOn": "2026-10-02",
+    "wrapper": {
+      "url": "https://codeload.github.com/kieler/elkjs/tar.gz/f64a4813dcab63c30fe67a32470cd1c05f4f7031",
+      "bytes": 1867912,
+      "sha256": "26c7456029827cf5522a80f24aec68c9b00090d5fc5a0cb5a60847bc8207ebe7",
+      "root": "elkjs-f64a4813dcab63c30fe67a32470cd1c05f4f7031",
+      "members": 88
+    },
+    "java": {
+      "url": "https://codeload.github.com/eclipse-elk/elk/tar.gz/28e5173243cab0cf4e2c9816c803bc0d5c47ab24",
+      "bytes": 9350528,
+      "sha256": "f432e8f53006e96f178da9470ced34f551bbb278ffce52ea094a3fe54cb3420c",
+      "root": "elk-28e5173243cab0cf4e2c9816c803bc0d5c47ab24",
+      "members": 3067
+    },
+    "safeRegularFileDirectoryLists": true,
+    "sourceFilesPresent": true,
+    "archiveScriptsExecuted": false,
+    "publicArchiveDeliveryApproved": false
+  },
+  "upstreamDeclaredJavaSourceIdentityLocated": true,
+  "independentRegenerationVerified": false,
+  "completeBundledInventory": false,
+  "releaseLicenseAcceptance": false
+}

@@ -1,0 +1,172 @@
+{
+  "name": "dsh-design-panel",
+  "version": "0.0.0",
+  "license": "Apache-2.0",
+  "type": "module",
+  "description": "Declarative design-panel interpreter for the dsh Web UI: renders Design Files as editable panels in a conversation.view workspace.",
+  "main": "lib/host.js",
+  "types": "lib/host.d.ts",
+  "exports": {
+    "./interpreter": {
+      "types": "./lib/interpreter.d.ts",
+      "default": "./lib/interpreter.js"
+    },
+    ".": {
+      "types": "./lib/host.d.ts",
+      "default": "./lib/host.js"
+    },
+    "./ui": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./client-api": {
+      "types": "./lib/client-api.d.ts",
+      "default": "./lib/client-api.js"
+    },
+    "./select": {
+      "types": "./lib/select.d.ts",
+      "default": "./lib/select.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "dsh-design-core",
+        "@deepseek-ai/dsh-api-session-controller",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-session",
+        "@deepseek-ai/dsh-client-ui-tool",
+        "@deepseek-ai/dsh-api-remotes"
+      ]
+    }
+  },
+  "scripts": {
+    "test:host-entry": "node --test test/host-entry.test.mjs",
+    "test:host-dock-geometry": "node --test test/host-dock-geometry.test.mjs && node smoke-host-dock-geometry.mjs",
+    "test:workspace-navigation": "TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx --test test/record-workspace-navigation-groups.test.mjs test/record-workspace-navigation-layout.test.mjs",
+    "test:clarity-hover": "TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-clarity-hover.mjs",
+    "test:clarity-activity": "TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx --test test/clarity-activity.test.mjs",
+    "test:review-settings": "TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-review-policy-control.mjs",
+    "test:advisory-reading": "TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-advisory-reading.mjs && node smoke-advisory-card.mjs && node smoke-advisory-sidebar-entry.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx --test test/advisory-activity.test.mjs",
+    "test:tabs": "TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-store.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-panel-unread.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-tab-update-indicator.mjs",
+    "test:visual": "TSX_TSCONFIG_PATH=tsconfig.json node --test test/visual-records.test.mjs test/question-list.test.mjs",
+    "test:sidebar-icons": "TSX_TSCONFIG_PATH=tsconfig.json node --import tsx --test test/sidebar-icon.test.mjs",
+    "test:visual:browser": "node smoke-visual-records-browser.mjs",
+    "build:css": "tailwindcss -c tailwind.config.cjs -i src/client/ported/design.css -o src/client/generated/design.tw.css --minify",
+    "build": "pnpm run build:css && tsdown",
+    "typecheck": "tsc --noEmit",
+    "test:graph": "node --test test/graph-dependencies.test.mjs test/graph-layout.test.mjs test/graph-model.test.mjs test/graph-presentation.test.mjs",
+    "test:graph:browser": "node smoke-graph-browser.mjs",
+    "test": "node --test test/host-entry.test.mjs && node smoke-dock-layout.mjs && node smoke-advisory-card.mjs && node smoke-advisory-sidebar-entry.mjs && node smoke-design-project-sidebar.mjs && node smoke-host-overlay-layering.mjs && pnpm run test:host-dock-geometry && node smoke-dock-session.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-live-poll.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-execution-log-lifecycle.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-session-controller-adapter.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-next-step-question.mjs"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "*",
+    "@deepseek-ai/dsh-api-remotes": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-api-session-controller": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-conversation": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-session": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-slots": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-tool": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.2",
+    "dsh-design-core": "0.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.0.5",
+    "@deepseek-ai/dsh-api-remotes": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-api-session-controller": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-conversation": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-session": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-slots": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-tool": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.2",
+    "@types/d3-drag": "^3.0.7",
+    "@types/d3-force": "^3.0.10",
+    "@types/d3-selection": "^3.0.11",
+    "@types/d3-zoom": "^3.0.8",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.0",
+    "@types/three": "0.183.1",
+    "cytoscape": "3.33.1",
+    "cytoscape-fcose": "2.2.0",
+    "dsh-design-core": "link:../core",
+    "elkjs": "0.10.2",
+    "force-graph": "1.49.4",
+    "graphology": "0.26.0",
+    "graphology-layout-forceatlas2": "0.10.1",
+    "jsdom": "^30.0.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tailwindcss": "^3.3.5",
+    "tailwindcss-animate": "^1.0.7",
+    "tsdown": "^0.22.2",
+    "typescript": "^6.0.3",
+    "webcola": "3.4.0"
+  },
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "lib/client.js",
+    "lib/css-assets",
+    "LICENSE",
+    "NOTICE",
+    "THIRD_PARTY_NOTICES.md",
+    "third-party/lucide-react/LICENSE",
+    "third-party/lucide-react/SOURCE.md",
+    "third-party/native/NOTICE.md",
+    "third-party/native/bpmn-font-0.12.1/LICENSE",
+    "third-party/native/bpmn-font-0.12.1/SOURCE.md",
+    "third-party/native/bpmn-font-0.12.1/release-source-binding.json",
+    "third-party/native/bpmn-js-18.24.0/LICENSE",
+    "third-party/native/bpmn-js-18.24.0/SOURCE.md",
+    "third-party/native/dompurify-3.4.16/LICENSE",
+    "third-party/native/dompurify-3.4.16/LICENSE-MPL",
+    "third-party/native/dompurify-3.4.16/SOURCE.md",
+    "third-party/native/elkjs-0.10.2/LICENSE.md",
+    "third-party/native/elkjs-0.10.2/NOTICE.md",
+    "third-party/native/elkjs-0.10.2/DEPENDENCIES",
+    "third-party/native/elkjs-0.10.2/NATIVE-CORRESPONDENCE.md",
+    "third-party/native/elkjs-0.10.2/SOURCE.md",
+    "third-party/native/elkjs-0.10.2/graph-layout-worker.ts",
+    "third-party/native/elkjs-0.10.2/native-source/packages/panel/src/client/graph-layout-worker.mjs",
+    "third-party/native/elkjs-0.10.2/native-source/packages/panel/src/client/graph-layout.mjs",
+    "third-party/native/elkjs-0.10.2/native-source/packages/panel/tsdown.config.ts",
+    "third-party/native/elkjs-0.10.2/release-source-binding.json",
+    "third-party/native/elkjs-0.10.2/upstream-README.md",
+    "third-party/native/elkjs-0.10.2/upstream-build.gradle",
+    "third-party/native/elkjs-0.10.2/upstream-ci.yml",
+    "third-party/native/pako-2.0.3/LICENSE",
+    "third-party/native/pako-2.0.3/SOURCE.md",
+    "third-party/native/pako-2.0.3/zlib-README",
+    "third-party/native/whiteboard-fonts/licenses/JetBrainsMono-OFL.txt",
+    "third-party/native/whiteboard-fonts/licenses/source-han-sans-LICENSE.txt",
+    "third-party/native/whiteboard-fonts/manifest.json"
+  ],
+  "dependencies": {
+    "@radix-ui/react-select": "2.3.7",
+    "@xyflow/react": "^12.10.0",
+    "3d-force-graph": "1.80.0",
+    "@radix-ui/react-slot": "^1.2.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "d3-drag": "3.0.0",
+    "d3-force": "3.0.0",
+    "d3-selection": "3.0.0",
+    "d3-zoom": "3.0.0",
+    "lucide-react": "0.562.0",
+    "parse5": "7.3.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "tailwind-merge": "^3.4.0",
+    "three": "0.186.0",
+    "yaml": "^2.9.0",
+    "@excalidraw/excalidraw": "0.18.1",
+    "bpmn-js": "18.24.0"
+  }
+}

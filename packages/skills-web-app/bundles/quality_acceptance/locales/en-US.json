@@ -1,0 +1,21 @@
+{
+  "guidance": "Describe the acceptance scenario and an observable passing result. Add a verification method only when unclear; test code is not required.",
+  "bundleDescription": "- **Capability**: define the small set of observable requirements that tell users and the delivery team when established product behavior and material quality are good enough to accept.\n- **Resolves**: T gaps where an important function, rule, flow, page, or integration has no concrete passing result, or a material quality expectation remains vague.\n- **Candidate when**: the user asks for acceptance criteria, quality requirements, non-functional requirements, or a clear definition of done for product behavior.\n- **Do not infer**: business rules, missing product behavior, test code, release governance, project plans, risk registers, or a generic enterprise NFR checklist do not belong here.\n- **Output**: `quality_acceptance` panel — one editable ordered list of acceptance requirements.",
+  "empty": "Add an acceptance requirement: describe the situation and the outcome that counts as success.",
+  "requirements": "Acceptance requirements",
+  "newRequirement": "New acceptance requirement",
+  "newRequirementNumbered": "New acceptance requirement {index}",
+  "title": "Requirement name",
+  "titleExample": "For example: order submitted successfully",
+  "condition": "Under what conditions is this checked?",
+  "conditionHelp": "Describe the situation and what the user did or what happened in the product.",
+  "conditionExample": "For example: the user completes the order and clicks Submit",
+  "criteria": "What counts as passing?",
+  "criteriaHelp": "Use observable or measurable criteria; avoid vague statements such as “a good experience”.",
+  "criteriaExample": "For example: an order number is created and Pending is displayed",
+  "verification": "How will this be verified? (optional)",
+  "verificationHelp": "Add a method only when it is not obvious. Test code is not required.",
+  "workspace": "Acceptance criteria",
+  "group": "Group (optional)",
+  "groupExample": "For example: Business flow, AI capabilities"
+}

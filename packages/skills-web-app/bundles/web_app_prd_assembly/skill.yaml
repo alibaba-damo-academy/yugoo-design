@@ -1,0 +1,45 @@
+# Skill manifest. Repository authoring guide: docs/bundle-contract.md.
+
+# Stable internal id; must equal this directory name.
+name: web_app_prd_assembly
+version: "1.0"
+
+# Bilingual FE heading and progress title.
+title:
+  zh: 整合PRD
+  en: Assembled PRD
+
+# Bilingual picker fallback label.
+label:
+  zh: 生成完整 PRD
+  en: Assemble complete PRD
+
+
+# FE display order only; never selects a skill.
+order: 90
+
+# FE icon name.
+icon: document
+
+# On-demand delivery Bundle: the foreground Producer creates or target-edits
+# the sole canonical prd.html; Git owns history.
+execution:
+  handoff: none
+
+# Presentation contract: dispatch is driven by this metadata, never by the
+# Bundle name. The PRD panel is a read-only HTML document viewer.
+presentation:
+  mode: declarative
+
+# Optional model-facing summary; omission does not block design work.
+# 摘要不替代只读的 canonical HTML 文档。章节来源和待确认的临时补全由文档标注与 ai_provenance 共同呈现；面板不修改原文和其他 Bundle。
+summary:
+  fields:
+    - {source: title, title: 文档标题}
+    - {source: detail_level, title: 详细程度}
+    - {source: html_file, title: 文档文件}
+  collections:
+    - source: ai_provenance
+      title: 临时补全
+      title_fields: [id]
+      fields: [description]

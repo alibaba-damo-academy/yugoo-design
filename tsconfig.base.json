@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "es2024",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "strict": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "allowImportingTsExtensions": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "lib": ["es2024", "dom", "dom.iterable"]
+  }
+}

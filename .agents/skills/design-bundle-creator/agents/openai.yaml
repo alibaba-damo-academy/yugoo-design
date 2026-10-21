@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design Bundle Creator"
+  short_description: "Create self-contained interactive Bundles"
+  default_prompt: "Use $design-bundle-creator to build this interactive information slice using the method-authoring skill."

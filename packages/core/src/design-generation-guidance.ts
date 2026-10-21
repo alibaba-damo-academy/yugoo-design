@@ -1,0 +1,15 @@
+/** Host-neutral collaboration contract; no Bundle-specific data or scheduler. */
+export const DESIGN_EXECUTOR_EVIDENCE_GUIDANCE = `Before independent artifact work, resolve shared decisions from the current request and saved Design Files. Keep the same evidence method whether the Bundle executor is the main Agent or a Producer.
+Give each Worker a bounded assignment: intended user outcome; settled shared decisions and constraints; its exact output and interfaces with related work; relevant evidence excerpts with file/record locators, the Host-disclosed Design Files/resource roots and their checkpoint or working-copy status; unresolved assumptions; and the applicable validation/repair contract. Use the existing task prompt, not a new canonical task store. Do not assume native cwd equals the Design Files root.
+Read common evidence once for synthesis, then pass only the material each task needs. Do not require every Worker to reread all upstream files after supplying sufficient excerpts. Preserve conditions, exceptions and source locators when shortening context. A reference alone is insufficient when the task needs its content. Exact assets and mechanical validator inputs stay file-backed; prose summaries are not byte authority.
+Workers may retrieve missing or contradictory evidence through available read-only tools. When a shared decision changes, update the affected assignments or artifacts before integration; do not mix incompatible assumptions or regenerate unaffected work.
+Integrate receipts without echoing artifact bytes. Read relevant artifact content for real synthesis and quality review when needed; a receipt or successful validator does not establish design quality. Check consistency across outputs and report unresolved shared decisions to their owner. Follow the Bundle's existing handoff and publication contract.`
+
+export const DESIGN_WORKER_EVIDENCE_GUIDANCE = `Use the assignment's shared decisions and relevant evidence before requesting more context. Do not automatically reread the complete project, shared specifications or sibling artifacts already sufficiently represented in the brief.
+For a material gap, read the smallest relevant source record or excerpt with available read-only tools; widen only when necessary. Check current source evidence if the brief conflicts with it or a relevant revision changed. Report that conflict to the executor rather than silently changing shared decisions. Exact assets and file-backed validators still read their authoritative files.
+Keep ownership to the assigned artifact. Return its receipt or path, meaningful validation evidence, and any unresolved dependency or inconsistency; do not return the artifact body or claim cross-artifact acceptance. Your executor owns integration.`
+
+/** Optional capability: never make a Kit depend on a configured graph provider. */
+export function availableDesignKnowledgeTools(available: (name: string) => boolean): string[] {
+  return ['design_query_knowledge'].filter(available)
+}

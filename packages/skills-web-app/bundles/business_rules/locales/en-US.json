@@ -1,0 +1,19 @@
+{
+  "guidance": "Select a rule and describe its conditions and deterministic outcome. Leave conditions empty when no restriction applies.",
+  "bundleDescription": "- **Capability**: turn product decisions into independent rules that name relevant conditions or inputs and deterministic outcomes.\n- **Resolves**: S/T gaps where reasonable implementations could differ without a qualification, validation, calculation, threshold, automation, or exception.\n- **Candidate when**: an action, business thing, flow branch, price, limit, approval, or eligibility decision needs deterministic behavior.\n- **Do not infer**: ordinary step order, role permission, field definition, page layout, UI copy, and technical implementation are not automatically business rules.\n- **Output**: a native `business_rules` panel with an ordered list of editable rules.",
+  "empty": "No business rules yet. Add one to explain when and how the product should respond.",
+  "rules": "Business rules",
+  "rule": "rule",
+  "newRule": "New rule 1",
+  "newRuleNumbered": "New rule {index}",
+  "title": "Rule name",
+  "ruleContent": "Rule content",
+  "condition": "Under what conditions, or based on which inputs? (optional)",
+  "conditionHelp": "Describe the trigger or calculation inputs, then the expected decision or behavior. Leave blank for unconditional rules.",
+  "conditionExample": "For example: order total including tax exceeds 100,000; or: unit prices, quantities and discounts",
+  "outcome": "What should the product decide, calculate or do?",
+  "outcomeExample": "For example: require manager approval; or: sum the line amounts and subtract discounts",
+  "notes": "Notes (optional)",
+  "notesHelp": "Clarify a boundary, exception or example. Leave blank if no clarification is needed.",
+  "notesExample": "For example: an order of exactly 100,000 does not require manager approval."
+}

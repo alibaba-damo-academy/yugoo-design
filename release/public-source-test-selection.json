@@ -1,0 +1,10 @@
+{
+  "kind": "proposed-public-source-root-test-selection",
+  "schemaVersion": 1,
+  "releaseApproved": false,
+  "rootScriptFileExclusions": {
+    "test:public-contracts": ["scripts/public-env-template.test.mjs"]
+  },
+  "reason": "The excluded regression verifies the internal dogfood model/search credential template. Public plugins leave these credentials and tools to the host. Keep this regression and template in the development repository; do not require them in the public source test command.",
+  "pending": ["Complete immutable source command/import closure", "Clean source build and test execution"]
+}

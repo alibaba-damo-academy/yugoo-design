@@ -1,0 +1,50 @@
+{
+  "rounds": {
+    "0": {
+      "title": "阅读材料整理",
+      "description": "合成预览示例：了解个人阅读材料整理中的主要困难与使用情境。以下问题和选项仅演示交互，不代表用户需求或已确认事实。"
+    }
+  },
+  "questions": {
+    "const_auth_mode": {
+      "prompt": "是否需要注册登录？",
+      "kind": "single",
+      "choices": [
+        {"value": "anonymous", "label": "不需要，直接使用", "recommended": true},
+        {"value": "auth_required", "label": "需要，支持注册登录", "recommended": false}
+      ],
+      "answer": "anonymous",
+      "detail": ""
+    },
+    "const_storage_mode": {
+      "prompt": "应用数据如何保存？",
+      "kind": "single",
+      "choices": [
+        {"value": "browser_temp", "label": "仅当前浏览器临时保存", "recommended": true},
+        {"value": "database_persistent", "label": "持久保存，可跨设备继续使用", "recommended": false}
+      ],
+      "answer": "browser_temp",
+      "detail": ""
+    },
+    "preview_main_outcome": {
+      "prompt": "整理个人阅读材料时，你最希望先解决什么问题？",
+      "kind": "single",
+      "choices": [
+        {"value": "find_saved", "label": "更快找到已保存的材料", "recommended": true},
+        {"value": "organize_notes", "label": "把阅读笔记整理得更清楚", "recommended": false}
+      ],
+      "answer": "",
+      "detail": "",
+      "round": 0,
+      "rejected": false
+    },
+    "preview_situation": {
+      "prompt": "最近一次找不到阅读材料时，你正在做什么？可以直接用自己的话描述。",
+      "kind": "text",
+      "answer": "",
+      "detail": "",
+      "round": 0,
+      "rejected": false
+    }
+  }
+}

@@ -1,0 +1,34 @@
+# Skill manifest. Repository authoring guide: docs/bundle-contract.md.
+name: role_access
+version: "1.0"
+title: { zh: 角色权限, en: Roles and Access }
+label: { zh: 定义角色授予与权限清单, en: Define role assignment and permission decisions }
+order: 12
+icon: shield
+
+execution:
+  handoff: must_edit
+
+presentation:
+  mode: declarative
+
+# Optional model-facing summary; omission does not block design work.
+# 摘要按稳定 ID 引用角色，面板按所属角色组织权限；requirements 的完整列表请读取
+# canonical 或交互面板，摘要不把遗漏的权限推断为源产品的禁止行为。
+# 继承摘要只列同源边；不复制或合成父权限。结合 policies 的原条件/验证读取。
+summary:
+  collections:
+    - source: roles
+      title: 角色
+      order: role_order
+      title_fields: [title]
+      fields: [assignment_rule]
+    - source: policies
+      title: 权限
+      order: policy_order
+      title_fields: [title]
+      fields: [role_ref, effect, capability, applies_when, custom_requirement]
+    - source: inheritances
+      title: 角色继承（子角色 → 来源角色；权限保留原条件和验证）
+      title_fields: [title]
+      fields: [source, target, kind, description]

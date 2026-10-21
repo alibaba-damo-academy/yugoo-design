@@ -1,0 +1,37 @@
+{
+  "scope": "Official npm package license material; not compiled-component licensing closure",
+  "package": "@ladybugdb/wasm-core",
+  "version": "0.21.1",
+  "registryMetadataUrl": "https://registry.npmjs.org/@ladybugdb%2fwasm-core/0.21.1",
+  "archiveUrl": "https://registry.npmjs.org/@ladybugdb/wasm-core/-/wasm-core-0.21.1.tgz",
+  "archiveIntegrityFromInstalledLock": "sha512-DEPxsl0f974p++WonWK868jXZraWCsRURG8LWNQyLiop0p8AYMx3QWRhF/bmv9MPEHWreplEuRgmzb306mDyaQ==",
+  "upstreamRepository": "https://github.com/LadybugDB/ladybug",
+  "declaredLicense": "MIT",
+  "material": {
+    "path": "LICENSE",
+    "packageRelativeSource": "LICENSE",
+    "bytes": 1116,
+    "sha256": "1c495c9546d0de02e83c9d50d5f7eb21f0085bc8f77a0ee333081a123a9c8d0c",
+    "originalInstalledBytes": true
+  },
+  "installedPackageMetadataSha256": "c4e22aac591e99ffd0b6297e37bed531dc200839b886320ce1c896c77fca2fc4",
+  "observedInstalledLicenseNoticeProvenanceFiles": [
+    "LICENSE"
+  ],
+  "declaredJavaScriptDependencies": {
+    "threads": "^1.7.0",
+    "tiny-worker": "^2.3.0",
+    "uuid": "^11.0.3"
+  },
+  "exactUpstreamBuildCommit": null,
+  "compiledInComponentInventoryVerified": false,
+  "registryProvenanceAttestationVerified": false,
+  "sourceArchiveRecoveredForThisMaterial": false,
+  "basis": "License copied from the actual installed official0.21.1 package; source URL/integrity taken from its actual npm lock. No archive redownload or new integrity verification.",
+  "limits": [
+    "MIT text covers the package declaration; it is not a blanket license for all components embedded in the WASM.",
+    "No separate NOTICE, third-party inventory or precise build-provenance file was observed in this installed package.",
+    "Exact source/build correspondence, embedded third-party notices, historical vendored patches and source/relink obligations require separate resolution.",
+    "This preparation does not establish final tarball inclusion, publication or complete release compliance."
+  ]
+}

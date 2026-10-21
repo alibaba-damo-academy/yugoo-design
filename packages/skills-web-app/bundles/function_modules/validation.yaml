@@ -1,0 +1,21 @@
+# function_modules validation contract.
+# Issue codes, messages and repair hints ported verbatim from sdk-pilot
+# skill/design_skills/function_modules/validation.py.
+skill: function_modules
+
+rules:
+  - id: empty
+    scope: [state]
+    code: function_modules.empty
+    message: "At least one function module is required."
+    repair_hint: "Add the product's smallest useful set of function cards."
+    check: { non_empty_map: functions }
+
+  - id: source-locations
+    scope: [state, completion]
+    code: function_modules.source_location
+    message: "Source locations require confined paths, exact commits and valid pointers; a subject must exist in its owning function."
+    repair_hint: "Repair the locator, or omit an unsupported reference without fabricating a target. Missing historical data is shown by source reading, not guessed."
+    check: { for_each_in_map: functions, source_reference_map: references }
+
+  # Rich card-quality checks remain Producer self-checks in SKILL.md.

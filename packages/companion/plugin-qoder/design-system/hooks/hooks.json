@@ -1,0 +1,8 @@
+{
+  "hooks": {
+    "SessionStart": [{ "hooks": [{ "type": "command", "command": "node \"${QODER_PLUGIN_ROOT}/scripts/qoder-context.mjs\"" }] }],
+    "CwdChanged": [{ "hooks": [{ "type": "command", "command": "node \"${QODER_PLUGIN_ROOT}/scripts/qoder-context.mjs\"" }] }],
+    "SubagentStart": [{ "hooks": [{ "type": "command", "command": "node \"${QODER_PLUGIN_ROOT}/scripts/qoder-context.mjs\"" }] }],
+    "FileChanged": [{ "matcher": ".design-system-qoder-notify", "hooks": [{ "type": "command", "command": "node \"${QODER_PLUGIN_ROOT}/scripts/qoder-notification.mjs\"", "asyncRewake": true }] }]
+  }
+}

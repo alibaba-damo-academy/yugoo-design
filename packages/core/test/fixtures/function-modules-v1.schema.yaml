@@ -1,0 +1,20 @@
+# Frozen pre-upgrade contract, used to prove old pins cannot accept new fields.
+type: object
+additional_properties: false
+properties:
+  skill_name: { knowledge: { role: metadata }, type: string }
+  functions:
+    type: map
+    value:
+      type: object
+      additional_properties: false
+      required: [function_id, function_name, function_description, function_epic]
+      properties:
+        function_id: { type: string }
+        function_name: { type: string }
+        function_description: { type: string }
+        function_epic: { type: string }
+        priority: { type: enum, values: [High, Medium, Low] }
+        rejected: { type: boolean }
+        source: { type: enum, values: [ai, user] }
+        reason: { type: string }

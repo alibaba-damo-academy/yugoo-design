@@ -1,0 +1,6 @@
+Yugoo Design local Git binding
+
+Derived from @napi-rs/simple-git 1.2.0, upstream commit 0cdb713269151a7af05718c745a718f0f2bd37f9.
+Original binding copyright and MIT license are retained in LICENSE. Yugoo Design modifications are identified in SOURCE.json and native-source/UPSTREAM.patch.
+
+libgit2, zlib, Rust and Cargo dependencies retain their own licenses. See third-party/ for unmodified license texts and exact source archive checksums. The wrapper MIT license does not relicense these components.

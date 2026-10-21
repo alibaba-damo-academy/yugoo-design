@@ -1,0 +1,14 @@
+{
+  "bundleDescription": "- **能力**：把产品组织成面向用户的功能卡片。\n- **解决**：将已确定的产品目标和核心场景转化为互不重叠的能力地图，补齐 S 类缺口。\n- **适用时机**：结果、主要用户和关键边界已经明确，或用户明确要求拆分或修改功能。\n- **不要推断**：仅凭应用类别、领域名称或泛化的产品目标，不足以凭空编造功能地图。\n- **输出**：按 Epic 分组浏览的功能模块面板。",
+  "functions": "功能模块", "function": "功能", "empty": "添加功能，或在主对话中描述需要的能力。",
+  "details": "功能详情", "functionId": "功能 ID", "name": "功能名称", "description": "说明", "epic": "所属分组", "epicHelp": "分组只是功能的标签，不会创建独立设计记录。",
+  "priority": "优先级", "high": "高优先级", "medium": "中优先级", "low": "低优先级", "rejected": "已拒绝",
+  "source": "来源", "ai": "AI 提出", "user": "用户添加", "reason": "备注", "references": "关联来源",
+  "situation": "使用场景", "behaviors": "核心行为", "behavior": "行为", "inputs": "输入", "input": "输入",
+  "outputs": "结果", "output": "结果", "limits": "范围边界", "limit": "边界", "exceptions": "异常处理", "exception": "异常情况", "condition": "发生条件", "response": "处理方式",
+  "guidance": "按分组浏览功能，调整说明和优先级；新增功能会交给主对话继续完善。",
+  "applicationMindMap": "应用功能脑图",
+  "createRequest": "请新增以下功能",
+  "createSubmit": "AI 智能添加",
+  "detailsAndEvidence": "功能详情"
+}

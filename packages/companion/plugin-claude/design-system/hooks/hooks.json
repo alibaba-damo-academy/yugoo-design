@@ -1,0 +1,8 @@
+{
+  "hooks": {
+    "SessionStart": [{ "hooks": [{ "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/claude-context.mjs"] }] }],
+    "CwdChanged": [{ "hooks": [{ "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/claude-context.mjs"] }] }],
+    "SubagentStart": [{ "hooks": [{ "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/claude-context.mjs"] }] }],
+    "FileChanged": [{ "hooks": [{ "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/claude-notification.mjs"], "asyncRewake": true }] }]
+  }
+}

@@ -1,0 +1,939 @@
+{
+  "kind": "retained-relocated-pica-worker-probe",
+  "fullBuild": false,
+  "staticUnknown": [
+    "webworkify factory accesses dispatcher/source/cache to generate Worker code"
+  ],
+  "dynamicClosureVerified": false,
+  "browserExecuted": true,
+  "requests": [
+    {
+      "phase": "network-control",
+      "url": "http://127.0.0.1:43111/probe.html",
+      "type": "document"
+    },
+    {
+      "phase": "network-control",
+      "url": "https://example.invalid/pica-worker-fetch-control",
+      "type": "fetch"
+    },
+    {
+      "phase": "network-control",
+      "url": "https://example.invalid/pica-worker-import-control",
+      "type": "other"
+    },
+    {
+      "phase": "js-worker",
+      "url": "http://127.0.0.1:43111/probe.html",
+      "type": "document"
+    },
+    {
+      "phase": "js-worker",
+      "url": "http://127.0.0.1:43111/web/pica-DGw4b28J.js",
+      "type": "script"
+    },
+    {
+      "phase": "js-worker",
+      "url": "http://127.0.0.1:43111/web/rolldown-runtime-CEgmsyvS.js",
+      "type": "script"
+    },
+    {
+      "phase": "default-worker",
+      "url": "http://127.0.0.1:43111/probe.html",
+      "type": "document"
+    },
+    {
+      "phase": "default-worker",
+      "url": "http://127.0.0.1:43111/web/pica-DGw4b28J.js",
+      "type": "script"
+    },
+    {
+      "phase": "default-worker",
+      "url": "http://127.0.0.1:43111/web/rolldown-runtime-CEgmsyvS.js",
+      "type": "script"
+    }
+  ],
+  "blocked": [
+    {
+      "phase": "network-control",
+      "url": "https://example.invalid/pica-worker-fetch-control",
+      "type": "fetch"
+    },
+    {
+      "phase": "network-control",
+      "url": "https://example.invalid/pica-worker-import-control",
+      "type": "other"
+    }
+  ],
+  "serverRequests": [
+    {
+      "method": "GET",
+      "path": "/probe.html",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/probe.html",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/web/pica-DGw4b28J.js",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/web/rolldown-runtime-CEgmsyvS.js",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/probe.html",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/web/pica-DGw4b28J.js",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/web/rolldown-runtime-CEgmsyvS.js",
+      "status": 200
+    }
+  ],
+  "cases": [
+    {
+      "label": "js-worker",
+      "status": "PASS",
+      "features": {
+        "js": true,
+        "wasm": false,
+        "cib": false,
+        "ww": true
+      },
+      "width": 64,
+      "height": 32,
+      "samples": [
+        [
+          220,
+          30,
+          40,
+          255
+        ],
+        [
+          20,
+          180,
+          60,
+          255
+        ],
+        [
+          30,
+          50,
+          210,
+          255
+        ],
+        [
+          230,
+          200,
+          20,
+          255
+        ]
+      ],
+      "pixelSha256": "b55f7c8394931baf77db23b5ab2cd0b220ebf967c94fac44de3a689a46411184",
+      "workers": [
+        {
+          "id": 0,
+          "url": "blob:http://127.0.0.1:43111/synthetic-js-worker-0",
+          "posts": [],
+          "messages": [],
+          "errors": [],
+          "terminated": true,
+          "urlKind": "owned-blob"
+        },
+        {
+          "id": 1,
+          "url": "data:text/javascript;base64,KGZ1bmN0aW9uIHdvcmtlclBheWxvYWQoc2VsZikgewoJCQkJCQkJaWYgKHR5cGVvZiBjcmVhdGVJbWFnZUJpdG1hcCA9PT0gInVuZGVmaW5lZCIpIHsKCQkJCQkJCQlzZWxmLnBvc3RNZXNzYWdlKGZhbHNlKTsKCQkJCQkJCQlyZXR1cm47CgkJCQkJCQl9CgkJCQkJCQlQcm9taXNlLnJlc29sdmUoKS50aGVuKGZ1bmN0aW9uKCkgewoJCQkJCQkJCXZhciBjYW52YXMgPSBuZXcgT2Zmc2NyZWVuQ2FudmFzKDEwLCAxMCk7CgkJCQkJCQkJY2FudmFzLmdldENvbnRleHQoIjJkIikucmVjdCgwLCAwLCAxLCAxKTsKCQkJCQkJCQlyZXR1cm4gY3JlYXRlSW1hZ2VCaXRtYXAoY2FudmFzLCAwLCAwLCAxLCAxKTsKCQkJCQkJCX0pLnRoZW4oZnVuY3Rpb24oKSB7CgkJCQkJCQkJcmV0dXJuIHNlbGYucG9zdE1lc3NhZ2UodHJ1ZSk7CgkJCQkJCQl9LCBmdW5jdGlvbigpIHsKCQkJCQkJCQlyZXR1cm4gc2VsZi5wb3N0TWVzc2FnZShmYWxzZSk7CgkJCQkJCQl9KTsKCQkJCQkJfSkoc2VsZik7",
+          "posts": [],
+          "messages": [
+            {
+              "bitmap": false,
+              "support": true
+            }
+          ],
+          "errors": [],
+          "terminated": true,
+          "urlKind": "verified-offscreen-support",
+          "scriptSha256": "0029e1ee27b485038c9283b6390d69aa31807262c4ea9bfa723a790b8ef7a054"
+        },
+        {
+          "id": 2,
+          "url": "blob:http://127.0.0.1:43111/synthetic-js-worker-2",
+          "posts": [
+            {
+              "tile": true,
+              "width": 52,
+              "height": 52,
+              "toWidth": 13,
+              "toHeight": 13
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 52,
+              "toWidth": 16,
+              "toHeight": 13
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 52,
+              "toWidth": 16,
+              "toHeight": 13
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 52,
+              "toWidth": 16,
+              "toHeight": 13
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 52,
+              "toWidth": 16,
+              "toHeight": 13
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 52,
+              "toWidth": 16,
+              "toHeight": 13
+            },
+            {
+              "tile": true,
+              "width": 28,
+              "height": 52,
+              "toWidth": 7,
+              "toHeight": 13
+            },
+            {
+              "tile": true,
+              "width": 52,
+              "height": 64,
+              "toWidth": 13,
+              "toHeight": 16
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 64,
+              "toWidth": 16,
+              "toHeight": 16
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 64,
+              "toWidth": 16,
+              "toHeight": 16
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 64,
+              "toWidth": 16,
+              "toHeight": 16
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 64,
+              "toWidth": 16,
+              "toHeight": 16
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 64,
+              "toWidth": 16,
+              "toHeight": 16
+            },
+            {
+              "tile": true,
+              "width": 28,
+              "height": 64,
+              "toWidth": 7,
+              "toHeight": 16
+            },
+            {
+              "tile": true,
+              "width": 52,
+              "height": 60,
+              "toWidth": 13,
+              "toHeight": 15
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 60,
+              "toWidth": 16,
+              "toHeight": 15
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 60,
+              "toWidth": 16,
+              "toHeight": 15
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 60,
+              "toWidth": 16,
+              "toHeight": 15
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 60,
+              "toWidth": 16,
+              "toHeight": 15
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 60,
+              "toWidth": 16,
+              "toHeight": 15
+            },
+            {
+              "tile": true,
+              "width": 28,
+              "height": 60,
+              "toWidth": 7,
+              "toHeight": 15
+            },
+            {
+              "tile": true,
+              "width": 52,
+              "height": 20,
+              "toWidth": 13,
+              "toHeight": 5
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 20,
+              "toWidth": 16,
+              "toHeight": 5
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 20,
+              "toWidth": 16,
+              "toHeight": 5
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 20,
+              "toWidth": 16,
+              "toHeight": 5
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 20,
+              "toWidth": 16,
+              "toHeight": 5
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 20,
+              "toWidth": 16,
+              "toHeight": 5
+            },
+            {
+              "tile": true,
+              "width": 28,
+              "height": 20,
+              "toWidth": 7,
+              "toHeight": 5
+            }
+          ],
+          "messages": [
+            {
+              "dataLength": 676,
+              "bitmap": false
+            },
+            {
+              "dataLength": 832,
+              "bitmap": false
+            },
+            {
+              "dataLength": 832,
+              "bitmap": false
+            },
+            {
+              "dataLength": 832,
+              "bitmap": false
+            },
+            {
+              "dataLength": 832,
+              "bitmap": false
+            },
+            {
+              "dataLength": 832,
+              "bitmap": false
+            },
+            {
+              "dataLength": 364,
+              "bitmap": false
+            },
+            {
+              "dataLength": 832,
+              "bitmap": false
+            },
+            {
+              "dataLength": 1024,
+              "bitmap": false
+            },
+            {
+              "dataLength": 1024,
+              "bitmap": false
+            },
+            {
+              "dataLength": 1024,
+              "bitmap": false
+            },
+            {
+              "dataLength": 1024,
+              "bitmap": false
+            },
+            {
+              "dataLength": 1024,
+              "bitmap": false
+            },
+            {
+              "dataLength": 448,
+              "bitmap": false
+            },
+            {
+              "dataLength": 780,
+              "bitmap": false
+            },
+            {
+              "dataLength": 960,
+              "bitmap": false
+            },
+            {
+              "dataLength": 960,
+              "bitmap": false
+            },
+            {
+              "dataLength": 960,
+              "bitmap": false
+            },
+            {
+              "dataLength": 960,
+              "bitmap": false
+            },
+            {
+              "dataLength": 960,
+              "bitmap": false
+            },
+            {
+              "dataLength": 420,
+              "bitmap": false
+            },
+            {
+              "dataLength": 260,
+              "bitmap": false
+            },
+            {
+              "dataLength": 320,
+              "bitmap": false
+            },
+            {
+              "dataLength": 320,
+              "bitmap": false
+            },
+            {
+              "dataLength": 320,
+              "bitmap": false
+            },
+            {
+              "dataLength": 320,
+              "bitmap": false
+            },
+            {
+              "dataLength": 320,
+              "bitmap": false
+            },
+            {
+              "dataLength": 140,
+              "bitmap": false
+            }
+          ],
+          "errors": [],
+          "terminated": true,
+          "urlKind": "owned-blob"
+        }
+      ]
+    },
+    {
+      "label": "default-worker",
+      "status": "PASS",
+      "features": {
+        "js": true,
+        "wasm": true,
+        "cib": false,
+        "ww": true
+      },
+      "width": 64,
+      "height": 32,
+      "samples": [
+        [
+          220,
+          30,
+          40,
+          255
+        ],
+        [
+          20,
+          180,
+          60,
+          255
+        ],
+        [
+          30,
+          50,
+          210,
+          255
+        ],
+        [
+          230,
+          200,
+          20,
+          255
+        ]
+      ],
+      "pixelSha256": "b55f7c8394931baf77db23b5ab2cd0b220ebf967c94fac44de3a689a46411184",
+      "workers": [
+        {
+          "id": 0,
+          "url": "blob:http://127.0.0.1:43111/synthetic-default-worker-0",
+          "posts": [],
+          "messages": [],
+          "errors": [],
+          "terminated": true,
+          "urlKind": "owned-blob"
+        },
+        {
+          "id": 1,
+          "url": "data:text/javascript;base64,KGZ1bmN0aW9uIHdvcmtlclBheWxvYWQoc2VsZikgewoJCQkJCQkJaWYgKHR5cGVvZiBjcmVhdGVJbWFnZUJpdG1hcCA9PT0gInVuZGVmaW5lZCIpIHsKCQkJCQkJCQlzZWxmLnBvc3RNZXNzYWdlKGZhbHNlKTsKCQkJCQkJCQlyZXR1cm47CgkJCQkJCQl9CgkJCQkJCQlQcm9taXNlLnJlc29sdmUoKS50aGVuKGZ1bmN0aW9uKCkgewoJCQkJCQkJCXZhciBjYW52YXMgPSBuZXcgT2Zmc2NyZWVuQ2FudmFzKDEwLCAxMCk7CgkJCQkJCQkJY2FudmFzLmdldENvbnRleHQoIjJkIikucmVjdCgwLCAwLCAxLCAxKTsKCQkJCQkJCQlyZXR1cm4gY3JlYXRlSW1hZ2VCaXRtYXAoY2FudmFzLCAwLCAwLCAxLCAxKTsKCQkJCQkJCX0pLnRoZW4oZnVuY3Rpb24oKSB7CgkJCQkJCQkJcmV0dXJuIHNlbGYucG9zdE1lc3NhZ2UodHJ1ZSk7CgkJCQkJCQl9LCBmdW5jdGlvbigpIHsKCQkJCQkJCQlyZXR1cm4gc2VsZi5wb3N0TWVzc2FnZShmYWxzZSk7CgkJCQkJCQl9KTsKCQkJCQkJfSkoc2VsZik7",
+          "posts": [],
+          "messages": [
+            {
+              "bitmap": false,
+              "support": true
+            }
+          ],
+          "errors": [],
+          "terminated": true,
+          "urlKind": "verified-offscreen-support",
+          "scriptSha256": "0029e1ee27b485038c9283b6390d69aa31807262c4ea9bfa723a790b8ef7a054"
+        },
+        {
+          "id": 2,
+          "url": "blob:http://127.0.0.1:43111/synthetic-default-worker-2",
+          "posts": [
+            {
+              "tile": true,
+              "width": 52,
+              "height": 52,
+              "toWidth": 13,
+              "toHeight": 13
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 52,
+              "toWidth": 16,
+              "toHeight": 13
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 52,
+              "toWidth": 16,
+              "toHeight": 13
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 52,
+              "toWidth": 16,
+              "toHeight": 13
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 52,
+              "toWidth": 16,
+              "toHeight": 13
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 52,
+              "toWidth": 16,
+              "toHeight": 13
+            },
+            {
+              "tile": true,
+              "width": 28,
+              "height": 52,
+              "toWidth": 7,
+              "toHeight": 13
+            },
+            {
+              "tile": true,
+              "width": 52,
+              "height": 64,
+              "toWidth": 13,
+              "toHeight": 16
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 64,
+              "toWidth": 16,
+              "toHeight": 16
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 64,
+              "toWidth": 16,
+              "toHeight": 16
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 64,
+              "toWidth": 16,
+              "toHeight": 16
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 64,
+              "toWidth": 16,
+              "toHeight": 16
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 64,
+              "toWidth": 16,
+              "toHeight": 16
+            },
+            {
+              "tile": true,
+              "width": 28,
+              "height": 64,
+              "toWidth": 7,
+              "toHeight": 16
+            },
+            {
+              "tile": true,
+              "width": 52,
+              "height": 60,
+              "toWidth": 13,
+              "toHeight": 15
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 60,
+              "toWidth": 16,
+              "toHeight": 15
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 60,
+              "toWidth": 16,
+              "toHeight": 15
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 60,
+              "toWidth": 16,
+              "toHeight": 15
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 60,
+              "toWidth": 16,
+              "toHeight": 15
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 60,
+              "toWidth": 16,
+              "toHeight": 15
+            },
+            {
+              "tile": true,
+              "width": 28,
+              "height": 60,
+              "toWidth": 7,
+              "toHeight": 15
+            },
+            {
+              "tile": true,
+              "width": 52,
+              "height": 20,
+              "toWidth": 13,
+              "toHeight": 5
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 20,
+              "toWidth": 16,
+              "toHeight": 5
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 20,
+              "toWidth": 16,
+              "toHeight": 5
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 20,
+              "toWidth": 16,
+              "toHeight": 5
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 20,
+              "toWidth": 16,
+              "toHeight": 5
+            },
+            {
+              "tile": true,
+              "width": 64,
+              "height": 20,
+              "toWidth": 16,
+              "toHeight": 5
+            },
+            {
+              "tile": true,
+              "width": 28,
+              "height": 20,
+              "toWidth": 7,
+              "toHeight": 5
+            }
+          ],
+          "messages": [
+            {
+              "dataLength": 676,
+              "bitmap": false
+            },
+            {
+              "dataLength": 832,
+              "bitmap": false
+            },
+            {
+              "dataLength": 832,
+              "bitmap": false
+            },
+            {
+              "dataLength": 832,
+              "bitmap": false
+            },
+            {
+              "dataLength": 832,
+              "bitmap": false
+            },
+            {
+              "dataLength": 832,
+              "bitmap": false
+            },
+            {
+              "dataLength": 364,
+              "bitmap": false
+            },
+            {
+              "dataLength": 832,
+              "bitmap": false
+            },
+            {
+              "dataLength": 1024,
+              "bitmap": false
+            },
+            {
+              "dataLength": 1024,
+              "bitmap": false
+            },
+            {
+              "dataLength": 1024,
+              "bitmap": false
+            },
+            {
+              "dataLength": 1024,
+              "bitmap": false
+            },
+            {
+              "dataLength": 1024,
+              "bitmap": false
+            },
+            {
+              "dataLength": 448,
+              "bitmap": false
+            },
+            {
+              "dataLength": 780,
+              "bitmap": false
+            },
+            {
+              "dataLength": 960,
+              "bitmap": false
+            },
+            {
+              "dataLength": 960,
+              "bitmap": false
+            },
+            {
+              "dataLength": 960,
+              "bitmap": false
+            },
+            {
+              "dataLength": 960,
+              "bitmap": false
+            },
+            {
+              "dataLength": 960,
+              "bitmap": false
+            },
+            {
+              "dataLength": 420,
+              "bitmap": false
+            },
+            {
+              "dataLength": 260,
+              "bitmap": false
+            },
+            {
+              "dataLength": 320,
+              "bitmap": false
+            },
+            {
+              "dataLength": 320,
+              "bitmap": false
+            },
+            {
+              "dataLength": 320,
+              "bitmap": false
+            },
+            {
+              "dataLength": 320,
+              "bitmap": false
+            },
+            {
+              "dataLength": 320,
+              "bitmap": false
+            },
+            {
+              "dataLength": 140,
+              "bitmap": false
+            }
+          ],
+          "errors": [],
+          "terminated": true,
+          "urlKind": "owned-blob"
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "blobs": [
+    {
+      "phase": "js-worker",
+      "file": "js-worker-worker-0.js",
+      "url": "blob:http://127.0.0.1:43111/synthetic-js-worker-0",
+      "bytes": 62814,
+      "sha256": "3c33ca005c333a771413944903fb5bb6a06ea72e60837ee6396163d0f2ca4bb3",
+      "revoked": true,
+      "sourceRewritten": false,
+      "importScriptsMentions": false,
+      "urlLoadingMentions": false
+    },
+    {
+      "phase": "js-worker",
+      "file": "js-worker-worker-1.js",
+      "url": "blob:http://127.0.0.1:43111/synthetic-js-worker-2",
+      "bytes": 31997,
+      "sha256": "379c6ccc11fad0f32801d97b20bfb9f542116cf3b2301b718b48f564e64b69e2",
+      "revoked": true,
+      "sourceRewritten": false,
+      "importScriptsMentions": false,
+      "urlLoadingMentions": false
+    },
+    {
+      "phase": "default-worker",
+      "file": "default-worker-worker-0.js",
+      "url": "blob:http://127.0.0.1:43111/synthetic-default-worker-0",
+      "bytes": 62816,
+      "sha256": "62bcee64dc9a7ceadff9962b637abe188c3d2547aa9c2f85687c17296b741ab9",
+      "revoked": true,
+      "sourceRewritten": false,
+      "importScriptsMentions": false,
+      "urlLoadingMentions": false
+    },
+    {
+      "phase": "default-worker",
+      "file": "default-worker-worker-1.js",
+      "url": "blob:http://127.0.0.1:43111/synthetic-default-worker-2",
+      "bytes": 31997,
+      "sha256": "5272b6e125e11ee58882b64acca5c7c1d7d14b3a9e63b6a4690be1e931d0add4",
+      "revoked": true,
+      "sourceRewritten": false,
+      "importScriptsMentions": false,
+      "urlLoadingMentions": false
+    }
+  ],
+  "cleanup": {
+    "httpListening": false,
+    "browserConnected": false,
+    "browserPidAlive": false
+  },
+  "offscreenSupportScriptSha256": "0029e1ee27b485038c9283b6390d69aa31807262c4ea9bfa723a790b8ef7a054",
+  "origin": "http://127.0.0.1:43111",
+  "browserVersion": "149.0.7827.55",
+  "nodeVersion": "22.22.3",
+  "playwrightVersion": "1.61.1",
+  "networkAuditControl": {
+    "status": "PASS",
+    "fetchBlocked": true,
+    "importBlocked": true
+  },
+  "status": "PASS",
+  "fixtureOnly": true
+}

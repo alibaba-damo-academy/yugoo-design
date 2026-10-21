@@ -1,0 +1,11 @@
+# ref_board fixture validation contract (declarative checks).
+skill: ref_board
+
+rules:
+  - id: link_target_required
+    scope: [state, completion]
+    code: ref_board.empty_link_target
+    message: "link {key} has no target record id"
+    check:
+      for_each_in_map: links
+      non_empty_string: target

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "functions": {
+    "F-001": {
+      "function_id": "F-001",
+      "function_name": "研究资料归档",
+      "function_description": "把文献与笔记保存到同一课题下，方便后续检索。",
+      "function_epic": "文献与知识",
+      "priority": "High",
+      "rejected": false
+    },
+    "F-002": {
+      "function_id": "F-002",
+      "function_name": "研究任务规划",
+      "function_description": "记录下一步研究任务和预期产出。",
+      "function_epic": "课题推进",
+      "priority": "Medium",
+      "rejected": false
+    }
+  }
+}

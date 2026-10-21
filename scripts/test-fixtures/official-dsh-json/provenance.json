@@ -1,0 +1,16 @@
+{
+  "repository": "https://github.com/deepseek-ai/deepseek-harness",
+  "commit": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "license": "MIT",
+  "files": {
+    "packages/core/session/src/json.ts": {
+      "sha256": "cbb271dadd2f476a4d19a2b22ac606db6887ed70367b86d6c13ddf1d102d36ba",
+      "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/cd5ef8148158c3a752a658978873241fdf8e2bbc/packages/core/session/src/json.ts"
+    },
+    "LICENSE": {
+      "sha256": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be",
+      "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/cd5ef8148158c3a752a658978873241fdf8e2bbc/LICENSE"
+    }
+  },
+  "purpose": "Retained offline test and Companion build input containing only the JSON helper and its upstream license; not the DSH host program."
+}

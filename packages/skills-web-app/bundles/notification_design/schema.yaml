@@ -1,0 +1,30 @@
+# Declarative translation of notification_design/schema.py. Pydantic defaults
+# are documented beside optional properties. validation.yaml carries the
+# executable subset of the source collection constraints.
+type: object
+additional_properties: false
+required: [schema_version]
+properties:
+  schema_version: { knowledge: { role: metadata }, type: enum, values: [3] } # default 3
+  notifications:
+    type: map
+    value:
+      type: object
+      additional_properties: false
+      required: [id, title]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        trigger: { type: string } # default ""
+        recipients:
+          type: array
+          items: { type: string }
+        channels:
+          type: array
+          items: { type: string }
+        message: { type: string } # default ""
+        action_target: { type: string } # default ""
+  notification_order:
+    knowledge: { role: metadata }
+    type: array
+    items: { type: string }

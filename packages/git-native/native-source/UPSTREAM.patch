@@ -1,0 +1,162 @@
+--- upstream/Cargo.toml
++++ yugoo/Cargo.toml
+@@ -1,22 +1,22 @@
+ [package]
+ edition = "2024"
+-name = "napi-rs_simple-git"
+-version = "0.0.0"
++name = "yugoo_design_git_native"
++version = "0.1.0-beta.2"
+ 
+ [lib]
+ crate-type = ["cdylib"]
+ 
+ [dependencies]
+ chrono = "0.4"
+-git2 = { version = "0.21", features = ["default", "vendored-libgit2", "vendored-openssl"] }
+-libgit2-sys = { version = "*", features = ["ssh", "https", "vendored", "vendored-openssl"] }
++git2 = { version = "0.21", default-features = false, features = ["vendored-libgit2"] }
++libgit2-sys = { version = "*", default-features = false, features = ["vendored"] }
+ home = "0.5"
+ once_cell = "1"
+ 
+ [dependencies.napi]
+ version = "3.0"
+ default-features = false
+-features = ["async", "chrono_date", "napi6"]
++features = ["async", "chrono_date", "napi6", "dyn-symbols"]
+ 
+ [dependencies.napi-derive]
+ version = "3.0"
+--- upstream/build.rs
++++ yugoo/build.rs
+@@ -1,8 +1,12 @@
+ extern crate napi_build;
+ 
+ fn main() {
+-  napi_build::setup();
+   let compile_target = std::env::var("TARGET").unwrap();
++  // This fork resolves Node-API dynamically from the running host. GNU builds
++  // therefore do not link a separately deployed libnode.dll.
++  if compile_target != "x86_64-pc-windows-gnu" {
++    napi_build::setup();
++  }
+   match compile_target.as_str() {
+     "x86_64-unknown-linux-gnu" => {
+       println!("cargo:rustc-link-search=/usr/lib");
+--- upstream/src/repo.rs
++++ yugoo/src/repo.rs
+@@ -6,7 +6,6 @@
+ use chrono::{DateTime, Utc};
+ use napi::{JsString, bindgen_prelude::*};
+ use napi_derive::napi;
+-use once_cell::sync::Lazy;
+ 
+ use crate::blame::{BlameHunk, BlameOptions, blame_single_line, collect_blame};
+ use crate::blob::{Blob, BlobParent};
+@@ -33,28 +32,11 @@
+ use crate::util::path_to_javascript_string;
+ use crate::{CodeInto, GitErrorCode, Result, coded_error, disposed_error, ensure_alive};
+ 
+-static INIT_GIT_CONFIG: Lazy<Result<()>> = Lazy::new(|| {
+-  // Handle the `failed to stat '/root/.gitconfig'; class=Config (7)` Error
+-  #[cfg(all(
+-    target_os = "linux",
+-    target_env = "gnu",
+-    any(target_arch = "x86_64", target_arch = "aarch64")
+-  ))]
+-  {
+-    if git2::Config::find_global().is_err()
+-      && let Some(mut git_config_dir) = dirs::home_dir()
+-    {
+-      git_config_dir.push(".gitconfig");
+-      std::fs::write(&git_config_dir, "").map_err(|err| {
+-        Error::new(
+-          GitErrorCode::GenericError,
+-          format!("Initialize {git_config_dir:?} failed {err}"),
+-        )
+-      })?;
+-    }
+-  }
+-  Ok(())
+-});
++#[napi(object)]
++pub struct ObjectHeader {
++  pub kind: String,
++  pub size: i64,
++}
+ 
+ #[napi]
+ pub enum RepositoryState {
+@@ -737,9 +719,6 @@
+ 
+   #[napi(factory)]
+   pub fn init(p: String) -> Result<Repository> {
+-    INIT_GIT_CONFIG
+-      .as_ref()
+-      .map_err(|err| Error::new(err.status, err.reason.clone()))?;
+     Ok(Self {
+       inner: Some(git2::Repository::init(&p).convert("Failed to init git repo")?),
+       open_flags: None,
+@@ -779,9 +758,6 @@
+   /// `ceilingDirs` is a list of absolute paths at which the upward search stops
+   /// (ignored when `RepositoryOpenFlags.FromEnv` is set).
+   pub fn open_ext(path: String, flags: u32, ceiling_dirs: Vec<String>) -> Result<Repository> {
+-    INIT_GIT_CONFIG
+-      .as_ref()
+-      .map_err(|err| Error::new(err.status, err.reason.clone()))?;
+     Ok(Self {
+       inner: Some(
+         git2::Repository::open_ext(
+@@ -802,9 +778,6 @@
+   /// This starts at `path` and looks up the filesystem hierarchy
+   /// until it finds a repository.
+   pub fn discover(path: String) -> Result<Repository> {
+-    INIT_GIT_CONFIG
+-      .as_ref()
+-      .map_err(|err| Error::new(err.status, err.reason.clone()))?;
+     Ok(Self {
+       inner: Some(
+         git2::Repository::discover(&path)
+@@ -884,9 +857,6 @@
+   ///
+   /// The path can point to either a normal or bare repository.
+   pub fn new(git_dir: String) -> Result<Self> {
+-    INIT_GIT_CONFIG
+-      .as_ref()
+-      .map_err(|err| Error::new(err.status, err.reason.clone()))?;
+     Ok(Self {
+       inner: Some(git2::Repository::open(&git_dir).convert("Failed to open git repo")?),
+       open_flags: None,
+@@ -2068,6 +2038,31 @@
+   }
+ 
+   #[napi]
++  /// Read an immutable object's type and size through the ODB header API.
++  /// No JavaScript blob/content buffer is created. Missing objects return null.
++  pub fn read_object_header(&self, oid: String) -> Result<Option<ObjectHeader>> {
++    let oid = git2::Oid::from_str(&oid).convert("Invalid object OID")?;
++    let odb = self.inner()?.odb().convert_without_message()?;
++    match odb.read_header(oid) {
++      Ok((size, kind)) => {
++        if size > 9_007_199_254_740_991 {
++          return Err(Error::new(GitErrorCode::InvalidArg, "Object size exceeds JavaScript safe integer".to_string()));
++        }
++        let kind = match kind {
++          git2::ObjectType::Blob => "blob",
++          git2::ObjectType::Tree => "tree",
++          git2::ObjectType::Commit => "commit",
++          git2::ObjectType::Tag => "tag",
++          _ => return Err(Error::new(GitErrorCode::InvalidArg, "Unsupported object type".to_string())),
++        };
++        Ok(Some(ObjectHeader { kind: kind.to_owned(), size: size as i64 }))
++      }
++      Err(error) if error.code() == git2::ErrorCode::NotFound => Ok(None),
++      Err(error) => Err(error).convert_without_message(),
++    }
++  }
++
++  #[napi]
+   /// Look up a blob in the repository's object database by its OID hex
+   /// string. Throws if the OID is malformed or no such blob exists.
+   pub fn find_blob(

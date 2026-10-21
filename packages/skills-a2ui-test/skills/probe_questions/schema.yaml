@@ -1,0 +1,42 @@
+type: "object"
+additional_properties: false
+required:
+  - "schema_version"
+  - "questions"
+properties:
+  schema_version:
+    type: "enum"
+    values: [1]
+    knowledge:
+      role: "metadata"
+  questions:
+    type: "map"
+    value:
+      type: "object"
+      additional_properties: false
+      required:
+        - "prompt"
+        - "answer"
+      properties:
+        prompt:
+          type: "string"
+        answer:
+          type: "string"
+        detail:
+          type: "string"
+        kind:
+          type: "enum"
+          values: ["text", "single"]
+        choices:
+          type: "array"
+          items:
+            type: "object"
+            additional_properties: false
+            required: ["value", "label"]
+            properties:
+              value:
+                type: "string"
+              label:
+                type: "string"
+              recommended:
+                type: "boolean"

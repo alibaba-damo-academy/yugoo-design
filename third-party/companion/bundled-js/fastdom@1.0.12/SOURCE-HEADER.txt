@@ -1,0 +1,10 @@
+/**
+ * FastDom
+ *
+ * Eliminates layout thrashing
+ * by batching DOM read/write
+ * interactions.
+ *
+ * @author Wilson Page <wilsonpage@me.com>
+ * @author Kornel Lesinski <kornel.lesinski@ft.com>
+ */

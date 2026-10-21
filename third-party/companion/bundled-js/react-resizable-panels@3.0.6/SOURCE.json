@@ -1,0 +1,13 @@
+{
+  "name": "react-resizable-panels",
+  "version": "3.0.6",
+  "metadataUrl": "https://registry.npmjs.org/react-resizable-panels/3.0.6",
+  "repository": "bvaughn/react-resizable-panels",
+  "commit": "43a071df6bb96d54e8b81a6be0e2d453af45cc4b",
+  "tag": null,
+  "licenseUrl": "https://raw.githubusercontent.com/bvaughn/react-resizable-panels/43a071df6bb96d54e8b81a6be0e2d453af45cc4b/LICENSE",
+  "licenseSha256": "8b21167f99f3c016b39473b2984ceb03b54bf796dd9a7c74fcb80cfd513fe8a8",
+  "emittedMembers": [
+    "package/payload/shared/web/client.js"
+  ]
+}

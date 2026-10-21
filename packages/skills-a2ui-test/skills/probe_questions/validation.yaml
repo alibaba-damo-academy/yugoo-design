@@ -1,0 +1,8 @@
+skill: "probe_questions"
+rules:
+  - id: "questions_present"
+    scope: ["completion"]
+    code: "probe_questions.empty"
+    message: "请先保存至少一个与当前测试场景有关的问题。"
+    check:
+      non_empty_map: "questions"

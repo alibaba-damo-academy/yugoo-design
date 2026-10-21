@@ -1,0 +1,8 @@
+skill: "probe_report"
+rules:
+  - id: "report_title"
+    scope: ["completion"]
+    code: "probe_report.title_required"
+    message: "请先提供报告标题。"
+    check:
+      non_empty_string: "report.title"

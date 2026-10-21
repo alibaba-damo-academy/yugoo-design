@@ -1,0 +1,187 @@
+/**
+ * Tailwind entry for the ported design panels. Built ahead of tsdown by
+ * `pnpm run build:css` into src/client/generated/design.tw.css, which the
+ * client bundle imports as text and injects through a <style> tag (the same
+ * path the bpmn-js stylesheets take).
+ *
+ * Isolation contract with the dsh host page:
+ * - CSS custom properties live on `.dsh-design-root` (never `:root`), so the
+ *   host theme is untouched. Radix portals must render inside a
+ *   `.dsh-design-root` wrapper to inherit them.
+ * - Preflight is disabled in tailwind.config.cjs; the minimal box/border base
+ *   the shadcn components rely on is re-declared scoped below.
+ * - Utility classes are global (the host styles are hashed CSS modules, so
+ *   names do not collide).
+ */
+
+@import './token.css';
+/* Preflight is disabled in tailwind.config.cjs, so this emits no global
+   reset; it only opens the base layer for the scoped variables below. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  .dsh-design-root {
+    /* Light theme variables, ported verbatim from extend-design-skill
+       src/styles/index.css @layer base `:root`. */
+    --font-main: var(--ds-font-main);
+    --font-code: var(--ds-font-code);
+    --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+
+    --background: 0 0% 100%; /* --ds-static-white #FFFFFF */
+    --foreground: 0 0% 15.3%; /* --ds-text-primary #272727 */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 15.3%;
+    --primary: 253.1 89.7% 65.9%; /* --ds-brand-6 #7C5AF6 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 96.9%; /* --ds-bg-gary-default #F7F7F7 */
+    --secondary-foreground: 0 0% 15.3%;
+    --muted: 0 0% 95.3%; /* --ds-bg-component #F3F3F3 */
+    --muted-foreground: 0 0% 42.7%; /* --ds-text-tertiary #6D6D6D */
+    --accent: 0 0% 96.9%;
+    --accent-foreground: 0 0% 15.3%;
+    --destructive: 1 62% 57.6%; /* --ds-error-bg-default #D65350 */
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 87.5%; /* --ds-border-default #DFDFDF */
+
+    --success: 145.8 72.2% 35.3%;
+    --success-bg: 144 100% 98%;
+    --warning: 28 96.1% 40%;
+    --warning-bg: 24 100% 98%;
+    --warning-border: 31 100% 89.2%;
+    --warning-text: 30 100% 32.2%;
+    --warning-accent: 28 96.1% 40%;
+    --error: 1 62% 57.6%;
+    --error-bg: 5 100% 97.8%;
+    --error-border: 0 100% 92.5%;
+    --info: 210 55.6% 47.6%;
+    --input: 0 0% 100%;
+    --ring: 253.1 89.7% 65.9%;
+    --disabled: 0 0% 91%;
+    --disabled-foreground: 0 0% 71%;
+
+    --hover: 0 0% 96.9%;
+    --focus: 253.1 89.7% 65.9%;
+    --active: 0 0% 94.5%;
+    --selection: 251.5 100% 94.9%;
+    --overlay: 0 0% 0% / 0.5;
+    --skeleton: 0 0% 91%;
+    --primary-bg-hover: 251.5 100% 94.9%;
+    --primary-bg-light: 258 83.3% 97.6%;
+    --surface-hover: 0 0% 96.9%;
+
+    --radius: var(--ds-radius-4);
+    --button-radius: var(--ds-radius-4);
+    --input-radius: var(--ds-radius-4);
+    --shadow-sm: var(--ds-shadow-1-center);
+    --shadow-md: var(--ds-shadow-2-center);
+    --shadow-lg: var(--ds-shadow-3-center);
+
+    --text-primary: 0 0% 15.3%;
+    --text-secondary: 0 0% 29.8%;
+    --text-muted: 0 0% 42.7%;
+    --text-link: 210 55.6% 47.6%;
+
+    --surface: 0 0% 94.5%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 15.3%;
+    --tooltip: 0 0% 20%;
+    --tooltip-foreground: 0 0% 100%;
+    --chart-primary: 253.1 89.7% 65.9%;
+    --chart-secondary: 210 55.6% 47.6%;
+    --status-active: 253.1 89.7% 65.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+
+    --radius-sm: var(--ds-radius-2);
+    --radius-md: var(--ds-radius-4);
+    --spacing-xs: var(--ds-space-1);
+    --spacing-sm: var(--ds-space-2);
+    --spacing-md: var(--ds-space-3);
+    --spacing-lg: var(--ds-space-4);
+    --spacing-xl: var(--ds-space-6);
+
+    color: hsl(var(--foreground));
+    font-family: var(--font-main);
+    font-size: var(--ds-font-body-lv2);
+    line-height: 1.5;
+  }
+
+  /* Scoped preflight subset: the box/border base the shadcn components rely
+     on (Tailwind preflight is disabled so the host page stays untouched). */
+  /* Base defaults must not override component borders when a host or nested
+     panel injects this stylesheet after the component stylesheet. */
+  :where(.dsh-design-root,
+    .dsh-design-root *,
+    .dsh-design-root *::before,
+    .dsh-design-root *::after) {
+    box-sizing: border-box;
+    border-width: 0;
+    border-style: solid;
+    border-color: hsl(var(--border));
+  }
+
+  /* :where() keeps these element resets at zero specificity so component and
+     Tailwind utility rules (e.g. tab .px-3/.px-5 padding) win over them. */
+  :where(.dsh-design-root button) {
+    background-color: transparent;
+    background-image: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    color: inherit;
+    margin: 0;
+    padding: 0;
+  }
+
+  :where(.dsh-design-root input, .dsh-design-root textarea, .dsh-design-root select) {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    color: inherit;
+    margin: 0;
+  }
+
+  :where(.dsh-design-root h1, .dsh-design-root h2, .dsh-design-root h3, .dsh-design-root h4, .dsh-design-root p, .dsh-design-root ul, .dsh-design-root ol) {
+    margin: 0;
+  }
+
+  .dsh-design-root :where(
+    button,
+    [role='button'],
+    [role='tab'],
+    a[href],
+    input,
+    textarea,
+    select,
+    [tabindex]:not([tabindex='-1'])
+  ):focus-visible {
+    outline: none;
+    outline-offset: 0;
+  }
+}
+
+/* 设计 tab「new」在屏更新提示：短暂出现后淡出，不留角标（原 index.css）。 */
+@keyframes ds-flash-out {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}

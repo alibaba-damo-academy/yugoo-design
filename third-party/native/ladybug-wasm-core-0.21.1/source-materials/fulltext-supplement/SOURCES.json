@@ -1,0 +1,70 @@
+{
+  "scope": "Exact upstream release license supplements to the preserved Ladybug vendored-source notices; not binary licensing closure",
+  "materials": [
+    {
+      "path": "cpp-httplib-0.14.2.LICENSE",
+      "repository": "https://github.com/yhirose/cpp-httplib",
+      "sourceTag": "v0.14.2",
+      "tagResolvedCommit": "f14accb7b6ff4499321e14c61497bc7e4b28e49b",
+      "sourceUrl": "https://raw.githubusercontent.com/yhirose/cpp-httplib/f14accb7b6ff4499321e14c61497bc7e4b28e49b/LICENSE",
+      "bytes": 1075,
+      "sha256": "4b45cbe16d7b71b89ae6127e26e0d90a029198ca5e958ad8e3d0b8bbed364d8b",
+      "unalteredOriginalLicense": true
+    },
+    {
+      "path": "CRoaring-4.5.1.LICENSE",
+      "repository": "https://github.com/RoaringBitmap/CRoaring",
+      "sourceTag": "v4.5.1",
+      "tagResolvedCommit": "025ae3f7add169bc820dcfd46fa9304f382ec40a",
+      "sourceUrl": "https://raw.githubusercontent.com/RoaringBitmap/CRoaring/025ae3f7add169bc820dcfd46fa9304f382ec40a/LICENSE",
+      "bytes": 12609,
+      "sha256": "f8e1f16a3f22e001b44ae9b12625420b9a0c4dbb7ec0e9f83b6a3d38a9525411",
+      "unalteredOriginalLicense": true
+    }
+  ],
+  "sourceRelationship": {
+    "coreCommit": "17a70e51c31b50d30231da32154d9ff4bef0d95f",
+    "cppHttplib": {
+      "vendoredPath": "third_party/httplib/httplib.h",
+      "declaredVersion": "0.14.2",
+      "vendorHeaderSha256": "0ee34d727ac5d751091abaf8ac92ba01eeb95d5979402427b5161b7fc14fd71e",
+      "upstreamHeaderSha256": "646136e93fdec176cc9576b89cf0164eb7ed95d55277747454c4373a26b48349",
+      "vendorHeaderMatchesUpstreamWholeFile": false,
+      "originalVendorNotice": "../header-notices/httpfs-httplib.NOTICE.txt",
+      "limit": "Vendored source is modified; original 2023 Yuji Hirose header and upstream license 2017 yhirose copyright are both retained. No copyright substitution or whole-file identity claim."
+    },
+    "cRoaring": {
+      "vendoredPath": "third_party/roaring_bitmap/roaring.h",
+      "declaredVersion": "4.5.1",
+      "originalVendorNotice": "../header-notices/roaring_bitmap.NOTICE.txt",
+      "limit": "Version comes from the vendored amalgamated header. Both Apache/MIT alternatives are preserved in the upstream LICENSE; no alternative selected and no whole-source equality established."
+    }
+  },
+  "originalWorkflowObservation": {
+    "runUrl": "https://github.com/LadybugDB/ladybug/actions/runs/36647903773",
+    "jobId": 109695441920,
+    "jobName": "build-and-test-wasm / build-and-test-wasm",
+    "jobConclusion": "success",
+    "verifyEmscriptenStepConclusion": "success",
+    "jobLogsApi": "https://api.github.com/repos/LadybugDB/ladybug/actions/jobs/109695441920/logs",
+    "unauthenticatedLogFetchResult": "HTTP403 on2026-10-03",
+    "exactToolchainVersionObtained": false,
+    "limit": "A successful Verify Emscripten step does not reveal which version ran; emsdk latest is not a version pin."
+  },
+  "requiredUpstreamInputs": [
+    {
+      "gap": "ANTLR Cypher grammar/generated-code licensing",
+      "requestedInput": "Identify original grammar source commit and copyright/license for core src/antlr4/Cypher.g4 and third_party/antlr4_cypher generated code, including any required notices; generated ANTLR4.13.1 marker and runtime LICENSE do not license the grammar."
+    },
+    {
+      "gap": "Exact Emscripten toolchain/runtime correspondence",
+      "requestedInput": "Provide Setup/Verify Emscripten output or build record from run36647903773 job109695441920, including exact emsdk/Emscripten/LLVM runtime revisions and their original license/notice materials; latest at present time is not acceptable."
+    },
+    {
+      "gap": "Complete compiled-in inventory and source correspondence",
+      "requestedInput": "Provide the package build manifest/link map or equivalent recorded inventory for wasm-core0.21.1, including header-only libraries, static httpfs dependencies and runtime components; source CMake targets and npm JS dependency names are not an exhaustive binary inventory."
+    }
+  ],
+  "cryptographicProvenanceVerified": false,
+  "completeBinaryInventoryVerified": false
+}

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "questions": {
+    "main_conflict": {
+      "prompt": "团队安排会议时，最常遇到的冲突是什么？",
+      "kind": "text",
+      "answer": "",
+      "detail": "虚构测试情境；等待用户回答。"
+    },
+    "first_view": {
+      "prompt": "第一版更需要哪种查看方式？",
+      "kind": "single",
+      "choices": [
+        { "value": "calendar", "label": "按日历查看", "recommended": true },
+        { "value": "list", "label": "按列表查看" }
+      ],
+      "answer": ""
+    }
+  }
+}

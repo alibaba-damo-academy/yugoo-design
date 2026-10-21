@@ -1,0 +1,18 @@
+type: object
+additional_properties: false
+required: [schema_version, hazards]
+properties:
+  schema_version: {type: enum, values: [1], knowledge: {role: metadata}}
+  hazards:
+    type: map
+    value:
+      type: object
+      additional_properties: false
+      required: [id, label, scenario, response, certainty, evidence_note]
+      properties:
+        id: {type: string}
+        label: {type: string}
+        scenario: {type: string}
+        response: {type: string}
+        certainty: {type: enum, values: [observed, proposed, unknown]}
+        evidence_note: {type: string}

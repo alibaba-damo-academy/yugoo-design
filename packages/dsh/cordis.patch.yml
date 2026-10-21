@@ -1,0 +1,56 @@
+- insert:
+    - id: dsh-design-core
+      name: dsh-design-core
+    - id: dsh-design-knowledge
+      name: dsh-design-knowledge-ladybug/dsh
+      config:
+        writerAttempts: 16
+        writerRetryMs: 5
+        projectLockRetries: 8
+        projectLockMinTimeoutMs: 25
+        projectLockStaleMs: 10000
+        maxQueryLimit: 1000
+        maxFilterValues: 64
+        maxTextBytes: 16384
+        maxImpactDepth: 8
+        maxImpactSeeds: 128
+        maxArchiveRecords: 100000
+    - id: dsh-design-provider-web-app
+      name: dsh-design-provider-web-app
+    - id: dsh-design-kit-web-app
+      name: dsh-design-core/kit-loader
+      config:
+        packageName: dsh-design-skills-web-app
+        discoveryRoots: []
+    - id: dsh-design-advisory-scheduler
+      name: dsh-design-core/advisory-scheduler
+      config:
+        provider: spawn
+        debounceMs: 30000
+        maxSuggestions: 5
+    - id: dsh-design-execution
+      name: dsh-design-core/execution
+      config:
+        producerMaxTokens: 16384
+        producerMaxDepth: 4
+        delegation:
+          provider: dsh-design-file-worker
+          maxDepth: 4
+          maxTokens: 32768
+          maxConcurrency: 4
+        maxArtifactInputFiles: 64
+        maxArtifactInputPathBytes: 512
+        maxArtifactInputFileBytes: 262144
+        maxArtifactInputTotalBytes: 2097152
+    - id: dsh-design-panel-remote
+      name: dsh-design-core/panel-remote
+      config:
+        maxBinaryArtifactBytes: 26214400
+    - id: dsh-design-panel
+      name: dsh-design-panel
+    - id: dsh-design-studio
+      name: dsh-design-studio-dsh
+      config:
+        followInstalledSources: true
+    - id: dsh-design-studio-page
+      name: dsh-design-studio-dsh/studio-page

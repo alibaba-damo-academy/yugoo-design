@@ -1,0 +1,660 @@
+version: 1
+panel_kind: evidence_workbook
+i18n:
+  default_locale: zh-CN
+  locales:
+    zh-CN: locales/zh-CN.json
+    en-US: locales/en-US.json
+initial_values:
+  schema_version: 1
+empty_description: $t:empty
+sections:
+  - id: skills
+    title: $t:skillRoot
+    item_name: $t:skillRoot
+    confirm_delete: true
+    create:
+      id_field: id
+      defaults:
+        name: ""
+      initial_label:
+        field: name
+        text: $t:newskillRoot
+    form:
+      reorder: false
+      header:
+        variant: detail
+        title:
+          field: name
+          editable: true
+      body:
+        - kind: field
+          field: purpose
+        - kind: field
+          field: activation
+        - kind: field
+          field: body
+        - kind: field
+          field: source
+        - kind: group
+          title: $t:resourceFiles
+          collapsible: true
+          items:
+            - kind: field
+              field: resources
+              label: visually_hidden
+        - kind: field
+          field: notes
+  - id: tools
+    title: $t:toolRoot
+    item_name: $t:toolRoot
+    confirm_delete: true
+    create:
+      id_field: id
+      defaults:
+        name: ""
+      initial_label:
+        field: name
+        text: $t:newtoolRoot
+    form:
+      reorder: false
+      header:
+        variant: detail
+        title:
+          field: name
+          editable: true
+      body:
+        - kind: field
+          field: purpose
+        - kind: group
+          title: $t:authority
+          collapsible: true
+          items:
+            - kind: field
+              field: scope
+            - kind: field
+              field: approval
+            - kind: field
+              field: failure
+        - kind: group
+          title: $t:connectionDetails
+          collapsible: true
+          items:
+            - kind: field
+              field: tool_kind
+            - kind: field
+              field: source
+            - kind: field
+              field: interface
+            - kind: field
+              field: config_json
+        - kind: field
+          field: notes
+  - id: model_sources
+    title: $t:modelSourceRoot
+    item_name: $t:modelSourceRoot
+    confirm_delete: true
+    create:
+      id_field: id
+      defaults: {name: ""}
+      initial_label: {field: name, text: '$t:newModelSource'}
+    form:
+      reorder: false
+      header:
+        variant: detail
+        title: {field: name, editable: true}
+      body:
+        - kind: field
+          field: model_connection
+        - kind: field
+          field: integration_ref
+        - kind: group
+          title: $t:resourceDescription
+          items:
+            - kind: field
+              field: description
+              label: visually_hidden
+        - kind: field
+          field: notes
+  - id: knowledge_resources
+    title: $t:knowledgeResourceRoot
+    item_name: $t:knowledgeResourceRoot
+    confirm_delete: true
+    create:
+      id_field: id
+      defaults: {name: "", kind: knowledge_base}
+      initial_label: {field: name, text: '$t:newKnowledgeResource'}
+    form:
+      reorder: false
+      header:
+        variant: detail
+        title: {field: name, editable: true}
+      body:
+        - kind: field
+          field: kind
+        - kind: field
+          field: description
+        - kind: field
+          field: source_and_maintenance
+        - kind: field
+          field: formation_and_update
+        - kind: field
+          field: user_management
+        - kind: field
+          field: access_scope
+        - kind: field
+          field: notes
+  - id: agents
+    title: $t:agentRoot
+    item_name: $t:agentKind
+    confirm_delete: true
+    create:
+      id_field: id
+      defaults:
+        name: ""
+        description: ""
+      initial_label:
+        field: name
+        text: $t:newAgent
+        numbered_text: $t:numberedAgent
+    form:
+      reorder: false
+      header:
+        variant: detail
+        title:
+          field: name
+          editable: true
+      body:
+        - kind: tabs
+          id: agent-design
+          title: $t:agentDesign
+          tabs:
+            - id: experience
+              title: $t:experienceTab
+              items:
+                - kind: field
+                  field: description
+                - kind: field
+                  field: entries
+                - kind: group
+                  title: $t:contextGroup
+                  collapsible: true
+                  items:
+                    - kind: field
+                      field: knowledge_resource_refs
+                    - kind: field
+                      field: context
+                    - kind: field
+                      field: memory_retention
+            - id: instructions
+              title: $t:instructionsTab
+              items:
+                - kind: field
+                  field: system_prompt
+                - kind: field
+                  field: skill_refs
+                - kind: field
+                  field: tool_refs
+            - id: behavior
+              title: $t:behaviorTab
+              items:
+                - kind: field
+                  field: actions
+                - kind: field
+                  field: exceptions
+                - kind: field
+                  field: notes
+            - id: collaboration
+              title: $t:collaboration
+              items:
+                - kind: field
+                  field: collaborations
+            - id: model-connection
+              title: $t:modelConnectionTab
+              items:
+                - kind: field
+                  field: model_source_ref
+                - kind: field
+                  field: model_selection
+                - kind: group
+                  title: $t:legacyConnectionGroup
+                  collapsible: true
+                  items:
+                    - kind: field
+                      field: model_connection
+                    - kind: field
+                      field: integration_ref
+                    - kind: field
+                      field: model_service
+fields:
+  - key: model_source_ref
+    label: $t:modelSourceRef
+    description: $t:modelSourceHelp
+    control: record_select
+    applies_to: [agents]
+    options_from_section: model_sources
+  - key: model_selection
+    label: $t:modelSelection
+    description: $t:modelSelectionHelp
+    control: text
+    applies_to: [agents]
+  - key: knowledge_resource_refs
+    label: $t:knowledgeResourceRefs
+    description: $t:knowledgeResourceHelp
+    control: record_multi_select
+    applies_to: [agents]
+    options_from_section: knowledge_resources
+  - key: kind
+    label: $t:knowledgeKind
+    control: radio
+    choice_layout: row_wrap
+    applies_to: [knowledge_resources]
+    required: true
+    options:
+      - {value: knowledge_base, label: '$t:knowledgeBase'}
+      - {value: long_term_memory, label: '$t:longTermMemory'}
+  - key: name
+    label: $t:name
+    control: text
+    applies_to:
+      - skills
+      - tools
+      - agents
+      - model_sources
+      - knowledge_resources
+    required: true
+  - key: description
+    label: $t:description
+    label_when:
+      - {field: kind, in: [knowledge_base], label: '$t:knowledgeContent'}
+      - {field: kind, in: [long_term_memory], label: '$t:memoryContent'}
+    control: textarea
+    applies_to: [agents, model_sources, knowledge_resources]
+    required_in: [agents]
+  - key: source_and_maintenance
+    label: $t:knowledgeSourceMaintenance
+    description: $t:knowledgeSourceMaintenanceHelp
+    control: textarea
+    applies_to: [knowledge_resources]
+    visible_when: {field: kind, in: [knowledge_base]}
+  - key: formation_and_update
+    label: $t:memoryFormationUpdate
+    description: $t:memoryFormationUpdateHelp
+    control: textarea
+    applies_to: [knowledge_resources]
+    visible_when: {field: kind, in: [long_term_memory]}
+  - key: user_management
+    label: $t:memoryUserManagement
+    description: $t:memoryUserManagementHelp
+    control: textarea
+    applies_to: [knowledge_resources]
+    visible_when: {field: kind, in: [long_term_memory]}
+  - key: access_scope
+    label: $t:knowledgeAccessScope
+    control: textarea
+    placeholder: $t:knowledgeAccessScopePlaceholder
+    applies_to: [knowledge_resources]
+  - key: entries
+    label: $t:entries
+    control: record_map
+    applies_to:
+      - agents
+    row_name: $t:entry
+    item_collapsible: true
+    item_fields:
+      - key: name
+        label: $t:entryName
+        control: text
+        required: true
+      - key: trigger
+        label: $t:trigger
+        control: radio
+        choice_layout: row_wrap
+        options:
+          - value: conversation
+            label: $t:conversation
+          - value: action
+            label: $t:action
+          - value: background
+            label: $t:background
+      - key: location
+        label: $t:location
+        control: text
+        label_when:
+          - {field: trigger, in: [conversation], label: '$t:conversationLocation'}
+          - {field: trigger, in: [action], label: '$t:actionLocation'}
+          - {field: trigger, in: [background], label: '$t:backgroundCondition'}
+      - key: input_modes
+        label: $t:inputModes
+        control: token_list
+        visible_when: {field: trigger, in: [conversation, action]}
+        label_when:
+          - {field: trigger, in: [conversation], label: '$t:conversationInputs'}
+          - {field: trigger, in: [action], label: '$t:actionInputs'}
+        token_layout: cards
+        token_add_mode: menu
+        options:
+          - value: text
+            label: $t:textInput
+          - value: files
+            label: $t:files
+          - value: voice
+            label: $t:voice
+          - value: vision
+            label: $t:vision
+          - value: selection
+            label: $t:selection
+      - key: auto_context
+        label: $t:autoContext
+        control: textarea
+        placeholder: $t:autoContextPlaceholder
+      - key: feedback
+        label: $t:feedback
+        control: textarea
+    item_label_field: name
+    item_defaults:
+      name: ""
+      trigger: conversation
+    description: $t:entryHelp
+  - key: system_prompt
+    label: $t:systemPrompt
+    control: textarea
+    textarea_rows: 8
+    applies_to:
+      - agents
+    description: $t:promptHelp
+  - key: context
+    label: $t:context
+    control: textarea
+    applies_to:
+      - agents
+    description: $t:knowledgeHelp
+  - key: memory_retention
+    label: $t:memoryRetention
+    control: textarea
+    applies_to:
+      - agents
+    description: $t:memoryHelp
+  - key: actions
+    label: $t:actions
+    control: record_map
+    applies_to:
+      - agents
+    columns:
+      - key: action
+        label: $t:actionName
+        control: textarea
+      - key: condition
+        label: $t:actionCondition
+        control: textarea
+      - key: result
+        label: $t:actionResult
+        control: textarea
+  - key: notes
+    label: $t:notes
+    control: textarea
+    applies_to:
+      - skills
+      - tools
+      - agents
+      - model_sources
+      - knowledge_resources
+  - key: purpose
+    label: $t:purpose
+    control: textarea
+    placeholder: $t:capabilityPlaceholder
+    applies_to:
+      - skills
+      - tools
+  - key: activation
+    label: $t:activation
+    control: textarea
+    applies_to:
+      - skills
+  - key: body
+    label: $t:skillBody
+    control: textarea
+    textarea_rows: 12
+    applies_to:
+      - skills
+  - key: source
+    label: $t:source
+    control: text
+    placeholder: $t:sourcePlaceholder
+    applies_to:
+      - skills
+      - tools
+  - key: resources
+    label: $t:resourceFiles
+    description: $t:resourceFilesHelp
+    control: list
+    applies_to:
+      - skills
+  - key: scope
+    label: $t:scope
+    control: textarea
+    applies_to:
+      - tools
+  - key: config_json
+    label: $t:configJson
+    control: textarea
+    textarea_rows: 10
+    description: $t:configHelp
+    applies_to:
+      - tools
+    visible_when:
+      field: tool_kind
+      in:
+        - mcp
+  - key: approval
+    label: $t:approval
+    control: textarea
+    applies_to:
+      - tools
+  - key: failure
+    label: $t:failure
+    control: textarea
+    applies_to:
+      - tools
+  - key: tool_kind
+    label: $t:toolKind
+    control: radio
+    choice_layout: row_wrap
+    applies_to:
+      - tools
+    options:
+      - value: function
+        label: $t:functionTool
+      - value: mcp
+        label: MCP
+  - key: interface
+    label: $t:toolInterface
+    control: textarea
+    textarea_rows: 8
+    applies_to:
+      - tools
+    visible_when:
+      field: tool_kind
+      in:
+        - function
+  - key: skill_refs
+    label: $t:skillRefs
+    control: record_multi_select
+    applies_to:
+      - agents
+    options_from_section: skills
+  - key: tool_refs
+    label: $t:toolRefs
+    control: record_multi_select
+    applies_to:
+      - agents
+    options_from_section: tools
+  - key: delegate_refs
+    label: $t:delegateRefs
+    control: record_multi_select
+    applies_to:
+      - agents
+    options_from_section: agents
+    hidden: true
+  - key: external_delegation
+    label: $t:externalDelegation
+    control: textarea
+    hidden: true
+    applies_to:
+      - agents
+  - key: exceptions
+    label: $t:failureHandling
+    control: record_map
+    applies_to:
+      - agents
+    columns:
+      - key: condition
+        label: $t:exceptionCondition
+        control: textarea
+      - key: handling
+        label: $t:exceptionHandling
+        control: textarea
+  - key: collaborations
+    label: $t:collaboration
+    control: record_map
+    applies_to:
+      - agents
+    row_name: $t:collaborator
+    item_collapsible: true
+    item_fields:
+      - key: agent_ref
+        label: $t:localCollaborator
+        description: $t:collaboratorHelp
+        control: record_select
+        options_from_section: agents
+      - key: external_target
+        label: $t:externalCollaborator
+        control: text
+        visible_when: {field: agent_ref, in: ['']}
+      - key: condition
+        label: $t:collaborationCondition
+        control: textarea
+      - key: handoff
+        label: $t:collaborationHandoff
+        control: textarea
+      - key: result
+        label: $t:collaborationResult
+        control: textarea
+  - key: model_connection
+    label: $t:modelConnection
+    description: $t:modelConnectionHelp
+    control: radio
+    choice_layout: row_wrap
+    applies_to: [agents, model_sources]
+    visible_when: {field: model_source_ref, in: ['']}
+    options:
+      - {value: runtime, label: '$t:modelAtUse'}
+      - {value: existing, label: '$t:modelExisting'}
+      - {value: other, label: '$t:modelOther'}
+  - key: model_service
+    label: $t:modelService
+    label_when:
+      - {field: model_connection, in: [other], label: '$t:modelOtherDescription'}
+    control: textarea
+    textarea_rows: 5
+    applies_to:
+      - agents
+    placeholder: $t:modelServicePlaceholder
+    visible_when:
+      all:
+        - {field: model_source_ref, in: ['']}
+        - {field: model_connection, in: [existing, other]}
+  - key: integration_ref
+    label: $t:integrationRef
+    description: $t:integrationRefHelp
+    control: record_select
+    applies_to: [agents, model_sources]
+    visible_when:
+      all:
+        - {field: model_source_ref, in: ['']}
+        - {field: model_connection, in: [existing]}
+    options_from_panel:
+      panel_type: integration_design
+      section_id: integrations
+ui:
+  component: record_workspace
+  id: ai-agent-workspace
+  title: $t:agents
+  guidance: "$t:guidance"
+  sidebar_icon: bot
+  sources:
+    - agents
+    - model_sources
+    - knowledge_resources
+    - skills
+    - tools
+  children:
+    - component: reference_graph
+      id: resource-relations
+      title: $t:relationTitle
+      description: $t:relationHelp
+      references:
+        layout:
+          kind: hub
+          center: agents
+          center_presentation: portrait
+          top: model_sources
+          bottom: knowledge_resources
+          left: skills
+          right: tools
+          group_by: model_source_ref
+          value_field: model_selection
+          entries: {field: entries, title_field: name, description_field: location}
+        nodes:
+          - source: model_sources
+            label_field: name
+            description_field: description
+            icon: plug
+          - source: knowledge_resources
+            label_field: name
+            description_field: description
+            kind_field: kind
+            icon: database
+            kind_icons: {knowledge_base: book-open, long_term_memory: database}
+          - source: skills
+            label_field: name
+            description_field: purpose
+            icon: file-text
+          - source: tools
+            label_field: name
+            description_field: purpose
+            icon: plug
+          - source: agents
+            label_field: name
+            description_field: description
+            icon: bot
+        links:
+          - source: agents
+            field: model_source_ref
+            target: model_sources
+            label: $t:modelSourceLink
+            reverse: true
+          - source: agents
+            field: knowledge_resource_refs
+            target: knowledge_resources
+            label: $t:knowledgeResourceLink
+          - source: agents
+            field: skill_refs
+            target: skills
+            label: $t:skillLink
+          - source: agents
+            field: tool_refs
+            target: tools
+            label: $t:toolLink
+          - source: agents
+            field: delegate_refs
+            target: agents
+            label: $t:delegateLink
+          - source: agents
+            field: collaborations
+            item_field: agent_ref
+            target: agents
+            label: $t:delegateLink
+    - component: record_inspector
+      id: agent-configuration
+  workspace_view: switch

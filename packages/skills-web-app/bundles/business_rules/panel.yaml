@@ -1,0 +1,62 @@
+version: 1
+panel_kind: evidence_workbook
+i18n:
+  default_locale: zh-CN
+  locales: {zh-CN: locales/zh-CN.json, en-US: locales/en-US.json}
+initial_values: {schema_version: 4}
+empty_description: $t:empty
+sections:
+  - id: rules
+    title: $t:rules
+    item_name: $t:rule
+    order: rule_order
+    form:
+      reorder: false
+      header: {variant: detail, title: {field: title, editable: true}}
+      body:
+        - kind: group
+          title: $t:ruleContent
+          description: $t:conditionHelp
+          items:
+            - {kind: field, field: condition}
+            - {kind: field, field: outcome}
+        - kind: group
+          title: $t:notes
+          description: $t:notesHelp
+          items: [{kind: field, field: notes, label: visually_hidden}]
+    create:
+      id_field: id
+      defaults: {title: ''}
+      initial_label:
+        field: title
+        text: $t:newRule
+        numbered_text: $t:newRuleNumbered
+    confirm_delete: true
+fields:
+  - {key: title, label: '$t:title', control: text, required: true, applies_to: [rules]}
+  - key: condition
+    label: $t:condition
+    control: textarea
+    placeholder: $t:conditionExample
+    applies_to: [rules]
+  - key: outcome
+    required: true
+    label: $t:outcome
+    control: textarea
+    placeholder: $t:outcomeExample
+    applies_to: [rules]
+  - key: notes
+    label: $t:notes
+    control: textarea
+    placeholder: $t:notesExample
+    applies_to: [rules]
+ui:
+  component: record_workspace
+  guidance: "$t:guidance"
+  sidebar_icon: list-checks
+  navigation_layout: list
+  id: rules-workspace
+  title: $t:rules
+  sources: [rules]
+  children:
+    - {component: record_inspector, id: rule-editor}

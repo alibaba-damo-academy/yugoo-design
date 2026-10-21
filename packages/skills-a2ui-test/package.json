@@ -1,0 +1,21 @@
+{
+  "name": "dsh-design-skills-a2ui-test",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Isolated, opt-in Design Kit for testing generated Google A2UI Panels.",
+  "designSystem": {
+    "kit": {
+      "mindset": "./mindset.md",
+      "skills": "./skills"
+    }
+  },
+  "scripts": {
+    "test": "node --test test/kit.test.mjs"
+  },
+  "files": [
+    "mindset.md",
+    "README.md",
+    "skills"
+  ]
+}

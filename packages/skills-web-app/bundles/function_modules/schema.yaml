@@ -1,0 +1,93 @@
+# function_modules Design Files data contract (write-time validation).
+# Faithful declarative translation of sdk-pilot
+# skill/design_skills/function_modules/schema.py (Pydantic, extra="forbid").
+#
+# Functions are the only persisted entities. `function_epic` is a label on a
+# function; the Epic -> functions hierarchy is an emit-time projection. Epic
+# is never an entity. The current contract combines local purpose/situation into one
+# usage scenario; pinned sources and other local detail maps retain their meaning.
+type: object
+additional_properties: false
+properties:
+  skill_name: { knowledge: { role: metadata }, type: string }
+  functions:
+    type: map
+    value:
+      type: object
+      additional_properties: false
+      required: [function_id, function_name, function_description, function_epic]
+      properties:
+        function_id: { type: string }
+        function_name: { type: string }
+        function_description: { type: string }
+        function_epic: { type: string }
+        priority: { type: enum, values: [High, Medium, Low] }   # default Medium
+        rejected: { type: boolean }                              # default false
+        source: { type: enum, values: [ai, user] }               # default ai
+        reason: { type: string } # Optional notes: rationale, tradeoffs and unresolved points.
+        details:
+          type: object
+          additional_properties: false
+          knowledge: { role: content, granularity: container, label: 功能详情 }
+          properties:
+            situation: { type: string } # Who, in which situation, seeking which outcome.
+            behaviors:
+              type: map
+              value:
+                type: object
+                knowledge: { role: content, granularity: unit, label: 核心行为 }
+                additional_properties: false
+                required: [description]
+                properties:
+                  description: { type: string }
+            inputs:
+              type: map
+              value:
+                type: object
+                knowledge: { role: content, granularity: unit, label: 输入 }
+                additional_properties: false
+                required: [description]
+                properties:
+                  description: { type: string }
+            outputs:
+              type: map
+              value:
+                type: object
+                knowledge: { role: content, granularity: unit, label: 结果 }
+                additional_properties: false
+                required: [description]
+                properties:
+                  description: { type: string }
+            limits:
+              type: map
+              value:
+                type: object
+                knowledge: { role: content, granularity: unit, label: 范围边界 }
+                additional_properties: false
+                required: [description]
+                properties:
+                  description: { type: string }
+            exceptions:
+              type: map
+              value:
+                type: object
+                knowledge: { role: content, granularity: unit, label: 异常处理 }
+                additional_properties: false
+                required: [condition, response]
+                properties:
+                  condition: { type: string }
+                  response: { type: string }
+        references:
+          # Source locator mechanics are not standalone product-content nodes.
+          knowledge: { role: metadata, source_reference: true }
+          type: map
+          value:
+            type: object
+            additional_properties: false
+            required: [file, revision]
+            properties:
+              file: { type: string }
+              pointer: { type: string }
+              revision: { type: string }
+              note: { type: string }
+              subject_pointer: { type: string }

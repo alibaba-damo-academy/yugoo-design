@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "report": {
+    "title": "团队例会安排",
+    "summary": "整理例会时间与参与范围。",
+    "status": "draft",
+    "findings": ["尚需确认所有成员的可用时间。"]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "guidance": "选择流程查看责任、分支和交接；进入图编辑模式后调整节点或连线，再保存。",
+  "bundleDescription": "- **能力**：面向产品流程进行设计，为每个重要流程建立包含人员/系统职责、触发、交接和结果的 BPMN。\n- **解决**：让已确定的角色、产品自动化、状态顺序、分支、触发条件和可观察结果可审阅，从而补齐 S/T 类缺口。\n- **适用时机**：角色、审批、交接、异常或明确重要的用户旅程需要形成一致的流程约定。\n- **不要推断**：普通点击路径或模糊的产品想法，不足以凭空编造角色、策略分支或 BPMN 图。\n- **输出**：每个重要产品流程一张 BPMN 的 `flow_design` 面板，每张图都明确系统实际做什么。",
+  "empty":"流程计划和流程图将在这里展示。", "processes":"业务流程", "process":"流程", "title":"名称", "description":"流程说明",
+  "tier":"价值层级", "core":"核心流程", "business":"业务流程", "auxiliary":"辅助流程", "type":"流程结构", "linear":"顺序", "approval":"审批", "parallel":"并行", "event":"事件驱动",
+  "actors":"参与角色", "responsibilities":"系统职责", "features":"核心能力", "rules":"业务规则", "triggers":"触发条件", "trigger":"触发", "kind":"类型",
+  "timer":"定时", "message":"消息", "error":"错误", "conditional":"条件", "signal":"信号", "outcome":"预期结果", "exceptions":"异常处理", "exception":"异常", "scenario":"情境", "handling":"处理方式", "diagram":"流程图",
+  "priorityHigh": "高",
+  "priorityMedium": "中",
+  "priorityLow": "低"
+}

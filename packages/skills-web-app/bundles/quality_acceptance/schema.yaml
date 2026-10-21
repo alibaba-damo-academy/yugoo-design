@@ -1,0 +1,25 @@
+# Declarative translation of quality_acceptance/schema.py. Pydantic defaults
+# are documented beside optional properties. validation.yaml carries the
+# executable subset of the source collection constraints.
+type: object
+additional_properties: false
+required: [schema_version]
+properties:
+  schema_version: { knowledge: { role: metadata }, type: enum, values: [4] } # default 4
+  requirements:
+    type: map
+    value:
+      type: object
+      additional_properties: false
+      required: [id, title]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        group: { type: string } # optional free label; absent/blank stays ungrouped
+        condition: { type: string } # default ""
+        pass_criteria: { type: string } # default ""
+        verification: { type: string } # default ""
+  requirement_order:
+    knowledge: { role: metadata }
+    type: array
+    items: { type: string }

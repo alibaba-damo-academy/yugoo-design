@@ -1,0 +1,76 @@
+version: 1
+panel_kind: evidence_workbook
+sections:
+  - id: standards
+    title: 标准条目
+  - id: adaptations
+    title: 适配决策
+fields:
+  - key: name
+    control: text
+    label: 名称
+    applies_to: [adaptations]
+  - key: decision_scope
+    control: radio
+    label: 决策范围
+    applies_to: [adaptations]
+    options:
+      - { value: mandatory, label: 必选 }
+      - { value: optional, label: 可选 }
+  - key: decision
+    control: select
+    label: 决策
+    applies_to: [adaptations]
+    options:
+      - { value: adopt, label: 采纳 }
+      - { value: adapt, label: 改造 }
+      - value: defer
+        label: 暂缓
+        when: { field: decision_scope, in: [optional] }
+  - key: detail
+    control: textarea
+    label: 改造说明
+    applies_to: [adaptations]
+    visible_when: { field: decision, in: [adapt] }
+  - key: standard_ref
+    control: record_select
+    label: 关联标准
+    applies_to: [adaptations]
+    options:
+      - { value: std-1, label: 静态标准 }
+    options_from_section: standards
+  - key: tags
+    control: multi_select
+    label: 标签
+    applies_to: [adaptations]
+    options:
+      - { value: t1, label: 标签一 }
+      - { value: t2, label: 标签二 }
+  - key: module_ref
+    control: record_select
+    label: 关联功能
+    applies_to: [adaptations]
+    options_from_panel: { panel_type: function_modules, section_id: functions }
+  - key: steps
+    control: rows
+    label: 落地步骤
+    applies_to: [adaptations]
+    row_name: 步骤
+    max_rows: 3
+    columns:
+      - { key: title, control: text, label: 步骤 }
+      - key: kind
+        control: select
+        label: 类型
+        options:
+          - { value: dev, label: 开发 }
+          - { value: test, label: 测试 }
+      - { key: owner, control: ref, label: 负责标准, ref_sections: [standards] }
+  - key: sources
+    control: source_list
+    label: 依据来源
+    applies_to: [adaptations]
+ui:
+  component: record_form
+  id: adaptations-form
+  source: adaptations

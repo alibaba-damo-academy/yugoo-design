@@ -1,0 +1,23 @@
+{
+  "bundleDescription": "- **Capability**: define the durable business things a Web App remembers, the information kept for each thing, user-visible states, and grounded associations or subtype inheritance between object types.\n- **Resolves**: S/T gaps where users must find, distinguish, update, or track lasting things but their meaning and information are unclear.\n- **Candidate when**: the product must remember the same business thing across actions or visits, or the user asks what information or custom fields to keep.\n- **Do not infer**: pages, actions, workflow steps, reports, filters, database tables, API payloads, and state-change behavior are not business things. Type relationships belong here; workflow transitions and instance provenance do not.\n- **Output**: a native `business_data` panel with ordered business things, information fields, optional states, and one relationship model shared by the form and canvas.",
+  "objects": "Business objects", "object": "business object", "relations": "Object relationships", "relation": "relationship",
+  "empty": "Add the first business object this product needs to remember and manage.",
+  "guidance": "Define the things, information and states the product remembers. The relationship canvas and forms edit the same design.",
+  "graphHint": "Cards represent object types; arrows point from source to target. Inheritance connects a subtype to its parent, not containment or instance provenance.",
+  "parents": "Parent definitions", "parentHint": "Only local information is edited below. Shared information stays with its parent types.", "reverse": "Swap endpoints",
+  "createSubtype": "Add subtype", "createSubtypeTitle": "Create a subtype",
+  "name": "Name", "meaning": "Meaning and constraints", "fields": "Recorded information", "field": "information field",
+  "fieldName": "Information name", "fieldMeaning": "What does this information mean?", "valueType": "How is it entered or displayed?",
+  "typeText": "Short text", "typeLongText": "Long text", "typeNumber": "Number", "typeAmount": "Amount",
+  "typeDate": "Date", "typeDateTime": "Date and time", "typeSingle": "Single choice", "typeMultiple": "Multiple choice",
+  "typeBoolean": "Yes or no", "typeFile": "File", "typeOther": "Other",
+  "requirement": "When is it required?", "optional": "Optional", "always": "Always required", "conditional": "Required under a condition",
+  "requiredWhen": "When must it be provided?", "options": "Choices", "example": "Example value",
+  "states": "Business states", "state": "state", "stateName": "State name", "stateMeaning": "What does this state mean?",
+  "relationKind": "Relationship meaning", "association": "Business association", "generalization": "Type inheritance (is a kind of)",
+  "source": "Source object (subtype for inheritance)", "target": "Target object (parent for inheritance)",
+  "sourceCount": "How many source objects per target object?", "targetCount": "How many target objects per source object?",
+  "unknownCount": "Leave blank when undecided. Blank does not mean zero or exactly one.",
+  "countOne": "Exactly one", "countOptional": "None or one", "countMany": "One or more", "countAny": "None or more",
+  "relationMeaning": "Meaning and constraints (optional)", "relationMeaningHint": "Describe uncertainty about quantities, ownership or deletion behavior here."
+}

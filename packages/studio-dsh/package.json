@@ -1,0 +1,93 @@
+{
+  "name": "dsh-design-studio-dsh",
+  "version": "0.0.0",
+  "license": "Apache-2.0",
+  "type": "module",
+  "description": "DSH lifecycle, Remote, source, and Settings adapter for the read-only Design Studio.",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": "./lib/client.js",
+    "./client-adapter": {
+      "types": "./lib/client-adapter.d.ts",
+      "default": "./lib/client-adapter.js"
+    },
+    "./studio-page": {
+      "types": "./lib/page.d.ts",
+      "default": "./lib/page.js"
+    },
+    "./remote": {
+      "types": "./lib/typert.remote-client.d.ts",
+      "default": "./lib/typert.remote-client.js"
+    },
+    "./typert": {
+      "types": "./lib/typert.host.d.ts",
+      "default": "./lib/typert.host.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "node tests/service.test.mjs && node --test tests/independent-catalog.test.mjs && node tests/page.test.mjs && node tests/page-rpc.test.mjs && node tests/client.test.mjs && node tests/boundary.test.mjs"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-client-locale": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-settings": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-slots": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-fs": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-host-webserver": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.2",
+    "dsh-design-core": "0.0.0",
+    "dsh-design-panel": "0.0.0",
+    "dsh-design-studio": "0.0.0",
+    "dsh-design-studio-ui": "0.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.0.5",
+    "@deepseek-ai/dsh-client-locale": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-settings": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-slots": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-fs": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-host-webserver": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.2",
+    "@types/node": "^22.20.0",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.0",
+    "dsh-design-core": "link:../core",
+    "dsh-design-panel": "link:../panel",
+    "dsh-design-studio": "link:../studio",
+    "dsh-design-studio-ui": "link:../studio-ui",
+    "react": "^18.2.0",
+    "react-dom": "^18.3.1",
+    "tsdown": "^0.22.2",
+    "typescript": "^6.0.3"
+  },
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "README.md",
+    "LICENSE",
+    "NOTICE",
+    "THIRD_PARTY_NOTICES.md"
+  ]
+}

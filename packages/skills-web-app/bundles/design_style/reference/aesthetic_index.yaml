@@ -1,0 +1,57 @@
+version: 1
+directions:
+  - id: classic_blue_saas
+    label: 经典白蓝 SaaS
+    match: 通用 B2B、协作、账户型产品；没有更强品牌信号
+    avoid: 需要强叙事、奢华感或高能氛围
+    traits: [light, calm, familiar, medium-density]
+  - id: neutral_workspace
+    label: 中性效率工作台
+    match: 写作、知识库、任务规划、AI 工作台
+    avoid: 营销落地页或商品展示
+    traits: [light, quiet, content-first, medium-density]
+  - id: trust_light
+    label: 高信任浅色界面
+    match: 金融、医疗、教育记录、身份与公共服务
+    avoid: 娱乐活动或冲动消费
+    traits: [light, reassuring, explicit, accessible]
+  - id: data_operations
+    label: 数据运营界面
+    match: 分析、监控、库存、客服与高频扫描任务
+    avoid: 内容阅读或品牌展示
+    traits: [light, dense, operational, precise]
+  - id: clean_web
+    label: 简洁品牌网页
+    match: 产品官网、服务介绍、文档门户与内容网站
+    avoid: 复杂后台工作面
+    traits: [light, spacious, editorial-order, restrained]
+  - id: editorial_mono
+    label: 画刊单色
+    match: 出版、作品集、长文与工艺型内容
+    avoid: 数据密集型后台
+    traits: [light, serif, narrow-measure, restrained]
+  - id: morandi_still
+    label: 莫兰迪静物
+    match: 疗愈、生活方式、手作与低刺激产品
+    avoid: 强促销或技术监控
+    traits: [light, tactile, muted, spacious]
+  - id: honey_twilight
+    label: 暮光琥珀
+    match: 精品生活方式、文化体验与温暖叙事
+    avoid: 严肃操作台
+    traits: [light, warm, premium, spacious]
+  - id: vermilion_festival
+    label: 节庆朱橙
+    match: 拼团、促销、节庆电商与移动消费
+    avoid: 高信任表单或安静阅读
+    traits: [light, energetic, commerce, mobile]
+  - id: frosted_prism
+    label: 棱镜雾光
+    match: 技术监控、AI/数据产品与深色信息界面
+    avoid: 玻璃效果没有功能边界的普通页面
+    traits: [dark, technical, glass, dense]
+  - id: studio_noir
+    label: 深夜舞台
+    match: 音乐、创作、播放、发布与高能品牌体验
+    avoid: 需要浅色或保守可信的任务
+    traits: [dark, performative, kinetic, bold]

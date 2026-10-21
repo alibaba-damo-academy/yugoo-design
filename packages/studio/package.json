@@ -1,0 +1,39 @@
+{
+  "name": "dsh-design-studio",
+  "version": "0.0.0",
+  "license": "Apache-2.0",
+  "type": "module",
+  "description": "Host-neutral read-only Design Studio domain: catalog workspace, exact Kit source workspaces, and real Bundle source inspection over injected ports. No Agent Host, Cordis, or filesystem coupling.",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test:kit-drafts": "tsx --tsconfig tests/source-tsconfig.json --test tests/kit-drafts.test.mjs",
+    "test:content-archive": "tsx --tsconfig tests/source-tsconfig.json --test tests/content-archive.test.mjs",
+    "test": "node tests/studio.test.mjs && node tests/composition.test.mjs && node tests/management.test.mjs && node tests/kit-workspace.test.mjs && node tests/bundle-workspace.test.mjs && node tests/panel-preview.test.mjs && node --test tests/legacy-exact-version.test.mjs"
+  },
+  "peerDependencies": {
+    "dsh-design-core": "0.0.0"
+  },
+  "devDependencies": {
+    "dsh-design-core": "link:../core",
+    "@types/node": "^22.20.0",
+    "tsdown": "^0.22.2",
+    "typescript": "^6.0.3"
+  },
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "LICENSE",
+    "NOTICE",
+    "THIRD_PARTY_NOTICES.md"
+  ]
+}

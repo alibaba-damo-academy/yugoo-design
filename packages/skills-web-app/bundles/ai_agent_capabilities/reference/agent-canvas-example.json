@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "skills": {
+    "source-review": {
+      "id": "source-review",
+      "name": "资料核验方法",
+      "purpose": "依据获准材料核对来源与断言。",
+      "body": "# 资料核验\n\n只读取用户授权的材料。核对每条关键断言，保留来源与限定；缺少证据就说明未知。不可读时保留可核对部分，不声称全部完成。",
+      "notes": "合成表示示例；未安装或执行。"
+    },
+    "structured-writing": {
+      "id": "structured-writing",
+      "name": "结构化写作",
+      "body": "# 结构化写作\n\n依据已核对材料组织草稿。区分事实与建议，保留原始材料。需要新依据时交回研究员，不编造来源。",
+      "notes": "合成表示示例；未安装或执行。"
+    }
+  },
+  "tools": {
+    "material-search": {
+      "id": "material-search",
+      "name": "材料检索",
+      "purpose": "在获准材料中找到段落，返回文字和来源位置。",
+      "notes": "仅能力需求；实现类型和连接未选定。"
+    },
+    "document-edit": {
+      "id": "document-edit",
+      "name": "草稿编辑",
+      "purpose": "生成可供用户审阅的修改建议，不自动覆盖原文。",
+      "notes": "仅能力需求；不是已连接的 MCP。"
+    }
+  },
+  "agents": {
+    "research": {
+      "id": "research",
+      "name": "研究员",
+      "description": "核对材料并形成可定位来源的发现。",
+      "entries": {
+        "source-chat": {"name": "资料问答", "trigger": "conversation", "location": "资料详情 / 问答侧栏", "auto_context": "当前资料与选中段落"},
+        "search-action": {"name": "研究助理", "trigger": "action", "location": "全局搜索 / 研究按钮", "feedback": "展示带来源的发现"}
+      },
+      "skill_refs": ["source-review"],
+      "tool_refs": ["material-search"],
+      "model_connection": "runtime",
+      "context": "用户授权的项目材料；具体知识库身份未说明。",
+      "memory_retention": "可保留已确认的团队写作偏好；存储身份和权限未说明。",
+      "collaborations": {
+        "deliver-findings": {"agent_ref": "writer", "condition": "当前材料已核对且用户需要草稿", "handoff": "带来源的发现与未知项", "result": "返回草稿；失败时保留研究结果并告知用户"},
+        "supplement-findings": {"agent_ref": "writer", "condition": "已有草稿提出新的证据问题", "handoff": "新补充的来源及尚未解决的问题", "result": "返回修订建议，不覆盖用户已改文字"}
+      },
+      "notes": "合成示例。runtime 是配置方式，不是共享入口ID；相同文本不证明同一知识库/记忆。"
+    },
+    "writer": {
+      "id": "writer",
+      "name": "创作伙伴",
+      "description": "把核对后的材料组织成用户可审阅的草稿。",
+      "entries": {"draft-action": {"name": "辅助写作", "trigger": "action", "location": "编辑器 / AI 写作按钮", "auto_context": "当前文档与选中文字", "feedback": "预览草稿，由用户决定采用"}},
+      "skill_refs": ["structured-writing"],
+      "tool_refs": ["material-search", "document-edit"],
+      "model_connection": "runtime",
+      "context": "用户授权的项目材料；具体知识库身份未说明。",
+      "memory_retention": "可保留已确认的团队写作偏好；存储身份和权限未说明。",
+      "collaborations": {"review-draft": {"agent_ref": "reviewer", "condition": "用户请求初稿核验", "handoff": "获准分享的草稿与所用来源", "result": "返回证据缺口；无回应时保留草稿并说明未完成核验"}},
+      "notes": "合成示例；具体模型未知，不以名称或runtime方式推断与研究员共享模型入口。"
+    },
+    "reviewer": {
+      "id": "reviewer",
+      "name": "评审员",
+      "description": "核验草稿中的关键断言与来源。",
+      "entries": {"draft-review": {"name": "初稿核验", "trigger": "background", "location": "提交初稿后，按用户授权的范围自动核验", "feedback": "返回需要补证据的项目"}},
+      "skill_refs": ["source-review"],
+      "context": "仅接收获准分享的草稿与来源。",
+      "collaborations": {"request-evidence": {"agent_ref": "research", "condition": "草稿缺少可定位来源", "handoff": "待核对断言与已有线索", "result": "返回可读来源或明确未知；不无限重试"}},
+      "notes": "合成示例；后台位置表示事件，不是页面。未配置模型选择或长期记忆，不为画布补造。"
+    }
+  }
+}

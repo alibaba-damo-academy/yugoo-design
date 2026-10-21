@@ -1,0 +1,28 @@
+# Skill manifest. Repository authoring guide: docs/bundle-contract.md.
+name: integration_design
+version: "1.0"
+title: { zh: 系统集成, en: System Integration }
+label: { zh: 设计可执行集成, en: Design executable integrations }
+order: 15
+icon: connection
+
+execution:
+  handoff: none
+
+producer:
+  required_tools: [web_search]
+  optional_tools: [web_fetch]
+
+presentation:
+  mode: declarative
+
+# Optional model-facing summary; omission does not block design work.
+# 摘要展示连接用途、入口、使用方法及产品侧备注。凭据需求明细在面板和 canonical
+# 的 secrets / secret_order 中读取；摘要不伪造凭据值，也不宣称连接已经实现。
+summary:
+  collections:
+    - source: integrations
+      title: 系统集成
+      order: integration_order
+      title_fields: [title]
+      fields: [description, url, prompt_content, business_rules]

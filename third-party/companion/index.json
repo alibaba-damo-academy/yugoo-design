@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "scope": "known-bundled-elk-bpmn-pako-and-dompurify-materials-only",
+  "releaseLicenseAcceptance": false,
+  "completeBundledInventory": false,
+  "components": [
+    {
+      "name": "elkjs",
+      "version": "0.10.2",
+      "license": "EPL-2.0",
+      "upstreamCommit": "f64a4813dcab63c30fe67a32470cd1c05f4f7031",
+      "upstreamJavaCommit": "28e5173243cab0cf4e2c9816c803bc0d5c47ab24",
+      "preferredSourceCorrespondenceVerified": false,
+      "localTransformation": "graph-layout-worker.ts prepends lexical document sentinel and minifies bundled worker",
+      "upstreamDeclaredJavaSourceIdentityLocated": true,
+      "independentRegenerationVerified": false,
+      "sourceBindingEvidence": "elkjs-0.10.2/release-source-binding.json"
+    },
+    {
+      "name": "bpmn-js",
+      "version": "18.24.0",
+      "license": "bpmn.io License",
+      "watermarkRuntimeVerified": false,
+      "sourceLocator": "https://github.com/bpmn-io/bpmn-js/tree/v18.24.0"
+    },
+    {
+      "name": "dompurify",
+      "version": "3.4.16",
+      "license": "(MPL-2.0 OR Apache-2.0)",
+      "sourceLocator": "https://github.com/cure53/DOMPurify",
+      "sourceEvidence": "dompurify-3.4.16/SOURCE.md",
+      "originalLicenseFiles": [
+        "LICENSE",
+        "LICENSE-MPL"
+      ],
+      "licenseRouteSelected": false,
+      "independentUpstreamRetrievalVerified": false
+    },
+    {
+      "name": "pako",
+      "version": "2.0.3",
+      "license": "(MIT AND Zlib)",
+      "sourceLocator": "https://github.com/nodeca/pako",
+      "sourceEvidence": "pako-2.0.3/SOURCE.md",
+      "originalLicenseFiles": [
+        "LICENSE",
+        "zlib-README"
+      ],
+      "licenseRouteSelected": null,
+      "independentUpstreamRetrievalVerified": false
+    },
+    {
+      "name": "pako",
+      "version": "1.0.11",
+      "license": "(MIT AND Zlib)",
+      "sourceLocator": "https://registry.npmjs.org/pako/-/pako-1.0.11.tgz",
+      "sourceEvidence": "pako-1.0.11/SOURCE.md",
+      "originalLicenseFiles": [
+        "LICENSE",
+        "zlib-README"
+      ],
+      "role": "Core Git codec dependency; browser pako 2 unchanged",
+      "licenseRouteSelected": null,
+      "officialArchiveIntegrityVerified": true
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "scope": "observed-rendered-package-and-selected-local-original-materials",
+  "package": "victory-vendor",
+  "version": "37.3.6",
+  "repository": "https://github.com/FormidableLabs/victory",
+  "author": "Formidable",
+  "declaredLicense": "MIT AND ISC",
+  "packageMetadataSha256": "e895a58a809f2daabdc5452f332a6a319ec0e83ec3b63654dd098ee1e10ce5d0",
+  "observedOutput": "payload/shared/web/client.js",
+  "topLevelLicenseFilePresent": false,
+  "materials": "Original package README and every LICENSE supplied inside this exact local package's lib-vendor directory; no assertion that every vendor is rendered.",
+  "originalFiles": {
+    "lib-vendor/d3-array/LICENSE": "faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884",
+    "lib-vendor/d3-color/LICENSE": "faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884",
+    "lib-vendor/d3-ease/LICENSE": "b989d9085148d21ff64a75e14462aefa06b2589a55553b07b1460c70081c7d08",
+    "lib-vendor/d3-format/LICENSE": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+    "lib-vendor/d3-interpolate/LICENSE": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+    "lib-vendor/d3-path/LICENSE": "0ab21426fad1e8b819ea8ab4c7faf5a24d4fca9c01572fe722490d600bba0d22",
+    "lib-vendor/d3-scale/LICENSE": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+    "lib-vendor/d3-shape/LICENSE": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+    "lib-vendor/d3-time/LICENSE": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+    "lib-vendor/d3-time-format/LICENSE": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+    "lib-vendor/d3-timer/LICENSE": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+    "lib-vendor/d3-voronoi/LICENSE": "ad6cf57648385d6c40a29f73c55e42922dd793823df5ea265ccd834873bf09b9",
+    "lib-vendor/internmap/LICENSE": "9ea8903938dab5f12c4572d60725069bec2d1b0dc3bcc210b09bae946a5ebb1f",
+    "UPSTREAM-README.md": "f5f116bca6bb3ea302bede231b04725a41199136b6b168d9c22c15f06297dc81"
+  },
+  "completeBundledInventoryVerified": false,
+  "releaseLicenseAcceptance": false
+}

@@ -1,0 +1,252 @@
+{
+  "schemaVersion": 1,
+  "package": "yugoo-design-git-native",
+  "version": "0.1.0-beta.2",
+  "upstream": {
+    "name": "@napi-rs/simple-git",
+    "version": "1.2.0",
+    "repository": "https://github.com/Brooooooklyn/simple-git",
+    "gitHead": "0cdb713269151a7af05718c745a718f0f2bd37f9",
+    "license": "MIT"
+  },
+  "modifications": [
+    "Independent package identity and local artifact loader; never override the upstream npm version.",
+    "Repository.readObjectHeader returns ODB type/size or null on NotFound; other failures throw.",
+    "Remove implicit global Git configuration creation.",
+    "Lock Cargo dependencies, enable runtime Node-API dynamic symbols, and build local Git without unused SSH/HTTPS/OpenSSL transports.",
+    "Platform prebuilds are produced by the maintainer, never compiled on user installation."
+  ],
+  "capabilities": {
+    "gitScope": "local immutable objects, refs, trees, status and index operations",
+    "networkTransports": false,
+    "fallbackToGitExecutable": false,
+    "platforms": [
+      "x86_64-unknown-linux-gnu",
+      "x86_64-pc-windows-msvc"
+    ]
+  },
+  "toolchain": {
+    "rustVersion": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "files": [
+      {
+        "name": "rustc",
+        "target": "x86_64-unknown-linux-gnu",
+        "url": "https://static.rust-lang.org/dist/2026-10-15/rustc-1.99.1-x86_64-unknown-linux-gnu.tar.xz",
+        "sha256": "2ff05ff9c08a90861e7f6e4065b40a8b87463b4576186fd613871c3e37f2091f"
+      },
+      {
+        "name": "cargo",
+        "target": "x86_64-unknown-linux-gnu",
+        "url": "https://static.rust-lang.org/dist/2026-10-15/cargo-1.99.1-x86_64-unknown-linux-gnu.tar.xz",
+        "sha256": "53f3521949404d595efb06a55c12c5658d4ed1c75566f33d3d514eaebe70bd8a"
+      },
+      {
+        "name": "rust-std",
+        "target": "x86_64-unknown-linux-gnu",
+        "url": "https://static.rust-lang.org/dist/2026-10-15/rust-std-1.99.1-x86_64-unknown-linux-gnu.tar.xz",
+        "sha256": "109b074225bf5b9ea3820890876bfdf4ed161adbfaf94b2b4b5984c85ee5d958"
+      },
+      {
+        "name": "rust-std",
+        "target": "x86_64-pc-windows-gnu",
+        "url": "https://static.rust-lang.org/dist/2026-10-15/rust-std-1.99.1-x86_64-pc-windows-gnu.tar.xz",
+        "sha256": "b17e3bc962ff24b3bc47a750d838defed85b280746250e3a3ad029e6c1a29dd7"
+      }
+    ]
+  },
+  "crossTools": [
+    {
+      "name": "llvm-mingw-20240619-msvcrt-ubuntu-20.04-x86_64.tar.xz",
+      "url": "https://github.com/mstorsjo/llvm-mingw/releases/download/20240619/llvm-mingw-20240619-msvcrt-ubuntu-20.04-x86_64.tar.xz",
+      "sha256": "8a78af8e05a707df02dae9e98e5277e92ba22b8d7f346db1ee3d603c7518ff12",
+      "bytes": 88116196
+    },
+    {
+      "name": "cmake-4.4.4-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "url": "https://files.pythonhosted.org/packages/7e/d5/664ea06d01864f25d6067f09fa218404e4d588edd5e495135ac91429fecb/cmake-4.4.4-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "sha256": "f773a0544c66370408f451acd487c2c643b0dfebb48c5d64f3638bc1bb820238",
+      "bytes": 30245729
+    }
+  ],
+  "msvcTools": [
+    {
+      "url": "https://github.com/Jake-Shadle/xwin/releases/download/0.10.0/xwin-0.10.0-x86_64-unknown-linux-musl.tar.gz",
+      "name": "xwin-0.10.0-x86_64-unknown-linux-musl.tar.gz",
+      "sha256": "d870eb4b2f390878af6da1ccd3cf321d22fcb72720984853b4be732ae597fc88",
+      "bytes": 3416863
+    },
+    {
+      "url": "https://static.rust-lang.org/dist/2026-10-15/rust-std-1.99.1-x86_64-pc-windows-msvc.tar.xz",
+      "name": "rust-std-1.99.1-x86_64-pc-windows-msvc.tar.xz",
+      "sha256": "4fe09430ded40b8b3092b49f0a651178eb1f8154ef4d1f1a73f2a3595b2d956f",
+      "bytes": 23619148
+    }
+  ],
+  "rustSource": {
+    "repository": "https://github.com/rust-lang/rust",
+    "commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+    "licenseMaterials": "third-party/rust-stdlib/"
+  },
+  "buildRecipe": {
+    "command": "cargo build --release --locked --target <declared-target> --manifest-path native-source/Cargo.toml",
+    "jobs": 2,
+    "artifactCopy": "scripts/build.cjs",
+    "linux": "Native GNU compiler; installed Rust release from the hashed official channel archives.",
+    "windows": "LLVM clang-cl/lld-link cross compilation with xwin CRT/SDK in an isolated directory. No user profile or installed Host modifications.",
+    "limits": "Source/build correspondence and exact artifact hashes are recorded; this is not a claim of independently reproduced bit-for-bit builds or untested platform support."
+  },
+  "inputs": [
+    {
+      "path": "index.cjs",
+      "sha256": "8854c59a74d40ae017fbfc0fae88c71000da55aa52a6644a29fef5cd56243bd6"
+    },
+    {
+      "path": "index.d.ts",
+      "sha256": "a2f44b0eaaa4d4cb6819465d6f36bc833ae2eb193817019504ea8693b97b84c2"
+    },
+    {
+      "path": "native-source/Cargo.lock",
+      "sha256": "3b5fce3314e3e1caca64d229ebd0358d394bab3aa79203aad39a6e6f46738d2f"
+    },
+    {
+      "path": "native-source/Cargo.toml",
+      "sha256": "bc14f6c2c6a263ccde07123031eb4f88414e3ef7dc2ae521f7c3c2ad8fedad58"
+    },
+    {
+      "path": "native-source/UPSTREAM.patch",
+      "sha256": "f76191afe688da268a71e7b130940a902ddf12b1ade34aae4e77175203a8b420"
+    },
+    {
+      "path": "native-source/build.rs",
+      "sha256": "2b2cfa263b66c171758c043627771d594addedba2ddac3819b3d23ecb9d8c590"
+    },
+    {
+      "path": "native-source/src/blame.rs",
+      "sha256": "af24af292e1b274d8f552df48b25615bcbcb0b5610934c064763068396794a47"
+    },
+    {
+      "path": "native-source/src/blob.rs",
+      "sha256": "8fbbff65d3a2702b784417c7701496b215bbd984fa8f6ea15a07888477851ead"
+    },
+    {
+      "path": "native-source/src/branch.rs",
+      "sha256": "1561a5cc7fdc4ddf437be1c1b179676da7f2bb69024438f4159d4477aa9e05c4"
+    },
+    {
+      "path": "native-source/src/buffer_diff.rs",
+      "sha256": "dbbdc99455b5d14c0957c4e97e1fab9251de15744120b4b18589ce5c4e7d446c"
+    },
+    {
+      "path": "native-source/src/checkout.rs",
+      "sha256": "1e11f3d68092c14721d258cac74e0f377ee0eb96da28baab27571b1a1549931d"
+    },
+    {
+      "path": "native-source/src/commit.rs",
+      "sha256": "357b4d8f7f97f4d7f2b25112e0db85a1cec001fc60eb5fe0a10a364f061b6028"
+    },
+    {
+      "path": "native-source/src/config.rs",
+      "sha256": "77197fd33a279697372f48e839eb9934cad498a9c6a483654889ca98365bee22"
+    },
+    {
+      "path": "native-source/src/deltas.rs",
+      "sha256": "9aa4a02b8cd7fb38a9b46c9a7873e11094da87caba6b72d52ef33e13f4cc2c68"
+    },
+    {
+      "path": "native-source/src/diff.rs",
+      "sha256": "f325d33a77f0f68cd0408595098149f082bb9c85b15b6d029df16765382b84c4"
+    },
+    {
+      "path": "native-source/src/error.rs",
+      "sha256": "910513aa579833b0155295869a6b1785cd80ae8756cbddf0fef2e47993eb5e4b"
+    },
+    {
+      "path": "native-source/src/file_modification.rs",
+      "sha256": "c2e9c1c949010ed55b38fdf174f4c0ede9c4a530c4d90bfeec202407436cc4a6"
+    },
+    {
+      "path": "native-source/src/index.rs",
+      "sha256": "5b28be8d09e40db08db454d9524a2c859f90e0064809eeea24635880c022adaa"
+    },
+    {
+      "path": "native-source/src/lib.rs",
+      "sha256": "6c13c4495794ba12c7145c718a609a3f9aae7d757b4c8cb92717ca3bbe41c8f4"
+    },
+    {
+      "path": "native-source/src/object.rs",
+      "sha256": "ae0c9cce50389046c7517ac99da4d5765d7803da4156c27432caf7023ff06951"
+    },
+    {
+      "path": "native-source/src/reference.rs",
+      "sha256": "495ecdf569778bf209ed37579e8b4e09c20be2b03f7255924fd2f8fb62420df7"
+    },
+    {
+      "path": "native-source/src/remote.rs",
+      "sha256": "397f77a688c2a745aa71c6830dab784884b32c2cbbd7308b767f37041e795a8a"
+    },
+    {
+      "path": "native-source/src/repo.rs",
+      "sha256": "5371d5991b56d256950beb0a21a5f2021f5b4ac494921dac451ae8592b19eecc"
+    },
+    {
+      "path": "native-source/src/repo_builder.rs",
+      "sha256": "24d5983154c3412db8b1c8501fe87c301d59f3adb0cf4f5f8b8e9e84292bb3bb"
+    },
+    {
+      "path": "native-source/src/rev_walk.rs",
+      "sha256": "00bb3dd8100018a727905326f5916d4bc8a775439cb5085dcde84161a126bedc"
+    },
+    {
+      "path": "native-source/src/signature.rs",
+      "sha256": "523434fb9bb7aa5064fd6b630768232fea4dc59627139e076ac504b9f1e9d3c9"
+    },
+    {
+      "path": "native-source/src/status.rs",
+      "sha256": "4e310b53d36aa473ec58572dc11c78a4af3abbe8baae48ac37a0b6d4d50ac682"
+    },
+    {
+      "path": "native-source/src/tag.rs",
+      "sha256": "622ec181ecb6115bddbc700578a42177ecdc8f16c10f3ca694d69b311d756480"
+    },
+    {
+      "path": "native-source/src/tree.rs",
+      "sha256": "b2a2b2c3e1bfc9241b93081ec1a041cd434bd9a570359dc8117f7c73dad8d3d2"
+    },
+    {
+      "path": "native-source/src/tree_builder.rs",
+      "sha256": "58f81912334baeb81b7bed1cc8a044f65ef1e85377ef14eb4986fee5e5e8a2e2"
+    },
+    {
+      "path": "native-source/src/util.rs",
+      "sha256": "2b007507c9ce63d0a9f9cad89dd0585efb7488a07fa79df78f580e98b2e0535e"
+    },
+    {
+      "path": "scripts/build.cjs",
+      "sha256": "1a7125d5b4f8ed43a0e86f21ad37a851c3b25c82bb04f66ede37c737dbd10758"
+    },
+    {
+      "path": "scripts/check-artifacts.cjs",
+      "sha256": "694c378e01ca0a2230fa62fd860bf701caa3ca85d9821ef308c21b3097743313"
+    },
+    {
+      "path": "third-party/CARGO-SOURCES.json",
+      "sha256": "ec9030cd682fde0bc3c2d623979197e2581a4151b6c163df4f90c8a631177fdd"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "native/yugoo_git.linux-x64.node",
+      "target": "x86_64-unknown-linux-gnu",
+      "bytes": 3149760,
+      "sha256": "a5adde6399b842eb63927f9a1b830e1f49798b9ffa9ddeeb4d1bac380e0e1e5a"
+    },
+    {
+      "path": "native/yugoo_git.win32-x64.node",
+      "target": "x86_64-pc-windows-msvc",
+      "bytes": 3343360,
+      "sha256": "521b4280777f5e9af2a12c1c8ef872dc05e8ba77375d57a1245cdf2a0cbed9a6"
+    }
+  ],
+  "crateSources": "third-party/CARGO-SOURCES.json",
+  "licensing": "Original license texts remain unchanged; wrapper MIT does not override libgit2, zlib, Rust or any other third-party license. Tool-only LLVM/MS SDK material is not distributed as runtime DLLs."
+}

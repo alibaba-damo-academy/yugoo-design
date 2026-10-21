@@ -1,0 +1,22 @@
+# Fixture skill manifest (cross-panel references).
+
+name: ref_board
+version: "1.0"
+
+title:
+  zh: 引用板
+  en: Reference Board
+
+label:
+  zh: 跨面板记录引用
+  en: Cross-panel record references
+
+order: 2
+icon: link
+
+execution:
+  handoff: must_edit
+
+presentation:
+  mode: declarative
+  renderer: pilot-design/v2

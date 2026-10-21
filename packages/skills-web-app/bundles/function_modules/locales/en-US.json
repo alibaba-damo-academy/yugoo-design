@@ -1,0 +1,14 @@
+{
+  "bundleDescription": "- **Capability**: organize the product into user-facing function cards.\n- **Resolves**: S gaps by turning an established product goal and core scenarios into a non-overlapping capability map.\n- **Candidate when**: the outcome, primary users, and material boundary are established, or the user explicitly asks to split or revise functions.\n- **Do not infer**: an app category, domain name, or generic product goal is not enough evidence to invent a function map.\n- **Output**: a function-module panel grouped by Epic for browsing.",
+  "functions": "Function modules", "function": "Function", "empty": "Add a function, or describe the capability in the conversation.",
+  "details": "Functional details", "functionId": "Function ID", "name": "Function name", "description": "Description", "epic": "Group", "epicHelp": "Groups are labels on functions, not separate design records.",
+  "priority": "Priority", "high": "High", "medium": "Medium", "low": "Low", "rejected": "Rejected",
+  "source": "Origin", "ai": "AI proposal", "user": "User added", "reason": "Notes", "references": "Pinned sources",
+  "situation": "Usage scenario", "behaviors": "Core behaviors", "behavior": "Behavior", "inputs": "Inputs", "input": "Input",
+  "outputs": "Outcomes", "output": "Outcome", "limits": "Scope boundaries", "limit": "Boundary", "exceptions": "Exception handling", "exception": "Exception", "condition": "Condition", "response": "System response",
+  "guidance": "Browse functions by group and adjust descriptions or priorities. New function requests go to the main conversation for refinement.",
+  "applicationMindMap": "Application Functional Mind Map",
+  "createRequest": "Please add the following function",
+  "createSubmit": "Add with AI",
+  "detailsAndEvidence": "Function details"
+}

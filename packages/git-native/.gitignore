@@ -1,0 +1,3 @@
+native/*.node
+native-source/target/
+*.tgz

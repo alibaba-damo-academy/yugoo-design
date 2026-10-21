@@ -1,0 +1,31 @@
+# Skill manifest. Repository authoring guide: docs/bundle-contract.md.
+name: business_rules
+version: "1.0"
+
+title:
+  zh: 业务规则
+  en: Business Rules
+
+label:
+  zh: 细化业务规则
+  en: Define business rules
+
+
+order: 11
+icon: rules
+
+execution:
+  handoff: must_edit
+
+presentation:
+  mode: declarative
+
+# Optional model-facing summary; omission does not block design work.
+# 按保存顺序显示条件、结果与备注；摘要不新增规则，不改变稳定 ID。
+summary:
+  collections:
+    - source: rules
+      title: 业务规则
+      order: rule_order
+      title_fields: [title]
+      fields: [condition, outcome, notes]

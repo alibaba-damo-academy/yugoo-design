@@ -1,0 +1,23 @@
+skill: hazard_register
+rules:
+  - id: nonempty_register
+    scope: [completion]
+    code: hazard_register.empty
+    message: Save at least one hazard relevant to the current request.
+    check: {non_empty_map: hazards}
+  - id: label
+    scope: [completion]
+    code: hazard_register.label
+    check: {for_each_in_map: hazards, non_empty_string: label}
+  - id: scenario
+    scope: [completion]
+    code: hazard_register.scenario
+    check: {for_each_in_map: hazards, non_empty_string: scenario}
+  - id: response
+    scope: [completion]
+    code: hazard_register.response
+    check: {for_each_in_map: hazards, non_empty_string: response}
+  - id: evidence
+    scope: [completion]
+    code: hazard_register.evidence
+    check: {for_each_in_map: hazards, non_empty_string: evidence_note}

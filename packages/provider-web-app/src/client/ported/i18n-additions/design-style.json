@@ -1,0 +1,10 @@
+{
+  "zh_CN": {
+    "design_preview_reload_title": "重新加载已生成的预览",
+    "design_preview_refresh": "刷新预览"
+  },
+  "en_US": {
+    "design_preview_reload_title": "Reload the generated preview",
+    "design_preview_refresh": "Refresh preview"
+  }
+}

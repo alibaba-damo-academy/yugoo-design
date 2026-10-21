@@ -1,0 +1,118 @@
+{
+  "name": "dsh-design-provider-web-app",
+  "version": "0.0.0",
+  "license": "Apache-2.0",
+  "type": "module",
+  "description": "Native Web App Design Bundle panel presentation adapter.",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "dsh-design-panel"
+      ]
+    }
+  },
+  "scripts": {
+    "build:css": "tailwindcss -c tailwind.config.cjs -i src/client/ported/design.css -o src/client/generated/design.tw.css --minify",
+    "build": "pnpm run build:css && tsdown",
+    "typecheck": "tsc --noEmit",
+    "test:whiteboard": "node smoke-whiteboard-scene.mjs && node smoke-whiteboard-save.mjs && node smoke-whiteboard-browser.mjs",
+    "test": "node smoke-kit-authority.mjs && node smoke-page-map-layout.mjs && node smoke-artifact-activity-ui.mjs && node smoke-artifact-file-hydration.mjs && node smoke-artifact-html-images.mjs && node smoke-page-style-file.mjs && node smoke-research-artifact-rendering.mjs && node smoke-integration-panel.mjs && node smoke-form-controls.mjs && node smoke-smart-question-options.mjs && node smoke-smart-question-attachments.mjs"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
+    "dsh-design-core": "0.0.0",
+    "dsh-design-panel": "0.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "dependencies": {
+    "@excalidraw/excalidraw": "0.18.1",
+    "@hookform/resolvers": "5.9.1",
+    "@radix-ui/react-checkbox": "^1.2.0",
+    "@radix-ui/react-dialog": "^1.1.2",
+    "@radix-ui/react-dropdown-menu": "^2.1.2",
+    "@radix-ui/react-icons": "^1.3.2",
+    "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-popover": "^1.1.15",
+    "@radix-ui/react-radio-group": "^1.2.1",
+    "@radix-ui/react-scroll-area": "^1.2.1",
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-slider": "^1.2.1",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-switch": "^1.1.1",
+    "@radix-ui/react-tabs": "^1.1.2",
+    "@radix-ui/react-tooltip": "^1.1.3",
+    "@xyflow/react": "^12.10.0",
+    "bpmn-js": "18.24.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.562.0",
+    "parse5": "7.3.0",
+    "react-hook-form": "^7.85.0",
+    "react-markdown": "^10.1.0",
+    "react-resizable-panels": "^3.0.6",
+    "recharts": "3.5.1",
+    "rehype-raw": "^7.0.0",
+    "remark-breaks": "^4.0.0",
+    "remark-gfm": "^4.0.1",
+    "tailwind-merge": "^3.4.0",
+    "yaml": "^2.9.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.0.5",
+    "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
+    "@types/node": "^22.20.0",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.0",
+    "dsh-design-core": "link:../core",
+    "dsh-design-panel": "link:../panel",
+    "jsdom": "^30.0.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tailwindcss": "^3.3.5",
+    "tailwindcss-animate": "^1.0.7",
+    "tsdown": "^0.22.2",
+    "typescript": "^6.0.3"
+  },
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "lib/client.js",
+    "lib/css-assets",
+    "LICENSE",
+    "NOTICE",
+    "THIRD_PARTY_NOTICES.md",
+    "third-party/lucide-react/LICENSE",
+    "third-party/lucide-react/SOURCE.md",
+    "third-party/native/bpmn-js-18.24.0/LICENSE",
+    "third-party/native/bpmn-js-18.24.0/SOURCE.md",
+    "third-party/native/dompurify-3.4.16/LICENSE",
+    "third-party/native/dompurify-3.4.16/LICENSE-MPL",
+    "third-party/native/dompurify-3.4.16/SOURCE.md",
+    "third-party/native/pako-2.0.3/LICENSE",
+    "third-party/native/pako-2.0.3/SOURCE.md",
+    "third-party/native/pako-2.0.3/zlib-README",
+    "third-party/native/whiteboard-fonts/licenses/JetBrainsMono-OFL.txt",
+    "third-party/native/whiteboard-fonts/licenses/source-han-sans-LICENSE.txt",
+    "third-party/native/whiteboard-fonts/manifest.json",
+    "third-party/native/NOTICE.md",
+    "third-party/native/bpmn-font-0.12.1/LICENSE",
+    "third-party/native/bpmn-font-0.12.1/SOURCE.md",
+    "third-party/native/bpmn-font-0.12.1/release-source-binding.json"
+  ]
+}

@@ -1,0 +1,31 @@
+version: 1
+panel_kind: evidence_workbook
+i18n:
+  default_locale: zh-CN
+  locales: {zh-CN: locales/zh-CN.json, en-US: locales/en-US.json}
+empty_description: $t:empty
+sections:
+  - id: boards
+    title: $t:boards
+    item_name: $t:board
+    order: board_order
+    add_mode: none
+fields:
+  - {key: id, label: '$t:id', control: text, hidden: true, readonly: true, applies_to: [boards]}
+  - {key: title, label: '$t:title', control: text, required: true, applies_to: [boards]}
+  - {key: artifact_file, label: '$t:file', control: artifact_ref, hidden: true, readonly: true, applies_to: [boards]}
+ui:
+  component: canvas_workspace
+  guidance: "$t:guidance"
+  sidebar_icon: pen-tool
+  id: topic-canvases
+  title: $t:boards
+  source: boards
+  canvas:
+    format: excalidraw
+    file_field: artifact_file
+    label_field: title
+    id_field: id
+    scene_directory: boards
+    asset_directory: attachments
+    new_title: $t:new

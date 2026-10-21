@@ -1,0 +1,8 @@
+{
+  "schema_version": 3,
+  "notifications": {
+    "N-PREVIEW-001": {"id": "N-PREVIEW-001", "title": "合成示例：请求待审核", "trigger": "合成请求已保存并进入待审核状态后", "recipients": ["审核人"], "channels": ["in_app"], "message": "有一条合成请求等待审核。\n请核对请求内容后决定通过或退回；此内容仅用于预览。", "action_target": "合成请求详情的审核区域"},
+    "N-PREVIEW-002": {"id": "N-PREVIEW-002", "title": "合成示例：审核结果已生成", "trigger": "合成审核结果已保存后", "recipients": ["申请人"], "channels": ["in_app"], "message": "合成请求已处理，请查看结果。不是实际发送的通知。", "action_target": "合成请求详情的结果区域"}
+  },
+  "notification_order": ["N-PREVIEW-001", "N-PREVIEW-002"]
+}

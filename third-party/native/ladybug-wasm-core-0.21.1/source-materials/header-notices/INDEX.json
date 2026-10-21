@@ -1,0 +1,117 @@
+{
+  "scope": "Original fixed-source notices and generated markers supplement; does not close the compiled-in binary inventory",
+  "materials": [
+    {
+      "materialPath": "fast_float.NOTICE.txt",
+      "sourceRepository": "https://github.com/LadybugDB/ladybug",
+      "sourceCommit": "17a70e51c31b50d30231da32154d9ff4bef0d95f",
+      "sourcePath": "third_party/fast_float/include/fast_float.h",
+      "url": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/third_party/fast_float/include/fast_float.h",
+      "originalByteRange": {
+        "start": 0,
+        "endExclusive": 1427
+      },
+      "sourceRetrieval": "First4096 bytes",
+      "retrievedBytes": 4096,
+      "retrievedSha256": "07129fd76d762200280ec34bc3f17da57ce5878e2a42f41d0e5a469c2611b553",
+      "bytes": 1427,
+      "sha256": "936634c53755cce4c96b6cc4bdc011ea64acf2b61fbe1a8f3528d19fdc6103ea",
+      "interpretation": "Original permission, author and contributor header; no license choice introduced."
+    },
+    {
+      "materialPath": "roaring_bitmap.NOTICE.txt",
+      "sourceRepository": "https://github.com/LadybugDB/ladybug",
+      "sourceCommit": "17a70e51c31b50d30231da32154d9ff4bef0d95f",
+      "sourcePath": "third_party/roaring_bitmap/roaring.h",
+      "url": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/third_party/roaring_bitmap/roaring.h",
+      "originalByteRange": {
+        "start": 0,
+        "endExclusive": 2089
+      },
+      "sourceRetrieval": "First4096 bytes",
+      "retrievedBytes": 4096,
+      "retrievedSha256": "f9d56ede98d207aca10aecdcf819e49190ca0d2902185c32a76eb1a913685414",
+      "bytes": 2089,
+      "sha256": "1bcd1aa3cd2dfed9993999185456f4e0a3c0649b3ca276342b21de2f90c56b31",
+      "interpretation": "Original dual Apache/MIT declaration and copyright/permission header; both alternatives preserved, no choice made. Apache full text is not supplied by this excerpt."
+    },
+    {
+      "materialPath": "antlr4_cypher-lexer.GENERATED.txt",
+      "sourceRepository": "https://github.com/LadybugDB/ladybug",
+      "sourceCommit": "17a70e51c31b50d30231da32154d9ff4bef0d95f",
+      "sourcePath": "third_party/antlr4_cypher/cypher_lexer.cpp",
+      "url": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/third_party/antlr4_cypher/cypher_lexer.cpp",
+      "originalByteRange": {
+        "start": 0,
+        "endExclusive": 47
+      },
+      "sourceRetrieval": "First4096 bytes",
+      "retrievedBytes": 4096,
+      "retrievedSha256": "862850d998bf705811d9ffcf5dd63fc882fda19c4643c217c22661ec983de303",
+      "bytes": 47,
+      "sha256": "b90c1948479de7be01984fced1b5cd2b7e227b5370f2dc2bd896991df26fedae",
+      "interpretation": "Generated-from marker only, not a license text."
+    },
+    {
+      "materialPath": "antlr4_cypher-parser.GENERATED.txt",
+      "sourceRepository": "https://github.com/LadybugDB/ladybug",
+      "sourceCommit": "17a70e51c31b50d30231da32154d9ff4bef0d95f",
+      "sourcePath": "third_party/antlr4_cypher/cypher_parser.cpp",
+      "url": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/third_party/antlr4_cypher/cypher_parser.cpp",
+      "originalByteRange": {
+        "start": 0,
+        "endExclusive": 48
+      },
+      "sourceRetrieval": "First4096 bytes",
+      "retrievedBytes": 4096,
+      "retrievedSha256": "412da71fa13416f74fdededcd5aba5dbb9c19aefd3d04a0422d4d2e943bb4cb8",
+      "bytes": 48,
+      "sha256": "589eb5528efb9bcb95da811d82881c7e2d9278acbe9a059c01bf8f485844a34a",
+      "interpretation": "Generated-from marker only, not a license text."
+    },
+    {
+      "materialPath": "httpfs-httplib.NOTICE.txt",
+      "sourceRepository": "https://github.com/LadybugDB/ladybug",
+      "sourceCommit": "17a70e51c31b50d30231da32154d9ff4bef0d95f",
+      "sourcePath": "third_party/httplib/httplib.h",
+      "url": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/third_party/httplib/httplib.h",
+      "originalByteRange": {
+        "start": 0,
+        "endExclusive": 97
+      },
+      "sourceRetrieval": "First4096 bytes",
+      "retrievedBytes": 4096,
+      "retrievedSha256": "66d0e9364c1aa9149fda469e8557e5d019e03af3ed5405a1f98fb76eefe7012f",
+      "bytes": 97,
+      "sha256": "a1fa1fb5e7eaf1ce2eb8bd94256cfaeac1e4f8ea1b7a2db1434c0c0040a9b7f1",
+      "interpretation": "Original copyright/MIT label header referenced by httpfs; no full MIT permission text in this excerpt."
+    },
+    {
+      "materialPath": "httpfs-extension.LICENSE",
+      "sourceRepository": "https://github.com/LadybugDB/extensions",
+      "sourceCommit": "bf74ab654af6bd40a0e3208ac4e8bcf5cb45a7a0",
+      "sourcePath": "LICENSE",
+      "url": "https://raw.githubusercontent.com/LadybugDB/extensions/bf74ab654af6bd40a0e3208ac4e8bcf5cb45a7a0/LICENSE",
+      "originalByteRange": {
+        "start": 0,
+        "endExclusive": 1116
+      },
+      "sourceRetrieval": "Complete file",
+      "retrievedBytes": 1116,
+      "retrievedSha256": "1c495c9546d0de02e83c9d50d5f7eb21f0085bc8f77a0ee333081a123a9c8d0c",
+      "bytes": 1116,
+      "sha256": "1c495c9546d0de02e83c9d50d5f7eb21f0085bc8f77a0ee333081a123a9c8d0c",
+      "interpretation": "Unmodified repository LICENSE for the pinned extension source; not a blanket license for dependencies."
+    }
+  ],
+  "antlrGrammarSource": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/src/antlr4/Cypher.g4",
+  "antlrGrammarObservation": "The fixed grammar contains one openCypher mention but no copyright/license text; generated markers do not establish grammar licensing.",
+  "httpfsLinkSource": "https://raw.githubusercontent.com/LadybugDB/extensions/bf74ab654af6bd40a0e3208ac4e8bcf5cb45a7a0/httpfs/CMakeLists.txt",
+  "remaining": [
+    "ANTLR generated code/grammar licensing correspondence is not established by generated markers.",
+    "cpp-httplib header names MIT but its complete permission text is not supplied in this material.",
+    "CRoaring Apache alternative full text and applicability of other embedded subcomponents remain separate.",
+    "Exact Emscripten version/runtime notice correspondence and cryptographic provenance verification remain unresolved.",
+    "Header-only/component enumeration and installed binary correspondence remain incomplete."
+  ]
+}

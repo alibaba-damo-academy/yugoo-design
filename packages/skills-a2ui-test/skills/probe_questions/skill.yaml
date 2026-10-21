@@ -1,0 +1,15 @@
+name: "probe_questions"
+version: "1.0"
+title:
+  zh: "自动面板测试问题"
+  en: "Generated Panel Test Questions"
+label:
+  zh: "编辑测试问题"
+  en: "Edit Test Questions"
+order: 1
+icon: "list"
+execution:
+  mode: "main"
+  handoff: "must_edit"
+presentation:
+  mode: "auto"

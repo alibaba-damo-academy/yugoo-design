@@ -1,0 +1,62 @@
+version: 1
+panel_kind: evidence_workbook
+i18n:
+  default_locale: zh-CN
+  locales: {zh-CN: locales/zh-CN.json, en-US: locales/en-US.json}
+initial_values: {schema_version: 3}
+empty_description: $t:empty
+sections:
+  - id: notifications
+    title: $t:notifications
+    item_name: $t:notification
+    order: notification_order
+    form:
+      reorder: false
+      header: {variant: detail, title: {field: title, editable: true}}
+      body:
+        - {kind: field, field: trigger}
+        - {kind: field, field: recipients}
+        - {kind: field, field: channels}
+        - {kind: field, field: message}
+        - {kind: field, field: action_target}
+    create:
+      id_field: id
+      defaults: {title: '', channels: [in_app]}
+      initial_label:
+        field: title
+        text: $t:newNotification
+        numbered_text: $t:newNotificationNumbered
+    confirm_delete: true
+fields:
+  - {key: title, label: $t:title, control: text, required: true, applies_to: [notifications]}
+  - {key: trigger, label: $t:trigger, control: textarea, required: true, applies_to: [notifications]}
+  - {key: recipients, label: $t:recipients, control: token_list, required: true, applies_to: [notifications]}
+  - key: channels
+    required: true
+    label: $t:channels
+    control: token_list
+    token_layout: cards
+    token_add_mode: menu
+    token_add_description: $t:addChannelsDescription
+    token_custom_icon: plug
+    custom_description: $t:external
+    options:
+      - {value: in_app, label: $t:inApp, description: $t:builtIn, icon: message-square, menu_description: $t:builtInDefault, selected_description: $t:builtInSelected}
+    applies_to: [notifications]
+  - {key: message, label: $t:message, control: textarea, required: true, applies_to: [notifications]}
+  - {key: action_target, label: $t:action, control: text, applies_to: [notifications]}
+ui:
+  component: record_workspace
+  guidance: "$t:guidance"
+  sidebar_icon: bell
+  navigation_layout: list
+  id: notification-workspace
+  title: $t:workspace
+  sources: [notifications]
+  children:
+    - {component: record_inspector, id: notification-editor}
+    - component: record_preview
+      id: notification-preview
+      source: notifications
+      title: $t:preview
+      preview: {title: title, body: message, action: action_target}

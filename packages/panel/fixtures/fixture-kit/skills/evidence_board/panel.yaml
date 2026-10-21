@@ -1,0 +1,84 @@
+version: 1
+panel_kind: evidence_workbook
+sections:
+  - id: items
+    title: 条目
+    item_name: 条目
+    order: items_order
+  - id: enhancements
+    title: 增强项
+    item_name: 增强
+    records_path: add.enhancements.records
+    fields_path: details
+    order: add.enhancements.record_order
+fields:
+  - { key: name, control: text, label: 名称, applies_to: [items], required: true }
+  - { key: weight, control: number, label: 权重, applies_to: [items] }
+  - key: kind
+    control: select
+    label: 类别
+    applies_to: [items]
+    options:
+      - { value: alpha, label: 甲类 }
+      - { value: beta, label: 乙类 }
+  - key: mode
+    control: radio
+    label: 模式
+    applies_to: [items]
+    options:
+      - { value: solo, label: 单人 }
+      - { value: team, label: 团队 }
+  - { key: active, control: toggle, label: 启用, applies_to: [items] }
+  - key: flags
+    control: multi_select
+    label: 标记
+    applies_to: [items]
+    options:
+      - { value: f1, label: 标记一 }
+      - { value: f2, label: 标记二 }
+      - { value: f3, label: 标记三 }
+  - key: rels
+    control: record_multi_select
+    label: 关联条目
+    applies_to: [items]
+    options_from_section: items
+  - { key: tags, control: list, label: 标签, applies_to: [items] }
+  - { key: sources, control: source_list, label: 来源, applies_to: [items] }
+  - { key: meta, control: key_value, label: 元信息, applies_to: [items] }
+  - { key: doc, control: artifact_ref, label: 产物, applies_to: [items] }
+  - key: enh_ref
+    control: record_select
+    label: 关联增强
+    applies_to: [items]
+    options_from_section: enhancements
+  - key: parts
+    control: rows
+    label: 子项
+    applies_to: [items]
+    row_name: 子项
+    columns:
+      - { key: label, control: text, label: 名称 }
+      - { key: note, control: text, label: 说明 }
+  - key: enh_kind
+    control: select
+    label: 类型
+    applies_to: [enhancements]
+    options:
+      - { value: param, label: 参数 }
+      - { value: sub, label: 子结构 }
+  - key: note
+    control: textarea
+    label: 说明
+    applies_to: [enhancements]
+    visible_when: { field: enh_kind, in: [sub] }
+ui:
+  component: stack
+  id: root
+  children:
+    - component: record_form
+      id: items-form
+      source: items
+    - component: rowview_workbench
+      id: bench
+      source: enhancements
+      title: 模块增强

@@ -1,0 +1,25 @@
+{
+  "scope": "actual target-package attribution and retained original texts; no exact source provenance or release acceptance claim",
+  "components": [
+    {
+      "name": "fastdom",
+      "version": "1.0.12",
+      "targetPackageLicenseDeclaration": "MIT",
+      "targetPackageCopyright": "Copyright (c) 2016 Wilson Page <wilsonpage@me.com>",
+      "retainedOriginal": "fastdom@1.0.12/README-LICENSE.txt",
+      "originalSha256": "df2ae14f12f31864acef768195afe4584b08a257f25925f49884619279f02f37",
+      "status": "target README full original retained; previous missing-text statement corrected"
+    },
+    {
+      "name": "react-remove-scroll-bar",
+      "version": "2.3.8",
+      "targetPackageLicenseDeclaration": "MIT",
+      "targetPackageAuthor": "Anton Korzunov <thekashey@gmail.com>",
+      "retainedSharedOriginal": "react-remove-scroll-bar@2.3.8/UPSTREAM-LICENSE-2.3.7.txt",
+      "sharedOriginalVersion": "2.3.7",
+      "sharedOriginalCommit": "8ca9ba5ea52de03308fe8ced94f7b159a44d28ff",
+      "originalSha256": "a79aae0c0f21990d9d963bb3c5a79cdcea9a46f8523ba55c58d7fe776b6ebc84",
+      "status": "target MIT/author attribution retained with original shared upstream text; not exact 2.3.8 source proof"
+    }
+  ]
+}

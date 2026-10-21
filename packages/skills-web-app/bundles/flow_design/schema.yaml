@@ -1,0 +1,61 @@
+# flow_design Design Files data contract (write-time validation).
+# Faithful declarative translation of sdk-pilot
+# skill/design_skills/flow_design/schema.py (Pydantic, extra="allow").
+#
+# Disk-as-truth: the heavy BPMN XML lives on disk at
+# design_files/flow_design/{process_id}.bpmn. The owning process carries only
+# the durable direct file reference; Host execution events drive queued/running/
+# failed activity in the panel.
+#
+# `nullable: true` marks fields the Pydantic model types `str | None`;
+# the write-time validator accepts null for them.
+type: object
+properties:
+  skill_name: { knowledge: { role: metadata }, type: string }
+  topic: { type: string }
+  epoch: { knowledge: { role: metadata }, type: number }
+  roles:
+    knowledge: { role: metadata }
+    type: array
+    items:
+      type: object
+      properties:
+        id: { type: string }     # ASCII slug for lane ids, e.g. "Buyer"
+        name: { type: string }   # Chinese display name, e.g. "采购员"
+  processes:
+    type: map
+    value:
+      type: object
+      required: [process_id]
+      properties:
+        process_id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        tier: { type: enum, values: [core, business, auxiliary] }         # default core
+        process_type: { type: enum, values: [linear, approval, parallel, event_driven] } # default linear
+        stakeholders: { type: array, items: { type: string } }
+        system_responsibilities: { type: array, items: { type: string } }
+        trigger_hints:
+          type: array
+          items:
+            type: object
+            required: [kind, trigger, expected_outcome]
+            properties:
+              kind: { type: enum, values: [timer, message, error, conditional, signal] }
+              trigger: { type: string }
+              expected_outcome: { type: string }
+        key_features: { type: array, items: { type: string } }
+        business_rules: { type: array, items: { type: string } }
+        exception_handling:
+          type: array
+          items:
+            type: object
+            required: [scenario, handling]   # both must be non-empty (validation.yaml)
+            properties:
+              scenario: { type: string }
+              handling: { type: string }
+        deleted: { type: boolean }           # default false
+        bpmn_file: { type: string, nullable: true }
+  process_order:
+    type: array
+    items: { type: string }

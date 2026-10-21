@@ -1,0 +1,25 @@
+type: "object"
+additional_properties: false
+required: ["schema_version", "report"]
+properties:
+  schema_version:
+    type: "enum"
+    values: [1]
+    knowledge:
+      role: "metadata"
+  report:
+    type: "object"
+    additional_properties: false
+    required: ["title", "summary", "status"]
+    properties:
+      title:
+        type: "string"
+      summary:
+        type: "string"
+      status:
+        type: "enum"
+        values: ["draft", "reviewed"]
+      findings:
+        type: "array"
+        items:
+          type: "string"

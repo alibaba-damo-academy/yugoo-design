@@ -1,0 +1,51 @@
+{
+  "kind": "proposed-public-source-dependency-baseline",
+  "schemaVersion": 1,
+  "releaseApproved": false,
+  "registry": "https://registry.npmjs.org",
+  "officialVersions": {
+    "@deepseek-ai/cordis": "4.0.5",
+    "@deepseek-ai/dsh-agent": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-api-gateway": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-api-remotes": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-api-session-controller": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-brand": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-locale": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-conversation": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-session": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-settings": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-slots": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-tool": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-commands": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-fs": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-host-webserver": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-jobs": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-llm": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-scope": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-session": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-session-projection": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-settings": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-subagent": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-subprocess": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-subprocess-local": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.2",
+    "@deepseek-ai/schemastery": "3.18.4"
+  },
+  "ladybugVersion": "0.21.1",
+  "reviewedWorkspaceOverrides": {
+    "dompurify": "3.4.16"
+  },
+  "ladybugSource": "registry",
+  "ladybugIntegrity": "sha512-DEPxsl0f974p++WonWK868jXZraWCsRURG8LWNQyLiop0p8AYMx3QWRhF/bmv9MPEHWreplEuRgmzb306mDyaQ==",
+  "rootScripts": ["build", "typecheck", "test:public-contracts", "test:public-documents"],
+  "notes": [
+    "Explicit source-build selections, not a list of supported host releases.",
+    "Direct exact versions were found in the public registry; the full lock, integrity graph, installation and runtime gates remain pending.",
+    "Do not reuse the development lock, disable strict peer checks, copy the DSH checkout, or include local credentials.",
+    "Use the explicit registry mode of the existing physical/npm mapper. Source unit tests do not replace the clean installed runtime and pinned-integrity gates.",
+    "React and react-dom are non-optional host peers of the UI packages (currently ^18.2.0), not entries in this official DSH source-version selection. The actual compatible host/strict consumer must supply and verify them; absence is an error, never an implicit optional peer or permission to disable peer checks.",
+    "This file is an explicit input proposal for source projection and release review, not an automatically consumed publication configuration. Final assembly must record its actual use, the matching resolved lock and installed peer evidence."
+  ]
+}

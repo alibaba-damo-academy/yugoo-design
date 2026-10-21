@@ -1,0 +1,40 @@
+# Copy to bundles/<catalog_identity>/skill.yaml and replace the example identity/copy.
+# This is a manifest starting point, not a complete or installed Bundle.
+# Also author SKILL.md, schema.yaml, validation.yaml and panel.yaml.
+# Optional summary.fields/collections below belong in this manifest, not renderer.md.
+# Omit summary entirely when no model-facing summary is needed; Panel/execution remain available.
+# identity is the independent catalog id: use it for the directory resolver and Kit mount name.
+# name is the runtime id: match SKILL.md name, validation.yaml skill and canonical paths.
+# A copied Bundle can have a new identity while retaining its runtime name and method.
+# Required version: quoted major.minor only (e.g. "0.1"), without leading zeros,
+# patch components or prerelease suffixes; this is not an npm package version.
+# Required title and label: each needs non-empty zh and en strings.
+identity: example_bundle
+name: example_bundle
+version: "0.1"
+title:
+  zh: "示例设计切片"
+  en: "Example Design Slice"
+label:
+  zh: "编辑示例设计切片"
+  en: "Edit Example Design Slice"
+# Capability/routing description belongs in SKILL.md frontmatter, not here.
+# Optional translated picker copy: bundleDescription in the panel's declared
+# zh-CN/en-US locale JSON files. Never duplicate it in this manifest.
+# Optional display metadata; neither value controls capability routing.
+order: 1
+icon: list
+execution:
+  # Choose main or subagent deliberately; this example is not a universal policy.
+  mode: main
+  # must_edit returns an editable result to the user. Other allowed values are
+  # none and user_continue; user_continue additionally requires resume_action.
+  handoff: must_edit
+presentation:
+  # Default authoring path: compose approved components without Bundle-local JS.
+  # Native mode needs an existing trusted provider; auto/none have different slots.
+  mode: declarative
+# The declarative interpreter is selected by the runtime, not by the author.
+# Add runtime.driver, capabilities or semantic_capabilities only when an actual
+# registered contribution or semantic contract requires them. Do not invent
+# scheduler, Worker-permission, model or search-credential fields here.

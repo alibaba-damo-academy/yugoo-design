@@ -1,0 +1,22 @@
+version: 1
+panel_kind: evidence_workbook
+sections:
+  - id: links
+    title: 引用
+    item_name: 引用
+fields:
+  - key: target
+    control: record_select
+    label: 目标
+    applies_to: [links]
+    options_from_panel: { panel_type: evidence_board, section_id: items }
+  - key: enh_target
+    control: record_select
+    label: 增强目标
+    applies_to: [links]
+    options_from_panel: { panel_type: evidence_board, section_id: enhancements }
+  - { key: label, control: text, label: 备注, applies_to: [links] }
+ui:
+  component: record_form
+  id: links-form
+  source: links

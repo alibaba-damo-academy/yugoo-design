@@ -1,0 +1,32 @@
+{
+  "name": "dsh-design-system-dsh",
+  "version": "0.0.0",
+  "license": "Apache-2.0",
+  "type": "module",
+  "description": "Yugoo Design (yugoo-design) installation plugin for DeepSeek Harness.",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "files": [
+    "index.js",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE",
+    "NOTICE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "dependencies": {
+    "dsh-design-core": "workspace:^",
+    "dsh-design-knowledge-ladybug": "workspace:^",
+    "dsh-design-panel": "workspace:^",
+    "dsh-design-provider-web-app": "workspace:^",
+    "dsh-design-studio-dsh": "workspace:^",
+    "dsh-design-skills-web-app": "workspace:^"
+  }
+}

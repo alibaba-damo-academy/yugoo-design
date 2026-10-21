@@ -1,0 +1,38 @@
+version: 1
+panel_kind: evidence_workbook
+i18n:
+  default_locale: en-US
+  locales: {en-US: locales/en-US.json, zh-CN: locales/zh-CN.json}
+initial_values: {schema_version: 1}
+empty_description: $t:empty
+sections:
+  - id: hazards
+    title: $t:register
+    item_name: $t:hazard
+    add_label: $t:add
+    create:
+      id_field: id
+      defaults: {label: '', scenario: '', response: '', certainty: unknown, evidence_note: ''}
+    confirm_delete: true
+fields:
+  - {key: label, label: '$t:label', control: text, required: true, applies_to: [hazards]}
+  - {key: scenario, label: '$t:scenario', control: textarea, required: true, applies_to: [hazards]}
+  - {key: response, label: '$t:response', control: textarea, required: true, applies_to: [hazards]}
+  - key: certainty
+    label: $t:certainty
+    control: select
+    required: true
+    applies_to: [hazards]
+    options:
+      - {value: observed, label: '$t:observed'}
+      - {value: proposed, label: '$t:proposed'}
+      - {value: unknown, label: '$t:unknown'}
+  - {key: evidence_note, label: '$t:evidence', control: textarea, required: true, applies_to: [hazards]}
+ui:
+  component: record_workspace
+  id: hazards-workspace
+  title: $t:register
+  description: $t:guidance
+  sources: [hazards]
+  children:
+    - {component: record_inspector, id: hazard-editor}

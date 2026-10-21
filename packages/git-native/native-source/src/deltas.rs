@@ -1,0 +1,292 @@
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+use napi::{JsString, bindgen_prelude::*};
+use napi_derive::napi;
+
+use crate::ensure_alive;
+use crate::util::path_to_javascript_string;
+
+#[napi]
+#[repr(u32)]
+pub enum DiffFlags {
+  /// File(s) treated as binary data.
+  /// 1 << 0
+  Binary = 1,
+  /// File(s) treated as text data.
+  /// 1 << 1
+  NotBinary = 2,
+  /// `id` value is known correct.
+  /// 1 << 2
+  ValidId = 4,
+  /// File exists at this side of the delta.
+  /// 1 << 3
+  Exists = 8,
+}
+
+impl From<DiffFlags> for git2::DiffFlags {
+  fn from(value: DiffFlags) -> Self {
+    match value {
+      DiffFlags::Binary => git2::DiffFlags::BINARY,
+      DiffFlags::NotBinary => git2::DiffFlags::NOT_BINARY,
+      DiffFlags::ValidId => git2::DiffFlags::VALID_ID,
+      DiffFlags::Exists => git2::DiffFlags::EXISTS,
+    }
+  }
+}
+
+#[napi]
+/// Check whether a raw diff-flags bitset contains a given `DiffFlags` bit.
+///
+/// `flags` is the raw value returned by `DiffDelta.flags()`; `flag` is one of
+/// the `DiffFlags` constants. Returns `(flags & flag) === flag`.
+pub fn diff_flags_contains(flags: u32, flag: DiffFlags) -> bool {
+  let flag_bits = Into::<git2::DiffFlags>::into(flag).bits();
+  (flags & flag_bits) == flag_bits
+}
+
+#[napi]
+/// Valid modes for index and tree entries.
+pub enum FileMode {
+  /// Unreadable
+  Unreadable,
+  /// Tree
+  Tree,
+  /// Blob
+  Blob,
+  /// Group writable blob. Obsolete mode kept for compatibility reasons
+  BlobGroupWritable,
+  /// Blob executable
+  BlobExecutable,
+  /// Link
+  Link,
+  /// Commit
+  Commit,
+}
+
+impl From<git2::FileMode> for FileMode {
+  fn from(value: git2::FileMode) -> Self {
+    match value {
+      git2::FileMode::Unreadable => FileMode::Unreadable,
+      git2::FileMode::Tree => FileMode::Tree,
+      git2::FileMode::Blob => FileMode::Blob,
+      git2::FileMode::BlobGroupWritable => FileMode::BlobGroupWritable,
+      git2::FileMode::BlobExecutable => FileMode::BlobExecutable,
+      git2::FileMode::Link => FileMode::Link,
+      git2::FileMode::Commit => FileMode::Commit,
+    }
+  }
+}
+
+#[napi(iterator)]
+/// An iterator over the diffs in a delta
+pub struct Deltas {
+  pub(crate) inner: SharedReference<crate::diff::Diff, git2::Deltas<'static>>,
+  /// Liveness flag shared with the owning `Repository` (see `Repository::alive`).
+  pub(crate) alive: Arc<AtomicBool>,
+}
+
+#[napi]
+impl Generator for Deltas {
+  type Yield = DiffDelta;
+  type Next = ();
+  type Return = ();
+
+  fn next(&mut self, _value: Option<()>) -> Option<Self::Yield> {
+    // `Generator::next` returns `Option`, not `Result`, so it cannot throw. On
+    // disposal the iterator borrows a freed repo, so returning `None` (a safe
+    // iteration end) is the correct memory-safe substitute for a throw — it
+    // prevents the use-after-free deref below.
+    if !self.alive.load(Ordering::Relaxed) {
+      return None;
+    }
+    let alive = self.alive.clone();
+    self.inner.next().map(|delta| DiffDelta {
+      inner: delta,
+      alive,
+    })
+  }
+}
+
+#[napi]
+pub struct DiffDelta {
+  pub(crate) inner: git2::DiffDelta<'static>,
+  /// Liveness flag shared with the owning `Repository` (see `Repository::alive`).
+  /// The owned `git2::DiffDelta` still points into the repo's diff data.
+  pub(crate) alive: Arc<AtomicBool>,
+}
+
+#[napi]
+impl DiffDelta {
+  #[napi]
+  /// Returns the flags on the delta.
+  ///
+  /// The value is the raw `git2::DiffFlags` bitset (an OR-able `number`); test
+  /// individual bits with `diffFlagsContains` and the `DiffFlags` constants.
+  pub fn flags(&self) -> crate::Result<u32> {
+    ensure_alive(&self.alive)?;
+    Ok(self.inner.flags().bits())
+  }
+
+  #[napi]
+  /// Returns the number of files in this delta.
+  pub fn num_files(&self) -> crate::Result<u32> {
+    ensure_alive(&self.alive)?;
+    Ok(self.inner.nfiles() as u32)
+  }
+
+  #[napi]
+  /// Returns the status of this entry
+  pub fn status(&self) -> crate::Result<Delta> {
+    ensure_alive(&self.alive)?;
+    Ok(self.inner.status().into())
+  }
+
+  #[napi]
+  /// Return the file which represents the "from" side of the diff.
+  ///
+  /// What side this means depends on the function that was used to generate
+  /// the diff and will be documented on the function itself.
+  pub fn old_file(&self) -> crate::Result<DiffFile> {
+    ensure_alive(&self.alive)?;
+    Ok(DiffFile {
+      inner: self.inner.old_file(),
+      alive: self.alive.clone(),
+    })
+  }
+
+  #[napi]
+  /// Return the file which represents the "to" side of the diff.
+  ///
+  /// What side this means depends on the function that was used to generate
+  /// the diff and will be documented on the function itself.
+  pub fn new_file(&self) -> crate::Result<DiffFile> {
+    ensure_alive(&self.alive)?;
+    Ok(DiffFile {
+      inner: self.inner.new_file(),
+      alive: self.alive.clone(),
+    })
+  }
+}
+
+#[napi]
+pub enum Delta {
+  /// No changes
+  Unmodified,
+  /// Entry does not exist in old version
+  Added,
+  /// Entry does not exist in new version
+  Deleted,
+  /// Entry content changed between old and new
+  Modified,
+  /// Entry was renamed between old and new
+  Renamed,
+  /// Entry was copied from another old entry
+  Copied,
+  /// Entry is ignored item in workdir
+  Ignored,
+  /// Entry is untracked item in workdir
+  Untracked,
+  /// Type of entry changed between old and new
+  Typechange,
+  /// Entry is unreadable
+  Unreadable,
+  /// Entry in the index is conflicted
+  Conflicted,
+}
+
+impl From<git2::Delta> for Delta {
+  fn from(delta: git2::Delta) -> Self {
+    match delta {
+      git2::Delta::Unmodified => Delta::Unmodified,
+      git2::Delta::Added => Delta::Added,
+      git2::Delta::Deleted => Delta::Deleted,
+      git2::Delta::Modified => Delta::Modified,
+      git2::Delta::Renamed => Delta::Renamed,
+      git2::Delta::Copied => Delta::Copied,
+      git2::Delta::Ignored => Delta::Ignored,
+      git2::Delta::Untracked => Delta::Untracked,
+      git2::Delta::Typechange => Delta::Typechange,
+      git2::Delta::Unreadable => Delta::Unreadable,
+      git2::Delta::Conflicted => Delta::Conflicted,
+    }
+  }
+}
+
+#[napi]
+pub struct DiffFile {
+  pub(crate) inner: git2::DiffFile<'static>,
+  /// Liveness flag shared with the owning `Repository` (see `Repository::alive`).
+  /// The owned `git2::DiffFile` still points into the repo's diff data.
+  pub(crate) alive: Arc<AtomicBool>,
+}
+
+#[napi]
+impl DiffFile {
+  #[napi]
+  /// Returns the Oid of this item.
+  ///
+  /// If this entry represents an absent side of a diff (e.g. the `old_file`
+  /// of a `Added` delta), then the oid returned will be zeroes.
+  pub fn id(&self) -> crate::Result<String> {
+    ensure_alive(&self.alive)?;
+    Ok(self.inner.id().to_string())
+  }
+
+  #[napi]
+  /// Returns the path of the entry relative to the working directory of the
+  /// repository, as a lossily-decoded (UTF-8) string.
+  ///
+  /// Returns `null` when the path is absent or not representable.
+  pub fn path<'env>(&'env self, env: &'env Env) -> crate::Result<Option<JsString<'env>>> {
+    ensure_alive(&self.alive)?;
+    Ok(
+      self
+        .inner
+        .path()
+        .and_then(|p| path_to_javascript_string(env, p).ok()),
+    )
+  }
+
+  #[napi]
+  /// Returns the size of this entry, in bytes
+  pub fn size(&self) -> crate::Result<i64> {
+    ensure_alive(&self.alive)?;
+    Ok(self.inner.size() as i64)
+  }
+
+  #[napi]
+  /// Returns `true` if file(s) are treated as binary data.
+  pub fn is_binary(&self) -> crate::Result<bool> {
+    ensure_alive(&self.alive)?;
+    Ok(self.inner.is_binary())
+  }
+
+  #[napi]
+  /// Returns `true` if file(s) are treated as text data.
+  pub fn is_not_binary(&self) -> crate::Result<bool> {
+    ensure_alive(&self.alive)?;
+    Ok(self.inner.is_not_binary())
+  }
+
+  #[napi]
+  /// Returns `true` if `id` value is known correct.
+  pub fn is_valid_id(&self) -> crate::Result<bool> {
+    ensure_alive(&self.alive)?;
+    Ok(self.inner.is_valid_id())
+  }
+
+  #[napi]
+  /// Returns `true` if file exists at this side of the delta.
+  pub fn exists(&self) -> crate::Result<bool> {
+    ensure_alive(&self.alive)?;
+    Ok(self.inner.exists())
+  }
+
+  #[napi]
+  /// Returns file mode.
+  pub fn mode(&self) -> crate::Result<FileMode> {
+    ensure_alive(&self.alive)?;
+    Ok(self.inner.mode().into())
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "package": "ws",
+  "version": "8.22.0",
+  "license": "MIT",
+  "licenseSha256": "2b29dcfe0d6471f7e8c92c5fb38c9f93edee10330937055440192f1832b1ecef",
+  "source": "https://www.npmjs.com/package/ws/v/8.22.0",
+  "scope": "original-package-license-only; emitted-module correspondence requires the next same-source build"
+}

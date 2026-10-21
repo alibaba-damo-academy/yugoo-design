@@ -1,0 +1,63 @@
+# Declarative translation of ProductNotification model validators and
+# deliverables.py. The schema owns scalar/container types; these rules own the
+# completion minimum, identity, durable order, and channel-list constraints.
+skill: notification_design
+
+rules:
+  - id: notifications_present
+    scope: [completion]
+    code: notification_design.empty
+    message: "collection 'notifications' has no items"
+    check: { non_empty_map: notifications }
+
+  - id: notification_ids_match_keys
+    scope: [state, completion]
+    code: notification_design.invalid_id
+    message: "notification mapping key {key} must equal notification.id"
+    check:
+      map_keys_match_field: { map: notifications, field: id }
+
+  - id: notification_order_exact
+    scope: [state, completion]
+    code: notification_design.invalid_order
+    message: "notification_order must contain notification {key} exactly once"
+    check:
+      order_exactly_covers_map: { order: notification_order, map: notifications }
+
+  - id: trigger_present
+    scope: [completion]
+    code: notification_design.missing_trigger
+    message: "item {key} in 'notifications' has no 'trigger'"
+    check: { for_each_in_map: notifications, non_empty_string: trigger }
+
+  - id: recipients_present
+    scope: [completion]
+    code: notification_design.missing_recipients
+    message: "item {key} in 'notifications' has no 'recipients'"
+    check: { for_each_in_map: notifications, non_empty_list: recipients }
+
+  - id: recipients_valid
+    scope: [state, completion]
+    code: notification_design.invalid_recipients
+    message: "notification {key} recipients must be unique non-blank strings"
+    check:
+      map_entries_have_unique_non_empty_string_list: { map: notifications, field: recipients }
+
+  - id: channels_present
+    scope: [completion]
+    code: notification_design.missing_channels
+    message: "item {key} in 'notifications' has no 'channels'"
+    check: { for_each_in_map: notifications, non_empty_list: channels }
+
+  - id: channels_valid
+    scope: [state, completion]
+    code: notification_design.invalid_channels
+    message: "notification {key} channels must be unique non-blank strings"
+    check:
+      map_entries_have_unique_non_empty_string_list: { map: notifications, field: channels }
+
+  - id: message_present
+    scope: [completion]
+    code: notification_design.missing_message
+    message: "item {key} in 'notifications' has no 'message'"
+    check: { for_each_in_map: notifications, non_empty_string: message }

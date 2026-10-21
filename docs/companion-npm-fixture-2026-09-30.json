@@ -1,0 +1,30 @@
+{
+  "name": "@fixture-design-release/design-system-companion",
+  "version": "0.1.0-review.1",
+  "description": "Fixture manifest for review; payload and npm publication are not implemented.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": { "node": ">=22.19.0 <23" },
+  "publishConfig": { "access": "public" },
+  "bin": { "design-system": "bin/design-system.mjs" },
+  "files": ["bin", "payload", "licenses", "release-manifest.json", "README.md", "LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"],
+  "dependencies": {
+    "@ladybugdb/wasm-core": "npm:@fixture-design-release/ladybug-wasm-core@0.19.1-walfix.1",
+    "@huggingface/transformers": "3.8.1",
+    "onnxruntime-common": "1.21.0",
+    "undici": "8.10.0"
+  },
+  "x-design-release-review": {
+    "fixture": true,
+    "publishReady": false,
+    "registryChecked": false,
+    "platformsVerified": [],
+    "sharedPayload": "payload/shared",
+    "hostOverlays": ["codex", "claude-code", "qoder"],
+    "additionalHostTargetsPending": ["codex-desktop", "qwenwork"],
+    "platformStrategy": "npm installs public runtime dependencies on the target; do not copy build-machine node_modules",
+    "modelIncluded": false,
+    "installPolicyPending": ["native dependency lifecycle controls", "CPU-only ONNX provisioning", "config receipt and rollback", "relocatable host overlay launchers"],
+    "payloadImplemented": false
+  }
+}

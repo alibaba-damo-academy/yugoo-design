@@ -1,0 +1,67 @@
+# business_data Design Files contract, translated from BusinessDataState v3.
+type: object
+additional_properties: false
+required: [schema_version, objects, object_order]
+properties:
+  skill_name: { knowledge: { role: metadata }, type: string }
+  schema_version: { knowledge: { role: metadata }, type: enum, values: [3] }
+  object_order: { knowledge: { role: metadata }, type: array, items: { type: string } }
+  relations:
+    type: map
+    value:
+      type: object
+      additional_properties: false
+      knowledge: { role: content, granularity: unit, label: 对象关系 }
+      required: [id, kind, name, source, target]
+      properties:
+        id: { knowledge: { role: metadata }, type: string }
+        kind: { type: enum, values: [association, generalization] }
+        name: { type: string }
+        source:
+          type: string
+          knowledge: { role: reference, target: "business_data/business_data.json#/objects" }
+        target:
+          type: string
+          knowledge: { role: reference, target: "business_data/business_data.json#/objects" }
+        description: { type: string }
+        source_count: { type: enum, values: ["1", "0..1", "1..*", "0..*"] }
+        target_count: { type: enum, values: ["1", "0..1", "1..*", "0..*"] }
+  objects:
+    type: map
+    value:
+      type: object
+      additional_properties: false
+      required: [id, name]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        fields:
+          type: map
+          value:
+            type: object
+            additional_properties: false
+            required: [id, name]
+            properties:
+              id: { type: string }
+              name: { type: string }
+              meaning: { type: string }
+              value_type:
+                type: enum
+                values: [text, long_text, number, amount, date, date_time, single_choice, multiple_choice, yes_no, file, other]
+              requirement: { type: enum, values: [optional, always, conditional] }
+              required_when: { type: string }
+              example: { type: string }
+              options: { type: array, items: { type: string } }
+        field_order: { knowledge: { role: metadata }, type: array, items: { type: string } }
+        states:
+          type: map
+          value:
+            type: object
+            additional_properties: false
+            required: [id, name]
+            properties:
+              id: { type: string }
+              name: { type: string }
+              meaning: { type: string }
+        state_order: { knowledge: { role: metadata }, type: array, items: { type: string } }

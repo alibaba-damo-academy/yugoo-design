@@ -1,0 +1,62 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& node \"${env:CLAUDE_PLUGIN_ROOT}/scripts/qwenwork-context.mjs\""
+          }
+        ]
+      }
+    ],
+    "CwdChanged": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& node \"${env:CLAUDE_PLUGIN_ROOT}/scripts/qwenwork-context.mjs\""
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& node \"${env:CLAUDE_PLUGIN_ROOT}/scripts/qwenwork-context.mjs\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& node \"${env:CLAUDE_PLUGIN_ROOT}/scripts/qwenwork-context.mjs\""
+          }
+        ]
+      }
+    ],
+    "FileChanged": [
+      {
+        "matcher": ".design-system-qwenwork-notify",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& node \"${env:CLAUDE_PLUGIN_ROOT}/scripts/qwenwork-notification.mjs\"",
+            "asyncRewake": true
+          }
+        ]
+      }
+    ]
+  }
+}

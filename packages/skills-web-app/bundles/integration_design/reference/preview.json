@@ -1,0 +1,16 @@
+{
+  "schema_version": 8,
+  "integrations": {
+    "I-PREVIEW-001": {
+      "id": "I-PREVIEW-001",
+      "title": "合成示例：读取外部材料标题",
+      "description": "仅演示连接表单：从外部资料服务获取标题。服务入口和认证方式尚未确定，不是已实现连接。",
+      "url": "",
+      "secrets": {},
+      "secret_order": [],
+      "prompt_content": "示例意图：在保存材料时读取其标题。实际访问方式未确定；不得根据此预览调用任何外部服务。",
+      "business_rules": "- 仅用于 Studio 合成预览\n- URL 与认证方式未确定，此记录不是完整集成设计\n- 不保存真实凭据，不宣称外部连接已执行"
+    }
+  },
+  "integration_order": ["I-PREVIEW-001"]
+}

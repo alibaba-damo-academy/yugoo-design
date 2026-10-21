@@ -1,0 +1,37 @@
+{
+  "name": "dsh-design-system",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Interactive Design System as a pure dsh plugin: Mindset-gated Design Bundles, declarative design panels, and git-versioned Design Files.",
+  "packageManager": "pnpm@11.7.0",
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test:public-contracts": "node --test scripts/public-canonical-documents.test.mjs scripts/public-snapshot-preflight.test.mjs scripts/public-snapshot-utf8.test.mjs scripts/public-export-large-artifact.test.mjs scripts/release-evidence.test.mjs scripts/release-own-license.test.mjs scripts/kit-test-file-policy.test.mjs scripts/release-consumer-config.test.mjs scripts/release-physical-entry.test.mjs scripts/release-npm-candidates.test.mjs scripts/companion-npm-candidate.test.mjs scripts/companion-bundled-license.test.mjs scripts/official-dsh-json-input.test.mjs scripts/companion-packaged-knowledge.test.mjs scripts/emitted-loader-check.test.mjs scripts/known-browser-loader-proof.test.mjs scripts/known-node-loader-proof.test.mjs scripts/embedded-image-loader-proof.test.mjs scripts/pica-worker-evidence.test.mjs scripts/fixture-notice-map.test.mjs scripts/build-companion-npm-candidate.test.mjs scripts/public-snapshot-stage.test.mjs scripts/public-export.test.mjs scripts/public-export-recovery.test.mjs scripts/public-sync-prepare.test.mjs scripts/public-sync-receipt.test.mjs scripts/public-sync-lock.test.mjs scripts/public-sync-journal.test.mjs scripts/public-sync-directories.test.mjs scripts/public-sync-directory-recovery.test.mjs scripts/public-sync-directory-rollback.test.mjs scripts/public-sync-rollback-completion.test.mjs scripts/public-sync-rollback-release.test.mjs scripts/public-sync-file-step.test.mjs scripts/public-sync-recovery-plan.test.mjs scripts/public-sync-completion.test.mjs scripts/public-sync-apply.test.mjs scripts/public-sync-rollback.test.mjs scripts/public-sync-interruption.test.mjs scripts/public-sync-resume-lease.test.mjs scripts/public-sync-resume-claim.test.mjs packages/core/test/json-value.test.mjs packages/core/test/settings-consumer.test.mjs packages/companion/test/portable-knowledge-output.test.mjs scripts/public-preflight-portability.test.mjs packages/panel/test/design-command.test.mjs",
+    "test:public-documents": "node --test scripts/public-canonical-documents.test.mjs scripts/public-snapshot-stage.test.mjs scripts/public-export.test.mjs"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@types/node": "^22.20.0",
+    "css-tree": "3.2.1",
+    "playwright": "1.61.1",
+    "semver": "7.8.5",
+    "tsdown": "^0.22.2",
+    "tsx": "4.22.4",
+    "typescript": "^6.0.3",
+    "ws": "8.22.0",
+    "yaml": "^2.9.0",
+    "zod": "^4.4.3"
+  },
+  "directories": {
+    "doc": "docs",
+    "example": "examples"
+  },
+  "keywords": [],
+  "author": "YugooDesign Team",
+  "license": "Apache-2.0"
+}

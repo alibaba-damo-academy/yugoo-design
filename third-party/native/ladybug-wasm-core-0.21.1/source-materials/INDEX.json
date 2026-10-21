@@ -1,0 +1,115 @@
+{
+  "scope": "Original license texts from the source commit declared in npm provenance; not a verified complete binary inventory",
+  "repository": "https://github.com/LadybugDB/ladybug",
+  "commit": "17a70e51c31b50d30231da32154d9ff4bef0d95f",
+  "materials": [
+    {
+      "sourcePath": "third_party/antlr4_runtime/LICENSE",
+      "url": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/third_party/antlr4_runtime/LICENSE",
+      "materialPath": "source-materials/third_party/antlr4_runtime/LICENSE",
+      "bytes": 4237,
+      "sha256": "1e41356f47b55ce77df2f639d1fdf3c2d50587f857307144e9aa547618974b32"
+    },
+    {
+      "sourcePath": "third_party/brotli/LICENSE",
+      "url": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/third_party/brotli/LICENSE",
+      "materialPath": "source-materials/third_party/brotli/LICENSE",
+      "bytes": 1084,
+      "sha256": "3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94"
+    },
+    {
+      "sourcePath": "third_party/fastpfor/LICENSE",
+      "url": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/third_party/fastpfor/LICENSE",
+      "materialPath": "source-materials/third_party/fastpfor/LICENSE",
+      "bytes": 10273,
+      "sha256": "73ba74dfaa520b49a401b5d21459a8523a146f3b7518a833eea5efa85130bf68"
+    },
+    {
+      "sourcePath": "third_party/parquet/LICENSE",
+      "url": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/third_party/parquet/LICENSE",
+      "materialPath": "source-materials/third_party/parquet/LICENSE",
+      "bytes": 11625,
+      "sha256": "70b6a7d630fae9f49643f9b16bee42a2feda68301f9c14470e7fb5ad0599bb9f"
+    },
+    {
+      "sourcePath": "third_party/snappy/LICENSE",
+      "url": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/third_party/snappy/LICENSE",
+      "materialPath": "source-materials/third_party/snappy/LICENSE",
+      "bytes": 2645,
+      "sha256": "55172044f7e241207117448a4d9d6ba1d0925c8ad66b5d4c08c70adfa9cc3de6"
+    },
+    {
+      "sourcePath": "third_party/thrift/LICENSE",
+      "url": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/third_party/thrift/LICENSE",
+      "materialPath": "source-materials/third_party/thrift/LICENSE",
+      "bytes": 12610,
+      "sha256": "23df881cec3192d1f4474633c14eb2ec30a45b84f8daeb82b9de5d2bd3ac8218"
+    },
+    {
+      "sourcePath": "third_party/yyjson/LICENSE",
+      "url": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/third_party/yyjson/LICENSE",
+      "materialPath": "source-materials/third_party/yyjson/LICENSE",
+      "bytes": 1084,
+      "sha256": "45e384d3d52c73cba3a64d6e6c25d47cd738cd8a55c30629e3201046eda62947"
+    },
+    {
+      "sourcePath": "third_party/zstd/LICENSE",
+      "url": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/third_party/zstd/LICENSE",
+      "materialPath": "source-materials/third_party/zstd/LICENSE",
+      "bytes": 1549,
+      "sha256": "7055266497633c9025b777c78eb7235af13922117480ed5c674677adc381c9d8"
+    },
+    {
+      "sourcePath": "third_party/miniz/LICENSE",
+      "url": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/third_party/miniz/LICENSE",
+      "materialPath": "source-materials/third_party/miniz/LICENSE",
+      "bytes": 1184,
+      "sha256": "0115478d567121238cf6cc1c0c361926cf07a49d9e4c9e66da97fac6a01646b3"
+    },
+    {
+      "sourcePath": "third_party/mbedtls/LICENSE",
+      "url": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/third_party/mbedtls/LICENSE",
+      "materialPath": "source-materials/third_party/mbedtls/LICENSE",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "sourcePath": "third_party/lz4/LICENSE",
+      "url": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/third_party/lz4/LICENSE",
+      "materialPath": "source-materials/third_party/lz4/LICENSE",
+      "bytes": 1311,
+      "sha256": "8b58c446121a109ccf32edc094bba3010a3d85e4ee3702950db55e4d3e87736c"
+    },
+    {
+      "sourcePath": "third_party/simsimd/LICENSE",
+      "url": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/third_party/simsimd/LICENSE",
+      "materialPath": "source-materials/third_party/simsimd/LICENSE",
+      "bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "sourcePath": "third_party/utf8proc/LICENSE.md",
+      "url": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/third_party/utf8proc/LICENSE.md",
+      "materialPath": "source-materials/third_party/utf8proc/LICENSE.md",
+      "bytes": 5125,
+      "sha256": "3b510150d34f248a221bb88e1d811238d6c6c18b51231822c42974c39bb07256"
+    },
+    {
+      "sourcePath": "third_party/re2/LICENSE",
+      "url": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/third_party/re2/LICENSE",
+      "materialPath": "source-materials/third_party/re2/LICENSE",
+      "bytes": 1558,
+      "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449"
+    }
+  ],
+  "remainingSourceTargetsWithoutStandaloneLicense": [
+    "antlr4_cypher",
+    "roaring_bitmap",
+    "fast_float"
+  ],
+  "limits": [
+    "Source linkage is declared by npm provenance; cryptographic verification and binary correspondence remain unresolved.",
+    "Header-only dependencies, static httpfs extension and Emscripten runtime are not closed by these license texts.",
+    "Do not infer that every source license applies to every binary or that this is the complete compiled-in inventory."
+  ]
+}

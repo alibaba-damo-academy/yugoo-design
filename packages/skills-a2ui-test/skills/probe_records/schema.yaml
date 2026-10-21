@@ -1,0 +1,29 @@
+type: "object"
+additional_properties: false
+required: ["schema_version", "functions"]
+properties:
+  schema_version:
+    type: "enum"
+    values: [1]
+    knowledge:
+      role: "metadata"
+  functions:
+    type: "map"
+    value:
+      type: "object"
+      additional_properties: false
+      required: ["function_id", "function_name", "function_description", "function_epic", "priority", "rejected"]
+      properties:
+        function_id:
+          type: "string"
+        function_name:
+          type: "string"
+        function_description:
+          type: "string"
+        function_epic:
+          type: "string"
+        priority:
+          type: "enum"
+          values: ["High", "Medium", "Low"]
+        rejected:
+          type: "boolean"

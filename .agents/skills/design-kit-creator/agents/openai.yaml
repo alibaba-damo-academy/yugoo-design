@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design Kit Creator"
+  short_description: "Compose professional Kits from standard Bundles"
+  default_prompt: "Use $design-kit-creator to create this Kit's mindset and Bundles through the layered authoring skills."

@@ -1,0 +1,27 @@
+{
+  "rounds": {
+    "R-PREVIEW-001": {
+      "round_id": "R-PREVIEW-001",
+      "topic": "合成预览示例：个人阅读材料整理方式（未执行调研）",
+      "stage": "identified",
+      "directions": {
+        "D-PREVIEW-001": {
+          "direction_id": "D-PREVIEW-001",
+          "title": "从保存到再次阅读的使用场景",
+          "research_points": ["了解材料难以再次找到的典型情境。", "比较按标题查找与按主题整理的使用边界。"],
+          "findings_file": null
+        },
+        "D-PREVIEW-002": {
+          "direction_id": "D-PREVIEW-002",
+          "title": "个人笔记与材料的关联方式",
+          "research_points": ["了解笔记如何帮助读者恢复阅读上下文。"],
+          "findings_file": null
+        }
+      },
+      "direction_order": ["D-PREVIEW-001", "D-PREVIEW-002"],
+      "conclusion_file": null
+    }
+  },
+  "round_order": ["R-PREVIEW-001"],
+  "current_round_id": "R-PREVIEW-001"
+}

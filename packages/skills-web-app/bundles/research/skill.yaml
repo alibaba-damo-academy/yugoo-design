@@ -1,0 +1,70 @@
+# Skill manifest. Repository authoring guide: docs/bundle-contract.md.
+
+# Stable internal id; must equal this directory name.
+name: research
+version: "1.0"
+
+# Optional candidate hint, not automatic execution or a unique provider binding.
+review_support: [reflection]
+
+# Bilingual FE heading and progress title.
+title:
+  zh: 调研分析
+  en: Research
+
+# Bilingual picker fallback label.
+label:
+  zh: 先做一轮调研
+  en: Do a round of research
+
+
+# FE display order only; never selects a skill.
+order: 2
+
+# FE icon name.
+icon: search
+
+# The foreground Producer publishes a revision-pinned plan for confirmation,
+# then owns the complete research run. Optional delegation only returns bounded
+# direction candidates while the Producer remains responsible for integration.
+execution:
+  mode: main
+  handoff: user_continue
+  resume_action:
+    # Stable action id kept for parity with the sdk-pilot manifest. Any way a
+    # user resumes this pause (the label below or its aliases, sent as a chat
+    # message) means "continue the current plan".
+    route_id: execute_plan
+    label:
+      zh: 开始调研
+      en: Start Research
+    # Exact controls that mean "run the current plan". Other chat remains input.
+    aliases:
+      zh:
+        - 执行调研计划
+        - 继续调研
+        - 继续执行调研
+      en:
+        - Execute research plan
+        - Continue research
+
+# Presentation contract: dispatch is driven by this metadata, never by
+# the skill name. `native` selects a bespoke renderer supplied by
+# dsh-design-provider-web-app; skills without this block render through the
+# declarative panel.yaml interpreter.
+producer:
+  required_tools: [web_search]
+  optional_tools: [web_fetch]
+
+presentation:
+  mode: declarative
+
+# Optional model-facing summary; omission does not block design work.
+# 摘要显示轮次与综合结论引用。完整方向、要点、来源与 Markdown/HTML 报告通过产物工作区读取；执行状态来自 Host，不写入 Design JSON。
+summary:
+  collections:
+    - source: rounds
+      title: 调研轮次
+      title_fields: [topic]
+      order: round_order
+      fields: [stage, conclusion_file]

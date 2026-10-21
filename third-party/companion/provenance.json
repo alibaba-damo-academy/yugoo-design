@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "licenseChecks": [
+    {
+      "path": "elkjs-0.10.2/LICENSE.md",
+      "url": "https://raw.githubusercontent.com/kieler/elkjs/f64a4813dcab63c30fe67a32470cd1c05f4f7031/LICENSE.md",
+      "bytes": 14480,
+      "sha256": "89591d4578fb1ebd91501312a3d25f021bd865a2e436641c1cf7b1bc7e3c1617",
+      "matchesInstalledBuildInput": true
+    },
+    {
+      "path": "bpmn-js-18.24.0/LICENSE",
+      "url": "https://raw.githubusercontent.com/bpmn-io/bpmn-js/v18.24.0/LICENSE",
+      "bytes": 1390,
+      "sha256": "5788cf8bd61481776cee1c943595525499a1355c045e9244f92e6c8092c06770",
+      "matchesInstalledBuildInput": true
+    },
+    {
+      "path": "dompurify-3.4.16/LICENSE",
+      "sourcePackagePath": "LICENSE",
+      "package": "dompurify",
+      "version": "3.4.16",
+      "sourceLocator": "https://github.com/cure53/DOMPurify",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "matchesInstalledBuildInput": true,
+      "independentUpstreamRetrievalVerified": false
+    },
+    {
+      "path": "dompurify-3.4.16/LICENSE-MPL",
+      "sourcePackagePath": "LICENSE-MPL",
+      "package": "dompurify",
+      "version": "3.4.16",
+      "sourceLocator": "https://github.com/cure53/DOMPurify",
+      "bytes": 16726,
+      "sha256": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85",
+      "matchesInstalledBuildInput": true,
+      "independentUpstreamRetrievalVerified": false
+    },
+    {
+      "path": "pako-2.0.3/LICENSE",
+      "sourcePackagePath": "LICENSE",
+      "package": "pako",
+      "version": "2.0.3",
+      "sourceLocator": "https://github.com/nodeca/pako",
+      "bytes": 1104,
+      "sha256": "a04665b3b2de56c66730c1f720f528175739e4104f79073614aa611da1e85539",
+      "matchesInstalledBuildInput": true,
+      "independentUpstreamRetrievalVerified": false
+    },
+    {
+      "path": "pako-2.0.3/zlib-README",
+      "sourcePackagePath": "lib/zlib/README",
+      "package": "pako",
+      "version": "2.0.3",
+      "sourceLocator": "https://github.com/nodeca/pako",
+      "bytes": 2180,
+      "sha256": "d8b499598e43d755ea8918448128259ff01820c50d94d5a48c8883d0a594ddb1",
+      "matchesInstalledBuildInput": true,
+      "independentUpstreamRetrievalVerified": false
+    },
+    {
+      "path": "pako-1.0.11/LICENSE",
+      "sourcePackagePath": "LICENSE",
+      "package": "pako",
+      "version": "1.0.11",
+      "sourceLocator": "https://registry.npmjs.org/pako/-/pako-1.0.11.tgz",
+      "bytes": 1104,
+      "sha256": "a04665b3b2de56c66730c1f720f528175739e4104f79073614aa611da1e85539",
+      "matchesInstalledBuildInput": true,
+      "officialArchiveIntegrityVerified": true
+    },
+    {
+      "path": "pako-1.0.11/zlib-README",
+      "sourcePackagePath": "lib/zlib/README",
+      "package": "pako",
+      "version": "1.0.11",
+      "sourceLocator": "https://registry.npmjs.org/pako/-/pako-1.0.11.tgz",
+      "bytes": 2180,
+      "sha256": "d8b499598e43d755ea8918448128259ff01820c50d94d5a48c8883d0a594ddb1",
+      "matchesInstalledBuildInput": true,
+      "officialArchiveIntegrityVerified": true
+    }
+  ],
+  "elkjsNpmGitHeadMatchesOfficialTag": "f64a4813dcab63c30fe67a32470cd1c05f4f7031",
+  "elkjsRegistryMetadata": "https://registry.npmjs.org/elkjs/0.10.2",
+  "completeBundledInventory": false,
+  "elkjsUpstreamDeclaredJavaSourceIdentityLocated": true,
+  "elkjsUpstreamJavaCommit": "28e5173243cab0cf4e2c9816c803bc0d5c47ab24",
+  "elkjsReleaseSourceDeclaration": "https://github.com/kieler/elkjs/releases/tag/0.10.2",
+  "elkjsSourceBindingEvidence": "elkjs-0.10.2/release-source-binding.json",
+  "independentRegenerationVerified": false,
+  "releaseLicenseAcceptance": false
+}

@@ -1,0 +1,27 @@
+{
+  "name": "yugoo-design-git-native",
+  "version": "0.1.0-beta.2",
+  "description": "Node-only local Git binding for Yugoo Design, with bounded object-header access.",
+  "license": "MIT",
+  "main": "index.cjs",
+  "types": "index.d.ts",
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "files": [
+    "index.cjs",
+    "index.d.ts",
+    "native/*.node",
+    "LICENSE",
+    "NOTICE",
+    "SOURCE.json",
+    "native-source/**",
+    "third-party/**",
+    "scripts/*.cjs"
+  ],
+  "scripts": {
+    "test": "node --test test/header.test.mjs",
+    "prepack": "node scripts/check-artifacts.cjs",
+    "build:native": "node scripts/build.cjs"
+  }
+}

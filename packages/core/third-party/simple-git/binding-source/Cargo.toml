@@ -1,0 +1,36 @@
+[package]
+edition = "2024"
+name = "napi-rs_simple-git"
+version = "0.0.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+chrono = "0.4"
+git2 = { version = "0.21", features = ["default", "vendored-libgit2", "vendored-openssl"] }
+libgit2-sys = { version = "*", features = ["ssh", "https", "vendored", "vendored-openssl"] }
+home = "0.5"
+once_cell = "1"
+
+[dependencies.napi]
+version = "3.0"
+default-features = false
+features = ["async", "chrono_date", "napi6"]
+
+[dependencies.napi-derive]
+version = "3.0"
+
+[target.'cfg(all(target_os = "linux", target_env = "gnu", any(target_arch = "x86_64", target_arch = "aarch64")))'.dependencies]
+dirs = "6"
+
+[target.'cfg(all(target_os = "linux", target_env = "gnu", target_arch = "x86_64"))'.dependencies]
+libz-sys = { version = "1", features = ["static"] }
+
+[build-dependencies]
+napi-build = "2"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = "symbols"

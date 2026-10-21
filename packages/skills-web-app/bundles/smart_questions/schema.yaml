@@ -1,0 +1,93 @@
+# smart_questions Design Files data contract (write-time validation).
+# Faithful declarative translation of sdk-pilot
+# skill/design_skills/smart_questions/schema.py (Pydantic, extra="forbid").
+#
+# Executor-owned fixed-card contract (not automatic schema/Core seeding):
+# carry both fixed definitions into every complete state — prompt, kind and
+# choices are stable; only `answer` and `detail` are user-owned. Fixed cards
+# have no `round` / `rejected`; panel.yaml declares their UI protection.
+#
+#   const_auth_mode:
+#     prompt: 是否需要注册登录？
+#     kind: single
+#     choices:
+#       - { value: anonymous, label: 不需要，直接使用, recommended: true }
+#       - { value: auth_required, label: 需要，支持注册登录, recommended: false }
+#     answer: anonymous
+#     detail: ""
+#   const_storage_mode:
+#     prompt: 应用数据如何保存？
+#     kind: single
+#     choices:
+#       - { value: browser_temp, label: 仅当前浏览器临时保存, recommended: true }
+#       - { value: database_persistent, label: 持久保存，可跨设备继续使用, recommended: false }
+#     answer: browser_temp
+#     detail: ""
+#
+# Choice quality, answer resolution, fixed-card, and attachment-quality
+# semantics are Producer self-checks in SKILL.md; this schema owns the stable
+# persisted shape only.
+type: object
+additional_properties: false
+properties:
+  # Optional for existing files. New rounds have independently authored display
+  # copy keyed by the saved nonnegative integer round's decimal string, not its
+  # consecutive UI label. Meaningful nonempty copy is an executor self-check.
+  rounds:
+    type: map
+    value:
+      type: object
+      additional_properties: false
+      required: [title, description]
+      properties:
+        title: { type: string }
+        description: { type: string }
+  questions:
+    type: map
+    value:
+      type: object
+      additional_properties: false
+      required: [prompt]
+      properties:
+        prompt: { type: string }
+        kind: { type: enum, values: [single, multiple, text] }
+        choices:
+          type: array
+          items:
+            type: object
+            additional_properties: false
+            required: [value, label]
+            properties:
+              value: { type: string }
+              label: { type: string }
+              recommended: { type: boolean }
+        # The direct response: text questions store their substantive answer here;
+        # choice questions store selected choice values. Source-supported answers
+        # in reconstruction belong here too, without implying user confirmation.
+        # Leave genuinely unknown answers empty; never promote a proposal as an answer.
+        answer: { type: string }
+        # Optional supplementary explanation, constraints or source locations.
+        # Do not put a known text answer only here. A choice response outside the
+        # available options may be preserved here without inventing a selection.
+        # Supplementary detail alone does not mark the question answered.
+        detail: { type: string }
+        multimodal_answer:
+          # The native panel prepares each local Bundle-owned Design File and
+          # its reference together for generic atomic Panel Save. New uploads
+          # use a SHA-256 filename. Browser-only transport bytes are never
+          # persisted in canonical state.
+          type: array
+          items:
+            type: object
+            additional_properties: false
+            required: [type, file_md5, filename, mime_type, size_bytes]
+            properties:
+              # `image` remains readable for references created before generic files.
+              type: { type: enum, values: [file, image] }
+              file_md5: { type: string }
+              filename: { type: string }
+              mime_type: { type: string }
+              size_bytes: { type: number }
+              artifact_file: { type: string }
+        round: { type: number }
+        rejected: { type: boolean }

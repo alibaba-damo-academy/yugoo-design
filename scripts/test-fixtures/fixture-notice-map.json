@@ -1,0 +1,214 @@
+{
+  "schemaVersion": 1,
+  "scope": "fixed-public-test-fixtures-only",
+  "completeBundledInventory": false,
+  "releaseLicenseAcceptance": false,
+  "noticeFiles": [
+    {
+      "path": "scripts/test-fixtures/pica-worker/source/glur/LICENSE",
+      "bytes": 1083,
+      "sha256": "b6138f8837c5776c0760cb5a711e593dacd423b11195f6365ab17be69e715fcc"
+    },
+    {
+      "path": "scripts/test-fixtures/pica-worker/source/inherits/LICENSE",
+      "bytes": 749,
+      "sha256": "5ffe28e7ade7d8f10d85d5337a73fd793dac5c462fb9a28fbf8c5046c7fbca3b"
+    },
+    {
+      "path": "scripts/test-fixtures/pica-worker/source/multimath/LICENSE",
+      "bytes": 1079,
+      "sha256": "87ce65401af04f9a31e681276faeb166e0de56cc483751d6ca99a7dcb353dd7f"
+    },
+    {
+      "path": "scripts/test-fixtures/pica-worker/source/object-assign/license",
+      "bytes": 1119,
+      "sha256": "6fb9754611c20f6649f68805e8c990e83261f29316e29de9e6cedae607b8634c"
+    },
+    {
+      "path": "scripts/test-fixtures/pica-worker/source/rolldown/LICENSE",
+      "bytes": 1302,
+      "sha256": "23ecfff35a5a2e80d92142f75228912c3b1abc4b5a8337a821ff4397e2f9f734"
+    },
+    {
+      "path": "scripts/test-fixtures/pica-worker/source/rolldown/THIRD-PARTY-LICENSE",
+      "bytes": 2209,
+      "sha256": "a877291d800ed43692f3f9ae09d8e01cc6f7293ad39d43896059c188ffbb8b7c"
+    },
+    {
+      "path": "scripts/test-fixtures/ui-blob-chain/LICENSE",
+      "bytes": 1067,
+      "sha256": "1352d204fdb90d5e482c13139d848bc2c9300a9a7de358a0a558a23e72d0d8be"
+    },
+    {
+      "path": "scripts/test-fixtures/pica-worker/source/pica/LICENSE",
+      "bytes": 1084,
+      "sha256": "55c3dde19ab8a9b9b23c576375fb7a48423124d76530a3ddeeb897a3c47223aa"
+    },
+    {
+      "path": "scripts/test-fixtures/pica-worker/source/webworkify/LICENSE",
+      "bytes": 1073,
+      "sha256": "435a6722c786b0a56fbe7387028f1d9d3f3a2d0fb615bb8fee118727c3f59b7b"
+    },
+    {
+      "path": "scripts/test-fixtures/embedded-image-loader/LICENSE",
+      "bytes": 1073,
+      "sha256": "23620d4179e5deb477db18c09c07f5bc2bd9ffd6ccd0839a3da79d156694b980"
+    }
+  ],
+  "fixtures": [
+    {
+      "path": "scripts/test-fixtures/embedded-image-loader/image-blob-reduce.esm.js",
+      "sha256": "85145597b769e8beebe8590fbdfd0092a4109a55d5643cd7114a22e29c196a38"
+    },
+    {
+      "path": "scripts/test-fixtures/ui-blob-chain/client-consumer.js",
+      "sha256": "1d38de254f2d7d5befcaaf81501a3447571b145690d26b65e6e97b7a0a13d7a8"
+    },
+    {
+      "path": "scripts/test-fixtures/pica-worker/default-worker-worker-0.js",
+      "sha256": "62bcee64dc9a7ceadff9962b637abe188c3d2547aa9c2f85687c17296b741ab9"
+    },
+    {
+      "path": "scripts/test-fixtures/pica-worker/default-worker-worker-1.js",
+      "sha256": "5272b6e125e11ee58882b64acca5c7c1d7d14b3a9e63b6a4690be1e931d0add4"
+    },
+    {
+      "path": "scripts/test-fixtures/pica-worker/js-worker-worker-0.js",
+      "sha256": "3c33ca005c333a771413944903fb5bb6a06ea72e60837ee6396163d0f2ca4bb3"
+    },
+    {
+      "path": "scripts/test-fixtures/pica-worker/js-worker-worker-1.js",
+      "sha256": "379c6ccc11fad0f32801d97b20bfb9f542116cf3b2301b718b48f564e64b69e2"
+    },
+    {
+      "path": "scripts/test-fixtures/pica-worker/pica-DGw4b28J.js",
+      "sha256": "c79c7f30b9c2b043072d5b975caf1dbe27007204fe72480ce4a9dbe5c27bdbce"
+    },
+    {
+      "path": "scripts/test-fixtures/pica-worker/rolldown-runtime-CEgmsyvS.js",
+      "sha256": "43716186c8575b2ba466c74735300a1a0295debbc765bbd16c5ac72c944ed56f"
+    },
+    {
+      "path": "scripts/test-fixtures/pica-worker/source/pica/dist/pica.js",
+      "sha256": "236fb295eb3089e7a95daf40ec8ea5512411591b7a71bd571bc90bcc4c0dcc5a"
+    }
+  ],
+  "components": [
+    {
+      "name": "glur",
+      "comparedSourceVersion": "1.1.2",
+      "moduleId": 18,
+      "sourceMember": "mono16.js",
+      "noticePath": "scripts/test-fixtures/pica-worker/source/glur/LICENSE",
+      "sourceLocator": "https://registry.npmjs.org/glur/1.1.2",
+      "correspondence": "Lexical tokens match fixed pica dist: ignore comments/whitespace/string quotes and require-to-_dereq_ only; identical code can appear across versions, so historical resolution is not uniquely recovered."
+    },
+    {
+      "name": "inherits",
+      "comparedSourceVersion": "2.0.4",
+      "moduleId": 19,
+      "sourceMember": "inherits_browser.js",
+      "noticePath": "scripts/test-fixtures/pica-worker/source/inherits/LICENSE",
+      "sourceLocator": "https://registry.npmjs.org/inherits/2.0.4",
+      "correspondence": "Lexical tokens match fixed pica dist: ignore comments/whitespace/string quotes and require-to-_dereq_ only; identical code can appear across versions, so historical resolution is not uniquely recovered."
+    },
+    {
+      "name": "multimath",
+      "comparedSourceVersion": "2.0.0",
+      "moduleId": 20,
+      "sourceMember": "index.js",
+      "noticePath": "scripts/test-fixtures/pica-worker/source/multimath/LICENSE",
+      "sourceLocator": "https://registry.npmjs.org/multimath/2.0.0",
+      "correspondence": "Lexical tokens match fixed pica dist: ignore comments/whitespace/string quotes and require-to-_dereq_ only; identical code can appear across versions, so historical resolution is not uniquely recovered."
+    },
+    {
+      "name": "multimath",
+      "comparedSourceVersion": "2.0.0",
+      "moduleId": 21,
+      "sourceMember": "lib/base64decode.js",
+      "noticePath": "scripts/test-fixtures/pica-worker/source/multimath/LICENSE",
+      "sourceLocator": "https://registry.npmjs.org/multimath/2.0.0",
+      "correspondence": "Lexical tokens match fixed pica dist: ignore comments/whitespace/string quotes and require-to-_dereq_ only; identical code can appear across versions, so historical resolution is not uniquely recovered."
+    },
+    {
+      "name": "multimath",
+      "comparedSourceVersion": "2.0.0",
+      "moduleId": 22,
+      "sourceMember": "lib/wa_detect.js",
+      "noticePath": "scripts/test-fixtures/pica-worker/source/multimath/LICENSE",
+      "sourceLocator": "https://registry.npmjs.org/multimath/2.0.0",
+      "correspondence": "Lexical tokens match fixed pica dist: ignore comments/whitespace/string quotes and require-to-_dereq_ only; identical code can appear across versions, so historical resolution is not uniquely recovered."
+    },
+    {
+      "name": "object-assign",
+      "comparedSourceVersion": "4.1.1",
+      "moduleId": 23,
+      "sourceMember": "index.js",
+      "noticePath": "scripts/test-fixtures/pica-worker/source/object-assign/license",
+      "sourceLocator": "https://registry.npmjs.org/object-assign/4.1.1",
+      "correspondence": "Lexical tokens match fixed pica dist: ignore comments/whitespace/string quotes and require-to-_dereq_ only; identical code can appear across versions, so historical resolution is not uniquely recovered."
+    },
+    {
+      "name": "pica",
+      "version": "7.1.1",
+      "noticePath": "scripts/test-fixtures/pica-worker/source/pica/LICENSE",
+      "sourceLocator": "https://registry.npmjs.org/pica/7.1.1"
+    },
+    {
+      "name": "webworkify",
+      "version": "1.5.0",
+      "moduleId": 24,
+      "noticePath": "scripts/test-fixtures/pica-worker/source/webworkify/LICENSE",
+      "sourceLocator": "https://registry.npmjs.org/webworkify/1.5.0"
+    },
+    {
+      "name": "image-blob-reduce",
+      "version": "3.0.1",
+      "noticePath": "scripts/test-fixtures/embedded-image-loader/LICENSE",
+      "sourceLocator": "https://registry.npmjs.org/image-blob-reduce/3.0.1"
+    },
+    {
+      "name": "rolldown",
+      "version": "1.2.4",
+      "noticePaths": [
+        "scripts/test-fixtures/pica-worker/source/rolldown/LICENSE",
+        "scripts/test-fixtures/pica-worker/source/rolldown/THIRD-PARTY-LICENSE"
+      ],
+      "sourceLocator": "https://github.com/rolldown/rolldown/tree/v1.2.4/crates/rolldown/src/runtime",
+      "runtimeBlobSha1": [
+        "b322b17154822cc820bd399daef37ff6197617fb",
+        "ef5a963f45a7db7a19fd9b7b85cf22a68cd62147"
+      ],
+      "matchedInitializers": [
+        "__create",
+        "__defProp",
+        "__getOwnPropDesc",
+        "__getOwnPropNames",
+        "__getProtoOf",
+        "__hasOwnProp",
+        "__esmMin",
+        "__commonJSMin",
+        "__exportAll",
+        "__copyProps",
+        "__toESM",
+        "__toCommonJS",
+        "__require"
+      ],
+      "correspondence": "13 initializer ASTs match; omit trivia/export modifiers, parentheses and one-statement blocks only. Historical build records tool1.2.4; no rebuild."
+    },
+    {
+      "name": "@excalidraw/excalidraw",
+      "version": "0.18.1",
+      "noticePath": "scripts/test-fixtures/ui-blob-chain/LICENSE",
+      "upstreamCommit": "a2ec2889babf7d2295469c6d90ebe77fae57df84",
+      "packageManifestSha256": "402f54fc7de128b25d22bd4d905fb46dbcdbe2ce6efee567d4da0fc79a29aab1",
+      "sourceLocator": "https://github.com/excalidraw/excalidraw/blob/a2ec2889babf7d2295469c6d90ebe77fae57df84/packages/excalidraw/data/blob.ts#L296",
+      "correspondence": "Official tag manifest equals installed input; reviewed resizeImageFile semantics correspond to retained consumer. No independent emitted regeneration."
+    }
+  ],
+  "limitations": [
+    "Not complete embedded WASM, Kit or release inventory.",
+    "Synthetic fixture associations are not new-candidate execution receipts.",
+    "Original code pins unchanged; bounded source correspondence only."
+  ]
+}

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>流程布局 · 偏好对照</title><link rel="stylesheet" href="/diagram.css">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f6fa;color:#253047;font:14px system-ui,'Microsoft YaHei',sans-serif}header{padding:18px 24px;background:white;border-bottom:1px solid #dce2eb}h1{font-size:20px;margin:0 0 8px}p{margin:6px 0;color:#617087;line-height:1.6}.toolbar{display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap}button,select{font:inherit;border:1px solid #ccd5e2;border-radius:7px;background:white;padding:7px 12px;color:inherit}button{cursor:pointer}button:hover{background:#edf2fa}#status{color:#596a85}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:16px}article{background:white;border:1px solid #dce2eb;border-radius:10px;overflow:hidden}.heading{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #e5e9f0;gap:12px}h2{font-size:15px;margin:0 0 4px}.metric{font-size:12px;color:#617087}.canvas{height:480px;position:relative;background:radial-gradient(#e4e9f0 .7px,transparent .7px);background-size:14px 14px}.canvas:empty::after{content:'等待生成布局…';position:absolute;inset:0;display:grid;place-items:center;color:#8895a9}.djs-palette,.bjs-powered-by{display:none!important}.canvas text{font-family:system-ui,'Microsoft YaHei',sans-serif!important}body.single .grid{grid-template-columns:1fr}body.single article:not(.selected){display:none}body.single .canvas{height:calc(100vh - 260px);min-height:480px}@media(max-width:850px){.grid{grid-template-columns:1fr}.canvas{height:430px}}
+body.channels article:not([data-profile="balanced"]):not([data-profile="balanced-channels"]){display:none}
+</style>
+<header><h1>流程布局 · 偏好对照</h1><p>独立只读演示，使用相同输入、种子和节点搜索预算。第五组在均衡布局上额外调整连线通道，不移动节点。不会修改项目文件。</p><p>拖动背景平移，滚轮缩放；点击「放大查看」可单独看一组。重点比较「均衡」与「均衡＋通道间距」。</p><div class="toolbar"><label>参考流程 <select id="sample"></select></label><button id="channels">只看通道前后</button><button id="all">全部对照</button><button id="fit">全部适应画布</button><span id="status" role="status">准备中…</span></div></header>
+<main class="grid" id="grid"></main><script src="/viewer.js"></script>
+<script>
+const titles={baseline:'原策略 · 相同预算',alignment:'对齐优先',balanced:'均衡',routing:'布线优先','balanced-channels':'均衡＋通道间距（实验）'};
+const viewers=new Map();let version=0;
+for(const [profile,title]of Object.entries(titles)){
+  const article=document.createElement('article');article.dataset.profile=profile;
+  const heading=document.createElement('div');heading.className='heading';
+  const info=document.createElement('div');const h=document.createElement('h2');h.textContent=title;
+  const metric=document.createElement('div');metric.className='metric';metric.textContent='尚未生成';info.append(h,metric);
+  const button=document.createElement('button');button.textContent='放大查看';button.onclick=()=>{
+    document.body.classList.remove('channels');document.body.classList.add('single');document.querySelectorAll('article').forEach(a=>a.classList.toggle('selected',a===article));
+    requestAnimationFrame(()=>viewers.get(profile)?.get('canvas').zoom('fit-viewport',true));
+  };
+  const controls=document.createElement('div');controls.style.cssText='display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end';
+  for(const [label,factor]of [['−',.8],['＋',1.25],['100%',null]]){
+    const zoom=document.createElement('button');zoom.textContent=label;zoom.setAttribute('aria-label',title+' '+label);
+    zoom.onclick=()=>{const c=viewers.get(profile)?.get('canvas');if(c)c.zoom(factor===null?1:c.zoom()*factor);};controls.append(zoom);
+  }
+  controls.append(button);heading.append(info,controls);const canvas=document.createElement('div');canvas.className='canvas';article.append(heading,canvas);grid.append(article);
+}
+function fit(){for(const [profile,v]of viewers)if(document.querySelector('article[data-profile="'+profile+'"]').offsetWidth)v.get('canvas').zoom('fit-viewport',true);}
+document.querySelector('#all').onclick=()=>{document.body.classList.remove('single','channels');requestAnimationFrame(fit);};
+document.querySelector('#channels').onclick=()=>{document.body.classList.remove('single');document.body.classList.add('channels');requestAnimationFrame(fit);};
+document.querySelector('#fit').onclick=fit;
+async function load(name){
+  const current=++version;
+  for(const v of viewers.values())v.destroy();viewers.clear();
+  for(const a of document.querySelectorAll('article')){a.querySelector('.canvas').replaceChildren();a.querySelector('.metric').textContent='等待生成';}
+  const loaded=new Set();
+  while(current===version){
+    try{
+      const response=await fetch('/api/layout/'+encodeURIComponent(name));if(!response.ok)throw Error('HTTP '+response.status);
+      const data=await response.json();if(current!==version)return;
+      for(const item of data.variants){
+        if(loaded.has(item.profile))continue;
+        const a=document.querySelector('article[data-profile="'+item.profile+'"]');
+        const v=new BpmnJS({container:a.querySelector('.canvas')});viewers.set(item.profile,v);
+        await v.importXML(item.xml);if(current!==version)return;v.get('canvas').zoom('fit-viewport',true);loaded.add(item.profile);
+        const m=item.metrics;a.querySelector('.metric').textContent='平均行列偏移 '+m.meanDeviation.toFixed(1)+'px · 交叉 '+m.crossings+' · 通道拥挤 '+(m.channelCrowding??0).toFixed(0)+'↓ · '+(item.ms/1000).toFixed(1)+'s';
+      }
+      if(data.status==='failed')throw Error(data.error);
+      if(data.status==='ready'){document.querySelector('#status').textContent='全部已就绪 · 结果缓存在内存，切回无需重算';return;}
+      document.querySelector('#status').textContent=data.status==='queued'?'已排队，正在处理前一个样本…':'首次计算 '+(titles[data.current]||'布局')+'（'+data.variants.length+'/'+Object.keys(titles).length+'）；完成后切回无需等待';
+    }catch(e){if(current!==version)return;document.querySelector('#status').textContent='加载失败：'+e.message;return;}
+    await new Promise(r=>setTimeout(r,1000));
+  }
+}
+fetch('/api/cases').then(r=>r.json()).then(names=>{
+  const select=document.querySelector('#sample');for(const name of names){const option=document.createElement('option');option.value=name;option.textContent=name;select.append(option);}
+  select.value='P-001.bpmn';select.onchange=()=>load(select.value);load(select.value);
+}).catch(e=>document.querySelector('#status').textContent=e.message);
+</script></html>

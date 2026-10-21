@@ -1,0 +1,32 @@
+{
+  "functions": {
+    "F-PREVIEW-001": {
+      "function_id": "F-PREVIEW-001",
+      "function_name": "保存阅读材料",
+      "function_description": "合成预览示例：记录材料标题和链接，方便以后继续阅读。不是用户已确认需求。",
+      "function_epic": "个人阅读",
+      "priority": "High",
+      "source": "ai",
+      "reason": "仅用于展示功能卡片与嵌套详情。",
+      "rejected": false,
+      "details": {
+        "situation": "合成示例中的读者遇到暂时没有时间阅读的材料时，保存阅读入口，方便以后继续阅读。",
+        "behaviors": {"B-001": {"description": "填写标题与链接后保存材料。"}},
+        "inputs": {"I-001": {"description": "材料标题和链接。"}},
+        "outputs": {"O-001": {"description": "可再次打开的材料记录。"}},
+        "limits": {"L-001": {"description": "此示例不承诺自动抓取全文。"}},
+        "exceptions": {"E-001": {"condition": "链接为空。", "response": "提示补充链接，保留已填标题。"}}
+      }
+    },
+    "F-PREVIEW-002": {
+      "function_id": "F-PREVIEW-002",
+      "function_name": "查找已存材料",
+      "function_description": "合成预览示例：按标题关键词查找已保存的材料，并返回阅读入口。",
+      "function_epic": "个人阅读",
+      "priority": "Medium",
+      "source": "ai",
+      "reason": "与保存材料构成可理解的示例旅程，不代表用户确认。",
+      "rejected": false
+    }
+  }
+}

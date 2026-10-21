@@ -1,0 +1,112 @@
+{
+  "package": "@ladybugdb/wasm-core",
+  "version": "0.21.1",
+  "npmProvenanceUrl": "https://registry.npmjs.org/-/npm/v1/attestations/@ladybugdb%2fwasm-core@0.21.1",
+  "provenanceResponseSha256": "eab244fe37230807eeadfa6589e4f716d4fc008eada5bcb828bf3e485e783bb4",
+  "registryDeclaredProvenance": {
+    "_type": "https://in-toto.io/Statement/v1",
+    "subject": [
+      {
+        "name": "pkg:npm/%40ladybugdb/wasm-core@0.21.1",
+        "digest": {
+          "sha512": "0c43f1b25d1ff7be29fbe5a89d62bcebc8d766b6960ac454446f0b58d4322e2a29d29f0060cc7741646117f6e6bfd30f1075ab7a9944b91826cdbdf4ea60f269"
+        }
+      }
+    ],
+    "predicateType": "https://slsa.dev/provenance/v1",
+    "predicate": {
+      "buildDefinition": {
+        "buildType": "https://slsa-framework.github.io/github-actions-buildtypes/workflow/v1",
+        "externalParameters": {
+          "workflow": {
+            "ref": "refs/tags/v0.21.1",
+            "repository": "https://github.com/LadybugDB/ladybug",
+            "path": ".github/workflows/build-and-deploy.yml"
+          }
+        },
+        "internalParameters": {
+          "github": {
+            "event_name": "workflow_dispatch",
+            "repository_id": "1071734040",
+            "repository_owner_id": "236667260"
+          }
+        },
+        "resolvedDependencies": [
+          {
+            "uri": "git+https://github.com/LadybugDB/ladybug@refs/tags/v0.21.1",
+            "digest": {
+              "gitCommit": "17a70e51c31b50d30231da32154d9ff4bef0d95f"
+            }
+          }
+        ]
+      },
+      "runDetails": {
+        "builder": {
+          "id": "https://github.com/actions/runner/github-hosted"
+        },
+        "metadata": {
+          "invocationId": "https://github.com/LadybugDB/ladybug/actions/runs/36647903773/attempts/1"
+        }
+      }
+    }
+  },
+  "installedLockArchiveIntegrity": "sha512-DEPxsl0f974p++WonWK868jXZraWCsRURG8LWNQyLiop0p8AYMx3QWRhF/bmv9MPEHWreplEuRgmzb306mDyaQ==",
+  "subjectDigestMatchesInstalledLock": true,
+  "cryptographicAttestationVerified": false,
+  "sourceTag": "v0.21.1",
+  "sourceTagUrl": "https://github.com/LadybugDB/ladybug/releases/tag/v0.21.1",
+  "sourceTagResolvedCommit": "17a70e51c31b50d30231da32154d9ff4bef0d95f",
+  "sourceRepository": "https://github.com/LadybugDB/ladybug",
+  "submodules": [
+    {
+      "path": "tools/wasm",
+      "repository": "https://github.com/ladybugdb/ladybug-wasm",
+      "commit": "aa726993fd95b0cbe6e080a76d94e689a7044950"
+    },
+    {
+      "path": "extension",
+      "repository": "https://github.com/ladybugdb/extensions",
+      "commit": "bf74ab654af6bd40a0e3208ac4e8bcf5cb45a7a0"
+    }
+  ],
+  "sourceDeclaredStaticTargets": [
+    "antlr4_cypher",
+    "antlr4_runtime",
+    "brotlidec",
+    "brotlicommon",
+    "utf8proc",
+    "re2",
+    "fastpfor",
+    "parquet",
+    "snappy",
+    "thrift",
+    "yyjson",
+    "zstd",
+    "miniz",
+    "mbedtls",
+    "lz4",
+    "roaring_bitmap",
+    "simsimd"
+  ],
+  "additionalSourceLinkTarget": "fast_float",
+  "workflowStaticExtension": "httpfs",
+  "sourceFiles": {
+    "CMakeLists.txt": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/CMakeLists.txt",
+    "third_party/CMakeLists.txt": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/third_party/CMakeLists.txt",
+    ".github/workflows/wasm-workflow.yml": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/.github/workflows/wasm-workflow.yml",
+    ".gitmodules": "https://raw.githubusercontent.com/LadybugDB/ladybug/17a70e51c31b50d30231da32154d9ff4bef0d95f/.gitmodules"
+  },
+  "compilerToolchainSelection": "emsdk install latest; exact Emscripten version not pinned by workflow",
+  "sourceLicenseIndex": "source-materials/INDEX.json",
+  "binaryComponentInventoryVerified": false,
+  "limits": [
+    "The registry statement and current tag agree on a source commit; this is not signature verification or build reproduction.",
+    "Listed targets are source build declarations, not an exhaustive inventory measured from the installed WASM.",
+    "Exact Emscripten toolchain/runtime notices, header-only components, static extension notices and final binary correspondence remain unresolved."
+  ],
+  "wasmPackageVersionStamp": {
+    "source": "https://raw.githubusercontent.com/ladybugdb/ladybug-wasm/aa726993fd95b0cbe6e080a76d94e689a7044950/build.mjs",
+    "operation": "Reads core CMakeLists.txt Lbug VERSION and sets packageJson.version; source template0.15.1 is replaced at build time.",
+    "coreDeclaredVersion": "0.21.1"
+  }
+}

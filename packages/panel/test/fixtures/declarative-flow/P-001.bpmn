@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_SyntheticApproval" targetNamespace="https://example.org/synthetic/panel-tests">
+  <bpmn:process id="Process_SyntheticApproval" name="请求提交与审批" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_Approval">
+      <bpmn:lane id="Lane_Requester" name="申请人"><bpmn:flowNodeRef>Start_Request</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_Submit</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_Amend</bpmn:flowNodeRef></bpmn:lane>
+      <bpmn:lane id="Lane_Reviewer" name="审核人"><bpmn:flowNodeRef>Task_Validate</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_Review</bpmn:flowNodeRef><bpmn:flowNodeRef>Gateway_Decision</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_Record</bpmn:flowNodeRef><bpmn:flowNodeRef>End_Approved</bpmn:flowNodeRef></bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_Request" name="收到请求"><bpmn:outgoing>Flow_StartSubmit</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:userTask id="Task_Submit" name="提交请求"><bpmn:incoming>Flow_StartSubmit</bpmn:incoming><bpmn:incoming>Flow_AmendSubmit</bpmn:incoming><bpmn:outgoing>Flow_SubmitValidate</bpmn:outgoing></bpmn:userTask>
+    <bpmn:serviceTask id="Task_Validate" name="校验请求"><bpmn:incoming>Flow_SubmitValidate</bpmn:incoming><bpmn:outgoing>Flow_ValidateReview</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:userTask id="Task_Review" name="审核请求"><bpmn:incoming>Flow_ValidateReview</bpmn:incoming><bpmn:outgoing>Flow_ReviewDecision</bpmn:outgoing></bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_Decision" name="是否通过"><bpmn:incoming>Flow_ReviewDecision</bpmn:incoming><bpmn:outgoing>Flow_Approved</bpmn:outgoing><bpmn:outgoing>Flow_Returned</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_Amend" name="修改请求"><bpmn:incoming>Flow_Returned</bpmn:incoming><bpmn:outgoing>Flow_AmendSubmit</bpmn:outgoing></bpmn:userTask>
+    <bpmn:serviceTask id="Task_Record" name="记录结果"><bpmn:incoming>Flow_Approved</bpmn:incoming><bpmn:outgoing>Flow_RecordEnd</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:endEvent id="End_Approved" name="审批完成"><bpmn:incoming>Flow_RecordEnd</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_StartSubmit" sourceRef="Start_Request" targetRef="Task_Submit"/>
+    <bpmn:sequenceFlow id="Flow_SubmitValidate" sourceRef="Task_Submit" targetRef="Task_Validate"/>
+    <bpmn:sequenceFlow id="Flow_ValidateReview" sourceRef="Task_Validate" targetRef="Task_Review"/>
+    <bpmn:sequenceFlow id="Flow_ReviewDecision" sourceRef="Task_Review" targetRef="Gateway_Decision"/>
+    <bpmn:sequenceFlow id="Flow_Approved" name="通过" sourceRef="Gateway_Decision" targetRef="Task_Record"/>
+    <bpmn:sequenceFlow id="Flow_Returned" name="退回" sourceRef="Gateway_Decision" targetRef="Task_Amend"/>
+    <bpmn:sequenceFlow id="Flow_AmendSubmit" name="重新提交" sourceRef="Task_Amend" targetRef="Task_Submit"/>
+    <bpmn:sequenceFlow id="Flow_RecordEnd" sourceRef="Task_Record" targetRef="End_Approved"/>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_Approval"><bpmndi:BPMNPlane id="Plane_Approval" bpmnElement="Process_SyntheticApproval">
+    <bpmndi:BPMNShape id="Shape_Requester" bpmnElement="Lane_Requester" isHorizontal="true"><dc:Bounds x="40" y="40" width="920" height="200"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Reviewer" bpmnElement="Lane_Reviewer" isHorizontal="true"><dc:Bounds x="40" y="240" width="920" height="220"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Start" bpmnElement="Start_Request"><dc:Bounds x="90" y="122" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Submit" bpmnElement="Task_Submit"><dc:Bounds x="170" y="100" width="100" height="80"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Validate" bpmnElement="Task_Validate"><dc:Bounds x="330" y="300" width="100" height="80"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Review" bpmnElement="Task_Review"><dc:Bounds x="480" y="300" width="100" height="80"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Decision" bpmnElement="Gateway_Decision" isMarkerVisible="true"><dc:Bounds x="630" y="315" width="50" height="50"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Amend" bpmnElement="Task_Amend"><dc:Bounds x="605" y="100" width="100" height="80"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Record" bpmnElement="Task_Record"><dc:Bounds x="730" y="300" width="100" height="80"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_End" bpmnElement="End_Approved"><dc:Bounds x="885" y="322" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNEdge id="Edge_StartSubmit" bpmnElement="Flow_StartSubmit"><di:waypoint x="126" y="140"/><di:waypoint x="170" y="140"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_SubmitValidate" bpmnElement="Flow_SubmitValidate"><di:waypoint x="270" y="140"/><di:waypoint x="300" y="140"/><di:waypoint x="300" y="340"/><di:waypoint x="330" y="340"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_ValidateReview" bpmnElement="Flow_ValidateReview"><di:waypoint x="430" y="340"/><di:waypoint x="480" y="340"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_ReviewDecision" bpmnElement="Flow_ReviewDecision"><di:waypoint x="580" y="340"/><di:waypoint x="630" y="340"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Approved" bpmnElement="Flow_Approved"><di:waypoint x="680" y="340"/><di:waypoint x="730" y="340"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Returned" bpmnElement="Flow_Returned"><di:waypoint x="655" y="315"/><di:waypoint x="655" y="180"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_AmendSubmit" bpmnElement="Flow_AmendSubmit"><di:waypoint x="655" y="100"/><di:waypoint x="655" y="70"/><di:waypoint x="220" y="70"/><di:waypoint x="220" y="100"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_RecordEnd" bpmnElement="Flow_RecordEnd"><di:waypoint x="830" y="340"/><di:waypoint x="885" y="340"/></bpmndi:BPMNEdge>
+  </bpmndi:BPMNPlane></bpmndi:BPMNDiagram>
+</bpmn:definitions>

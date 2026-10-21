@@ -1,0 +1,322 @@
+/*
+  # Task depencencies
+  The dependencies are specified at the end of this file,
+  not within the task definitions.
+
+  1) copy (and preprocess) relevant source code
+  2) generate code for .melk and .xtend files
+  3) compile java source code
+  4) run gwt compiler
+
+  # Build directory layout
+  src
+   +-- elk
+   +-- elkjs
+   +-- melk
+   +-- xtend-gen
+*/
+plugins {
+  // The documentation of the plugin [1] states "tested up to [gradle] 7.2". 
+  // [1] https://xtext.github.io/xtext-gradle-plugin/xtext-builder.html
+  id 'org.xtext.builder' version '3.0.2' // according to the docu, tested up to gradle 7.2
+  id 'org.xtext.xtend'   version '3.0.2'
+  id 'java'
+}
+
+// make sure all compile tasks use utf8
+tasks.withType(JavaCompile) {
+  options.encoding = 'UTF-8'
+}
+
+// GWT 2.10 allows to run Java [8, 17]
+//  (http://www.gwtproject.org/release-notes.html#Release_Notes_2_10_0)
+if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_1_8) 
+    || JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_18)) {
+    throw new GradleException("elkjs build requires to be run with Java [8, 17] (due to GWT compilation). You are running " + JavaVersion.current() + ".")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//                         Settings
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ext.versions = [
+  emfGwt: '2.12.4',
+  gwt:    '2.11.0',
+  guava:  '31.1-jre',
+  melk:   '0.11.0-SNAPSHOT',
+  xtext:  '2.36.0',
+
+  // From 2.26 on Xtext supports Java 17, however,
+  //   "Xtext now supports running on Java 17 with Java 8 and 11 targets. Source and Target 17 are not supported yet".
+  // https://www.eclipse.org/Xtext/releasenotes.html#/releasenotes/2022/08/29/version-2-28-0
+  sourceTargetCompatibility: JavaVersion.current().ordinal() < 11 - 1 ? '1.8' : '11' 
+]
+
+java {
+  sourceCompatibility = "$versions.sourceTargetCompatibility"
+  targetCompatibility = "$versions.sourceTargetCompatibility"
+}
+
+project.logger.lifecycle("You are running Java version ${JavaVersion.current()}.")
+project.logger.lifecycle("Due to current Xtext's limitations ($versions.xtext), source and target compatibility have been set to ${versions.sourceTargetCompatibility}.")
+
+if (!hasProperty('elkRepo')) {
+	ext.elkRepo = '../elk'
+}
+
+def elkSources = [
+  // The core and graph format
+  "${elkRepo}/plugins/org.eclipse.elk.core/src",
+  "${elkRepo}/plugins/org.eclipse.elk.graph/src",
+  "${elkRepo}/plugins/org.eclipse.elk.graph.json/src",
+  "${elkRepo}/plugins/org.eclipse.elk.alg.common/src",
+  // The algorithms
+  // FIXME: DisCo breaks Github Actions for unknown reasons, see https://github.com/kieler/elkjs/issues/291
+  //"${elkRepo}/plugins/org.eclipse.elk.alg.disco/src",
+  "${elkRepo}/plugins/org.eclipse.elk.alg.force/src",
+  "${elkRepo}/plugins/org.eclipse.elk.alg.layered/src",
+  "${elkRepo}/plugins/org.eclipse.elk.alg.mrtree/src",
+  "${elkRepo}/plugins/org.eclipse.elk.alg.rectpacking/src",
+  "${elkRepo}/plugins/org.eclipse.elk.alg.radial/src",
+  "${elkRepo}/plugins/org.eclipse.elk.alg.spore/src"
+]
+
+// the directory to which all sources are copied for compilation
+def srcDir = "${buildDir}/src"
+def distDir = "${buildDir}/js"
+
+def gwtModule = "org.eclipse.elk.js.ElkJs"
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//            Repositories, Source Sets, and Dependencies
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+repositories {
+    jcenter()
+    // for melk compiler
+    maven {
+        url 'https://oss.sonatype.org/content/repositories/snapshots'
+    }
+}
+
+configurations {
+    gwt
+}
+
+sourceSets {
+  // compile xtext related sources. This includes:
+  // xtend -> java
+  // melk -> java
+  xtext {
+    java {
+      srcDirs = [ "$srcDir/elk" ]
+    }
+    xtendOutputDir = "$srcDir/xtend-gen"
+  }
+
+  main {
+    java {
+      srcDirs = [ srcDir ]
+    }
+  }
+}
+
+def gwtClasspath = [
+      // gwt requires the folder structure to equal the package structure
+      "$srcDir/elk",
+      "$srcDir/elkjs",
+      "$srcDir/melk",
+      "$srcDir/xtend-gen",
+      sourceSets.main.output.classesDirs,
+
+      configurations.gwt
+    ]
+
+dependencies {
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  // melk language
+  xtextLanguages "org.eclipse.elk:org.eclipse.elk.core.meta:$versions.melk"
+
+  // for the minus sign to work in melk files
+  xtextImplementation "org.eclipse.xtext:org.eclipse.xtext.xbase.lib:$versions.xtext"
+
+  xtextImplementation "com.google.guava:guava:$versions.guava"
+
+  xtextImplementation "org.gwtproject:gwt-dev:$versions.gwt"
+  xtextImplementation "org.gwtproject:gwt-user:$versions.gwt"
+
+  xtextImplementation "com.genmymodel.emf.gwt:emf-common:$versions.emfGwt"
+  xtextImplementation "com.genmymodel.emf.gwt:emf-ecore:$versions.emfGwt"
+
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  // emf for gwt
+  implementation "com.genmymodel.emf.gwt:emf-common:$versions.emfGwt"
+  implementation "com.genmymodel.emf.gwt:emf-ecore:$versions.emfGwt"
+  // guava
+  implementation "com.google.guava:guava:$versions.guava"
+  // gwt
+  implementation "org.gwtproject:gwt-user:$versions.gwt"
+  implementation "org.gwtproject:gwt-dev:$versions.gwt"
+  // xtend libs
+  implementation "org.eclipse.xtend:org.eclipse.xtend.lib:$versions.xtext"
+  implementation "org.eclipse.xtext:org.eclipse.xtext.xbase.lib:$versions.xtext"
+
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  gwt "com.google.guava:guava-gwt:$versions.guava"
+
+  gwt "org.gwtproject:gwt:$versions.gwt"
+  gwt "org.gwtproject:gwt-dev:$versions.gwt"
+  gwt "org.gwtproject:gwt-user:$versions.gwt"
+
+  gwt "com.genmymodel.emf.gwt:emf-common:$versions.emfGwt:sources"
+  gwt "com.genmymodel.emf.gwt:emf-ecore:$versions.emfGwt:sources"
+
+  // the xtext/xtend gwt plugins only contain the '.gwt.xml' files
+  // thus the source code has to be retrieved separately
+  gwt "org.eclipse.xtext:org.eclipse.xtext.xbase.lib:$versions.xtext:sources"
+  gwt "org.eclipse.xtend:org.eclipse.xtend.lib:$versions.xtext:sources"
+  gwt "org.eclipse.xtext:org.eclipse.xtext.xbase.lib.gwt:$versions.xtext"
+  gwt "org.eclipse.xtend:org.eclipse.xtend.lib.gwt:$versions.xtext"
+
+}
+
+// configure the melk language
+xtext {
+  languages {
+    melk {
+      fileExtension = 'melk'
+      setup = 'org.eclipse.elk.core.meta.MetaDataStandaloneSetup'
+      generator.outlet.producesJava = true
+    }
+  }
+}
+
+// don't bother the xtext generator with irrelevant source sets
+generateXtext.enabled = false
+
+clean {
+  delete distDir
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//                         Copy Tasks
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+task copyElk(type: Copy) {
+  from elkSources
+  into "$srcDir/elk/"
+
+  include "**/*.java"
+  include "**/*.xtend"
+  include "**/*.melk"
+
+  // the gson based json import
+  exclude "**/ElkGraphJson.java"   // java-based api
+  exclude "**/JsonAdapter.xtend"   // the gson implementation
+  exclude "**/JsonExporter.xtend"  // not required here (should be compatible though)
+
+  // class is in there for convenience reasons
+  // usually the factories are generated by the melk compiler
+  exclude "**/AlgorithmFactory.java"
+
+  // exclude because they require ecore.xmi
+  exclude "**/ElkGraphResource.java"
+  exclude "**/ElkGraphXMIHelper.java"
+  exclude "**/ElkGraphXMISave.java"
+  exclude "**/ElkGraphResourceFactory.java"
+
+  // incompatible api, an emulating class is used (java-additional)
+  exclude "**/alg/common/utils/SVGImage.java"
+
+  // after copying, remove those parts of the code
+  // that have been marked to be incompatible with gwt
+  doLast {
+    ant.replaceregexp(
+        match: '// elkjs-exclude-start(.+?)elkjs-exclude-end',
+        replace: '',
+        flags: 'gis',
+        byline: false) {
+      fileset(dir: "$srcDir/elk/")
+    }
+  }
+}
+
+task copyEmul(type: Copy) {
+  from([
+    // contains the implementation for json->elk graph importer
+    // using gwt's json
+    "./src/java-additional"
+  ])
+  into "$srcDir/elk/"
+}
+
+task copyMelk(type: Copy) {
+  from "$buildDir/melk/xtext"
+  into "$srcDir/melk"
+}
+
+task copyElkJs(type: Copy) {
+  from "./src/java"
+  into "$srcDir/elkjs"
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//                         GWT Compilation
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+def gwtInputs = [
+  fileTree(srcDir),
+  sourceSets.main.output.classesDirs
+]
+
+task gwtc (type: JavaExec) {
+  main = 'com.google.gwt.dev.Compiler'
+  classpath { gwtClasspath }
+  args = [ gwtModule, '-war', "$buildDir/dist", '-style', 'PRETTY' ]
+  maxHeapSize = '2G'
+
+  inputs.files(gwtInputs)
+  outputs.dir("$buildDir/dist/elk")
+}
+
+task gwtcMinified (type: JavaExec) {
+  main = 'com.google.gwt.dev.Compiler'
+  classpath { gwtClasspath }
+  args = [ gwtModule, '-war', "$buildDir/distMinified" ]
+  maxHeapSize = '2G'
+
+  inputs.files(gwtInputs)
+  outputs.dir("$buildDir/distMinified/elk")
+}
+
+task copyPretty(type: Copy) {
+  from "$buildDir/dist/elk"
+  into distDir
+  include "**/*.js"
+}
+
+task copyMinified(type: Copy) {
+  from "$buildDir/distMinified/elk"
+  into distDir
+  include "**/*.js"
+  rename '(.*).js', '$1.min.js'
+}
+
+task lib(dependsOn: [ copyPretty, copyMinified ])
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//                      Task Dependencies
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+generateXtextXtext.dependsOn copyElk
+generateXtextXtext.dependsOn copyEmul
+copyMelk.dependsOn generateXtextXtext
+compileJava.dependsOn copyMelk
+compileJava.dependsOn copyElkJs
+gwtc.dependsOn compileJava
+gwtcMinified.dependsOn compileJava
+copyPretty.dependsOn gwtc
+copyMinified.dependsOn gwtcMinified

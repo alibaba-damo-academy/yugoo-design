@@ -1,0 +1,24 @@
+# Cheap state checks remain declarative. The HTML file, fixed HTML template,
+# provenance, visual-region, and source checks live in scripts/prd.mjs and
+# are run by the foreground Producer before publication.
+skill: web_app_prd_assembly
+
+rules:
+  - id: referenced_files_present
+    scope: [state]
+    code: web_app_prd_assembly.referenced_artifact_invalid
+    check:
+      referenced_files: ["html_file"]
+
+  - id: empty_title
+    scope: [completion]
+    code: web_app_prd_assembly.empty_title
+    message: "PRD title must not be empty."
+    check: { non_empty_string: title }
+
+  - id: completed_artifact_ref
+    scope: [completion]
+    code: web_app_prd_assembly.incomplete
+    message: "The PRD has no accepted HTML artifact reference."
+    repair_hint: "Validate and write web_app_prd_assembly/prd.html, then publish that file and html_file together."
+    check: { non_empty_string: html_file }

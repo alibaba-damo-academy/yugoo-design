@@ -1,0 +1,38 @@
+# Faithful declarative translation of integration_design/schema.py
+# (Pydantic extra="forbid"). A one-value enum preserves Literal[8].
+type: object
+additional_properties: false
+required: [schema_version]
+properties:
+  schema_version: { knowledge: { role: metadata }, type: enum, values: [8] }
+  integrations:
+    type: map
+    value:
+      type: object
+      additional_properties: false
+      required: [id, title]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        url: { type: string }
+        secrets:
+          type: map
+          value:
+            type: object
+            additional_properties: false
+            required: [id]
+            properties:
+              id: { type: string }
+              name: { type: string }
+              description: { type: string }
+        secret_order:
+          knowledge: { role: metadata }
+          type: array
+          items: { type: string }
+        prompt_content: { type: string }
+        business_rules: { type: string }
+  integration_order:
+    knowledge: { role: metadata }
+    type: array
+    items: { type: string }

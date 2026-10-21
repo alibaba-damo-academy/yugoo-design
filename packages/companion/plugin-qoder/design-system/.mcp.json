@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "design-system": {
+      "command": "node",
+      "args": ["${QODER_PLUGIN_ROOT}/scripts/design.mjs", "mcp"]
+    }
+  }
+}

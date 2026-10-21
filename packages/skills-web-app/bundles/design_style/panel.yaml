@@ -1,0 +1,867 @@
+{
+  "version": 1,
+  "panel_kind": "page_spec",
+  "i18n": {
+    "default_locale": "zh-CN",
+    "locales": {
+      "zh-CN": "locales/zh-CN.json",
+      "en-US": "locales/en-US.json"
+    }
+  },
+  "empty_description": "$t:empty",
+  "sections": [],
+  "fields": [],
+  "ui": {
+    "component": "preview_workspace",
+    "guidance": "$t:guidance",
+    "sidebar_icon": "palette",
+    "id": "visual-preview",
+    "title": "$t:title",
+    "description": "$t:previewEmpty",
+    "live_preview": {
+      "file_path": "config.preview_page.html_file",
+      "title_path": "config.preview_page.title",
+      "description_path": "config.preview_page.rationale",
+      "stylesheet": "design_style/tokens.css",
+      "design_width": 1280,
+      "tokens": [
+        {
+          "variable": "--ds-primary",
+          "path": "config.colors.primary",
+          "fallback": "#6366f1"
+        },
+        {
+          "variable": "--ds-primary-light",
+          "path": "config.colors.primaryLight",
+          "fallback": "#818cf8",
+          "fallback_path": "config.colors.primary"
+        },
+        {
+          "variable": "--ds-primary-dark",
+          "path": "config.colors.primaryDark",
+          "fallback": "#4f46e5",
+          "fallback_path": "config.colors.primary"
+        },
+        {
+          "variable": "--ds-secondary",
+          "path": "config.colors.secondary",
+          "fallback": "#06b6d4"
+        },
+        {
+          "variable": "--ds-accent",
+          "path": "config.colors.accent",
+          "fallback": "#f59e0b"
+        },
+        {
+          "variable": "--ds-background",
+          "path": "config.colors.background",
+          "fallback": "#ffffff"
+        },
+        {
+          "variable": "--ds-surface",
+          "path": "config.colors.surface",
+          "fallback": "#f8fafc",
+          "fallback_path": "config.colors.background"
+        },
+        {
+          "variable": "--ds-text",
+          "path": "config.colors.text",
+          "fallback": "#0f172a"
+        },
+        {
+          "variable": "--ds-text-secondary",
+          "path": "config.colors.textSecondary",
+          "fallback": "#64748b"
+        },
+        {
+          "variable": "--ds-border",
+          "path": "config.colors.border",
+          "fallback": "#e2e8f0"
+        },
+        {
+          "variable": "--ds-success",
+          "path": "config.semantic_colors.success",
+          "fallback": "#22c55e"
+        },
+        {
+          "variable": "--ds-warning",
+          "path": "config.semantic_colors.warning",
+          "fallback": "#f59e0b"
+        },
+        {
+          "variable": "--ds-error",
+          "path": "config.semantic_colors.error",
+          "fallback": "#ef4444"
+        },
+        {
+          "variable": "--ds-info",
+          "path": "config.semantic_colors.info",
+          "fallback": "#3b82f6"
+        },
+        {
+          "variable": "--ds-heading-font",
+          "path": "config.typography.headingFont",
+          "fallback": "Inter, system-ui, -apple-system, sans-serif",
+          "font_fallback": "\"PingFang SC\", system-ui, sans-serif"
+        },
+        {
+          "variable": "--ds-body-font",
+          "path": "config.typography.bodyFont",
+          "fallback": "Inter, system-ui, -apple-system, sans-serif",
+          "font_fallback": "\"PingFang SC\", system-ui, sans-serif"
+        },
+        {
+          "variable": "--ds-mono-font",
+          "path": "config.typography.monoFont",
+          "fallback": "JetBrains Mono, monospace",
+          "font_fallback": "ui-monospace, monospace"
+        },
+        {
+          "variable": "--ds-base-font-size",
+          "path": "config.typography.baseFontSize",
+          "fallback": "14px"
+        },
+        {
+          "variable": "--ds-heading-weight",
+          "path": "config.typography.headingWeight",
+          "fallback": "600"
+        },
+        {
+          "variable": "--ds-line-height",
+          "path": "config.typography.lineHeight",
+          "fallback": "1.5"
+        },
+        {
+          "variable": "--ds-density-gap",
+          "path": "config.layout.density",
+          "fallback": "comfortable",
+          "values": {
+            "compact": "12px",
+            "comfortable": "20px",
+            "spacious": "32px"
+          }
+        },
+        {
+          "variable": "--ds-density-padding",
+          "path": "config.layout.density",
+          "fallback": "comfortable",
+          "values": {
+            "compact": "12px",
+            "comfortable": "20px",
+            "spacious": "32px"
+          }
+        },
+        {
+          "variable": "--ds-content-width",
+          "path": "config.layout.content_width",
+          "fallback": "wide",
+          "values": {
+            "narrow": "768px",
+            "medium": "1024px",
+            "wide": "1280px",
+            "full": "100%"
+          }
+        },
+        {
+          "variable": "--ds-radius",
+          "path": "config.components.borderRadius",
+          "fallback": "8px",
+          "values": {
+            "full": "9999px"
+          }
+        },
+        {
+          "variable": "--ds-shadow",
+          "path": "config.components.shadowDepth",
+          "fallback": "medium",
+          "values": {
+            "none": "none",
+            "subtle": "0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06)",
+            "medium": "0 4px 6px rgba(0, 0, 0, 0.06), 0 10px 15px rgba(0, 0, 0, 0.08)",
+            "deep": "0 10px 15px rgba(0, 0, 0, 0.1), 0 20px 25px rgba(0, 0, 0, 0.12)"
+          }
+        }
+      ],
+      "presets": [
+        {
+          "id": "vermilion-festival",
+          "title": "$t:preset.vermilion-festival",
+          "description": "$t:preset.vermilion-festival.description",
+          "values": {
+            "config.theme": "节庆朱橙",
+            "config.colors.primary": "#e85a2c",
+            "config.colors.primaryLight": "#f4845a",
+            "config.colors.primaryDark": "#b8421e",
+            "config.colors.secondary": "#7a3aa8",
+            "config.colors.accent": "#f5c542",
+            "config.colors.background": "#fffaf3",
+            "config.colors.surface": "#fff2e3",
+            "config.colors.text": "#1f1410",
+            "config.colors.textSecondary": "#7a5a4a",
+            "config.colors.border": "#f5d4b8",
+            "config.typography.headingFont": "PingFang SC, Inter, system-ui, sans-serif",
+            "config.typography.bodyFont": "PingFang SC, Inter, system-ui, sans-serif",
+            "config.typography.monoFont": "JetBrains Mono, ui-monospace, monospace",
+            "config.typography.baseFontSize": "14px",
+            "config.typography.headingWeight": "700",
+            "config.typography.lineHeight": "1.5",
+            "config.components.borderRadius": "12px",
+            "config.components.shadowDepth": "medium",
+            "config.components.buttonStyle": "filled",
+            "config.components.inputStyle": "bordered",
+            "config.components.cardStyle": "elevated",
+            "config.layout.density": "comfortable"
+          }
+        },
+        {
+          "id": "honey-twilight",
+          "title": "$t:preset.honey-twilight",
+          "description": "$t:preset.honey-twilight.description",
+          "values": {
+            "config.theme": "暮光琥珀",
+            "config.colors.primary": "#d8466a",
+            "config.colors.primaryLight": "#e87391",
+            "config.colors.primaryDark": "#a82c4f",
+            "config.colors.secondary": "#e88a3a",
+            "config.colors.accent": "#9468d8",
+            "config.colors.background": "#fdf8f0",
+            "config.colors.surface": "#f8edd8",
+            "config.colors.text": "#3a1f1f",
+            "config.colors.textSecondary": "#7a4a3a",
+            "config.colors.border": "#e8d4b0",
+            "config.typography.headingFont": "\"Playfair Display\", \"Source Han Serif SC\", Songti, serif",
+            "config.typography.bodyFont": "Inter, \"PingFang SC\", system-ui, sans-serif",
+            "config.typography.monoFont": "JetBrains Mono, ui-monospace, monospace",
+            "config.typography.baseFontSize": "15px",
+            "config.typography.headingWeight": "600",
+            "config.typography.lineHeight": "1.6",
+            "config.components.borderRadius": "16px",
+            "config.components.shadowDepth": "subtle",
+            "config.components.buttonStyle": "filled",
+            "config.components.inputStyle": "underlined",
+            "config.components.cardStyle": "elevated",
+            "config.layout.density": "spacious"
+          }
+        },
+        {
+          "id": "studio-noir",
+          "title": "$t:preset.studio-noir",
+          "description": "$t:preset.studio-noir.description",
+          "values": {
+            "config.theme": "深夜舞台",
+            "config.colors.primary": "#ff4470",
+            "config.colors.primaryLight": "#ff6e90",
+            "config.colors.primaryDark": "#cc2e54",
+            "config.colors.secondary": "#3acccc",
+            "config.colors.accent": "#ffd84a",
+            "config.colors.background": "#0a0a10",
+            "config.colors.surface": "#15151f",
+            "config.colors.text": "#f5f5f8",
+            "config.colors.textSecondary": "#9898a8",
+            "config.colors.border": "#262633",
+            "config.semantic_colors.success": "#4ade80",
+            "config.semantic_colors.warning": "#fbbf24",
+            "config.semantic_colors.error": "#fb7185",
+            "config.semantic_colors.info": "#60a5fa",
+            "config.typography.headingFont": "Inter, \"PingFang SC\", system-ui, sans-serif",
+            "config.typography.bodyFont": "Inter, \"PingFang SC\", system-ui, sans-serif",
+            "config.typography.monoFont": "JetBrains Mono, ui-monospace, monospace",
+            "config.typography.baseFontSize": "14px",
+            "config.typography.headingWeight": "700",
+            "config.typography.lineHeight": "1.5",
+            "config.components.borderRadius": "8px",
+            "config.components.shadowDepth": "deep",
+            "config.components.buttonStyle": "filled",
+            "config.components.inputStyle": "filled",
+            "config.components.cardStyle": "elevated",
+            "config.layout.density": "comfortable"
+          }
+        },
+        {
+          "id": "editorial-mono",
+          "title": "$t:preset.editorial-mono",
+          "description": "$t:preset.editorial-mono.description",
+          "values": {
+            "config.theme": "画刊单色",
+            "config.colors.primary": "#1a1a1a",
+            "config.colors.primaryLight": "#3a3a3a",
+            "config.colors.primaryDark": "#000000",
+            "config.colors.secondary": "#6a6a6a",
+            "config.colors.accent": "#c8472b",
+            "config.colors.background": "#fafaf7",
+            "config.colors.surface": "#f3f1ec",
+            "config.colors.text": "#0a0a0a",
+            "config.colors.textSecondary": "#6a6a6a",
+            "config.colors.border": "#e0ddd5",
+            "config.typography.headingFont": "\"Source Serif Pro\", \"Source Han Serif SC\", Songti, Georgia, serif",
+            "config.typography.bodyFont": "Inter, \"PingFang SC\", system-ui, sans-serif",
+            "config.typography.monoFont": "JetBrains Mono, ui-monospace, monospace",
+            "config.typography.baseFontSize": "15px",
+            "config.typography.headingWeight": "600",
+            "config.typography.lineHeight": "1.7",
+            "config.components.borderRadius": "4px",
+            "config.components.shadowDepth": "subtle",
+            "config.components.buttonStyle": "outlined",
+            "config.components.inputStyle": "underlined",
+            "config.components.cardStyle": "flat",
+            "config.layout.density": "spacious"
+          }
+        },
+        {
+          "id": "morandi-still",
+          "title": "$t:preset.morandi-still",
+          "description": "$t:preset.morandi-still.description",
+          "values": {
+            "config.theme": "莫兰迪静物",
+            "config.colors.primary": "#8a9678",
+            "config.colors.primaryLight": "#a8b298",
+            "config.colors.primaryDark": "#646e58",
+            "config.colors.secondary": "#b89878",
+            "config.colors.accent": "#9a6f68",
+            "config.colors.background": "#fbfaf5",
+            "config.colors.surface": "#efece2",
+            "config.colors.text": "#322d28",
+            "config.colors.textSecondary": "#75695e",
+            "config.colors.border": "#dad3c4",
+            "config.typography.headingFont": "\"Cormorant Garamond\", \"Source Han Serif SC\", Songti, Georgia, serif",
+            "config.typography.bodyFont": "Inter, \"PingFang SC\", system-ui, sans-serif",
+            "config.typography.monoFont": "JetBrains Mono, ui-monospace, monospace",
+            "config.typography.baseFontSize": "15px",
+            "config.typography.headingWeight": "500",
+            "config.typography.lineHeight": "1.7",
+            "config.components.borderRadius": "12px",
+            "config.components.shadowDepth": "subtle",
+            "config.components.buttonStyle": "soft",
+            "config.components.inputStyle": "bordered",
+            "config.components.cardStyle": "flat",
+            "config.layout.density": "spacious"
+          }
+        },
+        {
+          "id": "frosted-prism",
+          "title": "$t:preset.frosted-prism",
+          "description": "$t:preset.frosted-prism.description",
+          "values": {
+            "config.theme": "棱镜雾光",
+            "config.colors.primary": "#6a4ad8",
+            "config.colors.primaryLight": "#8c75e8",
+            "config.colors.primaryDark": "#4a32a8",
+            "config.colors.secondary": "#3aa8c4",
+            "config.colors.accent": "#d878c8",
+            "config.colors.background": "#0e0d1a",
+            "config.colors.surface": "#19182a",
+            "config.colors.text": "#f3f1fa",
+            "config.colors.textSecondary": "#9e9bbb",
+            "config.colors.border": "#2a2840",
+            "config.semantic_colors.success": "#34d399",
+            "config.semantic_colors.warning": "#fbbf24",
+            "config.semantic_colors.error": "#f87171",
+            "config.semantic_colors.info": "#60a5fa",
+            "config.typography.headingFont": "Inter, \"PingFang SC\", system-ui, sans-serif",
+            "config.typography.bodyFont": "Inter, \"PingFang SC\", system-ui, sans-serif",
+            "config.typography.monoFont": "JetBrains Mono, ui-monospace, monospace",
+            "config.typography.baseFontSize": "14px",
+            "config.typography.headingWeight": "600",
+            "config.typography.lineHeight": "1.55",
+            "config.components.borderRadius": "10px",
+            "config.components.shadowDepth": "medium",
+            "config.components.buttonStyle": "filled",
+            "config.components.inputStyle": "filled",
+            "config.components.cardStyle": "elevated",
+            "config.layout.density": "comfortable"
+          }
+        }
+      ],
+      "swatch_paths": [
+        "config.colors.primary",
+        "config.colors.primaryLight",
+        "config.colors.primaryDark",
+        "config.colors.secondary",
+        "config.colors.accent",
+        "config.colors.surface"
+      ],
+      "restore_paths": [
+        "config.theme",
+        "config.colors",
+        "config.semantic_colors",
+        "config.typography",
+        "config.components",
+        "config.layout.density"
+      ]
+    },
+    "children": [
+      {
+        "component": "stack",
+        "id": "colors",
+        "title": "$t:group.colors",
+        "children": [
+          {
+            "component": "schema_field",
+            "id": "config-colors-primary",
+            "path": "config.colors.primary",
+            "title": "$t:config.colors.primary",
+            "control": "color"
+          },
+          {
+            "component": "schema_field",
+            "id": "config-colors-primaryLight",
+            "path": "config.colors.primaryLight",
+            "title": "$t:config.colors.primaryLight",
+            "control": "color"
+          },
+          {
+            "component": "schema_field",
+            "id": "config-colors-primaryDark",
+            "path": "config.colors.primaryDark",
+            "title": "$t:config.colors.primaryDark",
+            "control": "color"
+          },
+          {
+            "component": "schema_field",
+            "id": "config-colors-secondary",
+            "path": "config.colors.secondary",
+            "title": "$t:config.colors.secondary",
+            "control": "color"
+          },
+          {
+            "component": "schema_field",
+            "id": "config-colors-accent",
+            "path": "config.colors.accent",
+            "title": "$t:config.colors.accent",
+            "control": "color"
+          },
+          {
+            "component": "schema_field",
+            "id": "config-colors-background",
+            "path": "config.colors.background",
+            "title": "$t:config.colors.background",
+            "control": "color"
+          },
+          {
+            "component": "schema_field",
+            "id": "config-colors-surface",
+            "path": "config.colors.surface",
+            "title": "$t:config.colors.surface",
+            "control": "color"
+          },
+          {
+            "component": "schema_field",
+            "id": "config-colors-text",
+            "path": "config.colors.text",
+            "title": "$t:config.colors.text",
+            "control": "color"
+          },
+          {
+            "component": "schema_field",
+            "id": "config-colors-textSecondary",
+            "path": "config.colors.textSecondary",
+            "title": "$t:config.colors.textSecondary",
+            "control": "color"
+          },
+          {
+            "component": "schema_field",
+            "id": "config-colors-border",
+            "path": "config.colors.border",
+            "title": "$t:config.colors.border",
+            "control": "color"
+          },
+          {
+            "component": "schema_field",
+            "id": "config-semantic_colors-success",
+            "path": "config.semantic_colors.success",
+            "title": "$t:config.semantic_colors.success",
+            "control": "color"
+          },
+          {
+            "component": "schema_field",
+            "id": "config-semantic_colors-warning",
+            "path": "config.semantic_colors.warning",
+            "title": "$t:config.semantic_colors.warning",
+            "control": "color"
+          },
+          {
+            "component": "schema_field",
+            "id": "config-semantic_colors-error",
+            "path": "config.semantic_colors.error",
+            "title": "$t:config.semantic_colors.error",
+            "control": "color"
+          },
+          {
+            "component": "schema_field",
+            "id": "config-semantic_colors-info",
+            "path": "config.semantic_colors.info",
+            "title": "$t:config.semantic_colors.info",
+            "control": "color"
+          }
+        ]
+      },
+      {
+        "component": "stack",
+        "id": "typography",
+        "title": "$t:group.typography",
+        "children": [
+          {
+            "component": "schema_field",
+            "id": "config-typography-headingFont",
+            "path": "config.typography.headingFont",
+            "title": "$t:config.typography.headingFont",
+            "control": "text"
+          },
+          {
+            "component": "schema_field",
+            "id": "config-typography-bodyFont",
+            "path": "config.typography.bodyFont",
+            "title": "$t:config.typography.bodyFont",
+            "control": "text"
+          },
+          {
+            "component": "schema_field",
+            "id": "config-typography-monoFont",
+            "path": "config.typography.monoFont",
+            "title": "$t:config.typography.monoFont",
+            "control": "text"
+          },
+          {
+            "component": "schema_field",
+            "id": "config-typography-baseFontSize",
+            "path": "config.typography.baseFontSize",
+            "title": "$t:config.typography.baseFontSize",
+            "control": "select",
+            "options": [
+              {
+                "value": "14px",
+                "label": "14px"
+              },
+              {
+                "value": "15px",
+                "label": "15px"
+              },
+              {
+                "value": "16px",
+                "label": "16px"
+              },
+              {
+                "value": "18px",
+                "label": "18px"
+              }
+            ]
+          },
+          {
+            "component": "schema_field",
+            "id": "config-typography-headingWeight",
+            "path": "config.typography.headingWeight",
+            "title": "$t:config.typography.headingWeight",
+            "control": "select",
+            "options": [
+              {
+                "value": "500",
+                "label": "500"
+              },
+              {
+                "value": "600",
+                "label": "600"
+              },
+              {
+                "value": "700",
+                "label": "700"
+              },
+              {
+                "value": "800",
+                "label": "800"
+              }
+            ]
+          },
+          {
+            "component": "schema_field",
+            "id": "config-typography-lineHeight",
+            "path": "config.typography.lineHeight",
+            "title": "$t:config.typography.lineHeight",
+            "control": "select",
+            "options": [
+              {
+                "value": "1.4",
+                "label": "1.4"
+              },
+              {
+                "value": "1.5",
+                "label": "1.5"
+              },
+              {
+                "value": "1.6",
+                "label": "1.6"
+              },
+              {
+                "value": "1.8",
+                "label": "1.8"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "component": "stack",
+        "id": "layout",
+        "title": "$t:group.layout",
+        "description": "$t:regeneration",
+        "children": [
+          {
+            "component": "schema_field",
+            "id": "config-layout-mode",
+            "path": "config.layout.mode",
+            "title": "$t:config.layout.mode",
+            "control": "select",
+            "options": [
+              {
+                "value": "sidebar",
+                "label": "$t:option.sidebar"
+              },
+              {
+                "value": "topbar",
+                "label": "$t:option.topbar"
+              },
+              {
+                "value": "bottom-nav",
+                "label": "$t:option.bottom-nav"
+              },
+              {
+                "value": "dashboard",
+                "label": "$t:option.dashboard"
+              },
+              {
+                "value": "minimal",
+                "label": "$t:option.minimal"
+              }
+            ]
+          },
+          {
+            "component": "schema_field",
+            "id": "config-layout-sidebar-position",
+            "path": "config.layout.sidebar.position",
+            "title": "$t:config.layout.sidebar.position",
+            "control": "select",
+            "options": [
+              {
+                "value": "left",
+                "label": "$t:option.left"
+              },
+              {
+                "value": "right",
+                "label": "$t:option.right"
+              }
+            ]
+          },
+          {
+            "component": "schema_field",
+            "id": "config-layout-sidebar-style",
+            "path": "config.layout.sidebar.style",
+            "title": "$t:config.layout.sidebar.style",
+            "control": "select",
+            "options": [
+              {
+                "value": "fixed",
+                "label": "$t:option.fixed"
+              },
+              {
+                "value": "collapsible",
+                "label": "$t:option.collapsible"
+              }
+            ]
+          },
+          {
+            "component": "schema_field",
+            "id": "config-layout-content_width",
+            "path": "config.layout.content_width",
+            "title": "$t:config.layout.content_width",
+            "control": "select",
+            "options": [
+              {
+                "value": "narrow",
+                "label": "$t:option.narrow"
+              },
+              {
+                "value": "medium",
+                "label": "$t:option.medium"
+              },
+              {
+                "value": "wide",
+                "label": "$t:option.wide"
+              },
+              {
+                "value": "full",
+                "label": "$t:option.fullWidth"
+              }
+            ]
+          },
+          {
+            "component": "schema_field",
+            "id": "config-layout-density",
+            "path": "config.layout.density",
+            "title": "$t:config.layout.density",
+            "control": "select",
+            "options": [
+              {
+                "value": "compact",
+                "label": "$t:option.compact"
+              },
+              {
+                "value": "comfortable",
+                "label": "$t:option.comfortable"
+              },
+              {
+                "value": "spacious",
+                "label": "$t:option.spacious"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "component": "stack",
+        "id": "components",
+        "title": "$t:group.components",
+        "description": "$t:regeneration",
+        "children": [
+          {
+            "component": "schema_field",
+            "id": "config-components-borderRadius",
+            "path": "config.components.borderRadius",
+            "title": "$t:config.components.borderRadius",
+            "control": "select",
+            "options": [
+              {
+                "value": "0px",
+                "label": "0px"
+              },
+              {
+                "value": "4px",
+                "label": "4px"
+              },
+              {
+                "value": "8px",
+                "label": "8px"
+              },
+              {
+                "value": "12px",
+                "label": "12px"
+              },
+              {
+                "value": "16px",
+                "label": "16px"
+              },
+              {
+                "value": "full",
+                "label": "$t:option.full"
+              }
+            ]
+          },
+          {
+            "component": "schema_field",
+            "id": "config-components-shadowDepth",
+            "path": "config.components.shadowDepth",
+            "title": "$t:config.components.shadowDepth",
+            "control": "select",
+            "options": [
+              {
+                "value": "none",
+                "label": "$t:option.none"
+              },
+              {
+                "value": "subtle",
+                "label": "$t:option.subtle"
+              },
+              {
+                "value": "medium",
+                "label": "$t:option.medium"
+              },
+              {
+                "value": "deep",
+                "label": "$t:option.deep"
+              }
+            ]
+          },
+          {
+            "component": "schema_field",
+            "id": "config-components-buttonStyle",
+            "path": "config.components.buttonStyle",
+            "title": "$t:config.components.buttonStyle",
+            "control": "select",
+            "options": [
+              {
+                "value": "filled",
+                "label": "$t:option.filled"
+              },
+              {
+                "value": "outlined",
+                "label": "$t:option.outlined"
+              },
+              {
+                "value": "ghost",
+                "label": "$t:option.ghost"
+              },
+              {
+                "value": "soft",
+                "label": "$t:option.soft"
+              }
+            ]
+          },
+          {
+            "component": "schema_field",
+            "id": "config-components-inputStyle",
+            "path": "config.components.inputStyle",
+            "title": "$t:config.components.inputStyle",
+            "control": "select",
+            "options": [
+              {
+                "value": "bordered",
+                "label": "$t:option.bordered"
+              },
+              {
+                "value": "underlined",
+                "label": "$t:option.underlined"
+              },
+              {
+                "value": "filled",
+                "label": "$t:option.filled"
+              }
+            ]
+          },
+          {
+            "component": "schema_field",
+            "id": "config-components-cardStyle",
+            "path": "config.components.cardStyle",
+            "title": "$t:config.components.cardStyle",
+            "control": "select",
+            "options": [
+              {
+                "value": "flat",
+                "label": "$t:option.flat"
+              },
+              {
+                "value": "bordered",
+                "label": "$t:option.bordered"
+              },
+              {
+                "value": "elevated",
+                "label": "$t:option.elevated"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "component": "stack",
+        "id": "notes",
+        "title": "$t:group.notes",
+        "children": [
+          {
+            "component": "schema_field",
+            "id": "config-notes",
+            "path": "config.notes",
+            "title": "$t:config.notes",
+            "control": "textarea"
+          }
+        ]
+      }
+    ]
+  }
+}

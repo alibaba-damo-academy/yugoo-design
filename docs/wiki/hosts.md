@@ -1,0 +1,93 @@
+# 宿主兼容与安装入口
+
+语构设计系统（Yugoo Design）以插件形式接入已有智能体（Agent）应用。宿主提供模型、凭据、工具和原生 Agent；共享设计运行时与 UI 负责设计项目和面板。npm 发行状态与宿主功能验收分别记录，不能互相替代。
+
+[开始使用](getting-started.md) · [预览状态](preview-status.md) · [故障排查](troubleshooting.md)
+
+安装、更新与接入实现的规范入口是 [Host integration entry points](../../packages/companion/HOSTS.md)，在安装前即可阅读。本页提供各宿主的呈现方式和已有验证范围；操作指令以对应指南及候选版本为准。桌面端支持不能从同名 CLI 或其他平台推断。
+
+默认主路径是复制[同一段通用安装提示词](../../packages/companion/HOSTS.md#default-prompt-any-supported-host)，让当前宿主的 Agent 从 npm 获取精确版本并选择其安装路径；需要时也可以显式指定宿主。历史发行检查（2026-10-17 UTC）记录 Companion `0.1.0-beta.3` 与当时 11 个 DSH 相关 `0.1.0-beta.2` 包已公开，12 个包的版本、标签和归档元数据已核对；完整下载及安装验证范围见[预览状态](preview-status.md)。已获取、已登记/导入、已激活与实际可用分别验证；本地候选和历史套件的结果不等于六宿主 beta 安装及更新已经验收。
+
+## DeepSeek Harness
+
+- 呈现方式：宿主内嵌 Design Panel 与 Studio。桌面端目前只有 DSH 能承载完整功能与一体化交互体验；其他桌面宿主的支持范围分别说明，不以桌面应用名称推断同等能力。
+- 安装入口：[DSH 专用提示词](../../packages/companion/HOSTS.md#install-or-update-deepseek-harness)与[DSH 安装指南](../../packages/dsh/README.md#candidate-npm-installer-dsh-route-and-recovery-limits)。本地工作区路线用于发布前预检。
+- 现有公开指南记录官方 DSH `0.1.2-rc.1` 的本地候选安装路线；开发仓的 submodule pin 是另一组开发输入。
+- 模型、搜索和用户配置由 DSH 管理。插件通过公开扩展点接入。
+
+安装候选与具体功能的验证范围见 [DSH 指南](../../packages/dsh/README.md)和[预览状态](preview-status.md)。
+
+## Codex CLI
+
+- 呈现方式：绑定原生会话的 Companion UI。
+- 安装入口：[Companion 指南](../../packages/companion/README.md)，按其中的 Codex 插件/注册路线选择。
+- 原生会话识别、执行和消息返回依赖实际 Codex 版本，不能套用其他宿主的注册命令。
+- 当前测试范围为 Codex CLI；ChatGPT 桌面应用（Codex 模式）的接入列入第二轮开发目标，尚未完成。当前官方桌面入口和模式见[OpenAI 使用说明](https://learn.chatgpt.com/docs/use-chatgpt)，CLI 验收不代替桌面验收。
+
+安装后按[首次协作步骤](getting-started.md#3-创建设计项目)创建项目、请求结果并检查保存与继续；原生接线和执行限制以本候选的 [Companion 指南](../../packages/companion/README.md)为准。
+
+## Claude Code CLI
+
+- 呈现方式：绑定原生会话的 Companion UI。
+- 安装入口：[Companion 持久注册指南](../../packages/companion/README.md#npm-candidate-and-native-installation-boundary)。
+- 使用指南中的 `design-system install --host claude-code` 路线注册所提供的候选；正常启动宿主后使用已安装的 Design skill。
+- 当前测试范围为 Claude Code CLI；桌面端接入尚未测试。
+
+正常启动并确认已安装入口后，按[首次协作步骤](getting-started.md#3-创建设计项目)检查项目、面板保存和原会话继续。持久注册、已有进程及执行限制仍按上述候选指南核对。
+
+## Qoder CLI
+
+- 呈现方式：绑定原生会话的 Companion UI，沿用 Qoder 的模型和原生 Hooks。
+- 安装入口：[Companion 持久注册指南](../../packages/companion/README.md#claude-code-and-qoder-cli-persistent-native-registration)。从所提供候选的 npm 安装目录，按指南使用 `design-system install --host qoder` 完成原生注册。
+- 注册后正常启动 Qoder CLI，在会话中使用 `/yugoo-design:yugoo`；已运行的宿主需要重启以加载注册。源码构建的临时插件目录路线另见 [Qoder CLI 预览指南](../../packages/companion/README.md#qoder-cli-preview)。
+- 已记录的原生进程绑定与 Hook 验证范围是 Linux/WSL、Qoder CLI `1.1.48`。其他平台、版本与后台能力按候选分别核实。
+
+## 千问办公 QwenWork
+
+- 呈现方式：在系统浏览器中打开完整 Companion，连接千问办公的原生会话。
+- 安装入口：[千问办公专用提示词](../../packages/companion/HOSTS.md#install-or-update-qwenwork)。当前 Companion `0.1.0-beta.3` 支持从已获取的精确 npm 包准备专家套件与连接器，按[桌面准备指南](../../packages/companion/README.md#desktop-npm-package-preparation)在原生界面确认导入。现有 Windows 预览材料仍按随包指南使用；独立连接器须单独导入，启用 Skill 不代表工具已经连接。
+- 预览运行时与所需 Node 环境按随包指南准备。桌面输入依赖特定版本的宿主设置；普通 Hook 模式下可能需要回到原会话继续，不应将两种模式混用。
+- 历史验证范围：千问办公 `1.2.5` 系列、Yugoo Design 套件 `0.2.0` 的 Windows 本地预览；对应版本的首次会话身份、工具连接、系统浏览器打开及消息往返已有实际验证。
+- 历史边界：2026-10-11 的记录仍有发送确认与历史回显延迟，以及保存后继续、KAG 和完整设计执行待验收项；这些结果不能代替后续 `1.3.2` 的逐项验收。后续本地 beta.18 候选的前台 GRA 手测范围见下方[评审降级](#后台能力与评审降级)。千问办公接入不使用 WorkBuddy 的内嵌面板路径。
+
+安装材料中的 `hosts/qwenwork/README.md` 记录具体准备步骤与版本限制。界面和回答保留“千问办公（QwenWork）”的宿主身份，插件名称为 **Yugoo Design**。
+
+## WorkBuddy
+
+- 呈现方式：通过宿主的 `present_files` 自动打开内嵌面板预览，也可以在系统浏览器打开完整 Companion。
+- 安装入口：[WorkBuddy 专用提示词](../../packages/companion/HOSTS.md#install-or-update-workbuddy)。当前 Companion `0.1.0-beta.3` 支持从已获取的精确 npm 包准备稳定 market，再按[桌面准备指南](../../packages/companion/README.md#desktop-npm-package-preparation)使用宿主导入或 Refresh/Update。现有预览插件按随包指南安装、启用，再在原生会话中使用已安装的 `yugoo` 技能。
+- 版本范围：WorkBuddy `5.7.x` 系列、Yugoo Design 插件 `0.3.20` 的 Windows 本地预览。对应预览迭代已有工具与身份绑定、主会话及串行原生 Producer、面板自动打开与回传、保存后原会话读取、历史及 KAG 的实际验证记录。
+- 当前边界：嵌套 Worker 与后台 GRA 尚不可用。内嵌预览的工具栏与地址栏由宿主控制，不能据此承诺打开带地址栏的独立内置浏览器标签页。
+
+安装材料中的 `hosts/workbuddy/README.md` 记录具体安装及验证范围。页面可见、会话已连接和保存内容被 Agent 读取是不同状态；遇到问题按[故障排查](troubleshooting.md)分别检查。
+
+## 后台能力与评审降级
+
+2026-10-20 对 Windows 千问办公 `1.3.2-26101704` 安装源码的只读检查确认：桌面 SDK 集成关闭原生后台 Agent 能力，本次未发现受支持的用户开关。普通重启或在系统环境、`.env` 中设置开关，不能视为恢复该能力的方法；也不修改宿主绕过限制。此结论限定于已检查的安装版本和源码调用链，不代表完成了当前会话的 GRA 实测，也不推及未来版本。技术边界见[千问办公接入指南](../../packages/companion/hosts/qwenwork/README.md#qwenworkcn-132-background-agent-policy)。
+
+WorkBuddy `5.8.3` 的用户实测则表现为：原生 Agent 虽返回异步启动，普通消息仍排队到 GRA 结束。它与千问办公关闭后台能力的原因不同，但都未提供主对话保持可用的后台体验；不据此推断所有宿主或未来版本都无法后台运行。
+
+**后台不可用，或原生异步仍占用主对话时，采用同一降级原则。共享源码已实现并通过定向回归，实际宿主结果按下方精确候选记录：** 先说明限制，再请用户选择：
+
+- **关闭自动 GRA**：沿用现有关闭策略，停止自动调度，手动评审入口仍保留。
+- **本次在主对话同步评审**：先说明会占用当前对话，得到确认后由主 Agent 按相同的 Grounding、Reflection、Alignment 方法完成本次评审，不强制启动同步子 Agent，不改为永久自动同步策略。
+
+用户未选择时不改策略、不启动评审。宿主支持不占用主对话的后台执行时，手动评审沿用异步方式；否则，手动请求也须先确认本次同步执行。共享实现、固定版本回归和实际宿主验收分别记录；安装版是否提供这一降级方式，以其随包指南和验证结果为准。
+
+**2026-10-21 的千问办公局部手测：** Windows 千问办公 `1.3.2-26101704`、套件 `0.1.5` 与 Companion `0.1.0-beta.18` 的本地候选中，用户明确选择本次前台评审后，主 Agent 通过既有读取与提交接口完成 G/R/A 三项评审。没有启动子 Agent 或后台就绪探针；评审策略仍为 `auto`，已有 U/S/T 被复用，设计文件未被改写。本次不包含 WorkBuddy 对应流程，不证明后台就绪、完整 Kit 执行或这些本地版本已发布到 npm。
+
+GRA 仍是三个审查视角。清晰度评估（U/S/T）由主 Agent 报告，KAG 由自己的投影与维护流程管理；两者均不以 GRA 后台可用为前提，也不能据此推断各自已通过实机验收。
+
+## 其他宿主
+
+更多宿主适配的版本、配置和限制以 [Companion 指南](../../packages/companion/README.md)为准。某个候选完成登记、工具发现或一次执行，不能证明其他平台或后台能力已验收。
+
+## 如何阅读兼容说明
+
+兼容性需同时说明插件候选、宿主版本、平台、呈现方式和实际功能。前台 Bundle、嵌套 Worker、后台 GRA 及 KAG 可能有不同支持状态。
+
+当前六个宿主入口不等于六宿主 npm 自动安装/更新已经通过验收。macOS 的原生宿主功能与性能尚未完成实机验收；Node.js 的平台支持不代替插件接入、原生资源和 UI 测试。
+
+宿主徽章链接到本页的对应入口。只有相关安装及功能验证完成后才更新具体支持范围；源码实现、独立原型和公开 npm 发行分别记录。
+
+宿主接入结构、适配代码与验证边界另见[宿主接入入口](../../packages/companion/HOSTS.md)。

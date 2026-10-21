@@ -1,0 +1,74 @@
+# Declarative rules enforce the required deliverable fields and top-level order
+# references. Rich nested-secret semantics remain Producer self-checks in
+# SKILL.md.
+skill: integration_design
+
+rules:
+  - id: empty_integrations
+    scope: [state, completion]
+    code: integration_design.empty
+    message: "At least one system integration is required."
+    repair_hint: "Add each independently useful external capability as one integration record."
+    check: { non_empty_map: integrations }
+
+  - id: title
+    scope: [state, completion]
+    code: integration_design.incomplete
+    message: "integration {key}: `title` is empty"
+    repair_hint: "Give the external capability a short user-recognisable name."
+    check: { for_each_in_map: integrations, non_empty_string: title }
+
+  - id: description
+    scope: [state, completion]
+    code: integration_design.incomplete
+    message: "integration {key}: `description` is empty"
+    repair_hint: "Explain what the connection does and the result returned to the product."
+    check: { for_each_in_map: integrations, non_empty_string: description }
+
+  - id: url
+    scope: [state, completion]
+    code: integration_design.incomplete
+    message: "integration {key}: `url` is empty"
+    repair_hint: "Record the confirmed service entry or documentation URL for the connection."
+    check: { for_each_in_map: integrations, non_empty_string: url }
+
+  - id: prompt_content
+    scope: [state, completion]
+    code: integration_design.incomplete
+    message: "integration {key}: `prompt_content` is empty"
+    repair_hint: "Tell the Agent when and how to use this connection and what result to return."
+    check: { for_each_in_map: integrations, non_empty_string: prompt_content }
+
+  # Product-side notes (business_rules) are optional. Absence or an empty string
+  # must not block state saves or completion; applicable consequences remain
+  # part of the Producer's semantic self-check in the output contract.
+
+  # Rich integration-quality checks remain Producer self-checks in SKILL.md.
+
+  - id: integration_order_refs
+    scope: [state, completion]
+    code: integration_design.invalid_order
+    message: "integration_order references missing integration {key}"
+    repair_hint: "Keep each live integration ID exactly once in integration_order."
+    check: { order_refs_map: { order: integration_order, map: integrations } }
+
+  - id: integration_order_empty
+    scope: [state, completion]
+    code: integration_design.invalid_order
+    message: "integration_order is empty"
+    repair_hint: "Keep each live integration ID exactly once in integration_order."
+    check: { non_empty_list: integration_order }
+
+  - id: integration_ids_match_keys
+    scope: [state, completion]
+    code: integration_design.invalid_id
+    message: "integration mapping key {key} must equal integration.id"
+    repair_hint: "Keep the integration mapping key equal to the record's stable id."
+    check: { map_keys_match_field: { map: integrations, field: id } }
+
+  - id: integration_order_exact
+    scope: [state, completion]
+    code: integration_design.invalid_order
+    message: "integration_order must contain integration {key} exactly once"
+    repair_hint: "Keep each live integration ID exactly once in integration_order."
+    check: { order_exactly_covers_map: { order: integration_order, map: integrations } }

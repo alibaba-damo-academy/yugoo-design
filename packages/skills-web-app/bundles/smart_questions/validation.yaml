@@ -1,0 +1,17 @@
+# Rich question and answer quality checks remain Producer self-checks in
+# SKILL.md. The persisted shape is enforced by schema.yaml.
+skill: smart_questions
+
+rules:
+  - id: referenced_files_present
+    scope: [state]
+    code: smart_questions.referenced_artifact_invalid
+    check:
+      referenced_files: ["questions.*.multimodal_answer.*.artifact_file"]
+
+  - id: questions_present
+    scope: [completion]
+    code: smart_questions.empty
+    message: "At least one question is required before completing the Bundle."
+    repair_hint: "Keep the fixed questions and add only the smallest useful current round."
+    check: { non_empty_map: questions }

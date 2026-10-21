@@ -1,0 +1,50 @@
+{
+  "name": "dsh-design-knowledge-ladybug",
+  "version": "0.0.0",
+  "license": "Apache-2.0",
+  "type": "module",
+  "description": "LadybugDB WASM provider for the host-neutral Design Knowledge port.",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./dsh": {
+      "types": "./lib/dsh-plugin.d.ts",
+      "default": "./lib/dsh-plugin.js"
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test test/durability.test.mjs && node test/provider.test.mjs && node test/full-service.test.mjs && node test/dsh-plugin.test.mjs && node test/reconstruction.test.mjs && node --test test/recovery.test.mjs test/semantic-index.test.mjs test/query-pagination.test.mjs test/file-projection.test.mjs test/knowledge-refresh.test.mjs test/knowledge-review.test.mjs test/reading.test.mjs test/wal-same-process-reopen.test.cjs ../core/test/knowledge-reading.test.mjs ../core/test/knowledge-projection.test.mjs ../core/test/knowledge-artifacts.test.mjs ../core/test/knowledge-recovery-progress.test.mjs"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "dsh-design-core": "0.0.0"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "3.8.1",
+    "@ladybugdb/wasm-core": "0.21.1",
+    "proper-lockfile": "4.1.2",
+    "undici": "8.10.0"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.0.5",
+    "@types/node": "^22.20.0",
+    "@types/proper-lockfile": "^4.1.4",
+    "dsh-design-core": "link:../core",
+    "tsdown": "^0.22.2",
+    "typescript": "^6.0.3"
+  },
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "lib/third-party/ladybug-wasm-core-0.21.1/**",
+    "LICENSE",
+    "NOTICE",
+    "THIRD_PARTY_NOTICES.md"
+  ]
+}

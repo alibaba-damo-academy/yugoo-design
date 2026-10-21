@@ -1,0 +1,270 @@
+/**
+ * Shared styles for design sub-panels (research, flow_design, …).
+ *
+ *   • `.panel-resize-handle`
+ *       Adds a visible hover/drag glow to the shadcn `ResizableHandle`.
+ *       The default 1px line is too subtle when paired with long
+ *       truncated nav titles, so we widen the hit region and tint it
+ *       on interaction.
+ *
+ *   • `.module-markdown.panel-md`
+ *       Modern markdown polish. Used by `<ModuleMarkDown className="panel-md">`
+ *       inside research conclusions / direction findings, and the flow
+ *       process description. We dual-class with `.module-markdown` so we
+ *       win specificity over the awkward defaults baked into ModuleMarkDown
+ *       itself (e.g. `li { line-height: 2 }`).
+ */
+
+.panel-resize-handle {
+  width: 4px;
+  background: transparent;
+  transition: background-color 0.15s ease;
+}
+.panel-resize-handle:hover,
+.panel-resize-handle[data-resize-handle-state='hover'],
+.panel-resize-handle[data-resize-handle-state='drag'] {
+  background: rgba(102, 58, 232, 0.25);
+}
+
+/* Vertical handle variant — applied to handles inside a `direction='vertical'`
+   group. The shadcn primitive flips the wrap automatically; we just
+   make the bar height-flavored instead of width. */
+.panel-resize-handle[data-panel-group-direction='vertical'] {
+  width: 100%;
+  height: 4px;
+}
+
+.design-panel-resize-handle {
+  position: relative;
+  width: 1px;
+  min-width: 1px;
+  max-width: 1px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  border: 0;
+  background: var(--ds-border-default);
+  transition: background-color 0.15s ease;
+}
+
+/* ResizablePanel clips overflow but does not size its React child. Establish
+   the bounded height that each view needs before its own main/nav scroller can
+   consume the remaining space. */
+.design-panel-pane-content,
+.design-panel-pane-content > * {
+  height: 100%;
+  min-height: 0;
+}
+
+.design-panel-pane-content {
+  overflow: hidden;
+}
+
+.design-panel-resize-handle::before {
+  display: none;
+}
+
+.design-panel-resize-handle::after {
+  position: absolute;
+  inset-block: 0;
+  left: 50%;
+  width: 12px;
+  content: '';
+  background: transparent;
+  transform: translateX(-50%);
+}
+
+.design-panel-resize-handle:hover,
+.design-panel-resize-handle[data-resize-handle-state='hover'],
+.design-panel-resize-handle[data-resize-handle-state='drag'] {
+  background: var(--ds-brand-6);
+}
+
+.module-markdown.panel-md {
+  color: rgba(16, 8, 43, 0.85);
+  font-size: 14px;
+  line-height: 1.75;
+  font-family: var(--font-main);
+}
+.module-markdown.panel-md > *:first-child {
+  margin-top: 0;
+}
+.module-markdown.panel-md > *:last-child {
+  margin-bottom: 0;
+}
+
+.module-markdown.panel-md h1,
+.module-markdown.panel-md h2,
+.module-markdown.panel-md h3,
+.module-markdown.panel-md h4,
+.module-markdown.panel-md h5,
+.module-markdown.panel-md h6 {
+  color: #10082b;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 1.2em 0 0.5em;
+}
+.module-markdown.panel-md h1 {
+  font-size: 18px;
+}
+.module-markdown.panel-md h2 {
+  font-size: 16px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #ecebee;
+}
+.module-markdown.panel-md h3 {
+  font-size: 15px;
+}
+.module-markdown.panel-md h4 {
+  font-size: 13px;
+  color: rgba(16, 8, 43, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.module-markdown.panel-md p {
+  margin: 0.6em 0;
+}
+
+.module-markdown.panel-md ul,
+.module-markdown.panel-md ol {
+  margin: 0.6em 0;
+  padding-left: 1.5em;
+  display: block;
+}
+.module-markdown.panel-md ul {
+  list-style: disc outside;
+}
+.module-markdown.panel-md ol {
+  list-style: decimal outside;
+}
+.module-markdown.panel-md li {
+  margin: 0.25em 0;
+  line-height: 1.75;
+  display: list-item;
+}
+/* Sub-headings inside the conclusion need breathing room so structure reads */
+.module-markdown.panel-md h3,
+.module-markdown.panel-md h4 {
+  margin-top: 1em;
+  margin-bottom: 0.4em;
+}
+.module-markdown.panel-md ul li::marker {
+  color: #663ae8;
+}
+.module-markdown.panel-md ol li::marker {
+  color: #663ae8;
+  font-weight: 600;
+}
+.module-markdown.panel-md li > p {
+  margin: 0.2em 0;
+}
+
+.module-markdown.panel-md strong {
+  color: #10082b;
+  font-weight: 600;
+}
+.module-markdown.panel-md em {
+  color: rgba(16, 8, 43, 0.8);
+}
+
+.module-markdown.panel-md a {
+  color: #663ae8;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(102, 58, 232, 0.3);
+  transition: border-color 0.15s ease;
+}
+.module-markdown.panel-md a:hover {
+  border-bottom-color: #663ae8;
+}
+
+.module-markdown.panel-md code {
+  background: #f4f2fb;
+  color: #5c2fe5;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.92em;
+  font-family: var(--font-code);
+}
+.module-markdown.panel-md pre {
+  background: #1e1b2e;
+  color: #e6e2f5;
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0.9em 0;
+}
+.module-markdown.panel-md pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font-size: inherit;
+}
+
+.module-markdown.panel-md blockquote {
+  border-left: 3px solid #663ae8;
+  background: #fafafc;
+  margin: 0.9em 0;
+  padding: 0.6em 1em;
+  color: rgba(16, 8, 43, 0.7);
+  border-radius: 0 6px 6px 0;
+}
+.module-markdown.panel-md blockquote p {
+  margin: 0.3em 0;
+}
+
+.module-markdown.panel-md hr {
+  border: 0;
+  border-top: 1px solid #ecebee;
+  margin: 1.4em 0;
+}
+
+.module-markdown.panel-md table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.9em 0;
+  font-size: 13px;
+}
+.module-markdown.panel-md th,
+.module-markdown.panel-md td {
+  border: 1px solid #ecebee;
+  padding: 7px 10px;
+  text-align: left;
+  line-height: 1.6;
+}
+.module-markdown.panel-md th {
+  background: #fafafc;
+  font-weight: 600;
+  color: #10082b;
+}
+.module-markdown.panel-md tr:nth-child(even) td {
+  background: #fcfcfd;
+}
+
+.module-markdown.panel-md img {
+  max-width: 100%;
+  border-radius: 6px;
+  margin: 0.6em 0;
+}
+
+/* Keep the Canvas split stable when the host injects its utility CSS later. */
+.business-object-canvas-layout.flex-col {
+  flex-direction: column;
+}
+.business-object-node-summary {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .business-relation-direction-pulse {
+    display: none;
+  }
+}
+@media (min-width: 768px) {
+  .business-object-canvas-layout.flex-col {
+    flex-direction: row;
+  }
+}

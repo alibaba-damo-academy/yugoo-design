@@ -1,0 +1,9 @@
+name: hazard_register
+version: "0.1"
+title: {en: Delivery hazard register, zh: 配送风险登记册}
+label: {en: Edit delivery hazards, zh: 编辑配送风险记录}
+description: {en: Review workshop material delivery scenarios, responses and evidence limits., zh: 核对工坊物料配送情境、应对措施与证据边界。}
+order: 1
+icon: list
+execution: {mode: main, handoff: must_edit}
+presentation: {mode: declarative, renderer: pilot-design/v2}

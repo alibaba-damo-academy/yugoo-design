@@ -1,0 +1,91 @@
+version: 1
+panel_kind: evidence_workbook
+i18n:
+  default_locale: zh-CN
+  locales: {zh-CN: locales/zh-CN.json, en-US: locales/en-US.json}
+empty_description: $t:empty
+sections:
+  - id: functions
+    title: $t:functions
+    item_name: $t:function
+    confirm_delete: true
+    create:
+      id_field: function_id
+      defaults: {function_name: '', function_description: '', function_epic: '', priority: Medium, source: user, rejected: false}
+  - id: function_details
+    title: $t:details
+    records_path: functions
+    fields_path: details
+    add_mode: none
+fields:
+  - {key: function_id, label: '$t:functionId', control: text, readonly: true, applies_to: [functions]}
+  - {key: function_name, label: '$t:name', control: text, required: true, applies_to: [functions]}
+  - {key: function_description, label: '$t:description', control: textarea, required: true, applies_to: [functions]}
+  - {key: function_epic, label: '$t:epic', control: text, required: true, description: '$t:epicHelp', applies_to: [functions]}
+  - key: priority
+    label: $t:priority
+    control: select
+    options: [{value: High, label: '$t:high'}, {value: Medium, label: '$t:medium'}, {value: Low, label: '$t:low'}]
+    applies_to: [functions]
+  - {key: rejected, label: '$t:rejected', control: toggle, hidden: true, applies_to: [functions]}
+  - key: source
+    label: $t:source
+    control: select
+    readonly: true
+    options: [{value: ai, label: '$t:ai'}, {value: user, label: '$t:user'}]
+    applies_to: [functions]
+  - {key: reason, label: '$t:reason', control: textarea, applies_to: [functions]}
+  - {key: references, label: '$t:references', control: source_reference_map, readonly: true, applies_to: [functions]}
+  - {key: situation, label: '$t:situation', control: textarea, applies_to: [function_details]}
+  - key: behaviors
+    label: $t:behaviors
+    row_name: $t:behavior
+    control: record_map
+    columns: [{key: description, label: '$t:description', control: textarea}]
+    applies_to: [function_details]
+  - key: inputs
+    label: $t:inputs
+    row_name: $t:input
+    control: record_map
+    columns: [{key: description, label: '$t:description', control: textarea}]
+    applies_to: [function_details]
+  - key: outputs
+    label: $t:outputs
+    row_name: $t:output
+    control: record_map
+    columns: [{key: description, label: '$t:description', control: textarea}]
+    applies_to: [function_details]
+  - key: limits
+    label: $t:limits
+    row_name: $t:limit
+    control: record_map
+    columns: [{key: description, label: '$t:description', control: textarea}]
+    applies_to: [function_details]
+  - key: exceptions
+    label: $t:exceptions
+    row_name: $t:exception
+    control: record_map
+    columns: [{key: condition, label: '$t:condition', control: textarea}, {key: response, label: '$t:response', control: textarea}]
+    applies_to: [function_details]
+ui:
+  component: record_board
+  guidance: "$t:guidance"
+  sidebar_icon: blocks
+  id: function-board
+  title: $t:applicationMindMap
+  source: functions
+  board:
+    request_create:
+      fields: [function_name, function_description, priority]
+      prompt: $t:createRequest
+      submit_label: $t:createSubmit
+    label: function_name
+    id_field: function_id
+    description: function_description
+    group: function_epic
+    rejected: rejected
+    badge: priority
+    details_title: $t:detailsAndEvidence
+    detail_fields_mode: fixed
+    detail_fields: [reason, references]
+    detail_sections: [function_details]

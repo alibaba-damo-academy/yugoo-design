@@ -1,0 +1,90 @@
+{
+  "schema_version": 5,
+  "title": "合成预览示例：请求处理角色",
+  "summary": "合成示例：单父多级继承保留原权限条件与验证；不是用户项目的授权事实。",
+  "roles": {
+    "R-PREVIEW-A": {
+      "id": "R-PREVIEW-A",
+      "title": "申请人",
+      "assignment_rule": "注册后自动拥有"
+    },
+    "R-PREVIEW-B": {
+      "id": "R-PREVIEW-B",
+      "title": "审核人",
+      "assignment_rule": "由管理员授予"
+    },
+    "R-PREVIEW-C": {
+      "id": "R-PREVIEW-C",
+      "title": "主审核人",
+      "assignment_rule": "由管理员明确授予主审角色"
+    }
+  },
+  "role_order": [
+    "R-PREVIEW-A",
+    "R-PREVIEW-B",
+    "R-PREVIEW-C"
+  ],
+  "policies": {
+    "AP-PREVIEW-A": {
+      "id": "AP-PREVIEW-A",
+      "title": "允许修改请求",
+      "role_ref": "R-PREVIEW-A",
+      "capability": "修改请求",
+      "effect": "allow",
+      "applies_when": "仅限本人创建且尚未通过的请求",
+      "requirements": [
+        "confirm",
+        "reauthenticate",
+        "custom"
+      ],
+      "custom_requirement": "核对请求归属后才能修改"
+    },
+    "AP-PREVIEW-B": {
+      "id": "AP-PREVIEW-B",
+      "title": "允许审核请求",
+      "role_ref": "R-PREVIEW-B",
+      "capability": "审核请求",
+      "effect": "allow",
+      "applies_when": "请求处于待审核状态",
+      "requirements": [
+        "confirm"
+      ],
+      "custom_requirement": ""
+    },
+    "AP-PREVIEW-C": {
+      "id": "AP-PREVIEW-C",
+      "title": "允许导出审核记录",
+      "role_ref": "R-PREVIEW-C",
+      "capability": "导出审核记录",
+      "effect": "allow",
+      "applies_when": "仅限本人负责的审核范围",
+      "requirements": [
+        "confirm"
+      ],
+      "custom_requirement": ""
+    }
+  },
+  "policy_order": [
+    "AP-PREVIEW-A",
+    "AP-PREVIEW-B",
+    "AP-PREVIEW-C"
+  ],
+  "inheritances": {
+    "RI-PREVIEW-B-A": {
+      "id": "RI-PREVIEW-B-A",
+      "title": "继承权限",
+      "kind": "inherits",
+      "source": "R-PREVIEW-B",
+      "target": "R-PREVIEW-A",
+      "description": "合成例：审核人保留申请人自有请求的操作条件与验证要求。"
+    },
+    "RI-PREVIEW-C-B": {
+      "id": "RI-PREVIEW-C-B",
+      "title": "继承权限",
+      "kind": "inherits",
+      "source": "R-PREVIEW-C",
+      "target": "R-PREVIEW-B",
+      "description": "合成例：主审核人复用审核权限，不继承审核人的授予规则。"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "hazards": {
+    "HZ-DEMO-001": {
+      "id": "HZ-DEMO-001",
+      "label": "Synthetic: late delivery",
+      "scenario": "Synthetic example: a delivery might arrive after the field team's planned handoff window.",
+      "response": "Proposed example response: check the estimated arrival with the coordinator and agree a revised handoff before changing the visit plan.",
+      "certainty": "proposed",
+      "evidence_note": "Synthetic teaching example only. No late delivery, agreed response or operational outcome has been verified."
+    },
+    "HZ-DEMO-002": {
+      "id": "HZ-DEMO-002",
+      "label": "Synthetic: access restriction",
+      "scenario": "Synthetic example: it is unknown whether the destination requires advance visitor authorization.",
+      "response": "Verify entry requirements with the site contact before scheduling access; do not infer permission from this example.",
+      "certainty": "unknown",
+      "evidence_note": "Synthetic teaching example only. No site restriction or access permission has been verified; an actual site source is still needed."
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "standards": {
+    "std-1": { "name": "GB/T 1234" }
+  },
+  "adaptations": {
+    "ad-1": {
+      "name": "登录适配",
+      "decision_scope": "optional",
+      "decision": "adapt",
+      "detail": "拆分登录模块",
+      "tags": ["t1"],
+      "standard_ref": "std-1",
+      "module_ref": "fn-9",
+      "steps": [
+        { "title": "拆分模块", "kind": "dev", "owner": "std-1" }
+      ],
+      "sources": ["standard:std-1", "research:登录调研", "upload:需求文档.pdf"]
+    },
+    "ad-2": {
+      "name": "导出适配",
+      "decision_scope": "mandatory",
+      "decision": "adopt"
+    }
+  }
+}

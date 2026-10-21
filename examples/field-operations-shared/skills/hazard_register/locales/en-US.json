@@ -1,0 +1,15 @@
+{
+  "register": "Shared field hazard register",
+  "hazard": "Hazard",
+  "add": "Add hazard",
+  "empty": "Add a scenario, a response and an evidence note.",
+  "label": "Short label",
+  "scenario": "Scenario",
+  "response": "Response",
+  "certainty": "Certainty",
+  "observed": "Observed",
+  "proposed": "Proposed",
+  "unknown": "Unknown",
+  "evidence": "Evidence note",
+  "guidance": "Select a record to edit it, or add a hazard. Save using the panel's shared Save action. Synthetic examples are not verified operational facts. Changing language changes labels only."
+}

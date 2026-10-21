@@ -1,0 +1,36 @@
+# Kit and independent Bundle content archives
+
+These host-neutral primitives are exported from the Studio library. Companion
+supplies a separately tested private-envelope adapter and authenticated routes;
+the archive browser UI and working-copy adoption are not implemented by this
+primitive. There is no installer, publisher or model client here.
+
+`exportStudioContentArchive(snapshot, request)` reads a host-resolved immutable regular-file snapshot. `snapshot.fs` supplies the existing Core loader view, `listFiles()` lists the complete relative tree, and `readBytes(absolutePath)` preserves exact bytes. The host must reject symlinks, special files and filesystem escapes before supplying this port; it must not provide a mutable installed directory with inconsistent text and byte views.
+
+Archive validation uses Core's optional attached-resource projection to keep
+explicit binary assets opaque (`bin`, PNG/JPEG/GIF/WebP/AVIF/ICO/BMP, PDF,
+WOFF/WOFF2/TTF/OTF/EOT and WASM). These files remain in the complete directory
+and byte snapshots and count toward resource budgets; they do not become
+model-facing text. Required definition slots and explicitly referenced text
+still use strict UTF-8 reads, as do unknown resource types, Markdown and scripts.
+An invalid text encoding is never accepted as replacement-character text or
+silently reclassified as an asset. Existing loader adapters without the optional
+resource port retain their previous behavior. Opaque transport does not validate
+an asset's media format or grant execution authority.
+
+The JSON envelope is `studio-content-archive/v1`. It holds kind (`kit` or `bundle`), exact current-loader name/version, declared source and license text, exact Bundle dependencies, sorted regular files (`path`, canonical base64, bytes, SHA-256), and a canonical-envelope SHA-256. It is a transport wrapper, not a replacement Kit/Bundle directory format. Independent Kit files retain `mindset.md`, `kit.yaml`, optional resources and licensing notices byte-for-byte. The host supplies `snapshot.bundles` with exact name/version, source identity and immutable byte snapshots; exports include only the mounted Bundle closure under `bundles/<name>/<version>/`. That prefix is transport placement, not an installed layout or authority. Kit-owned files colliding with this reserved transport directory are rejected rather than dropped. Legacy v1 Kit envelopes containing `skills/<name>/` remain readable. An independent Bundle contains only files relative to its own root; its containing Kit is not invented as a dependency.
+
+Kit dependency pins are derived in original catalog order from the existing Core loader. Bundle dependency pins are explicit caller declarations, not a new dependency inference mechanism. Core's independent Bundle loader validates dependency-free Bundle content without a Kit. Explicitly declared dependencies require a host-resolved immutable Kit context and exact matching pins; missing context produces an unvalidated diagnostic. When the context already mounts the imported pin, the complete imported Bundle tree replaces that Bundle's context subtree for validation, without retaining deleted files or writing to the context. Catalog identity (`identity` in the Bundle manifest) and the runtime binding name are kept distinct; both archive identity and Core authority retain the existing lowercase snake-case name boundary. Missing or wrong-version declared requirements and mismatched content identities fail validation. This slice does not claim to discover undeclared semantic requirements.
+
+`readStudioContentArchive(json)` checks bounded shape and integrity, rejecting unknown fields, traversal, absolute paths, Windows ADS/device/unsafe names, case collisions, file/directory collisions, links, modes and malformed/noncanonical base64. Limits are 4096 files, 16 MiB decoded content and 32 MiB JSON. The transport uses the current loader's local directory identities, not a newly invented namespace syntax.
+
+`prepareStudioContentImport(json, { validationContext? })` returns frozen isolated file data, definition diagnostics and `contents`. For a valid independent Kit closure, `contents` contains a Kit unit without transport Bundle files and one complete Bundle unit per exact mount, each with paths relative to its own root. A valid standalone Bundle returns one Bundle unit; legacy Kit content returns one legacy Kit unit. Invalid definitions return an empty `contents` list, so no partial closure is presented for adoption. `validation.valid` means content passed the existing Core loader only. It never means installed, trusted, licensed for redistribution, signed, published or ready for execution. Source/license declarations and hashes do not authenticate authorship or confer authority. Hosts must resolve trust and license compatibility separately and preserve supplied LICENSE/NOTICE material.
+
+No file permission, executable mode, link target or installation path can enter this format. Known platform-native payload extensions (exe/dll/node/so/dylib/com/msi/sys) explicitly report unsupported; files are never silently dropped. Ordinary Bundle scripts are retained as inert content; script extensions, native presentation and validation-driver references set `requiresTrustReview`. Every prepared result explicitly has `executionGranted: false`. A copied provider id does not register or authorize that provider. Companion captures trusted Kit and Bundle roots under one shared byte/file budget and retains only the envelope and receipt, avoiding duplicated base64 payloads. A host can reprepare that stored envelope to obtain `contents`; incoming provenance does not become a trusted source identity. Import prepares data only; host-owned adoption must use isolated storage, safe permissions and atomic conflict handling, without changing existing installed source or publishing a catalog version.
+
+Companion's `studioContentImportAdopt` is the separate adoption boundary. It reads the retained envelope, rechecks its integrity and original validation context, and repeats definition validation rather than trusting the saved positive receipt. Its shared `contentLibrary.adoptPrepared` adapter retains exact independent content units in the local content library, normalizing legacy Kit closures through the existing migration path. Identical pins and bytes are reused; conflicting bytes at an existing pin fail. A Kit import retains its complete mounted Bundle closure and returns a new unconfirmed Kit working copy. A Bundle import retains only that independent Bundle and returns no Kit draft; validation context is not permission to mount it anywhere. The receipt contains `importId`, exact `{kind, pin}` entries in `contents`, `executionGranted: false`, `requiresTrustReview`, and `draft` only for Kits. Studio refreshes its catalog and opens the returned Kit working copy or exact Bundle source workspace. Adoption does not overwrite installed sources, change active project pins, publish a version, register copied provider identities or execute content.
+
+Focused source-plane test with explicit Core source resolution:
+`pnpm --filter dsh-design-studio test:content-archive`. Typecheck:
+`pnpm --filter dsh-design-studio typecheck`. No installed-package, durable
+working-copy, GUI or host-execution outcome is claimed by this primitive.

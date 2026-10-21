@@ -1,0 +1,76 @@
+version: 1
+panel_kind: evidence_workbook
+i18n:
+  default_locale: zh-CN
+  locales: {zh-CN: locales/zh-CN.json, en-US: locales/en-US.json}
+initial_values: {schema_version: 8}
+empty_description: $t:empty
+sections:
+  - id: integrations
+    form: {header: {variant: detail, title: {field: title, editable: true}}}
+    title: $t:integrations
+    item_name: $t:integration
+    order: integration_order
+    create:
+      id_field: id
+      defaults: {title: ''}
+      initial_label:
+        field: title
+        text: $t:newIntegration
+        numbered_text: $t:newIntegrationNumbered
+    confirm_delete: true
+fields:
+  - {key: title, label: '$t:title', control: text, required: true, applies_to: [integrations]}
+  - key: description
+    label: $t:description
+    description: $t:descriptionHelp
+    placeholder: $t:descriptionExample
+    control: textarea
+    required: true
+    max_length: 500
+    applies_to: [integrations]
+  - key: url
+    label: $t:url
+    description: $t:urlHelp
+    placeholder: 'https://api.example.com'
+    control: text
+    input_type: url
+    required: true
+    applies_to: [integrations]
+  - key: secrets
+    label: $t:secrets
+    description: $t:secretsHelp
+    control: record_map
+    row_name: $t:secret
+    id_field: id
+    order_field: secret_order
+    max_rows: 10
+    columns:
+      - {key: name, label: '$t:secretName', control: text, format: upper_identifier}
+      - {key: description, label: '$t:secretDescription', control: text}
+    applies_to: [integrations]
+  - key: prompt_content
+    label: $t:prompt
+    description: $t:promptHelp
+    placeholder: $t:promptExample
+    control: textarea
+    required: true
+    applies_to: [integrations]
+  - key: business_rules
+    label: $t:notes
+    description: $t:notesHelp
+    placeholder: $t:notesExample
+    control: textarea
+    required: false
+    max_length: 10000
+    applies_to: [integrations]
+ui:
+  component: record_workspace
+  guidance: "$t:guidance"
+  sidebar_icon: plug
+  navigation_layout: list
+  id: integrations-workspace
+  title: $t:integrations
+  sources: [integrations]
+  children:
+    - {component: record_inspector, id: integration-editor}

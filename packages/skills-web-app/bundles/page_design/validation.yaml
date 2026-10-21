@@ -1,0 +1,104 @@
+# page_design validation contract.
+# Host-enforced declarative validation for the DSH schema_version 7 Page map.
+# HTML, hotspot, and token checks belong to the foreground
+# Producer and the Bundle's ordinary scripts/page-design.mjs tool.
+skill: page_design
+
+rules:
+  - id: referenced_files_present
+    scope: [state]
+    code: page_design.referenced_artifact_invalid
+    check:
+      referenced_files: ["pages.*.artifact_file"]
+
+  - id: empty_map
+    scope: [state]
+    code: page_design.empty_map
+    message: "The page map has no pages."
+    repair_hint: "Propose at least one page before confirming the map."
+    check: { non_empty_map: pages }
+
+  - id: empty_order
+    scope: [state]
+    code: page_design.empty_order
+    message: "page_order is empty, so the map cannot render."
+    repair_hint: "List every active page id in page_order."
+    check: { non_empty_list: page_order }
+
+  - id: order_covers_pages
+    scope: [state]
+    code: page_design.order_covers_pages
+    message: "page_order must contain every page exactly once."
+    repair_hint: "Send the complete page_order whenever pages change; order replaces rather than appends."
+    check: { order_exactly_covers_map: { order: page_order, map: pages } }
+
+  - id: page_key_matches_id
+    scope: [state]
+    code: page_design.page_key_mismatch
+    message: "A pages mapping key differs from its page id."
+    repair_hint: "Keep every mapping key equal to the page id; a rename never justifies a new id."
+    check: { map_keys_match_field: { map: pages, field: id } }
+
+  - id: empty_page_name
+    scope: [state]
+    code: page_design.empty_page_name
+    message: "Page {pid} has an empty name."
+    repair_hint: "Give the page a short user-facing name."
+    check:
+      for_each_in_order: { order: page_order, map: pages }
+      non_empty_string: name
+
+  - id: empty_page_purpose
+    scope: [state]
+    code: page_design.empty_page_purpose
+    message: "Page {pid} has an empty purpose."
+    repair_hint: "State the one primary user task this page helps complete."
+    check:
+      for_each_in_order: { order: page_order, map: pages }
+      non_empty_string: purpose
+
+  - id: function_refs_unique
+    scope: [state]
+    code: page_design.function_refs_duplicate
+    message: "Page {pid} function_refs contains duplicates."
+    repair_hint: "A function may appear on multiple pages, but only once per page."
+    check: { map_entries_have_unique_string_list: { map: pages, field: function_refs } }
+
+  - id: entry_refs_page
+    scope: [state]
+    code: page_design.entry_refs_page
+    message: "entry_page_ids references unknown page {pid}."
+    repair_hint: "Entry pages must exist in the map; keep at least one entry."
+    check: { order_refs_map: { order: entry_page_ids, map: pages } }
+
+  - id: connection_order_covers
+    scope: [state]
+    code: page_design.connection_order_covers
+    message: "connection_order must contain every connection exactly once."
+    repair_hint: "Send the complete connection_order whenever connections change."
+    check: { order_exactly_covers_map: { order: connection_order, map: connections } }
+
+  - id: connection_key_matches_id
+    scope: [state]
+    code: page_design.connection_key_mismatch
+    message: "A connections mapping key differs from its connection id."
+    repair_hint: "Keep every mapping key equal to the connection id."
+    check: { map_keys_match_field: { map: connections, field: id } }
+
+  - id: connection_source_exists
+    scope: [state]
+    code: page_design.connection_source_missing
+    message: "Connection {pid} source_page_id references an unknown page."
+    repair_hint: "Connections must connect existing pages; hierarchy alone never creates a connection."
+    check:
+      for_each_in_order: { order: connection_order, map: connections }
+      member_of_map: { value: source_page_id, map: pages }
+
+  - id: connection_target_exists
+    scope: [state]
+    code: page_design.connection_target_missing
+    message: "Connection {pid} target_page_id references an unknown page."
+    repair_hint: "Connections must connect existing pages."
+    check:
+      for_each_in_order: { order: connection_order, map: connections }
+      member_of_map: { value: target_page_id, map: pages }

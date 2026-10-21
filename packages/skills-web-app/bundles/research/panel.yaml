@@ -1,0 +1,31 @@
+version: 1
+panel_kind: evidence_workbook
+i18n:
+  default_locale: zh-CN
+  locales: {zh-CN: locales/zh-CN.json, en-US: locales/en-US.json}
+sections: []
+fields: []
+empty_description: $t:empty
+ui:
+  component: artifact_workspace
+  guidance: "$t:guidance"
+  sidebar_icon: search
+  id: research-artifacts
+  title: $t:title
+  description: $t:empty
+  artifacts:
+    records_path: rounds
+    order_path: round_order
+    current_path: current_round_id
+    title_field: topic
+    file_field: conclusion_file
+    artifact_kind: research_conclusion
+    children:
+      records_field: directions
+      order_field: direction_order
+      title_field: title
+      file_field: findings_file
+      points_field: research_points
+      links_field: source_urls
+      artifact_kind: research_direction
+      scoped_ids: true

@@ -1,0 +1,63 @@
+version: 1
+panel_kind: evidence_workbook
+i18n:
+  default_locale: zh-CN
+  locales: {zh-CN: locales/zh-CN.json, en-US: locales/en-US.json}
+initial_values: {schema_version: 4}
+empty_description: $t:empty
+sections:
+  - id: requirements
+    form: {header: {variant: detail, title: {field: title, editable: true}}}
+    title: $t:requirements
+    item_name: $t:requirements
+    order: requirement_order
+    create:
+      id_field: id
+      defaults: {title: ''}
+      initial_label:
+        field: title
+        text: $t:newRequirement
+        numbered_text: $t:newRequirementNumbered
+    confirm_delete: true
+fields:
+  - key: title
+    label: $t:title
+    control: text
+    required: true
+    placeholder: $t:titleExample
+    applies_to: [requirements]
+  - key: group
+    label: $t:group
+    control: text
+    placeholder: $t:groupExample
+    applies_to: [requirements]
+  - key: condition
+    required: true
+    label: $t:condition
+    control: textarea
+    description: $t:conditionHelp
+    placeholder: $t:conditionExample
+    applies_to: [requirements]
+  - key: pass_criteria
+    required: true
+    label: $t:criteria
+    control: textarea
+    description: $t:criteriaHelp
+    placeholder: $t:criteriaExample
+    applies_to: [requirements]
+  - key: verification
+    label: $t:verification
+    control: textarea
+    description: $t:verificationHelp
+    applies_to: [requirements]
+ui:
+  component: record_workspace
+  guidance: "$t:guidance"
+  sidebar_icon: clipboard-check
+  navigation_layout: list
+  navigation_group_by: group
+  id: acceptance-workspace
+  title: $t:workspace
+  sources: [requirements]
+  children:
+    - {component: record_inspector, id: acceptance-editor}

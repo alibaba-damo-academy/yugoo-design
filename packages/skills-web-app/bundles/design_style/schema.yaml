@@ -1,0 +1,177 @@
+# design_style Design Files data contract (write-time validation).
+# Adapted from the sdk-pilot visual model for DSH file-backed previews. Preview
+# records are closed so historical inline HTML cannot become a second authority.
+#
+# Agent writes settle the complete state and preview HTML atomically through
+# ordinary WorkingCopy publication. All config fields are optional with defaults so
+# lean stage-2 payloads stay valid.
+#
+# Script invariants owned by scripts/design-style.mjs (not expressible here):
+# theme <= 80 chars single line; colors/semantic_colors/dark_mode.colors must
+# be valid hex or recognised CSS named colors; design content fields must be
+# nested inside `config`, never at the top level.
+#
+# `nullable: true` marks fields the Pydantic model types `... | None`;
+# the write-time validator accepts null for them.
+type: object
+properties:
+  skill_name: { knowledge: { role: metadata }, type: string }
+  epoch: { knowledge: { role: metadata }, type: number }
+  config:
+    type: object
+    knowledge: { role: content, granularity: container, label: 设计风格配置 }
+    properties:
+      theme: { knowledge: { role: content, granularity: property }, type: string } # visual-direction label, <=80 chars, single line
+      layout:
+        type: object
+        knowledge: { role: content, granularity: unit, label: 布局规范 }
+        properties:
+          mode: { type: enum, values: [sidebar, topbar, bottom-nav, dashboard, minimal] }  # default sidebar
+          sidebar:
+            type: object
+            nullable: true
+            properties:
+              position: { type: string }   # left | right
+              style: { type: string }      # fixed | collapsible
+          content_width: { type: enum, values: [narrow, medium, wide, full] }  # default wide
+          density: { type: enum, values: [compact, comfortable, spacious] }    # default comfortable
+      colors: { knowledge: { role: content, granularity: unit, label: 基础配色 }, type: map, value: { type: string } }
+      typography: { knowledge: { role: content, granularity: unit, label: 字体与排版 }, type: map, value: { type: string } }
+      components: { knowledge: { role: content, granularity: unit, label: 通用组件样式 }, type: map, value: { type: string } }
+      hierarchy: { knowledge: { role: content, granularity: unit, label: 文本层级 }, type: map, value: { type: string } }
+      component_patterns:
+        type: map
+        value:
+          type: object
+          knowledge: { role: content, granularity: unit, label: 组件模式 }
+          additional_properties: false
+          required: [description]
+          properties:
+            description: { type: string }
+            anatomy: { type: array, items: { type: string } }
+            variants: { type: array, items: { type: string } }
+            states: { type: array, items: { type: string } }
+      iconography:
+        type: object
+        knowledge: { role: content, granularity: unit, label: 图标规范 }
+        additional_properties: false
+        properties:
+          library: { type: string }
+          style: { type: string }
+          view_box: { type: string }
+          stroke_width: { type: string }
+          linecap: { type: string }
+          linejoin: { type: string }
+          size_sm: { type: string }
+          size_md: { type: string }
+          size_lg: { type: string }
+      icons:
+        type: map
+        value:
+          type: object
+          knowledge: { role: content, granularity: unit, label: 图标 }
+          additional_properties: false
+          required: [label, svg]
+          properties:
+            label: { type: string }
+            svg: { type: string }
+            asset: { type: string }
+      semantic_colors: { knowledge: { role: content, granularity: unit, label: 状态配色 }, type: map, value: { type: string } }
+      dark_mode: { knowledge: { role: content, granularity: unit, label: 深色模式 }, type: map, nullable: true, value: { type: map, value: { type: string } } }
+      preview_page:
+        type: object
+        knowledge: { role: content, granularity: unit, label: 风格预览 }
+        nullable: true
+        additional_properties: false
+        properties:
+          name: { type: string }
+          title: { type: string }
+          rationale: { type: string }
+          html_file: { type: string, nullable: true }   # path under design_files/design_style/
+      notes: { knowledge: { role: content, granularity: unit, label: 来源与补充说明 }, type: string }
+      motion:
+        type: object
+        knowledge: { role: content, granularity: unit, label: 动效规范 }
+        properties:
+          duration_fast: { type: string }    # default 150ms
+          duration_normal: { type: string }  # default 300ms
+          duration_slow: { type: string }    # default 500ms
+          ease_standard: { type: string }    # default cubic-bezier(0.16, 1, 0.3, 1)
+          ease_in: { type: string }          # default cubic-bezier(0.7, 0, 0.84, 0)
+          ease_out: { type: string }         # default cubic-bezier(0.16, 1, 0.3, 1)
+          ease_spring: { type: string }      # default cubic-bezier(0.5, 1.5, 0.5, 1)
+      spacing:
+        type: object
+        knowledge: { role: content, granularity: unit, label: 间距规范 }
+        properties:
+          base: { type: string }             # default 4px; numbers normalized to px at the boundary
+          scale: { type: array, items: { type: string } }
+      elevation:
+        type: object
+        knowledge: { role: content, granularity: unit, label: 叠放层级 }
+        properties:
+          dropdown: { type: number }         # default 10
+          sticky_nav: { type: number }       # default 20
+          drawer: { type: number }           # default 30
+          modal_backdrop: { type: number }   # default 40
+          modal: { type: number }            # default 50
+          toast: { type: number }            # default 60
+          tooltip: { type: number }          # default 70
+      breakpoints:
+        type: object
+        knowledge: { role: content, granularity: unit, label: 响应式断点 }
+        properties:
+          sm: { type: string }   # default 640px
+          md: { type: string }   # default 768px
+          lg: { type: string }   # default 1024px
+          xl: { type: string }   # default 1280px
+          xxl: { type: string }  # default 1536px
+      images:
+        type: map
+        value:
+          type: object
+          knowledge: { role: content, granularity: unit, label: 图片素材 }
+          properties:
+            source: { type: enum, values: [ai, pexels, iqs, external] }  # default ai
+            path: { type: string, nullable: true }
+            prompt: { type: string, nullable: true }
+            url: { type: string, nullable: true }
+            photo_id: { type: string, nullable: true }
+            photographer: { type: string, nullable: true }
+            photographer_url: { type: string, nullable: true }
+            alt: { type: string }
+            width: { type: number, nullable: true }
+            height: { type: number, nullable: true }
+            avg_color: { type: string, nullable: true }
+      brand:
+        type: object
+        knowledge: { role: content, granularity: unit, label: 品牌设定 }
+        nullable: true
+        properties:
+          name: { type: string }
+          name_en: { type: string }
+          tagline: { type: string }
+          mark_id: { type: string }
+          wordmark_svg: { type: string, nullable: true }   # inline SVG markup
+          mark_svg: { type: string, nullable: true }       # inline SVG markup
+          logo_image: { type: object, nullable: true }     # ImageRef shape, as `images` values
+      aesthetic:
+        type: object
+        knowledge: { role: content, granularity: unit, label: 视觉气质 }
+        nullable: true
+        properties:
+          vocabulary: { type: string }      # canonical key, e.g. studio_noir
+          mood: { type: string }
+          copy_register: { type: string }
+          lighting_hints: { type: string }
+      preview_pages:
+        type: array
+        items:
+          type: object
+          knowledge: { role: content, granularity: unit }
+          additional_properties: false
+          properties:
+            name: { type: string }
+            title: { type: string }
+            rationale: { type: string }
+            html_file: { type: string, nullable: true }

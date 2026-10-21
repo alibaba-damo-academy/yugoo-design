@@ -1,0 +1,16 @@
+/* Font-free compatibility box for ported IconFont consumers. */
+.dsh-design-root .iconfont {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  vertical-align: -0.125em;
+}
+/* Native Button SVG utilities must not override the wrapper's glyph size. */
+.dsh-design-root .iconfont > svg.dsh-icon-glyph {
+  width: 1em !important;
+  height: 1em !important;
+  flex-shrink: 0;
+}

@@ -1,0 +1,24 @@
+{
+  "schema_version": 3,
+  "object_order": ["project", "experimental-project", "paper"],
+  "objects": {
+    "project": {
+      "id": "project", "name": "项目", "description": "围绕研究目标组织任务和参考资料的工作单元。",
+      "fields": {"title": {"id": "title", "name": "项目名称", "meaning": "用于识别和查找项目的名称。", "value_type": "text", "requirement": "always", "required_when": "", "example": "开放数据分析", "options": []}},
+      "field_order": ["title"], "states": {}, "state_order": []
+    },
+    "experimental-project": {
+      "id": "experimental-project", "name": "实验项目", "description": "通过实验推进研究的项目类型，沿用项目的通用定义与信息。",
+      "fields": {}, "field_order": [], "states": {}, "state_order": []
+    },
+    "paper": {
+      "id": "paper", "name": "文献", "description": "独立保存且可被不同项目引用的学术资料。",
+      "fields": {"title": {"id": "title", "name": "文献标题", "meaning": "用户阅读和查找文献时看到的标题。", "value_type": "text", "requirement": "always", "required_when": "", "example": "开放科研实践", "options": []}},
+      "field_order": ["title"], "states": {}, "state_order": []
+    }
+  },
+  "relations": {
+    "inherits-project": {"id": "inherits-project", "kind": "generalization", "name": "是一种", "source": "experimental-project", "target": "project", "description": "实验项目是项目的一种，不是项目中的一个实例。"},
+    "references-paper": {"id": "references-paper", "kind": "association", "name": "引用", "source": "project", "target": "paper", "source_count": "0..*", "target_count": "0..*", "description": "项目可引用多篇文献，文献可被多个项目引用。移除引用不删除文献。"}
+  }
+}

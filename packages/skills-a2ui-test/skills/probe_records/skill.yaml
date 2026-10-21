@@ -1,0 +1,15 @@
+name: "probe_records"
+version: "1.0"
+title:
+  zh: "记录卡片测试"
+  en: "Generated Record Panel Test"
+label:
+  zh: "编辑测试记录"
+  en: "Edit Test Records"
+order: 2
+icon: "cards"
+execution:
+  mode: "main"
+  handoff: "must_edit"
+presentation:
+  mode: "auto"

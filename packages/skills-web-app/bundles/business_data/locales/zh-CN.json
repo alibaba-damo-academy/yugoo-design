@@ -1,0 +1,23 @@
+{
+  "bundleDescription": "- **能力**：定义 Web App 持久记忆的业务事物、信息和用户可见状态，以及对象类型间有依据的关联与继承。\n- **解决**：用户需要查找、区分、更新或跟踪持久事物，但其含义和信息不明确时的 S/T 类缺口。\n- **适用时机**：产品需要跨操作或跨访问记住同一业务事物，或用户询问应保留哪些信息或自定义字段。\n- **不要推断**：页面、操作、流程步骤、报表、筛选器、数据库表、API 载荷和状态变化行为都不是业务事物；类型间关系属于本切片，流程转换和实例来源不属于。\n- **输出**：对象、信息、状态与关系共用 canonical 的原生表单/关系画布 `business_data` 面板。",
+  "objects": "业务对象", "object": "业务对象", "relations": "对象关系", "relation": "关系",
+  "empty": "添加产品需要长期保存和管理的第一个业务对象。",
+  "guidance": "定义产品需要记住的事物、信息和状态；关系画布与表单编辑同一份设计。",
+  "graphHint": "方框表示对象类型，箭头由起点指向终点。类型继承由子类型指向父类型，不表示包含或实例来源。",
+  "parents": "沿用父类型的定义与信息", "parentHint": "下方仅维护本类型自己的信息；共享信息在父类型原处修改。", "reverse": "交换双方",
+  "createSubtype": "添加子类型", "createSubtypeTitle": "创建子类型",
+  "name": "名称", "meaning": "含义与约束", "fields": "记录的信息", "field": "信息",
+  "fieldName": "信息名称", "fieldMeaning": "这项信息表示什么？", "valueType": "用户怎样填写或看到它？",
+  "typeText": "简短文字", "typeLongText": "较长内容", "typeNumber": "数字", "typeAmount": "金额",
+  "typeDate": "日期", "typeDateTime": "日期和时间", "typeSingle": "单选", "typeMultiple": "多选",
+  "typeBoolean": "是或否", "typeFile": "文件", "typeOther": "其他",
+  "requirement": "什么时候必须填写？", "optional": "可以不填", "always": "始终必填", "conditional": "满足条件时必填",
+  "requiredWhen": "什么情况下必须填写？", "options": "可选内容", "example": "填写示例",
+  "states": "业务状态", "state": "状态", "stateName": "状态名称", "stateMeaning": "这个状态表示什么？",
+  "relationKind": "关系含义", "association": "业务关联", "generalization": "类型继承（是一种）",
+  "source": "起点对象（继承时为子类型）", "target": "终点对象（继承时为父类型）",
+  "sourceCount": "每个终点对象关联多少个起点对象？", "targetCount": "每个起点对象关联多少个终点对象？",
+  "unknownCount": "尚未确定时留空，不代表零个或仅一个。",
+  "countOne": "必须且仅一个", "countOptional": "可以没有，最多一个", "countMany": "至少一个，可有多个", "countAny": "可以没有，也可有多个",
+  "relationMeaning": "含义与约束（选填）", "relationMeaningHint": "数量、归属或删除时的约定尚未确定，也可以在这里说明。"
+}

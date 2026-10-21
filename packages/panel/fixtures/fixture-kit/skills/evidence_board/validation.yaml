@@ -1,0 +1,18 @@
+# evidence_board fixture validation contract (declarative checks).
+skill: evidence_board
+
+rules:
+  - id: item_name_required
+    scope: [state, completion]
+    code: evidence_board.empty_item_name
+    message: "item {key} has an empty name"
+    check:
+      for_each_in_map: items
+      non_empty_string: name
+  - id: enhancement_title_required
+    scope: [state, completion]
+    code: evidence_board.empty_enhancement_title
+    message: "enhancement {key} has an empty title"
+    check:
+      for_each_in_map: add.enhancements.records
+      non_empty_string: title

@@ -1,0 +1,58 @@
+version: 1
+panel_kind: capability_map
+i18n:
+  default_locale: zh-CN
+  locales: {zh-CN: locales/zh-CN.json, en-US: locales/en-US.json}
+initial_values: {schema_version: 7, stage: mapped}
+sections:
+  - {id: pages, form: {header: {variant: detail, title: {field: name, editable: true}}}, title: $t:pages, order: page_order, confirm_delete: true, create: {id_field: id, defaults: {name: '', purpose: '', page_type: other}}}
+  - {id: connections, title: $t:connections, order: connection_order, form: {header: {variant: detail, title: {field: label, editable: true}}}, create: {id_field: id, defaults: {label: ''}}}
+  - {id: canvas_sections, title: $t:frames, form: {header: {variant: detail, title: {field: label, editable: true}}}, create: {id_field: id, defaults: {label: ''}}}
+fields:
+  - {key: id, control: text, readonly: true, hidden: true, applies_to: [pages, connections, canvas_sections]}
+  - {key: name, label: $t:pageName, control: text, required: true, applies_to: [pages]}
+  - {key: purpose, label: $t:purpose, control: textarea, required: true, applies_to: [pages]}
+  - key: page_type
+    label: $t:pageType
+    control: select
+    applies_to: [pages]
+    options:
+      - {value: overview, label: $t:overview}
+      - {value: list, label: $t:list}
+      - {value: detail, label: $t:detail}
+      - {value: form, label: $t:form}
+      - {value: workspace, label: $t:workspace}
+      - {value: content, label: $t:content}
+      - {value: other, label: $t:other}
+  - {key: parent_id, label: $t:parent, control: record_select, options_from_section: pages, applies_to: [pages]}
+  - {key: audience, label: $t:audience, control: list, applies_to: [pages]}
+  - {key: key_content, label: $t:keyContent, control: list, applies_to: [pages]}
+  - {key: key_actions, label: $t:keyActions, control: list, applies_to: [pages]}
+  - {key: function_refs, label: $t:functions, control: list, applies_to: [pages]}
+  - {key: evidence_refs, label: $t:evidence, control: list, applies_to: [pages]}
+  - {key: style_pattern_refs, label: $t:patterns, control: list, applies_to: [pages]}
+  - {key: artifact_file, label: $t:artifact, control: artifact_ref, readonly: true, applies_to: [pages]}
+  - {key: label, label: $t:name, control: text, applies_to: [connections, canvas_sections]}
+  - {key: source_page_id, label: $t:source, control: record_select, options_from_section: pages, applies_to: [connections], required: true}
+  - {key: target_page_id, label: $t:target, control: record_select, options_from_section: pages, applies_to: [connections], required: true}
+  - {key: source_element_id, label: $t:hotspot, control: text, readonly: true, applies_to: [connections]}
+  - {key: source_element_label, label: $t:hotspotLabel, control: text, readonly: true, applies_to: [connections]}
+  - {key: page_ids, label: $t:members, control: record_multi_select, options_from_section: pages, applies_to: [canvas_sections]}
+ui:
+  component: navigation_workspace
+  sidebar_icon: map
+  id: page-map
+  title: $t:map
+  guidance: "$t:guidance"
+  navigation_map:
+    connection_policy: {allow_self: false, allow_parallel: true}
+    grouping: {path: common_spec.navigation, target: target_page_id, label: group}
+    entry_ids: entry_page_ids
+    reference_lists:
+      - {path: common_spec.navigation, target: target_page_id}
+    stylesheet: design_style/tokens.css
+    nodes: {path: pages, order: page_order, label: name, position: canvas_position, artifact: artifact_file, artifact_kind: page_html, parent: parent_id, caption_fields: [page_type, function_refs]}
+    edges: {path: connections, order: connection_order, source: source_page_id, target: target_page_id, label: label, hotspot: source_element_id, hotspot_label: source_element_label, context: preview_context, new_label: '$t:newConnectionLabel'}
+    frames: {path: canvas_sections, label: label, members: page_ids, position: canvas_position, size: canvas_size}
+  children:
+    - {component: structured_data, id: shared-specification, title: $t:shared, source: common_spec}

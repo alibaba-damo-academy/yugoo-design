@@ -1,0 +1,71 @@
+# research validation contract.
+# Mechanical publication validation uses the installed schema and the rules
+# declared below. Citation provenance and report quality are reviewed by the
+# executing Agent against SKILL.md, not by a separate citation/report driver
+# declared in this Bundle. A successful validation is not proof of grounding.
+#
+# Contract summary:
+# - Every accepted direction has a direct `findings_file` and non-empty file.
+# - Attempt failure stays in Host execution events, never in canonical JSON.
+# - A completed/partial round has a direct, non-empty `conclusion_file`.
+skill: research
+
+rules:
+  - id: referenced_files_present
+    scope: [state]
+    code: research.referenced_artifact_invalid
+    check:
+      referenced_files: ["rounds.*.directions.*.findings_file", "rounds.*.conclusion_file"]
+
+  # ---- validate_state ----
+  - id: empty_plan
+    scope: [state]
+    code: research.empty_plan
+    message: "The research plan has no rounds."
+    repair_hint: "Create one round with a concrete topic and directions."
+    check: { non_empty_map: rounds }
+
+  - id: empty_round_order
+    scope: [state]
+    code: research.empty_round_order
+    message: "round_order is empty."
+    repair_hint: "List every active research round in chronological order."
+    check: { non_empty_list: round_order }
+
+  - id: invalid_current_round
+    scope: [state]
+    code: research.invalid_current_round
+    message: "current_round_id does not identify a planned round."
+    repair_hint: "Set current_round_id to the round being executed."
+    check: { member_of_map: { value: current_round_id, map: rounds } }
+
+  - id: empty_topic
+    scope: [state]
+    code: research.empty_topic
+    message: "Round {round_id} has no topic."
+    repair_hint: "State the concrete research goal for this round."
+    check:
+      for_each_in_map: rounds
+      non_empty_string: topic
+
+  - id: empty_directions
+    scope: [state]
+    code: research.empty_directions
+    message: "Round {round_id} has no research directions."
+    repair_hint: "Add at least one evidence-oriented direction."
+    check:
+      for_each_in_map: rounds
+      non_empty_map: directions
+
+  - id: empty_direction_order
+    scope: [state]
+    code: research.empty_direction_order
+    message: "Round {round_id} has an empty direction_order."
+    repair_hint: "List every planned direction id."
+    check:
+      for_each_in_map: rounds
+      non_empty_list: direction_order
+
+  # Candidate prose quality and citation grounding are Agent-reviewed against
+  # SKILL.md. Schema plus these rules remain the single publication validator;
+  # no second state-transform script participates in the workflow.

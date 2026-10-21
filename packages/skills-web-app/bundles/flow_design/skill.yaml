@@ -1,0 +1,43 @@
+# Skill manifest. Repository authoring guide: docs/bundle-contract.md.
+
+# Stable internal id; must equal this directory name.
+name: flow_design
+version: "1.0"
+
+# Bilingual FE heading and progress title.
+title:
+  zh: 业务流程
+  en: Business Flows
+
+# Bilingual picker fallback label.
+label:
+  zh: 理清业务流程
+  en: Map the business flow
+
+
+# FE display order only; never selects a skill.
+order: 4
+
+# FE icon name.
+icon: workflow
+
+# The foreground Producer owns process state and may author BPMN serially or
+# delegate independent exact-path BPMN files.
+execution:
+  handoff: none
+
+presentation:
+  mode: declarative
+
+# Optional model-facing summary; omission does not block design work.
+# Process metadata is summarized here. Read the canonical records for rules,
+# roles, triggers and exceptions; open the declared BPMN artifact for the diagram.
+# The panel does not copy XML or runtime execution state into canonical JSON.
+summary:
+  fields: [{source: topic, title: Topic}]
+  collections:
+    - source: processes
+      title: Processes
+      title_fields: [title]
+      order: process_order
+      fields: [title, description, tier, process_type, bpmn_file]

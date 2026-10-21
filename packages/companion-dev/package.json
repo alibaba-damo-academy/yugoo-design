@@ -1,0 +1,14 @@
+{
+  "name": "@yugoo-design/companion-dev",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --import tsx src/cli.mjs",
+    "test": "node --import tsx --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "6.1.2",
+    "vite": "8.3.4"
+  }
+}

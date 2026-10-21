@@ -1,0 +1,43 @@
+# Declarative translation of quality_acceptance/deliverables.py. The schema
+# owns scalar/container types; these rules own the completion minimum and
+# durable order and identity constraints.
+skill: quality_acceptance
+
+rules:
+  - id: requirements_present
+    scope: [completion]
+    code: quality_acceptance.empty
+    message: "requirements has no acceptance requirements"
+    check: { non_empty_map: requirements }
+
+  - id: requirement_ids_match_keys
+    scope: [state, completion]
+    code: quality_acceptance.invalid_id
+    message: "acceptance requirement mapping key {key} must equal its id"
+    check:
+      map_keys_match_field: { map: requirements, field: id }
+
+  - id: requirement_order_exact
+    scope: [state, completion]
+    code: quality_acceptance.invalid_order
+    message: "requirement_order must contain requirement {key} exactly once"
+    check:
+      order_exactly_covers_map: { order: requirement_order, map: requirements }
+
+  - id: title_present
+    scope: [completion]
+    code: quality_acceptance.missing_title
+    message: "acceptance requirement {key} has no 'title'"
+    check: { for_each_in_map: requirements, non_empty_string: title }
+
+  - id: condition_present
+    scope: [completion]
+    code: quality_acceptance.missing_condition
+    message: "acceptance requirement {key} has no 'condition'"
+    check: { for_each_in_map: requirements, non_empty_string: condition }
+
+  - id: pass_criteria_present
+    scope: [completion]
+    code: quality_acceptance.missing_pass_criteria
+    message: "acceptance requirement {key} has no 'pass_criteria'"
+    check: { for_each_in_map: requirements, non_empty_string: pass_criteria }

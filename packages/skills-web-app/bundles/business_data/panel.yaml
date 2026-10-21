@@ -1,0 +1,145 @@
+version: 1
+panel_kind: capability_map
+i18n:
+  default_locale: zh-CN
+  locales: {zh-CN: locales/zh-CN.json, en-US: locales/en-US.json}
+initial_values: {schema_version: 3}
+empty_description: $t:empty
+sections:
+  - id: objects
+    form: {header: {variant: detail, title: {field: name, editable: true}}}
+    title: $t:objects
+    item_name: $t:object
+    order: object_order
+    create: {id_field: id, defaults: {name: '', description: ''}}
+    confirm_delete: true
+    delete_relations: [{section: relations, reference_fields: [source, target]}]
+  - id: relations
+    form: {header: {variant: detail, title: {field: name, editable: true}}}
+    title: $t:relations
+    item_name: $t:relation
+    add_mode: graph
+    create: {id_field: id, defaults: {kind: association, name: '', description: ''}}
+    confirm_delete: true
+fields:
+  - {key: id, control: text, hidden: true, readonly: true, applies_to: [objects, relations]}
+  - {key: name, label: '$t:name', control: text, required: true, applies_to: [objects, relations]}
+  - {key: description, label: '$t:meaning', control: textarea, required_in: [objects], applies_to: [objects, relations]}
+  - key: fields
+    label: $t:fields
+    row_name: $t:field
+    control: record_map
+    id_field: id
+    order_field: field_order
+    item_label_field: name
+    item_collapsible: true
+    item_defaults: {name: '', meaning: '', value_type: text, requirement: optional, required_when: '', example: '', options: []}
+    applies_to: [objects]
+    item_fields:
+      - {key: name, label: '$t:fieldName', control: text, required: true}
+      - {key: meaning, label: '$t:fieldMeaning', control: textarea}
+      - key: value_type
+        label: $t:valueType
+        control: select
+        options:
+          - {value: text, label: '$t:typeText'}
+          - {value: long_text, label: '$t:typeLongText'}
+          - {value: number, label: '$t:typeNumber'}
+          - {value: amount, label: '$t:typeAmount'}
+          - {value: date, label: '$t:typeDate'}
+          - {value: date_time, label: '$t:typeDateTime'}
+          - {value: single_choice, label: '$t:typeSingle'}
+          - {value: multiple_choice, label: '$t:typeMultiple'}
+          - {value: yes_no, label: '$t:typeBoolean'}
+          - {value: file, label: '$t:typeFile'}
+          - {value: other, label: '$t:typeOther'}
+      - key: requirement
+        label: $t:requirement
+        control: radio
+        choice_layout: row_wrap
+        options:
+          - {value: optional, label: '$t:optional'}
+          - {value: always, label: '$t:always'}
+          - {value: conditional, label: '$t:conditional'}
+      - {key: required_when, label: '$t:requiredWhen', control: textarea, visible_when: {field: requirement, in: [conditional]}, clear_when_hidden: true}
+      - {key: options, label: '$t:options', control: list, visible_when: {field: value_type, in: [single_choice, multiple_choice]}, clear_when_hidden: true}
+      - {key: example, label: '$t:example', control: text}
+  - key: states
+    label: $t:states
+    row_name: $t:state
+    control: record_map
+    id_field: id
+    order_field: state_order
+    item_label_field: name
+    item_defaults: {name: '', meaning: ''}
+    applies_to: [objects]
+    item_fields:
+      - {key: name, label: '$t:stateName', control: text, required: true}
+      - {key: meaning, label: '$t:stateMeaning', control: textarea}
+  - key: kind
+    label: $t:relationKind
+    control: select
+    applies_to: [relations]
+    options:
+      - {value: association, label: '$t:association'}
+      - {value: generalization, label: '$t:generalization'}
+  - {key: source, label: '$t:source', control: record_select, options_from_section: objects, required: true, applies_to: [relations]}
+  - {key: target, label: '$t:target', control: record_select, options_from_section: objects, required: true, applies_to: [relations]}
+  - key: source_count
+    label: $t:sourceCount
+    description: $t:unknownCount
+    control: select
+    applies_to: [relations]
+    visible_when: {field: kind, in: [association]}
+    clear_when_hidden: omit
+    options:
+      - {value: '1', label: '$t:countOne'}
+      - {value: '0..1', label: '$t:countOptional'}
+      - {value: '1..*', label: '$t:countMany'}
+      - {value: '0..*', label: '$t:countAny'}
+  - key: target_count
+    label: $t:targetCount
+    description: $t:unknownCount
+    control: select
+    applies_to: [relations]
+    visible_when: {field: kind, in: [association]}
+    clear_when_hidden: omit
+    options:
+      - {value: '1', label: '$t:countOne'}
+      - {value: '0..1', label: '$t:countOptional'}
+      - {value: '1..*', label: '$t:countMany'}
+      - {value: '0..*', label: '$t:countAny'}
+ui:
+  component: record_workspace
+  sidebar_icon: database
+  id: business-objects
+  title: $t:objects
+  guidance: "$t:guidance"
+  sources: [objects, relations]
+  workspace_view: switch
+  children:
+    - component: relation_graph
+      id: business-graph
+      title: $t:relations
+      description: $t:graphHint
+      graph:
+        nodes: objects
+        edges: relations
+        source_field: source
+        target_field: target
+        label_field: name
+        node_description_field: description
+        edge_kind_field: kind
+        source_annotation_field: source_count
+        target_annotation_field: target_count
+        edge_defaults: {kind: association}
+        hierarchy:
+          values: [generalization]
+          label: $t:parents
+          description: $t:parentHint
+          create:
+            edge_kind: generalization
+            create_label: $t:createSubtype
+            create_title: $t:createSubtypeTitle
+        reverse: {label: '$t:reverse', pairs: [[source_count, target_count]]}
+    - {component: record_inspector, id: business-inspector}

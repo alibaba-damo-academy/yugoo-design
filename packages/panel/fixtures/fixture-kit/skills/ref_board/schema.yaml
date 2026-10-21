@@ -1,0 +1,11 @@
+# ref_board fixture data contract (cross-panel references).
+type: object
+properties:
+  links:
+    type: map
+    value:
+      type: object
+      properties:
+        target: { type: string }
+        label: { type: string }
+        enh_target: { type: string }

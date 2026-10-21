@@ -1,0 +1,155 @@
+version: 1
+panel_kind: evidence_workbook
+i18n:
+  default_locale: zh-CN
+  locales: {zh-CN: locales/zh-CN.json, en-US: locales/en-US.json}
+initial_values: {schema_version: 5}
+empty_description: $t:empty
+sections:
+  - id: roles
+    title: $t:roles
+    item_name: $t:role
+    order: role_order
+    form:
+      reorder: false
+      header: {variant: detail, title: {field: title, editable: true}}
+      body:
+        - kind: group
+          title: $t:assignment
+          description: $t:assignmentHelp
+          items: [{kind: field, field: assignment_rule, label: visually_hidden, width: fill}]
+    create:
+      id_field: id
+      defaults: {title: '', assignment_rule: ''}
+      initial_label:
+        field: title
+        text: $t:newRole
+        numbered_text: $t:newRoleNumbered
+    confirm_delete: true
+    delete_children: [{section: policies, reference_field: role_ref}]
+    delete_relations: [{section: inheritances, reference_fields: [source, target]}]
+  - id: policies
+    title: $t:policies
+    item_name: $t:policy
+    order: policy_order
+    form:
+      reorder: false
+      header: {variant: card, title: {text: '$t:policy', numbered: true}}
+      body:
+        - kind: row
+          items:
+            - {kind: text, text: '$t:effect'}
+            - {kind: field, field: effect, label: visually_hidden, width: auto}
+            - {kind: field, field: capability, label: visually_hidden, width: fill}
+        - kind: group
+          separator: true
+          items: [{kind: field, field: applies_when, label: inline, width: fill}]
+        - kind: group
+          separator: true
+          items:
+            - {kind: field, field: requirements, label: inline, width: fill}
+            - {kind: field, field: custom_requirement, width: fill}
+    navigation: contextual
+    add_mode: context
+    create: {id_field: id, defaults: {title: '', effect: allow, capability: '', applies_when: '', requirements: [], custom_requirement: ''}}
+    derived_fields:
+      title:
+        parts:
+          - {field: effect, values: {allow: 允许, deny: 禁止}}
+          - {field: capability, fallback: 未填写权限}
+  - id: inheritances
+    title: $t:inheritances
+    item_name: $t:inheritance
+    add_mode: graph
+    create:
+      id_field: id
+      defaults: {title: '', kind: inherits, description: ''}
+      initial_label: {field: title, text: '$t:inherits'}
+    confirm_delete: true
+fields:
+  - {key: title, label: '$t:title', control: text, required: true, placeholder: '$t:titleExample', applies_to: [roles, inheritances]}
+  - key: assignment_rule
+    required: true
+    label: $t:assignment
+    placeholder: $t:assignmentExample
+    control: radio_custom
+    choice_layout: row_scroll
+    custom_focus: true
+    options:
+      - {value: 注册后自动拥有, label: '$t:registered'}
+      - {value: 由管理员授予, label: '$t:granted'}
+    applies_to: [roles]
+  - {key: role_ref, label: '$t:role', control: record_select, options_from_section: roles, readonly: true, hidden: true, applies_to: [policies]}
+  - key: effect
+    label: $t:effect
+    control: select
+    allow_clear: false
+    options: [{value: allow, label: '$t:allow'}, {value: deny, label: '$t:deny'}]
+    applies_to: [policies]
+  - {key: capability, label: '$t:capability', control: text, required: true, placeholder: '$t:capabilityExample', applies_to: [policies]}
+  - {key: applies_when, label: '$t:condition', control: text, placeholder: '$t:conditionExample', applies_to: [policies]}
+  - key: requirements
+    label: $t:requirements
+    control: multi_select
+    choice_layout: row_wrap
+    options:
+      - {value: confirm, label: '$t:confirm'}
+      - {value: reauthenticate, label: '$t:reauthenticate'}
+      - {value: custom, label: '$t:other'}
+    applies_to: [policies]
+  - key: custom_requirement
+    label: $t:customRequirement
+    placeholder: $t:customHelp
+    control: text
+    visible_when: {field: requirements, in: [custom]}
+    clear_when_hidden: true
+    applies_to: [policies]
+  - {key: id, control: text, hidden: true, readonly: true, applies_to: [inheritances]}
+  - {key: kind, control: select, hidden: true, options: [{value: inherits, label: '$t:inherits'}], applies_to: [inheritances]}
+  - {key: source, label: '$t:childRole', control: record_select, options_from_section: roles, required: true, applies_to: [inheritances]}
+  - {key: target, label: '$t:parentRole', control: record_select, options_from_section: roles, required: true, applies_to: [inheritances]}
+  - {key: description, label: '$t:inheritanceReason', control: textarea, applies_to: [inheritances]}
+ui:
+  component: record_workspace
+  sidebar_icon: users
+  id: roles-workspace
+  title: $t:roles
+  guidance: "$t:guidance"
+  sources: [roles, policies, inheritances]
+  workspace_view: switch
+  children:
+    - component: relation_graph
+      id: role-inheritance-graph
+      title: $t:inheritances
+      description: $t:graphHint
+      graph:
+        nodes: roles
+        edges: inheritances
+        source_field: source
+        target_field: target
+        label_field: title
+        edge_kind_field: kind
+        edge_defaults: {kind: inherits}
+        hierarchy:
+          values: [inherits]
+          label: $t:parentRole
+          description: $t:inheritanceHelp
+          max_parents: 1
+          parent_control: header
+          create: {edge_kind: inherits, create_label: '$t:addChildRole', create_title: '$t:addChildRole'}
+    - component: record_inspector
+      id: role-editor
+      children:
+        - component: record_related_editor
+          id: permissions
+          title: $t:policies
+          description: $t:policiesHelp
+          source: policies
+          bindings: {reference: role_ref}
+          inherit_from_graph: true
+          record_table:
+            columns:
+              - {fields: [effect]}
+              - {fields: [capability]}
+              - {fields: [applies_when]}
+              - {fields: [requirements, custom_requirement], label: '$t:requirements'}

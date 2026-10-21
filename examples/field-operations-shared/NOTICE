@@ -1,0 +1,12 @@
+Field operations — shared teaching edition
+Copyright 2026 Yugoo-design contributors
+
+Derived from the project's independently authored field_operations@0.1
+synthetic demonstration Kit. This copy changes the Kit identity and the
+English/Chinese register labels. Original Bundle methods, declarations,
+schema, rules, renderer, output contract and synthetic example are retained.
+
+Original project content is licensed under Apache-2.0; see LICENSE.
+Shared runtime components and dependencies are not included or relicensed.
+No operational facts, credentials, user projects or authoring-session logs
+are included. Synthetic records must not be treated as verified facts.

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "hazards": {
+    "HZ-DEMO-001": {
+      "id": "HZ-DEMO-001",
+      "label": "Synthetic: late leather hide delivery",
+      "scenario": "Synthetic example: a shipment of vegetable-tanned hides for the Saturday leather-working workshop might arrive after the session's planned start time.",
+      "response": "Proposed example response: contact the supplier to confirm the revised estimated arrival and agree whether to reschedule the cutting demonstration or begin with tool maintenance instead.",
+      "certainty": "proposed",
+      "evidence_note": "Synthetic teaching example only. No late delivery, supplier agreement or workshop rescheduling has been verified."
+    },
+    "HZ-DEMO-002": {
+      "id": "HZ-DEMO-002",
+      "label": "Synthetic: garden plot access unknown",
+      "scenario": "Synthetic example: it is unknown whether the community garden plot requires advance permission for a weekend soil-amendment delivery before the gardening workshop.",
+      "response": "Verify entry and unloading arrangements with the garden committee before scheduling the delivery; do not infer permission from this example.",
+      "certainty": "unknown",
+      "evidence_note": "Synthetic teaching example only. No garden access restriction or delivery permission has been verified; an actual garden committee source is still needed."
+    }
+  }
+}
