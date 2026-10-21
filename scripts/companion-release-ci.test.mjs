@@ -55,20 +55,75 @@ test('workflow remains manual, default dry-run and exact Companion archive publi
   assert.equal(workflow.on.workflow_dispatch.inputs.publish.type, 'boolean')
   assert.equal(workflow.on.workflow_dispatch.inputs.version.required, true)
   assert.deepEqual(workflow.permissions, { contents: 'read' })
-  const job = workflow.jobs.prepare
-  assert.equal(job.permissions?.['id-token'], undefined)
+  assert.deepEqual(Object.keys(workflow.jobs), ['dryrun', 'publish'])
+  const job = workflow.jobs.dryrun
+  assert.equal(job.permissions, undefined)
+  assert.equal(job.if, "github.repository == 'alibaba-damo-academy/yugoo-design' && (inputs.publish != true || github.ref != 'refs/heads/main')")
   const publisher = workflow.jobs.publish
-  assert.equal(publisher.needs, 'prepare')
-  assert.equal(publisher.if, "inputs.publish == true && github.ref == 'refs/heads/main'")
+  assert.equal(publisher.if, "github.repository == 'alibaba-damo-academy/yugoo-design' && inputs.publish == true && github.ref == 'refs/heads/main'")
   assert.deepEqual(publisher.permissions, { contents: 'read', 'id-token': 'write' })
-  assert.ok(publisher.steps.some(step => step.uses === 'actions/download-artifact@v4'))
-  assert.ok(!publisher.steps.some(step => /pnpm|build-companion| prepare /u.test(step.run ?? '')))
-  assert.ok(!job.steps.some(step => step.run?.includes('npm publish')))
-  assert.equal(job['runs-on'], 'ubuntu-24.04')
+  // The exact expressions above use the shared JavaScript/GitHub boolean subset.
+  // Exercise fork, branch, tag and explicit/default publication routing.
+  for (const repository of ['alibaba-damo-academy/yugoo-design', 'example/fork']) {
+    for (const ref of ['refs/heads/main', 'refs/heads/feature', 'refs/tags/v0.1.0-beta.19']) {
+      for (const publish of [false, true]) {
+        const selected = Object.entries(workflow.jobs).filter(([, row]) => new Function('github', 'inputs', `return (${row.if})`)({ repository, ref }, { publish })).map(([id]) => id)
+        assert.deepEqual(selected, repository === 'example/fork' ? [] : [publish && ref === 'refs/heads/main' ? 'publish' : 'dryrun'])
+      }
+    }
+  }
+  assert.deepEqual(publisher.steps, job.steps, 'Use the same steps in the mutually exclusive jobs')
+  assert.deepEqual(publisher.env, job.env)
+  for (const row of [job, publisher]) {
+    assert.equal(row.needs, undefined)
+    assert.equal(row['runs-on'], 'ubuntu-24.04')
+    assert.equal(row['timeout-minutes'], 45)
+  }
+  assert.doesNotMatch(text, /actions\/(?:upload-artifact|download-artifact|cache)@/u)
+  const actionVersions = new Map([
+    ['actions/checkout', 'v7.0.1'], ['actions/setup-node', 'v7.1.0'],
+    ['pnpm/action-setup', 'v6.1.0'],
+  ])
+  const actions = [...job.steps, ...publisher.steps].filter(step => step.uses)
+  for (const step of actions) {
+    const [action, version] = step.uses.split('@')
+    assert.equal(version, actionVersions.get(action), 'Use the reviewed Node24 Action release')
+    if (action === 'actions/setup-node') {
+      assert.equal(step.with['node-version'], '22.22.3')
+      assert.equal(step.with['package-manager-cache'], false)
+    }
+    if (action === 'pnpm/action-setup') {
+      assert.equal(step.with.version, '11.7.0')
+      assert.equal(step.with.run_install, false)
+      assert.equal(step.with.cache, false)
+    }
+  }
+  assert.equal(new Set(actions.map(step => step.uses.split('@')[0])).size, actionVersions.size)
+  assert.ok([job, publisher].every(row => row.steps.some(step => step.run?.includes('npm install --global npm@11.21.0'))))
   const publish = publisher.steps.filter(x => x.run?.includes('npm publish'))
   assert.equal(publish.length, 1)
-  assert.ok(publisher.steps.find(step => step.id === 'verify').run.includes(' verify '))
-  assert.ok(publish[0].run.includes('npm publish "$RELEASE_TARBALL" --access public --tag beta'))
+  assert.equal(publish[0].if, "github.job == 'publish'")
+  assert.equal(publish[0].env.RELEASE_TARBALL, '${{ steps.verify.outputs.tarball }}')
+  assert.equal(publish[0].run, 'npm publish "$RELEASE_TARBALL" --access public --tag beta --registry=https://registry.npmjs.org')
+  const rejection = job.steps.find(step => step.if?.includes("github.ref != 'refs/heads/main'"))
+  assert.equal(rejection.if, "inputs.publish == true && github.ref != 'refs/heads/main'")
+  assert.match(rejection.run, /exit 1/u)
+  const install = job.steps.find(step => step.run?.includes('pnpm install --frozen-lockfile'))
+  assert.match(install.run, /pnpm install --lockfile-only --strict-peer-dependencies --registry=https:\/\/registry.npmjs.org/u)
+  assert.match(install.run, /pnpm install --frozen-lockfile --strict-peer-dependencies --registry=https:\/\/registry.npmjs.org/u)
+  const prepare = job.steps.filter(step => step.run?.includes('prepare-companion-release.mjs prepare '))
+  assert.equal(prepare.length, 1, 'Build and pack exactly once per selected job')
+  assert.equal(prepare[0].env.RELEASE_VERSION, '${{ inputs.version }}')
+  assert.equal(prepare[0].run, 'node --import tsx scripts/prepare-companion-release.mjs prepare "$RELEASE_VERSION" "$RUNNER_TEMP/companion-release"')
+  const native = job.steps.find(step => step.run === 'node --test scripts/companion-native-git.test.mjs')
+  assert.equal(native.env.YUGOO_NATIVE_GIT_ARTIFACT_ROOT, '${{ runner.temp }}/companion-release/native-artifacts')
+  const verify = job.steps.find(step => step.id === 'verify')
+  assert.equal(verify.run, 'node scripts/prepare-companion-release.mjs verify "$RUNNER_TEMP/companion-release/release-receipt.json"')
+  assert.ok(job.steps.indexOf(rejection) < job.steps.indexOf(install))
+  assert.ok(job.steps.indexOf(install) < job.steps.indexOf(prepare[0]))
+  assert.ok(job.steps.indexOf(prepare[0]) < job.steps.indexOf(native))
+  assert.ok(job.steps.indexOf(native) < job.steps.indexOf(verify))
+  assert.ok(job.steps.indexOf(verify) < job.steps.indexOf(publish[0]))
   assert.doesNotMatch(text, /NPM_TOKEN|NODE_AUTH_TOKEN|secrets\.|--workspaces|--ignore-scripts|continue-on-error/u)
   for (const step of [...job.steps, ...publisher.steps].filter(x => x.run)) assert.ok(!step.run.includes('${{ inputs.version }}'), 'Version must enter via env, never shell interpolation')
 })

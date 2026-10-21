@@ -21,24 +21,28 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  prepare:
+  dryrun:
     # This workflow covers only Companion, not the separate DSH package chain.
-    if: github.repository == 'alibaba-damo-academy/yugoo-design'
+    # Invalid publication refs enter this unprivileged job and fail explicitly.
+    if: github.repository == 'alibaba-damo-academy/yugoo-design' && (inputs.publish != true || github.ref != 'refs/heads/main')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    env:
+    env: &companion-env
       ONNXRUNTIME_NODE_INSTALL_CUDA: skip
-    steps:
-      - uses: actions/checkout@v4
+    # Both mutually exclusive jobs use the same preparation and archive checks.
+    steps: &companion-steps
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6.1.0
         with:
           version: 11.7.0
           run_install: false
-      - uses: actions/setup-node@v4
+          cache: false
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 22.22.3
+          package-manager-cache: false
       - name: Install the explicit OIDC-capable npm CLI
         run: npm install --global npm@11.21.0 --registry=https://registry.npmjs.org
       - name: Validate beta input before installation
@@ -70,46 +74,22 @@ jobs:
         env:
           YUGOO_NATIVE_GIT_ARTIFACT_ROOT: ${{ runner.temp }}/companion-release/native-artifacts
         run: node --test scripts/companion-native-git.test.mjs
-      - name: Retain the prepared archive and evidence
-        uses: actions/upload-artifact@v4
-        with:
-          name: companion-${{ inputs.version }}-${{ github.sha }}
-          path: ${{ runner.temp }}/companion-release
-          if-no-files-found: error
-          retention-days: 7
-      - name: Retain the resolved public dependency lock
-        uses: actions/upload-artifact@v4
-        with:
-          name: companion-source-lock-${{ github.sha }}
-          path: pnpm-lock.yaml
-          if-no-files-found: error
-          retention-days: 7
-
-  publish:
-    needs: prepare
-    if: inputs.publish == true && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.22.3
-      - name: Install the explicit OIDC-capable npm CLI
-        run: npm install --global npm@11.21.0 --registry=https://registry.npmjs.org
-      - name: Download this run's prepared Companion archive
-        uses: actions/download-artifact@v4
-        with:
-          name: companion-${{ inputs.version }}-${{ github.sha }}
-          path: ${{ runner.temp }}/companion-release
-      - name: Verify the relocated archive against the original receipt
+      - name: Verify the prepared archive against its receipt
         id: verify
-        run: node scripts/prepare-companion-release.mjs verify "$RUNNER_TEMP/companion-release/release-receipt.json" "$RUNNER_TEMP/companion-release"
+        run: node scripts/prepare-companion-release.mjs verify "$RUNNER_TEMP/companion-release/release-receipt.json"
       - name: Publish only the exact prepared archive through npm OIDC
+        if: github.job == 'publish'
         env:
           RELEASE_TARBALL: ${{ steps.verify.outputs.tarball }}
         run: npm publish "$RELEASE_TARBALL" --access public --tag beta --registry=https://registry.npmjs.org
+
+  publish:
+    if: github.repository == 'alibaba-damo-academy/yugoo-design' && inputs.publish == true && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    # Publication deliberately trusts this reviewed job's install/build steps too.
+    permissions:
+      contents: read
+      id-token: write
+    env: *companion-env
+    steps: *companion-steps

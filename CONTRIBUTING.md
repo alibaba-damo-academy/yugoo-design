@@ -77,8 +77,9 @@ The manual [Companion workflow](.github/workflows/publish-companion.yml) covers 
 `@yugoo-design/companion`; the DSH package publication chain is separate. A source
 push does not run it. In **Actions → Prepare or publish Companion beta → Run
 workflow**, select the reviewed `main` commit and a new exact `X.Y.Z-beta.N`
-version. Leave **publish** unchecked for build/pack evidence. Download the run's
-archive and receipts before deciding to release. Compilation, pack checks,
+version. Leave **publish** unchecked for build/pack checks and the receipt summary
+in the run's logs. Prepared archives remain on the temporary runner; the workflow
+does not upload downloadable artifacts. Compilation, pack checks,
 installed runtime/Host acceptance and registry publication are separate results.
 The assembler deliberately retains its incomplete acceptance flags.
 
@@ -86,6 +87,7 @@ The workflow uses GitHub-hosted Ubuntu, Node `22.22.3`, pnpm `11.7.0` and explic
 npm `11.21.0`. Public exports currently omit the internal lockfile: on that input,
 CI first resolves a public-registry lock, then performs a strict frozen install.
 The resolved lock is a run input, not a committed reproducibility guarantee.
+Dependency caching is explicitly disabled in both setup Actions.
 Build permissions come only from `pnpm-workspace.yaml`; preserve exact approved
 versions and explicit denials. The exact Rolldown `1.2.4` override preserves the
 compiler boundary of the retained Pica/UI artifact proofs. Installation executes the approved native scripts
@@ -105,10 +107,15 @@ Before the first authorized publication, an npm package maintainer configures
 its **Trusted Publisher** for GitHub organization `alibaba-damo-academy`,
 repository `yugoo-design`, workflow filename `publish-companion.yml` (filename
 only), and no environment name. Enable direct **npm publish** in Allowed actions;
-new connections otherwise default to staged publishing. Only the explicit publication job receives OIDC permission; dependency
-installation and build jobs cannot request that identity. The publication job
-downloads and rechecks the same run’s archive without rebuilding it. No npm token
-secret is needed. See [npm's trusted publishing instructions](https://docs.npmjs.com/trusted-publishers/).
+new connections otherwise default to staged publishing. The default dry-run job
+has no OIDC permission. Only an explicit publication request on this repository's
+`main` branch selects the publication job. That job installs dependencies, builds
+once, checks the archive against its receipt and publishes it on the same runner,
+without Artifact transfer. Its OIDC permission covers the whole job, including
+installation and build steps: publication therefore trusts the reviewed `main`
+source, approved dependency scripts and toolchain. A publication request on
+another ref fails explicitly in the unprivileged job. No npm token secret is
+needed. See [npm's trusted publishing instructions](https://docs.npmjs.com/trusted-publishers/).
 The packaged repository URL must match this public repository; it is maintained
 in the package template, never patched into a prepared archive.
 
