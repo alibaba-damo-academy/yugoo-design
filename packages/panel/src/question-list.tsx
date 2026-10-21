@@ -154,9 +154,10 @@ function StandardQuestionCard(props: {
   const choices = props.question.choices ?? []
   const canUseChoiceActions = props.allowChoiceActions && canEdit && expanded
   const allSelected = choices.length > 0 && choices.every(choice => selected.includes(choice.value))
+  const detailReadLabel = props.labels.detail.replace(/\s*(?:（选填）|\(optional\))$/iu, '')
   const textContext = showDetail && props.question.kind === 'text' && props.question.detail?.trim()
     ? <div className='dsh-standard-question-context' data-testid='standard-question-context'>
-        <span>{t('questionAdditions')}</span>
+        <span>{detailReadLabel}</span>
         <div className='dsh-standard-question-answer-info'>{props.question.detail}</div>
       </div>
     : null
@@ -274,7 +275,7 @@ function StandardQuestionCard(props: {
                 ? <div className='is-empty'>{props.labels.unanswered}</div>
                 : null}
             {props.question.kind === 'text' ? textContext : showDetail && props.question.detail?.trim()
-              ? <p><span>{props.labels.detail.replace(/（.*$/, '')}</span>{props.question.detail}</p>
+              ? <p><span>{detailReadLabel}</span>{props.question.detail}</p>
               : null}
           </div>
         )}

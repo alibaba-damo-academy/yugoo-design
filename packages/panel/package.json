@@ -48,6 +48,7 @@
   "scripts": {
     "test:host-entry": "node --test test/host-entry.test.mjs",
     "test:host-dock-geometry": "node --test test/host-dock-geometry.test.mjs && node smoke-host-dock-geometry.mjs",
+    "test:dock-open-layout": "node --test test/dock-open-layout.test.mjs",
     "test:workspace-navigation": "TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx --test test/record-workspace-navigation-groups.test.mjs test/record-workspace-navigation-layout.test.mjs",
     "test:clarity-hover": "TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-clarity-hover.mjs",
     "test:clarity-activity": "TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx --test test/clarity-activity.test.mjs",
@@ -62,7 +63,7 @@
     "typecheck": "tsc --noEmit",
     "test:graph": "node --test test/graph-dependencies.test.mjs test/graph-layout.test.mjs test/graph-model.test.mjs test/graph-presentation.test.mjs",
     "test:graph:browser": "node smoke-graph-browser.mjs",
-    "test": "node --test test/host-entry.test.mjs && node smoke-dock-layout.mjs && node smoke-advisory-card.mjs && node smoke-advisory-sidebar-entry.mjs && node smoke-design-project-sidebar.mjs && node smoke-host-overlay-layering.mjs && pnpm run test:host-dock-geometry && node smoke-dock-session.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-live-poll.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-execution-log-lifecycle.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-session-controller-adapter.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-next-step-question.mjs"
+    "test": "node --test test/host-entry.test.mjs && node smoke-dock-layout.mjs && node smoke-advisory-card.mjs && node smoke-advisory-sidebar-entry.mjs && node smoke-design-project-sidebar.mjs && node smoke-host-overlay-layering.mjs && pnpm run test:host-dock-geometry && node smoke-dock-session.mjs && pnpm run test:dock-open-layout && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-live-poll.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-execution-log-lifecycle.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-session-controller-adapter.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-next-step-question.mjs"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "*",

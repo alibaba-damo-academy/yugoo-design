@@ -284,7 +284,6 @@
   "questionAttachmentReading": "Reading attachment",
   "questionAttachmentRemove": "Remove attachment {filename}",
   "questionAttachmentHint": "Add attachments; up to {count}, each no larger than 10 MiB",
-  "questionAdditions": "Other additions",
   "questionAttachmentPreviewUnavailable": "Attachment preview is currently unavailable.",
   "questionAttachmentReadFailed": "Failed to read attachment.",
   "questionAttachmentSizeLimit": "Attachment {filename} must be larger than 0 and no larger than 10 MiB.",

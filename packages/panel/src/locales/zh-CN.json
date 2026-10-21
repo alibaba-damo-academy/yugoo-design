@@ -284,7 +284,6 @@
   "questionAttachmentReading": "正在读取附件",
   "questionAttachmentRemove": "移除附件 {filename}",
   "questionAttachmentHint": "添加附件；最多 {count} 个，每个不超过 10 MiB",
-  "questionAdditions": "其他补充",
   "questionAttachmentPreviewUnavailable": "附件预览暂时不可用",
   "questionAttachmentReadFailed": "附件读取失败",
   "questionAttachmentSizeLimit": "附件 {filename} 必须大于 0 且不超过 10 MiB",

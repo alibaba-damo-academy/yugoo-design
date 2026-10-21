@@ -3,57 +3,57 @@
   "reviewedFiles": [
     {
       "path": "docs/images/readme-smart-questions.gif",
-      "oid": "8cea5764b02e182cf6e390158127f73192d82166",
-      "bytes": 163168,
+      "oid": "75b73939a232d74d038e72033037d0a549956fb4",
+      "bytes": 742400,
       "findings": [
         "binary_manual_review"
       ],
-      "reason": "Direct browser-captured frames of reading and editing Smart Questions in an isolated synthetic studio-delivery project. Compiled shared UI from a20e35d7; no native conversation, user profile, credentials or private source pixels. Short interface interaction, not a complete native generation or save/continuation claim."
+      "reason": "Actual full DeepSeek Harness workspace captures from isolated synthetic studio-delivery, with real native conversation beside Smart Questions. Read/edit frames use the d4ebed7d Panel and provider build, including the one-input free-text behavior and shared supplementary label. Close-ups only crop and enlarge the same frames. Draft edits were reverted; this is not full-generation or save-consumption acceptance. No credentials or private customer data."
     },
     {
       "path": "docs/images/readme-flow.png",
-      "oid": "897a2b611a0403db88b7b5b9c4e296fdc4883490",
-      "bytes": 68987,
+      "oid": "9705e56a64e920c27e20a38443275df8d0c3ffcd",
+      "bytes": 253023,
       "findings": [
         "binary_manual_review"
       ],
-      "reason": "Direct element screenshot of the synthetic studio-delivery BPMN process in the shared Flow Panel from a20e35d7. Original demonstration data and diagram; role lanes and confirmation branches visible, BPMN.io attribution retained. No Host credential, private project or model run claim."
+      "reason": "Actual full DeepSeek Harness workspace capture with real conversation and the shared Flow Panel from d4ebed7d, opened at its corrected 70 percent workspace width. Synthetic studio-delivery BPMN role lanes and scope/timing branches; BPMN.io attribution retained. No fabricated conversation, credentials or private customer data; not an end-to-end generation claim."
     },
     {
       "path": "docs/images/readme-design-advice.png",
-      "oid": "655ac69679468258b88baac78fd9f9cd2300e04e",
-      "bytes": 43234,
+      "oid": "4f96e19c0576cd768e74a8049d0c874d39ee94ce",
+      "bytes": 281236,
       "findings": [
         "binary_manual_review"
       ],
-      "reason": "Direct screenshot of the shared advisory inbox from a20e35d7. One deliberately prepared synthetic grounding result, submitted through the existing explicit foreground review path for this isolated example. Shows readable detail and human decision controls, not background/native Agent execution; no private conversation or credential pixels."
+      "reason": "Actual full DeepSeek Harness workspace capture: expanded native Alignment clarification advice beside the synthetic studio-delivery process. The advice was produced in the real isolated native session and is shown pending human review; it is not the hypothetical scope/timing example quoted in the tutorial, an accepted decision, or evidence of a new review at the latest design revision. No credentials or private customer data."
     },
     {
       "path": "docs/images/readme-design-views.gif",
-      "oid": "001e2b9e3ca10b8838041c02bd64ba7a42ef8264",
-      "bytes": 137974,
+      "oid": "65836a5959968b3794daf72007a2b374bb832e6e",
+      "bytes": 667205,
       "findings": [
         "binary_manual_review"
       ],
-      "reason": "Direct browser-captured frames of the same synthetic project in object detail, the business-object relationship canvas and business rules. Shared UI from a20e35d7; no fabricated KAG view or native conversation. Existing component attribution remains visible; no private data or credentials."
+      "reason": "Actual full DeepSeek Harness workspace frames show one synthetic project through the business-object relationship canvas, object detail and business rules. Shared d4ebed7d Panel build with 70 percent dock width; the close-up enlarges the same canvas frame. Existing React Flow attribution remains in the full frame. No fabricated KAG view, conversation, credentials or private customer data."
     },
     {
       "path": "docs/images/readme-prd.png",
-      "oid": "bdcf69d8e5030f7418020bdf56b68f3258d191f7",
-      "bytes": 118528,
+      "oid": "b516f1c8da88e18732713797aa4da9c602a7009c",
+      "bytes": 294301,
       "findings": [
         "binary_manual_review"
       ],
-      "reason": "Direct shared PRD Panel screenshot from a20e35d7 using a hand-authored synthetic demonstration document. Outline, business decisions and actual source-label controls visible. Retains the original full Host screenshots elsewhere; does not claim a live native PRD generation or spec handoff."
+      "reason": "Actual full DeepSeek Harness workspace capture with native conversation and the shared PRD reader at 70 percent dock width. The synthetic draft uses the unchanged official PRD template, all eleven formal chapters, its stylesheet and source controls; the screenshot selects product solution and functional requirements. Missing decisions and unconfirmed draft material remain explicit. Template validation is recorded separately; no complete native PRD-generation or product-acceptance claim."
     },
     {
       "path": "docs/images/readme-studio.gif",
-      "oid": "c2776ee65bbadf3729fc424f35a8d2e31f6cfc6f",
-      "bytes": 338777,
+      "oid": "eeb5abe5928e7576c3c14ba217ddbb38f6b2d2f3",
+      "bytes": 460589,
       "findings": [
         "binary_manual_review"
       ],
-      "reason": "Direct browser captures of the a20e35d7 shared Studio: Web App Mindset, Bundle catalog, installed Panel YAML/sample preview and component catalog. Only shipped public Web App content and synthetic preview data; no trials, native dispatch, credential settings or installed user plugin changes."
+      "reason": "Actual full native DSH Studio pages show the shipped public Web App Mindset and its fifteen mounted Bundles. Close-up only enlarges the captured Mindset; full application navigation and version context remain in the full frames. These unchanged Studio views were captured before the question-label build. This host does not expose installed Panel preview, so the GIF does not claim to demonstrate that capability or the component catalog. No credentials, private Kit content or user plugin modifications."
     },
     {
       "path": "docs/images/yugoo-design-concept.webp",
@@ -138,6 +138,7 @@
     }
   ],
   "rules": [
+    { "kind": "file", "path": "packages/panel/test/dock-open-layout.test.mjs", "action": "include", "reason": "Synthetic client-source regression verifies asynchronous navigation collapse, dock width, drag, session isolation and lease ownership using the actual store and reflow functions; no user data, installed Host or model execution." },
     {
       "kind": "file",
       "path": "docs/README.md",
@@ -184,37 +185,37 @@
       "kind": "file",
       "path": "docs/images/readme-studio.gif",
       "action": "include",
-      "reason": "Direct browser captures of the a20e35d7 shared Studio: Web App Mindset, Bundle catalog, installed Panel YAML/sample preview and component catalog. Only shipped public Web App content and synthetic preview data; no trials, native dispatch, credential settings or installed user plugin changes."
+      "reason": "Actual full native DSH Studio pages show the shipped public Web App Mindset and its fifteen mounted Bundles. Close-up only enlarges the captured Mindset; full application navigation and version context remain in the full frames. These unchanged Studio views were captured before the question-label build. This host does not expose installed Panel preview, so the GIF does not claim to demonstrate that capability or the component catalog. No credentials, private Kit content or user plugin modifications."
     },
     {
       "kind": "file",
       "path": "docs/images/readme-prd.png",
       "action": "include",
-      "reason": "Direct shared PRD Panel screenshot from a20e35d7 using a hand-authored synthetic demonstration document. Outline, business decisions and actual source-label controls visible. Retains the original full Host screenshots elsewhere; does not claim a live native PRD generation or spec handoff."
+      "reason": "Actual full DeepSeek Harness workspace capture with native conversation and the shared PRD reader at 70 percent dock width. The synthetic draft uses the unchanged official PRD template, all eleven formal chapters, its stylesheet and source controls; the screenshot selects product solution and functional requirements. Missing decisions and unconfirmed draft material remain explicit. Template validation is recorded separately; no complete native PRD-generation or product-acceptance claim."
     },
     {
       "kind": "file",
       "path": "docs/images/readme-design-views.gif",
       "action": "include",
-      "reason": "Direct browser-captured frames of the same synthetic project in object detail, the business-object relationship canvas and business rules. Shared UI from a20e35d7; no fabricated KAG view or native conversation. Existing component attribution remains visible; no private data or credentials."
+      "reason": "Actual full DeepSeek Harness workspace frames show one synthetic project through the business-object relationship canvas, object detail and business rules. Shared d4ebed7d Panel build with 70 percent dock width; the close-up enlarges the same canvas frame. Existing React Flow attribution remains in the full frame. No fabricated KAG view, conversation, credentials or private customer data."
     },
     {
       "kind": "file",
       "path": "docs/images/readme-design-advice.png",
       "action": "include",
-      "reason": "Direct screenshot of the shared advisory inbox from a20e35d7. One deliberately prepared synthetic grounding result, submitted through the existing explicit foreground review path for this isolated example. Shows readable detail and human decision controls, not background/native Agent execution; no private conversation or credential pixels."
+      "reason": "Actual full DeepSeek Harness workspace capture: expanded native Alignment clarification advice beside the synthetic studio-delivery process. The advice was produced in the real isolated native session and is shown pending human review; it is not the hypothetical scope/timing example quoted in the tutorial, an accepted decision, or evidence of a new review at the latest design revision. No credentials or private customer data."
     },
     {
       "kind": "file",
       "path": "docs/images/readme-flow.png",
       "action": "include",
-      "reason": "Direct element screenshot of the synthetic studio-delivery BPMN process in the shared Flow Panel from a20e35d7. Original demonstration data and diagram; role lanes and confirmation branches visible, BPMN.io attribution retained. No Host credential, private project or model run claim."
+      "reason": "Actual full DeepSeek Harness workspace capture with real conversation and the shared Flow Panel from d4ebed7d, opened at its corrected 70 percent workspace width. Synthetic studio-delivery BPMN role lanes and scope/timing branches; BPMN.io attribution retained. No fabricated conversation, credentials or private customer data; not an end-to-end generation claim."
     },
     {
       "kind": "file",
       "path": "docs/images/readme-smart-questions.gif",
       "action": "include",
-      "reason": "Direct browser-captured frames of reading and editing Smart Questions in an isolated synthetic studio-delivery project. Compiled shared UI from a20e35d7; no native conversation, user profile, credentials or private source pixels. Short interface interaction, not a complete native generation or save/continuation claim."
+      "reason": "Actual full DeepSeek Harness workspace captures from isolated synthetic studio-delivery, with real native conversation beside Smart Questions. Read/edit frames use the d4ebed7d Panel and provider build, including the one-input free-text behavior and shared supplementary label. Close-ups only crop and enlarge the same frames. Draft edits were reverted; this is not full-generation or save-consumption acceptance. No credentials or private customer data."
     },
     { "kind": "file", "path": "packages/companion/test/foreground-reviews.test.mjs", "action": "include", "reason": "Shared explicit manual GRA fixtures verify main-conversation submission, unchanged policy, pinned evidence and advisory actions in temporary projects; no actual Host, credentials, private user data or model execution." },
     { "kind": "file", "path": "packages/companion/test/review-reader-context.test.mjs", "action": "include", "reason": "Synthetic large-graph review fixtures verify on-demand native evidence, unchanged private snapshots and managed supplied context; no actual Host, credentials, user project or model execution." },

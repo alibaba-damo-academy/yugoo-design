@@ -92,9 +92,9 @@ This existing research-collaboration example shows the DeepSeek Harness interfac
 
 ![Conversation, design suggestions, and a business process panel in DeepSeek Harness](docs/images/design-panel-process.png)
 
-*The screenshot above retains the conversation-and-Panel context of an earlier version. See the [interface overview](docs/wiki/usage.md#7-界面概览) for the page map and PRD panels. The screenshots and short GIFs below show a synthetic studio project-delivery example in the current shared Panel and Studio interfaces.*
+*The screenshot above retains the conversation-and-Panel context of an earlier version. See the [interface overview](docs/wiki/usage.md#7-界面概览) for the page map and PRD panels. The studio example below preserves the complete DeepSeek Harness workspace: actual conversation on the left and Design Panels on the right. Studio is shown in its separate page. Close-ups in the GIFs make details easier to read.*
 
-> **Demo scope:** The example data, review suggestion, and PRD are prepared for demonstration in an isolated local project. The GIFs show interface interactions; see the [host guide](docs/wiki/hosts.md) for generation, saved-edit continuation, and background-review support.
+> **Demo scope:** These captures show actual host conversations and Panel interactions with synthetic business data in an isolated project. The PRD is a draft prepared from the official template, with unresolved content marked. The screenshots and interaction clips do not establish automatic generation or acceptance of an entire specification; see the [host guide](docs/wiki/hosts.md) for generation, saved-edit continuation, and background-review support.
 
 These commands match the current DeepSeek Harness source. Follow bundled help on older installations, where `mindset` is the old spelling. Create a project and manually activate the Web App Kit:
 
@@ -111,7 +111,7 @@ After you describe the studio from the quick start, AI can open the **Smart Ques
 
 Once you save, AI suggests: “Let's map a client's change request through to scheduling the work, showing who records feedback, assesses scope, and makes commitments.”
 
-![Read answers and edit supporting context in Smart Questions](docs/images/readme-smart-questions.gif)
+![Read Smart Questions beside the conversation, zoom into details, and edit supporting context](docs/images/readme-smart-questions.gif)
 
 ### 2. See the process, then add real-world context
 
@@ -119,7 +119,7 @@ AI opens the **business process panel**. A swimlane diagram separates the client
 
 Seeing every revision go through the lead, you add: “Designers can handle layout revisions within the agreed scope directly. New pages or capabilities need a scope discussion.” AI revises the branches. You discuss, edit, and save alongside the Panel, bringing the team's real working practices into the design.
 
-![A swimlane process distinguishes direct changes from those needing the project lead's confirmation](docs/images/readme-flow.png)
+![Discuss the proposal beside a swimlane process distinguishing direct changes from those needing the project lead's confirmation](docs/images/readme-flow.png)
 
 ### 3. Check earlier decisions against the current design
 
@@ -129,7 +129,7 @@ In a host that supports GRA, developing the design might lead to a **design sugg
 
 You decide: “Assess scope and timing separately. Any impact on a promised milestone needs the lead to confirm the plan again.” Ask AI to revise the relevant rules and process, then inspect the panels. Reviewing the relationships helps you articulate a choice you had not expressed separately before.
 
-![Expand a design suggestion about in-scope changes and delivery commitments](docs/images/readme-design-advice.png)
+![Expand design suggestions beside the conversation and compare them with the business process](docs/images/readme-design-advice.png)
 
 ### 4. Develop other parts as needed
 
@@ -145,7 +145,7 @@ When this round of design is clear, you ask: “Assemble the current design into
 
 For implementation, prepare a spec for the particular task and the development project's conventions, linking the relevant design evidence. Follow the [complete tutorial (中文)](docs/wiki/web-app-demo.md), read the [design-to-development handoff](docs/design-development-handoff.md), or explore the recorded [non-Web Kit examples](docs/wiki/non-web-kit-demo.md).
 
-![Read the PRD outline and its question, process, and business-rule source labels](docs/images/readme-prd.png)
+![Read the PRD draft's formal chapters beside the conversation, retaining design sources and unresolved content](docs/images/readme-prd.png)
 
 ## Start with software design, then extend it
 
@@ -155,7 +155,7 @@ The shared framework's panels, feedback, and design integration capabilities can
 
 Start by reusing a professional method you know, define its structured output and interactive panel, and try it on a small example. Combine it with related Bundles and a domain Mindset to form a Kit. Panels can use question cards, tables, diagrams, prototypes, or whiteboards; extensions can also integrate specialist editors and UI components. **Studio** provides an entry point to inspect and manage methods and source files, and customize working copies. Available authoring capabilities depend on the installed version; follow the [Studio walkthrough](docs/wiki/usage.md#6-studio查看定制和检验套件) and complete the [author and recipient checks](docs/wiki/kit-sharing.md#作者与接收者的最小验证) before sharing.
 
-![Browse a Kit, its Mindset and Bundles, Panel previews, and the component catalog in Studio](docs/images/readme-studio.gif)
+![Read the Web App Mindset and browse mounted Bundles in the complete Studio page](docs/images/readme-studio.gif)
 
 | What you want to do | Start here |
 | --- | --- |

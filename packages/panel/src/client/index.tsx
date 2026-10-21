@@ -111,7 +111,17 @@ function applyFrameInset(): void {
 }
 
 function clampDockWidth(width: number): number {
-  return clampDesignDockWidth(window.innerWidth, width, hostNavigationWidth(frameElement()))
+  const frame = frameElement()
+  const renderedNavigationWidth = hostNavigationWidth(frame)
+  const lease = sidebarCollapseLease
+  // Host toggles commit asynchronously and animate the navigation track. Do
+  // not lose the opening width to that old/intermediate geometry. The existing
+  // lease bounds this to our own collapse; later Host/user choices use reality.
+  const navigationWidth = lease?.owned && lease.frame === frame
+    && (lease.expectedMutation || lease.frame.dataset.sidebarCollapsed !== undefined)
+    ? Math.min(renderedNavigationWidth, COLLAPSED_NAV_WIDTH)
+    : renderedNavigationWidth
+  return clampDesignDockWidth(window.innerWidth, width, navigationWidth)
 }
 
 /** A bare observable that always reads undefined (absent projection face). */
@@ -648,10 +658,19 @@ function mountPanelShell(ctx: Context): void {
     }
   }, 'design panel: session dock activation')
   ctx.effect(() => {
-    const frame = frameElement()
+    let frame: HTMLElement | null = null
+    let navigation: Element | null = null
     let animationFrame: number | undefined
     const reconcileDockWidth = (): void => {
       animationFrame = undefined
+      const nextFrame = frameElement()
+      const nextNavigation = nextFrame?.firstElementChild ?? null
+      if (nextFrame !== frame || nextNavigation !== navigation) {
+        resizeObserver.disconnect()
+        frame = nextFrame
+        navigation = nextNavigation
+        if (navigation !== null) resizeObserver.observe(navigation)
+      }
       const snapshot = rail.getSnapshot()
       if (!snapshot.open) return
       // Opening owns the initial Design-first layout. Later Host changes,
@@ -665,17 +684,20 @@ function mountPanelShell(ctx: Context): void {
     }
     const disposeRailReflow = rail.subscribe(scheduleReconcile)
     window.addEventListener('resize', scheduleReconcile)
-    const navigation = frame?.firstElementChild
-    const resizeObserver = navigation === null || navigation === undefined
-      ? undefined
-      : new ResizeObserver(scheduleReconcile)
-    if (navigation !== null && navigation !== undefined) resizeObserver?.observe(navigation)
-    const sidebarObserver = frame === null
-      ? undefined
-      : new MutationObserver(scheduleReconcile)
-    if (frame !== null) {
-      sidebarObserver?.observe(frame, { attributes: true, attributeFilter: ['data-sidebar-collapsed'] })
-    }
+    const resizeObserver = new ResizeObserver(scheduleReconcile)
+    const hasOverlay = (node: Node): boolean => node instanceof Element
+      && (node.matches('[data-shell-overlay]') || node.querySelector('[data-shell-overlay]') !== null)
+    const sidebarObserver = new MutationObserver(records => {
+      if (records.some(record => record.type === 'attributes'
+        ? record.target === frame
+        : record.target === frame || Array.from(record.addedNodes).some(hasOverlay)
+          || Array.from(record.removedNodes).some(hasOverlay))) scheduleReconcile()
+    })
+    // The shell may mount after this client effect or replace its frame/nav.
+    // Only those anchors and the current frame's sidebar attribute matter;
+    // ordinary conversation streaming must not schedule layout work.
+    sidebarObserver?.observe(document.body, { childList: true, subtree: true,
+      attributes: true, attributeFilter: ['data-sidebar-collapsed'] })
     // The per-session open flags and the page width survive session switches
     // and hot client remounts. Fit a restored open dock to the current Host
     // layout without reapplying its one-time opening policy.

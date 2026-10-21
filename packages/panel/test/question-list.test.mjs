@@ -424,20 +424,24 @@ test('text supplements stay readonly inside the answer shell and preserve collap
   const root = createRoot(container)
   const changes = []
   const question = { id: 'text', prompt: '说明', kind: 'text', answer: '答案', detail: '第一行\n第二行' }
+  const choice = { id: 'choice', prompt: '选择', kind: 'single', answer: 'yes', detail: '选择题的补充', choices: [{ value: 'yes', label: '同意' }] }
   const show = (editable, detail = question.detail) => root.render(React.createElement(PanelLocaleContext.Provider, { value: 'en-US' },
-    React.createElement(StandardQuestionList, { questions: [{ ...question, detail }], editable, collapseAnswered: false,
+    React.createElement(StandardQuestionList, { questions: [{ ...question, detail }, choice], editable, collapseAnswered: false,
       onDetailChange: (...args) => changes.push(args) })))
   await React.act(async () => show(true))
   const shell = container.querySelector('.dsh-standard-question-answer-shell')
   const context = shell.querySelector('[data-testid=standard-question-context]')
-  assert.equal(context.querySelector('span').textContent, 'Other additions')
+  assert.equal(context.querySelector('span').textContent, 'Additional context')
   assert.equal(context.querySelector('.dsh-standard-question-answer-info').textContent, question.detail)
   assert.equal(context.querySelector('input,textarea,[contenteditable=true]'), null)
   assert.equal(shell.querySelectorAll('textarea').length, 1)
-  assert.equal(container.querySelector('[data-testid=standard-question-detail]'), null)
+  assert.equal(shell.querySelector('[data-testid=standard-question-detail]'), null)
+  assert.equal(container.querySelector('[data-question-id=choice] [data-testid=standard-question-detail]').placeholder, 'Additional context (optional)')
   await React.act(async () => show(false))
   assert.equal(container.querySelector('.dsh-standard-question-answer-shell'), null)
   assert.equal(container.querySelector('.dsh-standard-question-result .dsh-standard-question-answer-info').textContent, question.detail)
+  assert.equal(container.querySelector('[data-testid=standard-question-context] > span').textContent, 'Additional context')
+  assert.equal(container.querySelector('[data-question-id=choice] .dsh-standard-question-result p > span').textContent, 'Additional context')
   assert.equal(container.querySelector('input,textarea'), null)
   await React.act(async () => show(false, '  '))
   assert.equal(container.querySelector('[data-testid=standard-question-context]'), null)

@@ -906,7 +906,9 @@ optional `choices[]` (`value`, `label`, `recommended`), `answer`, and optional
 `detail`. Text answers render as one multiline input; an existing text-question
 `detail` remains visible as read-only context rather than becoming a second
 answer box. Single/multiple answers use accessible choice rows and may edit
-`detail`; cards with a non-empty `answer` collapse to a readable result and can
+`detail`. Existing read-only context and choice supplements use the same
+localized label (without the optional-input suffix in reading mode). Cards
+with a non-empty `answer` collapse to a readable result and can
 be reopened for editing. The component writes only the fields exposed by that
 interaction back to the owning record. It does not invent approval state, and an
 empty answer remains unanswered even when `detail` contains context. Native
