@@ -3,6 +3,7 @@
   "version": "0.1.0-review.1",
   "description": "Fixture manifest for review; payload and npm publication are not implemented.",
   "license": "Apache-2.0",
+  "repository": { "type": "git", "url": "git+https://github.com/alibaba-damo-academy/yugoo-design.git" },
   "type": "module",
   "engines": { "node": ">=22.19.0 <23" },
   "publishConfig": { "access": "public" },

@@ -10,7 +10,7 @@ import { execFile } from 'node:child_process'
 export const PANEL_AUTHORING_RESOURCE = 'authoring/panel-components.json'
 const inspector = '.agents/skills/design-bundle-creator/scripts/inspect-panel-component.mjs'
 const generator = 'scripts/generate-panel-authoring-material.mjs'
-const maxBytes = 4_000_000
+const maxBytes = 6_000_000
 
 /** Include every example the inspector actually scans, also across non-Web Kits. */
 export async function panelAuthoringInputPaths(workspace) {

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": "97f00193f3c1c1040bda42f36fbccf76c5d25cff",
-  "policySha256": "ad5e6e02bddcdea2f916de418c5297ff1b7aa472b0550a262b800f7c921dcfa9",
+  "revision": "1ab25cea81ed5bc9a5b1582cf91f18f43659930b",
+  "policySha256": "a95d5d1810cdf1ea4c9c7c3c0c08e54338ba05589adfc3764f06739dd5c1734d",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
       "sha256": "3145f8cadf2abb2ccf5ebd3d12ab65b903d1fed9cf87fd7c4c29b306e67cacd0",
@@ -75,6 +75,10 @@
       "sha256": "3cd68bd8500ebfcf7af1975be349288fa596e8450bb251ae981ce4a1082be55b",
       "mode": "100644"
     },
+    ".github/workflows/publish-companion.yml": {
+      "sha256": "74057cae10f6b9ebf5539c98cf4bf446fafe7c6134574f4f249709602bec0b34",
+      "mode": "100644"
+    },
     ".gitignore": {
       "sha256": "3c66e283dd94e30d1a3295470a397963d7e26e4d283640bf9ac2f6efc834c815",
       "mode": "100644"
@@ -84,7 +88,7 @@
       "mode": "100644"
     },
     "CONTRIBUTING.md": {
-      "sha256": "47b4c2bb8038882e39e40deecb735b7d5480e671b858038aba778551dab06253",
+      "sha256": "ff2eceb7af01c9b8ced53c04416a284cdcd28705ac33ef7585dcf6371f9152fd",
       "mode": "100644"
     },
     "LICENSE": {
@@ -124,7 +128,7 @@
       "mode": "100644"
     },
     "docs/companion-npm-fixture-2026-09-30.json": {
-      "sha256": "3d62859981be52e3fa37ea269636e8bbfdb36d27fa78756cc9c5468a022b0879",
+      "sha256": "8015fdac447f0fb57e09cc8f84f33845e7f104232aad9409de29d85ccaa6f018",
       "mode": "100644"
     },
     "docs/design-command-agent-entry.md": {
@@ -212,7 +216,7 @@
       "mode": "100644"
     },
     "docs/public-document-sync.md": {
-      "sha256": "f790b8d34a5f23e906c15398f57429b696f1c283ef6f9c4b54552bc7fa0acd7d",
+      "sha256": "b6d25de016cac17011817bc898b86ec3d662f885c0e524f20bd7e9f70bb8e051",
       "mode": "100644"
     },
     "docs/standalone-roadmap.md": {
@@ -708,7 +712,7 @@
       "mode": "100644"
     },
     "packages/companion/src/mcp.mjs": {
-      "sha256": "e8f8ad8bad2407cb6f58982bb9ee981246675425e804999d8481ab60309a3b6a",
+      "sha256": "3f603f489accf3805e664e86f86658b3047f52cb985610f0b0267c8617babd3c",
       "mode": "100644"
     },
     "packages/companion/src/model-response.mjs": {
@@ -8184,11 +8188,11 @@
       "mode": "100644"
     },
     "release/public-source-baseline.json": {
-      "sha256": "fc2725feaa7c58d80c831adfbc2a3a53fe520a65f36554ba41b14e60331121b2",
+      "sha256": "d5a6071709b29375ac68456b8f9057b028d9b980c5a7af6b0c8a356275a51af0",
       "mode": "100644"
     },
     "release/public-source-policy.json": {
-      "sha256": "89e7d1c36e6fcf4bfb7a231d83b11c3ba38b002c12884cdf44b0e32e56392aef",
+      "sha256": "1106a4d751d68d0efdb79a278a71c6dbddbdfc3648b5f7003041e43ebc4d487f",
       "mode": "100644"
     },
     "release/public-source-test-selection.json": {
@@ -8228,11 +8232,11 @@
       "mode": "100644"
     },
     "scripts/companion-authoring-material.mjs": {
-      "sha256": "94aaaa48968f28e6114ae7515e21d04b6e505cf0e29bc9e396a7a7235499e234",
+      "sha256": "0521a70d29ab002b5378943b17f41b31771614a0fa118d189150a4f95d087427",
       "mode": "100644"
     },
     "scripts/companion-authoring-material.test.mjs": {
-      "sha256": "b01a77fdde27c862ccf1b172734d4d32cfae63a1563d8a271c70a7634c9e4d0c",
+      "sha256": "3de65eedd21259516a9510295d2f8acb26666bab6faa01ebc9184473c99dbf48",
       "mode": "100644"
     },
     "scripts/companion-bundled-license.mjs": {
@@ -8277,6 +8281,14 @@
     },
     "scripts/companion-packaged-knowledge.test.mjs": {
       "sha256": "02a9beef447e1dfea80c2b6f9a741a2351ec5a33908168864c01dbda7bc8b9af",
+      "mode": "100644"
+    },
+    "scripts/companion-release-ci.test.mjs": {
+      "sha256": "1e8e83aea0e6b8352e603cd8033da33e4835cd0b3df53e948f56bcdd88e5f056",
+      "mode": "100644"
+    },
+    "scripts/companion-release-native-donor.mjs": {
+      "sha256": "6075b422a2c884a098f4a2ad1923995b53aba5df1a9c3a0ae10e2a92b043b31a",
       "mode": "100644"
     },
     "scripts/companion-source-labels.mjs": {
@@ -8360,7 +8372,7 @@
       "mode": "100644"
     },
     "scripts/generate-panel-authoring-material.mjs": {
-      "sha256": "dc92f116a48d03a4c0aadef6d46bb23973fb9ee3b58a16a3d655acbe512c5905",
+      "sha256": "2ab45cf7e98caa2ae0e5d86dfee011c2e0d91095545ad1a14115c796c04d08d6",
       "mode": "100644"
     },
     "scripts/graph-browser-dependencies.ts": {
@@ -8421,6 +8433,10 @@
     },
     "scripts/pica-worker-evidence.test.mjs": {
       "sha256": "f636910a44ae4e9f519e2be53786bc764475c7fb6e31f7cb15b9dd327c869fd5",
+      "mode": "100644"
+    },
+    "scripts/prepare-companion-release.mjs": {
+      "sha256": "589fdc00b0def418dd6f6df05852b2792ca290c3ebd264d4e64aed130b2c0287",
       "mode": "100644"
     },
     "scripts/probe-companion-pica-worker.mjs": {
@@ -10552,7 +10568,7 @@
       "mode": "100644"
     },
     "pnpm-workspace.yaml": {
-      "sha256": "441b4db49785caaa5a96c95d3513773c6bb6668c96aa11e0b2ec513d0415a84e",
+      "sha256": "51f2cb1dd7d1082289ad5b78db639f993e42fbedb059a9c4b089564413c571a5",
       "mode": "100644"
     },
     "packages/companion-dev/package.json": {
@@ -10615,8 +10631,8 @@
     "inputs": [
       {
         "path": "release/public-source-baseline.json",
-        "sourceOid": "d979022482c103ca78b3698ea4c740472db98900",
-        "sourceSHA256": "fc2725feaa7c58d80c831adfbc2a3a53fe520a65f36554ba41b14e60331121b2"
+        "sourceOid": "ac56b093c571a71f5d0bf40461815845413e7405",
+        "sourceSHA256": "d5a6071709b29375ac68456b8f9057b028d9b980c5a7af6b0c8a356275a51af0"
       },
       {
         "path": "release/public-source-test-selection.json",
@@ -10633,9 +10649,9 @@
       },
       {
         "path": "pnpm-workspace.yaml",
-        "sourceOid": "a8455483ba135cc7035089f49ed2ee39cb81f823",
-        "sourceSHA256": "441b4db49785caaa5a96c95d3513773c6bb6668c96aa11e0b2ec513d0415a84e",
-        "outputSHA256": "441b4db49785caaa5a96c95d3513773c6bb6668c96aa11e0b2ec513d0415a84e"
+        "sourceOid": "4e42e2a782dfdd359bb0dd8143039195f41dcaf0",
+        "sourceSHA256": "3e298b490d01b95a48388eb943d36a4e5da8073c5c6853ca84690639fd21ccea",
+        "outputSHA256": "51f2cb1dd7d1082289ad5b78db639f993e42fbedb059a9c4b089564413c571a5"
       },
       {
         "path": "packages/companion-dev/package.json",

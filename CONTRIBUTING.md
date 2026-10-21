@@ -71,6 +71,56 @@ prepare, verify and apply workflow. The complete commands, exact-hash approval a
 target-conflict rules are maintained in the [source export procedure](docs/public-document-sync.md#准备与核准源码导出).
 Source synchronization, Git push and npm publication are separate operations.
 
+## Prepare or publish the Companion npm beta
+
+The manual [Companion workflow](.github/workflows/publish-companion.yml) covers only
+`@yugoo-design/companion`; the DSH package publication chain is separate. A source
+push does not run it. In **Actions → Prepare or publish Companion beta → Run
+workflow**, select the reviewed `main` commit and a new exact `X.Y.Z-beta.N`
+version. Leave **publish** unchecked for build/pack evidence. Download the run's
+archive and receipts before deciding to release. Compilation, pack checks,
+installed runtime/Host acceptance and registry publication are separate results.
+The assembler deliberately retains its incomplete acceptance flags.
+
+The workflow uses GitHub-hosted Ubuntu, Node `22.22.3`, pnpm `11.7.0` and explicit
+npm `11.21.0`. Public exports currently omit the internal lockfile: on that input,
+CI first resolves a public-registry lock, then performs a strict frozen install.
+The resolved lock is a run input, not a committed reproducibility guarantee.
+Build permissions come only from `pnpm-workspace.yaml`; preserve exact approved
+versions and explicit denials. The exact Rolldown `1.2.4` override preserves the
+compiler boundary of the retained Pica/UI artifact proofs. Installation executes the approved native scripts
+within the isolated runner, not within a user Host/profile.
+
+Native Git materials are acquired from the fixed public Companion `beta.16`
+archive, verified against its complete pinned SRI, and checked against the
+current `packages/git-native/SOURCE.json` by the existing builder. CI never
+rebuilds or substitutes those binaries. A changed source/prebuild identity fails
+until the maintained donor selection is reviewed. See the
+[preparation entry](scripts/prepare-companion-release.mjs) for the same local
+`prepare VERSION ABS_OUTPUT [ABS_NATIVE_ROOT]` dry-run; use `node --import tsx`
+after preparing source dependencies. The optional artifact root still passes
+the existing source/material gate.
+
+Before the first authorized publication, an npm package maintainer configures
+its **Trusted Publisher** for GitHub organization `alibaba-damo-academy`,
+repository `yugoo-design`, workflow filename `publish-companion.yml` (filename
+only), and no environment name. Enable direct **npm publish** in Allowed actions;
+new connections otherwise default to staged publishing. Only the explicit publication job receives OIDC permission; dependency
+installation and build jobs cannot request that identity. The publication job
+downloads and rechecks the same run’s archive without rebuilding it. No npm token
+secret is needed. See [npm's trusted publishing instructions](https://docs.npmjs.com/trusted-publishers/).
+The packaged repository URL must match this public repository; it is maintained
+in the package template, never patched into a prepared archive.
+
+Only after an explicit release decision for that version, rerun the manual
+workflow on `main` with **publish** checked. It builds, checks and publishes only
+that exact tarball with the `beta` tag through OIDC. It does not move `latest`,
+run a separate dist-tag command, publish workspace packages, or configure real
+Host accounts. npm can supply provenance automatically for eligible public
+repositories; OIDC on a private repository does not establish public attestation.
+Provenance does not prove independent native binary reproduction or complete
+product acceptance.
+
 ## Recover an interrupted source export
 
 Preserve the target, backups, journal and locks. Stop every executor for the

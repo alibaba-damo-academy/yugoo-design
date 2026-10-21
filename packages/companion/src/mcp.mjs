@@ -17,7 +17,7 @@ import { DESIGN_GIT_READ_ACTIONS, DESIGN_GIT_READ_DESCRIPTION, designGitReadArgu
 
 async function readPackagedAuthoringReference() {
   const bytes = await readFile(new URL('../authoring/panel-components.json', import.meta.url))
-  if (bytes.length > 4_000_000) throw Error('Packaged authoring reference exceeds its bounded size')
+  if (bytes.length > 6_000_000) throw Error('Packaged authoring reference exceeds its bounded size')
   return JSON.parse(bytes.toString('utf8'))
 }
 

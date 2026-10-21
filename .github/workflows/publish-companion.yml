@@ -1,0 +1,115 @@
+name: Prepare or publish Companion beta
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'New exact Companion beta version (for example 0.1.0-beta.19)'
+        required: true
+        type: string
+      publish:
+        description: 'Publish this prepared Companion archive to npm (requires release authorization)'
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: companion-npm-release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    # This workflow covers only Companion, not the separate DSH package chain.
+    if: github.repository == 'alibaba-damo-academy/yugoo-design'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      ONNXRUNTIME_NODE_INSTALL_CUDA: skip
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+      - name: Install the explicit OIDC-capable npm CLI
+        run: npm install --global npm@11.21.0 --registry=https://registry.npmjs.org
+      - name: Validate beta input before installation
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: node --input-type=module -e 'import {validateReleaseVersion} from "./scripts/prepare-companion-release.mjs"; validateReleaseVersion(process.env.RELEASE_VERSION)'
+      - name: Require main for an explicitly requested publication
+        if: inputs.publish == true && github.ref != 'refs/heads/main'
+        run: |
+          echo 'Companion publication requires the reviewed main branch.' >&2
+          exit 1
+      - name: Resolve the public source lock and install with reviewed build permissions
+        run: |
+          node --version
+          pnpm --version
+          npm --version
+          if [ ! -f pnpm-lock.yaml ]; then
+            pnpm install --lockfile-only --strict-peer-dependencies --registry=https://registry.npmjs.org
+          fi
+          pnpm install --frozen-lockfile --strict-peer-dependencies --registry=https://registry.npmjs.org
+      - name: Check release guards
+        run: node --test scripts/companion-release-ci.test.mjs scripts/known-browser-loader-proof.test.mjs scripts/companion-authoring-material.test.mjs
+      - name: Build the current source and pack the exact Companion candidate
+        id: prepare
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: node --import tsx scripts/prepare-companion-release.mjs prepare "$RELEASE_VERSION" "$RUNNER_TEMP/companion-release"
+      - name: Check the acquired native materials through Core
+        env:
+          YUGOO_NATIVE_GIT_ARTIFACT_ROOT: ${{ runner.temp }}/companion-release/native-artifacts
+        run: node --test scripts/companion-native-git.test.mjs
+      - name: Retain the prepared archive and evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: companion-${{ inputs.version }}-${{ github.sha }}
+          path: ${{ runner.temp }}/companion-release
+          if-no-files-found: error
+          retention-days: 7
+      - name: Retain the resolved public dependency lock
+        uses: actions/upload-artifact@v4
+        with:
+          name: companion-source-lock-${{ github.sha }}
+          path: pnpm-lock.yaml
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: prepare
+    if: inputs.publish == true && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+      - name: Install the explicit OIDC-capable npm CLI
+        run: npm install --global npm@11.21.0 --registry=https://registry.npmjs.org
+      - name: Download this run's prepared Companion archive
+        uses: actions/download-artifact@v4
+        with:
+          name: companion-${{ inputs.version }}-${{ github.sha }}
+          path: ${{ runner.temp }}/companion-release
+      - name: Verify the relocated archive against the original receipt
+        id: verify
+        run: node scripts/prepare-companion-release.mjs verify "$RUNNER_TEMP/companion-release/release-receipt.json" "$RUNNER_TEMP/companion-release"
+      - name: Publish only the exact prepared archive through npm OIDC
+        env:
+          RELEASE_TARBALL: ${{ steps.verify.outputs.tarball }}
+        run: npm publish "$RELEASE_TARBALL" --access public --tag beta --registry=https://registry.npmjs.org

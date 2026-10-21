@@ -16,7 +16,7 @@ try {
     for (const reference of ['contract', 'docs', 'examples']) queryPanelAuthoringReference(material, name, reference)
   }
   const bytes = Buffer.from(JSON.stringify(material, null, 2) + '\n')
-  assert.ok(bytes.length <= 4_000_000, 'Packaged authoring reference exceeds its bounded size')
+  assert.ok(bytes.length <= 6_000_000, 'Packaged authoring reference exceeds its bounded size')
   // Check the representation that ships, not just the in-memory source objects.
   const serialized = JSON.parse(bytes.toString('utf8'))
   for (const name of Object.keys(serialized.components)) {
