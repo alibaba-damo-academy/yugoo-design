@@ -24,7 +24,7 @@
 
 `release/public-source-policy.json` 是现有分类 authority；规则按顺序匹配，新文件必须有明确分类及理由。
 
-Companion 手动发布工作流 `.github/workflows/publish-companion.yml` 及其准备、原生材料获取与定点检查脚本按精确路径选入；维护者操作说明集中在 [CONTRIBUTING.md](../CONTRIBUTING.md#prepare-or-publish-the-companion-npm-beta)。它们与文档一起从固定提交导出，不在公开目录维护另一份。源码推送不触发 npm 发布，DSH 独立发布链不在该工作流范围内。
+Companion 发布工作流 `.github/workflows/publish-companion.yml`、发行版本文件 `release/companion-version.json` 及其准备、原生材料获取与定点检查脚本按精确路径选入；维护者操作说明集中在 [CONTRIBUTING.md](../CONTRIBUTING.md#prepare-or-publish-the-companion-npm-beta)。它们与文档一起从固定提交导出，不在公开目录维护另一份。发行版本文件更新并推到公开 `main` 后，工作流自动构建、校验并发布到 npm 的 `beta` 标签；不修改该文件的普通源码或文档推送不发包。手动入口保留用于仅构建检查或明确的发布重试。DSH 独立发布链不在该工作流范围内。
 
 | 内容 | 处理 |
 | --- | --- |

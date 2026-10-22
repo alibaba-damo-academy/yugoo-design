@@ -1,4 +1,4 @@
-/** Manual Companion CI preparation. The existing assembler owns package contents. */
+/** Companion CI version selection and preparation. The existing assembler owns package contents. */
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
@@ -11,6 +11,28 @@ export const COMPANION_REPOSITORY = 'git+https://github.com/alibaba-damo-academy
 export function validateReleaseVersion(version) {
   assert.match(version ?? '', /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)-beta\.(?:0|[1-9]\d*)$/u, 'Explicit canonical beta version required')
   return version
+}
+/** The committed version file is authoritative; manual input can only confirm it. */
+export async function selectCompanionRelease({ manifest, expectedVersion, checkPublished = false, fetchImpl = fetch }) {
+  assert.ok(manifest && typeof manifest === 'object' && !Array.isArray(manifest), 'Release version object required')
+  assert.deepEqual(Object.keys(manifest), ['version'], 'Only the tracked release version is supported')
+  const version = validateReleaseVersion(manifest.version)
+  if (expectedVersion !== undefined && expectedVersion !== '') {
+    assert.equal(validateReleaseVersion(expectedVersion), version, 'Manual version must match release/companion-version.json')
+  }
+  assert.equal(typeof checkPublished, 'boolean', 'Explicit publication lookup selection required')
+  if (!checkPublished) return { version, skip: false }
+  // Only a successful official-registry 404 means absent. Transport, HTTP and
+  // malformed metadata errors must fail, never authorize a new publication.
+  const response = await fetchImpl(`https://registry.npmjs.org/@yugoo-design%2fcompanion/${version}`, {
+    redirect: 'error', signal: AbortSignal.timeout(30000), headers: { accept: 'application/json' },
+  })
+  if (response.status === 404) return { version, skip: false }
+  assert.equal(response.status, 200, `Registry version lookup failed: HTTP ${response.status}`)
+  const published = await response.json()
+  assert.equal(published.name, '@yugoo-design/companion', 'Registry returned an unexpected package')
+  assert.equal(published.version, version, 'Registry returned an unexpected version')
+  return { version, skip: true }
 }
 export function validateReleaseManifest(manifest, version) {
   validateReleaseVersion(version)
@@ -93,13 +115,24 @@ export async function verifyReleaseArchive(receiptFile, { archiveDir = dirname(r
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const [command, ...args] = process.argv.slice(2)
-    if (command === 'verify') {
+    if (command === 'select') {
+      assert.equal(args.length, 0, 'Version selection reads only release/companion-version.json')
+      const lookup = process.env.CHECK_RELEASE_PUBLISHED ?? 'false'
+      assert.ok(['true', 'false'].includes(lookup), 'CHECK_RELEASE_PUBLISHED must be true or false')
+      const selected = await selectCompanionRelease({
+        manifest: JSON.parse(await readFile(new URL('../release/companion-version.json', import.meta.url))),
+        expectedVersion: process.env.EXPECTED_RELEASE_VERSION, checkPublished: lookup === 'true',
+      })
+      if (process.env.GITHUB_OUTPUT) await appendFile(process.env.GITHUB_OUTPUT, `version=${selected.version}\nskip=${selected.skip}\n`)
+      console.log(JSON.stringify({ ...selected, message: selected.skip ? 'Exact version already published; skipping' : 'Tracked version selected' }))
+    }
+    else if (command === 'verify') {
       const verified = await verifyReleaseArchive(resolve(args[0]), args[1] ? { archiveDir: resolve(args[1]) } : {})
       if (process.env.GITHUB_OUTPUT) await appendFile(process.env.GITHUB_OUTPUT, `tarball=${verified.tarball}\n`)
       console.log(JSON.stringify({ tarball: verified.tarball, sha256: verified.sha256, integrity: verified.integrity }))
     }
     else {
-      assert.equal(command, 'prepare', 'Use prepare VERSION ABS_OUTPUT [ABS_NATIVE_ROOT] or verify RECEIPT [ABS_ARCHIVE_DIR]')
+      assert.equal(command, 'prepare', 'Use select, prepare VERSION ABS_OUTPUT [ABS_NATIVE_ROOT] or verify RECEIPT [ABS_ARCHIVE_DIR]')
       const [version, output, nativeArtifactRoot] = args
       assert.ok(!nativeArtifactRoot || isAbsolute(nativeArtifactRoot), 'Absolute native artifacts required')
       const receipt = await prepareRelease({ version, output, nativeArtifactRoot })

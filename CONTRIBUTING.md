@@ -73,16 +73,27 @@ Source synchronization, Git push and npm publication are separate operations.
 
 ## Prepare or publish the Companion npm beta
 
-The manual [Companion workflow](.github/workflows/publish-companion.yml) covers only
-`@yugoo-design/companion`; the DSH package publication chain is separate. A source
-push does not run it. In **Actions → Prepare or publish Companion beta → Run
-workflow**, select the reviewed `main` commit and a new exact `X.Y.Z-beta.N`
-version. Leave **publish** unchecked for build/pack checks and the receipt summary
-in the run's logs. Prepared archives remain on the temporary runner; the workflow
-does not upload downloadable artifacts. Compilation, pack checks,
-installed runtime/Host acceptance and registry publication are separate results.
-The preparation receipt retains flags for checks that have not yet passed;
-review these before making a release decision.
+The [Companion workflow](.github/workflows/publish-companion.yml) covers only
+`@yugoo-design/companion`; the DSH package publication chain is separate.
+
+For a beta release, update `version` in
+[`release/companion-version.json`](release/companion-version.json) to a new exact
+`X.Y.Z-beta.N` value alongside the reviewed changes. Synchronizing that version
+change to the public repository's `main` automatically builds, checks and publishes
+the package with the `beta` tag. The version change is the release decision; no
+second click in Actions is required. Ordinary documentation or source pushes
+without a change to this file do not publish a package.
+
+For a build-only check, use **Actions → Prepare or publish Companion beta → Run
+workflow** and leave **publish** unchecked. Both automatic and manual runs use
+the version file in the selected source revision. The optional **version** input
+is an expected-version check: if supplied, it must match that file.
+The manual entry also remains available for an explicit publication retry.
+Read the receipt summary in the run's logs. Prepared archives remain on the
+temporary runner; the workflow does not upload downloadable artifacts.
+Compilation, pack checks, installed runtime/Host acceptance and registry
+publication are separate results. The preparation receipt retains flags for
+checks that have not yet passed.
 
 The workflow uses GitHub-hosted Ubuntu, Node `22.22.3`, pnpm `11.7.0` and explicit
 npm `11.21.0`. Public exports currently omit the internal lockfile: on that input,
@@ -109,9 +120,9 @@ Before the first authorized publication, an npm package maintainer configures
 its **Trusted Publisher** for GitHub organization `alibaba-damo-academy`,
 repository `yugoo-design`, workflow filename `publish-companion.yml` (filename
 only), and no environment name. Enable direct **npm publish** in Allowed actions;
-new connections otherwise default to staged publishing. The default dry-run job
-has no OIDC permission. Only an explicit publication request on this repository's
-`main` branch selects the publication job. That job installs dependencies, builds
+new connections otherwise default to staged publishing. The manual dry-run job
+has no OIDC permission. A release-version push or explicit manual publication
+request on this repository's `main` selects the publication job. That job installs dependencies, builds
 once, checks the archive against its receipt and publishes it on the same runner,
 without Artifact transfer. Its OIDC permission covers the whole job, including
 installation and build steps: publication therefore trusts the reviewed `main`
@@ -121,9 +132,10 @@ needed. See [npm's trusted publishing instructions](https://docs.npmjs.com/trust
 The packaged repository URL must match this public repository; it is maintained
 in the package template, never patched into a prepared archive.
 
-Only after an explicit release decision for that version, rerun the manual
-workflow on `main` with **publish** checked. It builds, checks and publishes only
-that exact tarball with the `beta` tag through OIDC. It does not move `latest`,
+Both automatic and manually requested publication build, check and publish only
+the exact prepared tarball with the `beta` tag through OIDC. An already published
+version is reported and skipped; a registry/network failure is not treated as an
+unused version. The workflow does not move `latest`,
 run a separate dist-tag command, publish workspace packages, or configure real
 Host accounts. npm can supply provenance automatically for eligible public
 repositories; OIDC on a private repository does not establish public attestation.

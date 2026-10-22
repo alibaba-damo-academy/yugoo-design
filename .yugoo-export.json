@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": "f7b01b1e05e12e3895023053ff3757ac577486df",
-  "policySha256": "0536324583dfa50f478a2cf609307206d0d0aec86a1298d81e8731c5e6dbce50",
+  "revision": "bc20f50ca29f5647d7c13dcee564ca05c2544471",
+  "policySha256": "d95f04682709ca33a794e93409fab592859d15ee31848ef8683335fd6cbd7815",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
       "sha256": "9689903cd86839d8805125d1c199b38ea0eb828e5171da23ca178a5c3ec20866",
@@ -76,7 +76,7 @@
       "mode": "100644"
     },
     ".github/workflows/publish-companion.yml": {
-      "sha256": "047b34c3f3325cc4ccb6541593517b57cc4e2813c7c7e477a62281be4dc5be9c",
+      "sha256": "96b2a4bf1edddc93f889733b1ae58866c85cb0b31b5150699d50725a07563e8e",
       "mode": "100644"
     },
     ".gitignore": {
@@ -88,7 +88,7 @@
       "mode": "100644"
     },
     "CONTRIBUTING.md": {
-      "sha256": "4535237b6b63d3b8fb9425db8325696f65b830bebae48ef94e95dd0ba4fa7d0a",
+      "sha256": "941ded81e6a28f3925557b6baad770163b8856ca822f64e231d71026ec069cfc",
       "mode": "100644"
     },
     "LICENSE": {
@@ -224,7 +224,7 @@
       "mode": "100644"
     },
     "docs/public-document-sync.md": {
-      "sha256": "b6b83375b3ad9a6894cd622e327ea30c1e2ec7845c70de9322263b2882eca741",
+      "sha256": "020082fe286b960bba686ca69afe1e3555c14f915cf9696d9cabb3a18a984991",
       "mode": "100644"
     },
     "docs/standalone-roadmap.md": {
@@ -8347,6 +8347,10 @@
       "sha256": "001570354b035774e1479065c8e793b7cfdc56e47d80e7417f2bec4c5951ddb5",
       "mode": "100644"
     },
+    "release/companion-version.json": {
+      "sha256": "a80482e771a60cf225e9ae777dd59409f55456edc15f06902c8024e91efa8d84",
+      "mode": "100644"
+    },
     "release/dsh-distribution-materials.json": {
       "sha256": "6f06e843a2755d9f334f049ff86498b91022a120664b9aea511d3844ccf5c79d",
       "mode": "100644"
@@ -8356,7 +8360,7 @@
       "mode": "100644"
     },
     "release/public-source-policy.json": {
-      "sha256": "607fafcf9191887e5448d11df63aff10828400cffed2c133d821feff600f3d1c",
+      "sha256": "fabc3c790e645a6e14989e90f8e62a7265693acb1374881bb3bec0d2230526df",
       "mode": "100644"
     },
     "release/public-source-test-selection.json": {
@@ -8448,7 +8452,7 @@
       "mode": "100644"
     },
     "scripts/companion-release-ci.test.mjs": {
-      "sha256": "eea9fa7b3e42a06c7dc92ee5a20b1c296f1a5451cba1296bbf1ee57e7ab2a2f6",
+      "sha256": "443db88fae0751b50a1f330c15efc2494fafd0b1feae83743b28d2e87098e0ee",
       "mode": "100644"
     },
     "scripts/companion-release-native-donor.mjs": {
@@ -8600,7 +8604,7 @@
       "mode": "100644"
     },
     "scripts/prepare-companion-release.mjs": {
-      "sha256": "589fdc00b0def418dd6f6df05852b2792ca290c3ebd264d4e64aed130b2c0287",
+      "sha256": "e6ab9e2f9916f4078ff463f6b98b974e58636fb1319515e6442bc6d65de27917",
       "mode": "100644"
     },
     "scripts/probe-companion-pica-worker.mjs": {

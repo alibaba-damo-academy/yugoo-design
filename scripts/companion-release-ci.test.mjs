@@ -4,14 +4,72 @@ import { mkdtemp, mkdir, readFile, writeFile, rm, access } from 'node:fs/promise
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createHash } from 'node:crypto'
+import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import YAML from 'yaml'
-import { validateReleaseVersion, validateReleaseManifest, validatePackInventory, verifyReleaseArchive, COMPANION_REPOSITORY } from './prepare-companion-release.mjs'
+import { validateReleaseVersion, selectCompanionRelease, validateReleaseManifest, validatePackInventory, verifyReleaseArchive, COMPANION_REPOSITORY } from './prepare-companion-release.mjs'
 import { NATIVE_DONOR, stageNativeDonor } from './companion-release-native-donor.mjs'
 const read = path => readFile(new URL('../' + path, import.meta.url), 'utf8')
 const version = '0.1.0-beta.19'
 test('only explicit canonical beta versions reach the builder', () => {
   assert.equal(validateReleaseVersion(version), version)
   for (const value of [undefined, 'latest', 'beta', '1.0.0', '1.0.0-rc.1', '1.0.0-beta.01', '01.0.0-beta.1', '1.0.0-beta.1+build', '1.0.0-beta.1\n', '$(id)']) assert.throws(() => validateReleaseVersion(value))
+})
+test('the single tracked version is authoritative for automatic and manual selection', async () => {
+  const manifest = JSON.parse(await read('release/companion-version.json'))
+  validateReleaseVersion(manifest.version)
+  const fetchImpl = () => assert.fail('dry-run must not query publication state')
+  for (const expectedVersion of [undefined, '', manifest.version]) {
+    assert.deepEqual(await selectCompanionRelease({ manifest, expectedVersion, fetchImpl }), { version: manifest.version, skip: false })
+  }
+  for (const bad of [undefined, null, [], {}, { version: 'latest' }, { ...manifest, publish: true }]) {
+    await assert.rejects(selectCompanionRelease({ manifest: bad, fetchImpl }))
+  }
+  for (const expectedVersion of ['latest', '$(id)', '999.0.0-beta.1']) {
+    await assert.rejects(selectCompanionRelease({ manifest, expectedVersion, fetchImpl }))
+  }
+  await assert.rejects(selectCompanionRelease({ manifest, checkPublished: 'true', fetchImpl }))
+})
+test('publication lookup skips only an exact existing version and only 404 means absent', async () => {
+  const manifest = { version }, calls = []
+  const fetchImpl = async (url, options) => {
+    calls.push({ url, options })
+    return { status: 200, json: async () => ({ name: '@yugoo-design/companion', version }) }
+  }
+  assert.deepEqual(await selectCompanionRelease({ manifest, checkPublished: true, fetchImpl }), { version, skip: true })
+  assert.equal(calls.length, 1)
+  assert.equal(calls[0].url, `https://registry.npmjs.org/@yugoo-design%2fcompanion/${version}`)
+  assert.equal(calls[0].options.redirect, 'error')
+  assert.ok(calls[0].options.signal instanceof AbortSignal)
+  assert.deepEqual(await selectCompanionRelease({ manifest, checkPublished: true,
+    fetchImpl: async () => ({ status: 404, json: () => assert.fail('404 body is not package metadata') }) }), { version, skip: false })
+  for (const status of [301, 401, 403, 429, 500, 503]) {
+    await assert.rejects(selectCompanionRelease({ manifest, checkPublished: true,
+      fetchImpl: async () => ({ status }) }), /Registry version lookup failed/)
+  }
+  await assert.rejects(selectCompanionRelease({ manifest, checkPublished: true,
+    fetchImpl: async () => { throw new Error('network unavailable') } }), /network unavailable/)
+  await assert.rejects(selectCompanionRelease({ manifest, checkPublished: true,
+    fetchImpl: async () => ({ status: 200, json: async () => { throw new Error('bad metadata JSON') } }) }), /bad metadata JSON/)
+  for (const published of [{}, { name: '@foreign/package', version }, { name: '@yugoo-design/companion', version: '0.1.0-beta.16' }]) {
+    await assert.rejects(selectCompanionRelease({ manifest, checkPublished: true,
+      fetchImpl: async () => ({ status: 200, json: async () => published }) }))
+  }
+})
+test('the pre-install selector reads the tracked file and writes validated action outputs', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'companion-ci-select-')); t.after(() => rm(root, { recursive: true, force: true }))
+  const manifest = JSON.parse(await read('release/companion-version.json')), output = join(root, 'outputs')
+  const script = fileURLToPath(new URL('./prepare-companion-release.mjs', import.meta.url))
+  const env = { ...process.env, EXPECTED_RELEASE_VERSION: manifest.version, CHECK_RELEASE_PUBLISHED: 'false', GITHUB_OUTPUT: output }
+  const selected = spawnSync(process.execPath, [script, 'select'], { env, cwd: root, encoding: 'utf8' })
+  assert.equal(selected.status, 0, selected.stderr)
+  assert.equal(JSON.parse(selected.stdout).version, manifest.version)
+  assert.equal(await readFile(output, 'utf8'), `version=${manifest.version}\nskip=false\n`)
+  for (const extra of [{ EXPECTED_RELEASE_VERSION: '$(id)' }, { CHECK_RELEASE_PUBLISHED: 'yes' }]) {
+    const rejected = spawnSync(process.execPath, [script, 'select'], { env: { ...env, ...extra }, cwd: root, encoding: 'utf8' })
+    assert.equal(rejected.status, 1)
+    assert.equal(await readFile(output, 'utf8'), `version=${manifest.version}\nskip=false\n`, 'failed selection cannot emit new outputs')
+  }
 })
 test('release package identity and repository come from the maintained template', async () => {
   const template = JSON.parse(await read('docs/companion-npm-fixture-2026-09-30.json'))
@@ -48,27 +106,32 @@ test('donor size/integrity failure writes no artifact directory', async t => {
   for (const archive of [Buffer.from('partial donor'), Buffer.alloc(NATIVE_DONOR.bytes)]) await assert.rejects(stageNativeDonor({ workspace: root, destination, archive }), /archive (size|integrity) changed/)
   await assert.rejects(access(destination), { code: 'ENOENT' })
 })
-test('workflow remains manual, default dry-run and exact Companion archive publishing', async () => {
+test('only tracked version pushes publish automatically; manual dry-run and exact archive guards remain', async () => {
   const text = await read('.github/workflows/publish-companion.yml'), workflow = YAML.parse(text)
-  assert.deepEqual(Object.keys(workflow.on), ['workflow_dispatch'])
+  assert.deepEqual(Object.keys(workflow.on), ['push', 'workflow_dispatch'])
+  assert.deepEqual(workflow.on.push, { branches: ['main'], paths: ['release/companion-version.json'] })
   assert.equal(workflow.on.workflow_dispatch.inputs.publish.default, false)
   assert.equal(workflow.on.workflow_dispatch.inputs.publish.type, 'boolean')
-  assert.equal(workflow.on.workflow_dispatch.inputs.version.required, true)
+  assert.equal(workflow.on.workflow_dispatch.inputs.version.required, false)
   assert.deepEqual(workflow.permissions, { contents: 'read' })
   assert.deepEqual(Object.keys(workflow.jobs), ['dryrun', 'publish'])
   const job = workflow.jobs.dryrun
   assert.equal(job.permissions, undefined)
-  assert.equal(job.if, "github.repository == 'alibaba-damo-academy/yugoo-design' && (inputs.publish != true || github.ref != 'refs/heads/main')")
+  assert.equal(job.if, "github.repository == 'alibaba-damo-academy/yugoo-design' && github.event_name == 'workflow_dispatch' && (inputs.publish != true || github.ref != 'refs/heads/main')")
   const publisher = workflow.jobs.publish
-  assert.equal(publisher.if, "github.repository == 'alibaba-damo-academy/yugoo-design' && inputs.publish == true && github.ref == 'refs/heads/main'")
+  assert.equal(publisher.if, "github.repository == 'alibaba-damo-academy/yugoo-design' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' && inputs.publish == true)")
   assert.deepEqual(publisher.permissions, { contents: 'read', 'id-token': 'write' })
   // The exact expressions above use the shared JavaScript/GitHub boolean subset.
   // Exercise fork, branch, tag and explicit/default publication routing.
   for (const repository of ['alibaba-damo-academy/yugoo-design', 'example/fork']) {
     for (const ref of ['refs/heads/main', 'refs/heads/feature', 'refs/tags/v0.1.0-beta.19']) {
-      for (const publish of [false, true]) {
-        const selected = Object.entries(workflow.jobs).filter(([, row]) => new Function('github', 'inputs', `return (${row.if})`)({ repository, ref }, { publish })).map(([id]) => id)
-        assert.deepEqual(selected, repository === 'example/fork' ? [] : [publish && ref === 'refs/heads/main' ? 'publish' : 'dryrun'])
+      for (const event_name of ['push', 'workflow_dispatch', 'pull_request']) {
+        for (const publish of [undefined, false, true]) {
+          const selected = Object.entries(workflow.jobs).filter(([, row]) => new Function('github', 'inputs', `return (${row.if})`)({ repository, ref, event_name }, { publish })).map(([id]) => id)
+          const expected = repository === 'example/fork' ? [] : event_name === 'workflow_dispatch'
+            ? [publish && ref === 'refs/heads/main' ? 'publish' : 'dryrun'] : event_name === 'push' && ref === 'refs/heads/main' ? ['publish'] : []
+          assert.deepEqual(selected, expected)
+        }
       }
     }
   }
@@ -102,7 +165,7 @@ test('workflow remains manual, default dry-run and exact Companion archive publi
   assert.ok([job, publisher].every(row => row.steps.some(step => step.run?.includes('npm install --global npm@11.21.0'))))
   const publish = publisher.steps.filter(x => x.run?.includes('npm publish'))
   assert.equal(publish.length, 1)
-  assert.equal(publish[0].if, "github.job == 'publish'")
+  assert.equal(publish[0].if, "github.job == 'publish' && steps.release.outputs.skip != 'true'")
   assert.equal(publish[0].env.RELEASE_TARBALL, '${{ steps.verify.outputs.tarball }}')
   assert.equal(publish[0].run, 'npm publish "$RELEASE_TARBALL" --access public --tag beta --registry=https://registry.npmjs.org')
   const rejection = job.steps.find(step => step.if?.includes("github.ref != 'refs/heads/main'"))
@@ -113,12 +176,20 @@ test('workflow remains manual, default dry-run and exact Companion archive publi
   assert.match(install.run, /pnpm install --frozen-lockfile --strict-peer-dependencies --registry=https:\/\/registry.npmjs.org/u)
   const prepare = job.steps.filter(step => step.run?.includes('prepare-companion-release.mjs prepare '))
   assert.equal(prepare.length, 1, 'Build and pack exactly once per selected job')
-  assert.equal(prepare[0].env.RELEASE_VERSION, '${{ inputs.version }}')
+  assert.equal(prepare[0].env.RELEASE_VERSION, '${{ steps.release.outputs.version }}')
   assert.equal(prepare[0].run, 'node --import tsx scripts/prepare-companion-release.mjs prepare "$RELEASE_VERSION" "$RUNNER_TEMP/companion-release"')
   const native = job.steps.find(step => step.run === 'node --test scripts/companion-native-git.test.mjs')
   assert.equal(native.env.YUGOO_NATIVE_GIT_ARTIFACT_ROOT, '${{ runner.temp }}/companion-release/native-artifacts')
   const verify = job.steps.find(step => step.id === 'verify')
   assert.equal(verify.run, 'node scripts/prepare-companion-release.mjs verify "$RUNNER_TEMP/companion-release/release-receipt.json"')
+  const selector = job.steps.find(step => step.id === 'release')
+  assert.equal(selector.run, 'node scripts/prepare-companion-release.mjs select')
+  assert.equal(selector.env.EXPECTED_RELEASE_VERSION, '${{ inputs.version }}')
+  assert.equal(selector.env.CHECK_RELEASE_PUBLISHED, "${{ github.job == 'publish' }}")
+  assert.ok(job.steps.indexOf(selector) < job.steps.indexOf(install))
+  for (const step of job.steps.filter(step => step.run && ![selector, rejection, publish[0]].includes(step))) {
+    assert.equal(step.if, "steps.release.outputs.skip != 'true'", 'published versions skip all preparation/install steps')
+  }
   assert.ok(job.steps.indexOf(rejection) < job.steps.indexOf(install))
   assert.ok(job.steps.indexOf(install) < job.steps.indexOf(prepare[0]))
   assert.ok(job.steps.indexOf(prepare[0]) < job.steps.indexOf(native))

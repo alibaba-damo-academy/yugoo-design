@@ -1,11 +1,14 @@
 name: Prepare or publish Companion beta
 
 on:
+  push:
+    branches: [main]
+    paths: [release/companion-version.json]
   workflow_dispatch:
     inputs:
       version:
-        description: 'New exact Companion beta version (for example 0.1.0-beta.19)'
-        required: true
+        description: 'Optional expected version; must match release/companion-version.json'
+        required: false
         type: string
       publish:
         description: 'Publish this prepared Companion archive to npm (requires release authorization)'
@@ -23,8 +26,8 @@ concurrency:
 jobs:
   dryrun:
     # This workflow covers only Companion, not the separate DSH package chain.
-    # Invalid publication refs enter this unprivileged job and fail explicitly.
-    if: github.repository == 'alibaba-damo-academy/yugoo-design' && (inputs.publish != true || github.ref != 'refs/heads/main')
+    # Manual recovery/dry-runs stay available; invalid publication refs fail here.
+    if: github.repository == 'alibaba-damo-academy/yugoo-design' && github.event_name == 'workflow_dispatch' && (inputs.publish != true || github.ref != 'refs/heads/main')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env: &companion-env
@@ -43,18 +46,22 @@ jobs:
         with:
           node-version: 22.22.3
           package-manager-cache: false
-      - name: Install the explicit OIDC-capable npm CLI
-        run: npm install --global npm@11.21.0 --registry=https://registry.npmjs.org
-      - name: Validate beta input before installation
+      - name: Select the tracked version and skip an existing publication
+        id: release
         env:
-          RELEASE_VERSION: ${{ inputs.version }}
-        run: node --input-type=module -e 'import {validateReleaseVersion} from "./scripts/prepare-companion-release.mjs"; validateReleaseVersion(process.env.RELEASE_VERSION)'
+          EXPECTED_RELEASE_VERSION: ${{ inputs.version }}
+          CHECK_RELEASE_PUBLISHED: ${{ github.job == 'publish' }}
+        run: node scripts/prepare-companion-release.mjs select
+      - name: Install the explicit OIDC-capable npm CLI
+        if: steps.release.outputs.skip != 'true'
+        run: npm install --global npm@11.21.0 --registry=https://registry.npmjs.org
       - name: Require main for an explicitly requested publication
         if: inputs.publish == true && github.ref != 'refs/heads/main'
         run: |
           echo 'Companion publication requires the reviewed main branch.' >&2
           exit 1
       - name: Resolve the public source lock and install with reviewed build permissions
+        if: steps.release.outputs.skip != 'true'
         run: |
           node --version
           pnpm --version
@@ -64,27 +71,31 @@ jobs:
           fi
           pnpm install --frozen-lockfile --strict-peer-dependencies --registry=https://registry.npmjs.org
       - name: Check release guards
+        if: steps.release.outputs.skip != 'true'
         run: node --test scripts/companion-release-ci.test.mjs scripts/known-browser-loader-proof.test.mjs scripts/companion-authoring-material.test.mjs
       - name: Build the current source and pack the exact Companion candidate
+        if: steps.release.outputs.skip != 'true'
         id: prepare
         env:
-          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
         run: node --import tsx scripts/prepare-companion-release.mjs prepare "$RELEASE_VERSION" "$RUNNER_TEMP/companion-release"
       - name: Check the acquired native materials through Core
+        if: steps.release.outputs.skip != 'true'
         env:
           YUGOO_NATIVE_GIT_ARTIFACT_ROOT: ${{ runner.temp }}/companion-release/native-artifacts
         run: node --test scripts/companion-native-git.test.mjs
       - name: Verify the prepared archive against its receipt
+        if: steps.release.outputs.skip != 'true'
         id: verify
         run: node scripts/prepare-companion-release.mjs verify "$RUNNER_TEMP/companion-release/release-receipt.json"
       - name: Publish only the exact prepared archive through npm OIDC
-        if: github.job == 'publish'
+        if: github.job == 'publish' && steps.release.outputs.skip != 'true'
         env:
           RELEASE_TARBALL: ${{ steps.verify.outputs.tarball }}
         run: npm publish "$RELEASE_TARBALL" --access public --tag beta --registry=https://registry.npmjs.org
 
   publish:
-    if: github.repository == 'alibaba-damo-academy/yugoo-design' && inputs.publish == true && github.ref == 'refs/heads/main'
+    if: github.repository == 'alibaba-damo-academy/yugoo-design' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' && inputs.publish == true)
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     # Publication deliberately trusts this reviewed job's install/build steps too.

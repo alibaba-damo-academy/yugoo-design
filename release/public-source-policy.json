@@ -362,7 +362,7 @@
       "kind": "file",
       "path": "scripts/companion-release-ci.test.mjs",
       "action": "include",
-      "reason": "Focused synthetic refusal tests for manual publication guards, archive identity and exact native dependency approvals; not installed Host or OIDC acceptance."
+      "reason": "Focused synthetic tests for version-triggered and manual publication routing, archive identity and exact native dependency approvals; not installed Host or OIDC acceptance."
     },
     {
       "kind": "file",
@@ -380,7 +380,13 @@
       "kind": "file",
       "path": ".github/workflows/publish-companion.yml",
       "action": "include",
-      "reason": "Manual Companion-only OIDC build/pack/publication workflow, default publish false; no token, push trigger, Host configuration or DSH chain publication."
+      "reason": "Companion-only OIDC build/pack/publication workflow: public main release-version changes publish automatically; manual build-only and publication retry remain explicit. No stored token, Host configuration or DSH chain publication."
+    },
+    {
+      "kind": "file",
+      "path": "release/companion-version.json",
+      "action": "include",
+      "reason": "Maintained exact Companion beta release version; changing this public main file requests the existing OIDC build, verification and publication workflow. Not a Kit, Bundle or native host suite version."
     },
     {
       "kind": "prefix",
