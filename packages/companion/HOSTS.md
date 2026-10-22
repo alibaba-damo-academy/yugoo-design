@@ -8,8 +8,9 @@ are separate outcomes.
 
 ## Agent-led installation and updates
 
-The default route is **one prompt in the current host → exact npm acquisition →
-that host's installation adapter → normal host startup and functional checks**.
+The default route is **one prompt in the current host → reuse a matching runtime
+or acquire an exact npm version → that host's installation adapter → normal host
+startup and functional checks**.
 Users install Yugoo Design, not separate DSH and Companion products. Only the
 current or explicitly selected host is targeted, not every application on the
 machine. The Agent chooses the host from its actual execution context or an
@@ -47,6 +48,19 @@ CPU policy does not eliminate the separate embedding-model download/cache step.
 GPU support and configurable or user-local model selection remain future work;
 the default product does not provision a GPU environment.
 
+**Registry readback, 2026-10-21 UTC:** Companion `0.1.0-beta.19` was published;
+`beta` selected beta.19 and `latest` selected beta.10. An unqualified install can
+therefore select an older version. Resolve the chosen channel once for a new
+acquisition; an exact version is the input to installation. Publication does not
+update an already registered host. Current release and candidate scopes are
+recorded in [preview status](../../docs/wiki/preview-status.md#current-release-and-use).
+
+Before downloading, inspect any retained exact installation and its runtime
+receipt. Reuse it when its version, host adapter and runtime satisfy the request.
+If only the native material or loaded host session is stale, use the owning
+refresh/import/reload steps below. A required new npm version still belongs in a
+new retained directory; preserve the previous one and its receipts.
+
 **Historical registry check, 2026-10-17 UTC:** metadata is verified for
 `@yugoo-design/companion@0.1.0-beta.3` and all eleven owned DSH packages at
 `0.1.0-beta.2`, including `@yugoo-design/yugoo-design-git-native`.
@@ -58,9 +72,9 @@ Companion and the original ten DSH packages; the native Git helper's `latest`
 was beta.2. Eight of the twelve archives were fully downloaded and matched their
 digests. The native Git helper, Panel, Web App provider and Companion returned
 HTTP 200 but timed out after 90 seconds with partial bodies (`curl` exit 28);
-these are incomplete downloads, not digest mismatches. Full twelve-archive
-verification is incomplete; cold registry installation and native-host
-installation/update acceptance remain unverified. The separate cache-only
+these are incomplete downloads, not digest mismatches. At that checkpoint, full twelve-archive
+verification was incomplete; cold registry installation and native-host
+installation/update acceptance remained unverified. The separate cache-only
 Companion installation result is bounded in the [preview status](../../docs/wiki/preview-status.md).
 
 **Historical registry check, 2026-10-14:** `@yugoo-design/companion@0.1.0-beta.2` and the ten
@@ -94,7 +108,9 @@ ONNXRUNTIME_NODE_INSTALL_CUDA=skip，并保持依赖生命周期脚本开启；
 后续需要取依赖的宿主安装子进程也使用该设置。不要用全局 ignore-scripts
 代替此策略，不修改其他环境值，临时 shell 设置在操作后恢复。
 从 https://registry.npmjs.org 查询 @yugoo-design/companion 的 beta 版本，
-记录解析出的精确版本和完整性，将它安装到独立、长期保留的版本目录。
+记录解析出的精确版本和完整性。先检查已有长期保留的安装及回执；
+版本、宿主适配器和运行时满足请求时复用，只需刷新原生材料或重载会话时不重复取包。
+需要新版本时，将它安装到新的独立、长期保留的版本目录。
 先阅读随包 README 和 design-system --help，再按当前宿主的
 安装路径完成所需组件的安装或更新；不要让我分别安装 DSH 和 Companion。
 默认随主插件提供 Web App Kit，无需另装；保留已有项目的固定套件引用。
@@ -117,8 +133,11 @@ host-installation children that acquire dependencies too. Do not substitute
 blanket ignore-scripts, change other environment values or leave a temporary
 shell setting behind.
 Resolve @yugoo-design/companion's beta channel at https://registry.npmjs.org,
-record its exact version and integrity, and acquire it in a separate durable
-version directory. Read the bundled README and design-system --help,
+record its exact version and integrity, then inspect retained installations and
+receipts. Reuse a matching version with the required host adapter and runtime;
+refreshing native materials or reloading a stale session does not require another
+download. Acquire a required new version in a new durable version directory.
+Read the bundled README and design-system --help,
 then install or update all components needed by this host. Do not ask me to
 install DSH and Companion as separate products.
 The main plugin includes Web App Kit by default, with no separate Kit installation;
@@ -153,7 +172,8 @@ Agent follows the acquired version's actual help rather than inventing flags.
 
 > Install or update Yugoo Design in this Codex CLI environment. First verify
 > the selected beta of `@yugoo-design/companion` on `https://registry.npmjs.org`
-> and acquire its resolved exact version into a durable version directory. Inspect the
+> and reuse a matching retained runtime or acquire its resolved exact version into
+> a new durable version directory. Inspect the
 > installed `design-system --help`, current Codex version and existing registration.
 > Use its Codex `install --host codex` route: when the direct transaction is
 > supported it orchestrates the existing plan, runtime check and apply;
@@ -170,7 +190,8 @@ See [Codex registration and recovery](README.md#persistent-registration-transact
 
 > Install or update Yugoo Design in this Claude Code CLI environment. Verify
 > the selected beta of `@yugoo-design/companion` on `https://registry.npmjs.org`,
-> then acquire its resolved exact version into a durable version directory. Inspect the
+> then reuse a matching retained runtime or acquire its resolved exact version into
+> a new durable version directory. Inspect the
 > installed installer help, actual Claude executable and current user-scope
 > registration. Use `design-system install --host claude-code` and its supported
 > owned-receipt update/recovery route, preserving the previous installation.
@@ -185,7 +206,8 @@ See [Claude Code persistent registration](README.md#claude-code-and-qoder-cli-pe
 
 > Install or update Yugoo Design in this Qoder CLI environment. Verify and acquire
 > the selected beta of `@yugoo-design/companion` from `https://registry.npmjs.org`
-> at its resolved exact version into a durable version directory. Inspect
+> at its resolved exact version: reuse a matching retained runtime or acquire it
+> into a new durable version directory. Inspect
 > the installed installer help, actual Qoder executable/profile and existing
 > registration. Use `design-system install --host qoder`; an owned same-version
 > registration is a no-op, while a different version requires the reported native
@@ -200,8 +222,9 @@ See [Qoder persistent registration](README.md#claude-code-and-qoder-cli-persiste
 ### Install or update: DeepSeek Harness
 
 > Install or update Yugoo Design in this existing official DeepSeek Harness.
-> Resolve and acquire the selected beta of `@yugoo-design/companion` from
-> `https://registry.npmjs.org` as the product installer. Check its
+> Resolve the selected beta of `@yugoo-design/companion` from
+> `https://registry.npmjs.org` as the product installer. Reuse a matching retained
+> runtime or acquire the exact version in a new durable directory. Check its
 > `release-hosts.json` for the exact DSH aggregate and verify its complete exact
 > dependency set is available, including any declared native Git helper. Do not
 > install internal packages manually or change external dependency pins.
@@ -220,15 +243,19 @@ See [DSH installer and recovery limits](../dsh/README.md#candidate-npm-installer
 
 > Install or update Yugoo Design in this QwenWork desktop environment. Verify
 > and resolve the selected beta of `@yugoo-design/companion` from
-> `https://registry.npmjs.org`, acquiring the exact version in a durable directory. Use
+> `https://registry.npmjs.org`. Reuse a matching retained runtime or acquire the exact
+> version in a new durable directory. Use
 > the installed `install --host qwenwork` route when exposed by its help,
 > or beta.1's `prepare-desktop --target qwenwork`, with actual Windows
 > Node/runtime paths, verified executable/worker pins, and an external output
 > directory. Keep the npm version separate from the numeric native suite version;
 > an update requires the previous preparation receipt and a greater suite version.
-> Prepare the suite ZIP and connector configuration. Use the host's supported
-> importer, requesting only the necessary native GUI confirmation; preserve the
-> organization's separate-connector policy. After normal restart, confirm the
+> Prepare the suite ZIP and connector configuration. The default ZIP contains
+> its MCP connector; the separate JSON is an alternative for a permitted
+> separate-connector arrangement. Enable only one `design-system` connector,
+> using `--separate-mcp` when a connector-free suite is required. Use the host's
+> supported importer, requesting only the necessary native GUI confirmation;
+> preserve the organization's connector policy. After normal restart, confirm the
 > actually loaded `yugoo` version, MCP tools, original conversation, Panel
 > save/reopen and saved-edit consumption. Preparation alone is not installation.
 
@@ -244,7 +271,8 @@ are separate from installation, desktop input and KAG acceptance.
 
 > Install or update Yugoo Design in this WorkBuddy desktop environment. Verify
 > and resolve the selected beta of `@yugoo-design/companion` from
-> `https://registry.npmjs.org`, acquiring the exact version in a durable directory. Use
+> `https://registry.npmjs.org`. Reuse a matching retained runtime or acquire the exact
+> version in a new durable directory. Use
 > the installed `install --host workbuddy` route when exposed by its help,
 > or beta.1's `prepare-desktop --target workbuddy`, with actual Windows
 > Node paths and an external stable market directory. Keep the npm version
@@ -258,6 +286,40 @@ are separate from installation, desktop input and KAG acceptance.
 
 See [desktop preparation](README.md#desktop-npm-package-preparation) and
 [WorkBuddy's owning guide](hosts/workbuddy/README.md).
+
+## Disable, uninstall and retained files
+
+Disabling a plugin, removing its native registration and deleting its retained
+files are separate operations. Identify the actual host, profile/scope and owned
+installation first. Use the acquired version's help; an update failure does not
+call for a blanket uninstall. For Codex and Claude Code, run the following entry
+from the **retained npm installation that produced the successful receipt**, using
+its `design-system` executable, actual native executable and matching profile:
+
+| Host | Supported removal entry |
+| --- | --- |
+| Codex CLI | `design-system uninstall --host codex --codex-executable ABSOLUTE_CODEX --receipt OWNED_SUCCESS_RECEIPT`. The installer verifies ownership and the receipt before removing its registration. |
+| Claude Code CLI | `design-system uninstall --host claude-code --claude-executable ABSOLUTE_CLAUDE --receipt OWNED_SUCCESS_RECEIPT`. Keep the receipt's user profile and user scope; unrelated plugins are preserved. |
+| Qoder CLI | Use the selected native Qoder CLI's plugin management. Read back the installed selector and scope (`yugoo-design@local`, user scope for this adapter), then follow that CLI version's uninstall help for that exact entry. The product installer does **not** implement `uninstall --host qoder`. Keep the registration receipt and old runtime for inspection or re-registration. |
+| QwenWork | Disable or remove the owned `yugoo-design` expert suite through the native Expert Kits interface. If a separate `design-system` MCP connector was imported for this installation, also disable/remove that owned connector when removing the integration. Do not leave an old suite's Hooks or a duplicate connector enabled. |
+| WorkBuddy | Disable or remove the owned `yugoo-design` plugin through the native plugin manager. Remove its marketplace source only when no other retained installation needs it; keep the external market/runtime while still referenced. |
+| DSH | Use the official host's plugin/profile management for the exact installed aggregate and selected existing profile. This product adapter provides install plan/apply and retained partial-state diagnostics, **not** a general `uninstall --host dsh` or automatic rollback. Inspect the recorded state and use the host-supported removal procedure. |
+
+See [Codex/Claude transaction constraints](README.md#persistent-registration-transactions),
+[Qoder registration](README.md#claude-code-and-qoder-cli-persistent-native-registration)
+and [DSH recovery limits](../dsh/README.md#candidate-npm-installer-dsh-route-and-recovery-limits).
+An interrupted transaction uses its owning recovery procedure, not a successful
+installation's uninstall receipt. Installer `recover` concerns registration
+transactions; it is separate from the current project command `migrate`.
+
+After native removal, reload the host normally as required and confirm the owned
+Skill, Hooks and MCP entry are no longer active. Registration removal alone does
+not prove a previously opened Companion service stopped; close only the exact
+owned service if it remains running. Preserve Design Projects, their Git history
+and project records, models/credentials and unrelated registrations. npm runtimes,
+preparation receipts and embedding caches are retained separately; do not remove
+them while another host, running service or recovery receipt still needs them.
+Deleting those files is not an implicit part of disabling the integration.
 
 ## Product and invocation names
 
@@ -434,8 +496,9 @@ reads the shared G/R/A profiles and submits results through the existing review
 validation and Git record path; this mode does not force a synchronous child
 or a native background run descriptor. Keep asynchronous manual review when the
 host can leave the main conversation available. Focused source regressions have
-passed; package delivery and actual host acceptance remain pending. See the
-[current status](../../docs/wiki/hosts.md#后台能力与评审降级).
+passed. The dated user-confirmed foreground flows and exact candidate scopes are
+recorded in the [current status](../../docs/wiki/hosts.md#后台能力与评审降级);
+they do not establish package delivery or acceptance for every release and host.
 
 Core owns project state, validation, publication, Git and handoff semantics.
 Panel owns shared UI, including saving and the composer. Companion's
@@ -499,8 +562,9 @@ Host-specific setup, evidence and limits belong to the owning guides:
 
 - [QwenWork](hosts/qwenwork/README.md): suite/MCP separation, native Hook events,
   experimental desktop user input, normal-start preconfiguration, KAG status.
-- [WorkBuddy](hosts/workbuddy/README.md): official plugin/MCP ecosystem, local
-  discovery probe, pending exact-session transport and native acceptance.
+- [WorkBuddy](hosts/workbuddy/README.md): official plugin/MCP ecosystem and dated
+  discovery, exact-session transport and native acceptance records; each retains
+  its tested scope and remaining limits.
 
 These are source and maintenance entries, never alternate host launchers. A
 source probe, installation, live input, durable save and KAG acceptance remain

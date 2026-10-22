@@ -159,7 +159,7 @@ the server does not claim to prove every change of human intent from host logs.
 
 ## Design projects and persistence
 
-A **Design Project** is the durable unit that contains one designed product's state. It is independent of an Agent Host working directory. DSH sessions can open it today; future Codex and Claude Code adapters must open the same format without changing its identity or persistence semantics. A plugin-owned binding store records which project a Host conversation selected, keyed by the Host Provider identity and opaque Host conversation id. This store lives outside every Design Project because it is the bootstrap authority used to find that project; it contains no Design File or Kit content. Every Design File, panel operation, Bundle execution, advisory input pin, and DesignJournal association resolves the selected project through that binding rather than deriving a path from the Host's current working directory. Advisory publications and dispositions are scoped by both project identity and Host conversation identity. Switching projects cancels queued analysis for the prior selection and clears its review projection; opening an existing project in a new conversation restores Design Files but does not inherit another conversation's review queue.
+A **Design Project** is the durable unit that contains one designed product's state. It is independent of an Agent Host working directory. DSH sessions can open it today; future Codex and Claude Code adapters must open the same format without changing its identity or persistence semantics. A plugin-owned binding store records which project a Host conversation selected, keyed by the Host Provider identity and opaque Host conversation id. This store lives outside every Design Project because it is the bootstrap authority used to find that project; it contains no Design File or Kit content. Every Design File, panel operation, Bundle execution, advisory input pin, and DesignJournal association resolves the selected project through that binding rather than deriving a path from the Host's current working directory. Persisted advisory publications, human dispositions and review policy belong to the Design Project and travel with its Git history; active review queues, native execution bindings and notification ownership remain Host-conversation scoped. Switching projects cancels queued analysis for the prior selection and clears its review projection; opening an existing project in a new conversation restores Design Files but does not inherit another conversation's review queue.
 
 Each new managed Design Project is an independent Git repository with this initial layout:
 
@@ -191,7 +191,15 @@ archive. Copying a project does not copy permission to resume native execution.
 This change does not automatically import or migrate old external records.
 Missing project records mean unassessed or absent data, not permission to recover
 scores from chat text or an old Host profile. Existing design content can use the
-ordinary explicit `recover` operation when needed.
+ordinary explicit `migrate` operation when needed.
+
+`/yugoo migrate <path>` creates a new current-format project from an existing
+Design Files source, leaving the source files, identity and history unchanged.
+It stages only Bundles recognized by the selected Kit; their ordinary executors
+validate, adapt when necessary and publish in the new target. It does not restore
+the source's complete Git or Host execution history. Unknown Bundles remain in
+the source rather than being silently imported. `reconstruct` instead derives
+design from non-Design materials and refuses a Design Files source.
 
 The shared Core creation path writes a product-level `README.md` and includes it in
 the initial checkpoint. It introduces Yugoo Design, the available acquisition path,
@@ -217,7 +225,7 @@ format version and validation requirements remain unchanged.
 }
 ```
 
-New Design Projects default to the current operating-system user's Documents directory under `YuGoo/Projects`, resolved by the shared Core registry. Windows uses the current user's Documents Known Folder (including OneDrive/redirection); macOS uses `~/Documents`; Linux follows `XDG_DOCUMENTS_DIR` in the user-dirs configuration. Missing, disabled or invalid Linux directory declarations fall back to `~/Documents`; filesystem errors never silently choose another destination. WSL uses its Linux user's directories. Explicit `projectsRoot` configuration takes precedence. Only creation/recovery needs the new destination: registered roots, conversation selections, runtime state and caches remain where they are, and opening an existing project does not probe or create the new destination. This default change does not move existing projects.
+New Design Projects default to the current operating-system user's Documents directory under `YuGoo/Projects`, resolved by the shared Core registry. Windows uses the current user's Documents Known Folder (including OneDrive/redirection); macOS uses `~/Documents`; Linux follows `XDG_DOCUMENTS_DIR` in the user-dirs configuration. Missing, disabled or invalid Linux directory declarations fall back to `~/Documents`; filesystem errors never silently choose another destination. WSL uses its Linux user's directories. Explicit `projectsRoot` configuration takes precedence. Only creation/migration needs the new destination: registered roots, conversation selections, runtime state and caches remain where they are, and opening an existing project does not probe or create the new destination. This default change does not move existing projects.
 
 Each Bundle owns one directory below `design_files/`. Its canonical state and generated or imported artifacts remain together in that directory; the project has no separate top-level artifact tree. Bundle directories are created when first needed rather than pre-seeded as empty catalog entries.
 
@@ -500,7 +508,7 @@ Only user-provided or explicitly confirmed answers can become `human_confirmed` 
 
 ### Background design Agent execution
 
-Grounding, reflection, and alignment are Kit-neutral capabilities installed with the Design System integration, not Bundles or optional members of a Kit. They run outside the foreground Agent turn and inherit the primary Agent's active model route, credentials, authentication, permissions, and tool infrastructure; the Design System does not select a separate advisory model. Their completion never gates the foreground conversation. Their output is advisory and safe to discard or recompute; partial output is never authoritative.
+Grounding, reflection, and alignment are Kit-neutral capabilities installed with the Design System integration, not Bundles or optional members of a Kit. Their ordinary background runs leave the foreground conversation available and inherit the primary Agent's active model route, credentials, authentication, permissions, and tool infrastructure; the Design System does not select a separate advisory model. Background completion never gates the foreground conversation. When non-blocking background execution is unavailable, only the explicit user choice described below may authorize a one-time foreground review. Their output is advisory and safe to discard or recompute; partial output is never authoritative.
 
 The Design System owns the profile instructions, bounded input and output schemas, exact input pins, budgets, stale-result checks, and advisory projection. A host or standalone runtime owns model inference and its internal model-to-tool loop. The three profiles share host-neutral `AdvisoryDeliveryPort` and `HumanAttentionPort` interfaces so their semantics do not depend on DeepSeek Harness.
 
@@ -720,7 +728,7 @@ The architecture is preserved only when all of the following remain true:
 - Every host injects the Design Core before the selected Kit Mindset; selected Bundle instructions reach only the resolved invocation executor, with reconstruction using the output contract instead.
 - Main and subagent placement preserve the same scoped capabilities, Worker ownership, output contract and settlement; validation diagnostics return to the responsible executor or exact artifact Worker for repair.
 - The main Agent reads committed Design Files and inspects project status, diff and history through the shared read-only Git capability; it grants no write or publication authority. Only an active Bundle's scoped Design capabilities may modify or publish Design Files.
-- Grounding, reflection, and alignment run outside the foreground Agent turn and never make that turn wait for completion.
+- Automatic Grounding, reflection, and alignment run in the background without making the foreground conversation wait. When non-blocking background execution is unavailable, the user chooses between disabling automatic review while retaining manual review and explicitly running the requested batch in the foreground; there is no automatic synchronous fallback or policy change without that choice.
 - Ordinary advice is injected without waking an idle Agent; only an authenticated human acceptance may submit a normal prompt that wakes it.
 - Alignment advice never writes or routes Question state; after acceptance, the main Agent chooses a suitable active-Kit Bundle, host-native questioning, or no action. Optional review-support hints are neither an exclusive binding nor execution authority.
 - Advisory runtime capability negotiation distinguishes guaranteed detached execution, cooperative background execution, explicitly configured standalone execution, and an unavailable queue; foreground Bundle execution is always attached and never enters this fallback ladder.

@@ -85,7 +85,7 @@
     "test:git-versioning": "node smoke-git-versioning.mjs",
     "test:publication-integrity": "node --test test/git-publication-integrity.test.mjs",
     "test:workspace-refresh": "node --test test/workspace-refresh-cost.test.mjs test/workspace-poll.test.mjs test/display-files.test.mjs test/panel-worktree-presentation.test.mjs test/experience-view.test.mjs",
-    "test:project-recovery": "node smoke-design-project-recovery.mjs",
+    "test:project-migration": "node smoke-design-project-migration.mjs",
     "test:project-reconstruction": "node smoke-design-project-reconstruction.mjs",
     "test:skill-script-port": "node smoke-skill-script-port.mjs",
     "typecheck": "tsc --noEmit"

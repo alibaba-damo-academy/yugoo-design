@@ -114,7 +114,7 @@ export {
   type AdvisorySidebarEntryProps,
 } from './client/advisory-sidebar-entry.tsx'
 export {
-  designProjectRecoveryCommand,
+  designProjectMigrationCommand,
   DesignProjectSidebarEntry,
   sortDesignProjectsNewestFirst,
   type DesignProjectSidebarEntryProps,

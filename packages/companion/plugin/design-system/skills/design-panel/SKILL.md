@@ -19,8 +19,8 @@ node /absolute/plugin-root/scripts/design.mjs inspect --project /absolute/design
 ```
 
 This returns the pinned Kit, available Bundle resource directories, and current
-file list. For new/open/recover and project selection use [design](../yugoo/SKILL.md).
-Inspection itself does not create, recover, migrate or switch projects. Do not alter
+file list. For new/open/migrate and project selection use [design](../yugoo/SKILL.md).
+Inspection itself does not create, migrate, reconstruct or switch projects. Do not alter
 the Kit pin to make an incompatible project load. A project without a Kit opens
 with read-only `unconfigured` access; an unavailable/incompatible pin opens in
 read-only recovery. Neither prevents opening the workspace. After compatible

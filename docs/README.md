@@ -10,8 +10,11 @@
 | --- | --- |
 | 安装插件、选择宿主 | [开始使用](wiki/getting-started.md)、[宿主兼容](wiki/hosts.md) |
 | 理解项目、套件和面板 | [核心概念](wiki/concepts.md) |
+| 查项目目录、文件作用与备份迁移边界 | [项目文件管理](wiki/project-files.md) |
 | 跟着一个案例开始设计 | [Web App 协作教程](wiki/web-app-demo.md)、[官方套件用户指南](wiki/official-kits.md) |
 | 创建项目、修改面板、保存后继续 | [使用指南](wiki/usage.md) |
+| 查阅全部 `/yugoo` 命令与参数 | [完整命令参考](wiki/commands.md) |
+| 使用清晰度、知识关联、主动审查及版本恢复 | [项目手册能力索引](wiki/README.md#能力与原理)、[日常使用](wiki/usage.md) |
 | 查看版本与可用范围 | [预览状态](wiki/preview-status.md)、[套件清单与获取](wiki/kit-sharing.md#official-kits) |
 | 排查问题或反馈建议 | [故障排查](wiki/troubleshooting.md)、[问题反馈](wiki/support.md) |
 
@@ -32,10 +35,11 @@
 | 主题 | 阅读入口 |
 | --- | --- |
 | 为什么要帮助人理解、思考、表达并与 AI 对齐 | [产品理念](product-vision.md) |
-| 模块职责、事实来源与宿主边界 | [系统架构基线](system-design-baseline.md) |
+| 模块职责、事实来源与宿主边界 | [可读运行机制导览](wiki/architecture.md)、[系统架构基线](system-design-baseline.md) |
 | 哪些设计内容进入知识关联 | [独立设计知识来源](design-knowledge-source-policy.md) |
 | 怎样将设计交给开发任务 | [设计到开发交接](design-development-handoff.md) |
 | 宿主适配与后续演进 | [独立框架演进说明](standalone-roadmap.md) |
+| 清晰度评估和独立审查怎样辅助判断 | [U/S/T 解释](ust-score-explanations.md)、[建议阅读](advisory-reading.md)、[宿主范围](wiki/hosts.md) |
 
 ## 技术参考
 

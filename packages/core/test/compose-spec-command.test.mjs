@@ -35,13 +35,21 @@ test('compose_spec requires a selected project and allows an omitted brief', asy
   assert.deepEqual(parseDesignCommand('compose_spec'), { verb: 'compose_spec' })
 })
 
-test('public README exposes composition without promising an automatic export or coding authority', async () => {
-  const readme = await readFile(new URL('../../../release/README.public.md', import.meta.url), 'utf8')
-  const section = readme.split('## Continue into development\n')[1].split('\n## Development and documentation')[0]
-  assert.match(section, /\/yugoo compose_spec \[feature scope\]/)
-  assert.match(section, /assemble the current design into a development spec/)
-  assert.match(section, /authorized coding workspace/)
-  assert.match(section, /prepared-task receipt is not a generated spec/)
-  assert.match(section, /does not authorize implementation/)
-  assert.match(section, /Spec and PRD outputs are not re-ingested into KAG/)
+test('canonical public documentation exposes composition without promising an automatic export or coding authority', async () => {
+  for (const name of ['README.md', 'README.en.md']) {
+    const readme = await readFile(new URL(`../../../${name}`, import.meta.url), 'utf8')
+    assert.match(readme, /docs\/design-development-handoff\.md/)
+  }
+  const guide = await readFile(new URL('../../../docs/design-development-handoff.md', import.meta.url), 'utf8')
+  assert.match(guide, /\/yugoo compose_spec \[功能范围\]/)
+  assert.match(guide, /已授权的代码工作区/)
+  assert.match(guide, /没有既有\s*规范时采用 Spec Kit/)
+  assert.doesNotMatch(guide, /不是.*默认选型|不代表产品默认采用 Spec Kit/)
+  assert.match(guide, /不授权开始编码/)
+  assert.match(guide, /不修改 Design Files/)
+  const command = await readFile(new URL('../../../docs/design-command-agent-entry.md', import.meta.url), 'utf8')
+  assert.match(command, /command\s+receipt is not generated files/)
+  assert.match(command, /does not authorize implementation/)
+  const policy = await readFile(new URL('../../../docs/wiki/project-files.md', import.meta.url), 'utf8')
+  assert.match(policy, /PRD.*汇总产物.*不能反过来覆盖.*不作为新的独立 KAG 事实源/)
 })

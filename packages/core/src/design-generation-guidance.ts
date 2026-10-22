@@ -13,3 +13,12 @@ Keep ownership to the assigned artifact. Return its receipt or path, meaningful 
 export function availableDesignKnowledgeTools(available: (name: string) => boolean): string[] {
   return ['design_query_knowledge'].filter(available)
 }
+
+/** The same mounted-resource guidance before and during Bundle execution. */
+export const DESIGN_SKILL_RESOURCE_GUIDANCE = `Bundle references and scripts are installed Kit resources, not Design Project WorkingCopy files. Read a reference with read_skill_resource using its Bundle-relative path, such as reference/artifact-contract.md. Run a declared script with run_skill_script using its path below scripts/, such as page-design.mjs (not scripts/page-design.mjs); input_file refers to the project artifact, not the installed script. An empty WorkingCopy glob/list for reference/ or scripts/ does not show that a Kit resource is missing. Do not skip a declared validation step, invent its bindings, or claim the script unavailable on that basis; use the actual resource/script tool and report its diagnostic if it fails.
+During an active Bundle invocation, when the Skill ships an ordinary script under scripts/, call run_skill_script directly with input_json for a small structured request or input_file for an artifact, plus literal argv. Do not read or inspect executable script source before running it: use the Bundle reference documenting its CLI contract, and diagnostics provide repair feedback. Read script source only when execution itself reports an internal failure that its diagnostics cannot explain. Use optional input_files for exact additional project files, input_context for small metadata, and output_file when the script result is itself an artifact, so file bytes stay outside model context. Script execution never publishes Design Files.`
+
+/** No alternative filesystem root, content version or execution authority. */
+export function missingDesignSkillResource(path: string): Error {
+  return new Error(`resource not found: ${path}. This lookup uses the mounted Bundle, not the Design Project or Host workspace. Follow exact reference paths in the installed Bundle method; do not search installation directories or substitute another version. If the authorized design work has not been entered, run_design_skill supplies that method and its scoped tools. Report a genuinely missing declared resource instead of skipping its requirement.`)
+}

@@ -16,7 +16,9 @@ test('existing repository spec conventions keep requirement, proposal and task b
   for (const path of ['specs/<feature>/spec.md', 'openspec/specs/<domain>/spec.md', 'openspec/changes/<change>/', '.kiro/specs/<feature>/requirements.md']) assert.ok(guidance.includes(path), path)
   assert.match(guidance, /current-spec versus proposed-change distinction/)
   assert.match(guidance, /discovery hints, not permission to create every file/)
-  assert.match(guidance, /if none exists, propose an existing convention or an ordinary Markdown brief/)
+  assert.match(guidance, /For compose_spec with no existing convention, use Spec Kit's spec.md \/ plan.md \/ tasks.md organization/)
+  assert.match(guidance, /an ordinary development brief may instead use plain Markdown/)
+  assert.match(guidance, /Resolve the output location before writing/)
 })
 
 test('Markdown references and bounded edits preserve design and coding authority', () => {
@@ -32,8 +34,8 @@ test('native host entry skills reach the same handoff method as DSH progression'
   const common = await readFile(new URL('../../companion/plugin/design-system/skills/design-panel/native-execution.md', import.meta.url), 'utf8')
   const body = guidance.replace('<design_development_handoff>\n', '').replace('\n</design_development_handoff>', '')
   assert.ok(common.includes(body), 'Native method must preserve shared handoff guidance')
-  for (const host of ['plugin', 'plugin-claude', 'plugin-qoder']) {
-    const skill = await readFile(new URL(`../../companion/${host}/design-system/skills/design/SKILL.md`, import.meta.url), 'utf8')
+  for (const host of ['plugin', 'plugin-claude', 'plugin-qoder', 'plugin-qwenwork']) {
+    const skill = await readFile(new URL(`../../companion/${host}/design-system/skills/yugoo/SKILL.md`, import.meta.url), 'utf8')
     const reference = host === 'plugin' ? '../design-panel/native-execution.md' : 'native-execution.md'
     assert.ok(skill.includes(`${reference}#development-handoff-and-existing-specs`), host)
   }

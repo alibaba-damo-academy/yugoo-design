@@ -12,10 +12,12 @@ server. Registry, selection, connection files and caches keep their existing
 locations. Previously registered projects remain at their exact roots; they are
 not moved, and opening them does not require the new Documents destination.
 
-The 2026-10-17 registry checkpoint recorded Companion `0.1.0-beta.3` on npm's
-`beta` channel. Source capabilities, later local
-candidates and installed-host acceptance remain separate; availability does not
-mean every host's installation or update has passed. See the
+The 2026-10-21 registry readback confirmed Companion `0.1.0-beta.19` on npm's
+`beta` channel; `latest` still selected `0.1.0-beta.10`. Resolve the chosen channel
+again before a new acquisition, then retain its exact version and integrity.
+Published artifacts, later main-branch changes and installed-host acceptance
+remain separate; publication does not mean every host's installation or update
+has passed. See the
 [shared installation prompt and registry status](HOSTS.md#agent-led-installation-and-updates).
 The browser mounts the shared `DesignWorkspace` and project sidebar. Panel
 presentation follows the installed Kit: shared declarative components, retained
@@ -421,6 +423,11 @@ diagnostic backend and development fixtures. Missing native support is reported
 rather than silently spawning system Git. Resolve the
 selected beta to the exact version and integrity before acquisition; keep the
 previous installed version available during updates. Do not substitute `latest`.
+If a retained installation already matches that exact release and provides the
+required host adapter and runtime, reuse it after checking its help and runtime
+receipt. A stale catalog or old host session is not a reason to download the
+same runtime again. A different required release gets a new retained directory;
+do not overwrite an installed runtime or copy only part of its dependency tree.
 
 ```sh
 ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm install --ignore-scripts=false --save-exact <package-selector> --registry=https://registry.npmjs.org
@@ -477,7 +484,8 @@ npm/npx acquisition does not apply this policy automatically. Keep the same
 policy on later host-installation children that acquire dependencies. The
 maintained DSH adapter passes it to the official CLI in Web and Desktop; older
 installed adapters may need the caller to supply it. This does not establish
-installation success or remove the separate embedding-model download/cache step.
+installation success or remove the separate
+[embedding-model preparation step](#local-embedding-model-preparation).
 The default product does not provision GPU runtimes; optional GPU support and
 configurable or user-local model selection are future work.
 
@@ -493,6 +501,46 @@ try {
   [Environment]::SetEnvironmentVariable('ONNXRUNTIME_NODE_INSTALL_CUDA', $previousOrtCuda, 'Process')
 }
 ```
+
+### Local embedding model preparation
+
+The current provider pins `Xenova/multilingual-e5-small` at revision
+`761b726dd34fb83930e26aab4e9ac3899aa1fa78`, with quantized `q8` weights and CPU
+inference. Its default cache is `.cache/design-system/embeddings` under the home
+directory of the **user running the runtime**, not the npm installation or Design
+Project. Windows Node uses that Windows user's home; WSL uses its Linux user.
+An offline installation needs the complete model cache in the library's expected
+layout. A tokenizer or one weight file alone does not establish a usable cache.
+Use the acquired version's model identity; changing the model/revision or copying
+an arbitrary cache is not a supported repair.
+
+For the shared runtime's `scripts/design.mjs serve` entry used by Codex, Claude
+Code, Qoder and QwenWork, the default is **local-only** model loading. Its runtime
+help documents `--allow-embedding-download`: when explicitly allowed, this permits
+fetching the pinned model files if absent. Apply it only to that exact owned Panel
+startup with its existing host/session/project arguments. It is a runtime `serve`
+option, **not** a `design-system install` or `check-runtime` option. Conversely,
+`--disable-embedding` on that runtime entry keeps structure/evidence without
+semantic embeddings. Neither option changes host model credentials. Model-file
+download and CPU inference do not upload Design text.
+
+WorkBuddy's `yugoo_workbuddy_open_panel` service currently fixes `localOnly: true`
+and exposes no model-download parameter. It requires the existing complete cache
+for its Windows runtime user; the CLI flag above does not add a WorkBuddy download
+route. If the cache is missing, report that limitation and the semantic-index
+diagnostic. Do not invent an installer flag, change host identity or start another
+host's service to bypass it. Authorized design work can continue from Design Files
+and structural evidence; do not report semantic KAG as ready. DSH follows its own
+provider configuration rather than these Companion `serve` flags.
+
+`design-system check-runtime` verifies the declared runtime dependencies and its
+isolated native-load/Git checks. It does **not** fetch or validate the complete
+embedding model, run semantic inference or prove that KAG is current. After cache
+preparation, verify the real project's semantic status separately. Preserve the
+reported model/runtime failure and existing Design Files rather than clearing the
+database or reinstalling the host to make the status appear successful.
+
+### Install in the current native host
 
 Ask the Agent in your current host to install or update Yugoo Design as one
 product. It should identify the host from its actual execution context or your
@@ -510,19 +558,21 @@ to an already published package. Users do not install DSH and Companion separate
 | WorkBuddy | `install --host workbuddy`: prepare the stable marketplace and plugin; import or update and enable through the host. |
 | DSH | `install --host dsh`: run the existing plan/apply transaction with the bound aggregate, official CLI/Loader and an explicitly selected existing profile. |
 
-For the next local Companion `0.1.0-beta.18` candidate, use WorkBuddy native
-suite `0.3.30` with `--suite-version 0.3.30`, the verified Node executable and a persistent external
-preparation destination. Import the returned `nativeImport.market` directory and
+For a fresh WorkBuddy preparation, the native suite example is `0.3.30`
+(`--suite-version 0.3.30`), with the verified Node executable and a persistent
+external preparation destination. Import the returned `nativeImport.market` directory and
 enable its `yugoo-design` plugin. The fresh market is also named `yugoo-design`;
 no previous test market or preparation receipt is required. An owned update with
 `--previous-receipt` retains its original market name and directory, including
 historical test markets, rather than migrating a registered installation.
 
-For QwenWork in that candidate, use native suite `0.1.5` with
-`--suite-version 0.1.5`. These are candidate preparation versions, not a claim of
-npm publication or completed desktop acceptance.
-Its suite version advances independently of the WorkBuddy suite and Companion
-npm version; desktop preparation writes that explicit version into the import.
+The QwenWork native suite example is `0.1.5` (`--suite-version 0.1.5`). These
+numeric versions were used with the recorded local Companion beta.18 candidate;
+they are separate from the published Companion npm version. Use the selected
+package's guide and an explicitly chosen suite version. An owned update must
+advance beyond its previous receipt's suite version, even when an example here
+uses the old value. Desktop preparation writes that explicit version into the
+import; it does not prove the host loaded it.
 
 Supply the required host inputs shown by `design-system --help`. Without a host,
 the entry returns `host-selection-required`; missing inputs return
@@ -594,9 +644,12 @@ credential-free HTTPS `--registry` selects a download mirror without changing
 that exact aggregate or the canonical release origin. Pass the same choice to
 dry-run and apply; existing receipt-owned updates must retain both their origin
 and effective registry. Registry migration is not implicit.
-The current beta release mapping selects `@yugoo-design/dsh-design-system-dsh@0.1.0-beta.2`
-and `https://registry.npmjs.org`, with all eleven owned DSH packages, including
-`@yugoo-design/yugoo-design-git-native`, pinned to `0.1.0-beta.2`.
+The retained DSH mapping in `release/release-hosts.json` selects
+`@yugoo-design/dsh-design-system-dsh@0.1.0-beta.2` and
+`https://registry.npmjs.org`. That historical aggregate pins eleven owned DSH
+packages, including `@yugoo-design/yugoo-design-git-native`, to `0.1.0-beta.2`.
+It is distinct from the corrected source default and the Companion npm version;
+always inspect the acquired package's own `release-hosts.json`.
 Native suite and Kit/Bundle content versions are separate.
 These target values do not establish
 registry availability or an accepted public installation. Older
@@ -629,14 +682,17 @@ or publish it. Omitting `--candidate-mode` selects the exploratory fixture route
 Use the [shared prompt in the current host](HOSTS.md#default-prompt-any-supported-host).
 The Agent first resolves the selected beta channel or an explicit version,
 records the exact release and integrity, then acquires it in a durable,
-version-specific directory. The following example selects the current beta.3.
+version-specific directory. Run this example inside a new dedicated version
+directory; it resolves the chosen channel once, then uses that exact selector.
 Metadata availability does not establish complete archive acquisition or native
 installation. A missing required version is a failed
 availability check, not permission to use another package:
 
 ```sh
-npm view @yugoo-design/companion@0.1.0-beta.3 version dist.integrity --registry=https://registry.npmjs.org
-ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm install --ignore-scripts=false --save-exact @yugoo-design/companion@0.1.0-beta.3 --registry=https://registry.npmjs.org
+companion_version=$(npm view @yugoo-design/companion@beta version --registry=https://registry.npmjs.org) || exit
+[ -n "$companion_version" ] || exit 1
+npm view "@yugoo-design/companion@$companion_version" version dist.integrity --registry=https://registry.npmjs.org || exit
+ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm install --ignore-scripts=false --save-exact "@yugoo-design/companion@$companion_version" --registry=https://registry.npmjs.org || exit
 npx --no-install design-system --help
 ```
 
@@ -698,7 +754,7 @@ all-version or all-platform certification.
 
 Desktop preparation creates QwenWork expert suites and a stable WorkBuddy
 market from an already acquired exact npm version. The published beta.1 exposes
-this through `prepare-desktop`; the current beta.3 also delegates
+this through `prepare-desktop`; later releases also delegate
 `install --host qwenwork` and `install --host workbuddy` to the same preparer.
 Neither route contacts npm, registers a host, edits a native profile, launches a
 model or verifies that the imported Skill is loaded. Native import and activation
@@ -719,9 +775,12 @@ npx --no-install design-system prepare-desktop --target workbuddy --package-name
 QwenWork uses `--target qwenwork` plus `--qwenwork-runtime ABSOLUTE_JSON`.
 That JSON contains only `executable`, `worker`, `nodeExecutable`,
 `executableSha256` and `workerSha256`, from the intended native installation.
-`--separate-mcp` omits the suite's connector for an organization that requires
-a separately imported connector. The preparation emits the small expert ZIP
-and exact connector JSON; it does not alter that organization's policy.
+By default the expert ZIP already contains its MCP configuration; the emitted
+`design-system-mcp.json` describes the same connector. Enable only one
+`design-system` connector. Import the separate JSON only when that entry is
+permitted and the suite's connector cannot be enabled. `--separate-mcp` prepares
+a suite without its connector for an organization requiring that arrangement;
+it does not alter the organization's policy or acquire another runtime.
 
 On native Windows, npm and destination paths must match their actual roots.
 Cross-platform preparation additionally requires `--npm-root-windows` and
@@ -748,10 +807,15 @@ ZIP/configuration. Never overwrite the previous npm directory or silently
 reuse a stale receipt. An interrupted preparation may leave bounded partial
 outputs: retain them for inspection rather than importing or blindly retrying.
 
-Use the host's supported importer/Refresh/Update route for the prepared output,
-then separately verify the actually loaded `yugoo` version, tools, original
-conversation and saved-edit consumption. Current registration may require the
-native GUI; preparation is not evidence of an Agent-callable registration API.
+Use the host's supported importer/Refresh/Update route for the prepared output.
+For WorkBuddy, refresh the market catalog, confirm its listed version, then
+update the suite. For QwenWork, import/enable the new versioned suite and retain
+only one permitted connector to the prepared runtime. Restart the host normally
+or open the new session it requires, then verify the actually loaded `yugoo`
+version, tools, original conversation and saved-edit consumption. Updating the
+npm runtime, preparing materials, refreshing/importing them and reloading the
+host are distinct steps; an old session can still hold an earlier runtime.
+Current registration may require the native GUI; preparation is not evidence of an Agent-callable registration API.
 The existing preview suite version and npm version are distinct exact pins.
 The old fixed candidate does not gain this command without a new separately
 identified build and installation.
@@ -919,8 +983,9 @@ then builds Companion's browser and server entries and packages its Knowledge
 runtime, authoring reference, Web App Kit, and host overlay. Companion does not
 need a new workspace `package.json` for this entry.
 
-The output parent must already exist and `design-system` must not exist; the
-command refuses to overwrite an existing target. Omitting the output argument
+The output parent must already exist. Use a new `yugoo-design` directory; the
+legacy name `design-system` is also accepted. The command refuses to overwrite
+an existing target. Omitting the output argument
 creates a new directory under `packages/companion/dist-plugin` and prints its
 exact path. `--qoder` or `--claude` before the output argument selects the
 corresponding overlay; the default is Codex.
@@ -1022,7 +1087,8 @@ COMPANION_BROWSER_TEST=1 node --test packages/companion/test/plugin-package.test
 The builder prints a new `packages/companion/dist-plugin/build-*/yugoo-design`
 directory. It contains the manifest, launcher skill, compiled server/browser and
 raw Web App Kit resources. An optional output argument must be a **new** directory
-named `design-system`; existing directories are never overwritten. It does not
+named `yugoo-design` (legacy `design-system` is also accepted); existing directories
+are never overwritten. It does not
 install or change personal marketplaces/configuration. The manifest source under
 `plugin/design-system` is not itself runnable before packaging.
 

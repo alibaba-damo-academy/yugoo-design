@@ -531,7 +531,7 @@ export default class DesignService extends Service {
       }
       return result
     }
-    const input = { hint: '[new <name>|open <id|name|path>|recover <path>|reconstruct <material-path>|list|status|kit <kit>|delete <id|name>|close]' }
+    const input = { hint: '[new <name>|open <id|name|path>|migrate <path>|reconstruct <material-path>|list|status|kit <kit>|delete <id|name>|close]' }
     try {
       commands.register({ name: 'yugoo', description: 'Yugoo Design：新建、打开和管理独立设计项目', input, handler })
     } catch (cause) {
@@ -549,8 +549,8 @@ export default class DesignService extends Service {
       create: async (name) => this.projects.create(name, {
         provider: this.requireKnowledgeRuntime().defaultProvider,
       }, signal),
-      recover: async (reference, currentProjectId) => {
-        const source = await this.projects.inspectRecoverySource(reference, signal)
+      migrate: async (reference, currentProjectId) => {
+        const source = await this.projects.inspectMigrationSource(reference, signal)
         const current = currentProjectId === undefined ? undefined : await this.projects.require(currentProjectId, signal)
         const sourceKit = source.metadata?.kit === undefined
           ? undefined
@@ -561,10 +561,10 @@ export default class DesignService extends Service {
         const kit = sourceKit ?? currentKit ?? (installed.length === 1 ? installed[0] : undefined)
         if (kit === undefined) {
           const names = installed.map(candidate => candidate.name).sort().join(', ')
-          throw new Error(`design project recovery: cannot determine Mindset from the source or current project; available Mindsets: ${names || 'none'}`)
+          throw new Error(`design project migration: cannot determine Mindset from the source or current project; available Mindsets: ${names || 'none'}`)
         }
         const knowledge = current?.knowledge ?? { provider: this.requireKnowledgeRuntime().defaultProvider }
-        return this.projects.recover(reference, {
+        return this.projects.migrate(reference, {
           knowledge, kit: { name: kit.name, version: kit.version },
         }, kit.skills.map(skill => skill.name), signal)
       },
@@ -3216,7 +3216,7 @@ export default class DesignService extends Service {
     return lifecycle
   }
 
-  /** Run one journal operation in the per-project+conversation journal queue for an already resolved project. */
+  /** Serialize one durable project-journal operation; native conversation bindings remain separate. */
   private async withJournalForProject<T>(
     project: RegisteredDesignProject,
     conversation: string,

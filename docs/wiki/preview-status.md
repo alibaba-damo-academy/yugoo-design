@@ -4,30 +4,64 @@ These records distinguish published artifacts from bounded candidate checks.
 Neither implies that every host/platform is supported. See
 [host compatibility](hosts.md) and the [installation entry](getting-started.md).
 
-**Current source and archived installations:** source commands use `/yugoo kit <kit>`;
-`mindset` remains an alias. Frozen npm archives may retain the older command
-spelling and default package set. Use their bundled help and exact release
+## Current release and use
+
+**Companion registry readback, 2026-10-21 UTC:** the official registry returned
+`@yugoo-design/companion@0.1.0-beta.19` with its exact integrity; `beta` selected
+beta.19 and `latest` selected beta.10. These are the observed tags at that
+checkpoint. Resolve the requested channel again before acquisition and retain
+the exact release and integrity; an unqualified install can choose the older
+`latest`. The [shared host prompt](../../packages/companion/HOSTS.md#default-prompt-any-supported-host)
+uses the beta route. It can reuse an existing exact runtime that meets the
+request, or acquire a new version into a separate retained directory.
+
+Companion publication and registry readback are confirmed; they do not verify
+cryptographic provenance or every host's installed behavior. The current manual
+[Companion publishing route](../../CONTRIBUTING.md#prepare-or-publish-the-companion-npm-beta)
+is separate from public-source synchronization and DSH package publication.
+Later changes in main require another package release; they do not modify beta.19.
+Native suite numbers, Kit pins and the Companion npm version remain independent.
+
+**Foreground GRA, user-confirmed on 2026-10-21:** QwenWork and WorkBuddy both
+completed the user-selected manual foreground review flow. This confirms that
+flow, with the main conversation occupied; it is not nonblocking background
+acceptance. The exact local QwenWork candidate record follows below. The
+WorkBuddy confirmation does not borrow that candidate's version or logs. See
+[host compatibility and review limits](hosts.md#后台能力与评审降级).
+
+**Current source and archived installations:** source commands use `/yugoo kit <kit>`.
+The project migration command is now `/yugoo migrate <source-project-path>` in
+source, with no legacy alias. This rename is not included in the published
+Companion beta.19 archive; follow the acquired package's own help until a release
+containing the rename is available.
+Frozen npm archives may retain an older command spelling and default package set. Use their bundled help and exact release
 manifest; a source fix does not update an installed package.
 
-**Later local candidate, 2026-10-21 (UTC):** one user-confirmed foreground
+**Recorded local QwenWork candidate, 2026-10-21 (UTC):** one user-confirmed foreground
 Grounding/Reflection/Alignment batch completed on Windows QwenWork
 `1.3.2-26101704`, native suite `0.1.5` and Companion `0.1.0-beta.18`. The main
 Agent submitted all three results without a native child or readiness probe,
 retained the existing `auto` policy, reused U/S/T, and did not modify Design Files.
-This is a local native-host result, not npm publication, WorkBuddy acceptance,
-background readiness or full Kit acceptance. See the [foreground scope](hosts.md#后台能力与评审降级).
+This is the detailed local QwenWork result. WorkBuddy's separate user confirmation
+above does not extend this exact candidate record. It establishes neither npm
+publication, background readiness nor full Kit acceptance. See the [foreground scope](hosts.md#后台能力与评审降级).
+
+## Historical publication and candidate records
+
+The following records retain their dates, candidates and failures. They describe
+what was checked then; current acquisition starts from the section above.
 
 **Historical registry readback, 2026-10-17 (UTC):**
 `@yugoo-design/companion@0.1.0-beta.3` and all eleven owned DSH packages below at
 `0.1.0-beta.2` are published. Anonymous registry metadata checks matched all
 twelve exact names, versions, archive URLs, integrity and SHA-1 values against
-the reviewed publication plan. Each `beta` tag selects that package's current
-version. `latest` remains `0.1.0-beta.1` for eleven packages; the sole exception
-is `@yugoo-design/yugoo-design-git-native`, whose `latest` is `0.1.0-beta.2`.
+the reviewed publication plan. At that checkpoint each `beta` tag selected the version listed there.
+`latest` remained `0.1.0-beta.1` for eleven packages; the sole exception was
+`@yugoo-design/yugoo-design-git-native`, whose `latest` was `0.1.0-beta.2`.
 Resolve `beta` and retain the exact version rather than installing an unqualified
 package name for this preview.
 
-Full archive verification is incomplete: eight anonymous downloads completed
+At that checkpoint full archive verification was incomplete: eight anonymous downloads completed
 and matched the reviewed bytes and registry digests. The native Git, Panel,
 Web App provider and Companion archives returned HTTP 200, but their response
 bodies remained partial when the 90-second transfer limit expired (`curl` exit
@@ -51,8 +85,9 @@ Linux x64/GNU. Normal Design versioning needs no system Git executable; other
 platforms are not supplied by this release. The earlier bounded Git checks below
 remain evidence for their exact candidates, not acceptance of this npm update.
 Later source fixes, including removal of the redundant Panel footer guidance,
-are not in these frozen archives. Trusted publishing configuration remains
-deferred preparation; this checkpoint does not claim an OIDC publication.
+are not in those frozen archives. Trusted publishing configuration was still
+deferred at that checkpoint; that record does not claim an OIDC publication.
+The later Companion publication is recorded separately above.
 
 **CPU-first embedding installation policy:** local text embeddings run on CPU;
 GPU acceleration is outside the first-release scope. Host
@@ -85,8 +120,10 @@ real version-to-version update.
 The default product supplies Web App. Decision Modeling is currently an internal
 validation Kit, excluded from default product dependencies and the public source
 export. Its internal source and the generic independent-Kit loading mechanism are
-retained. Package withdrawal and corrected release availability are separate
-registry operations; neither is claimed complete by this documentation change.
+retained. The older DSH publication below keeps its original package set;
+this documentation does not withdraw packages or rewrite their frozen bytes.
+Use the acquired installer's exact mapping for DSH, independently of the
+Companion release number.
 
 The corrected source default below contains ten physical DSH package identities
 under `@yugoo-design`, including the native Git helper, plus Companion. The helper

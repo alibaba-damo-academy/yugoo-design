@@ -1,46 +1,28 @@
 # QwenWork Windows integration
 
-The tested desktop user-input path requires host setup and an exact session binding:
+## Installation and current verification scope
 
-- Start the pinned QwenWork installation with
-  `QWENWORK_DESKTOP_CONTROL_ENABLED=1` in that launch's environment.
-- Open Companion against the exact original conversation. QwenWork now defaults to
-  desktop input; `--qwenwork-desktop` remains a compatible explicit alias.
-  A startup failure does not switch to Hooks or alter host configuration.
+Use the [QwenWork installation prompt](../../HOSTS.md#install-or-update-qwenwork)
+from the existing desktop conversation. Reuse a retained runtime when it matches
+the selected exact release and required adapter; otherwise acquire the new npm
+version in a separate durable directory. Prepare/import the suite, enable one
+permitted MCP connector, then reload through the normal host entry and verify
+the loaded Skill, tools, original project and saved-edit consumption. There is
+no separate Companion runtime to download after this preparation.
 
-An ordinary restart may omit the environment flag; an already running desktop
-process does not acquire it by opening another shortcut. Close the application
-normally before changing startup mode. Do not automatically terminate the user's
-host, edit application bytes or change machine-wide environment variables.
-
-A dedicated host shortcut is not a delivery option. The earlier launcher proposal
-was withdrawn. The tested temporary launch flag remains experimental evidence,
-not the normal user entry. The desktop protocol and read-only session database
-mapping are version-specific, not a claimed stable public API.
-
-Read-only inspection of QwenWorkCN 1.2.5-26092902 confirms that desktop control
-first reads `QWENWORK_DESKTOP_CONTROL_ENABLED` from the host-owned
-`~/.qwenworkcn/.env`, then falls back to its process environment. This provides a
-candidate **preconfiguration** path that preserves ordinary host startup. It is
-not yet verified through a normal restart, and the public settings documentation
-does not establish this key as a supported public extension contract. Do not
-silently write the user's profile or advertise this as stable support. Any approved
-setup must preserve unrelated `.env` settings and define reversal of the exact
-owned change; upgrades require revalidation.
-
-Public documentation checked 2026-10-07:
-[settings](https://docs.qwenwork.cn/desktop/settings),
-[Hooks](https://docs.qwenwork.cn/desktop/hooks) and the
-[documentation index](https://docs.qwenwork.cn/llms.txt). The Hooks page describes
-enterprise HTTP callbacks from the client; it does not document an external
-original-session user-input API. Public API absence from these pages is not proof
-that no other supported entry exists.
+On 2026-10-21 the user confirmed manual foreground GRA; the detailed local
+beta.18 / suite 0.1.5 result on QwenWorkCN `1.3.2-26101704` is recorded in the
+[host status](../../../../docs/wiki/hosts.md#后台能力与评审降级).
+That does not enable native background Agents or establish acceptance of every
+npm release. The earlier desktop-control setup below is historical,
+version-specific evidence, not a new mandatory profile edit or custom launcher.
 
 Package the suite (Skills and native Hooks), MCP connector configuration and shared
-runtime as distinct installation concerns. The next local Companion
-`0.1.0-beta.18` candidate uses native suite `0.1.5`; supply
-`--suite-version 0.1.5` when preparing it. This identifies a candidate, not npm
-publication or completed desktop acceptance.
+runtime as distinct installation concerns. The recorded local Companion beta.18
+preparation used native suite `0.1.5` (`--suite-version 0.1.5`). Use the acquired
+package's guide and an explicit native version; an owned update must exceed its
+previous receipt's suite version. These numeric versions are independent of npm
+publication and do not establish that the desktop loaded the prepared materials.
 The suite version is independent of the Companion npm and WorkBuddy suite
 versions. If organization policy rejects the
 suite's data connector, the separately permitted Connectors JSON entry may work;
@@ -79,6 +61,48 @@ be delivered during active execution or retained for a natural conversation
 resume. Tell the user when a message in the original host is required. Do not label
 that fallback as automatic user input or silently downgrade after a failed submit.
 
+## Historical desktop-input setup: QwenWorkCN 1.2.5
+
+These retained observations describe the earlier tested startup path. Confirm
+the actual installed version and its supported setup before applying them to a
+new environment; they do not establish the same startup requirement for 1.3.2.
+
+The tested desktop user-input path requires host setup and an exact session binding:
+
+- Start the pinned QwenWork installation with
+  `QWENWORK_DESKTOP_CONTROL_ENABLED=1` in that launch's environment.
+- Open Companion against the exact original conversation. QwenWork now defaults to
+  desktop input; `--qwenwork-desktop` remains a compatible explicit alias.
+  A startup failure does not switch to Hooks or alter host configuration.
+
+An ordinary restart may omit the environment flag; an already running desktop
+process does not acquire it by opening another shortcut. Close the application
+normally before changing startup mode. Do not automatically terminate the user's
+host, edit application bytes or change machine-wide environment variables.
+
+A dedicated host shortcut is not a delivery option. The earlier launcher proposal
+was withdrawn. The tested temporary launch flag remains experimental evidence,
+not the normal user entry. The desktop protocol and read-only session database
+mapping are version-specific, not a claimed stable public API.
+
+Read-only inspection of QwenWorkCN 1.2.5-26092902 confirms that desktop control
+first reads `QWENWORK_DESKTOP_CONTROL_ENABLED` from the host-owned
+`~/.qwenworkcn/.env`, then falls back to its process environment. This provides a
+candidate **preconfiguration** path that preserves ordinary host startup. It is
+not yet verified through a normal restart, and the public settings documentation
+does not establish this key as a supported public extension contract. Do not
+silently write the user's profile or advertise this as stable support. Any approved
+setup must preserve unrelated `.env` settings and define reversal of the exact
+owned change; upgrades require revalidation.
+
+Public documentation checked 2026-10-07:
+[settings](https://docs.qwenwork.cn/desktop/settings),
+[Hooks](https://docs.qwenwork.cn/desktop/hooks) and the
+[documentation index](https://docs.qwenwork.cn/llms.txt). The Hooks page describes
+enterprise HTTP callbacks from the client; it does not document an external
+original-session user-input API. Public API absence from these pages is not proof
+that no other supported entry exists.
+
 ## Owning implementation and verification
 
 - [Suite packaging](../../qwenwork-package.mjs) and [native Skill](../../plugin-qwenwork/design-system/skills/yugoo/SKILL.md).
@@ -87,13 +111,13 @@ that fallback as automatic user input or silently downgrade after a failed submi
 - Shared runtime: [server](../../src/server.mjs), [knowledge](../../src/knowledge.mjs), [Windows file durability](../../../knowledge-ladybug/src/durability.ts).
 
 KAG code and database assets are included in the existing Windows test runtime.
-The live test project's status on 2026-10-07 reported recovery failure with
+The historical test project's status on 2026-10-07 reported recovery failure with
 `EPERM: operation not permitted, fsync`, no published snapshot, and semantic
 processing configured as enabled. This is not working KAG acceptance. A shared
 storage correction now passes Linux/Windows file flush checks and an isolated
-Windows database rebuild, backup byte preservation and reopen check; deployment
-to the live project and semantic indexing are separate outstanding gates. The
-older test runtime carries a Linux directory dependency manifest and no bundled
+Windows database rebuild, backup byte preservation and reopen check. At that
+historical checkpoint, deployment to the live project and semantic indexing
+remained separate outstanding gates. The older test runtime carries a Linux directory dependency manifest and no bundled
 embedding model; target-platform dependencies/model availability need explicit
 verification. G/R/A prepared records do not prove reviewers ran or KAG succeeded.
 
@@ -114,8 +138,8 @@ After a host update, refresh its external runtime pins through the normal suite
 update and reload the suite in a normal user-controlled session. Do not rewrite
 an existing preparation or bypass process checks to recover a missing binding.
 This is an installed-version-specific contract, not a stable documented public
-extension API; actual Host acceptance remains outstanding. The source adapter
-tests do not establish that the currently running Host enables background tasks.
+extension API. The source adapter tests do not establish that the currently
+running host enables background tasks.
 
 ### QwenWorkCN 1.3.2 background Agent policy
 
@@ -135,7 +159,7 @@ restriction for every future release. Existing worker pins and receipt-shape
 comparisons remain valid within their stated scope; they do not enable a feature
 that the desktop disables.
 
-**Shared source implementation verified; actual desktop acceptance pending:**
+**Manual foreground flow user-confirmed; nonblocking background remains separate:**
 when background execution is unavailable or a native asynchronous run still occupies the main
 conversation, first ask the user to choose **Disable automatic GRA**
 or **Run this review synchronously in the main conversation**. Explain that the

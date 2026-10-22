@@ -22,7 +22,18 @@ pnpm install --frozen-lockfile
 
 不要为通过安装而删除锁文件、关闭校验或更换依赖版本。公开源码、内部开发 checkout 和已安装 npm 产品是不同输入：公开快照使用经过整理的依赖配置，不需要取得内部宿主子模块；宿主集成仍须使用兼容的正式宿主。
 
-现有公开导出排除内部开发锁文件，公开锁文件及干净依赖准备需随所选发行源码单独验收。没有配套锁文件时，不将上面的 frozen 安装命令当作可用的公开教程，也不要复制内部锁文件替代它。公开源码的干净安装与构建有独立发行验收，上述准备步骤不代表任意快照已通过整仓构建。失败时保留实际错误、Node/pnpm 版本与所选提交。
+现有公开导出排除内部开发锁文件。对于**没有配套锁文件的公开快照**，在独立 checkout 根目录使用正常依赖解析，保留生命周期脚本和快照内的 `allowBuilds` 精确许可：
+
+```sh
+ONNXRUNTIME_NODE_INSTALL_CUDA=skip pnpm install --no-frozen-lockfile
+pnpm run test:public-documents
+```
+
+第一条命令生成该次解析的本地 `pnpm-lock.yaml`，不是删除旧锁或复制内部锁；依赖配置未变时，后续可用 `pnpm install --frozen-lockfile` 复用它。不要为安装失败放宽 peer 检查、全开依赖构建脚本或替换已固定的宿主/编译器版本。Windows PowerShell 的 CPU 环境设置及恢复方式见[取包说明](../../packages/companion/README.md#npm-candidate-and-native-installation-boundary)。CPU 设置不准备嵌入模型文件。
+
+2026-10-21 已有 Linux x64、Node `22.22.3`、pnpm `11.7.0` 下的公开依赖配置解析、正常生命周期依赖准备及 Companion 同源构建/打包记录；它验证该条发行路径，不代表所有公开快照、全部根脚本、独立 DSH 或其他平台均已通过。自行生成的锁文件是本次开发的解析输入；报告所选提交、工具版本、实际命令和失败信息，发行仍须单独验收。
+
+依赖准备完成后，按下面的分层和脚本表选择构建与检查。需要整仓构建时使用 `pnpm run build`；有界改动优先构建所属包及消费的前置依赖，不用一次整仓成功代替真实宿主验收。
 
 ## 选择源码分层
 
@@ -37,6 +48,10 @@ pnpm install --frozen-lockfile
 | `packages/studio-dsh` | Studio 的 DSH 接入 |
 
 不要在共享层写死某个 Bundle 名称来修复领域问题。图、表单和 Agent 应围绕同一份设计数据工作，继续使用已有保存、校验、发布与宿主适配机制。
+
+沿运行链找实现时，从宿主的 `yugoo` 入口和项目绑定开始，经 Core 装载项目固定的 Kit/Bundle，交给原生 Agent 执行，再通过已有校验和发布入口保存设计事实及项目 Git 记录；Panel 编辑同一份规范数据。KAG 是从独立设计来源建立的派生知识，GRA 提出建议，二者不成为另一份设计真相。宿主提供模型、凭据和原生执行，Companion 不另造模型客户端。
+
+技术契约入口：[架构基线](../system-design-baseline.md)说明项目、持久化、执行和宿主边界；[Bundle contract](../bundle-contract.md)说明方法、产物与声明；[DSL](../dsl-spec.md)和 [Panel UIUX](../panel-uiux-standard.md)分别规定可执行表现与创作约束。领域方法放在 `skills-*`，需要受信任执行能力时使用明确的 `provider-*`，宿主传输或身份接线由 `companion`/`dsh` 的适配层负责。定制内容沿已有 schema、validation、Panel、summary 与归档路径接入，不新增平行保存或发布入口。
 
 ## 从最小相关检查开始
 

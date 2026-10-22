@@ -22,13 +22,16 @@ node /absolute/plugin-root/scripts/design.mjs command --host qoder --thread SESS
 ```
 
 Pass the actual user command as `--input`: `help`, `new NAME`, `list`, `open PATH`,
-`status`, `kit web_app`, `close`, `delete`, `recover PATH`, `reconstruct PATH`.
+`status`, `kit web_app`, `close`, `delete`, `migrate PATH`, `reconstruct PATH`.
 Reuse the selected project's returned exact path. A new project has no Kit:
 select the relevant available Kit from the user's intent, or ask if ambiguous.
 Creating a named project alone is not a product brief; having only one available
 Kit is not a reason to activate it before the user gives a matching design intent.
-Recovery/reconstruction results are instructions to perform the task, not proof
+Migration/reconstruction results are instructions to perform the task, not proof
 that migration/reconstruction has already completed.
+For `migrate`, select a Kit first: recognized Design Files are staged in a new
+project for validation/adaptation, not a restoration of complete project history.
+Keep the source unchanged. `reconstruct` extracts design from non-design materials.
 
 ## Open the Panel
 

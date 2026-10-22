@@ -17,7 +17,7 @@ node /absolute/plugin-root/scripts/design.mjs command \
 ```
 
 Supported inputs: `new <name>`, `open <id|name|absolute-path>`, `list`, `status`,
-`kit <kit>`, `close`, `delete <id|name>`, `recover <absolute-path>`,
+`kit <kit>`, `close`, `delete <id|name>`, `migrate <absolute-path>`,
 `reconstruct <absolute-file-or-directory>`, and `help`. Pass the user's name or
 path as one literal argument; do not interpolate it into executable shell text.
 With no subcommand, show status/help rather than creating a project.
@@ -30,8 +30,9 @@ inside returned paths or project names.
 New projects start without a Kit: select an appropriate available Kit for the user's
 design task using `kit <kit>`; if they only requested an empty project,
 report the available choices. Do not silently change an existing Kit/version.
-For recovery, select a Kit first. Recovery stages known Bundle files into a
-new target for agent validation/adaptation; never modify the source. For
+For migration, select a Kit first. Migration stages recognized Design Files
+into a new target for agent validation/adaptation; it does not restore complete
+project history. Never modify the source. For
 reconstruction follow the returned evidence-extraction instructions, not normal
 forward design generation. Do not claim migration or reconstruction finished
 merely because the target project was created.

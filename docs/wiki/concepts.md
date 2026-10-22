@@ -1,6 +1,6 @@
 # 核心概念
 
-本页介绍语构设计系统（Yugoo Design）使用时出现的名称，中英文对照遵循[命名与术语翻译规范](terminology.md)。当前技术契约以[系统架构基线](../system-design-baseline.md)和 [Bundle contract](../bundle-contract.md)为准。
+本页介绍语构设计系统（Yugoo Design）使用时出现的名称，中英文对照遵循[命名与术语翻译规范](terminology.md)。运行机制先读[技术导览](architecture.md)，项目目录、文件作用及备份边界见[项目文件管理](project-files.md)；技术契约以[系统架构基线](../system-design-baseline.md)和 [Bundle contract](../bundle-contract.md)为准。
 
 ## 先看清谁在协作，设计的是什么
 
@@ -80,7 +80,7 @@ Mindset 与宿主基础指令、Design Core 系统策略和当前设计状态共
 
 ## 设计文件与派生内容
 
-设计文件、项目版本与被接受的人类决定有各自权威。KAG 和模型摘要帮助检索与理解；PRD/Spec 是派生交接输出，不重新成为独立设计事实。建议也不会自动成为已接受的设计内容。
+设计文件、项目版本与被接受的人类决定有各自权威。项目目录中的 `project.json`、`design_files/`、`design_records/`、`.git/`，以及目录外运行状态和派生缓存的作用与管理方式，见[项目文件管理](project-files.md)。KAG 和模型摘要帮助检索与理解；PRD/Spec 是派生交接输出，不重新成为独立设计事实。建议也不会自动成为已接受的设计内容。
 
 ## 执行与审查
 
@@ -118,4 +118,4 @@ Agent 根据目标与当前设计选择适合的 Kit 和 Bundle；DSH 也可以�
 
 项目保留确切内容引用，Panel 与 Agent 修改走共享校验/发布机制。切换或升级遵循显式版本操作，不能仅凭编辑源码推断现有项目已采用新版本。详见 [Kit 分享与恢复](kit-sharing.md)。
 
-具体操作见[使用指南](usage.md)，自定义方法见[扩展开发](extending.md)，交付和精确原件恢复见[分享指南](kit-sharing.md)。首发不承诺所有旧内容格式自动迁移，既有设计材料可以通过实际宿主的 `recover` 入口保留原件并在新项目中验证、适配。
+具体操作见[使用指南](usage.md)，自定义方法见[扩展开发](extending.md)，交付和精确原件恢复见[分享指南](kit-sharing.md)。首发不承诺所有旧内容格式自动迁移，已有设计项目可通过 `migrate` 保留原件，在新项目中验证和适配其设计文件；该操作不是原样复制完整历史。普通材料的还原使用 `reconstruct`。参数与前提见[完整命令](commands.md)。

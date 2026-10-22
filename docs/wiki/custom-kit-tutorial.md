@@ -194,6 +194,8 @@ Assess current clarity from the saved design and current scope; explain what is 
 
 确认 Studio 正在读取这个独立来源和身份，再打开 Bundle 的“面板预览”。应看到两条项目规则，标题为“项目范围与变更规则”。修改一条结果文字，确认视图和字段能正常工作；样例预览不向设计项目发布修改。若还显示原内容，按[来源与刷新排查](troubleshooting.md#修改了-bundlestudio-仍显示旧内容)核对。
 
+若目标宿主或安装版本没有 Studio 面板预览入口，将这一项记为未验证，继续下一节，在隔离的新项目中通过普通设计面板检查展示与编辑；不必为预览切换真实项目或修改宿主配置。普通面板检查和 Studio 预览分别记录，不互相冒充。
+
 ## 8. 在新项目中走一轮真正的协作
 
 通过宿主的 `yugoo` 入口为新项目选择 `studio_delivery`，确认精确版本，再提出：

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -89,7 +89,10 @@ test('project MCP works without Panel and shares CLI selection across all native
     assert.ok(tool.inputSchema.properties.action.enum.includes('compose_spec'))
     assert.ok(tool.inputSchema.properties.action.enum.includes('kit'))
     assert.ok(tool.inputSchema.properties.action.enum.includes('mindset'))
-    for (const host of ['codex', 'claude-code', 'qoder', 'qwenwork']) {
+    assert.ok(tool.inputSchema.properties.action.enum.includes('migrate'))
+    assert.ok(!tool.inputSchema.properties.action.enum.includes('recover'))
+    assert.match(tool.description, /migrate/)
+    for (const host of ['codex', 'claude-code', 'qoder', 'qwenwork', 'workbuddy']) {
       const run = async (action, argument, threadId = session) => {
         const value = await client.callTool({ name: 'design_command', arguments: { host, threadId, action, ...(argument ? { argument } : {}) } })
         assert.ok(!value.isError, JSON.stringify(value))
@@ -98,6 +101,11 @@ test('project MCP works without Panel and shares CLI selection across all native
       assert.equal((await run('status')).selected, undefined)
       const created = await run('new', `${host} 科研平台`)
       assert.equal(created.panelRestartRequired, true)
+      const listBeforeMigration = (await run('list')).text
+      const missingKit = await client.callTool({ name: 'design_command', arguments: { host, threadId: session, action: 'migrate', argument: created.selected.root } })
+      assert.equal(missingKit.isError, true)
+      assert.match(missingKit.content[0].text, /Select a Kit before migration/)
+      assert.equal((await run('list')).text, listBeforeMigration, 'missing Kit cannot create a target')
       const selected = await run('kit', 'web_app')
       assert.equal(selected.selected.projectId, created.selected.projectId)
       assert.equal(selected.selected.kit.name, 'web_app')
@@ -112,6 +120,27 @@ test('project MCP works without Panel and shares CLI selection across all native
       assert.equal((await run('status', undefined, '00000000-0000-4000-8000-000000000002')).selected, undefined)
       assert.equal((await run('close')).selected, undefined)
       assert.equal((await run('open', created.selected.projectId)).selected.projectId, created.selected.projectId)
+      const sourceFile = join(created.selected.root, 'design_files/smart_questions/smart_questions.json')
+      const sourceBytes = JSON.stringify({ questions: { goal: { prompt: 'Goal?', kind: 'text', answer: 'Preserve source', detail: '' } } }) + '\n'
+      await mkdir(join(created.selected.root, 'design_files/smart_questions'), { recursive: true })
+      await writeFile(sourceFile, sourceBytes)
+      const sourceMetadata = await readFile(join(created.selected.root, 'project.json'), 'utf8')
+      const rejected = await client.callTool({ name: 'design_command', arguments: { host, threadId: session, action: 'recover', argument: created.selected.root } })
+      assert.equal(rejected.isError, true, 'removed action must be rejected by the public MCP schema')
+      assert.equal((await run('status')).selected.projectId, created.selected.projectId)
+      const migrated = await run('migrate', created.selected.root)
+      assert.equal(migrated.kind, 'success')
+      assert.equal(migrated.panelRestartRequired, true)
+      assert.notEqual(migrated.selected.projectId, created.selected.projectId)
+      assert.notEqual(migrated.selected.root, created.selected.root)
+      assert.deepEqual(migrated.selected.kit, selected.selected.kit)
+      assert.ok(migrated.conversationPrompt.includes(created.selected.root))
+      assert.match(migrated.conversationPrompt, /smart_questions/)
+      assert.equal(await readFile(join(migrated.selected.root, 'design_files/smart_questions/smart_questions.json'), 'utf8'), sourceBytes)
+      assert.equal(await readFile(sourceFile, 'utf8'), sourceBytes)
+      assert.equal(await readFile(join(created.selected.root, 'project.json'), 'utf8'), sourceMetadata)
+      assert.equal((await run('status')).selected.projectId, migrated.selected.projectId)
+      assert.equal((await run('status', undefined, '00000000-0000-4000-8000-000000000002')).selected, undefined)
     }
     const invalid = await client.callTool({ name: 'design_command', arguments: { host: 'codex', threadId: session, action: 'new' } })
     assert.equal(invalid.isError, true)

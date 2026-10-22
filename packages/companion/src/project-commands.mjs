@@ -49,11 +49,11 @@ export async function runCompanionCommand({ input, host = 'codex', threadId, pro
     const projects = Object.fromEntries(['open', 'status', 'close', 'forget', 'snapshot', 'inspectReconstructionSource'].map(name => [name, registry[name].bind(registry)]))
     projects.create = name => registry.create(name, knowledge)
     projects.list = () => registry.listRecent()
-    projects.recover = async (reference, currentId) => {
+    projects.migrate = async (reference, currentId) => {
       const basis = currentId ? await registry.open(currentId) : undefined
-      if (!basis?.kit) throw new Error('Select a Kit before recovery: new a project if needed, then kit <kit>.')
+      if (!basis?.kit) throw new Error('Select a Kit before migration: create a project if needed, then kit <kit>.')
       const exposed = await contentLibrary.resolveExactProject(basis.kit)
-      return registry.recover(reference, { knowledge: basis.knowledge, kit: basis.kit }, exposed.skills.map(skill => skill.name))
+      return registry.migrate(reference, { knowledge: basis.knowledge, kit: basis.kit }, exposed.skills.map(skill => skill.name))
     }
     const result = await runDesignProjectCommand(invocation, { projects, conversation: {
       current: async () => selection?.projectId ? selection : undefined,
@@ -84,7 +84,7 @@ export async function runCompanionCommand({ input, host = 'codex', threadId, pro
     }
     return { ...result, commandEntry: entry, selected,
       availableMindsets, ...(mindsetCatalogError ? { mindsetCatalogError } : {}),
-      panelRestartRequired: ['new', 'open', 'recover', 'reconstruct', 'close', 'delete'].includes(invocation.verb) && result.kind === 'success',
+      panelRestartRequired: ['new', 'open', 'migrate', 'reconstruct', 'close', 'delete'].includes(invocation.verb) && result.kind === 'success',
     }
   } finally { if (!readOnly) await rmdir(lock) }
 }

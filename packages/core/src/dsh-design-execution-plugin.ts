@@ -16,7 +16,7 @@ import { registerReconstructionKnowledgeTool } from './dsh-reconstruction-knowle
 import { registerContentUpgradeTool } from './dsh-content-upgrade.ts'
 export { runNativeContentMigration, registerContentUpgradeTool } from './dsh-content-upgrade.ts'
 import { KNOWLEDGE_AGENTIC_GUIDANCE } from './design-knowledge-query.ts'
-import { DESIGN_EXECUTOR_EVIDENCE_GUIDANCE, availableDesignKnowledgeTools } from './design-generation-guidance.ts'
+import { DESIGN_EXECUTOR_EVIDENCE_GUIDANCE, DESIGN_SKILL_RESOURCE_GUIDANCE, availableDesignKnowledgeTools } from './design-generation-guidance.ts'
 import {
   deriveCurrentDesignExecutionGate,
   deriveDesignExecutionGate,
@@ -867,8 +867,7 @@ export function producerSystemPrompt(skill: DesignSkill, tools: ProducerEvidence
     reconstruct
       ? 'Report unresolved decisions without inventing answers.'
       : 'Route unresolved durable user decisions through the active Smart Questions Bundle rather than inventing answers.',
-    'Bundle references and scripts are installed Kit resources, not Design Project WorkingCopy files. Read a reference with read_skill_resource using its Bundle-relative path, such as reference/artifact-contract.md. Run a declared script with run_skill_script using its path below scripts/, such as page-design.mjs (not scripts/page-design.mjs); input_file refers to the project artifact, not the installed script. An empty WorkingCopy glob/list for reference/ or scripts/ does not show that a Kit resource is missing. Do not skip a declared validation step, invent its bindings, or claim the script unavailable on that basis; use the actual resource/script tool and report its diagnostic if it fails.',
-    'When the Skill ships an ordinary script under scripts/, call run_skill_script directly with input_json for a small structured request or input_file for an artifact, plus literal argv. Do not read or inspect executable script source before running it: use the Bundle reference documenting its CLI contract, and diagnostics provide repair feedback. Read script source only when execution itself reports an internal failure that its diagnostics cannot explain. Use optional input_files for exact additional project files, input_context for small metadata, and output_file when the script result is itself an artifact, so file bytes stay outside model context. Script execution never publishes Design Files.',
+    DESIGN_SKILL_RESOURCE_GUIDANCE,
     'Historical correction is Bundle-scoped and forward-only. Use design_revisions to select an exact Published ancestor, then design_restore_snapshot preview. Apply only when the user explicitly authorized the previewed overwrite. The restore stages a WorkingCopy snapshot; inspect diff, validate, and publish it as a new commit. Never ask for or attempt Git checkout, switch, reset, fetch, pull, push, repository deletion, or raw Git passthrough.',
     'Artifact work uses the current filesystem worktree; it never requires an intermediate Git checkpoint. Write the canonical definitions before their artifacts, accepting file references only after the corresponding files exist and pass validation. The Host records real Producer/Worker attempt state and rolling logs; do not copy queued, working, execution ids, or attempt errors into Design JSON.',
     KNOWLEDGE_AGENTIC_GUIDANCE,

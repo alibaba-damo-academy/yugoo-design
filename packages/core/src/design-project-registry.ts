@@ -52,19 +52,19 @@ export interface RegisteredDesignProjectSummary extends RegisteredDesignProject 
 }
 
 /** Newly created current-format project with source files staged for Agent migration. */
-export interface RecoveredDesignProject extends RegisteredDesignProject {
+export interface MigratedDesignProject extends RegisteredDesignProject {
   readonly sourceRoot: string
-  readonly recoveredBundles: readonly string[]
+  readonly migratedBundles: readonly string[]
 }
 
-/** Read-only facts available from a recovery source before a target exists. */
-export interface DesignProjectRecoverySource {
+/** Read-only facts available from a migration source before a target exists. */
+export interface DesignProjectMigrationSource {
   readonly sourceRoot: string
   readonly metadata?: DesignProjectMetadata
 }
 
-/** Local authority used to create the new recovery target. */
-export interface DesignProjectRecoveryBasis {
+/** Local authority used to create the new migration target. */
+export interface DesignProjectMigrationBasis {
   readonly knowledge: DesignProjectKnowledgePin
   readonly kit: DesignProjectKitPin
 }
@@ -164,21 +164,21 @@ function registryText(projects: Readonly<Record<string, string>>): string {
   return `${JSON.stringify({ formatVersion: DESIGN_PROJECT_REGISTRY_VERSION, projects: sorted }, null, 2)}\n`
 }
 
-async function copyRecoveryTree(source: string, target: string): Promise<void> {
+async function copyMigrationTree(source: string, target: string): Promise<void> {
   const sourceInfo = await lstat(source)
   if (!sourceInfo.isDirectory() || sourceInfo.isSymbolicLink()) {
-    throw new Error(`design project recovery: source must be a real directory: ${JSON.stringify(source)}`)
+    throw new Error(`design project migration: source must be a real directory: ${JSON.stringify(source)}`)
   }
   await mkdir(target, { recursive: true })
   for (const entry of await readdir(source, { withFileTypes: true })) {
     const from = join(source, entry.name)
     const to = join(target, entry.name)
     if (entry.isSymbolicLink()) {
-      throw new Error(`design project recovery: symbolic links are not accepted: ${JSON.stringify(from)}`)
+      throw new Error(`design project migration: symbolic links are not accepted: ${JSON.stringify(from)}`)
     }
-    if (entry.isDirectory()) await copyRecoveryTree(from, to)
+    if (entry.isDirectory()) await copyMigrationTree(from, to)
     else if (entry.isFile()) await copyFile(from, to)
-    else throw new Error(`design project recovery: unsupported filesystem entry: ${JSON.stringify(from)}`)
+    else throw new Error(`design project migration: unsupported filesystem entry: ${JSON.stringify(from)}`)
   }
 }
 
@@ -259,12 +259,12 @@ export class DesignProjectRegistry {
 
   /**
    * Inspect the source directory without registering or modifying it.
-   * Current-format metadata is optional because older recovery sources may
+   * Current-format metadata is optional because older migration sources may
    * contain only Design Files.
    */
-  async inspectRecoverySource(sourceReference: string, signal?: AbortSignal): Promise<DesignProjectRecoverySource> {
+  async inspectMigrationSource(sourceReference: string, signal?: AbortSignal): Promise<DesignProjectMigrationSource> {
     signal?.throwIfAborted()
-    if (!isAbsolute(sourceReference)) throw new Error('design project recovery: source path must be absolute')
+    if (!isAbsolute(sourceReference)) throw new Error('design project migration: source path must be absolute')
     const sourceRoot = await this.manager.fs.realpath(resolve(sourceReference))
     await this.manager.fs.requireDirectory(sourceRoot)
     await this.manager.fs.requireDirectory(join(sourceRoot, 'design_files'))
@@ -286,7 +286,7 @@ export class DesignProjectRegistry {
 
   /**
    * Resolve a local file or directory used only as reconstruction evidence.
-   * A Design Project is recovery input instead and must not enter this path.
+   * A Design Project is migration input instead and must not enter this path.
    */
   async inspectReconstructionSource(
     sourceReference: string,
@@ -304,7 +304,7 @@ export class DesignProjectRegistry {
       throw error
     }) : undefined
     if (designFiles?.isDirectory() === true && !designFiles.isSymbolicLink()) {
-      throw new Error('design reconstruction: source contains Design Files; use /yugoo recover <path>')
+      throw new Error('design reconstruction: source contains Design Files; use /yugoo migrate <path>')
     }
     signal?.throwIfAborted()
 
@@ -312,7 +312,7 @@ export class DesignProjectRegistry {
     const layout = await this.layout()
     const registered = await this.loadValidated(layout, signal)
     if (registered.records.some(project => isWithin(project.root, sourceRoot))) {
-      throw new Error('design reconstruction: source is a registered Design Project; use /yugoo recover <path> for Design Files')
+      throw new Error('design reconstruction: source is a registered Design Project; use /yugoo migrate <path> for Design Files')
     }
 
     let projectJson: string | undefined
@@ -330,7 +330,7 @@ export class DesignProjectRegistry {
       }
     }
     if (metadata !== undefined) {
-      throw new Error('design reconstruction: source is a Design Project; use /yugoo recover <path> for Design Files')
+      throw new Error('design reconstruction: source is a Design Project; use /yugoo migrate <path> for Design Files')
     }
 
     return Object.freeze({
@@ -343,26 +343,26 @@ export class DesignProjectRegistry {
    * Create a current-format project and stage only selected-Mindset Bundle
    * files from an older project. Bundle Producers own validation and adaptation.
    */
-  async recover(
+  async migrate(
     sourceReference: string,
-    basis: DesignProjectRecoveryBasis,
+    basis: DesignProjectMigrationBasis,
     bundleNames: readonly string[],
     signal?: AbortSignal,
-  ): Promise<RecoveredDesignProject> {
+  ): Promise<MigratedDesignProject> {
     return this.mutate(async () => {
       const layout = await this.creationLayout()
       const current = await this.loadValidated(layout, signal)
-      const { sourceRoot } = await this.inspectRecoverySource(sourceReference, signal)
+      const { sourceRoot } = await this.inspectMigrationSource(sourceReference, signal)
       const sourceDesignFiles = join(sourceRoot, 'design_files')
       const available = new Set((await readdir(sourceDesignFiles, { withFileTypes: true }))
         .filter(entry => entry.isDirectory() && !entry.isSymbolicLink())
         .map(entry => entry.name))
-      const recoveredBundles = [...new Set(bundleNames)].filter(name => available.has(name)).sort()
-      if (recoveredBundles.length === 0) {
-        throw new Error('design project recovery: source contains no Bundle directories exposed by the current Mindset')
+      const migratedBundles = [...new Set(bundleNames)].filter(name => available.has(name)).sort()
+      if (migratedBundles.length === 0) {
+        throw new Error('design project migration: source contains no Bundle directories exposed by the current Mindset')
       }
 
-      const baseName = `${folderSlug(basename(sourceRoot))}-recovered`
+      const baseName = `${folderSlug(basename(sourceRoot))}-migrated`
       let name = baseName
       for (let suffix = 2; current.records.some(project => project.metadata.name === name); suffix += 1) {
         name = `${baseName}-${suffix}`
@@ -377,8 +377,8 @@ export class DesignProjectRegistry {
       })
       let persisted = false
       try {
-        for (const bundle of recoveredBundles) {
-          await copyRecoveryTree(join(sourceDesignFiles, bundle), join(created.designFilesRoot, bundle))
+        for (const bundle of migratedBundles) {
+          await copyMigrationTree(join(sourceDesignFiles, bundle), join(created.designFilesRoot, bundle))
         }
         const canonical = await this.canonicalProject(created, signal)
         this.requireNewIdentity(current.document.projects, current.records, canonical)
@@ -390,7 +390,7 @@ export class DesignProjectRegistry {
         return Object.freeze({
           ...this.record(canonical, layout.stateRoot),
           sourceRoot,
-          recoveredBundles: Object.freeze(recoveredBundles),
+          migratedBundles: Object.freeze(migratedBundles),
         })
       } finally {
         if (!persisted) await this.manager.fs.removeTree(created.root)

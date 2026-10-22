@@ -35,9 +35,9 @@ export function sortDesignProjectsNewestFirst(
   ))
 }
 
-/** Recovery is a normal Host command; the Panel only supplies the source root. */
-export function designProjectRecoveryCommand(root: string): string {
-  return `/yugoo recover ${root}`
+/** Migration is a normal Host command; the Panel only supplies the source root. */
+export function designProjectMigrationCommand(root: string): string {
+  return `/yugoo migrate ${root}`
 }
 
 function compactDate(value: string, isZh: boolean): string {
@@ -169,8 +169,8 @@ export function DesignProjectSidebarEntry({
                         </button>
                         <button
                           type='button'
-                          className='dsh-project-recover'
-                          onClick={() => { onCommand(designProjectRecoveryCommand(project.root)) }}
+                          className='dsh-project-migrate'
+                          onClick={() => { onCommand(designProjectMigrationCommand(project.root)) }}
                           title={isZh ? `迁移 ${project.name}` : `Migrate ${project.name}`}
                           aria-label={isZh ? `迁移 ${project.name}` : `Migrate ${project.name}`}
                         >

@@ -6,7 +6,13 @@
 
 安装、更新与接入实现的规范入口是 [Host integration entry points](../../packages/companion/HOSTS.md)，在安装前即可阅读。本页提供各宿主的呈现方式和已有验证范围；操作指令以对应指南及候选版本为准。桌面端支持不能从同名 CLI 或其他平台推断。
 
-默认主路径是复制[同一段通用安装提示词](../../packages/companion/HOSTS.md#default-prompt-any-supported-host)，让当前宿主的 Agent 从 npm 获取精确版本并选择其安装路径；需要时也可以显式指定宿主。历史发行检查（2026-10-17 UTC）记录 Companion `0.1.0-beta.3` 与当时 11 个 DSH 相关 `0.1.0-beta.2` 包已公开，12 个包的版本、标签和归档元数据已核对；完整下载及安装验证范围见[预览状态](preview-status.md)。已获取、已登记/导入、已激活与实际可用分别验证；本地候选和历史套件的结果不等于六宿主 beta 安装及更新已经验收。
+停用或卸载时，使用[对应宿主的移除入口](../../packages/companion/HOSTS.md#disable-uninstall-and-retained-files)，区分原生登记、单独 MCP 连接器、共享 runtime 和用户项目；没有全宿主通用的卸载命令。
+
+默认主路径是复制[同一段通用安装提示词](../../packages/companion/HOSTS.md#default-prompt-any-supported-host)，让当前宿主的 Agent 选择安装路径；需要时可显式指定宿主。已有符合所需精确版本、适配器和运行条件的安装可以复用，无需为刷新宿主重复取同一包。需要新版本时，再从 npm 获取到独立长期目录。
+
+2026-10-21 的官方 npm 仓库查询确认 Companion `0.1.0-beta.19` 已发布，当时 `beta` 指向 beta.19，`latest` 仍为 beta.10；安装前重新解析所选渠道并固定版本。历史发行、候选与宿主实测见[预览状态](preview-status.md#current-release-and-use)。已获取、已登记/导入、已激活与实际可用分别验证；这些记录不等于六宿主安装及更新都已验收。
+
+日常入口随宿主不同：DSH 使用 `/yugoo` 子命令，Codex 使用 `$yugoo` 或技能选择器，Claude Code/Qoder 使用已安装插件的 `/yugoo-design:yugoo`。千问办公和 WorkBuddy 在原生技能入口选择 `yugoo`，再向 Agent 用自然语言提出项目操作；不要把 DSH 的整套斜杠参数当作所有宿主都能直接解析的命令。
 
 ## DeepSeek Harness
 
@@ -45,21 +51,23 @@
 ## 千问办公 QwenWork
 
 - 呈现方式：在系统浏览器中打开完整 Companion，连接千问办公的原生会话。
-- 安装入口：[千问办公专用提示词](../../packages/companion/HOSTS.md#install-or-update-qwenwork)。当前 Companion `0.1.0-beta.3` 支持从已获取的精确 npm 包准备专家套件与连接器，按[桌面准备指南](../../packages/companion/README.md#desktop-npm-package-preparation)在原生界面确认导入。现有 Windows 预览材料仍按随包指南使用；独立连接器须单独导入，启用 Skill 不代表工具已经连接。
+- 安装入口：[千问办公专用提示词](../../packages/companion/HOSTS.md#install-or-update-qwenwork)。从已获取的精确 npm 包准备专家套件，按[桌面准备指南](../../packages/companion/README.md#desktop-npm-package-preparation)在原生界面导入并启用。默认 ZIP 已含 MCP 连接器；独立 JSON 是组织策略允许时的替代入口，只启用一份 `design-system` 连接器。启用 Skill 不代表工具已连接。
 - 预览运行时与所需 Node 环境按随包指南准备。桌面输入依赖特定版本的宿主设置；普通 Hook 模式下可能需要回到原会话继续，不应将两种模式混用。
 - 历史验证范围：千问办公 `1.2.5` 系列、Yugoo Design 套件 `0.2.0` 的 Windows 本地预览；对应版本的首次会话身份、工具连接、系统浏览器打开及消息往返已有实际验证。
-- 历史边界：2026-10-11 的记录仍有发送确认与历史回显延迟，以及保存后继续、KAG 和完整设计执行待验收项；这些结果不能代替后续 `1.3.2` 的逐项验收。后续本地 beta.18 候选的前台 GRA 手测范围见下方[评审降级](#后台能力与评审降级)。千问办公接入不使用 WorkBuddy 的内嵌面板路径。
+- 历史边界：2026-10-11 的记录仍有发送确认与历史回显延迟，以及保存后继续、KAG 和完整设计执行待验收项；这些结果不能代替后续 `1.3.2` 的逐项验收。后续前台 GRA 的用户确认和本地 beta.18 细项记录见下方[评审降级](#后台能力与评审降级)。千问办公接入不使用 WorkBuddy 的内嵌面板路径。
 
 安装材料中的 `hosts/qwenwork/README.md` 记录具体准备步骤与版本限制。界面和回答保留“千问办公（QwenWork）”的宿主身份，插件名称为 **Yugoo Design**。
 
 ## WorkBuddy
 
 - 呈现方式：通过宿主的 `present_files` 自动打开内嵌面板预览，也可以在系统浏览器打开完整 Companion。
-- 安装入口：[WorkBuddy 专用提示词](../../packages/companion/HOSTS.md#install-or-update-workbuddy)。当前 Companion `0.1.0-beta.3` 支持从已获取的精确 npm 包准备稳定 market，再按[桌面准备指南](../../packages/companion/README.md#desktop-npm-package-preparation)使用宿主导入或 Refresh/Update。现有预览插件按随包指南安装、启用，再在原生会话中使用已安装的 `yugoo` 技能。
-- 版本范围：WorkBuddy `5.7.x` 系列、Yugoo Design 插件 `0.3.20` 的 Windows 本地预览。对应预览迭代已有工具与身份绑定、主会话及串行原生 Producer、面板自动打开与回传、保存后原会话读取、历史及 KAG 的实际验证记录。
-- 当前边界：嵌套 Worker 与后台 GRA 尚不可用。内嵌预览的工具栏与地址栏由宿主控制，不能据此承诺打开带地址栏的独立内置浏览器标签页。
+- 安装入口：[WorkBuddy 专用提示词](../../packages/companion/HOSTS.md#install-or-update-workbuddy)。从已获取的精确 npm 包准备稳定 market，再按[桌面准备指南](../../packages/companion/README.md#desktop-npm-package-preparation)导入并启用。升级先 Refresh 市场、确认目录版本，再 Update 已安装套件；按提示正常重载宿主或开启新会话，核对实际加载版本和工具。
+- 历史验证范围：WorkBuddy `5.7.x` 系列、Yugoo Design 插件 `0.3.20` 的 Windows 本地预览。对应预览迭代已有工具与身份绑定、主会话及串行原生 Producer、面板自动打开与回传、保存后原会话读取、历史及 KAG 的实际验证记录。
+- 后续 WorkBuddy `5.8.3` 的用户反馈确认前台手动 GRA 可用，仍未获得主对话不被占用的后台体验，详见下方[评审降级](#后台能力与评审降级)。嵌套 Worker 尚不可用。内嵌预览的工具栏与地址栏由宿主控制，不能据此承诺打开带地址栏的独立内置浏览器标签页。
 
 安装材料中的 `hosts/workbuddy/README.md` 记录具体安装及验证范围。页面可见、会话已连接和保存内容被 Agent 读取是不同状态；遇到问题按[故障排查](troubleshooting.md)分别检查。
+
+升级与重新打开：取得新 npm 运行时后，仍需更新宿主安装材料并让宿主重载；材料准备成功不代表正在运行的会话已换版本。保留旧运行时和回执，按适配器使用更高套件版本及上一成功回执；不要用重复安装掩盖旧会话或旧市场目录。重开后核对 `yugoo`、工具、原设计项目、面板保存与原会话读取。
 
 ## 后台能力与评审降级
 
@@ -74,7 +82,9 @@ WorkBuddy `5.8.3` 的用户实测则表现为：原生 Agent 虽返回异步启�
 
 用户未选择时不改策略、不启动评审。宿主支持不占用主对话的后台执行时，手动评审沿用异步方式；否则，手动请求也须先确认本次同步执行。共享实现、固定版本回归和实际宿主验收分别记录；安装版是否提供这一降级方式，以其随包指南和验证结果为准。
 
-**2026-10-21 的千问办公局部手测：** Windows 千问办公 `1.3.2-26101704`、套件 `0.1.5` 与 Companion `0.1.0-beta.18` 的本地候选中，用户明确选择本次前台评审后，主 Agent 通过既有读取与提交接口完成 G/R/A 三项评审。没有启动子 Agent 或后台就绪探针；评审策略仍为 `auto`，已有 U/S/T 被复用，设计文件未被改写。本次不包含 WorkBuddy 对应流程，不证明后台就绪、完整 Kit 执行或这些本地版本已发布到 npm。
+**2026-10-21 用户确认：** 千问办公与 WorkBuddy 的本次前台手动 GRA 均已通过。此结论限于用户实际操作的流程，不是后台异步验收，也不为未记录的候选版本补造安装结果。评审完成、建议已接受和设计文件已修订是不同状态；后两者按用户选择另行处理。
+
+**千问办公局部手测细项：** Windows 千问办公 `1.3.2-26101704`、套件 `0.1.5` 与 Companion `0.1.0-beta.18` 的本地候选中，用户明确选择本次前台评审后，主 Agent 通过既有读取与提交接口完成 G/R/A 三项评审。没有启动子 Agent 或后台就绪探针；评审策略仍为 `auto`，已有 U/S/T 被复用，设计文件未被改写。这份细项记录仅来自千问办公；WorkBuddy 的用户确认单独计入上述结论，不复用本候选的版本和日志。两者均不证明后台就绪、完整 Kit 执行或本地候选自身已发布到 npm。
 
 GRA 仍是三个审查视角。清晰度评估（U/S/T）由主 Agent 报告，KAG 由自己的投影与维护流程管理；两者均不以 GRA 后台可用为前提，也不能据此推断各自已通过实机验收。
 

@@ -1,4 +1,5 @@
 /** Project-scoped file tools installed only in one Design Producer Agent scope. */
+import { missingDesignSkillResource } from './design-generation-guidance.ts'
 import type { Context } from '@deepseek-ai/cordis'
 import type { JsonValue } from './json-value.ts'
 import { defineTool, type ToolDefinition } from '@deepseek-ai/dsh-tools'
@@ -700,7 +701,7 @@ export function registerDshProducerDesignTools(
   register(defineTool({
     name: 'read_skill_resource',
     description: 'Read one immutable reference or asset bundled with the current Design skill. '
-      + 'The invocation Bundle is already bound and cannot be selected through tool arguments. '
+      + 'The invocation Bundle is already bound and cannot be selected through tool arguments. Paths are Bundle-relative, not project or Host filesystem paths. '
       + 'A resource that exceeds one bounded page returns next_offset; continue reading from that offset.',
     parameters: {
       path: { type: 'string', required: true, description: 'Path relative to the current skill package.' },
@@ -731,7 +732,7 @@ export function registerDshProducerDesignTools(
     async execute(args, exec) {
       const path = requireSkillResourcePath(args.path)
       const content = await resources.read(path, exec.signal)
-      if (content === undefined) throw new Error(`resource not found: ${path}`)
+      if (content === undefined) throw missingDesignSkillResource(path)
       const page = pageDesignSkillResource(content, args.offset, args.max_chars)
       return {
         content: page.content,

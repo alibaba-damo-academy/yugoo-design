@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { createRequire } from 'node:module'
 import test from 'node:test'
 import { validateCanonicalDocumentLinks } from './public-document-projection.mjs'
 import { stagePublicSnapshot, inspectPublicSync } from './public-snapshot-stage.mjs'
@@ -140,9 +141,61 @@ test('the existing export CLI applies canonical docs to an isolated target and t
 const repo = fileURLToPath(new URL('../', import.meta.url))
 const actualPolicy = () => JSON.parse(readFileSync(join(repo, 'release/public-source-policy.json'), 'utf8'))
 const classify = (policy, path) => policy.rules.find(rule => rule.kind === 'file' ? rule.path === path : path.startsWith(rule.path))?.action ?? 'review'
+const isPublicDocument = path => path.endsWith('.md') && (
+  path.startsWith('docs/') || /^(README[^/]*|CONTRIBUTING|SECURITY|AGENTS)\.md$/.test(path) ||
+  /^packages\/[^/]+\/(?:hosts\/[^/]+\/)?(README[^/]*|HOSTS)\.md$/.test(path)
+)
+test('public documentation emphasis renders under CommonMark/GFM, including CJK punctuation', async () => {
+  // Reuse the Panel's declared Markdown dependencies; no separate documentation renderer.
+  const require = createRequire(join(repo, 'packages/panel/package.json'))
+  const { createElement } = require('react')
+  const { renderToStaticMarkup } = require('react-dom/server')
+  const { default: Markdown } = await import(require.resolve('react-markdown'))
+  const { default: gfm } = await import(require.resolve('remark-gfm'))
+  const render = source => {
+    const unresolved = []
+    const inspect = () => tree => {
+      const visit = node => {
+        // Code/inlineCode are deliberately excluded: literal Markdown examples are valid.
+        if (node.type === 'text' && node.value.includes('**')) {
+          unresolved.push({ line: node.position?.start.line, text: node.value })
+        }
+        for (const child of node.children ?? []) visit(child)
+      }
+      visit(tree)
+    }
+    const html = renderToStaticMarkup(createElement(Markdown, { remarkPlugins: [gfm, inspect] }, source))
+    return { html, unresolved }
+  }
+  assert.equal(render('**设计套件（Kit）**将方法组织在一起。').unresolved.length, 1)
+  assert.match(render('**设计套件（Kit）** 将方法组织在一起。').html, /<strong>设计套件（Kit）<\/strong>/)
+  assert.deepEqual(render('`**literal**`\n\n```md\n**literal**\n```').unresolved, [])
+  const policy = actualPolicy()
+  const tracked = execFileSync('git', ['-C', repo, 'ls-files'], { encoding: 'utf8' }).trim().split('\n')
+  const documents = tracked.filter(path => isPublicDocument(path) && classify(policy, path) === 'include')
+  for (const path of documents) {
+    assert.deepEqual(render(readFileSync(join(repo, path), 'utf8')).unresolved, [], `${path}: emphasis markers leaked into rendered text`)
+  }
+})
+test('command reference covers the shared parser and promotes migrate without a recovery alias', () => {
+  const source = readFileSync(join(repo, 'packages/core/src/design-project-adapter.ts'), 'utf8')
+  const declaration = source.match(/const VERBS:[^\n]*= \[([^\]]+)\]/)?.[1]
+  assert.ok(declaration, 'shared command list must be discoverable')
+  const commands = [...declaration.matchAll(/'([^']+)'/g)].map(match => match[1]).filter(name => name !== 'mindset')
+  commands.push('help')
+  const guide = readFileSync(join(repo, 'docs/wiki/commands.md'), 'utf8')
+  for (const name of commands) assert.ok(guide.includes(`/yugoo ${name}`), `missing documented command: ${name}`)
+  assert.ok(commands.includes('migrate'))
+  assert.ok(!commands.includes('recover'))
+  for (const path of ['docs/wiki/commands.md', 'docs/wiki/usage.md', 'docs/design-command-agent-entry.md']) {
+    assert.doesNotMatch(readFileSync(join(repo, path), 'utf8'), /\/yugoo recover\b/, path)
+  }
+})
 test('actual classification keeps canonical docs public, excludes retained originals and limits companion-dev to its directory', async t => {
   const p = actualPolicy()
-  for (const path of [...roots, 'README.en.md', 'docs/wiki/README.md', 'docs/wiki/hosts.md', 'docs/public-document-sync.md']) assert.equal(classify(p, path), 'include', path)
+  for (const path of [...roots, 'README.en.md', 'docs/wiki/README.md', 'docs/wiki/hosts.md',
+    'docs/wiki/commands.md', 'docs/wiki/architecture.md', 'docs/wiki/project-files.md',
+    'docs/public-document-sync.md']) assert.equal(classify(p, path), 'include', path)
   for (const path of ['docs/documentation-todo.md', 'release/README.public.md', 'docs/internal/documentation-first-pass/README.md']) assert.equal(classify(p, path), 'exclude', path)
   const f = await fixture(t, { 'packages/companion-dev/example.mjs': '// synthetic developer helper\n',
     'packages/companion-dev-tools/example.mjs': '// unknown neighboring directory\n' })
@@ -154,13 +207,13 @@ test('actual classification keeps canonical docs public, excludes retained origi
   assert.equal(result.releaseApproved, false)
 })
 
-test('actual canonical README/Wiki links close against the reviewed file selection', async () => {
+test('actual public documentation links close against the reviewed file selection', async () => {
   const p = actualPolicy()
   const wiki = (await readdir(join(repo, 'docs/wiki'))).filter(path => path.endsWith('.md')).map(path => `docs/wiki/${path}`)
   const publicRoots = [...roots, 'README.en.md', 'AGENTS.md', 'docs/public-document-sync.md']
   const tracked = execFileSync('git', ['-C', repo, 'ls-files'], { encoding: 'utf8' }).trim().split('\n')
   const selected = [...new Set([...tracked, ...publicRoots, ...wiki])].filter(path => classify(p, path) === 'include')
-  const documents = Object.fromEntries([...publicRoots, ...wiki].map(path => [path, readFileSync(join(repo, path), 'utf8')]))
+  const documents = Object.fromEntries(selected.filter(isPublicDocument).map(path => [path, readFileSync(join(repo, path), 'utf8')]))
   const result = validateCanonicalDocumentLinks({ documents, includedPaths: selected,
     readTarget: path => readFileSync(join(repo, path), 'utf8') })
   assert.deepEqual(result.missing, [])

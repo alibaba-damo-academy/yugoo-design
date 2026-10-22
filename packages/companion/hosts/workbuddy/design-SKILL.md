@@ -17,6 +17,11 @@ below still apply: foreground Producers remain serial and Workers are unsupporte
    Reuse the selected project (`status`); create or open a project only according
    to the user's request. `kit web_app` activates the existing installed Kit
    when authorized; it does not require recreating the project or restarting a panel.
+   For `migrate PATH`, first select a Kit: stage recognized Design Files in a new
+   project, then follow the returned validation/adaptation guidance. This does not
+   restore complete project history or modify the source. Use `reconstruct PATH`
+   for extracting design from non-design source materials. Creating either target
+   is preparation, not completed migration or reconstruction.
 3. Use `view: panel-only` when the user wants the host's right-side browser;
    use `view: full` for a separate complete browser. Page layout and the host's
    browser container are distinct. WorkBuddy can automatically open the local

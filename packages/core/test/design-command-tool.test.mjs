@@ -60,6 +60,71 @@ const { Context } = await import('@deepseek-ai/cordis')
 const { default: CommandRuntime } = await import('@deepseek-ai/dsh-commands')
 const { parseDesignCommand, runDesignProjectCommand } = await import('../src/design-project-adapter.ts')
 
+test('project migration is the canonical command without a recover alias', async () => {
+  const path = 'C:\\Users\\Tester\\Documents\\legacy project /recover notes'
+  assert.deepEqual(parseDesignCommand(`migrate ${path}`), { verb: 'migrate', argument: path })
+  assert.equal(parseDesignCommand(`recover ${path}`), undefined)
+  const missing = await runDesignProjectCommand(parseDesignCommand('migrate'), { projects: {}, conversation: {} })
+  assert.equal(missing.kind, 'error')
+  assert.match(missing.text, /\/yugoo migrate/)
+  const help = await runDesignProjectCommand(parseDesignCommand('help'), {
+    projects: {}, conversation: { current: async () => undefined },
+  })
+  assert.match(help.text, /\/yugoo migrate/)
+  assert.doesNotMatch(help.text, /\/yugoo recover/)
+  const { registerServiceTools } = await import('../src/service-tools.ts')
+  const definitions = new Map(), calls = []
+  registerServiceTools({ tools: { register: definition => definitions.set(definition.name, definition) } }, {
+    executeProjectCommand: async (...args) => { calls.push(args); return { kind: 'success', text: 'migration prepared' } },
+  })
+  const command = definitions.get('design_command')
+  assert.ok(command.parameters.properties.action.enum.includes('migrate'))
+  assert.ok(!command.parameters.properties.action.enum.includes('recover'))
+  const agent = { session: { header: {} } }, signal = new AbortController().signal
+  await command.execute({ action: 'migrate', argument: path }, { agent, signal })
+  assert.deepEqual(calls, [[agent, `migrate ${path}`, signal]])
+  const result = await DesignService.prototype.executeProjectCommand.call({}, agent, `recover ${path}`, signal)
+  assert.equal(result.kind, 'error', 'the native service rejects the retired command before any project access')
+})
+
+test('DSH migration resolves the source Kit and uses the renamed registry port', async () => {
+  const calls = [], selections = []
+  const sourceRoot = '/legacy/read only /recover notes'
+  const pin = { name: 'fixture_kit', version: '1.0' }
+  const kit = { ...pin, skills: [{ name: 'bounded_records' }] }
+  const migrated = { projectId: 'new-target', name: 'legacy-migrated', root: '/new-target',
+    sourceRoot, migratedBundles: ['bounded_records'], kit: pin }
+  const signal = new AbortController().signal
+  const owner = {
+    projects: {
+      inspectMigrationSource: async (...args) => { calls.push(['inspect', ...args]); return { sourceRoot, metadata: { kit: pin } } },
+      migrate: async (...args) => { calls.push(['migrate', ...args]); return migrated },
+      snapshot: async id => { assert.equal(id, migrated.projectId); return { checkpoint: 'new-head', bundleStates: {} } },
+    },
+    resolveKit: value => { assert.deepEqual(value, { kit: pin.name, version: pin.version }); return kit },
+    listKits: () => [kit],
+    requireKnowledgeRuntime: () => ({ defaultProvider: 'test-provider' }),
+    advisoryRuntimeStatus: () => undefined,
+    conversationPort: () => ({
+      current: async () => undefined,
+      select: async record => { selections.push(record); return { revision: 1 } },
+    }),
+  }
+  const main = { session: { header: {} } }
+  const result = await DesignService.prototype.executeProjectCommand.call(owner, main, `migrate ${sourceRoot}`, signal)
+  assert.equal(result.kind, 'success')
+  assert.deepEqual(calls, [
+    ['inspect', sourceRoot, signal],
+    ['migrate', sourceRoot, { knowledge: { provider: 'test-provider' }, kit: pin }, ['bounded_records'], signal],
+  ])
+  assert.deepEqual(selections, [migrated])
+  assert.match(result.conversationPrompt, /bounded_records/)
+  assert.match(result.conversationPrompt, /不要修改来源目录/)
+  await assert.rejects(DesignService.prototype.executeProjectCommand.call(owner,
+    { session: { header: { parentSession: 'main' } } }, `migrate ${sourceRoot}`, signal), /main Agent/)
+  assert.equal(calls.length, 2, 'a child refusal never begins migration')
+})
+
 test('Kit commands preserve exact catalog identifiers and keep the old spelling as an alias', async () => {
   assert.deepEqual(parseDesignCommand('  kit  custom_kit  '), { verb: 'kit', argument: 'custom_kit' })
   assert.deepEqual(parseDesignCommand('mindset custom_kit'), { verb: 'mindset', argument: 'custom_kit' })

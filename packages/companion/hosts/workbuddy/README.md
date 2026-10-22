@@ -1,5 +1,17 @@
 # WorkBuddy integration
 
+## Installation and confirmed use
+
+Start with the [shared installation prompt](../../HOSTS.md#install-or-update-workbuddy)
+and [stable installation and updates](#stable-installation-and-updates).
+Companion npm versions and numeric native suite versions are independent.
+On 2026-10-21 the user confirmed manual foreground GRA on WorkBuddy; the observed
+5.8.3 asynchronous path still occupied the main conversation. This is acceptance
+of the confirmed foreground flow, not nonblocking background execution or an
+installation result for every published Companion version. The
+[current host status](../../../../docs/wiki/hosts.md#后台能力与评审降级)
+separates this result from the historical candidate records below.
+
 ## Current source: main U/S/T and conditional native background GRA
 
 The current source exposes ordinary `design_main_context` /
@@ -530,7 +542,10 @@ Conversation switching and actual-host cleanup checks remain pending.
 For a fresh installation, acquire the exact `@yugoo-design/companion` npm version
 in a persistent user-owned directory and use its `install --host workbuddy`
 entry with the verified Node path, external preparation destination and
-`--suite-version 0.3.29`. The acquired manifest requires Node `>=22.19.0 <23`.
+an explicit native suite version (the recorded beta.18 preparation used
+`--suite-version 0.3.30`). Select the version for the acquired package; an update
+must be greater than the previous receipt's version. The acquired manifest
+requires Node `>=22.19.0 <23`.
 Import the returned `nativeImport.market` directory through WorkBuddy's normal
 marketplace importer, then enable the `yugoo-design` suite and its MCP connection.
 The new market is named `yugoo-design`; no historical test installation or

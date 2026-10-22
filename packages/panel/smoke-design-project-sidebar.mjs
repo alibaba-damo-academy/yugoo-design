@@ -6,7 +6,7 @@ import { createRoot } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { JSDOM } from 'jsdom'
 import {
-  designProjectRecoveryCommand,
+  designProjectMigrationCommand,
   DesignProjectSidebarEntry,
   sortDesignProjectsNewestFirst,
 } from './lib/index.js'
@@ -22,7 +22,7 @@ const projects = [
   { projectId: 'new', name: 'New', root: '/new', updatedAt: '2026-02-01T00:00:00.000Z' },
 ]
 assert.deepEqual(sortDesignProjectsNewestFirst(projects).map(project => project.projectId), ['new', 'old'])
-assert.equal(designProjectRecoveryCommand('/projects/legacy project'), '/yugoo recover /projects/legacy project')
+assert.equal(designProjectMigrationCommand('/projects/legacy project'), '/yugoo migrate /projects/legacy project')
 assert.doesNotMatch(sidebarSource, /disabled=\{!canRecover\}/)
 
 const html = renderToStaticMarkup(createElement(DesignProjectSidebarEntry, {
@@ -64,8 +64,14 @@ try {
       select.dispatchEvent(new window.Event('change', { bubbles: true }))
     })
     await act(async () => footer.querySelector('button').click())
+    const migrate = document.querySelector('.dsh-project-row:last-child .dsh-project-migrate')
+    assert.equal(migrate.textContent, language === 'zh-CN' ? '迁移' : 'Migrate')
+    assert.equal(migrate.getAttribute('aria-label'), language === 'zh-CN' ? '迁移 Old' : 'Migrate Old')
+    assert.equal(migrate.disabled, false, 'migration remains available without changing the existing action geometry')
+    await act(async () => migrate.click())
   }
-  assert.deepEqual(commands, ['/yugoo kit web_app', '/yugoo kit web_app'], 'Kit selection uses the canonical Host command')
+  assert.deepEqual(commands, ['/yugoo kit web_app', '/yugoo migrate /old', '/yugoo kit web_app', '/yugoo migrate /old'],
+    'Kit selection and bilingual migration use the canonical Host commands')
 } finally {
   await act(async () => root.unmount())
   dom.window.close()

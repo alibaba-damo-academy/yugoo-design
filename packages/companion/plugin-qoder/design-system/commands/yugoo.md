@@ -1,6 +1,6 @@
 ---
 description: Create, open or work on an interactive Design Project
-argument-hint: new <name> | open <path> | kit web_app | status | recover <path> | reconstruct <path>
+argument-hint: new <name> | open <path> | kit web_app | status | migrate <path> | reconstruct <path>
 ---
 
 Use this plugin's `skills/yugoo/SKILL.md` to handle the user's Yugoo Design request:

@@ -1,47 +1,74 @@
 # 语构设计系统（Yugoo Design）Wiki
 
-在已有智能体宿主（Agent Host）中，与 AI 一起澄清、查看、修改并继续设计。如果方案需要符合你的习惯、业务情况或判断，这里介绍如何把这些信息带进设计，并在后续讨论中保留下来。本 Wiki 是开发仓和公开源码共用的文档入口；安装与使用以所选候选版本及宿主指南为准。
+本 Wiki 是完整项目手册：从在已有智能体宿主（Agent Host）中开始设计，到项目与版本管理、能力原理、Kit 和 Studio、内容创作及源码开发。你可以先走最短使用路径，需要细节时再查对应章节；安装和运行范围以所选版本与宿主指南为准。
 
-[项目首页](../../README.md) · [文档总览](../README.md) · [开始使用](getting-started.md) · [宿主兼容](hosts.md) · [使用指南](usage.md) · [反馈](support.md)
+[项目首页](../../README.md) · [English README](../../README.en.md) · [文档总览](../README.md) · [开始使用](getting-started.md) · [全部命令](commands.md) · [反馈](support.md)
 
 ## 从哪里读起
 
-- **用现成套件完成自己的设计：**先[安装并开始一次协作](getting-started.md)，按[官方 Kit 用户指南](official-kits.md)选择设计活动，再沿[工作室项目交付教程](web-app-demo.md)体验面板、反馈、关联审查与整合；日常操作查[使用指南](usage.md)。[官方套件清单](kit-sharing.md#official-kits)集中说明版本和获取方式。
-- **把自己的专业方法做成工具：**先做[最小定制教程](custom-kit-tutorial.md)，再从[扩展开发](extending.md#一个最小创作闭环)查 Kit、Bundle 与交互表达的规则，借助[Studio](usage.md#6-studio查看定制和检验套件)检查效果，按[分享指南](kit-sharing.md)交给接收者验证。
-- **理解系统为什么这样工作：**先看[产品理念](../product-vision.md)，再看[三个核心机制](concepts.md#三个核心机制)与[名称职责](concepts.md#名称与职责)。可交互展开、缺口驱动推进、结构化整合与校准，共同服务于“理解、思考、表达、对齐”。
+- **完成自己的设计：**[安装并开始](getting-started.md) → [工作室协作教程](web-app-demo.md) → [日常使用](usage.md)。按[套件用户指南](official-kits.md)选择当前需要的设计活动。
+- **理解系统及全部能力：** 先看[产品理念](../product-vision.md)、[核心概念](concepts.md)和[运行机制导览](architecture.md)，再按下面的能力表查 U/S/T、KAG、GRA、保存与交接；[完整命令](commands.md)说明 `/yugoo` 参数。
+- **把专业方法做成工具：**[最小定制](custom-kit-tutorial.md) → [创作规则](extending.md) → [Studio](usage.md#6-studio查看定制和检验套件) → [分享给接收者](kit-sharing.md)。
+- **参与源码开发：**[开发指南](development.md) → [架构基线](../system-design-baseline.md)与所属包 README → [贡献、测试与发布](../../CONTRIBUTING.md)。
 
 ## 第一次使用
 
-| 想做什么 | 阅读入口 |
+| 想做什么 | 阅读入口与结果 |
 | --- | --- |
-| 选择宿主并安装插件 | [开始使用](getting-started.md)、[宿主兼容](hosts.md) |
-| 使用默认 Web App 套件或获取其他官方套件 | [官方设计套件清单与 Agent 获取指引](kit-sharing.md#official-kits) |
-| 了解各套件能做什么、在面板里判断什么 | [官方 Kit 用户指南](official-kits.md) |
-| 跟着一个案例完成协作 | [工作室项目交付教程](web-app-demo.md) |
-| 创建项目、请求设计、保存后继续 | [使用指南](usage.md) |
-| 查看、复制方法或检验一个面板 | [Studio 操作](usage.md#6-studio查看定制和检验套件) |
-| 理解 Kit、Bundle、Panel 和设计文件 | [核心概念](concepts.md) |
-| 定位安装、连接、模型和保存问题 | [故障排查](troubleshooting.md) |
-| 查看当前交付范围 | [预览状态与验证范围](preview-status.md) |
+| 准备宿主、配置模型并安装或更新 | [开始使用](getting-started.md)、[宿主兼容](hosts.md)：找到当前宿主入口并完成启用 |
+| 创建项目并请求一个结果 | [工作室教程](web-app-demo.md)：从目标进入具体面板，人的反馈改变设计 |
+| 了解可用领域能力 | [官方套件用户指南](official-kits.md)、[获取清单](kit-sharing.md#official-kits)：区分默认 Kit、独立内容和内部方法示例 |
+| 理解界面中的名称 | [核心概念](concepts.md)、[术语](terminology.md)：区分 Project、Kit、Mindset、Bundle、Panel、Studio |
+| 查看实际版本和运行限制 | [宿主范围](hosts.md)、[预览状态](preview-status.md)：当前可用能力与历史验证分开 |
+
+## 日常操作与完整命令
+
+| 任务 | 在哪里查 | 正常结果与边界 |
+| --- | --- | --- |
+| 创建、打开、列出、切换或关闭项目；选择 Kit | [完整命令与参数](commands.md)、[项目选择](usage.md#1-选择项目与目标) | 明确当前项目及精确 Kit；自然语言与可用宿主命令共用服务 |
+| 查看、编辑、保存、重开面板 | [面板操作](usage.md#2-查看并修改-panel) | 保存的设计成为后续依据；页面打开和保存完成是不同结果 |
+| 读建议并决定是否采纳 | [处理建议](usage.md#3-处理建议) | 接受后选择修订、澄清或研究；需要改设计时通过所属 Bundle，建议处置本身不改变设计 |
+| 查看 Git 历史、迁移旧项目或移除登记 | [管理与恢复](usage.md#4-管理与恢复)、[参数参考](commands.md) | 版本历史支持追溯；`migrate` 新建适配后的项目，移除登记保留文件 |
+| 从既有材料或软件重建设计 | [材料重建](usage.md#5-从既有材料重建设计) | 保留观察依据和未决项，通过所属 Bundle 形成设计文件 |
+| 整合 PRD 或准备开发任务 | [套件用户指南](official-kits.md)、[开发交接](../design-development-handoff.md) | 保留源设计，交接按当前任务及代码库已有 spec 组织 |
+
+## 能力与原理
+
+| 能力 | 用途与操作入口 | 进一步说明 |
+| --- | --- | --- |
+| 可交互成果与缺口驱动循环 | AI 根据当前目标、证据和人的反馈选择有意义的行动；按需打开问答、图表或原型 | [三个核心机制](concepts.md#三个核心机制)、[产品理念](../product-vision.md) |
+| Project、Kit、Mindset 与 Bundle | 项目保存成果与版本；Kit 组织领域专家的方法和工具箱，Bundle 提供聚焦能力 | [名称与职责](concepts.md#名称与职责)、[套件用户指南](official-kits.md) |
+| 清晰度评估（U/S/T） | 结合证据理解本轮还缺什么，追问判断依据和下一步 | [核心概念](concepts.md#清晰度评估与下一步建议)、[评分解释](../ust-score-explanations.md)、[日常操作](usage.md) |
+| 知识图谱（KAG） | 关联独立设计来源，辅助查找改动影响及依据 | [概念与使用](concepts.md#知识关联与审查)、[知识来源策略](../design-knowledge-source-policy.md)、[日常操作](usage.md) |
+| 主动审查（GRA） | 从一致性、知识疑点和意图三个视角提出建议；按宿主选择后台、同步或手动 | [处理建议](usage.md#3-处理建议)、[宿主限制](hosts.md#后台能力与评审降级)、[建议阅读](../advisory-reading.md) |
+| 耐久文件与 Git 版本 | 保存后继续、追溯修改并迁移旧项目；版本运行库随包提供 | [项目管理](usage.md#4-管理与恢复)、[项目文件及备份](project-files.md)、[项目参数](commands.md) |
+| 设计到开发 | 将任务所需设计依据交给编码 Agent，并把新发现的问题送回所属设计维度 | [交接指南](../design-development-handoff.md)、[教程](web-app-demo.md) |
+| 共享基础与宿主适配 | Core 保持项目/执行语义；Panel/Studio 共用表达，宿主提供会话、模型和原生接入 | [运行机制导览](architecture.md)、[系统架构](../system-design-baseline.md)、[接入入口](../../packages/companion/HOSTS.md) |
 
 ## 体验与扩展
 
-- [Web App 协作教程](web-app-demo.md)：工作室的范围、修改与交期如何逐步变成设计；页末保留社区活动原型的历史实测与截图。
-- [非 Web Kit 演示](non-web-kit-demo.md)：样例记录编辑和 Agent 生成决策澄清的不同路径。
-- [最小定制教程](custom-kit-tutorial.md)：创建独立 Kit，复用完整 Bundle，调整方法引导、面板文案和样例。
-- [扩展开发](extending.md)：领域方法、Bundle 声明、Panel 组件及验证。
-- [Kit 分享与恢复](kit-sharing.md)：官方套件清单与获取指引、内容副本、版本选择、冲突和原件恢复。
-- [社区工作坊 Kit](../../examples/community-workshop-delivery/README.md)与[现场作业 Kit](../../examples/field-operations-shared/README.md)：可检查的合成示例。
-- [设计到开发交接](../design-development-handoff.md)：按具体任务组织设计依据和反馈。
+| 想做什么 | 阅读入口 |
+| --- | --- |
+| 设计 Web App 的功能、流程、数据、权限、页面及 AI 能力 | [套件用户指南](official-kits.md)、[工作室案例](web-app-demo.md) |
+| 看软件页面以外的表达 | [非 Web 示例](non-web-kit-demo.md)、[社区工坊配送](../../examples/community-workshop-delivery/README.md)、[现场作业](../../examples/field-operations-shared/README.md) |
+| 在 Studio 查看 Mindset、挂载与 Bundle，检查样例预览 | [Studio 操作](usage.md#6-studio查看定制和检验套件)：区分工作副本、样例预览、真实试运行与版本发布 |
+| 创作 Kit、Mindset、Bundle 和 Panel | [最小定制](custom-kit-tutorial.md)、[扩展开发](extending.md)、[Panel DSL](../dsl-spec.md)、[共享 UIUX](../panel-uiux-standard.md) |
+| 分享、加载、更新或恢复内容 | [Kit 分享与恢复](kit-sharing.md)、[项目内容升级](../project-content-upgrade.md)：保留独立身份、版本与原件 |
 
 ## 开发与参与
 
-- [开发指南](development.md)：源码分层、环境、验证和改动流程。
-- [命名与术语翻译](terminology.md)：产品名称、中文（英文）对照及技术标识边界。
-- [贡献指南](../../CONTRIBUTING.md)：贡献代码、专业方法、文档和例子。
-- [问题反馈](support.md)：准备复现信息；公开 Issues 和模板仍待配置。
-- [安全报告](../../SECURITY.md)：敏感问题的私密报告路径及启用状态。
-- [公共文档同步规范](../public-document-sync.md)：单一维护源、分类及固定提交同步。
+- [开发指南](development.md)：环境、源码分层、相关构建和验证入口。
+- [贡献指南](../../CONTRIBUTING.md)：代码、领域方法、文档、翻译与例子，以及维护者发行流程。
+- [文档总览](../README.md)：定位架构、Bundle、DSL、模型接入与组件等稳定技术参考。
+- [命名规范](terminology.md)、[AGENTS.md](../../AGENTS.md)：术语、工作方式与验证范围。
+- [问题反馈](support.md)、[安全报告](../../SECURITY.md)：普通问题与敏感问题的不同渠道，启用状态按各页说明。
+- [公共文档同步](../public-document-sync.md)：单一维护源、分类和固定源码导出；源码同步与 npm 发布分别操作。
+
+## 运行边界与排障
+
+宿主提供模型、凭据、工具和原生 Agent。各宿主的面板呈现、后台审查和安装更新机制可以不同；详细配置及限制查[宿主指南](hosts.md)。本地知识计算和模型准备查[安装细节](getting-started.md#环境与安装细节)。
+
+出现入口、连接、生成、保存或续作问题时，按[故障排查](troubleshooting.md)记录实际失败阶段。当前交付及历史结果在[预览状态](preview-status.md)维护；用户设计、内容定制、源码开发和发行维护各有自己的操作边界。
 
 ## 契约与参考
 

@@ -2098,6 +2098,36 @@
     },
     {
       "kind": "file",
+      "path": "docs/wiki/commands.md",
+      "action": "include",
+      "reason": "Public complete project-command syntax, arguments, examples and failure handling, maintained with shared implementation."
+    },
+    {
+      "kind": "file",
+      "path": "docs/wiki/architecture.md",
+      "action": "include",
+      "reason": "Public technical guide to shared services, host adapters, execution, persistence and extension source ownership."
+    },
+    {
+      "kind": "file",
+      "path": "docs/wiki/project-files.md",
+      "action": "include",
+      "reason": "Public project-file and version-management guide covering durable records, caches, migration, backup and privacy boundaries."
+    },
+    {
+      "kind": "file",
+      "path": "packages/core/test/design-bundle-entry.test.mjs",
+      "action": "include",
+      "reason": "Focused shared resource-discovery regression with synthetic input, required to verify the public Bundle entry guidance."
+    },
+    {
+      "kind": "file",
+      "path": "packages/core/smoke-design-project-migration.mjs",
+      "action": "include",
+      "reason": "Public migration command regression renamed with the current API; uses isolated synthetic projects and preserves source data."
+    },
+    {
+      "kind": "file",
       "path": "docs/workspace-polling-reads-2026-09-30.md",
       "action": "exclude",
       "reason": "Internal historical plans and wiki; current public guides remain selected separately"
@@ -3089,8 +3119,14 @@
     {
       "kind": "file",
       "path": "scripts/smoke-kit-load.mjs",
-      "action": "exclude",
-      "reason": "Historical developer test or launcher outside fixed public command selection"
+      "action": "include",
+      "reason": "Current Kit load smoke entry documented for contributors, verifying resolved content roots and schema/panel/summary validation."
+    },
+    {
+      "kind": "file",
+      "path": "scripts/smoke-kit-load.test.mjs",
+      "action": "include",
+      "reason": "Synthetic regressions for the current public Kit smoke entry, preserving meaningful validation failures."
     },
     {
       "kind": "file",

@@ -23,9 +23,9 @@ export interface DesignProjectRecord {
 }
 
 /** Current-format target with old Bundle files staged for Agent migration. */
-export interface DesignProjectRecoveryRecord extends DesignProjectRecord {
+export interface DesignProjectMigrationRecord extends DesignProjectRecord {
   readonly sourceRoot: string
-  readonly recoveredBundles: readonly string[]
+  readonly migratedBundles: readonly string[]
 }
 
 /** One validated read-only application source used for Design reconstruction. */
@@ -52,7 +52,7 @@ export interface DesignProjectSnapshot {
 /** Host-neutral Design Project repository used by command execution. */
 export interface DesignProjectPort {
   create(name: string): Promise<DesignProjectRecord>
-  recover(reference: string, currentProjectId?: DesignProjectId): Promise<DesignProjectRecoveryRecord>
+  migrate(reference: string, currentProjectId?: DesignProjectId): Promise<DesignProjectMigrationRecord>
   inspectReconstructionSource(reference: string): Promise<DesignProjectReconstructionSource>
   open(reference: string): Promise<DesignProjectRecord>
   list(): Promise<readonly DesignProjectRecord[]>
@@ -111,9 +111,9 @@ export interface DesignProjectCommandResult {
 }
 
 /** Recognized `/yugoo` subcommands. */
-export type DesignProjectVerb = 'new' | 'open' | 'recover' | 'reconstruct' | 'list' | 'status' | 'close' | 'delete' | 'kit' | 'mindset' | 'compose_spec' | 'help'
+export type DesignProjectVerb = 'new' | 'open' | 'migrate' | 'reconstruct' | 'list' | 'status' | 'close' | 'delete' | 'kit' | 'mindset' | 'compose_spec' | 'help'
 
-const VERBS: readonly string[] = ['new', 'open', 'recover', 'reconstruct', 'list', 'status', 'close', 'delete', 'kit', 'mindset', 'compose_spec']
+const VERBS: readonly string[] = ['new', 'open', 'migrate', 'reconstruct', 'list', 'status', 'close', 'delete', 'kit', 'mindset', 'compose_spec']
 
 /** One parsed subcommand invocation. */
 export interface DesignProjectInvocation {
@@ -140,7 +140,7 @@ const HELP_TEXT = [
   '/yugoo                     显示本帮助与当前选择',
   '/yugoo new <name>          新建并打开设计项目',
   '/yugoo open <id|name|path> 校验并打开已注册的设计项目',
-  '/yugoo recover <path>      从旧设计项目文件创建恢复项目',
+  '/yugoo migrate <path>      将旧设计文件迁移到新项目并校验适配',
   '/yugoo reconstruct <path>  从只读材料（文件或目录）新建并还原设计项目',
   '/yugoo list                列出已注册的设计项目',
   '/yugoo status              显示当前项目与 Git 状态',
@@ -166,7 +166,7 @@ export async function runDesignProjectCommand(
     case 'help': return helpResult(ctx)
     case 'new': return runNew(invocation.argument, ctx)
     case 'open': return runOpen(invocation.argument, ctx)
-    case 'recover': return runRecover(invocation.argument, ctx)
+    case 'migrate': return runMigrate(invocation.argument, ctx)
     case 'reconstruct': return runReconstruct(invocation.argument, ctx)
     case 'list': return runList(ctx)
     case 'status': return runStatus(ctx)
@@ -225,20 +225,20 @@ async function runReconstruct(reference: string | undefined, ctx: DesignProjectC
   }
 }
 
-async function runRecover(reference: string | undefined, ctx: DesignProjectCommandContext): Promise<DesignProjectCommandResult> {
-  if (reference === undefined || reference === '') return { kind: 'error', text: '用法: /yugoo recover <旧项目绝对路径>' }
+async function runMigrate(reference: string | undefined, ctx: DesignProjectCommandContext): Promise<DesignProjectCommandResult> {
+  if (reference === undefined || reference === '') return { kind: 'error', text: '用法: /yugoo migrate <旧项目绝对路径>' }
   const current = await ctx.conversation.current()
-  const recovered = await ctx.projects.recover(reference, current?.projectId)
-  const selected = await select(recovered, '已创建恢复目标并打开', ctx)
+  const migrated = await ctx.projects.migrate(reference, current?.projectId)
+  const selected = await select(migrated, '已创建迁移目标并打开', ctx)
   return {
     ...selected,
     conversationPrompt: [
       selected.text,
       '',
-      `这是一次用户明确要求的旧设计项目恢复。只读来源目录：${recovered.sourceRoot}`,
-      `已将恢复 Mindset 能识别的旧 Bundle 文件原样暂存到新项目工作树：${recovered.recoveredBundles.join(', ')}`,
+      `这是一次用户明确要求的旧设计项目迁移。只读来源目录：${migrated.sourceRoot}`,
+      `已将迁移 Kit 能识别的旧 Bundle 文件原样暂存到新项目工作树：${migrated.migratedBundles.join(', ')}`,
       '依次调用这些文件各自所属的当前 Bundle。每个 Producer 先对当前工作树运行现有 validator：如果通过，直接发布；如果不通过，根据当前 Skill Body、schema 和 validator 诊断做最小适配，直到通过后发布。',
-      '不要修改来源目录，不要创建迁移框架、版本链或额外迁移状态。未知 Bundle 不在本次恢复范围内。全部 Bundle 结算后，简要报告成功项与仍需用户处理的失败项。',
+      '不要修改来源目录，不要创建迁移框架、版本链或额外迁移状态。未知 Bundle 不在本次迁移范围内。全部 Bundle 结算后，简要报告成功项与仍需用户处理的失败项。',
     ].join('\n'),
   }
 }

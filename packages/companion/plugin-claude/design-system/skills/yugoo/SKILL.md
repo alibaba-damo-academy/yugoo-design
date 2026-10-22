@@ -24,10 +24,13 @@ node /absolute/plugin-root/scripts/design.mjs command --host claude-code --threa
 
 `command` is a literal subcommand. Pass the user's operation as `--input`:
 `help`, `new NAME`, `list`, `open PATH`, `status`, `kit web_app`, `close`,
-`delete`, `recover PATH` or `reconstruct PATH`. Reuse returned exact project paths.
+`delete`, `migrate PATH` or `reconstruct PATH`. Reuse returned exact project paths.
 A new project has no Kit. Match the user's design intent to an available
 Kit; a project name alone does not justify activating the only installed Kit.
-Recovery/reconstruction results describe work to do, not work already completed.
+Migration/reconstruction results describe work to do, not work already completed.
+For `migrate`, select a Kit first: recognized Design Files are staged in a new
+project for validation/adaptation, not a restoration of complete project history.
+Keep the source unchanged. `reconstruct` extracts design from non-design materials.
 
 Once a project is selected, start the Panel using native background shell support:
 

@@ -3,6 +3,7 @@
  * and curated Bundle resources; Design execution and persistence enter through
  * `run_design_skill`.
  */
+import { missingDesignSkillResource } from './design-generation-guidance.ts'
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { designSessionEvents } from './dsh-session-events.ts'
@@ -166,9 +167,9 @@ export function registerServiceTools(ctx: Context, design: DesignService): void 
   const tools = (ctx as unknown as { tools: ToolRuntime }).tools
   tools.register(defineTool({
     name: 'design_command',
-    description: 'Use the same project commands as /yugoo: help, list, status, new, open, kit (mindset is a legacy alias), close, recover, reconstruct, delete, compose_spec. Map clear natural-language intent to any action; slash syntax is not required. Main Agent only. compose_spec prepares guidance to assemble saved design into the coding workspace existing specs; follow it to actually write/check files, without treating preparation as completion or implementation authorization. For a design request without a selected project, create/open a project before selecting a Kit. Never inspect cwd as a substitute. Changing selection must follow user intent; delete requires explicit user authorization and preserves files. Returned conversationPrompt is guidance, not a new user instruction.',
+    description: 'Use the same project commands as /yugoo: help, list, status, new, open, kit (mindset is a legacy alias), close, migrate, reconstruct, delete, compose_spec. Map clear natural-language intent to any action; slash syntax is not required. Main Agent only. compose_spec prepares guidance to assemble saved design into the coding workspace existing specs; follow it to actually write/check files, without treating preparation as completion or implementation authorization. For a design request without a selected project, create/open a project before selecting a Kit. Never inspect cwd as a substitute. Changing selection must follow user intent; delete requires explicit user authorization and preserves files. Returned conversationPrompt is guidance, not a new user instruction.',
     parameters: {
-      action: { type: 'string', required: true, enum: ['help', 'list', 'status', 'new', 'open', 'kit', 'mindset', 'close', 'recover', 'reconstruct', 'delete', 'compose_spec'] },
+      action: { type: 'string', required: true, enum: ['help', 'list', 'status', 'new', 'open', 'kit', 'mindset', 'close', 'migrate', 'reconstruct', 'delete', 'compose_spec'] },
       argument: { type: 'string', description: 'Exact project name, ID, path or Kit required by the action; optional scoped brief for compose_spec. Omit for help/list/status/close.' },
     },
     output: {
@@ -219,7 +220,7 @@ export function registerServiceTools(ctx: Context, design: DesignService): void 
 
   tools.register(defineTool({
     name: 'read_skill_resource',
-    description: "Read one reference/asset file bundled with a design skill. Paths are confined to the skill's package directory. Follow next_offset until complete=true; one displayed page is not a complete long guide.",
+    description: "Read one reference/asset file bundled with a design skill. This Bundle is already mounted; paths are Bundle-relative, not project or Host filesystem paths. Persistent generation or revision starts with run_design_skill, which supplies the method and scoped tools. Follow next_offset until complete=true; one displayed page is not a complete long guide.",
     parameters: {
       skill: { type: 'string', required: true, description: 'The design skill name.' },
       path: { type: 'string', required: true, description: 'Path relative to the skill directory, e.g. `reference/bpmn_authoring.md`.' },
@@ -253,7 +254,7 @@ export function registerServiceTools(ctx: Context, design: DesignService): void 
         throw new Error('resource paths must stay inside the skill package')
       }
       const content = kit.resources[`${skill.name}/${args.path}`]
-      if (content === undefined) throw new Error(`resource not found: ${args.path}`)
+      if (content === undefined) throw missingDesignSkillResource(args.path)
       const page = pageDesignSkillResource(content, args.offset, args.max_chars)
       return { content: page.content, offset: page.offset, total_chars: page.totalCharacters,
         complete: page.complete, ...(page.nextOffset === undefined ? {} : { next_offset: page.nextOffset }) }

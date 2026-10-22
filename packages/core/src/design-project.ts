@@ -97,7 +97,7 @@ const PROJECT_IGNORE = '# Local operating-system metadata\n.DS_Store\nThumbs.db\
 // Product guidance travels with the project; it is not a Bundle or a design source.
 const PROJECT_README = `# Yugoo Design 设计项目
 
-这个目录是一个 Yugoo Design 设计项目，保存人与 AI 共同推敲形成的设计成果，可用于继续讨论、评估方案，或指导后续实现。
+这个目录是一个语构设计系统（Yugoo Design）的设计项目，保存人与 AI 共同推敲形成的设计成果，可用于继续讨论、评估方案，或指导后续实现。
 
 ## Yugoo Design 是什么
 
@@ -109,7 +109,7 @@ Yugoo Design 是一款兼容主流 AI Agent 应用的交互式构思设计插件
 
 ## 从哪里获取，如何继续设计
 
-当前为发行预览，公开获取入口尚未确认。请向项目提供者获取名为 **yugoo-design** 的插件或专家套件，以及对应 Agent 宿主的安装指南；本说明暂不提供未经确认的下载地址或安装命令。
+如果当前宿主已经安装 **yugoo-design**，先复用已有插件，不要重复安装。需要安装或更新时，请按[官方 GitHub 项目说明](https://github.com/alibaba-damo-academy/yugoo-design#readme)和[宿主安装指南](https://github.com/alibaba-damo-academy/yugoo-design/blob/main/packages/companion/HOSTS.md)操作；本项目不维护另一套安装流程。若无法访问指南，请向项目提供者核对当前获取方式，不猜测下载地址或安装命令。
 
 安装后，在宿主中使用 **yugoo** 技能或对应的命令入口（支持的宿主中为 **/yugoo**），告诉 Agent 打开这个已有项目的绝对路径，即可继续使用设计面板。具体安装和调用方式以对应宿主的指南为准。打开已有项目时应使用项目记录的 Kit/Bundle 版本；缺少相应版本时向项目提供者获取，不要新建项目来替代它。
 

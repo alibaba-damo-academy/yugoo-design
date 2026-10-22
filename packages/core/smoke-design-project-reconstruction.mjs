@@ -186,14 +186,14 @@ try {
     assert.match(commandResult.conversationPrompt, /single file/u)
   }
   await assert.rejects(registry.inspectReconstructionSource(join(root, 'missing')))
-  await assert.rejects(registry.inspectReconstructionSource(join(created.root, 'project.json')), /use \/design recover/u)
+  await assert.rejects(registry.inspectReconstructionSource(join(created.root, 'project.json')), /use \/yugoo migrate/u)
   assert.equal(await readFile(document, 'utf8'), '# Product\nExisting product requirements\n')
   assert.equal(created.kit, undefined)
   assert.deepEqual(await readdir(created.designFilesRoot), [])
   assert.equal(await readFile(join(sourceRoot, 'package.json'), 'utf8'), '{"name":"sample-app"}\n')
   await assert.rejects(
     registry.inspectReconstructionSource(created.root),
-    /use \/design recover/u,
+    /use \/yugoo migrate/u,
   )
   await assert.rejects(
     registry.inspectReconstructionSource('relative/repo'),
@@ -205,7 +205,7 @@ try {
   await mkdir(join(legacyProject, 'design_files'), { recursive: true })
   await assert.rejects(
     registry.inspectReconstructionSource(legacyProject),
-    /use \/design recover/u,
+    /use \/yugoo migrate/u,
   )
 } finally {
   await rm(root, { recursive: true, force: true })
