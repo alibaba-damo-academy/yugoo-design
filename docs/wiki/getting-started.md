@@ -19,7 +19,7 @@
 | 千问办公（QwenWork） | [操作指引](../../packages/companion/HOSTS.md#install-or-update-qwenwork) | 在宿主中导入专家套件及连接器后使用 |
 | WorkBuddy | [操作指引](../../packages/companion/HOSTS.md#install-or-update-workbuddy) | 在宿主中导入插件来源并按提示刷新或更新 |
 
-宿主机制和支持范围各有不同。Codex 与 Claude Code 当前的接入测试范围是 CLI，桌面端尚未测试。完整参数、配置及手工恢复步骤集中在[宿主接入入口](../../packages/companion/HOSTS.md)，Wiki 不再维护第二套安装器流程。
+Codex 与 Claude Code 当前仅测试了 CLI 接入，桌面端尚未测试。完整安装参数、配置及恢复步骤见[宿主接入入口](../../packages/companion/HOSTS.md)。
 
 ## 2. 让宿主 Agent 安装或更新
 
@@ -27,7 +27,7 @@ Agent 会获取所选 `beta` 渠道的精确版本，阅读随包指南，再完
 
 结束时，你应知道实际启用的版本、进入项目的方法，以及尚需手动完成的步骤。Agent 分别说明包获取、宿主登记或导入、激活和实际可用状态。只取得新包、或页面出现新文案，不代表宿主已经加载新版本；保留安装目录与回执，按原入口更新和恢复。
 
-如果 Agent 无法执行命令或访问宿主设置，它会说明未完成的步骤；按[对应指南](../../packages/companion/HOSTS.md#owning-entries)手动完成即可。失败时先查看回执和[故障排查](troubleshooting.md)，避免盲目重复安装、覆盖已有配置。所选精确发行的依赖清单与完整性由安装入口核对，历史包数与候选记录见[预览状态](preview-status.md)。
+如果 Agent 无法执行命令或访问宿主设置，它会说明未完成的步骤；按[对应指南](../../packages/companion/HOSTS.md#owning-entries)手动完成即可。失败时先查看回执和[故障排查](troubleshooting.md)，避免重复安装或覆盖已有配置。可安装版本与兼容信息见[预览状态](preview-status.md)。
 
 暂时不用或需要移除插件时，按[停用、卸载与文件保留](../../packages/companion/HOSTS.md#disable-uninstall-and-retained-files)走对应宿主入口。卸载登记与删除设计项目是两件事；不要先删仍被其他宿主引用的 runtime 或项目目录。
 
@@ -89,7 +89,7 @@ Agent 按 Kit 的方法澄清背景，或直接展开可讨论的结果。设计
 - **本地向量化（Embedding）：** KAG 使用 CPU，无需 GPU。首次通过 npm/npx 获取包前，按统一入口为安装进程设置 `ONNXRUNTIME_NODE_INSTALL_CUDA=skip`，跳过 CUDA 下载并保留依赖所需的正常安装脚本。已经取得的包不能替先前的获取进程补设环境；GPU 加速不在首发支持范围内。
 - **本地模型文件：** 使用该版本要求的完整缓存，或在支持的入口显式允许下载固定模型。模型名称、缓存位置与各宿主的下载限制见[本地向量模型准备](../../packages/companion/README.md#local-embedding-model-preparation)。跳过 CUDA 不等于无需模型；宿主的对话模型也不能替代本地向量模型。
 - **宿主模型与搜索：** 用户在宿主侧配置，插件不提供共享密钥或额度。跳过搜索配置不代表调研能力已验证；安装了某个 CLI 也不能证明当前会话正在该宿主中运行。
-- **发行与历史：** 精确包版本、完整依赖、已发布归档和后续本地候选分开维护在[预览状态](preview-status.md)。安装器按所选发行清单工作，历史包数不作为手工补装依据；无法取得所需包时报告实际状态，不用源码或别的候选冒充发行版本。
+- **版本与更新：** 可安装版本见[预览状态](preview-status.md)。安装器负责获取该版本需要的组件，无需按旧记录手工补装。无法取得所需版本时，请保留错误信息，不用其他包或源码构建替代。
 
 ## 发布前候选预检
 

@@ -1,32 +1,25 @@
 # Declarative Design Bundle contract
 
-## Optional versioned source locations
-
-`schema.yaml` can annotate a metadata map of locator objects with
-`knowledge: { role: metadata, source_reference: true }`. Its closed value
-schema owns `file`, `revision` (exact Git commit), optional JSON `pointer`,
-`note` and `subject_pointer` relative to the containing owner record. This
-is distinct from `role: reference`, which annotates a single identifier
-string and an optional declared target collection. Locator mechanics do not
-become product-content nodes. A missing, unreadable, deleted, positional-array
-or non-content target retains the original evidence but produces no guessed
-current edge. Resolved current content gets only a `references` relation,
-never mechanical support, causation or approval.
-
-For an optional locator map, `validation.yaml` may use a leaf check
-`source_reference_map: <field>` within `for_each_in_map`. It checks confined
-paths, exact commit syntax, RFC6901 pointer syntax and a present non-array
-local subject. Absent optional maps pass. History existence is checked when
-reading/projecting evidence, not a save-time dependency on historical I/O.
-DSH Panel Save applies these locator guards; Companion also retains its
-pre-existing complete state-scope checks. This addition does not harmonize
-unrelated existing empty-state publication rules between the two entrances.
-
 This document defines the zero-code declarative Bundle profile. The common Bundle responsibilities and the separate native profile are owned by the [Design System architecture baseline](system-design-baseline.md).
 
 The governing ownership rule is: **Bundle-specific instructions, schemas, validation declarations, and presentation references belong to the Bundle; generic Core, Panel, and Studio code do not enumerate Bundle names.** Adding a declarative Bundle means adding content, while compiled native behavior remains in a separately installed trusted provider and is bound to the Bundle through stable contribution ids.
 
 ## Fixed slots of a declarative Bundle
+
+Each required file answers exactly one question. Conditional presentation,
+execution, and artifact contributions follow the profiles in the architecture
+baseline.
+
+| File | The question it answers | Required? |
+|---|---|---|
+| `skill.yaml` | Who am I, how do I run, when do I hand back to the user; start from the [manifest template](../.agents/skills/design-bundle-creator/assets/skill.template.yaml) | ✅ |
+| `SKILL.md` | The Bundle executor's operating manual (main Agent or independent Producer; workflow, data rules, close-out discipline) | ✅ |
+| `schema.yaml` | What my persisted state looks like (declarative translation of the Pydantic State; collection-level invariants live in `validation.yaml`) | ✅ |
+| `validation.yaml` | How editable working copies, optional Worker artifacts, and prepared publications pass semantic validation | ✅ |
+| `panel.yaml` | State → frontend panel, rendered by the panel DSL interpreter | Required for declarative presentation |
+| `skill.yaml.summary` | Optional state → model-context summary rules (`fields` / `collections`); not a separate file | Optional for declarative presentation |
+
+This profile keeps state, validation, panel, and model-summary definitions declarative. `schema.yaml` and `validation.yaml` are compiled into validation behavior; `panel.yaml` is required for declarative presentation. Summary omission emits no declarative summary and never disables the Panel, execution, validation or publication. Agents can read original Design Files when context is needed.
 
 ### Isolated Studio preview sample
 
@@ -66,21 +59,6 @@ audit-only navigation wrappers or SVG serialization. Its Skill Body still asks
 the author to reuse the current Style assets and review shared navigation.
 Other Bundles should use this boundary when their validation is revised; this
 does not claim that all existing Bundle scripts have already been audited.
-
-Each required file answers exactly one question. Conditional presentation,
-execution, and artifact contributions follow the profiles in the architecture
-baseline.
-
-| File | The question it answers | Required? |
-|---|---|---|
-| `skill.yaml` | Who am I, how do I run, when do I hand back to the user; start from the [manifest template](../.agents/skills/design-bundle-creator/assets/skill.template.yaml) | ✅ |
-| `SKILL.md` | The Bundle executor's operating manual (main Agent or independent Producer; workflow, data rules, close-out discipline) | ✅ |
-| `schema.yaml` | What my persisted state looks like (declarative translation of the Pydantic State; collection-level invariants live in `validation.yaml`) | ✅ |
-| `validation.yaml` | How editable working copies, optional Worker artifacts, and prepared publications pass semantic validation | ✅ |
-| `panel.yaml` | State → frontend panel, rendered by the panel DSL interpreter | Required for declarative presentation |
-| `skill.yaml.summary` | Optional state → model-context summary rules (`fields` / `collections`); not a separate file | Optional for declarative presentation |
-
-This profile keeps state, validation, panel, and model-summary definitions declarative. `schema.yaml` and `validation.yaml` are compiled into validation behavior; `panel.yaml` is required for declarative presentation. Summary omission emits no declarative summary and never disables the Panel, execution, validation or publication. Agents can read original Design Files when context is needed.
 
 ### Cooperation method resources
 
@@ -588,3 +566,25 @@ check:
 
 This leaf check forbids the listed own properties for matching records, even
 when their values are empty or null. It does not invent or delete values.
+
+## Optional versioned source locations
+
+`schema.yaml` can annotate a metadata map of locator objects with
+`knowledge: { role: metadata, source_reference: true }`. Its closed value
+schema owns `file`, `revision` (exact Git commit), optional JSON `pointer`,
+`note` and `subject_pointer` relative to the containing owner record. This
+is distinct from `role: reference`, which annotates a single identifier
+string and an optional declared target collection. Locator mechanics do not
+become product-content nodes. A missing, unreadable, deleted, positional-array
+or non-content target retains the original evidence but produces no guessed
+current edge. Resolved current content gets only a `references` relation,
+never mechanical support, causation or approval.
+
+For an optional locator map, `validation.yaml` may use a leaf check
+`source_reference_map: <field>` within `for_each_in_map`. It checks confined
+paths, exact commit syntax, RFC6901 pointer syntax and a present non-array
+local subject. Absent optional maps pass. History existence is checked when
+reading/projecting evidence, not a save-time dependency on historical I/O.
+DSH Panel Save applies these locator guards; Companion additionally applies
+its complete state-scope checks. Empty-state publication rules remain different
+between these two entry points.

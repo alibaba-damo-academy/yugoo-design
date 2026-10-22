@@ -1,19 +1,63 @@
 # Preview status and verification scope
 
-These records distinguish published artifacts from bounded candidate checks.
-Neither implies that every host/platform is supported. See
-[host compatibility](hosts.md) and the [installation entry](getting-started.md).
+Check the release and known host limits before installing. Setup steps are in
+[getting started](getting-started.md); host-specific behavior is in
+[host compatibility](hosts.md).
 
 ## Current release and use
 
-**Companion registry readback, 2026-10-21 UTC:** the official registry returned
-`@yugoo-design/companion@0.1.0-beta.19` with its exact integrity; `beta` selected
-beta.19 and `latest` selected beta.10. These are the observed tags at that
-checkpoint. Resolve the requested channel again before acquisition and retain
-the exact release and integrity; an unqualified install can choose the older
-`latest`. The [shared host prompt](../../packages/companion/HOSTS.md#default-prompt-any-supported-host)
-uses the beta route. It can reuse an existing exact runtime that meets the
-request, or acquire a new version into a separate retained directory.
+**Release checked on 2026-10-21 UTC:** the official registry returned
+`@yugoo-design/companion@0.1.0-beta.19` with its exact integrity. At that time,
+`beta` selected beta.19 and `latest` selected beta.10. Use the
+[shared installation prompt](../../packages/companion/HOSTS.md#default-prompt-any-supported-host)
+to resolve the requested channel and retain the exact version and integrity.
+Reuse a matching retained runtime, or acquire a new version in a separate
+retained directory. An unqualified install can select the older `latest`.
+
+**Project commands:** current source uses `/yugoo kit <kit>` and
+`/yugoo migrate <source-project-path>`. The migration rename has no legacy alias
+and is **not included in the published Companion beta.19 archive**. Until a release
+containing it is available, use the acquired package's own help and release
+manifest. Updating source does not update an installed plugin.
+
+**Foreground reviews:** on 2026-10-21 users completed manual GRA in QwenWork and
+WorkBuddy. These reviews occupied the main conversation. They did not provide
+nonblocking background review. See the [host choices](hosts.md#后台能力与评审降级)
+and [tested versions](#foreground-review-record-2026-10-21) before relying on that
+flow; the recorded runs do not cover every npm release.
+
+Companion npm versions, native suite versions and Kit/Bundle pins are separate.
+Older archives may also have different command spelling or default packages.
+The dated publication, download and installation checks are retained below.
+
+## Historical publication and candidate records
+
+The following records retain their dates, candidates and failures. They describe
+what was checked then; current acquisition starts from the section above.
+
+### Historical beta.2 source assembly
+
+The initial candidate npm namespace was `@yugoo-design`, with first beta target
+`0.1.0-beta.1` and dist-tag `beta`. Directory builds used `install-codex.mjs`
+separately. Earlier `0.1.0` tarballs remain preflight evidence for their own fixed
+builds, not later beta releases. Fixture names and directory-installer checks do
+not establish an npm installation.
+
+For reference, the published beta.2 candidate was prepared with this same-source
+non-fixture build command; further changes require a new unpublished version:
+
+```sh
+node --import tsx scripts/build-companion-npm-candidate.mjs --ladybug-dependency 0.21.1 --candidate-mode non-fixture --package-name @yugoo-design/companion --version 0.1.0-beta.2
+```
+
+Run this from the repository with its declared Node/pnpm toolchain and checked-in
+dependencies. The build writes an isolated candidate and report outside the
+source tree, verifies source stability, and retains resource, license and import
+checks. The reported candidate still requires the listed runtime evidence and
+installed-package verification; selecting a public name does not mark it accepted
+or publish it. Omitting `--candidate-mode` selects the exploratory fixture route.
+
+### Companion publication record, 2026-10-21
 
 Companion publication and registry readback are confirmed; they do not verify
 cryptographic provenance or every host's installed behavior. The current manual
@@ -22,20 +66,15 @@ is separate from public-source synchronization and DSH package publication.
 Later changes in main require another package release; they do not modify beta.19.
 Native suite numbers, Kit pins and the Companion npm version remain independent.
 
-**Foreground GRA, user-confirmed on 2026-10-21:** QwenWork and WorkBuddy both
-completed the user-selected manual foreground review flow. This confirms that
-flow, with the main conversation occupied; it is not nonblocking background
-acceptance. The exact local QwenWork candidate record follows below. The
-WorkBuddy confirmation does not borrow that candidate's version or logs. See
-[host compatibility and review limits](hosts.md#后台能力与评审降级).
+### Foreground review record, 2026-10-21
 
-**Current source and archived installations:** source commands use `/yugoo kit <kit>`.
-The project migration command is now `/yugoo migrate <source-project-path>` in
-source, with no legacy alias. This rename is not included in the published
-Companion beta.19 archive; follow the acquired package's own help until a release
-containing the rename is available.
-Frozen npm archives may retain an older command spelling and default package set. Use their bundled help and exact release
-manifest; a source fix does not update an installed package.
+Both QwenWork and WorkBuddy completed the user-selected foreground review flow
+on 2026-10-21; the main conversation remained occupied. WorkBuddy's confirmation
+did not record the same complete candidate/version tuple as QwenWork, so those
+versions and logs are not assigned to WorkBuddy. Suggestions, acceptance and
+subsequent Design File changes remain separate outcomes. Focused source
+regressions for the foreground path passed; they are not additional installed-host
+acceptance.
 
 **Recorded local QwenWork candidate, 2026-10-21 (UTC):** one user-confirmed foreground
 Grounding/Reflection/Alignment batch completed on Windows QwenWork
@@ -46,10 +85,42 @@ This is the detailed local QwenWork result. WorkBuddy's separate user confirmati
 above does not extend this exact candidate record. It establishes neither npm
 publication, background readiness nor full Kit acceptance. See the [foreground scope](hosts.md#后台能力与评审降级).
 
-## Historical publication and candidate records
+### Development handoff verification records
 
-The following records retain their dates, candidates and failures. They describe
-what was checked then; current acquisition starts from the section above.
+The guide is written against the [architecture baseline](../system-design-baseline.md#design-to-development-handoff);
+a fresh native agent in an empty code workspace has produced a source-linked brief
+without inherited design conversation, using the published files directly rather
+than KAG. That run asked the user to decide ordinary route and stack choices. Those
+questions were unnecessary for the authorized task; material product decisions
+still require clarification. A subsequent fresh agent used the
+installed npm candidate to inspect the same published project, prepared its own
+source-linked brief, and implemented the authorized two-activity list/detail/back
+example in an isolated code workspace. Independent review found and corrected an
+unsupported empty-state explanation in the implementation; the original design
+was not changed. Static checks and initial browser list checks are recorded, but
+browser screenshot and ordinary-click timeouts prevented that run's complete
+interactive acceptance; those failures remain recorded.
+
+A later fresh, low-cost coding-agent session organized the task using the existing
+Spec Kit `spec.md` / `plan.md` / `tasks.md` convention, then implemented the approved
+two-activity journey. The same candidate passed behavior and browser navigation
+checks. A registered native Producer subsequently published a controlled location
+change through the owning Page Bundle; the same coding-agent session reread the
+new checkpoint and updated the existing spec and implementation. Independent
+verification retained the original four behavior tests and passed one additional
+fixed-value test, with six browser checks confirming the changed location,
+unchanged second activity and ordinary return links. No unrelated design files
+were changed. The browser harness required termination of its own Node process
+after assertions and page/server cleanup because its CDP client remained alive;
+this was not a natural-zero process exit.
+
+This demonstrates the representative task-scoped design-to-development feedback
+loop, not every host, general KAG coverage, pixel-perfect UI fidelity or automatic
+continuous two-way synchronization. Spec Kit was an appropriate choice for the
+empty code workspace, not a mandatory new product-specific spec format. Code
+generation or a brief alone still does not establish implementation acceptance.
+
+### Registry and download records
 
 **Historical registry readback, 2026-10-17 (UTC):**
 `@yugoo-design/companion@0.1.0-beta.3` and all eleven owned DSH packages below at
@@ -282,35 +353,9 @@ has been confirmed. The task-scoped handoff contract is documented in the
 [practical handoff guide](../design-development-handoff.md). It explains
 how a fresh coding agent can find task-relevant sources, prepare a brief,
 implement the approved scope, and return design gaps through the owning Bundle.
-The guide is written against the [architecture baseline](../system-design-baseline.md#design-to-development-handoff);
-a fresh native agent in an empty code workspace has produced a source-linked brief
-without inherited design conversation, using the published files directly rather
-than KAG. That run unnecessarily elevated ordinary route and stack choices into
-mandatory user decisions; the guide now distinguishes reasonable implementation
-defaults from material product decisions. A subsequent fresh agent used the
-installed npm candidate to inspect the same published project, prepared its own
-source-linked brief, and implemented the authorized two-activity list/detail/back
-example in an isolated code workspace. Independent review found and corrected an
-unsupported empty-state explanation in the implementation; the original design
-was not changed. Static checks and initial browser list checks are recorded, but
-browser screenshot and ordinary-click timeouts prevented that run's complete
-interactive acceptance; those failures remain recorded.
-
-A later fresh, low-cost coding-agent session organized the task using the existing
-Spec Kit `spec.md` / `plan.md` / `tasks.md` convention, then implemented the approved
-two-activity journey. The same candidate passed behavior and browser navigation
-checks. A registered native Producer subsequently published a controlled location
-change through the owning Page Bundle; the same coding-agent session reread the
-new checkpoint and updated the existing spec and implementation. Independent
-verification retained the original four behavior tests and passed one additional
-fixed-value test, with six browser checks confirming the changed location,
-unchanged second activity and ordinary return links. No unrelated design files
-were changed. The browser harness required termination of its own Node process
-after assertions and page/server cleanup because its CDP client remained alive;
-this was not a natural-zero process exit.
-
-This demonstrates the representative task-scoped design-to-development feedback
-loop, not every host, general KAG coverage, pixel-perfect UI fidelity or automatic
-continuous two-way synchronization. Spec Kit was an appropriate choice for the
-empty code workspace, not a mandatory new product-specific spec format. Code
-generation or a brief alone still does not establish implementation acceptance.
+The coding agent can choose ordinary implementation details within the authorized
+scope; ask the user when a material product decision is missing. Keep using the
+code workspace's existing spec convention. Spec Kit is one option, not a required
+Yugoo Design format. The [recorded handoff checks](#development-handoff-verification-records)
+cover a representative list/detail/back journey and a later design change; they
+do not establish automatic two-way synchronization or every host's behavior.

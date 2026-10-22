@@ -1,10 +1,8 @@
 # Host integration entry points
 
-Start here when installing, maintaining or adding a host adapter. These links
-index implemented entry points; they are not a promise that every host, version
-or distribution has passed acceptance. See [Companion verification scope](README.md#verified-scope)
-and each host's guide. Source, installation, message delivery and model execution
-are separate outcomes.
+Choose the entry for the host you use. Each guide explains installation, updates
+and the supported behavior for that host. Check [compatibility](../../docs/wiki/hosts.md)
+before installing; adapter contracts for maintainers follow the setup instructions.
 
 ## Agent-led installation and updates
 
@@ -61,28 +59,9 @@ If only the native material or loaded host session is stale, use the owning
 refresh/import/reload steps below. A required new npm version still belongs in a
 new retained directory; preserve the previous one and its receipts.
 
-**Historical registry check, 2026-10-17 UTC:** metadata is verified for
-`@yugoo-design/companion@0.1.0-beta.3` and all eleven owned DSH packages at
-`0.1.0-beta.2`, including `@yugoo-design/yugoo-design-git-native`.
-At that checkpoint, their `beta` tags selected those exact versions. The set
-included Decision Modeling, now excluded from the source default; current source
-composition and later local candidates are distinguished in the
-[preview status](../../docs/wiki/preview-status.md). At that checkpoint, `latest` was beta.1 for
-Companion and the original ten DSH packages; the native Git helper's `latest`
-was beta.2. Eight of the twelve archives were fully downloaded and matched their
-digests. The native Git helper, Panel, Web App provider and Companion returned
-HTTP 200 but timed out after 90 seconds with partial bodies (`curl` exit 28);
-these are incomplete downloads, not digest mismatches. At that checkpoint, full twelve-archive
-verification was incomplete; cold registry installation and native-host
-installation/update acceptance remained unverified. The separate cache-only
-Companion installation result is bounded in the [preview status](../../docs/wiki/preview-status.md).
-
-**Historical registry check, 2026-10-14:** `@yugoo-design/companion@0.1.0-beta.2` and the ten
-owned DSH packages at `0.1.0-beta.1` were public; anonymous downloads matched their
-reviewed archives and registry integrity. Companion's `beta` pointed to beta.2,
-while its initial `latest` remained beta.1; DSH's two tags pointed to beta.1.
-These registry checks do not establish six-host
-installation/update acceptance. An already published version is immutable;
+Earlier registry checks and incomplete downloads are recorded in the
+[publication history](../../docs/wiki/preview-status.md#historical-publication-and-candidate-records).
+An already published version is immutable;
 subsequent changes need a new version. Native suite and Kit/Bundle versions stay
 separate. The Agent must resolve the chosen channel once, record the exact
 version and integrity, and use that version's bundled instructions and help.
@@ -495,10 +474,9 @@ conversation. No choice means no policy change and no review. The main Agent
 reads the shared G/R/A profiles and submits results through the existing review
 validation and Git record path; this mode does not force a synchronous child
 or a native background run descriptor. Keep asynchronous manual review when the
-host can leave the main conversation available. Focused source regressions have
-passed. The dated user-confirmed foreground flows and exact candidate scopes are
-recorded in the [current status](../../docs/wiki/hosts.md#后台能力与评审降级);
-they do not establish package delivery or acceptance for every release and host.
+host can leave the main conversation available. For supported versions and observed foreground behavior, see
+[host compatibility](../../docs/wiki/hosts.md#后台能力与评审降级) and the
+[dated review record](../../docs/wiki/preview-status.md#foreground-review-record-2026-10-21).
 
 Core owns project state, validation, publication, Git and handoff semantics.
 Panel owns shared UI, including saving and the composer. Companion's

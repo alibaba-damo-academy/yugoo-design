@@ -154,6 +154,21 @@ consumption and installed-package validation separately. A fixture or probe prov
 only its tested boundary. Preserve meaningful negative tests; do not remove a
 guard simply to make tests pass. Document untested behavior and concrete failures.
 
+## Reader-focused documentation
+
+Write for the reader's task, not the history of producing the document. README
+introduces purpose, capabilities and a usable starting path; user guides explain
+actions and expected results; technical references explain responsibilities,
+interfaces and mechanisms. Keep internal planning, editing notes and test logs
+in maintenance or historical records, not normal usage steps. Explain necessary
+limits beside the relevant capability, without repeating defensive disclaimers.
+Preserve substantive methods, examples, screenshots and precise contracts when
+improving readability. Check whether a new reader can understand and act on the
+instructions, not only whether all topics and links exist. These principles also
+guide the documentation produced or revised by authoring skills. This is a
+documentation principle, not authorization to change runtime behavior, execution
+workflows, ownership, validation or other technical contracts.
+
 ## Delivery boundaries
 
 Follow the Wiki [naming and translation standard](docs/wiki/terminology.md)

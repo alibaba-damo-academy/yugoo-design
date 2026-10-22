@@ -1,5 +1,24 @@
 # Shared Design Studio UI
 
+`dsh-design-studio-ui` is the shared React Studio. Its sidebar contains Kits
+and Bundles, with Kits as the entry view. A host may additionally expose the
+Component Library capability. The established Studio layout has a compact
+breadcrumb/refresh bar above the workspace, with neutral typography, colors and
+control details. Shared authoring guidance is in the
+[Panel UIUX standard](../../docs/panel-uiux-standard.md). Storage concepts such as
+Panel drafts must not add top-level navigation sections. The optional **Panel Component Library / 面板组件库**
+entry is a bottom sidebar utility, above the shared language switch, not another
+primary Kit/Bundle section.
+
+The Kit list provides a compact **Browse official kits / 浏览官方设计套件**
+documentation link to the maintained public `docs/wiki/kit-sharing.md#official-kits`
+guide. It opens a separate tab and does not install, adopt or update content, or
+retarget project pins. The installed catalog still comes only from the host.
+Public repository visibility and document synchronization must be verified before
+claiming that this external guide is available to anonymous users.
+
+## Locale and catalog copy
+
 Studio accepts an explicit host `locale` (`zh` or `en`) with a document/browser
 fallback. Bundle cards use the loader's existing bilingual title and display
 description; IDs and raw source files remain unchanged. Search includes those
@@ -23,6 +42,8 @@ Switching language never reruns or translates existing results.
 User task text remains byte-exact; natural-language locale
 inference is not implemented. Hosts must bind the result Panel to its recorded
 trial locale rather than inheriting an unrelated browser-origin preference.
+
+## Mindset editing and source files
 
 `MindsetInlineEditor` is an optional control embedded in the original Kit page.
 It lazily creates/reopens a Kit working copy via the existing authoring client,
@@ -50,6 +71,8 @@ installed originals stay protected. Removal means deleting a recoverable local
 copy, not uninstalling a Kit or Bundle. UI classes use the `ygd-studio` prefix;
 package identities are unchanged. Studio loading locations share one indicator
 with the KAG indeterminate sweep treatment (no fake completion percentage).
+
+## Bundle trials
 
 The title row owns the sole explicit trial entry. It checks the host connection,
 then asks the native Agent to prepare a concrete input and execute it in the same
@@ -82,6 +105,8 @@ They demonstrate the Panel's saved UI state in the current browser only; they do
 not publish design changes or send an Agent continuation. Undo returns to the
 latest local demonstration baseline. Reload restores the actual generated result.
 
+## Panel authoring and shared controls
+
 Optional authoring: hosts may supply `StudioAuthoring` to edit the left YAML in
 the preview workplane. The first actual source change lazily creates a retained
 Panel draft through the existing port, preserving text typed during creation.
@@ -109,21 +134,7 @@ keeps keyboard/focus handling and carries its own styles. Recovery menus stay
 inside an open native dialog's top layer. This changes presentation only, not
 working-copy, preview, CAS or save operations.
 
-`dsh-design-studio-ui` is the shared React Studio. Its sidebar contains Kits
-and Bundles, with Kits as the entry view. A host may additionally expose the
-accepted Component Library capability. A compact breadcrumb/refresh bar sits
-above the workspace. The approved Studio demo supplies the layout and interaction
-baseline; Yugoo supplies neutral typography, colors and control details. Storage
-concepts such as Panel drafts must not add top-level navigation sections.
-The optional **Panel Component Library / 面板组件库** entry is a bottom sidebar
-utility, above the shared language switch, not another primary Kit/Bundle section.
-
-The Kit list provides a compact **Browse official kits / 浏览官方设计套件**
-documentation link to the maintained public `docs/wiki/kit-sharing.md#official-kits`
-guide. It opens a separate tab and does not install, adopt or update content, or
-retarget project pins. The installed catalog still comes only from the host.
-Public repository visibility and document synchronization must be verified before
-claiming that this external guide is available to anonymous users.
+## Component library
 
 The optional `componentLibrary: StudioComponentLibrary` adapter supplies the
 actual same-build DSL catalog, display names, trusted synthetic examples and
@@ -160,6 +171,8 @@ Codex, Claude Code and Qoder packaging slots. WorkBuddy packaging and installed
 plugin activation are separate integration steps. Custom compiled components
 require a development-source change and the existing registration/validation/UI
 contract; this view is not a dynamic executable component marketplace.
+
+## Source browsing and retained copies
 
 Bundle pages put Source files first and Panel preview second. The recursive file
 explorer displays actual source paths, including nested reference folders. Trial
@@ -199,6 +212,8 @@ requires confirmation. This is not Kit publication or full Bundle-file editing.
 
 The package renders installed Kits, searchable Bundles, Kit workspaces and byte-exact read-only Bundle source files. Resource inventories belong in the file explorer, not a paragraph beneath the Kit cards. File viewing uses one toolbar, a scrollable document body and a compact byte-count/status footer; Markdown metadata is folded without removing it from the raw source. Schema and validation files use that same viewer without additional compiled-summary blocks. A Bundle workspace overlays its original section and returns without a re-read. Kit selection carries the exact `name@version` pin; divergent identities and obsolete asynchronous responses cannot replace the current workspace. Without the explicit authoring capability there are no draft controls. With it, edits are kept in a separate draft rather than changing installed content. All data comes from server views; the UI hardcodes no Kit, Bundle or version and imports no Agent Host, Design Core, G/R/A or filesystem API.
 
+## Layout and typography
+
 Styles are scoped to Studio: system CJK typography, purple `#7c5af6` brand accents
 (hover `#6849d8`, active `#5032bc`), neutral `#272727` primary text,
 `#6d6d6d` secondary text, light borders, 8px control radii, and compact search and
@@ -216,7 +231,7 @@ use compact borders and a horizontal scroll container within the file viewer.
 UI copy follows the host document/browser locale, but authored file content is never
 translated or abbreviated in the document viewer.
 
-### Content archives
+## Content archives
 
 Hosts may pass `contentClient` to expose **Content archives** in the existing
 workspace toolbar; the sidebar remains Kits / Bundles. The archive workbench

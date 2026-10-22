@@ -41,7 +41,7 @@
 | 清晰度评估（U/S/T） | 结合证据理解本轮还缺什么，追问判断依据和下一步 | [核心概念](concepts.md#清晰度评估与下一步建议)、[评分解释](../ust-score-explanations.md)、[日常操作](usage.md) |
 | 知识图谱（KAG） | 关联独立设计来源，辅助查找改动影响及依据 | [概念与使用](concepts.md#知识关联与审查)、[知识来源策略](../design-knowledge-source-policy.md)、[日常操作](usage.md) |
 | 主动审查（GRA） | 从一致性、知识疑点和意图三个视角提出建议；按宿主选择后台、同步或手动 | [处理建议](usage.md#3-处理建议)、[宿主限制](hosts.md#后台能力与评审降级)、[建议阅读](../advisory-reading.md) |
-| 耐久文件与 Git 版本 | 保存后继续、追溯修改并迁移旧项目；版本运行库随包提供 | [项目管理](usage.md#4-管理与恢复)、[项目文件及备份](project-files.md)、[项目参数](commands.md) |
+| 文件保存与 Git 版本历史 | 保存后继续、追溯修改并迁移旧项目；版本运行库随包提供 | [项目管理](usage.md#4-管理与恢复)、[项目文件及备份](project-files.md)、[项目参数](commands.md) |
 | 设计到开发 | 将任务所需设计依据交给编码 Agent，并把新发现的问题送回所属设计维度 | [交接指南](../design-development-handoff.md)、[教程](web-app-demo.md) |
 | 共享基础与宿主适配 | Core 保持项目/执行语义；Panel/Studio 共用表达，宿主提供会话、模型和原生接入 | [运行机制导览](architecture.md)、[系统架构](../system-design-baseline.md)、[接入入口](../../packages/companion/HOSTS.md) |
 
@@ -68,7 +68,7 @@
 
 宿主提供模型、凭据、工具和原生 Agent。各宿主的面板呈现、后台审查和安装更新机制可以不同；详细配置及限制查[宿主指南](hosts.md)。本地知识计算和模型准备查[安装细节](getting-started.md#环境与安装细节)。
 
-出现入口、连接、生成、保存或续作问题时，按[故障排查](troubleshooting.md)记录实际失败阶段。当前交付及历史结果在[预览状态](preview-status.md)维护；用户设计、内容定制、源码开发和发行维护各有自己的操作边界。
+遇到入口、连接、生成、保存或继续设计的问题时，查[故障排查](troubleshooting.md)。需要确认某项功能在当前版本是否可用，查[预览状态](preview-status.md)。
 
 ## 契约与参考
 
@@ -82,6 +82,6 @@
 
 ## 文档与版本
 
-使用教程描述实际入口和操作，示例页面保留当时版本的验证记录。源码能力、已安装候选和正式发行分别记录；查看[预览状态](preview-status.md)及[宿主兼容](hosts.md)，不要由一张截图或一次通过推断其他环境。
+教程中的界面和操作可能随宿主、插件及套件版本变化。开始前可查[宿主兼容](hosts.md)；示例附有拍摄或使用时的版本与范围，当前发行情况见[预览状态](preview-status.md)。
 
-维护时同时核对方法、实际源文件与对应验证。中文术语遵循[命名规范](terminology.md)，README 保持[完整中英对应](../../README.en.md)；公开版本从固定开发提交同步，渠道待办见[反馈入口](support.md#待补齐的渠道)。
+希望改进文档、翻译或例子，可阅读[贡献指南](../../CONTRIBUTING.md)与[命名规范](terminology.md)。[英文 README](../../README.en.md)提供对应的项目介绍；问题和建议见[反馈入口](support.md)，文档维护与公开同步规则见[公共文档同步](../public-document-sync.md)。

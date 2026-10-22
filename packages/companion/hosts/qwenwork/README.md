@@ -23,11 +23,9 @@ preparation used native suite `0.1.5` (`--suite-version 0.1.5`). Use the acquire
 package's guide and an explicit native version; an owned update must exceed its
 previous receipt's suite version. These numeric versions are independent of npm
 publication and do not establish that the desktop loaded the prepared materials.
-The suite version is independent of the Companion npm and WorkBuddy suite
-versions. If organization policy rejects the
-suite's data connector, the separately permitted Connectors JSON entry may work;
-it does not imply permission to bypass that policy. Importing the Skill alone
-must never be reported as a working MCP connection.
+If organization policy rejects the suite's data connector, use the separate
+Connectors JSON entry only when that entry is permitted. After import, check
+that the MCP tools connect; enabling the Skill alone does not connect them.
 
 The normal desktop installer emits a ZIP containing its MCP configuration and a
 separate `design-system-mcp.json` with the same connector. Import the separate JSON
@@ -36,12 +34,9 @@ connector; keep one enabled `design-system` connector. Both point to the same
 retained Companion runtime. The installer prepares these machine-specific paths
 from the acquired npm package, rather than downloading another runtime.
 
-If the organization requires a suite with no bundled connector, call `packageQwenWorkExpertKit` with
-`{ includeMcp: false }` and write `qwenWorkConnectorConfiguration` to the connector
-JSON supplied to the user. The suite ZIP then contains no `.mcp.json`; its Hooks
-and Skill point to the exact persistent runtime. Store installed runtime assets
-outside the operating-system temporary directory. This packaging does not edit
-the user's installed suite, connector or host profile.
+If your organization requires a suite without a bundled connector, ask the
+adapter maintainer to prepare it using the [packaging APIs below](#suite-packaging-for-adapter-maintainers).
+Import only the separately permitted connector and keep one enabled connector.
 
 The suite ID is now `yugoo-design` and the entry Skill is `yugoo`. For the
 one-time rename, disable/remove the old `design-system` expert suite through
@@ -221,3 +216,12 @@ caching process identity or weakening runtime pins. The shared Companion display
 path avoids redundant full Git-open checks and recovers stalled read requests.
 These changes do not promise token streaming or control when QwenWork flushes its
 native transcript. Do not resend automatically when acceptance is uncertain.
+
+## Suite packaging for adapter maintainers
+
+If the organization requires a suite with no bundled connector, call `packageQwenWorkExpertKit` with
+`{ includeMcp: false }` and write `qwenWorkConnectorConfiguration` to the connector
+JSON supplied to the user. The suite ZIP then contains no `.mcp.json`; its Hooks
+and Skill point to the exact persistent runtime. Store installed runtime assets
+outside the operating-system temporary directory. This packaging does not edit
+the user's installed suite, connector or host profile.

@@ -63,7 +63,6 @@ pnpm run test:public-documents
 | --- | --- | --- |
 | README、Wiki、公共文档同步 | `pnpm run test:public-documents` | 文档选择、链接校验和导出保护的回归；提交前还需检查所改正文的实际链接 |
 | Web App 方法脚本与产物 | `pnpm --filter dsh-design-skills-web-app test` | 内容包自己的脚本及产物回归 |
-| 决策与运筹建模（Decision Modeling，内部验证） | 仅内部源码环境使用，不属于公开源码验证入口 | 内部保留套件装载、内容契约、示例及方法回归；不随默认产品或公开源码交付，不代表原生 Agent 的完整咨询过程 |
 | Studio Kit 草稿 | `pnpm --filter dsh-design-studio test:kit-drafts` | 使用该包明确配置的源码别名，检查草稿服务 |
 | 某个包的类型或构建 | `pnpm --filter <package-name> typecheck` 或 `pnpm --filter <package-name> build` | 仅用于该包确实声明的脚本；先按依赖关系准备前置构建 |
 | 公开导出与发行合同 | `pnpm run test:public-contracts` | 现有发行回归；其中的合成 fixture 不证明真实安装或模型执行 |
@@ -109,3 +108,7 @@ Kit 作者与独立接收者的交付检查见[分享指南](kit-sharing.md)。�
 中文文档遵循[命名与术语翻译](terminology.md)，首次介绍核心术语使用中文（英文）。中文 [README](../../README.md) 与 [English README](../../README.en.md)保持相同章节、能力和状态。
 
 开发仓正式 README、公共 Wiki、贡献与安全说明是维护源。公开源码从固定提交按[公共文档同步规范](../public-document-sync.md)导出，不作为第二开发源。源码提交、公开同步、npm 打包与发布分别记录；贡献或检查通过不自动授权发布。
+
+## 内部验证记录说明
+
+决策与运筹建模（Decision Modeling）Kit 的套件装载、内容契约、示例及方法回归仅在内部源码环境保留，不随默认产品或公开源码交付，因此不列入上面的公开检查入口。这些内部回归也不代表原生 Agent 的完整咨询过程。

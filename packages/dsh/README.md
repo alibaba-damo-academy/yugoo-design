@@ -1,12 +1,5 @@
 # Yugoo Design for DeepSeek Harness
 
-New Design Projects default to the system user's Documents directory under
-`YuGoo/Projects`, using the same Core registry as Companion. Windows Documents
-redirection and Linux XDG user directories are honored; WSL uses Linux storage.
-An explicit Core `projectsRoot` still wins. Existing projects, registry, native
-conversation bindings and runtime state stay at their original paths; this
-changes new-project placement, not DSH authentication or host integration.
-
 The single external DeepSeek Harness installation bundle for Yugoo Design. Official DSH is a read-only Host compatibility target: this package uses public Cordis, command, tool, Agent, interaction, subagent, Remote, and client-module extension points and requires no DSH patch, fork, or Design-specific release. Installing it adds direct Loader rows for generic Core, Panel, Studio, Design Knowledge, the official Web App provider, and the official Web App content Kit. DeepSeek Harness discovers each package's browser plugin through its own `dsh.client` declaration; this distribution does not compile or hide a combined client. The Settings launcher opens the full-page `/design-studio/` workspace, which uses the same Typert Remote and storage-domain-backed Studio service without creating a Session or Agent.
 
 `dsh-design-skills-web-app` contains one Mindset plus self-contained Bundle
@@ -45,6 +38,16 @@ alias. Another plugin's command remains untouched. A conflict on `/yugoo` fails
 registration explicitly. Panel actions use `/yugoo`; internal service, tool and
 package identifiers are not additional user command aliases.
 
+### Project storage
+
+New Design Projects default to the system user's Documents directory under
+`YuGoo/Projects`, using the same Core registry as Companion. Windows Documents
+redirection and Linux XDG user directories are honored; WSL uses Linux storage.
+An explicit Core `projectsRoot` takes precedence. This default affects only new
+projects: existing projects, registry, native conversation bindings and runtime
+state stay at their original paths. DSH authentication and host integration are
+unchanged.
+
 ## Installation target and current package composition
 
 The product name is **Yugoo Design**. Source package and Loader identifiers remain
@@ -65,10 +68,7 @@ aggregate dependencies merely because they occur in a release inventory.
 The npm aggregate additionally supplies the two required Studio/Studio UI peers
 reached from this closure because DSH disables automatic peer installation.
 It does not install unrelated or optional peers from the release inventory.
-Decision Modeling is an independent internal extension-validation Kit. It is
-not included, automatically loaded, or published by the default DSH/Companion
-release. Internal users can install/import that Kit explicitly without changing
-the generic Core. The selected release manifest fixes exact dependency versions.
+The selected release manifest fixes exact dependency versions.
 The directory column identifies the existing source package, not an end-user
 checkout or build requirement.
 
@@ -123,30 +123,14 @@ LLM do not establish semantic indexing. GPU acceleration is outside the
 first-release scope; this policy does not change the published
 beta.2 archives or their installation acceptance.
 
-The npm scope is `@yugoo-design`. As checked on 2026-10-17 UTC, metadata is verified
-for the product installer `@yugoo-design/companion@0.1.0-beta.3` and all eleven DSH
-packages at `0.1.0-beta.2`, including `@yugoo-design/yugoo-design-git-native`.
-At that historical checkpoint, their `beta` tags selected those exact versions.
-The set included Decision Modeling; it is not the corrected source default
-listed above. Only the native Git helper had
-`latest` at beta.2; Companion and the original ten DSH packages retained beta.1.
-Eight archives were fully downloaded and matched their digests. Four transfers
-(native Git helper, Panel, Web App provider and Companion) returned HTTP 200 but
-timed out after 90 seconds with partial bodies (`curl` exit 28), not digest
-mismatches. Full twelve-archive verification is incomplete; cold registry
-installation and native-host installation/update acceptance remain unverified.
-The separate cache-only Companion installation result is bounded in the
-[preview status](../../docs/wiki/preview-status.md).
+Use the selected release's manifest and installation guide, rather than the
+versions recorded in [historical release checks](#historical-release-checks).
 Normal Design versioning uses the bundled native Git runtime, without
 system Git, on Windows x64 MSVC and Linux x64 GNU; other platforms are unsupported.
 System Git remains separate for source development and explicit CLI diagnostics.
 
-At the historical 2026-10-14 check, the product installer
-`@yugoo-design/companion@0.1.0-beta.2` and all ten owned DSH packages at
-`0.1.0-beta.1` were publicly available, with anonymous downloads matching the
-reviewed archives. Companion's `beta` pointed to beta.2 and initial `latest`
-remained beta.1; DSH's two tags pointed to beta.1. If a selected release is missing,
-report it rather than partially installing a guessed set. Native suite and Kit/Bundle content versions
+If a selected release is missing, report it rather than partially installing a
+guessed set. Native suite and Kit/Bundle content versions
 do not change with the npm prerelease. Registry acquisition, native installation
 and functional acceptance remain separate checks.
 The supplied local files below are for pre-publication preflight, rather than
@@ -520,3 +504,41 @@ The official DSH composition enables optional native delegation through the exec
 `pnpm run test:release:physical-distribution` at the repository root proves the isolated physical package closure: it packs this distribution and its internal packages, installs them in a consumer outside the source workspace, and rejects entry points that resolve back through the workspace. It does not install or boot an official DSH Host. The linked-profile composition gate against the pinned official DSH submodule is the official-Host compatibility check. Both gates are required before release because neither package closure nor Host compatibility implies the other.
 
 Planned Codex and Claude Code Host Providers will reuse the same Portable Kernel, projects, Kits, execution rules, and shared UI. Their first implementations discriminate the capabilities published by the installed CLI version and do not assume native programmatic questions, subagents, or panel APIs. When a CLI cannot embed the UI, its provider opens a session-bound browser companion and keeps the originating CLI as the primary Agent surface. Those providers are not implemented by this DSH package.
+
+## Historical release checks
+
+These dated checks describe earlier artifacts, not the versions to select for a
+new installation. Current source composition is listed above; installation and
+functional acceptance depend on the selected release.
+
+### 2026-10-17 UTC
+
+The npm scope is `@yugoo-design`. At this check, metadata was verified for the
+product installer `@yugoo-design/companion@0.1.0-beta.3` and all eleven DSH
+packages at `0.1.0-beta.2`, including `@yugoo-design/yugoo-design-git-native`.
+Their `beta` tags selected those exact versions. The set included Decision
+Modeling; it is not the current source default listed above. Only the native Git
+helper had `latest` at beta.2; Companion and the original ten DSH packages
+retained beta.1.
+
+Eight archives were fully downloaded and matched their digests. Four transfers
+(native Git helper, Panel, Web App provider and Companion) returned HTTP 200 but
+timed out after 90 seconds with partial bodies (`curl` exit 28), not digest
+mismatches. Full twelve-archive verification was incomplete; this check did not
+establish cold registry installation or native-host installation/update
+acceptance. The separate cache-only Companion installation result is bounded in
+the [preview status](../../docs/wiki/preview-status.md).
+
+### 2026-10-14
+
+At this check, the product installer `@yugoo-design/companion@0.1.0-beta.2` and
+all ten owned DSH packages at `0.1.0-beta.1` were publicly available, with anonymous
+downloads matching the reviewed archives. Companion's `beta` pointed to beta.2
+and initial `latest` remained beta.1; DSH's two tags pointed to beta.1.
+
+### Internal extension validation
+
+Decision Modeling is an independent internal extension-validation Kit, not
+included, automatically loaded, or published by the default DSH/Companion release.
+Its internal validation uses explicit installation/import without changing the
+generic Core; it is not a public installation step.

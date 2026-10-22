@@ -6,7 +6,7 @@
 
 DSH 可使用 `/yugoo new <name>`、`/yugoo open <id|name|path>` 和 `/yugoo status`；Companion 使用已安装的 `yugoo` 技能与项目操作入口。项目文件独立于聊天，可从其他会话继续打开。
 
-统一项目入口为 `yugoo`，不注册 `design` 命令、入口技能或兼容别名；具体前缀遵循宿主原生语法。已安装版本是否包含这一修正，需按实际包版本核对，源码更新不会自动替换宿主插件。
+项目入口为 `yugoo`，具体调用方式遵循宿主原生语法；查阅[宿主指南](hosts.md)选择适合当前插件版本的入口。
 
 例如，在 DSH 新建项目可使用 `/yugoo new research-platform`；需要手动选择 Web App Kit 时，可使用 `/yugoo kit web_app`。其他宿主可直接说“使用 Yugoo Design 新建工作室项目交付平台，选择 Web App Kit”。所有子命令、参数、前提和错误处理见[命令参考](commands.md)，宿主指令形式见[宿主指南](hosts.md)。
 
@@ -50,7 +50,7 @@ DSH 可使用 `/yugoo new <name>`、`/yugoo open <id|name|path>` 和 `/yugoo sta
 
 面板中的直接修改适合表达确定的字段和关系；需要解释原因、比较方案或联动其他设计时，可以结合对话提出。希望 AI 看到的面板修改应先保存，再指明需要继续推敲的地方。
 
-面板保存和原生 Agent 续作分别确认：看到保存成功后，检查宿主是否已消费本次修改；需要进一步推敲时回到原会话提出具体请求。等待输入、排队、执行中和完成是不同状态，消息发送状态不明时先检查原会话，不反复提交。
+保存成功后，可以在原会话中继续推敲这些修改。如果 AI 没有继续，或仍引用旧内容，先查看原会话是否收到修改，再按[故障排查](troubleshooting.md)检查保存通知和后续处理。消息状态不明时先查看已有任务，避免重复提交。
 
 ## 3. 处理建议
 
@@ -142,7 +142,7 @@ Grounding、Reflection、Alignment 可以提出疑点、研究或澄清建议。
 
 ## 6. Studio：查看、定制和检验套件
 
-Studio 管理构思时使用的方法和面板，日常 Design Panel 编辑的是你的设计成果。Companion 可从设置打开 Studio，在独立浏览器页中沿用当前服务连接；DSH 使用宿主提供的 Studio 入口。不同安装候选提供的创作能力可能不同，先核对[宿主指南](hosts.md)。
+Studio 管理构思时使用的方法和面板，日常 Design Panel 编辑的是你的设计成果。Companion 可从设置打开 Studio，在独立浏览器页中沿用当前服务连接；DSH 使用宿主提供的 Studio 入口。可用操作随宿主和插件版本而异，见[宿主指南](hosts.md)。
 
 ### 查看套件与技能包
 
@@ -161,7 +161,7 @@ Studio 管理构思时使用的方法和面板，日常 Design Panel 编辑的�
 
 标题处的重命名修改展示名称，不改变 Kit/Bundle 的技术身份。删除本地副本会检查引用，并保留可恢复数据；它不是卸载已安装内容。Mindset 原页的正文编辑和 Panel YAML 草稿也保存在独立工作副本中，安装原件保留。
 
-完整副本的发布、试运行和运行期采用需要各自的宿主接入；保存或样例预览不隐含这些能力。下面的原生试运行说明针对已经接入的已安装 Bundle 或已保存 Panel 草稿。
+以下原生试运行针对已接入宿主的 Bundle 或已保存的 Panel 草稿。要将完整本地副本用于设计项目，请按[分享指南](kit-sharing.md)加载并选择；发布新版本另按对应的发布流程处理。
 
 ### 预览与试运行
 
@@ -186,7 +186,7 @@ Studio 也可作为内容维护时的可视化工作台：查看真实样例、�
 
 “内容归档”支持导出、准备导入和明确采用 Kit/Bundle。准备导入只保存材料和校验结果；采用 Kit 会保留精确内容并创建未确认工作副本，独立 Bundle 则进入内容库，仍需明确挂载。具体步骤、来源与依赖要求见[分享指南](kit-sharing.md#通过-studio-内容归档分享)。
 
-以上操作按当前共享 UI 与 Companion 接线说明，不意味着所有宿主候选已通过每项交互验收。服务和作者职责分别见 [Studio domain](../../packages/studio/README.md) 与 [Studio UI](../../packages/studio-ui/README.md)。设计成果交给后续实现时，使用[设计到开发交接](../design-development-handoff.md)。
+维护 Studio 集成时，可进一步阅读 [Studio domain](../../packages/studio/README.md) 与 [Studio UI](../../packages/studio-ui/README.md)。设计成果交给后续实现时，使用[设计到开发交接](../design-development-handoff.md)。
 
 ## 7. 界面概览
 

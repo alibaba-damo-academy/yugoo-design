@@ -35,6 +35,8 @@ Bundle 的职责或交互变化还要复查 Kit 挂载说明与 Mindset 的引�
 
 ## 验收
 
+Bundle 的介绍、方法和交付说明遵循[面向读者的文档原则](../design-skill-creator/references/standards.md#面向读者的文档reader-focused)：让用户或执行者能理解用途并行动，内部调试过程与验证记录不混入正常操作步骤；专业方法与必要契约仍需完整可达。
+
 新建、修订或迁移面板时，按 [Panel 指南的面板自查](references/panel-authoring.md#面板自查)
 回答信息表达是否帮助理解和思考、交互是否方便且符合习惯、信息量与组织是否便于
 人工改写表达、修改结果是否支持与 AI 对齐。原则上不推荐多个内部 Tab，不把

@@ -1,14 +1,20 @@
 # Security reporting
 
-This document describes how to handle security reports for yugoo-design. Maintainers have selected GitHub private vulnerability reporting as the primary channel, with a dedicated security email as an optional alternative. Neither an enabled repository channel nor a monitored email address is announced by this draft; it does not announce a released or supported version.
+This policy explains how to report security issues for yugoo-design without exposing private data.
 
 ## Report privately
 
-Do not post credentials, private design projects, conversation transcripts, or an exploitable reproduction in a public issue. Once private vulnerability reporting is enabled in the public GitHub repository, use the repository's private vulnerability reporting entry, following [GitHub's reporting instructions](https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/report-privately). A dedicated security email may also be used once its monitored address is explicitly listed in this policy; no address is configured here yet. If neither channel is available, do not disclose sensitive details publicly; ask the maintainers to provide a private reporting channel first.
+Do not post credentials, private design projects, conversation transcripts, or an exploitable reproduction in a public issue.
+
+This policy does not yet list a verified private reporting entry or a monitored security email address. If no private channel is available, ask the maintainers to provide one before sharing sensitive details. Do not send the reproduction publicly while waiting.
+
+GitHub private vulnerability reporting is the intended primary channel. Once it is enabled in the public repository, use its private reporting entry, following [GitHub's reporting instructions](https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/report-privately). Use a security email alternative only after its monitored address is explicitly listed here; no address is currently configured in this policy.
 
 Include the affected package and version, host and operating system, a minimal synthetic reproduction, expected and observed behavior, and the likely impact. Remove tokens, personal data, internal addresses, and unrelated project files. A screenshot or log can contain sensitive data even when no API key is visible.
 
-No response deadline, bounty, or support period is promised by this draft. Maintainers must establish the reporting channel and a supported-version policy before replacing this draft with a public policy.
+## Supported versions and response expectations
+
+No supported-version list is currently published here. No response deadline, bounty, or support period is promised.
 
 ## Relevant security boundaries
 
@@ -20,6 +26,4 @@ Generated content and third-party Kits are not automatically trustworthy. Kit an
 
 yugoo-design is a plugin, not a distribution of the host agent application. A report should identify the host version and explain whether the problem remains without the plugin, where practical. The project should investigate its own boundaries without requiring users to patch the host application or disclose host credentials.
 
-## Before publishing this policy
-
-Enable and test private vulnerability reporting in the actual public repository, list the supported package versions, and verify that the README links to this policy. If the email alternative is offered, publish only an authorized, monitored security address and verify that it receives reports. Confirm that the npm and source distributions contain no private reporting addresses, development credentials, or real user projects. These checks remain prerequisites for activating this public policy, not claims about the local evaluation package. External publication follows the user's own package testing and separate authorization; this draft does not authorize a GitHub push or npm publish.
+Maintainers can find the [reporting-channel checklist in the contribution guide](CONTRIBUTING.md#maintain-private-security-reporting).

@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "revision": "b1bb8c7b4f74a45af06713ea8dd2c7d852e3fd97",
+  "revision": "77353c665fc39858be31c16b016eccc3f389fdf1",
   "policySha256": "ccea285ec29718a98fb01f4964d1ab4ca075be553ba87b9d65fb822c8a0662ba",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
-      "sha256": "3145f8cadf2abb2ccf5ebd3d12ab65b903d1fed9cf87fd7c4c29b306e67cacd0",
+      "sha256": "9689903cd86839d8805125d1c199b38ea0eb828e5171da23ca178a5c3ec20866",
       "mode": "100644"
     },
     ".agents/skills/design-bundle-creator/agents/openai.yaml": {
@@ -40,7 +40,7 @@
       "mode": "100644"
     },
     ".agents/skills/design-kit-creator/SKILL.md": {
-      "sha256": "08abaf35e6f606d25933624167f18a3013e0dcaed8a828ae03df30e51656570b",
+      "sha256": "4893c6f443cfb4376ec6cde166fc6983b837b39429c501aa019f43b52827a06c",
       "mode": "100644"
     },
     ".agents/skills/design-kit-creator/agents/openai.yaml": {
@@ -56,7 +56,7 @@
       "mode": "100644"
     },
     ".agents/skills/design-skill-creator/SKILL.md": {
-      "sha256": "47dff65d80d1f16070ab9f60953b2be7e42f3039caf3eb591ff2b86640565f2f",
+      "sha256": "891e0303a101e53dd44bd5295227e841119b0b3ba4007fe5ad0d4fbaa8ffff0f",
       "mode": "100644"
     },
     ".agents/skills/design-skill-creator/agents/openai.yaml": {
@@ -68,7 +68,7 @@
       "mode": "100644"
     },
     ".agents/skills/design-skill-creator/references/standards.md": {
-      "sha256": "07c2b9ebfac3f45cdc45c9cab2e34fc9f068b3c88625be0eca080f155f15d800",
+      "sha256": "63c107f35f79e5a88cf2e058cb26eb65035ad9f584532fdf16f930aa3736499a",
       "mode": "100644"
     },
     ".agents/skills/design-skill-creator/scripts/render-state-contract.mjs": {
@@ -84,11 +84,11 @@
       "mode": "100644"
     },
     "AGENTS.md": {
-      "sha256": "a2760ae036853f405f88ba22135ef9355f265b2120cf8003b08b3935b0afd566",
+      "sha256": "51ed647f5b81cfcec8061d54219710b86e80f59088124dba5dc5534adf3a2cc7",
       "mode": "100644"
     },
     "CONTRIBUTING.md": {
-      "sha256": "c89c91f4f4c9b9268a11b80171cbed6132193d92b8b7fc0be492b76a6eaf7504",
+      "sha256": "4535237b6b63d3b8fb9425db8325696f65b830bebae48ef94e95dd0ba4fa7d0a",
       "mode": "100644"
     },
     "LICENSE": {
@@ -100,15 +100,15 @@
       "mode": "100644"
     },
     "README.en.md": {
-      "sha256": "3543250759c95daf6d44e43c855318f012456265accf3e11f1a7d26cc7a53123",
+      "sha256": "cc96156598be40a6b23ab156d9902fe7d33b107817dc532d84d149f2deac5c50",
       "mode": "100644"
     },
     "README.md": {
-      "sha256": "19d8f9929940663ee74986d6bd4b326a2e79fc12743829e633b2d15fa748fbfb",
+      "sha256": "c44d137736e94bae6e27a78728106f616f5f1ccab0e81eca09dec034f040b956",
       "mode": "100644"
     },
     "SECURITY.md": {
-      "sha256": "7b96cff187336b06132dfe9d49ed656fc87816066acfde55c5f44d0a62b31647",
+      "sha256": "12fc4b728e014b55b8deddd87474ae1afc0f9172fe55df14a966f5c531c72478",
       "mode": "100644"
     },
     "THIRD_PARTY_NOTICES.md": {
@@ -128,7 +128,7 @@
       "mode": "100644"
     },
     "docs/bundle-contract.md": {
-      "sha256": "e4cec8ff4af56d923108f1ac7bfdc23cb764174673776860e7955a4e9f7354d0",
+      "sha256": "bc8cb62d5654fb95eb2433ba26439ce1efd182c62ee0b9f298c0524956c6b5de",
       "mode": "100644"
     },
     "docs/companion-npm-fixture-2026-09-30.json": {
@@ -140,7 +140,7 @@
       "mode": "100644"
     },
     "docs/design-development-handoff.md": {
-      "sha256": "ad4c18cd370ecf5348029f61d6a557cf8b9e4c8f613ea0569457880d56050b7c",
+      "sha256": "e64ae73fb7715797f9e3b60c90415d16db4780c939623eeeb76b91e9fa4b0613",
       "mode": "100644"
     },
     "docs/design-knowledge-source-policy.md": {
@@ -212,7 +212,7 @@
       "mode": "100644"
     },
     "docs/product-vision.md": {
-      "sha256": "aab63a38eddf085efd9d3395fa1ef7a2d67ef09bdefda9cbfd20521c6c4355df",
+      "sha256": "050407107062fd0fa30f61e372fa26616900bbed5a3196e0d0580d28d2882e28",
       "mode": "100644"
     },
     "docs/project-content-upgrade.md": {
@@ -220,7 +220,7 @@
       "mode": "100644"
     },
     "docs/public-document-sync.md": {
-      "sha256": "0d80fccd829671ffd0e65a87499c65a7aa809ce6098fdd913a18deec211695a6",
+      "sha256": "a931d440e265833ae5b4b8fc3cd98071ba972886b43f93ca24ec468c2a7f98f5",
       "mode": "100644"
     },
     "docs/standalone-roadmap.md": {
@@ -236,11 +236,11 @@
       "mode": "100644"
     },
     "docs/wiki/README.md": {
-      "sha256": "e68be7311bc1a1c8688a175d086b188636e7ea7c0032206d308029bc7aaee21f",
+      "sha256": "f90a790de940b2be13e849b976764dbbc2a89e8c92c5e482ea06ae540b9227c7",
       "mode": "100644"
     },
     "docs/wiki/architecture.md": {
-      "sha256": "c7c47a7fc48cdc287031f65a96a50f45b570b58446bee9651e26b3159517ffd1",
+      "sha256": "dcddf6842ba94011783eda6bc5fda7531cdd204680ae48dbe7f2c54b5dc773e8",
       "mode": "100644"
     },
     "docs/wiki/commands.md": {
@@ -248,43 +248,43 @@
       "mode": "100644"
     },
     "docs/wiki/concepts.md": {
-      "sha256": "2918e83c96faecade494f1969a8c5e9832d53aba6802eb027d0ae9414f7f974a",
+      "sha256": "006edda858257f8e1da16901262f9b1ca51f704ce63cb34123ae865b614ea395",
       "mode": "100644"
     },
     "docs/wiki/custom-kit-tutorial.md": {
-      "sha256": "b6c2acb6b3eda50b222e20c765395e3fcde76515025eec0f91e005d9f54a0cb9",
+      "sha256": "a638800f2e865442a527e6ce862673612848edcedb80dee908ba699d5a2ee89d",
       "mode": "100644"
     },
     "docs/wiki/development.md": {
-      "sha256": "da6b2e32ea08490e183dc89c49fe75a6d5834ce86cd8bb6d5b05cdc3f14d648c",
+      "sha256": "5341862569b2cde7a305f140fc08ce8ae3ab3bb53c433f5f99bc823cfcd85631",
       "mode": "100644"
     },
     "docs/wiki/extending.md": {
-      "sha256": "2e5032a7f59c01e93875cf8c85e5fb30625bef0bfd75726eb488216e6c458379",
+      "sha256": "bb046d5e48cb30b0386cdd9dcf1b13975bc8987fef7ba1e903d9298f9d42551b",
       "mode": "100644"
     },
     "docs/wiki/getting-started.md": {
-      "sha256": "d2df01e220284ab2d9386a86936f63ff912df8c1be48078a379d9f493f1e3430",
+      "sha256": "ef175a24982253ab0a36ac52543212952c47deb4719c2d96e5b644c8c2863fc6",
       "mode": "100644"
     },
     "docs/wiki/hosts.md": {
-      "sha256": "413708e1d80eeb578a533a207ff35f221a01cb8677a29023c475293af6c47030",
+      "sha256": "45342ae7258baa993384e73d134cbeb0066ab69be3de970cd41986ccd46eac7f",
       "mode": "100644"
     },
     "docs/wiki/kit-sharing.md": {
-      "sha256": "ac03be21aed6b45bcde1ac497ccd692ca047d608764ab8379ccc54aa4a38d451",
+      "sha256": "aed52a2c3847f815180bb44cc7b1b30c13f109fcc697f19b6aa41623c365d799",
       "mode": "100644"
     },
     "docs/wiki/non-web-kit-demo.md": {
-      "sha256": "236f3e8e6b510197d30439ef7be18a17a4cc3743075489f7616583e111ab5ab6",
+      "sha256": "970ad7629d12a448f43a213acc4d7a0a328ba71e0796b84b61e7c7dff92a91be",
       "mode": "100644"
     },
     "docs/wiki/official-kits.md": {
-      "sha256": "91c440590aaae52af7471cd6dc5fe90356e34df799b3a4c5482133b4ea23628c",
+      "sha256": "e097fc1f46e72f52464213e52fc418940f09d568c4e6305f9f9099e6fb57a6ac",
       "mode": "100644"
     },
     "docs/wiki/preview-status.md": {
-      "sha256": "e5db9f1c8d0e2a38ba99b8ebb20e793967879d636af5093226251fd05d5cc24d",
+      "sha256": "9fbd302f253ed8410029ed0436facb4e2a3757037e711d103f0c6067b4c1237b",
       "mode": "100644"
     },
     "docs/wiki/project-files.md": {
@@ -292,7 +292,7 @@
       "mode": "100644"
     },
     "docs/wiki/support.md": {
-      "sha256": "306a8b205dd0ce84509f788fa54833e1d708ea889b402808344d26833b2a3b26",
+      "sha256": "1515ed13a14384a31da3f99ea73a2301af55fb5c38829d66b19f3370b8e7d074",
       "mode": "100644"
     },
     "docs/wiki/terminology.md": {
@@ -300,15 +300,15 @@
       "mode": "100644"
     },
     "docs/wiki/troubleshooting.md": {
-      "sha256": "95a4a01936c9d9dd71bee58709cbc039d797a44c0a13097a8a2b67cfcb4d81db",
+      "sha256": "01a805b10418ec277b4d3b17a46f51303e31147890c5ff1d9b21981467e8a79f",
       "mode": "100644"
     },
     "docs/wiki/usage.md": {
-      "sha256": "b24735e2eb52294b2cd1f4271fbc4ee351c3fdff2925250b7703e04491857434",
+      "sha256": "695926469558fa5be5f968c01ea59583dd5d5b475fb26e564e7985985fa89f5b",
       "mode": "100644"
     },
     "docs/wiki/web-app-demo.md": {
-      "sha256": "a074089406ea996066106db3da7e60b69f97fe619b0176c9d7901e932a9c5136",
+      "sha256": "679be524c5d8715ad5bf74e700170a1fbeab509fa42b0b0a9a787d7d6ebd1d6b",
       "mode": "100644"
     },
     "examples/community-workshop-delivery/LICENSE": {
@@ -444,11 +444,11 @@
       "mode": "100644"
     },
     "packages/companion/HOSTS.md": {
-      "sha256": "2bad895d0422b71c1c109263310e340112a8cc68ee049b42543f0bf552a12abd",
+      "sha256": "1dff4f033a0f6512d2dc6929ee63f2b84e2ed6529f9cf5e924e624b29b99118f",
       "mode": "100644"
     },
     "packages/companion/README.md": {
-      "sha256": "b057d07e2977654116f1363107c7790df761faf4f423f7f0874a4ff099d8bf1e",
+      "sha256": "de3471f35535fabaeabdec0e4be50cb978ebf0c1f76ee48d44ede95ee8bf9f27",
       "mode": "100644"
     },
     "packages/companion/build-plugin.mjs": {
@@ -460,11 +460,11 @@
       "mode": "100644"
     },
     "packages/companion/hosts/qwenwork/README.md": {
-      "sha256": "636f480c04af0a7335ce4dc3f93b02281aa81d77d5ae0541e0e7aecf6f1fe25a",
+      "sha256": "b1042f4c2454a8e2aee05b507a018e77cb9018e46459d5f7ee231ab98e6c2d1b",
       "mode": "100644"
     },
     "packages/companion/hosts/workbuddy/README.md": {
-      "sha256": "e1b26137d5820e1cbd553566e7055dcd9ac1838bfec3777d8d17b011327a590e",
+      "sha256": "21cdb103c636b72a8d93ccaaa0b86beab1f824de8005a5c26e7a61336240e3a9",
       "mode": "100644"
     },
     "packages/companion/hosts/workbuddy/design-SKILL.md": {
@@ -3224,7 +3224,7 @@
       "mode": "100644"
     },
     "packages/dsh/README.md": {
-      "sha256": "c9ece35e386378d15ad88521772aac8182586aeeadefb7e0e61dd3ea992115e1",
+      "sha256": "6d982d38754a078bcab03007a790cb8e2038b0d2eb847a80f0de61ec4770870e",
       "mode": "100644"
     },
     "packages/dsh/THIRD_PARTY_NOTICES.md": {
@@ -4168,7 +4168,7 @@
       "mode": "100644"
     },
     "packages/panel/README.md": {
-      "sha256": "d861961d7813c13dc66e996e382643e2e01195ab8d7f95522e4a401014210b59",
+      "sha256": "d9f2eed36baa09c33283e48e0d47c87b95ec6f03abe58dd40944443901e8d15d",
       "mode": "100644"
     },
     "packages/panel/THIRD_PARTY_NOTICES.md": {
@@ -7912,7 +7912,7 @@
       "mode": "100644"
     },
     "packages/studio-ui/README.md": {
-      "sha256": "baeee8664c46ad6addd4b726c82269976174a09da3677de5ca4ccd49405ee146",
+      "sha256": "3c9bd23214458955527e75c78945b69fc2949fa09453d23e816a63e8e66225e8",
       "mode": "100644"
     },
     "packages/studio-ui/THIRD_PARTY_NOTICES.md": {

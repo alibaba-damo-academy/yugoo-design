@@ -606,29 +606,10 @@ uses the maintained guide for a non-fixture exact beta prerelease and sets the
 package's `publishConfig` to public access and the `beta` tag. It neither publishes
 nor marks runtime, registry or release validation complete.
 
-The npm candidate assembler is separate from the directory development build
-and its `install-codex.mjs` helper below. The candidate npm namespace is
-`@yugoo-design`, and the first beta target was `0.1.0-beta.1`, with dist-tag `beta`.
-As checked on 2026-10-17 UTC, metadata is verified for Companion `0.1.0-beta.3`
-and the eleven DSH packages at `0.1.0-beta.2`, including the native Git helper.
-Their `beta` tags select these exact versions. Only the native Git helper has
-`latest` at beta.2; the other eleven packages retain beta.1. Eight archives were
-fully downloaded and matched their digests. Four transfers (native Git helper,
-Panel, Web App provider and Companion) returned HTTP 200 but timed out after
-90 seconds with partial bodies (`curl` exit 28), not digest mismatches. Full
-twelve-archive verification is incomplete; cold registry installation and
-native-host installation/update acceptance remain unverified. The separate
-cache-only Companion installation result is bounded in the
-[preview status](../../docs/wiki/preview-status.md).
-
-At the historical 2026-10-14 check, `@yugoo-design/companion@0.1.0-beta.2` and the ten
-owned DSH beta.1 packages were publicly available and their anonymous downloads
-matched the reviewed archives. Companion's `beta` pointed to beta.2 and initial
-`latest` remained beta.1; DSH's two tags pointed to beta.1. Subsequent changes
-require a new version; published versions are not overwritten. Earlier `0.1.0`
-tarballs remain preflight evidence for their own fixed builds, not later betas.
-Do not install a fixture name, use `latest`, or
-treat the directory installer as acceptance of the npm lifecycle.
+Directory development packages and npm releases use different installation
+routes. Use the acquired release's README and help for native installation;
+[historical publication and download checks](../../docs/wiki/preview-status.md#historical-publication-and-candidate-records)
+record the earlier package sets and incomplete transfers.
 
 yugoo-design uses one product CLI entry, with `--host` selecting its existing
 host adapter. Companion is the shared runtime within that distribution; users
@@ -663,19 +644,10 @@ explicit `scope`, a canonical exact `version`, and the official exact
 candidate. Assembly leaves `publishReady` and `releaseValidated` false; it
 does not install a host or establish runtime, model or platform acceptance.
 
-For reference, the published beta.2 candidate was prepared with this same-source
-non-fixture build command; further changes require a new unpublished version:
-
-```sh
-node --import tsx scripts/build-companion-npm-candidate.mjs --ladybug-dependency 0.21.1 --candidate-mode non-fixture --package-name @yugoo-design/companion --version 0.1.0-beta.2
-```
-
-Run this from the repository with its declared Node/pnpm toolchain and checked-in
-dependencies. The build writes an isolated candidate and report outside the
-source tree, verifies source stability, and retains resource, license and import
-checks. The reported candidate still requires the listed runtime evidence and
-installed-package verification; selecting a public name does not mark it accepted
-or publish it. Omitting `--candidate-mode` selects the exploratory fixture route.
+Maintainers preparing a new npm release should use the
+[current preparation and publishing guide](../../CONTRIBUTING.md#prepare-or-publish-the-companion-npm-beta).
+The [beta.2 build record](../../docs/wiki/preview-status.md#historical-beta2-source-assembly)
+retains its original command and verification limits.
 
 ### Registry acquisition by the host Agent
 

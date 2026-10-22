@@ -16,6 +16,7 @@ description: 为 Design System Bundle 创建或修订 SKILL.md、可读取的输
 
 ## 写作与修订
 
+- 遵循[面向读者的文档原则](references/standards.md#面向读者的文档reader-focused)：运行方法面向下一位执行 Agent，说明它需要理解、判断和执行什么；用户说明面向人的操作和结果，不夹入作者的编辑、排期或调试过程。
 - 方法必须让一个没有上轮记忆的执行者知道：何时适用/不适用、读什么证据、拥有什么文件、如何得到符合格式的输出、如何修订、如何校验和交接。采用 [method-template.md](assets/method-template.md) 的信息结构作为起点，不要求照抄标题或段落数。
 - 复杂状态将字段、枚举、引用和产物规则放入 Bundle 自己的可读资源（推荐 `reference/artifact-contract.md`），在方法入口明确要求读取。简单状态也可以内联完整说明。提供最小有意义的合法例子，注明示例不是用户事实；不要靠“检查 schema”四个字代替契约。
 - 含画布时按 [画布方法规范](../design-bundle-creator/references/canvas-authoring.md) 编写 `reference/canvas-guide.md`，从正文及输出契约链接；保留原专项方法，由统一入口索引。规范统一归属与内容覆盖，不统一图形种类，也不为没有画布的 Bundle 增加占位文件。

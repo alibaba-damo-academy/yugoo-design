@@ -16,7 +16,7 @@ Yugoo Design (语构设计系统) is an open-source plugin for leading AI agent 
 
 ![Yugoo Design concept: turn scattered ideas into coherent designs through interactive Panels, gap-driven collaboration, and KAG/GRA integration, with ongoing feedback and revision](docs/images/yugoo-design-concept.webp)
 
-Start with the **Web App Kit**, included with the plugin by default, to design a complete software application, or customize Kits and panels for tasks such as developing game rules or designing a scheduling optimization model. The [official Kit list and acquisition guide (中文)](docs/wiki/kit-sharing.md#official-kits) describe other Kits and their actual integration scope.
+Start with the **Web App Kit**, included with the plugin by default, to design a complete software application, or customize Kits and panels for tasks such as developing game rules or designing a scheduling optimization model. See the [Kit list and installation guide (中文)](docs/wiki/kit-sharing.md#official-kits) for available Kits and how to load an independent Kit.
 
 [Quick start](#quick-start) · [Why use it](#why-use-it) · [Core capabilities](#core-capabilities) · [Walkthrough](#a-complete-collaboration) · [Extend it](#start-with-software-design-then-extend-it) · [Wiki (中文)](docs/wiki/README.md) · [Contributing and feedback](#contributing-and-feedback)
 
@@ -45,7 +45,7 @@ You need **Node.js `>=22.19.0 <23`** and an Agent Host with a configured model. 
 
 This is a **beta preview, with the Web App Kit included by default**. See [preview status](docs/wiki/preview-status.md) for exact releases and verified scope, and the [command reference (中文)](docs/wiki/commands.md) for all `/yugoo` parameters.
 
-Hosts such as Codex CLI, Claude Code CLI, and Qoder CLI use panels in a browser. **DeepSeek Harness (DSH) is currently the only desktop host that accommodates the full feature set and integrated interaction experience**, bringing conversation, panels, and Studio into one workspace. Other desktop hosts retain their individually verified scope. Codex desktop integration is a second-round development goal; Claude Code desktop has not been tested. See the [host guide (中文)](docs/wiki/hosts.md).
+Hosts such as Codex CLI, Claude Code CLI, and Qoder CLI use panels in a browser. **DeepSeek Harness (DSH) is currently the only desktop host that accommodates the full feature set and integrated interaction experience**, bringing conversation, panels, and Studio into one workspace. Feature support varies across other desktop hosts. Codex desktop integration is planned; Claude Code desktop has not been tested. Consult the [host guide (中文)](docs/wiki/hosts.md) when choosing a host.
 
 ## Why use it
 
@@ -97,9 +97,9 @@ Reuse, combine, or customize Kits and Bundles to adapt professional methods, out
 
 ## A complete collaboration
 
-Continue with the six-person studio from the quick start: turn its real practices for client change requests into the platform's processes, rules, permissions, and pages. The captures preserve the complete DeepSeek Harness workspace, with actual conversation on the left and Design Panels on the right. Studio is shown in its separate page. Close-ups in the GIFs make details easier to read.
+Continue with the six-person studio from the quick start: turn its agreements for handling client change requests into the platform's processes, rules, permissions, and pages. In DeepSeek Harness, discuss the design with AI on the left and edit the corresponding Panel on the right. Open Studio when you want to customize a Kit.
 
-> **Demo scope:** These captures show actual host conversations and Panel interactions with synthetic business data in an isolated project. The PRD is a draft prepared from the official template, with unresolved content marked. The screenshots and interaction clips do not establish automatic generation or acceptance of an entire specification; see the [host guide (中文)](docs/wiki/hosts.md) for generation, saved-edit continuation, and background-review support.
+> This example uses a fictional studio's business data to show actual conversations and Panel interactions, not one-click generation of a complete specification. The PRD follows the official template but remains a draft with open questions to discuss. See the [host guide (中文)](docs/wiki/hosts.md) for Panel and review support in each host.
 
 In DeepSeek Harness, create a project and manually activate the Web App Kit:
 
@@ -148,11 +148,11 @@ Each part has its own panel, and KAG helps you find their relationships. Choose 
 
 When this round of design is clear, you ask: “Assemble the current design into a PRD, keeping the supporting sources and unresolved questions.” AI opens the **PRD panel**, organizing existing requirements, processes, pages, permissions, and AI capabilities. Browse the outline and trace the sources; if something needs to change, return to its panel.
 
-For implementation, prepare a spec for the particular task and the development project's conventions, linking the relevant design evidence. Follow the [complete tutorial (中文)](docs/wiki/web-app-demo.md), read the [design-to-development handoff (中文)](docs/design-development-handoff.md), or explore the recorded [non-Web Kit examples (中文)](docs/wiki/non-web-kit-demo.md).
+For implementation, prepare a spec for the particular task and the development project's conventions, linking the relevant design evidence. Follow the [complete tutorial (中文)](docs/wiki/web-app-demo.md), read the [design-to-development handoff (中文)](docs/design-development-handoff.md), or explore [non-Web Kit examples (中文)](docs/wiki/non-web-kit-demo.md).
 
 ![Read the PRD draft's formal chapters beside the conversation, retaining design sources and unresolved content](docs/images/readme-prd.png)
 
-The earlier research-collaboration screenshot below also preserves the complete host interface, showing where conversation, design suggestions, and the process Panel appear. See the [interface overview (中文)](docs/wiki/usage.md#7-界面概览) for the page map and PRD views.
+In a research collaboration, you can discuss the work with AI while using design suggestions to refine the process. The example below shows conversation and Panel side by side; see the [interface overview (中文)](docs/wiki/usage.md#7-界面概览) for more page-map and PRD examples.
 
 ![Conversation, design suggestions, and a business process panel in DeepSeek Harness](docs/images/design-panel-process.png)
 
@@ -160,9 +160,9 @@ The earlier research-collaboration screenshot below also preserves the complete 
 
 The official **Web App Kit** covers requirements clarification, research, feature planning, and the design of business processes, rules, data, permissions, pages, and acceptance criteria. It also helps plan an application's **AI capabilities**: the AI's responsibilities, how it interacts with people, and the prompts, Skills, and tools it needs. Explore the [Mindset](packages/skills-web-app/kits/web_app/mindset.md) and [Bundle mount list](packages/skills-web-app/kits/web_app/kit.yaml) for the methods and scope.
 
-The shared framework's panels, feedback, and design integration capabilities can be extended with methods for other domains: developing a game's actions, resources, and win conditions, or turning staffing needs, night-shift limits, and fairness trade-offs into an operations research model for scheduling. Game design remains an extension direction. The **Decision Modeling Kit** is currently for internal validation, excluded from the default product distribution and public source export. See the [official Kit list (中文)](docs/wiki/kit-sharing.md#official-kits) for the default Kit and guidance on loading independent Kits.
+The shared framework's panels, feedback, and design integration capabilities can be extended with methods for other domains: developing a game's actions, resources, and win conditions, or turning staffing needs, night-shift limits, and fairness trade-offs into an operations research model for scheduling. These are possible customizations, not Kits included by default. See the [official Kit list (中文)](docs/wiki/kit-sharing.md#official-kits) for current availability and installation options.
 
-Start by reusing a professional method you know, define its structured output and interactive panel, and try it on a small example. Combine it with related Bundles and a domain Mindset to form a Kit. Panels can use question cards, tables, diagrams, prototypes, or whiteboards; extensions can also integrate specialist editors and UI components. **Studio** provides an entry point to inspect and manage methods and source files, and customize working copies. Available authoring capabilities depend on the installed version; follow the [Studio walkthrough (中文)](docs/wiki/usage.md#6-studio查看定制和检验套件) and complete the [author and recipient checks (中文)](docs/wiki/kit-sharing.md#作者与接收者的最小验证) before sharing.
+Start by reusing a professional method you know, define its structured output and interactive panel, and try it on a small example. Combine it with related Bundles and a domain Mindset to form a Kit. Panels can use question cards, tables, diagrams, prototypes, or whiteboards; extensions can also integrate specialist editors and UI components. Use **Studio** to inspect methods and source files, then customize and preview a working copy. Follow the [sharing guide (中文)](docs/wiki/kit-sharing.md#作者与接收者的最小验证) to check and deliver the Kit. See the [Studio walkthrough (中文)](docs/wiki/usage.md#6-studio查看定制和检验套件) for instructions and host support.
 
 ![Read the Web App Mindset and browse mounted Bundles in the complete Studio page](docs/images/readme-studio.gif)
 
@@ -182,7 +182,7 @@ Start by reusing a professional method you know, define its structured output an
 | [Core concepts (中文)](docs/wiki/concepts.md) · [Terminology (中文)](docs/wiki/terminology.md) | Projects, Kits, Bundles, panels, and bilingual naming |
 | [Product principles (中文)](docs/product-vision.md) | Professional methods, human–AI alignment, and interaction principles |
 | [Development guide (中文)](docs/wiki/development.md) · [Architecture baseline](docs/system-design-baseline.md) | Source setup, layer responsibilities, and verification |
-| [Preview status](docs/wiki/preview-status.md) | Candidate identity and verification scope |
+| [Preview status](docs/wiki/preview-status.md) | Versions, supported features, and known limitations |
 
 Before changing the project, read [AGENTS.md](AGENTS.md) and the [contribution guide](CONTRIBUTING.md).
 

@@ -149,6 +149,11 @@ source/protocol implementation, not installed-host acceptance or a new release
 claim. Historical acceptance and limitations below remain pinned to their tested
 versions; they do not permanently disable the new conditional route.
 
+## Historical integration records
+
+The following sections retain version-specific protocol investigations and test
+results. For installation or an update, use [Stable installation and updates](#stable-installation-and-updates).
+
 ## 0.3.20 connection card and secondary browser action
 
 The user confirmed installed 0.3.19 panel interaction/save reached the original
@@ -564,12 +569,8 @@ both native-message and external-relay tests. The separate message/relay market
 builders were removed; those suites remain historical test artifacts, not fresh
 installation prerequisites.
 
-Build each release in a fresh staging directory with matching suite/market-entry
-versions. Preserve the stable registered market directory and its name; place
-new source bytes in a new versioned child directory before replacing the catalog.
-Do not rewrite old installed cache directories or host registry/settings. Use
-WorkBuddy's market-name menu **Refresh**, then update the existing suite to the
-new version. These are separate operations. In the tested desktop build, the
+Use WorkBuddy's market-name menu **Refresh**, then update the existing suite to
+the new version. These are separate operations. In the tested desktop build, the
 local directory marketplace keeps an in-memory plugin-list cache; the plugin
 **Update** path can use that old list and return success without installing the
 new catalog version. Refresh the marketplace first, confirm its listed version,
@@ -578,10 +579,16 @@ a success notice or reloading an old Skill does not prove a new installation.
 An existing conversation may retain its older runtime snapshot;
 report actual new-tool availability separately from the catalog update. Do not
 promise automatic hot reload, silently restart WorkBuddy, or create a new host
-launch entry. The local market source update itself is not installed-host
-acceptance. Keep both the acquired npm runtime and explicit Node executable in
-persistent storage; a market refresh cannot restore a deleted runtime.
+launch entry. Keep both the acquired npm runtime and explicit Node executable
+in persistent storage; a market refresh cannot restore a deleted runtime.
 
+
+### Preparing market releases (maintainers)
+
+Build each release in a fresh staging directory with matching suite/market-entry
+versions. Preserve the stable registered market directory and its name; place
+new source bytes in a new versioned child directory before replacing the catalog.
+Do not rewrite old installed cache directories or host registry/settings.
 
 ### External relay request-process lifetime correction (0.2.1)
 

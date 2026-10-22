@@ -81,7 +81,8 @@ version. Leave **publish** unchecked for build/pack checks and the receipt summa
 in the run's logs. Prepared archives remain on the temporary runner; the workflow
 does not upload downloadable artifacts. Compilation, pack checks,
 installed runtime/Host acceptance and registry publication are separate results.
-The assembler deliberately retains its incomplete acceptance flags.
+The preparation receipt retains flags for checks that have not yet passed;
+review these before making a release decision.
 
 The workflow uses GitHub-hosted Ubuntu, Node `22.22.3`, pnpm `11.7.0` and explicit
 npm `11.21.0`. Public exports currently omit the internal lockfile: on that input,
@@ -89,8 +90,9 @@ CI first resolves a public-registry lock, then performs a strict frozen install.
 The resolved lock is a run input, not a committed reproducibility guarantee.
 Dependency caching is explicitly disabled in both setup Actions.
 Build permissions come only from `pnpm-workspace.yaml`; preserve exact approved
-versions and explicit denials. The exact Rolldown `1.2.4` override preserves the
-compiler boundary of the retained Pica/UI artifact proofs. Installation executes the approved native scripts
+versions and explicit denials. Keep the Rolldown override at `1.2.4`: the retained
+Pica/UI artifact verification used that compiler version. Recheck those artifacts
+before reusing their evidence with a different compiler. Installation executes the approved native scripts
 within the isolated runner, not within a user Host/profile.
 
 Native Git materials are acquired from the fixed public Companion `beta.16`
@@ -140,6 +142,24 @@ for evidence inspection, exact-plan approval, cleanup and separate finalization.
 Describe the change, affected contracts, actual commands and outcomes, dependency versions, and remaining gaps. Use synthetic design files instead of a real user's conversations or projects. Remove credentials and internal URLs from logs and images. Do not commit generated caches, local model configuration, installation tokens, or unrelated build outputs.
 
 Preserve third-party copyright and license notices. Project-owned code is Apache-2.0; adding a dependency or copying code requires reviewing its source, license, notices, and distribution obligations. Do not claim that the project's license replaces a dependency's license.
+
+## Maintain private security reporting
+
+Keep [SECURITY.md](SECURITY.md) focused on people reporting an issue. Before
+announcing a reporting channel and supported-version policy:
+
+- Enable and test private vulnerability reporting in the actual public repository.
+- List the supported package versions and verify that the README links to the policy.
+- If an email alternative is offered, publish only an authorized, monitored
+  security address and verify that it receives reports.
+- Check that npm and source distributions contain no private reporting addresses,
+  development credentials, or real user projects.
+
+Complete these checks before activating the reporting policy; the local evaluation
+package does not establish that they passed. GitHub and npm publication still
+require the user's package testing and separate authorization. Do not announce
+released or supported versions, response commitments or other support terms in
+the security policy before they have been established.
 
 ## Release checklist
 

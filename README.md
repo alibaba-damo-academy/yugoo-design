@@ -16,7 +16,7 @@
 
 ![语构设计系统（Yugoo Design）产品概念：从零散想法出发，通过可交互设计面板、缺口驱动协作与 KAG/GRA 整合，形成可持续反馈和修订的系统化设计成果](docs/images/yugoo-design-concept.webp)
 
-你可以先用默认随插件交付的 **Web App Kit** 设计完整的软件应用，也可以定制套件与面板，用于推敲游戏规则、设计排班优化模型等任务。[官方套件清单与获取指引](docs/wiki/kit-sharing.md#official-kits)列出其他套件的用途与实际接入范围。
+你可以先用默认随插件交付的 **Web App Kit** 设计完整的软件应用，也可以定制套件与面板，用于推敲游戏规则、设计排班优化模型等任务。已提供的套件与独立 Kit 的接入方式见[套件清单与获取指引](docs/wiki/kit-sharing.md#official-kits)。
 
 [快速开始](#快速开始) · [为什么需要它](#为什么需要它) · [核心能力](#核心能力) · [协作示例](#一次完整的协作) · [扩展套件](#从应用设计开始按需扩展) · [Wiki](docs/wiki/README.md) · [贡献与反馈](#参与与反馈)
 
@@ -44,7 +44,7 @@
 
 当前为 **Beta 预览版，默认包含 Web App Kit**。精确发行版本与已验证范围见[预览状态](docs/wiki/preview-status.md)；完整 `/yugoo` 参数见[命令参考](docs/wiki/commands.md)。
 
-Codex CLI、Claude Code CLI、Qoder CLI 等宿主通过浏览器使用面板；**DeepSeek Harness（DSH）目前是唯一能够承载完整功能与一体化交互体验的桌面宿主**，将对话、面板和设计工作室（Studio）放在同一工作区。其他桌面宿主按各自已验证范围使用；Codex 桌面接入是第二轮开发目标，Claude Code 桌面端尚未测试。具体范围见[宿主指南](docs/wiki/hosts.md)。
+Codex CLI、Claude Code CLI、Qoder CLI 等宿主通过浏览器使用面板；**DeepSeek Harness（DSH）目前是唯一能够承载完整功能与一体化交互体验的桌面宿主**，将对话、面板和设计工作室（Studio）放在同一工作区。其他桌面宿主的功能支持有所不同；Codex 桌面接入尚在规划中，Claude Code 桌面端尚未测试。选择宿主时请查看[宿主指南](docs/wiki/hosts.md)。
 
 ## 为什么需要它
 
@@ -96,9 +96,9 @@ AI 结合你的目标、已有设计和反馈，判断当前还缺什么：是�
 
 ## 一次完整的协作
 
-沿用快速开始中的六人工作室：把客户修改请求的实际处理约定，转成项目交付平台的流程、规则、权限与页面。下图保留完整的 DeepSeek Harness 工作区：左侧是实际对话，右侧是设计面板；Studio 展示其独立页面。动图中的局部放大便于阅读细节。
+沿用快速开始中的六人工作室：把客户修改请求的处理约定，转成项目交付平台的流程、规则、权限与页面。在 DeepSeek Harness 中，你可以在左侧与 AI 讨论，在右侧对照设计面板修改；定制套件时再打开 Studio。
 
-> **演示范围：** 在隔离项目中使用合成业务数据，实际操作宿主对话与面板；PRD 按正式模板编排为草案，未确定内容保留标记。这些截图与操作片段不代表整套需求已自动生成或通过验收；生成、保存后继续及后台审查的支持范围见[宿主指南](docs/wiki/hosts.md)。
+> 示例使用虚构工作室的业务数据，展示实际的对话与面板操作，并非一键生成完整需求的演示。PRD 按正式模板整理为草案，待确认内容仍需讨论。不同宿主的面板与审查支持见[宿主指南](docs/wiki/hosts.md)。
 
 在 DeepSeek Harness 中，创建项目并手动启用 Web App Kit：
 
@@ -147,11 +147,11 @@ AI 展开**业务流程面板**，用泳道图区分客户、设计师与负责�
 
 这一轮设计清楚后，你提出：“把当前设计整合成一份 PRD，保留各部分的依据和未决问题。”AI 打开 **PRD 面板**，组织已有的需求、流程、页面、权限与 AI 能力设计。你可以浏览目录、追溯来源；发现问题，再回到对应面板修改。
 
-进入开发时，再结合具体任务和开发项目的规范准备 spec，关联相应的设计依据。照着练习见[完整协作教程](docs/wiki/web-app-demo.md)，交接方式见[设计到开发交接](docs/design-development-handoff.md)，其他领域的已有记录见[非 Web Kit 演示](docs/wiki/non-web-kit-demo.md)。
+进入开发时，再结合具体任务和开发项目的规范准备 spec，关联相应的设计依据。照着练习见[完整协作教程](docs/wiki/web-app-demo.md)，交接方式见[设计到开发交接](docs/design-development-handoff.md)，其他领域的用法见[非 Web Kit 演示](docs/wiki/non-web-kit-demo.md)。
 
 ![在对话旁按正式章节阅读 PRD 草案，保留设计来源和待确认内容](docs/images/readme-prd.png)
 
-下面另保留早期科研协作案例的完整宿主界面，供查看对话、设计建议与流程面板的相对位置。页面地图与 PRD 界面另见[界面概览](docs/wiki/usage.md#7-界面概览)。
+在科研协作场景中，也可以一边与 AI 讨论，一边对照设计建议梳理业务流程。下图展示对话与面板配合的方式；更多页面地图与 PRD 示例见[界面概览](docs/wiki/usage.md#7-界面概览)。
 
 ![DeepSeek Harness 中的对话、设计建议与业务流程面板](docs/images/design-panel-process.png)
 
@@ -159,9 +159,9 @@ AI 展开**业务流程面板**，用泳道图区分客户、设计师与负责�
 
 官方提供开箱即用的 **Web App Kit**，覆盖需求澄清、调研、功能规划，以及业务流程、规则、数据、权限、页面和验收等设计。它也支持规划应用中的 **AI 能力**：AI 承担什么职责、怎样与人交互，以及需要哪些提示词、Skills 和工具。具体方法见 [Mindset](packages/skills-web-app/kits/web_app/mindset.md) 与 [Bundle 挂载清单](packages/skills-web-app/kits/web_app/kit.yaml)。
 
-共享框架中的交互面板、反馈与设计整合能力，可以配合不同领域的方法继续扩展。例如，把游戏里的行动、资源和胜负规则做成可推敲的设计；或把排班所需的人手、夜班限制和公平取舍整理成运筹优化模型。游戏设计仍是扩展方向；**决策与运筹建模（Decision Modeling）Kit** 暂用于内部验证，不随默认产品发行，也不包含在公开源码中。默认套件与独立 Kit 的接入说明见[官方套件清单](docs/wiki/kit-sharing.md#official-kits)。
+共享框架中的交互面板、反馈与设计整合能力，可以配合不同领域的方法继续扩展。例如，把游戏里的行动、资源和胜负规则做成可推敲的设计；或把排班所需的人手、夜班限制和公平取舍整理成运筹优化模型。这些是你可以定制的方向，不是默认附带的套件；当前可用套件与获取方式见[官方套件清单](docs/wiki/kit-sharing.md#official-kits)。
 
-你可以先复用一项熟悉的专业方法，为它定义结构化成果和交互面板，用小样例验证后，再与相关 Bundle、领域 Mindset 组合成 Kit。面板可以使用问题卡片、表格、图、原型、白板，也可以通过扩展接入专业编辑器和 UI 组件。**Studio** 提供查看、管理方法与源文件、定制工作副本的入口，具体创作能力以安装版本为准；操作见 [Studio 指南](docs/wiki/usage.md#6-studio查看定制和检验套件)，分享前完成[作者与接收者验证](docs/wiki/kit-sharing.md#作者与接收者的最小验证)。
+你可以先复用一项熟悉的专业方法，为它定义结构化成果和交互面板，用小样例验证后，再与相关 Bundle、领域 Mindset 组合成 Kit。面板可以使用问题卡片、表格、图、原型、白板，也可以通过扩展接入专业编辑器和 UI 组件。使用 **Studio** 查看方法与源文件，在工作副本中定制和预览，再按[分享指南](docs/wiki/kit-sharing.md#作者与接收者的最小验证)检查并交付套件。具体操作和宿主支持见 [Studio 指南](docs/wiki/usage.md#6-studio查看定制和检验套件)。
 
 ![在完整 Studio 页面中阅读 Web App Mindset，并浏览挂载的 Bundle 目录](docs/images/readme-studio.gif)
 
@@ -181,7 +181,7 @@ AI 展开**业务流程面板**，用泳道图区分客户、设计师与负责�
 | [核心概念](docs/wiki/concepts.md) · [术语规范](docs/wiki/terminology.md) | 项目、套件、技能包、面板及中英文命名 |
 | [产品理念](docs/product-vision.md) | 专业方法、人机对齐与交互原则 |
 | [开发指南](docs/wiki/development.md) · [架构基线](docs/system-design-baseline.md) | 源码环境、分层职责与验证流程 |
-| [预览状态](docs/wiki/preview-status.md) | 候选身份与验证范围 |
+| [预览状态](docs/wiki/preview-status.md) | 版本、支持范围与已知限制 |
 
 修改项目前，请阅读 [AGENTS.md](AGENTS.md) 与[贡献指南](CONTRIBUTING.md)。
 
