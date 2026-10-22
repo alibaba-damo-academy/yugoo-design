@@ -1,0 +1,66 @@
+{
+  "rounds": {
+    "R-001": {
+      "round_id": "R-001",
+      "topic": "客户反馈收集、判断与承诺转化的可借鉴机制",
+      "stage": "confirmed",
+      "directions": {
+        "D-001": {
+          "direction_id": "D-001",
+          "title": "收集与执行承诺的边界",
+          "research_points": [
+            "外部工具中用户或客户的原始反馈如何被接收和分类",
+            "反馈如何关联到已有交付范围或合同约定内容",
+            "在什么条件下反馈才转化为可执行的承诺或任务，而非直接视为新需求"
+          ],
+          "findings_file": "research/R-001/D-001-收集与执行承诺的边界.md",
+          "source_urls": [
+            "https://linear.app/docs/triage",
+            "https://linear.app/docs/customer-requests",
+            "https://asana.com/resources/change-control-process"
+          ]
+        },
+        "D-002": {
+          "direction_id": "D-002",
+          "title": "人工确认与 AI 建议的边界",
+          "research_points": [
+            "AI 辅助整理影响、起草说明或推荐分类时，哪些环节保留人工确认作为正式承诺的必要条件",
+            "AI 输出如何被标记为建议而非决定，用户如何区分和覆盖 AI 的判断",
+            "当 AI 建议与人工判断不一致时的处理机制"
+          ],
+          "findings_file": "research/R-001/D-002-人工确认与AI建议的边界.md",
+          "source_urls": [
+            "https://linear.app/docs/triage-intelligence",
+            "https://www.atlassian.com/agile/project-management/ai-agents",
+            "https://www.continuumpsa.io/single-post/ai-project-management-needs-a-human-approval-layer"
+          ]
+        },
+        "D-003": {
+          "direction_id": "D-003",
+          "title": "补充信息与退回重新处理的可借鉴机制",
+          "research_points": [
+            "当反馈信息不足或影响说明不充分时，系统如何保留原始上下文和历史记录",
+            "退回补充后如何通知相关方并重新进入判断流程，避免丢失之前的判断依据",
+            "多次退回和补充的循环是否有上限或升级机制"
+          ],
+          "findings_file": "research/R-001/D-003-补充信息与退回重新处理的可借鉴机制.md",
+          "source_urls": [
+            "https://linear.app/docs/triage",
+            "https://forum.asana.com/t/approvals-request-change-should-keep-the-task-incomplete/76962",
+            "https://sleekplan.com/blog/customer-feedback-management-that-works-a-practical-loop-for-triage-prioritization-and-closure-8762"
+          ]
+        }
+      },
+      "direction_order": [
+        "D-001",
+        "D-002",
+        "D-003"
+      ],
+      "conclusion_file": "research/R-001/conclusion.html"
+    }
+  },
+  "round_order": [
+    "R-001"
+  ],
+  "current_round_id": "R-001"
+}

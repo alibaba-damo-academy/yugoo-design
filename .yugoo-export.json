@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": "bc20f50ca29f5647d7c13dcee564ca05c2544471",
-  "policySha256": "d95f04682709ca33a794e93409fab592859d15ee31848ef8683335fd6cbd7815",
+  "revision": "9f3db51b5b325433eb6ed7e3c1008e4cf22c70d0",
+  "policySha256": "a68c7b8bfe38d294c8efa95ec28adc0124749a28f90ff8c8ebaf996e7713ae42",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
       "sha256": "9689903cd86839d8805125d1c199b38ea0eb828e5171da23ca178a5c3ec20866",
@@ -100,11 +100,11 @@
       "mode": "100644"
     },
     "README.en.md": {
-      "sha256": "b289ece51881b0f23b01a0466d204bc5f85a4ab10af2cf1dabf4309ef3620910",
+      "sha256": "2956b3a31dd94b46a8277e2d9df266800baab23859a1b5645ee9c1688e28068c",
       "mode": "100644"
     },
     "README.md": {
-      "sha256": "d756dce1fee74b3865c6baed99a3db7bbd9d2b0f479005b69b3da18f60d2f0a2",
+      "sha256": "aca3e51a3e4926f4a47cf6c0becee8ca558acd65d9bd81853234a1a6d8c96324",
       "mode": "100644"
     },
     "SECURITY.md": {
@@ -167,28 +167,36 @@
       "sha256": "db55f65e98527f2e3729db5984ec71f310fd2c641c455549e364a79d9368c159",
       "mode": "100644"
     },
+    "docs/images/readme-design-advice.gif": {
+      "sha256": "57a02db3f29d5a480e7b429d2b551d2e5c626a4af2abfd5aa2874b93365e5bf7",
+      "mode": "100644"
+    },
     "docs/images/readme-design-advice.png": {
-      "sha256": "a1de3ab011e67352ca08dd645827875729e3496da6bff06803330a6861090806",
+      "sha256": "7fecece49a21f77d9fe814c52bb3f5da79ecac45be1f646ae3d03b26fa688a72",
       "mode": "100644"
     },
     "docs/images/readme-design-exploration.gif": {
-      "sha256": "24dcbec7ebd3464167d6e93bf9a0578680d74bcf36c7aa96576d5a233c0aadaa",
+      "sha256": "e95bb16509d86ce91409c6c66bf32690cbaf7fbd6ab81cde4b2dd1538fa2f161",
       "mode": "100644"
     },
     "docs/images/readme-design-views.gif": {
       "sha256": "0efccb02218f257cf132db659bd28773f49f3c3fb898ba9cba3924f1fb7e28b4",
       "mode": "100644"
     },
+    "docs/images/readme-flow.gif": {
+      "sha256": "61fcece67da0bc0f8cfed7e5b4f8d6a33a1d7d97b531f14951ed828d2eee59ee",
+      "mode": "100644"
+    },
     "docs/images/readme-flow.png": {
-      "sha256": "62c82f41f3dbef844ac6ca4a80f8125e5d0c27bcb07f7eb03d487d71003e4c14",
+      "sha256": "c922d6091502a298db09ba89619c237190853e1e92cfb06952d4151c19b31d48",
       "mode": "100644"
     },
     "docs/images/readme-prd.png": {
-      "sha256": "a0f0a21a026e61c65f7ef186efb9c02a12d5e9d6cbb86baf23693131dc40a534",
+      "sha256": "5b068178f5e060ef69b53d02591faa9798fa493973a51f0253684208e002f1a7",
       "mode": "100644"
     },
     "docs/images/readme-smart-questions.gif": {
-      "sha256": "981741e4f93710e38cf1e3bcb95639b3af335433a3d9c193f202878ffbc8b188",
+      "sha256": "1d152674723df100fe4dede1aef50f56836f8429a9fef100478eb0a761a404fd",
       "mode": "100644"
     },
     "docs/images/readme-studio.gif": {
@@ -312,7 +320,7 @@
       "mode": "100644"
     },
     "docs/wiki/web-app-demo.md": {
-      "sha256": "088b57a3ea9565f6bb94a8ca1639b078c34eae5b4e97cbfa10d38640f506d4f7",
+      "sha256": "8ff692a00411d160624ca765ae4806348f443b5223a18980b391ff0aae3db1f1",
       "mode": "100644"
     },
     "examples/community-workshop-delivery/LICENSE": {
@@ -384,7 +392,7 @@
       "mode": "100644"
     },
     "examples/design-team-delivery/README.md": {
-      "sha256": "531e7282d2d315ff00f5cbaaf9f1af6f6f97387d416a9a01228deb6719b54ff1",
+      "sha256": "a3086eee009b4edcbaa6e25ab7156023d85995defdbb81f6adb47b1a7b167d8e",
       "mode": "100644"
     },
     "examples/design-team-delivery/design_files/_experiences/member-center-feedback-scenario/16def26a-9354-4075-ad19-3ab6141ca6d1/draft.json": {
@@ -428,7 +436,7 @@
       "mode": "100644"
     },
     "examples/design-team-delivery/design_files/business_rules/business_rules.json": {
-      "sha256": "28b93c9bb17dccc6838d9f83c9fe4236cb65fad05d8247fede20910ea728e90d",
+      "sha256": "20028f79e87057a035d366a1177dc144c7065008f8c9ee3c914c52155dce3b3a",
       "mode": "100644"
     },
     "examples/design-team-delivery/design_files/design_style/DESIGN.md": {
@@ -471,12 +479,32 @@
       "sha256": "6bdc4cefe0d86eea66770af77fa13e816b9c362ead12189ebd6425e1891bd30c",
       "mode": "100644"
     },
+    "examples/design-team-delivery/design_files/research/R-001/D-001-收集与执行承诺的边界.md": {
+      "sha256": "54c18230c123b7e751890a72b7083181b0a60034a0b9c99e1a7ec34a83c5f3f5",
+      "mode": "100644"
+    },
+    "examples/design-team-delivery/design_files/research/R-001/D-002-人工确认与AI建议的边界.md": {
+      "sha256": "cb0af430f09fd731b6edf3dcb8204e2c5b8b4a924db19d18a29657e4583d22aa",
+      "mode": "100644"
+    },
+    "examples/design-team-delivery/design_files/research/R-001/D-003-补充信息与退回重新处理的可借鉴机制.md": {
+      "sha256": "bc552312265b9dba06bc92a3c0ee61c4446bf22cc697845f750b9e026aceb211",
+      "mode": "100644"
+    },
+    "examples/design-team-delivery/design_files/research/R-001/conclusion.html": {
+      "sha256": "0a4f56ec021d1748dbc23bc010f4b6fcfcc7c5b80b4a508220f0f82e77ae4fed",
+      "mode": "100644"
+    },
+    "examples/design-team-delivery/design_files/research/research.json": {
+      "sha256": "edec2f391a8a12f676ad832ecfb6d6be7b6ee74279429adf35e33da9de54d180",
+      "mode": "100644"
+    },
     "examples/design-team-delivery/design_files/smart_questions/smart_questions.json": {
       "sha256": "db9fe9e8a9c21e398e87b9d490c0f8ef48acf6974d93af569c1f6f47ab27f77b",
       "mode": "100644"
     },
     "examples/design-team-delivery/design_files/web_app_prd_assembly/prd.html": {
-      "sha256": "12d60f7218b392cb5227a80ce29ac069015b4167c6f7b5850b583d017fa2d24a",
+      "sha256": "606c2b00aaf66e4d70b85deadb3dd222a4a44cef10112c1c905c03da70f8a994",
       "mode": "100644"
     },
     "examples/design-team-delivery/design_files/web_app_prd_assembly/web_app_prd_assembly.json": {
@@ -484,15 +512,15 @@
       "mode": "100644"
     },
     "examples/design-team-delivery/design_records/clarity.json": {
-      "sha256": "34743640f462f5b77657437fa33ff38ab5d3fb0b5fe578609772ee9bb21eeedf",
+      "sha256": "97ba518e85b8b4ddb57726720c3be418d663b6cef429cef51da4b0a5d906bf98",
       "mode": "100644"
     },
     "examples/design-team-delivery/design_records/journal/YjljZjdhZDktYTJlNy00Zjg5LTg0ZDEtYzM3OTFiYWQwY2Iw.jsonl": {
-      "sha256": "ffc62b4dc152d0cd3721303d244666095da1dc32d7c713fe4b5a6a65b17cba61",
+      "sha256": "565c82793e94ad983ca853377496fcfb4473d8bd3987c510bc80bd57246f4216",
       "mode": "100644"
     },
     "examples/design-team-delivery/design_records/knowledge/archive.json": {
-      "sha256": "0103518d08ae65d9cd136b5f5ede514482722395374bb0ca0478559fd8754cfd",
+      "sha256": "e33be4f91b828bda2acd2bc82dc6f77df4285ac81c6548ca89c600d201ddee53",
       "mode": "100644"
     },
     "examples/design-team-delivery/design_records/reviews/gra-policy.json": {
@@ -8360,7 +8388,7 @@
       "mode": "100644"
     },
     "release/public-source-policy.json": {
-      "sha256": "fabc3c790e645a6e14989e90f8e62a7265693acb1374881bb3bec0d2230526df",
+      "sha256": "51befb1f7f0dc09edb70fe3d4c3c87b482da3f70fb95290a3ca11b89a8983c7b",
       "mode": "100644"
     },
     "release/public-source-test-selection.json": {

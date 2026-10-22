@@ -3,12 +3,13 @@
 [简体中文](README.md) · English
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
-[![DeepSeek Harness: preview](https://img.shields.io/badge/DeepSeek_Harness-preview-2563eb)](docs/wiki/hosts.md#deepseek-harness)
-[![Codex CLI: preview](https://img.shields.io/badge/Codex_CLI-preview-2563eb)](docs/wiki/hosts.md#codex-cli)
-[![Claude Code CLI: preview](https://img.shields.io/badge/Claude_Code_CLI-preview-2563eb)](docs/wiki/hosts.md#claude-code-cli)
-[![Qoder CLI: preview](https://img.shields.io/badge/Qoder_CLI-preview-2563eb)](docs/wiki/hosts.md#qoder-cli)
-[![千问办公 QwenWork: preview](https://img.shields.io/badge/%E5%8D%83%E9%97%AE%E5%8A%9E%E5%85%AC_QwenWork-preview-2563eb)](docs/wiki/hosts.md#千问办公-qwenwork)
-[![WorkBuddy: preview](https://img.shields.io/badge/WorkBuddy-preview-2563eb)](docs/wiki/hosts.md#workbuddy)
+[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek_Harness-3964FE)](docs/wiki/hosts.md#deepseek-harness)
+[![Codex CLI](https://img.shields.io/badge/Codex_CLI-0D0D0D)](docs/wiki/hosts.md#codex-cli)
+[![Claude Code CLI](https://img.shields.io/badge/Claude_Code_CLI-D97757)](docs/wiki/hosts.md#claude-code-cli)
+[![Qoder CLI](https://img.shields.io/badge/Qoder_CLI-6AD86C)](docs/wiki/hosts.md#qoder-cli)
+[![千问办公 QwenWork](https://img.shields.io/badge/%E5%8D%83%E9%97%AE%E5%8A%9E%E5%85%AC_QwenWork-39D377)](docs/wiki/hosts.md#千问办公-qwenwork)
+[![WorkBuddy](https://img.shields.io/badge/WorkBuddy-00C29A)](docs/wiki/hosts.md#workbuddy)
+[![Companion release](https://img.shields.io/badge/Companion_release-2088FF?logo=githubactions&logoColor=white)](https://github.com/alibaba-damo-academy/yugoo-design/actions/workflows/publish-companion.yml)
 
 **See your ideas. Shape the details.**
 
@@ -54,13 +55,13 @@ For example, suppose you want to build an internal expense reimbursement tool fo
 
 Yugoo Design helps you work through these questions with AI: use design panels to understand proposals and refine details, then bring separate designs together into a consistent whole. As requirements change, you can keep discussing, checking, and revising the design together, so it remains a shared foundation for development, iteration, and maintenance.
 
-Software application design is a starting point. The framework aims to support a broader form of **Human-in-the-loop (HITL)** collaboration: **helping people understand problems, think through choices, express their needs, and keep AI aligned with their intent.** With methods and panels for different domains, this approach can also extend to event planning, game mechanics, and operations research modeling. See the [product principles (中文)](docs/product-vision.md) for more background.
+Software application design is a starting point. The framework aims to support and explore broader **human–AI interaction and collaboration (Human-in-the-loop, HITL)**: **helping people understand problems, think through choices, express their needs, and keep AI aligned with their intent.** With methods and panels for different domains, this approach can also extend to event planning, game mechanics, and operations research modeling. See the [product principles (中文)](docs/product-vision.md) for more background.
 
 ## Core capabilities
 
 ### Interactive design artifacts: from Skill to Bundle
 
-Yugoo Design extends an Agent Skill into a **Bundle**, adding interactive panels, structured data validation, and execution controls to professional methods. Each Bundle focuses on one part of a design, such as an application's features, processes, rules, data, or pages, turning skill outputs into artifacts you can inspect, discuss, and edit.
+Yugoo Design extends an Agent Skill into a **Bundle**, adding interactive panels (supporting declarative panel definitions and A2UI), structured data validation, and execution controls to professional methods. Each Bundle focuses on one part of a design, such as an application's features, processes, rules, data, or pages, turning skill outputs into artifacts you can inspect, discuss, and edit.
 
 Inspect relationships in a diagram, edit properties in a form, or explore pages through a prototype. The Panel and agent work with the same design data; validated, saved changes become the basis for further design. A Bundle can also declare whether to run in the main agent or a subagent, and when to hand control back to the user for input, edits, or confirmation, so its methods can take the appropriate role in the collaboration.
 
@@ -104,45 +105,49 @@ The business data is fictional. Start from the goal in the [quick start](#quick-
 
 After you describe the studio from the quick start, AI can open the **Smart Questions panel**, presenting questions that matter to the current proposal as answerable cards. You explain how your team works: **designers can discuss requests with clients; the project lead approves additional scope and delivery dates.**
 
-Once you save, AI suggests: “Let's map a client's change request through to scheduling the work, showing who records feedback, assesses scope, and makes commitments.”
+After saving, expand the **U/S/T assessment** to read AI's judgment and supporting evidence: is the context understood, do the parts fit together, and which behaviors still lack verifiable criteria? These reasons help you discuss what to clarify next, rather than chase a higher score.
 
-![Read Smart Questions beside the conversation, zoom into details, and edit supporting context](docs/images/readme-smart-questions.gif)
+With responsibilities clear, for example, AI can suggest: “Let's map a client's change request through to scheduling the work, showing who records feedback, assesses scope, and makes commitments.”
+
+![Answer Smart Questions beside the conversation, then open U/S/T for a close-up of the reasoning and next gap](docs/images/readme-smart-questions.gif)
 
 ### 2. See the process, then add real-world context
 
 AI opens the **business process panel**. Vertical swimlanes separate the client, designer, project lead, and system. Read from top to bottom to follow feedback capture, scope comparison, impact assessment, and confirmation of the work.
 
-Seeing every revision go through the lead, you add: “Designers can handle layout revisions within the agreed scope directly. New pages or capabilities need a scope discussion.” AI revises the branches. You discuss, edit, and save alongside the Panel, bringing the team's real working practices into the design.
+Start with the whole process, then zoom into the decisions: which small changes can proceed directly, which need scope or timing approval, and who supplies missing information? You might add: “Designers can handle in-scope layout revisions directly when they do not affect a promised milestone.” Check the conditions and destinations, edit, and save, bringing the team's real working practices into the design.
 
-![Discuss the proposal beside a swimlane process distinguishing direct changes from those needing the project lead's confirmation](docs/images/readme-flow.png)
+![View the complete vertical swimlanes, then zoom into direct handling, lead confirmation, and return-for-information branches in the same process](docs/images/readme-flow.gif)
 
 ### 3. Save your decisions and continue with AI
 
-After saving, ask: “Continue from the rules I just saved and identify what still needs thought.” AI proceeds from those changes. Read the **U/S/T assessment** and its reasons to see whether the missing piece is business context, design structure, or verifiable rules—not just whether a score is high or low.
+After saving, ask: “Continue from the rules I just saved and check whether the other designs express the same intent.” AI proceeds from those changes, while **proactive review (GRA)** helps identify parts that are not yet aligned.
 
-To explore what a decision affects, open **Related graph (KAG)** at the bottom of the workspace. Inspect design objects, relationships, and sources, then return to the relevant panel to check them. The graph and assessment help you choose the next step; neither has to be “completed” first.
+A Grounding suggestion recorded in this project identifies a specific gap:
 
-In a host that supports GRA, developing the design might lead to a **design suggestion** like this:
+> The answers require checking a revision's effect on delivery milestones, but the “in-scope revision” rule only checks for new pages or capabilities. It does not include the timing condition.
 
-> Designers can handle in-scope revisions directly, while the lead approves delivery dates. What happens when many in-scope revisions affect a milestone already promised to the client?
+You can clarify: “Assess scope and timing separately. Any impact on a promised milestone needs the lead to confirm the plan again.” Ask AI to revise the rule, then compare it with the same process. A suggestion does not make decisions or change the design for you.
 
-You decide: “Assess scope and timing separately. Any impact on a promised milestone needs the lead to confirm the plan again.” Ask AI to revise the relevant rules and process, then inspect the panels. Reviewing the relationships helps you articulate a choice you had not expressed separately before.
+To explore how the designs relate, open **Related graph (KAG)** at the bottom of the workspace. Select a process or page, follow its relationships and sources, and return to the relevant panel to check it. The graph provides discovery paths; the design content remains the basis for judgment.
 
-![Expand design suggestions beside the conversation and compare them with the business process](docs/images/readme-design-advice.png)
+![Read an actual suggestion from this project, compare the same process and rules, then inspect related objects and sources in KAG](docs/images/readme-design-advice.gif)
 
 That is the collaboration loop: **describe a goal → examine and edit the Panel → save and continue with AI → discuss the next question.** Start the next round where understanding or a decision is most needed.
 
 ### You can also explore further…
 
-To see how these rules translate into a product, use the **page map** to connect the client's feedback submission, the designer's impact assessment, and the lead's confirmation. Then develop individual pages through **UI design and interactive prototypes**.
+**Page map, UI design, and Research.** Use the page map to connect the client's feedback submission, the designer's impact assessment, and the lead's confirmation. Then develop individual pages through UI design and interactive prototypes. When a question needs investigation, use the Research panel to organize questions, sources, and findings that inform the next design decision.
 
-Or open **Scene experience (场景体验)** and choose a situation such as “the client adds a page at the last minute.” Explore the process, rules, and interface together. If a step is unclear, choose “在主对话讨论当前内容” (discuss the current content in the main conversation) to bring the question back into the design. Interactions in the experience are demonstrations; they do not directly change design files.
+**Scene experience (场景体验).** Choose a situation such as “the client adds a page at the last minute” and walk through the process, rules, and interface together. If a step is unclear, choose “在主对话讨论当前内容” (discuss the current content in the main conversation) to bring the question back into the design. Interactions in the experience are demonstrations; they do not directly change design files.
 
-![Explore the studio project's page map, UI design, and scene experience, then inspect U/S/T reasoning and the related graph](docs/images/readme-design-exploration.gif)
+**PRD and implementation handoff.** Assemble the current design into a PRD draft. Review the proposal chapter by chapter, retaining sources and unresolved questions. For implementation, prepare a spec for the particular task and link its design evidence.
+
+![Follow the same project's page map, UI design, Research panel, Scene experience, and PRD draft in order](docs/images/readme-design-exploration.gif)
 
 For greater detail, develop the data relationships between feedback, deliverables, and changes, refine permissions and business rules, or use the **AI capabilities panel** to define how the application's AI organizes feedback, which Skills and tools it needs, and which commitments remain human decisions.
 
-When it is time to hand off the work, assemble a **PRD draft**, retaining sources and unresolved questions. For implementation, prepare a spec for the particular task and link its design evidence. These are dimensions to explore as needed, not a checklist to complete every round.
+These are dimensions to explore as needed, not a checklist to complete every round.
 
 See the [tutorial (中文)](docs/wiki/web-app-demo.md) for the full walkthrough and data, rule, and PRD views, or the [usage guide (中文)](docs/wiki/usage.md#查看和更新-ust) for U/S/T, KAG, and Scene experience. The [interface overview (中文)](docs/wiki/usage.md#7-界面概览) also shows process and page design for a research collaboration tool. See [non-Web Kit examples (中文)](docs/wiki/non-web-kit-demo.md) for other domains and [design-to-development handoff (中文)](docs/design-development-handoff.md) for implementation.
 

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>R-001 调研结论：客户反馈收集、判断与承诺转化的可借鉴机制</title>
+<style>
+  :root {
+    --accent: #2563EB;
+    --bg: #FAFBFC;
+    --card-bg: #FFFFFF;
+    --text: #1F2937;
+    --text-secondary: #6B7280;
+    --border: #E5E7EB;
+    --warning: #D97706;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "PingFang SC", "Noto Sans SC", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 24px 16px;
+  }
+  .container { max-width: 960px; width: 100%; margin: 0 auto; }
+  h1 { font-size: clamp(20px, 4vw, 28px); font-weight: 700; margin-bottom: 8px; }
+  .subtitle { font-size: 14px; color: var(--text-secondary); margin-bottom: 32px; }
+  h2 { font-size: clamp(16px, 3vw, 20px); font-weight: 600; margin: 32px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); display: inline-block; }
+  p { font-size: 14px; margin-bottom: 12px; }
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 16px 0; }
+  .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+  .card-title { font-size: 14px; font-weight: 600; color: var(--accent); margin-bottom: 8px; }
+  .card-body { font-size: 13px; line-height: 1.5; }
+  .insight-box { background: #EFF6FF; border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 16px 0; }
+  .insight-box p { font-size: 14px; margin-bottom: 0; }
+  .gap-box { background: #FFF7ED; border-left: 4px solid var(--warning); border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 16px 0; }
+  .gap-box p { font-size: 14px; margin-bottom: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+  th { background: #F3F4F6; font-weight: 600; text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; margin-right: 4px; }
+  .tag-partial { background: #FEF3C7; color: #92400E; }
+  .tag-gap { background: #FEE2E2; color: #991B1B; }
+  .source-list { font-size: 12px; color: var(--text-secondary); margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .source-list a { color: var(--accent); text-decoration: none; }
+  .source-list a:hover { text-decoration: underline; }
+  @media (max-width: 700px) { .card-grid { grid-template-columns: 1fr; } body { padding: 16px 12px; } }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>客户反馈收集、判断与承诺转化的可借鉴机制</h1>
+<p class="subtitle">R-001 调研结论 · 基于 Linear、Asana、Atlassian、Sleekplan 官方文档的综合分析</p>
+
+<h2>核心问题</h2>
+<p>六人设计工作室的项目交付平台需要回答三个关键问题：客户反馈如何被接收而不直接变成承诺？AI 辅助与人工作业的边界在哪里？退回补充时如何不丢失上下文？本轮调研从项目管理工具中提取可借鉴的机制，不涉及市场规模或产品排名。</p>
+
+<h2>三项可借鉴的参考机制</h2>
+
+<div class="card-grid">
+  <div class="card">
+    <div class="card-title">① 接收 ≠ 承诺：可选的审查缓冲层</div>
+    <div class="card-body">Linear Triage 在启用后将外部反馈默认路由至专门收件箱，只有 accept 后才进入团队工作流。Asana 变更控制文章建议将评估和分析作为实施前的独立步骤。这些工具在启用相应功能后提供审查阶段，可作为工作室项目交付平台的参考。</div>
+  </div>
+  <div class="card">
+    <div class="card-title">② AI 建议 ≠ 决定：人工确认可作为设计选项</div>
+    <div class="card-body">Linear Triage Intelligence 以 suggestion 形式呈现 AI 输出，用户可接受、拒绝或查看推理依据。Atlassian 文档提到 Agent 操作供人工批准；Continuum PSA 是一家提供商的观点。对外承诺由负责人确认是本项目的本地决定（BR-002）。</div>
+  </div>
+  <div class="card">
+    <div class="card-title">③ 退回 ≠ 删除：上下文保留与条件恢复</div>
+    <div class="card-body">Linear Snooze 暂时隐藏但设定自动恢复条件（时间到达或新活动），原始上下文和评论历史完整保留。一条 Asana 社区帖子反映 Request Changes 后任务可能从待办列表消失。Sleekplan 强调多次退回应在同一记录上下文中进行。</div>
+  </div>
+</div>
+
+<h2>对本项目的设计启示</h2>
+
+<div class="insight-box">
+  <p><strong>反馈状态设计：</strong>当前 P-001 流程中设计师的判断环节对应审查阶段，但缺少显式的"待判断"状态标记。可考虑为 feedback 对象增加独立的待判断状态，区分"已收到但未处理"与"已确认纳入"。</p>
+</div>
+
+<div class="insight-box">
+  <p><strong>AI 输出呈现：</strong>BR-002 已写明"AI 整理影响，人作承诺"，与部分工具的实践方向一致。若引入 AI 辅助判断，可考虑以建议形式呈现，附带推理依据摘要和覆盖入口，并在触发下游动作前考虑设置人工确认节点。</p>
+</div>
+
+<div class="insight-box">
+  <p><strong>退回可见性：</strong>三页原型中缺少退回补充后重新提交的界面。退回后的 change 或 feedback 可考虑在发起人、处理人及监督方的工作台中保持可检索和可提醒状态，Snooze 的条件恢复机制可作为参考思路。</p>
+</div>
+
+<h2>证据比较</h2>
+
+<table>
+  <thead>
+    <tr><th>维度</th><th>Linear</th><th>Asana</th><th>Sleekplan</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>反馈接收机制</td>
+      <td>Triage 收件箱 + 四选一操作（启用时）</td>
+      <td>文章建议的五步流程（发起→评估→分析→实施→收尾）</td>
+      <td>收集 → 分类闭环</td>
+    </tr>
+    <tr>
+      <td>承诺转化条件</td>
+      <td>accept 后进入团队工作流（启用 Triage 时）</td>
+      <td>影响评估通过 + 正式决定</td>
+      <td>优先级排序后纳入构建</td>
+    </tr>
+    <tr>
+      <td>AI 角色定位</td>
+      <td>Suggestion + 推理透明度</td>
+      <td>未涉及</td>
+      <td>未涉及</td>
+    </tr>
+    <tr>
+      <td>退回后上下文</td>
+      <td>实体不变 + 评论追加 + Snooze 恢复</td>
+      <td>一条社区帖子反映状态变更可能影响可见性</td>
+      <td>单一记录内追加交互</td>
+    </tr>
+    <tr>
+      <td>退回上限/升级</td>
+      <td>本次材料未提及</td>
+      <td>本次材料未提及</td>
+      <td>本次材料未提及</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>证据局限与未解决项</h2>
+
+<div class="gap-box">
+  <p><span class="tag tag-gap">缺口</span><strong>退回循环上限：</strong>是否需要设定退回上限及升级路径取决于工作室项目交付平台的实际情况，本次调研未提供足够证据支持具体方案。</p>
+</div>
+
+<div class="gap-box">
+  <p><span class="tag tag-gap">缺口</span><strong>定量基准缺失：</strong>未获取反馈审查平均时长、AI 建议采纳率、退回轮次分布等定量数据，无法为本项目设定 SLA 或 auto-apply 阈值提供基准。</p>
+</div>
+
+<div class="gap-box">
+  <p><span class="tag tag-partial">局限</span><strong>角色映射差异：</strong>Linear/Asana 面向软件开发团队或中大型组织，与本项目的"六人设计工作室-客户"关系存在规模和协作模式差异。机制可借鉴，但需适配。</p>
+</div>
+
+<div class="gap-box">
+  <p><span class="tag tag-partial">局限</span><strong>来源覆盖：</strong>Jira Service Management 文档获取失败（404），未包含中文本土化工具（飞书、钉钉）对比。所有来源均为英文官方文档。</p>
+</div>
+
+<h2>仍待决定的产品问题</h2>
+
+<div class="card-grid">
+  <div class="card">
+    <div class="card-title">feedback 状态模型</div>
+    <div class="card-body">是否需要独立的"待判断"状态，还是复用现有状态即可？这影响列表页筛选和通知触发逻辑。</div>
+  </div>
+  <div class="card">
+    <div class="card-title">退回补充的实体策略</div>
+    <div class="card-body">退回是在同一个 change 上追加信息，还是创建新 change？若前者，change 需支持版本化判断依据。</div>
+  </div>
+  <div class="card">
+    <div class="card-title">AI 辅助的范围与时机</div>
+    <div class="card-body">AI 辅助判断是否纳入近期范围？若纳入，suggestion 的呈现方式、推理透明度和是否采用 auto-apply 及如何配置？</div>
+  </div>
+  <div class="card">
+    <div class="card-title">被拒绝请求的持久化</div>
+    <div class="card-body">被拒绝或退回的请求是否需要独立的持久化记录（类似 Asana 变更日志），以供后续审计或回溯？</div>
+  </div>
+</div>
+
+<div class="source-list">
+  <strong>信息来源：</strong><br>
+  <a href="https://linear.app/docs/triage">Linear Triage</a> ·
+  <a href="https://linear.app/docs/triage-intelligence">Linear Triage Intelligence</a> ·
+  <a href="https://linear.app/docs/customer-requests">Linear Customer Requests</a> ·
+  <a href="https://asana.com/resources/change-control-process">Asana Change Control Process</a> ·
+  <a href="https://www.atlassian.com/agile/project-management/ai-agents">Atlassian AI Agents in Project Management</a> ·
+  <a href="https://www.continuumpsa.io/single-post/ai-project-management-needs-a-human-approval-layer">Continuum PSA: AI Project Management Needs a Human Approval Layer</a> ·
+  <a href="https://forum.asana.com/t/approvals-request-change-should-keep-the-task-incomplete/76962">Asana Forum: Approvals Request Change</a> ·
+  <a href="https://sleekplan.com/blog/customer-feedback-management-that-works-a-practical-loop-for-triage-prioritization-and-closure-8762">Sleekplan Feedback Loop</a>
+</div>
+
+</div>
+</body>
+</html>

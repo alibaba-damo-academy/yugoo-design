@@ -3,12 +3,13 @@
 简体中文 · [English](README.en.md)
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
-[![DeepSeek Harness: preview](https://img.shields.io/badge/DeepSeek_Harness-preview-2563eb)](docs/wiki/hosts.md#deepseek-harness)
-[![Codex CLI: preview](https://img.shields.io/badge/Codex_CLI-preview-2563eb)](docs/wiki/hosts.md#codex-cli)
-[![Claude Code CLI: preview](https://img.shields.io/badge/Claude_Code_CLI-preview-2563eb)](docs/wiki/hosts.md#claude-code-cli)
-[![Qoder CLI: preview](https://img.shields.io/badge/Qoder_CLI-preview-2563eb)](docs/wiki/hosts.md#qoder-cli)
-[![千问办公 QwenWork: preview](https://img.shields.io/badge/%E5%8D%83%E9%97%AE%E5%8A%9E%E5%85%AC_QwenWork-preview-2563eb)](docs/wiki/hosts.md#千问办公-qwenwork)
-[![WorkBuddy: preview](https://img.shields.io/badge/WorkBuddy-preview-2563eb)](docs/wiki/hosts.md#workbuddy)
+[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek_Harness-3964FE)](docs/wiki/hosts.md#deepseek-harness)
+[![Codex CLI](https://img.shields.io/badge/Codex_CLI-0D0D0D)](docs/wiki/hosts.md#codex-cli)
+[![Claude Code CLI](https://img.shields.io/badge/Claude_Code_CLI-D97757)](docs/wiki/hosts.md#claude-code-cli)
+[![Qoder CLI](https://img.shields.io/badge/Qoder_CLI-6AD86C)](docs/wiki/hosts.md#qoder-cli)
+[![千问办公 QwenWork](https://img.shields.io/badge/%E5%8D%83%E9%97%AE%E5%8A%9E%E5%85%AC_QwenWork-39D377)](docs/wiki/hosts.md#千问办公-qwenwork)
+[![WorkBuddy](https://img.shields.io/badge/WorkBuddy-00C29A)](docs/wiki/hosts.md#workbuddy)
+[![Companion release](https://img.shields.io/badge/Companion_release-2088FF?logo=githubactions&logoColor=white)](https://github.com/alibaba-damo-academy/yugoo-design/actions/workflows/publish-companion.yml)
 
 **让构思看得见，让细节有把握。**
 
@@ -53,13 +54,13 @@ Vibe Coding 让把想法变成软件越来越容易。与此同时，想清楚�
 
 Yugoo Design 帮助你与 AI 一起把这些问题想清楚：通过具体面板理解方案、推敲细节，再把分散的设计组织成一致的整体。需求变化时，你们可以继续讨论、检查和修订，让共同的设计持续成为开发、迭代与维护的依据。
 
-软件应用设计是一个起点。这套框架希望支持更普遍的**人在回路中（Human-in-the-loop，HITL）** 协作：**帮助人理解问题、思考选择、表达诉求，并让 AI 持续与人的意图对齐。** 配合不同领域的方法与面板，这套协作方式也可以用于活动策划、游戏机制设计、运筹建模等任务。更多背景见[产品理念](docs/product-vision.md)。
+软件应用设计是一个起点。这套框架希望支持、探索更普遍的**人与 AI 的互动协作（Human-in-the-loop，HITL）**：**帮助人理解问题、思考选择、表达诉求，并让 AI 持续与人的意图对齐。** 配合不同领域的方法与面板，这套协作方式也可以用于活动策划、游戏机制设计、运筹建模等任务。更多背景见[产品理念](docs/product-vision.md)。
 
 ## 核心能力
 
 ### 可交互的设计成果：从 Skill 到 Bundle
 
-语构设计系统将智能体技能（Agent Skill）扩展为**设计技能包（Bundle）**，为专业方法加上交互面板、结构化数据校验和执行控制。每个 Bundle 聚焦一部分设计，例如应用的功能、流程、规则、数据或页面，把技能产出变成可查看、可讨论、可修改的成果。
+语构设计系统将智能体技能（Agent Skill）扩展为**设计技能包（Bundle）**，为专业方法加上交互面板（支持声明式面板定义和 A2UI）、结构化数据校验和执行控制。每个 Bundle 聚焦一部分设计，例如应用的功能、流程、规则、数据或页面，把技能产出变成可查看、可讨论、可修改的成果。
 
 你可以在图中查看关系，在表单中修改属性，或通过原型体验页面。面板与 Agent 使用同一份设计数据；经过校验和保存的修改，会成为后续构思的依据。Bundle 还可以声明由主 Agent 或子智能体（Subagent）运行，以及何时交还给用户补充、修改或确认，让专业方法按适合的方式参与协作。
 
@@ -103,45 +104,49 @@ AI 结合你的目标、已有设计和反馈，判断当前还缺什么：是�
 
 你提出快速开始中的工作室想法后，AI 可以打开 **Smart Questions 面板**，把影响当前方案的问题呈现为可作答的卡片。你补充实际分工：**设计师可以与客户讨论，项目负责人确认新增范围和交期。**
 
-保存后，AI 建议：“先把客户提出修改到安排执行的过程画出来，看看谁记录意见、谁判断范围、谁作出承诺。”
+保存后，你可以展开 **U/S/T 评估**，查看 AI 对当前设计的判断和依据：背景是否清楚、各部分能否配合、哪些行为还缺少可验证的约定。比起追求更高的分数，这些理由更适合用来讨论“接下来先想清楚什么”。
 
-![在完整对话工作区中查看智能提问答案、放大阅读并编辑补充说明](docs/images/readme-smart-questions.gif)
+例如，分工已经明确，AI 可以建议：“先把客户提出修改到安排执行的过程画出来，看看谁记录意见、谁判断范围、谁作出承诺。”
+
+![在对话旁回答智能提问，再展开 U/S/T 评估，近看判断依据与下一项缺口](docs/images/readme-smart-questions.gif)
 
 ### 2. 看见流程，再补充真实情况
 
 AI 展开**业务流程面板**，用纵向泳道区分客户、设计师、负责人和系统，从上往下呈现反馈记录、范围对照、影响评估和确认安排。
 
-看到所有修改都经过负责人，你补充：“已有范围内的布局调整可以由设计师直接处理；新增页面或业务能力才需要讨论范围。”AI 修订流程分支，你对照面板继续讨论、修改并保存，让实际工作方式进入设计。
+先看完整流程，再放大关键分支：哪些小改可以直接处理，哪些请求需要确认范围或交期，信息不足时又退回给谁补充？你可以补充：“已有范围内、又不影响已承诺节点的布局调整，设计师可以直接处理。”对照图中的条件和去向修改并保存，让实际工作方式进入设计。
 
-![对照左侧讨论查看客户修改请求的泳道流程，区分直接处理与负责人确认](docs/images/readme-flow.png)
+![先查看同一客户修改流程的完整纵向泳道，再放大直接处理、负责人确认和退回补充的分支](docs/images/readme-flow.gif)
 
 ### 3. 保存判断，让 AI 继续推敲
 
-保存后，你可以说：“按我刚保存的规则继续，看看还有哪里没想清楚。”AI 以这些修改为依据推进；你可以查看 **U/S/T 评估**及理由，了解当前缺的是业务背景、设计结构，还是可验证的规则，而不是只看分数高低。
+保存后，你可以说：“按我刚保存的规则继续，看看其他设计是否也表达了这个意思。”AI 以这些修改为依据推进，**主动审查（GRA）** 则帮助发现不同部分之间尚未对齐的地方。
 
-想知道一项决定影响了什么，可以打开底部的**关联图谱（KAG）**，查看设计对象、关系与来源，再回到相应面板核对。它和评估都帮助你判断下一步，不要求先把图谱或分数“做完”。
+这个项目中的一条一致性建议指出：
 
-在支持 GRA 的宿主中，设计推进后可能出现这样的**设计建议**：
+> 问答已经要求检查修改对交付节点的影响，但“范围内修改”的业务规则只检查是否新增页面或能力，没有写入交期条件。
 
-> 你允许设计师直接处理范围内的修改，同时要求负责人确认交期。如果大量范围内修改影响了已承诺的交付节点，应该怎样处理？
+你可以据此明确：“范围和交期分开判断；只要影响已承诺节点，就交负责人重新确认安排。”请 AI 修订相应规则，再对照同一流程检查；建议不会自动替你决定或改写设计。
 
-你进一步决定：“范围和交期分开判断；只要影响已承诺节点，就交负责人重新确认安排。”请 AI 修订相应规则与流程，再在面板中检查。一次关联审查，帮助你想清楚此前没有单独表达的取舍。
+想进一步查看这些设计如何关联，可以打开底部的**关联图谱（KAG）**，选择流程或页面对象，沿关系查看来源，再回到相应面板核对。图谱提供查找线索，具体判断仍以设计内容为依据。
 
-![在对话旁展开设计建议，并对照业务流程复核](docs/images/readme-design-advice.png)
+![阅读当前项目的真实设计建议，对照同一流程与规则，再在 KAG 中查看相关对象及其来源](docs/images/readme-design-advice.gif)
 
 这就是协作循环：**提出目标 → 在面板中看清并修改 → 保存后让 AI 继续 → 带着新的问题再讨论。** 下一轮从最需要理解或决定的地方开始。
 
 ### 你还可以继续展开……
 
-想看这些规则如何落到产品上，可以从**页面地图**梳理客户提交反馈、设计师判断影响、负责人确认安排之间的跳转，再展开具体页面的 **UI 设计与交互原型**。
+**页面地图、UI 设计与调研。** 先从页面地图梳理客户提交反馈、设计师判断影响、负责人确认安排之间的跳转，再展开具体页面的 UI 与交互原型。有需要查证的问题时，转到调研面板，整理问题、来源与结论，为下一项设计决定补充依据。
 
-也可以打开**场景体验**，选择“客户临时追加一个页面”这样的情境，把分散的流程、规则和界面放在一起体验。发现某一步不清楚，点击“在主对话讨论当前内容”，把问题带回设计；体验中的操作用于演示，不会直接改写设计文件。
+**场景体验。** 选择“客户临时追加一个页面”这样的情境，把流程、规则和界面放在一起试走。发现某一步不清楚，点击“在主对话讨论当前内容”，把问题带回设计；体验中的操作用于演示，不会直接改写设计文件。
 
-![在同一工作室项目中展开页面地图、UI 设计和场景体验，并查看 U/S/T 依据与关联图谱](docs/images/readme-design-exploration.gif)
+**PRD 与开发交接。** 把当前设计整合为 PRD 草案，按章节检查方案，保留来源与未决问题。进入开发时，再结合具体任务准备 spec，关联相应设计依据。
+
+![按顺序浏览同一项目的页面地图、UI 设计、调研面板、场景体验和 PRD 草案](docs/images/readme-design-exploration.gif)
 
 还需要深入时，你们可以设计反馈、交付物和变更的数据关系，细化权限与业务规则，或通过 **AI 能力面板**明确应用中的 AI 如何整理反馈、需要哪些 Skills 和工具，以及哪些承诺仍由人决定。
 
-需要交接时，再把当前设计整合为 **PRD 草案**，保留来源与未决问题；进入开发时，结合具体任务准备 spec，关联相应设计依据。这些是可以按需深入的维度，不是每轮必须完成的清单。
+这些是可以按需深入的维度，不是每轮必须完成的清单。
 
 完整操作和数据、规则、PRD 界面见[协作教程](docs/wiki/web-app-demo.md)；U/S/T、KAG 和场景体验的入口见[使用指南](docs/wiki/usage.md#查看和更新-ust)。[界面概览](docs/wiki/usage.md#7-界面概览)另展示科研协作工具的流程与页面设计；其他领域见[非 Web Kit 演示](docs/wiki/non-web-kit-demo.md)，开发交接见[设计到开发交接](docs/design-development-handoff.md)。
 

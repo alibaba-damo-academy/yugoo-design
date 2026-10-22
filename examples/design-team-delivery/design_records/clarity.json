@@ -1,27 +1,27 @@
 {
   "schemaVersion": 1,
   "projectId": "b9cf7ad9-a2e7-4f89-84d1-c3791bad0cb0",
-  "assessedCheckpoint": "18918ab962e648b28ef250ef851dd741088d92e8",
+  "assessedCheckpoint": "7e09266af37a5d14244b95b9e64411dcca430189",
   "report": {
-    "digest": "ff8a150feb4f020cd2cee1c173bd61a294b20d6ec223e1d3cfc8741f30066499",
+    "digest": "a76d76d3782679d6fe7c4659b7b188d7007be0425698a42e7670dd2b55a13b59",
     "origin": "main-agent",
     "kitContentHash": "31b933508db8c72877b1275f74f3a077a2c35829874d76c226cc0b9a524308f3",
-    "callId": "toolu_94bb3ec3afa041c485231a6e",
+    "callId": "toolu_b41ebaec3e6a4b64b52cbfb6",
     "kit": "web_app",
     "version": "1.0",
-    "summary": "项目有5个已回答的smart_questions（非5轮）、1条流程P-001、2条业务规则、3个页面原型和1个场景体验。scope_owner更新后确认触发条件与流程和规则对齐；open-feedback跳转已修正指向feedback-item-2。没有quality_acceptance面板或验收草案，原型和场景演示不是测试结果。主要未决事项：退回补充后的重新提交路径无页面承载。",
+    "summary": "PRD 已完成视觉物化并发布。调研 R-001 修正为可借鉴参考机制，设计证据链完整。退回补充的重新提交界面路径仍缺失，feedback 状态模型和退回实体策略待产品决定。",
     "u": {
       "score": 78,
-      "evidence": "5个问题明确了核心分工：设计师判断范围、负责人确认承诺、范围内调整免审批但影响节点时需确认。scope_owner的最新detail与P-001和within_scope一致。场景体验演示了FB-DEMO-002的完整决策路径。剩余缺口：客户在补充说明环节的交互入口未设计；多项目并行时的反馈归属未涉及；实际业务中的客户类型和项目规模变量未纳入。"
+      "evidence": "用户意图通过 smart_questions 明确了分工边界（负责人确认范围和交期、设计师处理范围内调整）、存储模式和认证需求。R-001 调研提供了可借鉴的反馈接收、AI 辅助和退回机制参考。但 feedback 是否需要独立待判断状态、退回补充在同一实体还是新建实体、AI 辅助是否纳入近期范围等产品决策尚未确认。"
     },
     "s": {
-      "score": 82,
-      "evidence": "smart_questions scope_owner、P-001流程、BR-001/BR-002三处关于确认触发条件的表述已对齐。5个业务对象及4条关联关系构成数据骨架；3个页面通过source_element_id绑定跳转；open-feedback已修正指向feedback-item-2。剩余缺口：change与confirmation之间的状态流转未显式建模；页面间返回路径和取消操作未设计；feedback-list筛选逻辑仅在UI层呈现。"
+      "score": 84,
+      "evidence": "业务对象（project/deliverable/feedback/change/confirmation）及关系已定义；两条业务规则（BR-001/BR-002）明确了范围内调整和新增范围的处置边界；P-001 流程覆盖了从反馈接收到确认安排的完整路径；三个页面原型（列表/详情/确认）对应核心场景。结构连贯，但退回补充后的重新提交路径在页面跳转中未显式定义。"
     },
     "t": {
       "score": 65,
-      "evidence": "当前没有quality_acceptance面板或验收标准记录。原型和场景体验是设计演示，不是可执行的业务测试或验收结果。可观察的检查点仅限于原型层面：反馈ID跨页一致、超出范围时直接处理按钮禁用、确认页必填字段高亮。缺少：端到端可执行验收场景、退回补充后重新提交的验证步骤、工期评估的实际触发条件。T分下调反映原型演示不等于验收证据这一事实。"
+      "evidence": "页面原型可点击浏览，流程图可视化展示了责任分配和分支逻辑。但验收标准尚未定义具体可观测条件；原型验证了界面布局而非业务规则的正确性；退回循环上限、AI 建议采纳率等缺乏定量基准。当前 T 分数反映的是可检查性的设计阶段现状，非测试结果。"
     },
-    "nextGap": "退回补充后的重新提交路径缺少页面承载：负责人选择退回后，设计师在哪个界面完善判断、如何重新触发确认流程，当前三页原型未覆盖。这是流程P-001中明确存在但界面上缺失的回路。"
+    "nextGap": "退回补充后的重新提交界面路径是当前最具体的交互缺口，补全后可使 P-001 流程在页面层面完整闭环。"
   }
 }
