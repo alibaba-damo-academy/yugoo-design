@@ -294,7 +294,7 @@ test('missing official ordered Bundle path interface fails admission without an 
 async function productFixture(t) {
   const f=await fixture(t), npmRoot=join(f.root,'product'), configPath=join(f.root,'pins.json')
   await f.put(join(npmRoot,'package.json'),json({name:'@release/companion',version:'0.1.0-beta.1',
-    dependencies:{'@ladybugdb/wasm-core':'0.21.1','@huggingface/transformers':'3.8.1','onnxruntime-common':'1.21.0',undici:'8.10.0'}}))
+    dependencies:{'@ladybugdb/wasm-core':'0.21.1','@huggingface/transformers':'3.8.1','onnxruntime-common':'1.21.0',undici:'8.10.2'}}))
   for(const file of ['design-system.mjs','installer.mjs','npm-installer-dsh.mjs','npm-agent-installation.mjs'])
     await f.put(join(npmRoot,'bin',file),'// isolated product entry '+file+'\n')
   await f.put(configPath,json({dshHome:f.home,...f.pins,hostVersion:f.adapterOptions.hostVersion,loaderVersion:f.adapterOptions.loaderVersion}))

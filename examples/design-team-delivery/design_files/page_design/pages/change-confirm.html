@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>变更确认 - 项目交付工作台</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--ds-body-font);
+      background-color: var(--ds-background);
+      color: var(--ds-text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      background: var(--ds-surface);
+      border-bottom: 1px solid var(--ds-border);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--ds-primary);
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--ds-text-secondary);
+    }
+
+    .breadcrumb span { color: var(--ds-text-secondary); }
+    .breadcrumb .current { color: var(--ds-text); font-weight: 500; }
+    .breadcrumb .sep { display: flex; align-items: center; color: var(--ds-border); }
+    .breadcrumb .sep svg { width: 16px; height: 16px; stroke: var(--ds-text-secondary); }
+
+    /* Main Container */
+    .main-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+
+    /* Page Header */
+    .page-header {
+      margin-bottom: 32px;
+    }
+
+    .page-header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--ds-text);
+      margin-bottom: 8px;
+    }
+
+    .page-header .subtitle {
+      font-size: 15px;
+      color: var(--ds-text-secondary);
+    }
+
+    /* Impact Summary Card */
+    .impact-card {
+      background: var(--ds-surface);
+      border: 1px solid var(--ds-border);
+      border-radius: var(--ds-radius);
+      box-shadow: var(--ds-shadow);
+      padding: 24px;
+      margin-bottom: 24px;
+      border-left: 4px solid var(--ds-warning);
+    }
+
+    .impact-card .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--ds-text);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .impact-card .card-title svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--ds-warning);
+    }
+
+    .impact-meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .meta-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ds-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .meta-value {
+      font-size: 14px;
+      color: var(--ds-text);
+      font-weight: 500;
+    }
+
+    .impact-detail {
+      background: var(--ds-primary-light);
+      border-radius: calc(var(--ds-radius) - 2px);
+      padding: 16px;
+    }
+
+    .impact-detail .detail-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .impact-detail .detail-row:last-child { margin-bottom: 0; }
+
+    .detail-label {
+      font-size: 13px;
+      color: var(--ds-text-secondary);
+      min-width: 100px;
+      flex-shrink: 0;
+    }
+
+    .detail-value {
+      font-size: 13px;
+      color: var(--ds-text);
+      font-weight: 500;
+    }
+
+    .detail-value.highlight {
+      color: var(--ds-warning);
+      font-weight: 600;
+    }
+
+    /* Form Section */
+    .form-section {
+      background: var(--ds-surface);
+      border: 1px solid var(--ds-border);
+      border-radius: var(--ds-radius);
+      box-shadow: var(--ds-shadow);
+      padding: 32px;
+      margin-bottom: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    .form-group:last-of-type { margin-bottom: 0; }
+
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ds-text);
+      margin-bottom: 8px;
+    }
+
+    .form-label .required {
+      color: var(--ds-error);
+      margin-left: 2px;
+    }
+
+    .form-hint {
+      font-size: 12px;
+      color: var(--ds-text-secondary);
+      margin-top: 6px;
+    }
+
+    textarea, input[type="text"] {
+      width: 100%;
+      padding: 12px 14px;
+      font-family: var(--ds-body-font);
+      font-size: 14px;
+      color: var(--ds-text);
+      background: var(--ds-surface);
+      border: 1px solid var(--ds-border);
+      border-radius: var(--ds-radius);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      outline: none;
+    }
+
+    textarea:focus, input[type="text"]:focus {
+      border-color: var(--ds-primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    textarea::placeholder, input::placeholder {
+      color: var(--ds-text-secondary);
+      opacity: 0.7;
+    }
+
+    /* Demo Disclaimer */
+    .demo-disclaimer {
+      background: var(--ds-primary-light);
+      border: 1px solid rgba(37, 99, 235, 0.15);
+      border-radius: var(--ds-radius);
+      padding: 12px 16px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--ds-primary-dark);
+    }
+
+    .demo-disclaimer svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--ds-primary);
+      flex-shrink: 0;
+    }
+
+    /* Action Bar */
+    .action-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding-top: 8px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 28px;
+      font-family: var(--ds-body-font);
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: var(--ds-radius);
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .btn-primary {
+      background: var(--ds-primary);
+      color: #FFFFFF;
+    }
+
+    .btn-primary:hover {
+      background: var(--ds-primary-dark);
+    }
+
+    .btn-secondary {
+      background: var(--ds-surface);
+      color: var(--ds-text);
+      border: 1px solid var(--ds-border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--ds-background);
+      border-color: var(--ds-text-secondary);
+    }
+
+    .action-note {
+      font-size: 13px;
+      color: var(--ds-text-secondary);
+      margin-left: auto;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .top-bar { padding: 0 16px; }
+      .main-container { padding: 24px 16px 48px; }
+      .page-header h1 { font-size: 24px; }
+      .form-section { padding: 24px; }
+      .action-bar { flex-wrap: wrap; }
+      .action-note { margin-left: 0; margin-top: 8px; width: 100%; }
+      .impact-meta { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <header class="top-bar">
+    <div class="logo">项目交付工作台</div>
+    <nav class="breadcrumb" aria-label="面包屑导航">
+      <span>反馈总览</span>
+      <span class="sep"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+      <span>反馈详情</span>
+      <span class="sep"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+      <span class="current">变更确认</span>
+    </nav>
+  </header>
+
+  <main class="main-container">
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1>变更确认</h1>
+      <p class="subtitle">请项目负责人明确本次纳入的范围与交期，保留确认记录。</p>
+    </div>
+
+    <!-- Impact Summary Card -->
+    <section class="impact-card" aria-label="影响说明">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        影响说明
+      </div>
+      <div class="impact-meta">
+        <div class="meta-item">
+          <span class="meta-label">反馈编号</span>
+          <span class="meta-value">FB-DEMO-002</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">客户 / 项目</span>
+          <span class="meta-value">星辰科技 · SaaS 管理后台</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">原交付节点</span>
+          <span class="meta-value">示例节点 A（合成演示）</span>
+        </div>
+      </div>
+      <div class="impact-detail">
+        <div class="detail-row">
+          <span class="detail-label">新增范围</span>
+          <span class="detail-value">会员中心页面（积分查询、等级权益、历史订单）</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">预估影响</span>
+          <span class="detail-value highlight">待团队评估</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Confirmation Form -->
+    <form class="form-section" onsubmit="return false;" aria-label="确认范围表单">
+
+      <div class="form-group">
+        <label class="form-label" for="confirm-scope">
+          确认纳入的具体范围<span class="required">*</span>
+        </label>
+        <textarea
+          id="confirm-scope"
+          name="confirm-scope"
+          required
+          placeholder="请描述本次确认纳入的具体功能范围与边界"
+          data-prototype-id="change-confirm-scope"
+          data-prototype-label="确认纳入的具体范围"
+        >新增会员中心页面，包含积分查询、会员等级展示、历史订单列表三个子功能</textarea>
+        <p class="form-hint">请明确列出本次变更涵盖的功能模块与交付物。</p>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="confirm-deadline">
+          承诺的交付节点<span class="required">*</span>
+        </label>
+        <input
+          type="text"
+          id="confirm-deadline"
+          name="confirm-deadline"
+          required
+          placeholder="例如：示例节点 C（合成演示，待团队评估后确定）"
+          value="示例节点 C（合成演示，待团队评估后确定）"
+          data-prototype-id="change-confirm-deadline"
+          data-prototype-label="承诺的交付节点"
+        />
+        <p class="form-hint">请填写调整后的预计交付日期或里程碑节点。</p>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="confirm-notes">备注说明</label>
+        <textarea
+          id="confirm-notes"
+          name="confirm-notes"
+          placeholder="可选：补充风险、依赖条件或其他需要记录的事项"
+          data-prototype-id="change-confirm-notes"
+          data-prototype-label="备注说明"
+        ></textarea>
+      </div>
+    </form>
+
+    <!-- Demo Disclaimer -->
+    <div class="demo-disclaimer" role="note">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="16" x2="12" y2="12"/>
+        <line x1="12" y1="8" x2="12.01" y2="8"/>
+      </svg>
+      此为合成演示数据，所有编号、日期与工作量均为示例，非实际客户承诺
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-bar">
+      <button
+        type="button"
+        class="btn btn-primary"
+        data-prototype-id="change-confirm-submit"
+        data-prototype-label="确认安排"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        确认安排
+      </button>
+      <button
+        type="button"
+        class="btn btn-secondary"
+        data-prototype-id="change-confirm-return"
+        data-prototype-label="退回补充"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+        退回补充
+      </button>
+      <span class="action-note">确认后系统将生成变更记录并通知相关设计师。</span>
+    </div>
+
+  </main>
+
+</body>
+</html>

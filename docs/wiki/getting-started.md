@@ -36,13 +36,13 @@ Agent 会获取所选 `beta` 渠道的精确版本，阅读随包指南，再完
 通过已安装的 `yugoo` 入口发出一个明确请求：
 
 ```text
-新建一个名为 studio-delivery 的设计项目，使用 Web App 设计套件。
+新建一个名为 design-team-delivery 的设计项目，使用 Web App 设计套件。
 ```
 
 DeepSeek Harness 的当前命令入口是：
 
 ```text
-/yugoo new studio-delivery
+/yugoo new design-team-delivery
 /yugoo kit web_app
 ```
 

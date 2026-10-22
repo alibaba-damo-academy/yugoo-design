@@ -1,0 +1,255 @@
+{
+  "skill_name": "design_style",
+  "epoch": 0,
+  "config": {
+    "theme": "专业浅色工作台，蓝色主色，面向反馈对照与变更确认",
+    "layout": {
+      "mode": "sidebar",
+      "sidebar": {
+        "position": "left",
+        "style": "fixed"
+      },
+      "content_width": "wide",
+      "density": "comfortable"
+    },
+    "colors": {
+      "primary": "#2563EB",
+      "primaryLight": "#EFF6FF",
+      "primaryDark": "#1D4ED8",
+      "secondary": "#64748B",
+      "accent": "#0EA5E9",
+      "background": "#F8FAFC",
+      "surface": "#FFFFFF",
+      "text": "#0F172A",
+      "textSecondary": "#64748B",
+      "border": "#E2E8F0"
+    },
+    "semantic_colors": {
+      "success": "#15803D",
+      "warning": "#A16207",
+      "error": "#B91C1C",
+      "info": "#2563EB"
+    },
+    "typography": {
+      "headingFont": "\"PingFang SC\", \"Noto Sans SC\", system-ui, sans-serif",
+      "bodyFont": "\"PingFang SC\", \"Noto Sans SC\", system-ui, sans-serif",
+      "monoFont": "\"JetBrains Mono\", ui-monospace, monospace",
+      "baseFontSize": "14px",
+      "headingWeight": "600",
+      "lineHeight": "1.6",
+      "fontSizeXs": "12px",
+      "fontSizeSm": "13px",
+      "fontSizeLg": "16px",
+      "fontSizeXl": "20px",
+      "fontSize2xl": "28px"
+    },
+    "hierarchy": {
+      "page_title": "页面主标题，标识当前视图与对象",
+      "section_title": "内容分区标题，区分原反馈、原范围、变更影响等区块",
+      "supporting_text": "辅助说明、时间戳、状态描述等次要信息",
+      "action_label": "确认、退回等操作按钮文字",
+      "field_label": "表单字段与列表条目标签"
+    },
+    "components": {
+      "borderRadius": "6px",
+      "shadowDepth": "subtle",
+      "buttonStyle": "filled",
+      "inputStyle": "bordered",
+      "cardStyle": "flat"
+    },
+    "component_patterns": {
+      "primary_navigation": {
+        "description": "左侧固定导航，图标加标签，标识当前模块",
+        "anatomy": [
+          "icon",
+          "label"
+        ],
+        "variants": [
+          "default",
+          "active"
+        ],
+        "states": [
+          "default",
+          "hover",
+          "active",
+          "focus"
+        ]
+      },
+      "feedback_card": {
+        "description": "反馈条目卡片，展示客户原文、关联交付物、状态标记",
+        "anatomy": [
+          "status_indicator",
+          "title",
+          "source_text",
+          "meta"
+        ],
+        "variants": [
+          "pending",
+          "in_scope",
+          "change_required"
+        ],
+        "states": [
+          "default",
+          "hover",
+          "selected"
+        ]
+      },
+      "scope_comparison": {
+        "description": "原范围与新反馈并排对照区域",
+        "anatomy": [
+          "original_panel",
+          "feedback_panel",
+          "impact_badge"
+        ],
+        "variants": [
+          "aligned",
+          "diverged"
+        ],
+        "states": [
+          "default",
+          "highlighted"
+        ]
+      },
+      "confirmation_action_bar": {
+        "description": "底部或内联操作区，包含确认与退回按钮",
+        "anatomy": [
+          "confirm_button",
+          "return_button",
+          "note_field"
+        ],
+        "variants": [
+          "inline",
+          "sticky_footer"
+        ],
+        "states": [
+          "default",
+          "disabled",
+          "loading"
+        ]
+      },
+      "status_badge": {
+        "description": "小型状态标记，用于待判断、已确认、已退回等",
+        "anatomy": [
+          "dot",
+          "label"
+        ],
+        "variants": [
+          "pending",
+          "confirmed",
+          "returned",
+          "out_of_scope"
+        ],
+        "states": [
+          "default"
+        ]
+      }
+    },
+    "iconography": {
+      "library": "bundled-lucide",
+      "style": "outline",
+      "view_box": "0 0 24 24",
+      "stroke_width": "1.5",
+      "linecap": "round",
+      "linejoin": "round",
+      "size_sm": "16px",
+      "size_md": "20px",
+      "size_lg": "24px"
+    },
+    "icons": {
+      "nav_feedback": {
+        "label": "反馈",
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"10\"></circle><line x1=\"12\" y1=\"16\" x2=\"12\" y2=\"12\"></line><line x1=\"12\" y1=\"8\" x2=\"12.01\" y2=\"8\"></line></svg>",
+        "asset": "assets/icons/info.svg"
+      },
+      "nav_search": {
+        "label": "搜索",
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"8\"></circle><line x1=\"21\" y1=\"21\" x2=\"16.65\" y2=\"16.65\"></line></svg>",
+        "asset": "assets/icons/search.svg"
+      },
+      "action_confirm": {
+        "label": "确认",
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><polyline points=\"20 6 9 17 4 12\"></polyline></svg>",
+        "asset": "assets/icons/check.svg"
+      },
+      "action_return": {
+        "label": "退回",
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"></line><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"></line></svg>",
+        "asset": "assets/icons/x-close.svg"
+      },
+      "status_alert": {
+        "label": "需关注",
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z\"></path><line x1=\"12\" y1=\"9\" x2=\"12\" y2=\"13\"></line><line x1=\"12\" y1=\"17\" x2=\"12.01\" y2=\"17\"></line></svg>",
+        "asset": "assets/icons/alert.svg"
+      },
+      "nav_chevron": {
+        "label": "展开",
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><polyline points=\"9 18 15 12 9 6\"></polyline></svg>",
+        "asset": "assets/icons/chevron-right.svg"
+      },
+      "status_dot": {
+        "label": "状态点",
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"3\" fill=\"currentColor\"></circle></svg>",
+        "asset": "assets/icons/dot.svg"
+      },
+      "action_arrow": {
+        "label": "前往",
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"></line><polyline points=\"12 5 19 12 12 19\"></polyline></svg>",
+        "asset": "assets/icons/arrow-right.svg"
+      },
+      "nav_menu": {
+        "label": "菜单",
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><line x1=\"4\" y1=\"7\" x2=\"20\" y2=\"7\"></line><line x1=\"4\" y1=\"12\" x2=\"20\" y2=\"12\"></line><line x1=\"4\" y1=\"17\" x2=\"20\" y2=\"17\"></line></svg>",
+        "asset": "assets/icons/menu.svg"
+      }
+    },
+    "preview_page": {
+      "name": "feedback_detail",
+      "title": "反馈详情与范围对照",
+      "rationale": "此页面集中体现产品核心交互：对照客户原始反馈与已约定交付范围，识别变更影响，执行确认或退回动作。视觉层次直接服务于判断效率。",
+      "html_file": "design_style/preview_feedback_detail.html"
+    },
+    "notes": "蓝色主色用于主要操作与当前焦点，中性灰承载信息密度。反馈原文保持客户原意排版，原范围以结构化条目呈现，变更影响用警告色标记。确认/退回按钮在视觉上明确区分主次。全中文界面，无深色模式、无渐变装饰、无过度动效。",
+    "aesthetic": {
+      "vocabulary": "neutral_workspace",
+      "mood": "专业、安静、可信",
+      "copy_register": "简洁准确的工作用语，避免营销语气",
+      "lighting_hints": "自然光感浅色背景，无装饰性光影"
+    },
+    "motion": {
+      "duration_fast": "120ms",
+      "duration_normal": "200ms",
+      "duration_slow": "300ms",
+      "ease_standard": "cubic-bezier(0.4, 0, 0.2, 1)"
+    },
+    "spacing": {
+      "base": "4px",
+      "scale": [
+        "4px",
+        "8px",
+        "12px",
+        "16px",
+        "24px",
+        "32px",
+        "48px"
+      ]
+    },
+    "elevation": {
+      "dropdown": 10,
+      "sticky_nav": 20,
+      "modal": 50,
+      "tooltip": 70
+    },
+    "breakpoints": {
+      "sm": "640px",
+      "md": "768px",
+      "lg": "1024px",
+      "xl": "1280px"
+    },
+    "brand": {
+      "name": "项目交付工作台",
+      "name_en": "",
+      "tagline": ""
+    },
+    "images": {}
+  }
+}

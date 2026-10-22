@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { cp, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, realpath, rename, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -10,8 +10,18 @@ import { artifactInventory, classifyPicaWorker, inventorySha256, PICA_WORKER_PIN
 
 const fixture = fileURLToPath(new URL('./test-fixtures/pica-worker/', import.meta.url))
 const runner = fileURLToPath(new URL('./probe-companion-pica-worker.mjs', import.meta.url))
-const sourceInputs = { picaDirectory: join(fixture, 'source/pica'), webworkifyDirectory: join(fixture, 'source/webworkify') }
 const versions = { browserVersion: '149.0.7827.55', playwrightVersion: '1.61.1', nodeVersion: '22.22.3' }
+
+async function sourceInputsFixture(t) {
+  const root = await mkdtemp(join(tmpdir(), 'pica-source-metadata-test-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  for (const name of ['pica', 'webworkify']) await cp(join(fixture, 'source', name), join(root, name), { recursive: true })
+  // Reconstruct metadata only inside this disposable test tree. Never install
+  // these historical development dependencies or execute upstream scripts.
+  await rename(join(root, 'pica/upstream-package.json'), join(root, 'pica/package.json'))
+  return { picaDirectory: join(root, 'pica'), webworkifyDirectory: join(root, 'webworkify') }
+}
+
 test('fixed upstream pica input is trackable without admitting other generated dist files', async t => {
   const root = await mkdtemp(join(tmpdir(), 'pica-fixture-ignore-test-'))
   t.after(() => rm(root, { recursive: true, force: true }))
@@ -56,7 +66,7 @@ async function setup(t) {
   for (const label of ['js-worker', 'default-worker']) await cp(join(fixture, label + '-offscreen-support.js'), join(evidenceDirectory, label + '-offscreen-support.js'))
   const candidateInputs = await artifactInventory(candidateDirectory)
   const options = { candidateDirectory, evidenceDirectory, candidateInventorySha256: inventorySha256(candidateInputs),
-    runnerSha256: sha256(await readFile(runner)), sourceInputs, versions }
+    runnerSha256: sha256(await readFile(runner)), sourceInputs: await sourceInputsFixture(t), versions }
   Object.assign(report, { kind: 'candidate-relocated-pica-worker-probe', root: evidenceDirectory, candidateDirectory,
     source: web, picaFile: 'pica-DGw4b28J.js', candidateInputs, candidateInventorySha256: options.candidateInventorySha256,
     inputs: await artifactInventory(web), runnerSha256: options.runnerSha256, candidateUnchanged: true, inputsUnchanged: true, copyUnchanged: true })
@@ -65,7 +75,7 @@ async function setup(t) {
   return { root, report, options, save }
 }
 
-test('fixed byte slices classify only the reviewed static unknown', async () => {
+test('fixed byte slices classify only the reviewed static unknown', async t => {
   const code = await readFile(join(fixture, 'pica-DGw4b28J.js'), 'utf8'), r = classifyPicaWorker(code)
   assert.equal(r.status, 'runtime-evidence-required'); assert.equal(r.staticUnknown.length, 3)
   assert.equal(r.boundedWorkerTaskVerified, false); assert.equal(r.dynamicClosureVerified, false)
@@ -73,7 +83,7 @@ test('fixed byte slices classify only the reviewed static unknown', async () => 
   for (const changed of [code + '\n', code.replace('arguments[3]', 'arguments[6]'), code.replace('"./mathlib": 1', '"./mathlib": 2'), code + "\nconst alias = __require; alias('unknown');"]) {
     assert.notEqual(changed, code); assert.throws(() => classifyPicaWorker(changed), /Unreviewed/)
   }
-  await verifyPicaSourceInputs(sourceInputs)
+  await verifyPicaSourceInputs(await sourceInputsFixture(t))
 })
 
 test('synthetic associations cannot certify browser execution or candidate acceptance', async t => {
@@ -129,9 +139,10 @@ test('evidence symlinks and altered source inputs fail closed', async t => {
   const f = await setup(t), blob = join(f.options.evidenceDirectory, f.report.blobs[0].file)
   await rm(blob); await symlink(join(fixture, f.report.blobs[0].file), blob)
   await assert.rejects(validatePicaWorkerEvidence(f.options), /Symlink/)
-  const source = join(f.root, 'source'); await cp(join(fixture, 'source'), source, { recursive: true })
-  await writeFile(join(source, 'webworkify/index.js'), 'changed')
-  await assert.rejects(verifyPicaSourceInputs({ picaDirectory: join(source, 'pica'), webworkifyDirectory: join(source, 'webworkify') }))
+  await writeFile(join(f.options.sourceInputs.webworkifyDirectory, 'index.js'), 'changed')
+  await assert.rejects(verifyPicaSourceInputs(f.options.sourceInputs), {
+    code: 'ERR_ASSERTION', actual: sha256('changed'), expected: PICA_WORKER_PINS.sourceWebworkify,
+  })
 })
 
 test('runner rejects missing or wrong explicit candidate binding before browser launch', async t => {

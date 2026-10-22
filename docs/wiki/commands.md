@@ -72,7 +72,7 @@ DSH 的格式是 `/yugoo 子命令 参数`。`<参数>` 表示必填，`[参数]
 
 ```text
 /yugoo open 工作室项目交付平台
-/yugoo open D:\Projects\studio-delivery
+/yugoo open D:\Projects\design-team-delivery
 ```
 
 按已登记 ID、唯一名称、绝对路径的顺序解析。路径必须指向完整、有效的设计项目；普通代码目录或仅有几份文档的目录不是可直接打开的项目。合法但未登记的项目可通过路径重新登记，所以 `delete` 后仍能用原路径打开。

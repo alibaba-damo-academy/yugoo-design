@@ -34,6 +34,65 @@ const fixturePaths = [
   'scripts/test-fixtures/embedded-image-loader/image-blob-reduce.esm.js',
   'scripts/test-fixtures/ui-blob-chain/client-consumer.js',
 ].sort()
+// Original upstream package.json bytes, archived as metadata rather than install inputs.
+// Keep these pins independent of both the archive contents and the notice map.
+const upstreamManifestArchives = [
+  {
+    directory: 'scripts/test-fixtures/pica-worker/source/pica',
+    name: 'pica', version: '7.1.1', electron: '^12.0.9', ghPages: '^3.1.0',
+    sha256: 'd3c4978a27b8df70dd4df5db0b02551844f1d22d31b432fea1504b5f2af0d0ff',
+  },
+  {
+    directory: 'scripts/test-fixtures/embedded-image-loader',
+    name: 'image-blob-reduce', version: '3.0.1', electron: '^11.1.1', ghPages: '^3.0.0',
+    sha256: '8fb21f9331d74fdafdfd05203c753cb691265ea487255713b8b41b7041e68c8f',
+  },
+]
+
+async function verifyArchivedManifests(readBytes = read) {
+  const map = JSON.parse(await read(mapPath))
+  for (const entry of upstreamManifestArchives) {
+    const path = `${entry.directory}/upstream-package.json`
+    const bytes = await readBytes(path)
+    assert.equal(sha(bytes), entry.sha256, `Archived upstream manifest hash: ${path}`)
+    const manifest = JSON.parse(bytes)
+    assert.equal(manifest.name, entry.name)
+    assert.equal(manifest.version, entry.version)
+    assert.equal(manifest.license, 'MIT')
+    assert.equal(manifest.devDependencies.electron, entry.electron)
+    assert.equal(manifest.devDependencies['gh-pages'], entry.ghPages)
+    const component = map.components.find(x => x.name === entry.name)
+    assert.equal(component.version, manifest.version)
+    assert.equal(component.sourceLocator, `https://registry.npmjs.org/${manifest.name}/${manifest.version}`)
+    await assert.rejects(readBytes(`${entry.directory}/package.json`), { code: 'ENOENT' },
+      `Active fixture package manifest must stay absent: ${entry.directory}`)
+  }
+}
+
+test('archived upstream manifests retain original bytes and cannot act as fixture install inputs', async () => {
+  await verifyArchivedManifests()
+})
+
+test('changed, missing or restored active upstream manifests fail without refreshing pins or fallback', async () => {
+  for (const entry of upstreamManifestArchives) {
+    const path = `${entry.directory}/upstream-package.json`
+    const originalPath = `${entry.directory}/package.json`
+    await assert.rejects(verifyArchivedManifests(async requested => {
+      const bytes = await read(requested)
+      if (requested !== path) return bytes
+      const changed = Buffer.from(bytes)
+      changed[0] ^= 1
+      return changed
+    }), /Archived upstream manifest hash/)
+    // An old-name copy must not substitute for a missing archive.
+    await assert.rejects(verifyArchivedManifests(requested => {
+      if (requested === path) throw Object.assign(new Error('Missing archive'), { code: 'ENOENT' })
+      return read(requested === originalPath ? path : requested)
+    }), { code: 'ENOENT' })
+    await assert.rejects(verifyArchivedManifests(requested =>
+      read(requested === originalPath ? path : requested)), /Active fixture package manifest must stay absent/)
+  }
+})
 
 async function verify(readBytes = read) {
   const raw = await readBytes(mapPath)

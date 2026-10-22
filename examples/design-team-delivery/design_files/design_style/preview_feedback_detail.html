@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>反馈详情与范围对照 — 项目交付工作台</title>
+<link rel="stylesheet" href="./tokens.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--ds-body-font);
+  font-size: var(--ds-base-font-size);
+  line-height: var(--ds-line-height);
+  color: var(--ds-text);
+  background: var(--ds-background);
+}
+.app-shell { display: flex; min-height: 100vh; }
+
+/* Sidebar */
+.sidebar {
+  width: 220px;
+  background: var(--ds-surface);
+  border-right: 1px solid var(--ds-border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.sidebar-brand {
+  padding: var(--ds-space-5) var(--ds-space-4);
+  font-size: var(--ds-font-size-lg);
+  font-weight: var(--ds-heading-weight);
+  color: var(--ds-primary);
+  letter-spacing: -0.01em;
+}
+.sidebar-nav { flex: 1; padding: var(--ds-space-2) var(--ds-space-2); }
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-2) var(--ds-space-3);
+  border-radius: var(--ds-radius);
+  color: var(--ds-text-secondary);
+  font-size: var(--ds-font-size-sm);
+  cursor: pointer;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard),
+              color var(--ds-duration-fast) var(--ds-ease-standard);
+}
+.nav-item:hover { background: var(--ds-primary-light); color: var(--ds-text); }
+.nav-item.active {
+  background: var(--ds-primary-light);
+  color: var(--ds-primary);
+  font-weight: var(--ds-heading-weight);
+}
+.nav-item svg { width: var(--ds-icon-size-md); height: var(--ds-icon-size-md); flex-shrink: 0; }
+
+/* Main content */
+.main-content { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.topbar {
+  padding: var(--ds-space-3) var(--ds-space-6);
+  border-bottom: 1px solid var(--ds-border);
+  background: var(--ds-surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-1);
+  font-size: var(--ds-font-size-sm);
+  color: var(--ds-text-secondary);
+}
+.breadcrumb-current { color: var(--ds-text); font-weight: var(--ds-heading-weight); }
+.breadcrumb svg { width: var(--ds-icon-size-sm); height: var(--ds-icon-size-sm); }
+.topbar-actions { display: flex; gap: var(--ds-space-2); }
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  background: var(--ds-surface);
+  color: var(--ds-text-secondary);
+  cursor: pointer;
+  transition: border-color var(--ds-duration-fast) var(--ds-ease-standard);
+}
+.icon-btn:hover { border-color: var(--ds-primary); color: var(--ds-primary); }
+.icon-btn svg { width: var(--ds-icon-size-sm); height: var(--ds-icon-size-sm); }
+
+/* Page content */
+.page-content { padding: var(--ds-space-6); max-width: var(--ds-content-width); }
+.page-header { margin-bottom: var(--ds-space-5); }
+.page-title {
+  font-size: var(--ds-font-size-xl);
+  font-weight: var(--ds-heading-weight);
+  color: var(--ds-text);
+  margin-bottom: var(--ds-space-1);
+}
+.page-meta {
+  font-size: var(--ds-font-size-sm);
+  color: var(--ds-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+}
+
+/* Status badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-1);
+  padding: 2px var(--ds-space-2);
+  border-radius: var(--ds-radius-full);
+  font-size: var(--ds-font-size-xs);
+  font-weight: var(--ds-heading-weight);
+}
+.badge svg { width: 10px; height: 10px; }
+.badge-pending { background: var(--ds-primary-light); color: var(--ds-warning); }
+.badge-change { background: var(--ds-primary-light); color: var(--ds-error); }
+.badge-confirmed { background: var(--ds-primary-light); color: var(--ds-success); }
+
+/* Comparison layout */
+.comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--ds-space-4);
+  margin-bottom: var(--ds-space-5);
+}
+.panel {
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  overflow: hidden;
+}
+.panel-header {
+  padding: var(--ds-space-3) var(--ds-space-4);
+  border-bottom: 1px solid var(--ds-border);
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-heading-weight);
+  color: var(--ds-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+}
+.panel-header svg { width: var(--ds-icon-size-sm); height: var(--ds-icon-size-sm); }
+.panel-body { padding: var(--ds-space-4); }
+
+/* Feedback panel specifics */
+.feedback-source {
+  font-size: var(--ds-base-font-size);
+  line-height: var(--ds-line-height);
+  color: var(--ds-text);
+  margin-bottom: var(--ds-space-3);
+  padding: var(--ds-space-3);
+  background: var(--ds-background);
+  border-radius: var(--ds-radius);
+  border-left: 3px solid var(--ds-primary);
+}
+.feedback-meta {
+  font-size: var(--ds-font-size-xs);
+  color: var(--ds-text-secondary);
+}
+
+/* Scope items */
+.scope-list { list-style: none; }
+.scope-item {
+  padding: var(--ds-space-2) 0;
+  border-bottom: 1px solid var(--ds-border);
+  font-size: var(--ds-font-size-sm);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ds-space-2);
+}
+.scope-item:last-child { border-bottom: none; }
+.scope-item svg { width: var(--ds-icon-size-sm); height: var(--ds-icon-size-sm); flex-shrink: 0; color: var(--ds-success); }
+.scope-item.affected svg { color: var(--ds-warning); }
+.scope-item.affected { color: var(--ds-text); font-weight: var(--ds-heading-weight); }
+
+/* Impact section */
+.impact-section {
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  padding: var(--ds-space-4);
+  margin-bottom: var(--ds-space-5);
+}
+.impact-title {
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-heading-weight);
+  color: var(--ds-text-secondary);
+  margin-bottom: var(--ds-space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+}
+.impact-title svg { width: var(--ds-icon-size-md); height: var(--ds-icon-size-md); color: var(--ds-warning); }
+.impact-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-2) var(--ds-space-3);
+  background: var(--ds-background);
+  border-left: 3px solid var(--ds-warning);
+  border-radius: var(--ds-radius);
+  font-size: var(--ds-font-size-sm);
+  margin-bottom: var(--ds-space-2);
+}
+.impact-item:last-child { margin-bottom: 0; }
+.impact-label {
+  font-weight: var(--ds-heading-weight);
+  color: var(--ds-warning);
+  white-space: nowrap;
+}
+
+/* Action bar */
+.action-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-4);
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-2) var(--ds-space-4);
+  border-radius: var(--ds-radius);
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-heading-weight);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard),
+              border-color var(--ds-duration-fast) var(--ds-ease-standard);
+}
+.btn svg { width: var(--ds-icon-size-sm); height: var(--ds-icon-size-sm); }
+.btn-primary {
+  background: var(--ds-primary);
+  color: var(--ds-surface);
+}
+.btn-primary:hover { background: var(--ds-primary-dark); }
+.btn-secondary {
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  border-color: var(--ds-border);
+}
+.btn-secondary:hover { border-color: var(--ds-text-secondary); }
+.btn-danger {
+  background: var(--ds-surface);
+  color: var(--ds-error);
+  border-color: var(--ds-border);
+}
+.btn-danger:hover { border-color: var(--ds-error); background: var(--ds-background); }
+.action-note {
+  flex: 1;
+  font-size: var(--ds-font-size-xs);
+  color: var(--ds-text-secondary);
+  text-align: right;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .comparison-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .page-content { padding: var(--ds-space-4); }
+  .action-bar { flex-wrap: wrap; }
+  .action-note { text-align: left; flex-basis: 100%; }
+}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-brand">项目交付工作台</div>
+    <div class="sidebar-nav">
+      <div class="nav-item active">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        反馈总览
+      </div>
+      <div class="nav-item">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        项目列表
+      </div>
+      <div class="nav-item">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        确认记录
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <div class="main-content">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="breadcrumb">
+        反馈总览
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        <span class="breadcrumb-current">FB-2024-0037</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn" aria-label="搜索">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </button>
+        <button class="icon-btn" aria-label="菜单">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="17" x2="20" y2="17"></line></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Page content -->
+    <main class="page-content">
+      <div class="page-header">
+        <h1 class="page-title">首页改版视觉风格调整</h1>
+        <div class="page-meta">
+          <span>青山设计工作室 · 品牌官网项目</span>
+          <span class="badge badge-change">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            可能超出范围
+          </span>
+          <span>2024-10-18 14:32</span>
+        </div>
+      </div>
+
+      <!-- Comparison grid -->
+      <div class="comparison-grid">
+        <!-- Original feedback -->
+        <div class="panel">
+          <div class="panel-header">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            客户原始反馈
+          </div>
+          <div class="panel-body">
+            <div class="feedback-source">
+              希望首页整体色调能更沉稳一些，现在的蓝色有点亮。另外能不能加一个客户案例的轮播区域？之前合同里好像没提到这个，但我们觉得对展示很有帮助。
+            </div>
+            <div class="feedback-meta">
+              来源：微信沟通记录 · 李经理 · 2024-10-18
+            </div>
+          </div>
+        </div>
+
+        <!-- Original scope -->
+        <div class="panel">
+          <div class="panel-header">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            已约定交付范围
+          </div>
+          <div class="panel-body">
+            <ul class="scope-list">
+              <li class="scope-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                首页视觉设计与配色方案
+              </li>
+              <li class="scope-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                响应式布局适配（桌面/平板/手机）
+              </li>
+              <li class="scope-item affected">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                首页内容区块排版（不含新增功能模块）
+              </li>
+              <li class="scope-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                交付时间：2024-10-25
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Impact assessment -->
+      <div class="impact-section">
+        <div class="impact-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          变更影响分析
+        </div>
+        <div class="impact-item">
+          <span class="impact-label">新增范围</span>
+          <span>客户案例轮播区域属于新增功能模块，不在原约定交付范围内。</span>
+        </div>
+        <div class="impact-item">
+          <span class="impact-label">配色调整</span>
+          <span>色调调整为范围内修改，但需确认新配色方案后重新出稿。</span>
+        </div>
+        <div class="impact-item">
+          <span class="impact-label">交期影响</span>
+          <span>若纳入轮播区域，预计需额外 3 个工作日，原定 10-25 交付节点将延后。</span>
+        </div>
+      </div>
+
+      <!-- Action bar -->
+      <div class="action-bar">
+        <button class="btn btn-primary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          确认安排
+        </button>
+        <button class="btn btn-danger">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          退回补充说明
+        </button>
+        <span class="action-note">确认后系统将记录本次范围与交期变更并通知相关参与者</span>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

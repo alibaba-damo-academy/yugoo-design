@@ -1,0 +1,14 @@
+Yugoo-design
+Copyright 2026 YugooDesign Team
+
+Yugoo Design was initiated by Jianfeng Yang, who independently completed
+its initial design and development. The project is maintained by
+YugooDesign Team.
+
+Except where otherwise identified, the original code and documentation in this
+repository are licensed under the Apache License, Version 2.0. See LICENSE.
+
+Third-party code, dependencies, vendored runtimes, and attributed materials
+retain their own licenses and copyright notices. This notice does not relicense
+those materials. The copied SVG icons retain the Lucide ISC and Feather MIT notices in
+licenses/lucide/LICENSE.

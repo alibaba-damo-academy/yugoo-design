@@ -25,13 +25,16 @@ Start with the **Web App Kit**, included with the plugin by default, to design a
 You need **Node.js `>=22.19.0 <23`** and an Agent Host with a configured model. The plugin uses your host's existing model, conversation, and tools; see [getting started (中文)](docs/wiki/getting-started.md) for environment setup.
 
 1. **Install the plugin.** Give the agent in your current host the [shared installation prompt](packages/companion/HOSTS.md#default-prompt-any-supported-host). Follow its instructions for authorization, import, activation, and any restart or new session.
+
+   Supported hosts include DeepSeek Harness (DSH), Codex CLI, Claude Code CLI, Qoder CLI, QwenWork, and WorkBuddy. DSH provides the full feature set and an integrated experience, bringing conversation, Design Panels, and Studio into one workspace. Feature support and interaction differ across other hosts; see the [host guide (中文)](docs/wiki/hosts.md).
+
 2. **Create a Design Project.** Invoke the installed `yugoo` entry and ask:
 
    ```text
-   Create a Design Project named studio-delivery using the Web App Kit.
+   Create a Design Project named design-team-delivery using the Web App Kit.
    ```
 
-   In DeepSeek Harness, you can also use `/yugoo new studio-delivery` and `/yugoo kit web_app`. Other hosts' entry points are in the [host guide (中文)](docs/wiki/hosts.md).
+   In DeepSeek Harness, you can also use `/yugoo new design-team-delivery` and `/yugoo kit web_app`. See the [command reference (中文)](docs/wiki/commands.md) for all commands and parameters.
 3. **Describe this round's goal.** For example:
 
    ```text
@@ -42,10 +45,6 @@ You need **Node.js `>=22.19.0 <23`** and an Agent Host with a configured model. 
    ```
 
 4. **Express your judgment in the Panel, then continue.** AI opens questions or design panels as needed. Edit and save, then ask: “Continue from the handling rules I just saved and explain which parts of the design they affect.” You can also request changes in conversation. Follow the [walkthrough (中文)](docs/wiki/web-app-demo.md) or consult the [usage guide (中文)](docs/wiki/usage.md).
-
-This is a **beta preview, with the Web App Kit included by default**. See [preview status](docs/wiki/preview-status.md) for exact releases and verified scope, and the [command reference (中文)](docs/wiki/commands.md) for all `/yugoo` parameters.
-
-Hosts such as Codex CLI, Claude Code CLI, and Qoder CLI use panels in a browser. **DeepSeek Harness (DSH) is currently the only desktop host that accommodates the full feature set and integrated interaction experience**, bringing conversation, panels, and Studio into one workspace. Feature support varies across other desktop hosts. Codex desktop integration is planned; Claude Code desktop has not been tested. Consult the [host guide (中文)](docs/wiki/hosts.md) when choosing a host.
 
 ## Why use it
 
@@ -99,16 +98,7 @@ Reuse, combine, or customize Kits and Bundles to adapt professional methods, out
 
 Continue with the six-person studio from the quick start: turn its agreements for handling client change requests into the platform's processes, rules, permissions, and pages. In DeepSeek Harness, discuss the design with AI on the left and edit the corresponding Panel on the right. Open Studio when you want to customize a Kit.
 
-> This example uses a fictional studio's business data to show actual conversations and Panel interactions, not one-click generation of a complete specification. The PRD follows the official template but remains a draft with open questions to discuss. See the [host guide (中文)](docs/wiki/hosts.md) for Panel and review support in each host.
-
-In DeepSeek Harness, create a project and manually activate the Web App Kit:
-
-```text
-/yugoo new studio-delivery
-/yugoo kit web_app
-```
-
-You can also describe your goal first and let the agent select a suitable Kit using the existing design. Other hosts use their own `yugoo` skill or tool entry; see the [host guide (中文)](docs/wiki/hosts.md).
+The business data is fictional. Start from the goal in the [quick start](#quick-start), or copy the [complete example project](examples/design-team-delivery/README.md), migrate it as instructed, and continue with the [tutorial (中文)](docs/wiki/web-app-demo.md). This illustrates how one discussion develops, not a mandatory sequence of panels for every task.
 
 ### 1. Confirm the important context in a panel
 
@@ -120,13 +110,17 @@ Once you save, AI suggests: “Let's map a client's change request through to sc
 
 ### 2. See the process, then add real-world context
 
-AI opens the **business process panel**. A swimlane diagram separates the client, designer, and project lead, showing feedback capture, scope comparison, impact assessment, and confirmation of the work.
+AI opens the **business process panel**. Vertical swimlanes separate the client, designer, project lead, and system. Read from top to bottom to follow feedback capture, scope comparison, impact assessment, and confirmation of the work.
 
 Seeing every revision go through the lead, you add: “Designers can handle layout revisions within the agreed scope directly. New pages or capabilities need a scope discussion.” AI revises the branches. You discuss, edit, and save alongside the Panel, bringing the team's real working practices into the design.
 
 ![Discuss the proposal beside a swimlane process distinguishing direct changes from those needing the project lead's confirmation](docs/images/readme-flow.png)
 
-### 3. Check earlier decisions against the current design
+### 3. Save your decisions and continue with AI
+
+After saving, ask: “Continue from the rules I just saved and identify what still needs thought.” AI proceeds from those changes. Read the **U/S/T assessment** and its reasons to see whether the missing piece is business context, design structure, or verifiable rules—not just whether a score is high or low.
+
+To explore what a decision affects, open **Related graph (KAG)** at the bottom of the workspace. Inspect design objects, relationships, and sources, then return to the relevant panel to check them. The graph and assessment help you choose the next step; neither has to be “completed” first.
 
 In a host that supports GRA, developing the design might lead to a **design suggestion** like this:
 
@@ -136,25 +130,21 @@ You decide: “Assess scope and timing separately. Any impact on a promised mile
 
 ![Expand design suggestions beside the conversation and compare them with the business process](docs/images/readme-design-advice.png)
 
-### 4. Develop other parts as needed
+That is the collaboration loop: **describe a goal → examine and edit the Panel → save and continue with AI → discuss the next question.** Start the next round where understanding or a decision is most needed.
 
-Next, you might design the data relationships between feedback, deliverables, and changes; client and team permissions; and pages for inspecting impacts and confirming plans. Open the **AI capabilities panel** to define how the application's AI organizes feedback and drafts impact notes, which Skills and tools it needs, and which commitments remain human decisions.
+### You can also explore further…
 
-Each part has its own panel, and KAG helps you find their relationships. Choose the next activity around what you currently need to understand or decide.
+To see how these rules translate into a product, use the **page map** to connect the client's feedback submission, the designer's impact assessment, and the lead's confirmation. Then develop individual pages through **UI design and interactive prototypes**.
 
-![Browse the same project's object relationship canvas, object details, and business rules](docs/images/readme-design-views.gif)
+Or open **Scene experience (场景体验)** and choose a situation such as “the client adds a page at the last minute.” Explore the process, rules, and interface together. If a step is unclear, choose “在主对话讨论当前内容” (discuss the current content in the main conversation) to bring the question back into the design. Interactions in the experience are demonstrations; they do not directly change design files.
 
-### 5. Bring the design together in a PRD
+![Explore the studio project's page map, UI design, and scene experience, then inspect U/S/T reasoning and the related graph](docs/images/readme-design-exploration.gif)
 
-When this round of design is clear, you ask: “Assemble the current design into a PRD, keeping the supporting sources and unresolved questions.” AI opens the **PRD panel**, organizing existing requirements, processes, pages, permissions, and AI capabilities. Browse the outline and trace the sources; if something needs to change, return to its panel.
+For greater detail, develop the data relationships between feedback, deliverables, and changes, refine permissions and business rules, or use the **AI capabilities panel** to define how the application's AI organizes feedback, which Skills and tools it needs, and which commitments remain human decisions.
 
-For implementation, prepare a spec for the particular task and the development project's conventions, linking the relevant design evidence. Follow the [complete tutorial (中文)](docs/wiki/web-app-demo.md), read the [design-to-development handoff (中文)](docs/design-development-handoff.md), or explore [non-Web Kit examples (中文)](docs/wiki/non-web-kit-demo.md).
+When it is time to hand off the work, assemble a **PRD draft**, retaining sources and unresolved questions. For implementation, prepare a spec for the particular task and link its design evidence. These are dimensions to explore as needed, not a checklist to complete every round.
 
-![Read the PRD draft's formal chapters beside the conversation, retaining design sources and unresolved content](docs/images/readme-prd.png)
-
-In a research collaboration, you can discuss the work with AI while using design suggestions to refine the process. The example below shows conversation and Panel side by side; see the [interface overview (中文)](docs/wiki/usage.md#7-界面概览) for more page-map and PRD examples.
-
-![Conversation, design suggestions, and a business process panel in DeepSeek Harness](docs/images/design-panel-process.png)
+See the [tutorial (中文)](docs/wiki/web-app-demo.md) for the full walkthrough and data, rule, and PRD views, or the [usage guide (中文)](docs/wiki/usage.md#查看和更新-ust) for U/S/T, KAG, and Scene experience. The [interface overview (中文)](docs/wiki/usage.md#7-界面概览) also shows process and page design for a research collaboration tool. See [non-Web Kit examples (中文)](docs/wiki/non-web-kit-demo.md) for other domains and [design-to-development handoff (中文)](docs/design-development-handoff.md) for implementation.
 
 ## Start with software design, then extend it
 

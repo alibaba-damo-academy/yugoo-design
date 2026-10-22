@@ -8,16 +8,25 @@
       "findings": [
         "binary_manual_review"
       ],
-      "reason": "Actual full DeepSeek Harness workspace captures from isolated synthetic studio-delivery, with real native conversation beside Smart Questions. Read/edit frames use the d4ebed7d Panel and provider build, including the one-input free-text behavior and shared supplementary label. Close-ups only crop and enlarge the same frames. Draft edits were reverted; this is not full-generation or save-consumption acceptance. No credentials or private customer data."
+      "reason": "Actual full DeepSeek Harness workspace captures from isolated synthetic design-team-delivery, with real native conversation beside Smart Questions. Read/edit frames use the d4ebed7d Panel and provider build, including the one-input free-text behavior and shared supplementary label. Close-ups only crop and enlarge the same frames. Draft edits were reverted; this is not full-generation or save-consumption acceptance. No credentials or private customer data."
     },
     {
       "path": "docs/images/readme-flow.png",
-      "oid": "9705e56a64e920c27e20a38443275df8d0c3ffcd",
-      "bytes": 253023,
+      "oid": "ecf4586804c0f648ee694200984e0d4957c8ebfc",
+      "bytes": 352274,
       "findings": [
         "binary_manual_review"
       ],
-      "reason": "Actual full DeepSeek Harness workspace capture with real conversation and the shared Flow Panel from d4ebed7d, opened at its corrected 70 percent workspace width. Synthetic studio-delivery BPMN role lanes and scope/timing branches; BPMN.io attribution retained. No fabricated conversation, credentials or private customer data; not an end-to-end generation claim."
+      "reason": "Actual full DeepSeek Harness workspace capture of the synthetic design-team-delivery project, showing native discussion beside the current DOWN-layout BPMN decision branches at about 70 percent dock width. Native canvas zoom/pan emphasizes scope and timing decisions, direct handling, lead confirmation and return paths; not the complete diagram at once. BPMN.io attribution retained. No fabricated conversation, credentials or private customer data; no installed-package acceptance claim."
+    },
+    {
+      "path": "docs/images/readme-design-exploration.gif",
+      "oid": "4a7e5f5c8fec32f5cd89ffdc5f04550eccc0d732",
+      "bytes": 3575942,
+      "findings": [
+        "large_file_manual_review"
+      ],
+      "reason": "Directly reviewed real DSH full-workspace screenshots and decoded GIF keyframes from the synthetic design-team-delivery example. Eight views show the page map, UI detail/confirmation, static guided Scene experience, evidence-based U/S/T explanation, and actual KAG overview/neighborhood with source details. Camera crops enlarge the same pixels; 23 frames, 34.74 seconds, 1440x781. Native conversation and source context remain in full frames. No fabricated interface, credentials or private customer data; Scene controls do not claim business execution, and graph candidates are not confirmed requirements."
     },
     {
       "path": "docs/images/readme-design-advice.png",
@@ -26,7 +35,7 @@
       "findings": [
         "binary_manual_review"
       ],
-      "reason": "Actual full DeepSeek Harness workspace capture: expanded native Alignment clarification advice beside the synthetic studio-delivery process. The advice was produced in the real isolated native session and is shown pending human review; it is not the hypothetical scope/timing example quoted in the tutorial, an accepted decision, or evidence of a new review at the latest design revision. No credentials or private customer data."
+      "reason": "Actual full DeepSeek Harness workspace capture: expanded native Alignment clarification advice beside the synthetic design-team-delivery process. The advice was produced in the real isolated native session and is shown pending human review; it is not the hypothetical scope/timing example quoted in the tutorial, an accepted decision, or evidence of a new review at the latest design revision. No credentials or private customer data."
     },
     {
       "path": "docs/images/readme-design-views.gif",
@@ -138,6 +147,210 @@
     }
   ],
   "rules": [
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/LICENSE",
+      "action": "include",
+      "reason": "Exact project Apache-2.0 license retained inside the reusable example so a separately copied project carries its license text."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/NOTICE",
+      "action": "include",
+      "reason": "Project attribution retained for the portable example, with its third-party notice reference pointing to the included icon licenses."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/licenses/lucide/LICENSE",
+      "action": "include",
+      "reason": "Exact Lucide ISC and Feather MIT license text from the shipped design_style icon assets, retained alongside the copied SVGs and prototype HTML."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/.gitignore",
+      "action": "include",
+      "reason": "Original ignore rules retained with the complete synthetic example project."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/README.md",
+      "action": "include",
+      "reason": "Portable copy and migrate instructions for the complete synthetic design-team-delivery example; official public documentation links and explicit historical-record limitations."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/_experiences/member-center-feedback-scenario/16def26a-9354-4075-ad19-3ab6141ca6d1/draft.json",
+      "action": "include",
+      "reason": "Final synthetic scene source references retained with the complete example; demonstration-only interactions, no backend service or private host state."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/_experiences/member-center-feedback-scenario/16def26a-9354-4075-ad19-3ab6141ca6d1/resources/design_style/tokens.css",
+      "action": "include",
+      "reason": "Native scene stylesheet snapshot retained with its versioned synthetic example; same reviewed project design tokens."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/_experiences/member-center-feedback-scenario/16def26a-9354-4075-ad19-3ab6141ca6d1/scenario-overview.html",
+      "action": "include",
+      "reason": "Final native scene demonstration aligned to the saved member-center feedback pages; synthetic data and simulated decisions, no live customer service or credentials."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/_experiences/member-center-feedback-scenario/4bef1c09-393f-4ae7-8838-c1418e459fef/draft.json",
+      "action": "include",
+      "reason": "Synthetic versioned scene experience and source references retained with the complete example; demonstration-only interactions, no backend service or private host state."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/_experiences/member-center-feedback-scenario/4bef1c09-393f-4ae7-8838-c1418e459fef/scenario-overview.html",
+      "action": "include",
+      "reason": "Synthetic versioned scene experience and source references retained with the complete example; demonstration-only interactions, no backend service or private host state."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/_experiences/member-center-feedback-scenario/9da60921-3869-4533-a47a-8883cf4ddee8/draft.json",
+      "action": "include",
+      "reason": "Synthetic versioned scene experience and source references retained with the complete example; demonstration-only interactions, no backend service or private host state."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/_experiences/member-center-feedback-scenario/9da60921-3869-4533-a47a-8883cf4ddee8/resources/design_style/tokens.css",
+      "action": "include",
+      "reason": "Synthetic versioned scene experience and source references retained with the complete example; demonstration-only interactions, no backend service or private host state."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/_experiences/member-center-feedback-scenario/9da60921-3869-4533-a47a-8883cf4ddee8/scenario-overview.html",
+      "action": "include",
+      "reason": "Synthetic versioned scene experience and source references retained with the complete example; demonstration-only interactions, no backend service or private host state."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/_experiences/member-center-feedback-scenario/view.json",
+      "action": "include",
+      "reason": "Synthetic versioned scene experience and source references retained with the complete example; demonstration-only interactions, no backend service or private host state."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/business_data/business_data.json",
+      "action": "include",
+      "reason": "Synthetic design-team-delivery canonical design content and associated BPMN, HTML or style artifacts; retained with the complete reusable project, not a real customer's data or completed production application."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/business_rules/business_rules.json",
+      "action": "include",
+      "reason": "Synthetic design-team-delivery canonical design content and associated BPMN, HTML or style artifacts; retained with the complete reusable project, not a real customer's data or completed production application."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/design_style/DESIGN.md",
+      "action": "include",
+      "reason": "Synthetic design-team-delivery canonical design content and associated BPMN, HTML or style artifacts; retained with the complete reusable project, not a real customer's data or completed production application."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/design_style/design_style.json",
+      "action": "include",
+      "reason": "Synthetic design-team-delivery canonical design content and associated BPMN, HTML or style artifacts; retained with the complete reusable project, not a real customer's data or completed production application."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/design_style/preview_feedback_detail.html",
+      "action": "include",
+      "reason": "Synthetic design-team-delivery canonical design content and associated BPMN, HTML or style artifacts; retained with the complete reusable project, not a real customer's data or completed production application."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/design_style/tokens.css",
+      "action": "include",
+      "reason": "Synthetic design-team-delivery canonical design content and associated BPMN, HTML or style artifacts; retained with the complete reusable project, not a real customer's data or completed production application."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/flow_design/P-001.bpmn",
+      "action": "include",
+      "reason": "Synthetic design-team-delivery canonical design content and associated BPMN, HTML or style artifacts; retained with the complete reusable project, not a real customer's data or completed production application."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/flow_design/flow_design.json",
+      "action": "include",
+      "reason": "Synthetic design-team-delivery canonical design content and associated BPMN, HTML or style artifacts; retained with the complete reusable project, not a real customer's data or completed production application."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/page_design/page_design.json",
+      "action": "include",
+      "reason": "Synthetic design-team-delivery canonical design content and associated BPMN, HTML or style artifacts; retained with the complete reusable project, not a real customer's data or completed production application."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/page_design/pages/change-confirm.html",
+      "action": "include",
+      "reason": "Synthetic design-team-delivery canonical design content and associated BPMN, HTML or style artifacts; retained with the complete reusable project, not a real customer's data or completed production application."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/page_design/pages/feedback-detail.html",
+      "action": "include",
+      "reason": "Synthetic design-team-delivery canonical design content and associated BPMN, HTML or style artifacts; retained with the complete reusable project, not a real customer's data or completed production application."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/page_design/pages/feedback-list.html",
+      "action": "include",
+      "reason": "Synthetic design-team-delivery canonical design content and associated BPMN, HTML or style artifacts; retained with the complete reusable project, not a real customer's data or completed production application."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/smart_questions/smart_questions.json",
+      "action": "include",
+      "reason": "Synthetic design-team-delivery canonical design content and associated BPMN, HTML or style artifacts; retained with the complete reusable project, not a real customer's data or completed production application."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/web_app_prd_assembly/prd.html",
+      "action": "include",
+      "reason": "Synthetic design-team-delivery canonical design content and associated BPMN, HTML or style artifacts; retained with the complete reusable project, not a real customer's data or completed production application."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/web_app_prd_assembly/web_app_prd_assembly.json",
+      "action": "include",
+      "reason": "Synthetic design-team-delivery canonical design content and associated BPMN, HTML or style artifacts; retained with the complete reusable project, not a real customer's data or completed production application."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_records/clarity.json",
+      "action": "include",
+      "reason": "Synthetic project design records retained for a complete reusable example; historical assessments, journal and derived knowledge are not new user decisions, host transcripts or credentials."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_records/journal/YjljZjdhZDktYTJlNy00Zjg5LTg0ZDEtYzM3OTFiYWQwY2Iw.jsonl",
+      "action": "include",
+      "reason": "Synthetic project design records retained for a complete reusable example; historical assessments, journal and derived knowledge are not new user decisions, host transcripts or credentials."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_records/knowledge/archive.json",
+      "action": "include",
+      "reason": "Synthetic project design records retained for a complete reusable example; historical assessments, journal and derived knowledge are not new user decisions, host transcripts or credentials."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_records/reviews/gra-policy.json",
+      "action": "include",
+      "reason": "Synthetic project design records retained for a complete reusable example; historical assessments, journal and derived knowledge are not new user decisions, host transcripts or credentials."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/project.json",
+      "action": "include",
+      "reason": "Synthetic demo project metadata and public Web App Kit reference; no original Git history or external host configuration."
+    },
     { "kind": "file", "path": "packages/panel/test/dock-open-layout.test.mjs", "action": "include", "reason": "Synthetic client-source regression verifies asynchronous navigation collapse, dock width, drag, session isolation and lease ownership using the actual store and reflow functions; no user data, installed Host or model execution." },
     {
       "kind": "file",
@@ -195,6 +408,12 @@
     },
     {
       "kind": "file",
+      "path": "docs/images/readme-design-exploration.gif",
+      "action": "include",
+      "reason": "Reviewed real-workspace exploration sequence for the complete synthetic example: page map, UI design, static guided Scene experience, U/S/T reasoning and KAG sources. Full-context frames and bounded camera crops, not a fabricated UI or product acceptance claim."
+    },
+    {
+      "kind": "file",
       "path": "docs/images/readme-design-views.gif",
       "action": "include",
       "reason": "Actual full DeepSeek Harness workspace frames show one synthetic project through the business-object relationship canvas, object detail and business rules. Shared d4ebed7d Panel build with 70 percent dock width; the close-up enlarges the same canvas frame. Existing React Flow attribution remains in the full frame. No fabricated KAG view, conversation, credentials or private customer data."
@@ -203,19 +422,19 @@
       "kind": "file",
       "path": "docs/images/readme-design-advice.png",
       "action": "include",
-      "reason": "Actual full DeepSeek Harness workspace capture: expanded native Alignment clarification advice beside the synthetic studio-delivery process. The advice was produced in the real isolated native session and is shown pending human review; it is not the hypothetical scope/timing example quoted in the tutorial, an accepted decision, or evidence of a new review at the latest design revision. No credentials or private customer data."
+      "reason": "Actual full DeepSeek Harness workspace capture: expanded native Alignment clarification advice beside the synthetic design-team-delivery process. The advice was produced in the real isolated native session and is shown pending human review; it is not the hypothetical scope/timing example quoted in the tutorial, an accepted decision, or evidence of a new review at the latest design revision. No credentials or private customer data."
     },
     {
       "kind": "file",
       "path": "docs/images/readme-flow.png",
       "action": "include",
-      "reason": "Actual full DeepSeek Harness workspace capture with real conversation and the shared Flow Panel from d4ebed7d, opened at its corrected 70 percent workspace width. Synthetic studio-delivery BPMN role lanes and scope/timing branches; BPMN.io attribution retained. No fabricated conversation, credentials or private customer data; not an end-to-end generation claim."
+      "reason": "Reviewed real DSH conversation and current DOWN-layout workflow decision branches from the complete synthetic example. Native canvas zoom/pan keeps scope, timing and confirmation decisions readable; BPMN.io attribution retained. No private data or installed-package acceptance claim."
     },
     {
       "kind": "file",
       "path": "docs/images/readme-smart-questions.gif",
       "action": "include",
-      "reason": "Actual full DeepSeek Harness workspace captures from isolated synthetic studio-delivery, with real native conversation beside Smart Questions. Read/edit frames use the d4ebed7d Panel and provider build, including the one-input free-text behavior and shared supplementary label. Close-ups only crop and enlarge the same frames. Draft edits were reverted; this is not full-generation or save-consumption acceptance. No credentials or private customer data."
+      "reason": "Actual full DeepSeek Harness workspace captures from isolated synthetic design-team-delivery, with real native conversation beside Smart Questions. Read/edit frames use the d4ebed7d Panel and provider build, including the one-input free-text behavior and shared supplementary label. Close-ups only crop and enlarge the same frames. Draft edits were reverted; this is not full-generation or save-consumption acceptance. No credentials or private customer data."
     },
     { "kind": "file", "path": "packages/companion/test/foreground-reviews.test.mjs", "action": "include", "reason": "Shared explicit manual GRA fixtures verify main-conversation submission, unchanged policy, pinned evidence and advisory actions in temporary projects; no actual Host, credentials, private user data or model execution." },
     { "kind": "file", "path": "packages/companion/test/review-reader-context.test.mjs", "action": "include", "reason": "Synthetic large-graph review fixtures verify on-demand native evidence, unchanged private snapshots and managed supplied context; no actual Host, credentials, user project or model execution." },
@@ -684,7 +903,7 @@
       "kind": "file",
       "path": "docs/wiki/official-kits.md",
       "action": "include",
-      "reason": "Public user-oriented Kit guide with studio-delivery and synthetic service-scheduling examples; identity/version/acquisition remains in the existing official catalog, and teaching scenarios do not claim native or solver acceptance."
+      "reason": "Public user-oriented Kit guide with design-team-delivery and synthetic service-scheduling examples; identity/version/acquisition remains in the existing official catalog, and teaching scenarios do not claim native or solver acceptance."
     },
     {
       "kind": "file",
@@ -5500,9 +5719,9 @@
     },
     {
       "kind": "file",
-      "path": "scripts/test-fixtures/embedded-image-loader/package.json",
+      "path": "scripts/test-fixtures/embedded-image-loader/upstream-package.json",
       "action": "include",
-      "reason": "Fully read exact test dependency: fixed public fixture, original accompanying notice or explicit-input probe; no private host checkout or credential configuration; inclusion delivers retained command inputs, not runtime or complete release license acceptance"
+      "reason": "Original upstream manifest bytes retained as non-installable provenance for the fixed public image-blob-reduce fixture. Not a workspace or CI package-manager input; preserves dependency and license evidence without claiming runtime security acceptance."
     },
     {
       "kind": "file",
@@ -5560,9 +5779,9 @@
     },
     {
       "kind": "file",
-      "path": "scripts/test-fixtures/pica-worker/source/pica/package.json",
+      "path": "scripts/test-fixtures/pica-worker/source/pica/upstream-package.json",
       "action": "include",
-      "reason": "Fully read exact test dependency: fixed public fixture, original accompanying notice or explicit-input probe; no private host checkout or credential configuration; inclusion delivers retained command inputs, not runtime or complete release license acceptance"
+      "reason": "Original upstream manifest bytes retained as non-installable provenance for the fixed public pica worker fixture. Source-verification tests may materialize it in isolated temporary input without installing dependencies; preserves original licensing and negative controls."
     },
     {
       "kind": "file",

@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>反馈与交付总览 - 项目交付工作台</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--ds-body-font);
+      font-size: var(--ds-base-font-size);
+      line-height: var(--ds-line-height);
+      color: var(--ds-text);
+      background-color: var(--ds-background);
+      min-height: 100vh;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      background: var(--ds-surface);
+      border-bottom: 1px solid var(--ds-border);
+      padding: var(--ds-space-4) var(--ds-space-5);
+      position: sticky;
+      top: 0;
+      z-index: var(--ds-z-sticky-nav);
+    }
+
+    .top-bar-inner {
+      max-width: var(--ds-content-width);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      font-size: var(--ds-font-size-lg);
+      font-weight: var(--ds-heading-weight);
+      color: var(--ds-primary);
+      display: flex;
+      align-items: center;
+      gap: var(--ds-space-2);
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: var(--ds-space-2);
+      font-size: var(--ds-font-size-sm);
+      color: var(--ds-text-secondary);
+    }
+
+    .breadcrumb-separator {
+      color: var(--ds-border);
+    }
+
+    .breadcrumb-current {
+      color: var(--ds-text);
+      font-weight: 500;
+    }
+
+    /* Main Content */
+    .main-content {
+      max-width: var(--ds-content-width);
+      margin: 0 auto;
+      padding: var(--ds-space-6) var(--ds-space-5);
+    }
+
+    .page-header {
+      margin-bottom: var(--ds-space-6);
+    }
+
+    .page-title {
+      font-size: var(--ds-font-size-2xl);
+      font-weight: var(--ds-heading-weight);
+      line-height: var(--ds-line-height-tight);
+      color: var(--ds-text);
+      margin-bottom: var(--ds-space-2);
+    }
+
+    .page-subtitle {
+      font-size: var(--ds-font-size-md);
+      color: var(--ds-text-secondary);
+    }
+
+    /* Filter Area */
+    .filter-area {
+      display: flex;
+      gap: var(--ds-space-3);
+      margin-bottom: var(--ds-space-5);
+      flex-wrap: wrap;
+    }
+
+    .search-input {
+      flex: 1;
+      min-width: 240px;
+      padding: var(--ds-space-2) var(--ds-space-3);
+      border: 1px solid var(--ds-border);
+      border-radius: var(--ds-radius);
+      font-size: var(--ds-font-size-md);
+      font-family: var(--ds-body-font);
+      color: var(--ds-text);
+      background: var(--ds-surface);
+      outline: none;
+      transition: border-color var(--ds-duration-fast) var(--ds-ease-standard);
+    }
+
+    .search-input:focus {
+      border-color: var(--ds-primary);
+    }
+
+    .search-input::placeholder {
+      color: var(--ds-text-secondary);
+    }
+
+    .filter-select {
+      padding: var(--ds-space-2) var(--ds-space-3);
+      border: 1px solid var(--ds-border);
+      border-radius: var(--ds-radius);
+      font-size: var(--ds-font-size-md);
+      font-family: var(--ds-body-font);
+      color: var(--ds-text);
+      background: var(--ds-surface);
+      cursor: pointer;
+      outline: none;
+    }
+
+    .filter-select:focus {
+      border-color: var(--ds-primary);
+    }
+
+    /* Feedback List */
+    .feedback-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--ds-space-3);
+    }
+
+    .feedback-card {
+      background: var(--ds-surface);
+      border: 1px solid var(--ds-border);
+      border-radius: var(--ds-radius);
+      padding: var(--ds-space-4) var(--ds-space-5);
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: var(--ds-space-4);
+      align-items: start;
+      cursor: pointer;
+      transition: box-shadow var(--ds-duration-fast) var(--ds-ease-standard),
+                  border-color var(--ds-duration-fast) var(--ds-ease-standard);
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .feedback-card:hover {
+      border-color: var(--ds-primary);
+      box-shadow: var(--ds-shadow);
+    }
+
+    .feedback-card:focus-visible {
+      outline: 2px solid var(--ds-primary);
+      outline-offset: 2px;
+    }
+
+    /* Status Badge */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--ds-space-1);
+      padding: var(--ds-space-1) var(--ds-space-2);
+      border-radius: var(--ds-radius-full);
+      font-size: var(--ds-font-size-xs);
+      font-weight: 500;
+      white-space: nowrap;
+      line-height: var(--ds-line-height-tight);
+    }
+
+    .status-badge--warning {
+      background: #FEF3C7;
+      color: var(--ds-warning);
+    }
+
+    .status-badge--info {
+      background: var(--ds-primary-light);
+      color: var(--ds-info);
+    }
+
+    .status-badge--success {
+      background: #DCFCE7;
+      color: var(--ds-success);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+
+    /* Card Content */
+    .card-content {
+      display: flex;
+      flex-direction: column;
+      gap: var(--ds-space-2);
+      min-width: 0;
+    }
+
+    .card-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--ds-space-2) var(--ds-space-4);
+      font-size: var(--ds-font-size-sm);
+      color: var(--ds-text-secondary);
+    }
+
+    .card-meta-item {
+      display: flex;
+      align-items: center;
+      gap: var(--ds-space-1);
+    }
+
+    .card-meta-label {
+      color: var(--ds-text-secondary);
+    }
+
+    .card-meta-value {
+      color: var(--ds-text);
+      font-weight: 500;
+    }
+
+    .card-summary {
+      font-size: var(--ds-font-size-md);
+      color: var(--ds-text);
+      line-height: var(--ds-line-height-normal);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .card-deliverable {
+      font-size: var(--ds-font-size-sm);
+      color: var(--ds-text-secondary);
+      display: flex;
+      align-items: center;
+      gap: var(--ds-space-1);
+    }
+
+    .card-deliverable-icon {
+      width: var(--ds-icon-size-sm);
+      height: var(--ds-icon-size-sm);
+      color: var(--ds-text-secondary);
+      flex-shrink: 0;
+    }
+
+    /* Card Actions */
+    .card-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--ds-space-2);
+      flex-shrink: 0;
+    }
+
+    .card-timestamp {
+      font-size: var(--ds-font-size-xs);
+      color: var(--ds-text-secondary);
+      white-space: nowrap;
+    }
+
+    .card-chevron {
+      width: var(--ds-icon-size-md);
+      height: var(--ds-icon-size-md);
+      color: var(--ds-text-secondary);
+      transition: color var(--ds-duration-fast) var(--ds-ease-standard);
+    }
+
+    .feedback-card:hover .card-chevron {
+      color: var(--ds-primary);
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: var(--ds-space-7) var(--ds-space-5);
+      color: var(--ds-text-secondary);
+    }
+
+    .empty-state-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto var(--ds-space-4);
+      color: var(--ds-border);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .feedback-card {
+        grid-template-columns: 1fr;
+        gap: var(--ds-space-3);
+      }
+
+      .card-actions {
+        justify-content: space-between;
+      }
+
+      .filter-area {
+        flex-direction: column;
+      }
+
+      .search-input {
+        min-width: 100%;
+      }
+
+      .top-bar-inner {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--ds-space-2);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Top Bar -->
+  <header class="top-bar">
+    <div class="top-bar-inner">
+      <div class="logo" data-prototype-id="logo" data-prototype-label="项目交付工作台 Logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="16" x2="12" y2="12"/>
+          <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+        项目交付工作台
+      </div>
+      <nav class="breadcrumb" aria-label="面包屑导航">
+        <span>首页</span>
+        <span class="breadcrumb-separator" aria-hidden="true">/</span>
+        <span class="breadcrumb-current">反馈与交付总览</span>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="page-header">
+      <h1 class="page-title" data-prototype-id="page-title" data-prototype-label="页面标题">反馈与交付总览</h1>
+      <p class="page-subtitle">按项目查看待判断反馈、当前范围及交付节点</p>
+    </div>
+
+    <!-- Filter Area -->
+    <div class="filter-area">
+      <input 
+        type="search" 
+        class="search-input" 
+        placeholder="搜索客户名称、项目名称或反馈内容..." 
+        data-prototype-id="search-input"
+        data-prototype-label="搜索反馈"
+        aria-label="搜索反馈"
+      >
+      <select class="filter-select" data-prototype-id="filter-status" data-prototype-label="状态筛选" aria-label="按状态筛选">
+        <option value="">全部状态</option>
+        <option value="pending">待判断</option>
+        <option value="processing">处理中</option>
+        <option value="confirmed">已确认</option>
+      </select>
+      <select class="filter-select" data-prototype-id="filter-project" data-prototype-label="项目筛选" aria-label="按项目筛选">
+        <option value="">全部项目</option>
+        <option value="brand-website">品牌官网改版</option>
+        <option value="saas-admin">SaaS 管理后台</option>
+        <option value="mobile-app">移动端应用重构</option>
+      </select>
+    </div>
+
+    <!-- Demo Disclaimer -->
+    <div style="background:var(--ds-primary-light);border:1px solid rgba(37,99,235,0.15);border-radius:var(--ds-radius);padding:12px 16px;margin-bottom:var(--ds-space-4);display:flex;align-items:center;gap:10px;font-size:var(--ds-font-size-sm);color:var(--ds-primary-dark);" role="note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;stroke:var(--ds-primary);flex-shrink:0;" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="16" x2="12" y2="12"/>
+        <line x1="12" y1="8" x2="12.01" y2="8"/>
+      </svg>
+      此为合成演示数据，所有编号、日期与工作量均为示例，非实际客户承诺
+    </div>
+
+    <!-- Feedback List -->
+    <div class="feedback-list" data-prototype-id="feedback-list" data-prototype-label="反馈列表">
+      
+      <!-- Item 1: 待判断 - 原范围内调整 -->
+      <article 
+        class="feedback-card" 
+        tabindex="0"
+        role="link"
+        data-prototype-id="feedback-item-1"
+        data-prototype-label="首页原范围内调整反馈卡片"
+      >
+        <div class="status-badge status-badge--warning" data-prototype-id="status-1" data-prototype-label="待判断状态标签">
+          <span class="status-dot" aria-hidden="true"></span>
+          待判断
+        </div>
+        <div class="card-content">
+          <div class="card-meta">
+            <span class="card-meta-item">
+              <span class="card-meta-label">客户:</span>
+              <span class="card-meta-value">青山设计工作室</span>
+            </span>
+            <span class="card-meta-item">
+              <span class="card-meta-label">项目:</span>
+              <span class="card-meta-value">品牌官网改版</span>
+            </span>
+          </div>
+          <p class="card-summary">希望首页整体色调更沉稳，调整主色饱和度和按钮圆角</p>
+          <div class="card-deliverable">
+            <svg class="card-deliverable-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+            关联交付物: 首页视觉设计与布局
+          </div>
+        </div>
+        <div class="card-actions">
+          <time class="card-timestamp" datetime="2024-10-18T14:32:00">2024-10-18 14:32</time>
+          <svg class="card-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+      </article>
+
+      <!-- Item 2: 待判断 - 超出范围需讨论 -->
+      <article 
+        class="feedback-card" 
+        tabindex="0"
+        role="link"
+        data-prototype-id="feedback-item-2"
+        data-prototype-label="新增会员中心反馈卡片"
+        data-prototype-connection="open-feedback"
+        data-prototype-page="feedback-detail"
+      >
+        <div class="status-badge status-badge--warning" data-prototype-id="status-2" data-prototype-label="待判断状态标签">
+          <span class="status-dot" aria-hidden="true"></span>
+          待判断
+        </div>
+        <div class="card-content">
+          <div class="card-meta">
+            <span class="card-meta-item">
+              <span class="card-meta-label">客户:</span>
+              <span class="card-meta-value">星辰科技</span>
+            </span>
+            <span class="card-meta-item">
+              <span class="card-meta-label">项目:</span>
+              <span class="card-meta-value">SaaS 管理后台</span>
+            </span>
+          </div>
+          <p class="card-summary">希望新增会员中心页面，包含积分查询、等级权益和历史订单</p>
+          <div class="card-deliverable">
+            <svg class="card-deliverable-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+            关联交付物: 用户管理模块
+          </div>
+        </div>
+        <div class="card-actions">
+          <time class="card-timestamp" datetime="2024-10-19T09:15:00">2024-10-19 09:15</time>
+          <svg class="card-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+      </article>
+
+      <!-- Item 3: 处理中 -->
+      <article 
+        class="feedback-card" 
+        tabindex="0"
+        role="link"
+        data-prototype-id="feedback-item-3"
+        data-prototype-label="导航栏交互优化反馈卡片"
+        data-prototype-page="feedback-detail"
+      >
+        <div class="status-badge status-badge--info" data-prototype-id="status-3" data-prototype-label="处理中状态标签">
+          <span class="status-dot" aria-hidden="true"></span>
+          处理中
+        </div>
+        <div class="card-content">
+          <div class="card-meta">
+            <span class="card-meta-item">
+              <span class="card-meta-label">客户:</span>
+              <span class="card-meta-value">云帆教育</span>
+            </span>
+            <span class="card-meta-item">
+              <span class="card-meta-label">项目:</span>
+              <span class="card-meta-value">移动端应用重构</span>
+            </span>
+          </div>
+          <p class="card-summary">导航栏下拉菜单在部分机型上展开动画卡顿，需要优化性能</p>
+          <div class="card-deliverable">
+            <svg class="card-deliverable-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+            关联交付物: 全局导航组件
+          </div>
+        </div>
+        <div class="card-actions">
+          <time class="card-timestamp" datetime="2024-10-17T16:45:00">2024-10-17 16:45</time>
+          <svg class="card-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+      </article>
+
+      <!-- Item 4: 已确认 -->
+      <article 
+        class="feedback-card" 
+        tabindex="0"
+        role="link"
+        data-prototype-id="feedback-item-4"
+        data-prototype-label="表单验证规则调整反馈卡片"
+        data-prototype-page="feedback-detail"
+      >
+        <div class="status-badge status-badge--success" data-prototype-id="status-4" data-prototype-label="已确认状态标签">
+          <span class="status-dot" aria-hidden="true"></span>
+          已确认
+        </div>
+        <div class="card-content">
+          <div class="card-meta">
+            <span class="card-meta-item">
+              <span class="card-meta-label">客户:</span>
+              <span class="card-meta-value">青山设计工作室</span>
+            </span>
+            <span class="card-meta-item">
+              <span class="card-meta-label">项目:</span>
+              <span class="card-meta-value">品牌官网改版</span>
+            </span>
+          </div>
+          <p class="card-summary">联系表单的手机号验证规则需要支持国际号码格式</p>
+          <div class="card-deliverable">
+            <svg class="card-deliverable-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+            关联交付物: 联系表单模块
+          </div>
+        </div>
+        <div class="card-actions">
+          <time class="card-timestamp" datetime="2024-10-16T11:20:00">2024-10-16 11:20</time>
+          <svg class="card-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+      </article>
+
+    </div>
+  </main>
+</body>
+</html>

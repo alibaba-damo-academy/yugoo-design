@@ -8,6 +8,12 @@ Exact retained emitted pica artifact SHA-256: `c79c7f30b9c2b043072d5b975caf1dbe2
 
 Generated Blob sources remain unmodified. Their random wrapper IDs are fixture evidence, not cross-run pins. Do not refresh these bytes or allowed pins automatically.
 
+## Upstream manifest archive
+
+The original Pica 7.1.1 `package.json` is retained byte-for-byte as [upstream-package.json](source/pica/upstream-package.json), with SHA-256 `d3c4978a27b8df70dd4df5db0b02551844f1d22d31b432fea1504b5f2af0d0ff`. Its source locator is `https://registry.npmjs.org/pica/7.1.1`, also recorded in the fixed notice/source map. The archived name distinguishes provenance metadata from an installable package manifest; it does not change the upstream version, dependencies, scripts or license.
+
+The repository workspace includes `packages/*`, not this copied source tree, and CI installs from the workspace root. No fixture test installs these archived dependencies or runs the upstream package scripts. The source-input tests explicitly reconstruct a temporary `package.json` from the archive solely to exercise the real-source verifier, then remove that temporary tree. Do not restore the archive as an active manifest or run its installation, build or publication scripts. Its old Electron `^12.0.9` and gh-pages `^3.1.0` development dependencies remain historical records, not upgraded or approved dependencies. Archive hashes and the absence of active manifests are checked by `scripts/fixture-notice-map.test.mjs`; the source, emitted-byte and notice pins remain unchanged.
+
 ## Copied-code notices
 
 Preserve [pica MIT](source/pica/LICENSE), [webworkify MIT](source/webworkify/LICENSE), [glur MIT](source/glur/LICENSE), [inherits ISC](source/inherits/LICENSE), [multimath MIT](source/multimath/LICENSE), and [object-assign MIT](source/object-assign/license) with the fixed bundle and large Worker sources. The emitted runtime also carries [Rolldown MIT](source/rolldown/LICENSE) and its original [third-party notices](source/rolldown/THIRD-PARTY-LICENSE).

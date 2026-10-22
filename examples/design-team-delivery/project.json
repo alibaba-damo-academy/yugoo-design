@@ -1,0 +1,14 @@
+{
+  "kind": "dsh-design-project",
+  "formatVersion": 3,
+  "id": "b9cf7ad9-a2e7-4f89-84d1-c3791bad0cb0",
+  "name": "工作室项目交付平台",
+  "createdAt": "2026-10-22T05:00:25.615Z",
+  "knowledge": {
+    "provider": "ladybug-wasm"
+  },
+  "kit": {
+    "name": "web_app",
+    "version": "1.0"
+  }
+}

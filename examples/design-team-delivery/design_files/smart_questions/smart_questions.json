@@ -1,0 +1,96 @@
+{
+  "rounds": {
+    "0": {
+      "title": "明确分工与承诺边界",
+      "description": "六人设计工作室的项目交付平台。先讨论谁记录客户反馈、谁确认范围，以及谁能承诺交期。"
+    }
+  },
+  "questions": {
+    "const_auth_mode": {
+      "prompt": "是否需要注册登录？",
+      "kind": "single",
+      "choices": [
+        {
+          "value": "anonymous",
+          "label": "不需要，直接使用",
+          "recommended": true
+        },
+        {
+          "value": "auth_required",
+          "label": "需要，支持注册登录",
+          "recommended": false
+        }
+      ],
+      "answer": "auth_required",
+      "detail": ""
+    },
+    "const_storage_mode": {
+      "prompt": "应用数据如何保存？",
+      "kind": "single",
+      "choices": [
+        {
+          "value": "browser_temp",
+          "label": "仅当前浏览器临时保存",
+          "recommended": true
+        },
+        {
+          "value": "database_persistent",
+          "label": "持久保存，可跨设备继续使用",
+          "recommended": false
+        }
+      ],
+      "answer": "database_persistent",
+      "detail": ""
+    },
+    "scope_owner": {
+      "prompt": "客户提出修改后，谁判断是否超出已约定范围？",
+      "kind": "single",
+      "choices": [
+        {
+          "value": "lead",
+          "label": "设计师记录意见，项目负责人确认新增范围",
+          "recommended": true
+        },
+        {
+          "value": "designer",
+          "label": "每位设计师自行决定"
+        },
+        {
+          "value": "ai",
+          "label": "由 AI 自动确认"
+        }
+      ],
+      "answer": "lead",
+      "detail": "已有页面清单。新增范围，或范围内修改影响已承诺节点时，都由项目负责人确认具体安排。",
+      "round": 0,
+      "rejected": false
+    },
+    "delivery_owner": {
+      "prompt": "谁可以向客户承诺新的交付时间？",
+      "kind": "single",
+      "choices": [
+        {
+          "value": "lead",
+          "label": "项目负责人确认后承诺",
+          "recommended": true
+        },
+        {
+          "value": "designer",
+          "label": "设计师可以直接承诺"
+        }
+      ],
+      "answer": "lead",
+      "detail": "AI 可以整理影响，不能代替团队作出承诺。",
+      "round": 0,
+      "rejected": false
+    },
+    "within_scope": {
+      "prompt": "已经在范围内的布局调整，是否仍然需要逐项审批？",
+      "kind": "text",
+      "answer": "通常由设计师直接处理；如果影响已承诺节点，再请负责人确认安排。",
+      "detail": "避免每项修改都走审批，同时保留交期责任。",
+      "round": 0,
+      "rejected": false
+    }
+  }
+}

@@ -237,7 +237,7 @@ test('real server and Knowledge compilation preserve the empty server dependency
     const shared=process.argv[4],companion=process.argv[5]
     const compile=async config=>{const bundles=await build(config);for(const bundle of bundles)await bundle[Symbol.asyncDispose]()}
     await compile({...server,config:false,entry:Object.fromEntries(Object.entries(server.entry).map(([name,path])=>[name,resolve(companion,path)])),outDir:join(shared,'scripts'),clean:false})
-    await packageKnowledge(undefined,{mode:'portable',outputDirectory:join(shared,'knowledge'),runtimeDependencies:{'@ladybugdb/wasm-core':'0.21.1','@huggingface/transformers':'3.8.1','onnxruntime-common':'1.21.0',undici:'8.10.0'},buildImpl:compile})
+    await packageKnowledge(undefined,{mode:'portable',outputDirectory:join(shared,'knowledge'),runtimeDependencies:{'@ladybugdb/wasm-core':'0.21.1','@huggingface/transformers':'3.8.1','onnxruntime-common':'1.21.0',undici:'8.10.2'},buildImpl:compile})
   `
   const env={...process.env};delete env.NODE_TEST_CONTEXT
   const compiled=spawnSync(process.execPath,['--import','tsx','--input-type=module','-e',program,import.meta.resolve('tsdown'),

@@ -289,7 +289,7 @@ test('official engine selection keeps package, payload manifest and inventory co
   const { options, put, root } = await setup(t)
   const { ladybugVersion: _legacy, ...official } = options
   official.ladybugDependency = '0.21.1'
-  const dependencies = { '@ladybugdb/wasm-core': '0.21.1', '@huggingface/transformers': '3.8.1', 'onnxruntime-common': '1.21.0', undici: '8.10.0' }
+  const dependencies = { '@ladybugdb/wasm-core': '0.21.1', '@huggingface/transformers': '3.8.1', 'onnxruntime-common': '1.21.0', undici: '8.10.2' }
   await assert.rejects(buildCompanionCandidate(official), /requires a knowledge runtime manifest/u)
   await assert.rejects(lstat(official.destination), { code: 'ENOENT' })
   await put('shared/knowledge/runtime-manifest.json', JSON.stringify({ runtimeDependencies: dependencies }))

@@ -143,6 +143,14 @@ test('current source inventory proposes official edges, not dogfood or host sour
   assert.equal(projectedCore.devDependencies['@deepseek-ai/dsh-subprocess-local'], '0.2.0-rc.2')
   assert.ok(!JSON.stringify(result.packages).includes('deepseek-harness'))
   assert.deepEqual(result.workspace.allowBuilds, workspace.allowBuilds)
+  assert.equal(result.workspace.overrides.undici,
+    packages['packages/knowledge-ladybug/package.json'].dependencies.undici,
+    'Public source must retain the reviewed undici security version for transitive consumers')
+  const missingSecurityOverride = { ...reviewedWorkspaceOverrides }
+  delete missingSecurityOverride.undici
+  assert.throws(() => proposePublicSourceConfig({ root, workspace, packages, officialVersions,
+    ladybugVersion, rootScripts, reviewedWorkspaceOverrides: missingSecurityOverride }),
+  /Workspace overrides require exact explicit review/)
   assert.equal(result.lockAction, 'regenerate-in-isolated-source-candidate')
   assert.equal(projectedCore.devDependencies['@deepseek-ai/dsh-agent'], officialVersions['@deepseek-ai/dsh-agent'])
   const selection = JSON.parse(readFileSync(new URL('release/public-source-test-selection.json', repo), 'utf8'))

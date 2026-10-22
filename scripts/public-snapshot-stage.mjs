@@ -180,7 +180,7 @@ export async function stagePublicSnapshot({ source, revision, policy, destinatio
       const paths = selected.filter(entry => roots.includes(entry.path)
         || /^README\.[A-Za-z0-9-]+\.md$/u.test(entry.path) || entry.path === 'AGENTS.md'
         || entry.path === 'docs/public-document-sync.md'
-        || (entry.path.startsWith('docs/wiki/') && entry.path.endsWith('.md'))).map(entry => entry.path)
+        || ((entry.path.startsWith('docs/wiki/') || entry.path.startsWith('examples/')) && entry.path.endsWith('.md'))).map(entry => entry.path)
       const checked = validateCanonicalDocumentLinks({
         documents: Object.fromEntries(paths.map(path => [path, readMarkdown(path)])),
         includedPaths: selected.map(entry => entry.path), readTarget: readMarkdown,

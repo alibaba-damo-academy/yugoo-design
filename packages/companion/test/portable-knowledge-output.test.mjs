@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 import { packageKnowledge } from '../package-knowledge.mjs'
 import { readOfficialDshJsonInput } from '../../../scripts/official-dsh-json-input.mjs'
 
-const dependencies = () => ({ '@ladybugdb/wasm-core': 'npm:@fixture-design-release/ladybug-wasm-core@0.19.1-walfix.1', '@huggingface/transformers': '3.8.1', 'onnxruntime-common': '1.21.0', undici: '8.10.0' })
+const dependencies = () => ({ '@ladybugdb/wasm-core': 'npm:@fixture-design-release/ladybug-wasm-core@0.19.1-walfix.1', '@huggingface/transformers': '3.8.1', 'onnxruntime-common': '1.21.0', undici: '8.10.2' })
 async function setup(t) {
   const root = await mkdtemp(join(await realpath(tmpdir()), 'portable knowledge output '))
   t.after(() => rm(root, { recursive: true, force: true }))
@@ -67,7 +67,7 @@ test('portable destinations are exclusive, absolute, outside source and cannot b
 
 test('missing, unknown or unpinned runtime deps are rejected before calling the build adapter', async t => {
   const { options, calls } = await setup(t)
-  const bad = [undefined, {}, { ...dependencies(), unknown: '1.0.0' }, { ...dependencies(), undici: '^8.10.0' }, { ...dependencies(), 'onnxruntime-common': 'latest' }, { ...dependencies(), '@ladybugdb/wasm-core': 'file:../../vendor/ladybug/runtime' }, { ...dependencies(), '@ladybugdb/wasm-core': 'npm:@fixture/ladybug@^0.19.1' }]
+  const bad = [undefined, {}, { ...dependencies(), unknown: '1.0.0' }, { ...dependencies(), undici: '8.10.0' }, { ...dependencies(), undici: '^8.10.2' }, { ...dependencies(), 'onnxruntime-common': 'latest' }, { ...dependencies(), '@ladybugdb/wasm-core': 'file:../../vendor/ladybug/runtime' }, { ...dependencies(), '@ladybugdb/wasm-core': 'npm:@fixture/ladybug@^0.19.1' }]
   for (const runtimeDependencies of bad) await assert.rejects(packageKnowledge(undefined, { ...options, runtimeDependencies }))
   assert.equal(calls.length, 0)
 })
@@ -76,7 +76,7 @@ test('declared dependencies are snapshotted before asynchronous compilation', as
   const { options, buildImpl } = await setup(t)
   const original = dependencies()
   const result = await packageKnowledge(undefined, { ...options, runtimeDependencies: original, buildImpl: async config => { original.undici = 'latest'; await buildImpl(config) } })
-  assert.equal(result.manifest.runtimeDependencies.undici, '8.10.0')
+  assert.equal(result.manifest.runtimeDependencies.undici, '8.10.2')
 })
 
 test('default directory mode retains its knowledge subdirectory and rejects portable-only overrides', async t => {

@@ -240,3 +240,80 @@ test('worker catches native import, model load and inference errors at the IPC b
     } finally { if (worker) await stopEmbeddingChild(worker); await rm(root, { recursive: true, force: true }) }
   }
 })
+
+test('embedding model fetch honors the installed proxy agent and NO_PROXY on Node 22', { timeout: 15000 }, async t => {
+  const { createServer, request: forward } = await import('node:http')
+  const { mkdtemp, mkdir, copyFile, writeFile, rm, symlink } = await import('node:fs/promises')
+  const { tmpdir } = await import('node:os')
+  const { join, dirname } = await import('node:path')
+  const { createRequire } = await import('node:module')
+  const { fork } = await import('node:child_process')
+  const root = await mkdtemp(join(tmpdir(), 'embedding-proxy-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const originRequests = [], proxyRequests = [], sockets = new Set()
+  const origin = createServer((request, response) => {
+    originRequests.push(request.url)
+    response.writeHead(200, { 'content-type': 'application/json' })
+    response.end('{}')
+  })
+  const track = socket => { sockets.add(socket); socket.once('close', () => sockets.delete(socket)) }
+  const proxy = createServer((request, response) => {
+    proxyRequests.push(request.url)
+    const path = new URL(request.url).pathname
+    const upstream = forward({ hostname: '127.0.0.1', port: origin.address().port, path }, incoming => {
+      response.writeHead(incoming.statusCode, incoming.headers)
+      incoming.pipe(response)
+    })
+    upstream.on('socket', track)
+    upstream.on('error', () => { response.writeHead(502); response.end() })
+    upstream.end()
+  })
+  origin.on('connection', track)
+  proxy.on('connection', track)
+  t.after(async () => {
+    for (const socket of sockets) socket.destroy()
+    await Promise.all([origin, proxy].map(server => new Promise(resolve => server.close(resolve))))
+  })
+  await new Promise(resolve => origin.listen(0, '127.0.0.1', resolve))
+  await new Promise(resolve => proxy.listen(0, '127.0.0.1', resolve))
+  for (const name of ['embedding-worker.mjs', 'embedding-text.mjs']) {
+    await copyFile(new URL('../src/' + name, import.meta.url), join(root, name))
+  }
+  const transformers = join(root, 'node_modules/@huggingface/transformers')
+  await mkdir(transformers, { recursive: true })
+  await writeFile(join(transformers, 'package.json'), JSON.stringify({ type: 'module', exports: './index.js' }))
+  // Only inference is stubbed. Model preparation uses real fetch and the installed
+  // Undici EnvHttpProxyAgent in an isolated child; no external model is downloaded.
+  await writeFile(join(transformers, 'index.js'), `
+    export const env = { backends: { onnx: { wasm: {} } } };
+    export async function pipeline(_task, model) {
+      const response = await fetch(model);
+      if (!response.ok) throw Error('model fetch failed');
+      await response.json();
+      return Object.assign(async inputs => ({ tolist: () => inputs.map(() => [1, 0]) }),
+        { tokenizer: { encode: () => [1] } });
+    }
+  `)
+  const require = createRequire(import.meta.url)
+  await symlink(dirname(require.resolve('undici/package.json')), join(root, 'node_modules/undici'), 'dir')
+  const run = async (model, noProxy) => {
+    const env = { ...process.env }
+    for (const key of ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy', 'NO_PROXY', 'no_proxy', 'ALL_PROXY', 'all_proxy']) delete env[key]
+    env.HTTP_PROXY = `http://127.0.0.1:${proxy.address().port}`
+    if (noProxy) env.NO_PROXY = noProxy
+    const worker = fork(join(root, 'embedding-worker.mjs'), { env, execArgv: [], windowsHide: true, stdio: ['ignore', 'ignore', 'ignore', 'ipc'] })
+    try {
+      const message = once(worker, 'message', { signal: AbortSignal.timeout(5000) })
+      worker.send({ texts: ['fixture text'], config: { model, prefix: '', localOnly: false, cacheDir: root } })
+      assert.deepEqual((await message)[0], { vectors: [[1, 0]] })
+    } finally { await stopEmbeddingChild(worker) }
+  }
+  const port = origin.address().port
+  const model = `http://model-download.invalid:${port}/proxied-model.json`
+  await run(model)
+  assert.deepEqual(proxyRequests, [model])
+  assert.deepEqual(originRequests, ['/proxied-model.json'])
+  await run(`http://127.0.0.1:${port}/local-model.json`, '127.0.0.1')
+  assert.deepEqual(proxyRequests, [model], 'NO_PROXY must bypass the proxy')
+  assert.deepEqual(originRequests, ['/proxied-model.json', '/local-model.json'])
+})

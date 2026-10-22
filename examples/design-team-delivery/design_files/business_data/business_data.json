@@ -1,0 +1,186 @@
+{
+  "schema_version": 3,
+  "object_order": [
+    "project",
+    "deliverable",
+    "feedback",
+    "change",
+    "confirmation"
+  ],
+  "objects": {
+    "project": {
+      "id": "project",
+      "name": "项目",
+      "description": "围绕已约定范围与交付节点组织工作的单元。",
+      "fields": {
+        "name": {
+          "id": "name",
+          "name": "项目名称",
+          "meaning": "用来识别项目。",
+          "value_type": "text",
+          "requirement": "always",
+          "required_when": "",
+          "example": "品牌官网改版",
+          "options": []
+        }
+      },
+      "field_order": [
+        "name"
+      ],
+      "states": {},
+      "state_order": []
+    },
+    "deliverable": {
+      "id": "deliverable",
+      "name": "交付物",
+      "description": "用来对照客户反馈的已约定页面或成果。",
+      "fields": {
+        "name": {
+          "id": "name",
+          "name": "交付物名称",
+          "meaning": "具体交付对象。",
+          "value_type": "text",
+          "requirement": "always",
+          "required_when": "",
+          "example": "产品详情页",
+          "options": []
+        },
+        "milestone": {
+          "id": "milestone",
+          "name": "承诺节点",
+          "meaning": "由负责人确认的交付安排。",
+          "value_type": "text",
+          "requirement": "always",
+          "required_when": "",
+          "example": "设计稿确认日",
+          "options": []
+        }
+      },
+      "field_order": [
+        "name",
+        "milestone"
+      ],
+      "states": {},
+      "state_order": []
+    },
+    "feedback": {
+      "id": "feedback",
+      "name": "客户反馈",
+      "description": "保留客户原意及关联内容，不直接视为新承诺。",
+      "fields": {
+        "content": {
+          "id": "content",
+          "name": "反馈内容",
+          "meaning": "客户提出的具体修改。",
+          "value_type": "text",
+          "requirement": "always",
+          "required_when": "",
+          "example": "调整首屏信息层级",
+          "options": []
+        },
+        "source": {
+          "id": "source",
+          "name": "反馈来源",
+          "meaning": "记录反馈的上下文。",
+          "value_type": "text",
+          "requirement": "always",
+          "required_when": "",
+          "example": "项目沟通群",
+          "options": []
+        }
+      },
+      "field_order": [
+        "content",
+        "source"
+      ],
+      "states": {},
+      "state_order": []
+    },
+    "change": {
+      "id": "change",
+      "name": "变更请求",
+      "description": "从反馈中识别需要单独确认的范围或交期变化。",
+      "fields": {
+        "impact": {
+          "id": "impact",
+          "name": "影响说明",
+          "meaning": "区分范围影响与交期影响。",
+          "value_type": "text",
+          "requirement": "always",
+          "required_when": "",
+          "example": "范围不变，需延后两天",
+          "options": []
+        }
+      },
+      "field_order": [
+        "impact"
+      ],
+      "states": {},
+      "state_order": []
+    },
+    "confirmation": {
+      "id": "confirmation",
+      "name": "确认记录",
+      "description": "保留谁对哪些范围与交期作出了确认。",
+      "fields": {
+        "decision": {
+          "id": "decision",
+          "name": "确认内容",
+          "meaning": "可以追溯的具体决定。",
+          "value_type": "text",
+          "requirement": "always",
+          "required_when": "",
+          "example": "先完成原定页面，再处理新增内容",
+          "options": []
+        }
+      },
+      "field_order": [
+        "decision"
+      ],
+      "states": {},
+      "state_order": []
+    }
+  },
+  "relations": {
+    "project-deliverable": {
+      "id": "project-deliverable",
+      "kind": "association",
+      "name": "包含",
+      "source": "project",
+      "target": "deliverable",
+      "source_count": "1",
+      "target_count": "1..*",
+      "description": "项目由可识别的交付物组成。"
+    },
+    "feedback-deliverable": {
+      "id": "feedback-deliverable",
+      "kind": "association",
+      "name": "针对",
+      "source": "feedback",
+      "target": "deliverable",
+      "source_count": "0..*",
+      "target_count": "1",
+      "description": "反馈关联具体交付内容。"
+    },
+    "feedback-change": {
+      "id": "feedback-change",
+      "kind": "association",
+      "name": "可能形成",
+      "source": "feedback",
+      "target": "change",
+      "source_count": "1..*",
+      "target_count": "0..*",
+      "description": "意见需要先判断影响，不直接成为承诺。"
+    },
+    "change-confirmation": {
+      "id": "change-confirmation",
+      "kind": "association",
+      "name": "由其确认",
+      "source": "change",
+      "target": "confirmation",
+      "source_count": "1",
+      "target_count": "0..*",
+      "description": "变更保留具体确认范围与安排。"
+    }
+  }
+}

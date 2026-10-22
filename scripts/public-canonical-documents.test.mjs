@@ -40,16 +40,21 @@ async function fixture(t, extra = {}) {
   return { root, source, files, policy, revision: git(['rev-parse', 'HEAD']), git }
 }
 
-test('canonical root and Wiki export exact committed bytes, preserving dirty inputs and excluding historical sources', async t => {
-  const f = await fixture(t, { 'README.en.md': '# Shared design\r\n[简体中文](README.md)\r\n' })
-  for (const path of ['README.md', 'README.en.md', 'docs/wiki/guide.md']) await writeFile(join(f.source, path), 'Uncommitted user edits\n')
+test('canonical roots, Wiki and example docs export exact committed bytes, preserving dirty inputs and excluding historical sources', async t => {
+  const f = await fixture(t, {
+    'README.en.md': '# Shared design\r\n[简体中文](README.md)\r\n',
+    'examples/demo/README.md': '# Example\n[Install](../../docs/wiki/guide.md#安装)\n[Project](project.json)\n',
+    'examples/demo/project.json': '{"name":"Synthetic example"}\n',
+  })
+  for (const path of ['README.md', 'README.en.md', 'docs/wiki/guide.md', 'examples/demo/README.md']) await writeFile(join(f.source, path), 'Uncommitted user edits\n')
   const result = await stagePublicSnapshot({ ...f, publicDocuments: true, destination: join(f.root, 'stage') })
-  for (const path of [...roots, 'README.en.md', 'docs/wiki/guide.md']) {
+  for (const path of [...roots, 'README.en.md', 'docs/wiki/guide.md', 'examples/demo/README.md', 'examples/demo/project.json']) {
     assert.equal(await readFile(join(result.target, path), 'utf8'), f.files[path])
     assert.equal(result.manifest.files[path].sha256, digest(f.files[path]))
   }
   assert.equal(await readFile(join(f.source, 'README.md'), 'utf8'), 'Uncommitted user edits\n')
   assert.equal(await readFile(join(f.source, 'README.en.md'), 'utf8'), 'Uncommitted user edits\n')
+  assert.equal(await readFile(join(f.source, 'examples/demo/README.md'), 'utf8'), 'Uncommitted user edits\n')
   for (const path of ['release/README.public.md', 'docs/internal/history.md']) await assert.rejects(access(join(result.target, path)))
   assert.deepEqual(result.manifest.transforms, [])
   assert.equal(result.manifest.releaseApproved, false)
@@ -62,6 +67,8 @@ test('missing canonical roots, outer badge anchors and unselected Wiki reference
     { extra: { 'docs/wiki/guide.md': '# 使用指南\n## 安装\n[Internal](../internal/history.md)\n' }, reason: /links are not closed.*file_not_selected/ },
     { extra: { 'README.en.md': '# English\n[Internal](docs/internal/history.md)\n' }, reason: /links are not closed.*file_not_selected/ },
     { extra: { 'README.en.md': '# English\n[Chinese](README.md#missing)\n' }, reason: /links are not closed.*anchor_not_found/ },
+    { extra: { 'examples/demo/README.md': '# Example\n[Internal](../../docs/internal/history.md)\n' }, reason: /links are not closed.*file_not_selected/ },
+    { extra: { 'examples/demo/README.md': '# Example\n[Install](../../docs/wiki/guide.md#missing)\n' }, reason: /links are not closed.*anchor_not_found/ },
     { exclude: 'SECURITY.md', reason: /canonical root documents/ },
     { exclude: 'docs/wiki/guide.md', reason: /links are not closed/ },
     { extra: { 'README.md': Buffer.from([0xff, 0xfe]) }, reason: /source review is incomplete/ },
@@ -142,7 +149,7 @@ const repo = fileURLToPath(new URL('../', import.meta.url))
 const actualPolicy = () => JSON.parse(readFileSync(join(repo, 'release/public-source-policy.json'), 'utf8'))
 const classify = (policy, path) => policy.rules.find(rule => rule.kind === 'file' ? rule.path === path : path.startsWith(rule.path))?.action ?? 'review'
 const isPublicDocument = path => path.endsWith('.md') && (
-  path.startsWith('docs/') || /^(README[^/]*|CONTRIBUTING|SECURITY|AGENTS)\.md$/.test(path) ||
+  path.startsWith('docs/') || path.startsWith('examples/') || /^(README[^/]*|CONTRIBUTING|SECURITY|AGENTS)\.md$/.test(path) ||
   /^packages\/[^/]+\/(?:hosts\/[^/]+\/)?(README[^/]*|HOSTS)\.md$/.test(path)
 )
 test('public documentation emphasis renders under CommonMark/GFM, including CJK punctuation', async () => {

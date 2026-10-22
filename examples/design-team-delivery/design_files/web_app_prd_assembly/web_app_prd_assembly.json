@@ -1,0 +1,27 @@
+{
+  "schema_version": 8,
+  "title": "工作室项目交付平台 PRD（合成示例）",
+  "detail_level": "concise",
+  "html_file": "web_app_prd_assembly/prd.html",
+  "ai_provenance": [
+    {
+      "id": "AI-001",
+      "operation": "completion",
+      "section_ids": [
+        "quality_acceptance",
+        "assembly_traceability"
+      ],
+      "description": "供团队审阅的验收草案，不是测试结果。",
+      "source_refs": [
+        "flow_design/flow_design.json",
+        "page_design/page_design.json"
+      ],
+      "assumption": {
+        "decision": "先提出与本轮范围相关的验收草案，等待负责人确认。",
+        "reason": "示例尚未完成独立的质量与验收设计。",
+        "impact": "不得将草案当成已确认要求或已通过验收。",
+        "decision_owner": "项目负责人"
+      }
+    }
+  ]
+}

@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>反馈详情与范围对照 — 项目交付工作台</title>
+<link rel="stylesheet" href="../tokens.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--ds-body-font);
+  font-size: var(--ds-base-font-size);
+  line-height: var(--ds-line-height);
+  color: var(--ds-text);
+  background: var(--ds-background);
+}
+
+/* Page shell — no sidebar */
+.page-shell { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* Top bar */
+.topbar {
+  padding: var(--ds-space-3) var(--ds-space-6);
+  border-bottom: 1px solid var(--ds-border);
+  background: var(--ds-surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: var(--ds-z-sticky-nav);
+}
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-5);
+}
+.logo {
+  font-size: var(--ds-font-size-lg);
+  font-weight: var(--ds-heading-weight);
+  color: var(--ds-primary);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-1);
+  font-size: var(--ds-font-size-sm);
+  color: var(--ds-text-secondary);
+}
+.breadcrumb-current { color: var(--ds-text); font-weight: var(--ds-heading-weight); }
+.breadcrumb svg { width: var(--ds-icon-size-sm); height: var(--ds-icon-size-sm); }
+
+/* Main content area */
+.main-content {
+  flex: 1;
+  padding: var(--ds-space-6);
+  max-width: var(--ds-content-width);
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Page header */
+.page-header { margin-bottom: var(--ds-space-5); }
+.page-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  margin-bottom: var(--ds-space-2);
+  flex-wrap: wrap;
+}
+.page-title {
+  font-size: var(--ds-font-size-xl);
+  font-weight: var(--ds-heading-weight);
+  color: var(--ds-text);
+}
+.page-meta {
+  font-size: var(--ds-font-size-sm);
+  color: var(--ds-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  flex-wrap: wrap;
+}
+
+/* Status badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-1);
+  padding: 2px var(--ds-space-2);
+  border-radius: var(--ds-radius-full);
+  font-size: var(--ds-font-size-xs);
+  font-weight: var(--ds-heading-weight);
+}
+.badge svg { width: 10px; height: 10px; }
+.badge-pending { background: var(--ds-primary-light); color: var(--ds-warning); }
+.badge-change { background: #FEF2F2; color: var(--ds-error); }
+.badge-normal { background: var(--ds-primary-light); color: var(--ds-primary); }
+
+/* Comparison grid */
+.comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--ds-space-4);
+  margin-bottom: var(--ds-space-5);
+}
+.panel {
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  overflow: hidden;
+  box-shadow: var(--ds-shadow);
+}
+.panel-header {
+  padding: var(--ds-space-3) var(--ds-space-4);
+  border-bottom: 1px solid var(--ds-border);
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-heading-weight);
+  color: var(--ds-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  background: var(--ds-background);
+}
+.panel-header svg { width: var(--ds-icon-size-sm); height: var(--ds-icon-size-sm); }
+.panel-body { padding: var(--ds-space-4); }
+
+/* Feedback quoted block */
+.feedback-quote {
+  font-size: var(--ds-base-font-size);
+  line-height: var(--ds-line-height-relaxed);
+  color: var(--ds-text);
+  padding: var(--ds-space-3) var(--ds-space-4);
+  background: var(--ds-background);
+  border-radius: var(--ds-radius);
+  border-left: 3px solid var(--ds-primary);
+  margin-bottom: var(--ds-space-3);
+}
+.feedback-source-info {
+  font-size: var(--ds-font-size-xs);
+  color: var(--ds-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+}
+.feedback-source-info svg { width: var(--ds-icon-size-sm); height: var(--ds-icon-size-sm); }
+
+/* Scope list */
+.scope-list { list-style: none; }
+.scope-item {
+  padding: var(--ds-space-2) 0;
+  border-bottom: 1px solid var(--ds-border);
+  font-size: var(--ds-font-size-sm);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ds-space-2);
+}
+.scope-item:last-child { border-bottom: none; }
+.scope-item .scope-icon {
+  width: var(--ds-icon-size-sm);
+  height: var(--ds-icon-size-sm);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.scope-icon-check { color: var(--ds-success); }
+.scope-icon-warn { color: var(--ds-warning); }
+.scope-icon-date { color: var(--ds-text-secondary); }
+.scope-item.affected { font-weight: var(--ds-heading-weight); }
+.scope-item.affected .scope-label-tag {
+  display: inline-block;
+  font-size: var(--ds-font-size-xs);
+  color: var(--ds-warning);
+  background: #FFFBEB;
+  padding: 0 var(--ds-space-1);
+  border-radius: var(--ds-radius-sm);
+  margin-left: var(--ds-space-1);
+}
+
+/* Impact section */
+.impact-section {
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  padding: var(--ds-space-4);
+  margin-bottom: var(--ds-space-5);
+  box-shadow: var(--ds-shadow);
+}
+.impact-title {
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-heading-weight);
+  color: var(--ds-text-secondary);
+  margin-bottom: var(--ds-space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+}
+.impact-title svg { width: var(--ds-icon-size-md); height: var(--ds-icon-size-md); color: var(--ds-warning); }
+.impact-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-3);
+  background: var(--ds-background);
+  border-left: 3px solid var(--ds-warning);
+  border-radius: var(--ds-radius);
+  font-size: var(--ds-font-size-sm);
+  margin-bottom: var(--ds-space-2);
+}
+.impact-item:last-child { margin-bottom: 0; }
+.impact-label {
+  font-weight: var(--ds-heading-weight);
+  color: var(--ds-warning);
+  white-space: nowrap;
+  min-width: 72px;
+}
+.impact-text { color: var(--ds-text); line-height: var(--ds-line-height); }
+
+/* Action bar */
+.action-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-4);
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  box-shadow: var(--ds-shadow);
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-2) var(--ds-space-4);
+  border-radius: var(--ds-radius);
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-heading-weight);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background var(--ds-duration-fast) var(--ds-ease-standard),
+              border-color var(--ds-duration-fast) var(--ds-ease-standard),
+              opacity var(--ds-duration-fast) var(--ds-ease-standard);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.btn svg { width: var(--ds-icon-size-sm); height: var(--ds-icon-size-sm); }
+.btn-primary {
+  background: var(--ds-primary);
+  color: var(--ds-surface);
+}
+.btn-primary:hover { background: var(--ds-primary-dark); }
+.btn-secondary {
+  background: var(--ds-surface);
+  color: var(--ds-text-secondary);
+  border-color: var(--ds-border);
+}
+.btn-secondary:hover { border-color: var(--ds-text-secondary); color: var(--ds-text); }
+.btn-secondary[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-danger {
+  background: var(--ds-surface);
+  color: var(--ds-error);
+  border-color: var(--ds-border);
+}
+.btn-danger:hover { border-color: var(--ds-error); background: #FEF2F2; }
+.action-note {
+  flex: 1;
+  font-size: var(--ds-font-size-xs);
+  color: var(--ds-text-secondary);
+  text-align: right;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .comparison-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .topbar { padding: var(--ds-space-3) var(--ds-space-4); }
+  .topbar-left { gap: var(--ds-space-3); }
+  .logo { font-size: var(--ds-font-size-sm); }
+  .main-content { padding: var(--ds-space-4); }
+  .action-bar { flex-wrap: wrap; }
+  .action-note { text-align: left; flex-basis: 100%; margin-top: var(--ds-space-2); }
+  .page-title { font-size: var(--ds-font-size-lg); }
+}
+</style>
+</head>
+<body>
+<div class="page-shell">
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="logo">项目交付工作台</span>
+      <nav class="breadcrumb" aria-label="面包屑导航">
+        <span data-prototype-id="breadcrumb-parent" data-prototype-label="返回反馈总览">反馈总览</span>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        <span class="breadcrumb-current" id="breadcrumb-id">FB-DEMO-002</span>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="main-content">
+    <!-- Page header -->
+    <div class="page-header">
+      <div class="page-title-row">
+        <h1 class="page-title" id="page-title">新增会员中心页面需求</h1>
+        <span class="badge badge-change" id="status-badge">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          <span id="status-text">可能超出范围</span>
+        </span>
+      </div>
+      <div class="page-meta">
+        <span id="project-name">星辰科技 · SaaS 管理后台项目</span>
+        <span id="timestamp">2024-10-19 10:15</span>
+      </div>
+    </div>
+
+    <!-- Comparison grid -->
+    <div class="comparison-grid">
+      <!-- Left: Client original feedback -->
+      <div class="panel" data-prototype-id="feedback-panel" data-prototype-label="客户原始反馈面板">
+        <div class="panel-header">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          客户原始反馈
+        </div>
+        <div class="panel-body">
+          <blockquote class="feedback-quote" id="feedback-text">
+            我们希望加一个会员中心页面，能看到积分、会员等级和之前的订单记录。这个之前好像没在合同里提到，但我们的用户经常问到这些功能。
+          </blockquote>
+          <div class="feedback-source-info" id="feedback-source">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            <span id="source-detail">来源：微信沟通记录 · 王总监 · 2024-10-19</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Agreed delivery scope -->
+      <div class="panel" data-prototype-id="scope-panel" data-prototype-label="已约定交付范围面板">
+        <div class="panel-header">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          已约定交付范围
+        </div>
+        <div class="panel-body">
+          <ul class="scope-list" id="scope-list">
+            <li class="scope-item">
+              <svg class="scope-icon scope-icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>用户管理模块（列表、详情、权限配置）</span>
+            </li>
+            <li class="scope-item">
+              <svg class="scope-icon scope-icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>基础数据看板</span>
+            </li>
+            <li class="scope-item affected">
+              <svg class="scope-icon scope-icon-warn" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              <span>系统通知集成（不含会员中心）<span class="scope-label-tag">受影响</span></span>
+            </li>
+            <li class="scope-item">
+              <svg class="scope-icon scope-icon-date" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              <span>交付节点：示例节点 A（合成演示）</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Impact assessment -->
+    <section class="impact-section" data-prototype-id="impact-section" data-prototype-label="变更影响分析区">
+      <div class="impact-title">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        变更影响分析
+      </div>
+      <div id="impact-items">
+        <div class="impact-item">
+          <span class="impact-label">新增范围</span>
+          <span class="impact-text">会员中心页面（积分查询、等级权益、历史订单）属于新增功能模块，不在原约定范围内。</span>
+        </div>
+        <div class="impact-item">
+          <span class="impact-label">交期影响</span>
+          <span class="impact-text">若纳入会员中心，工期影响待团队评估，原示例节点 A 可能延后。</span>
+        </div>
+        <div class="impact-item">
+          <span class="impact-label">建议</span>
+          <span class="impact-text">需项目负责人确认具体范围和调整后的交付安排。</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Demo Disclaimer -->
+    <div style="background:var(--ds-primary-light);border:1px solid rgba(37,99,235,0.15);border-radius:var(--ds-radius);padding:12px 16px;margin-bottom:var(--ds-space-5);display:flex;align-items:center;gap:10px;font-size:var(--ds-font-size-sm);color:var(--ds-primary-dark);" role="note">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;stroke:var(--ds-primary);flex-shrink:0;" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="16" x2="12" y2="12"/>
+        <line x1="12" y1="8" x2="12.01" y2="8"/>
+      </svg>
+      此为合成演示数据，所有编号、日期与工作量均为示例，非实际客户承诺
+    </div>
+
+    <!-- Action bar -->
+    <div class="action-bar" data-prototype-id="action-bar" data-prototype-label="操作按钮组">
+      <button class="btn btn-secondary" data-prototype-id="btn-direct-handle" data-prototype-label="直接处理" disabled>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        直接处理
+      </button>
+      <button class="btn btn-primary" data-prototype-id="btn-confirm-change" data-prototype-label="提交负责人确认" data-prototype-connection="confirm-change" data-prototype-page="change-confirm">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        提交负责人确认
+      </button>
+      <button class="btn btn-danger" data-prototype-id="btn-return-supplement" data-prototype-label="退回补充说明">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        退回补充说明
+      </button>
+      <span class="action-note">确认后系统将记录本次范围与交期变更并通知相关参与者</span>
+    </div>
+  </main>
+</div>
+
+<script>
+(function() {
+  // Scenarios data
+  var scenarios = {
+    "default": {
+      title: "新增会员中心页面需求",
+      projectName: "星辰科技 · SaaS 管理后台项目",
+      breadcrumbId: "FB-DEMO-002",
+      timestamp: "2024-10-19 10:15",
+      statusText: "可能超出范围",
+      statusClass: "badge-change",
+      feedbackText: "我们希望加一个会员中心页面，能看到积分、会员等级和之前的订单记录。这个之前好像没在合同里提到，但我们的用户经常问到这些功能。",
+      sourceDetail: "来源：微信沟通记录 · 王总监 · 2024-10-19",
+      scopeItems: [
+        { type: "check", text: "用户管理模块（列表、详情、权限配置）", affected: false },
+        { type: "check", text: "基础数据看板", affected: false },
+        { type: "warn", text: "系统通知集成（不含会员中心）", affected: true, tag: "受影响" },
+        { type: "date", text: "交付节点：示例节点 A（合成演示）", affected: false }
+      ],
+      impactItems: [
+        { label: "新增范围", text: "会员中心页面（积分查询、等级权益、历史订单）属于新增功能模块，不在原约定范围内。" },
+        { label: "交期影响", text: "若纳入会员中心，工期影响待团队评估，原示例节点 A 可能延后。" },
+        { label: "建议", text: "需项目负责人确认具体范围和调整后的交付安排。" }
+      ],
+      directHandleDisabled: true
+    },
+    "homepage-adjustment": {
+      title: "首页原范围内调整",
+      projectName: "青山设计工作室 · 品牌官网项目",
+      breadcrumbId: "FB-DEMO-001",
+      timestamp: "2024-10-20 16:45",
+      statusText: "范围内调整",
+      statusClass: "badge-normal",
+      feedbackText: "首页的标题字号能不能再大一点？另外banner图的色调偏冷了一些，能否调暖一点？这些都是之前定好的方向内的微调。",
+      sourceDetail: "来源：邮件反馈 · 陈经理 · 2024-10-20",
+      scopeItems: [
+        { type: "check", text: "首页视觉设计与配色方案", affected: false },
+        { type: "check", text: "响应式布局适配（桌面/平板/手机）", affected: false },
+        { type: "warn", text: "首页内容区块排版", affected: true, tag: "微调中" },
+        { type: "date", text: "交付节点：示例节点 B（合成演示）", affected: false }
+      ],
+      impactItems: [
+        { label: "范围判断", text: "字号调整与色调微调均属于已约定的首页视觉设计范围内，不涉及新增功能模块。" },
+        { label: "交期影响", text: "无需额外工期，可在原定交付节点内完成修改。" },
+        { label: "建议", text: "设计师可直接处理，无需重新确认安排。" }
+      ],
+      directHandleDisabled: false
+    }
+  };
+
+  // SVG icon templates
+  var icons = {
+    check: '<svg class="scope-icon scope-icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+    warn: '<svg class="scope-icon scope-icon-warn" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
+    date: '<svg class="scope-icon scope-icon-date" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>'
+  };
+
+  function applyScenario(key) {
+    var data = scenarios[key] || scenarios["default"];
+
+    // Update header
+    document.getElementById("page-title").textContent = data.title;
+    document.getElementById("project-name").textContent = data.projectName;
+    document.getElementById("breadcrumb-id").textContent = data.breadcrumbId;
+    document.getElementById("timestamp").textContent = data.timestamp;
+    document.getElementById("status-text").textContent = data.statusText;
+
+    // Update badge class
+    var badge = document.getElementById("status-badge");
+    badge.className = "badge " + data.statusClass;
+
+    // Update feedback
+    document.getElementById("feedback-text").textContent = data.feedbackText;
+    document.getElementById("source-detail").textContent = data.sourceDetail;
+
+    // Rebuild scope list
+    var scopeList = document.getElementById("scope-list");
+    scopeList.innerHTML = "";
+    data.scopeItems.forEach(function(item) {
+      var li = document.createElement("li");
+      li.className = "scope-item" + (item.affected ? " affected" : "");
+      var html = icons[item.type] || icons.check;
+      html += "<span>" + item.text;
+      if (item.tag) {
+        html += '<span class="scope-label-tag">' + item.tag + "</span>";
+      }
+      html += "</span>";
+      li.innerHTML = html;
+      scopeList.appendChild(li);
+    });
+
+    // Rebuild impact items
+    var impactContainer = document.getElementById("impact-items");
+    impactContainer.innerHTML = "";
+    data.impactItems.forEach(function(item) {
+      var div = document.createElement("div");
+      div.className = "impact-item";
+      div.innerHTML = '<span class="impact-label">' + item.label + '</span><span class="impact-text">' + item.text + "</span>";
+      impactContainer.appendChild(div);
+    });
+
+    // Update direct handle button state
+    var directBtn = document.querySelector('[data-prototype-id="btn-direct-handle"]');
+    if (data.directHandleDisabled) {
+      directBtn.setAttribute("disabled", "");
+    } else {
+      directBtn.removeAttribute("disabled");
+    }
+  }
+
+  // Read preview context if available
+  try {
+    var ctxEl = document.getElementById("dsh-design-preview-context");
+    if (ctxEl) {
+      var ctx = JSON.parse(ctxEl.textContent);
+      if (ctx && ctx.scenario) {
+        applyScenario(ctx.scenario);
+      }
+    }
+  } catch (e) {
+    // Fall back to default scenario already rendered in HTML
+  }
+})();
+</script>
+</body>
+</html>

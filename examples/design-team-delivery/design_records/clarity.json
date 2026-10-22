@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "projectId": "b9cf7ad9-a2e7-4f89-84d1-c3791bad0cb0",
+  "assessedCheckpoint": "18918ab962e648b28ef250ef851dd741088d92e8",
+  "report": {
+    "digest": "ff8a150feb4f020cd2cee1c173bd61a294b20d6ec223e1d3cfc8741f30066499",
+    "origin": "main-agent",
+    "kitContentHash": "31b933508db8c72877b1275f74f3a077a2c35829874d76c226cc0b9a524308f3",
+    "callId": "toolu_94bb3ec3afa041c485231a6e",
+    "kit": "web_app",
+    "version": "1.0",
+    "summary": "项目有5个已回答的smart_questions（非5轮）、1条流程P-001、2条业务规则、3个页面原型和1个场景体验。scope_owner更新后确认触发条件与流程和规则对齐；open-feedback跳转已修正指向feedback-item-2。没有quality_acceptance面板或验收草案，原型和场景演示不是测试结果。主要未决事项：退回补充后的重新提交路径无页面承载。",
+    "u": {
+      "score": 78,
+      "evidence": "5个问题明确了核心分工：设计师判断范围、负责人确认承诺、范围内调整免审批但影响节点时需确认。scope_owner的最新detail与P-001和within_scope一致。场景体验演示了FB-DEMO-002的完整决策路径。剩余缺口：客户在补充说明环节的交互入口未设计；多项目并行时的反馈归属未涉及；实际业务中的客户类型和项目规模变量未纳入。"
+    },
+    "s": {
+      "score": 82,
+      "evidence": "smart_questions scope_owner、P-001流程、BR-001/BR-002三处关于确认触发条件的表述已对齐。5个业务对象及4条关联关系构成数据骨架；3个页面通过source_element_id绑定跳转；open-feedback已修正指向feedback-item-2。剩余缺口：change与confirmation之间的状态流转未显式建模；页面间返回路径和取消操作未设计；feedback-list筛选逻辑仅在UI层呈现。"
+    },
+    "t": {
+      "score": 65,
+      "evidence": "当前没有quality_acceptance面板或验收标准记录。原型和场景体验是设计演示，不是可执行的业务测试或验收结果。可观察的检查点仅限于原型层面：反馈ID跨页一致、超出范围时直接处理按钮禁用、确认页必填字段高亮。缺少：端到端可执行验收场景、退回补充后重新提交的验证步骤、工期评估的实际触发条件。T分下调反映原型演示不等于验收证据这一事实。"
+    },
+    "nextGap": "退回补充后的重新提交路径缺少页面承载：负责人选择退回后，设计师在哪个界面完善判断、如何重新触发确认流程，当前三页原型未覆盖。这是流程P-001中明确存在但界面上缺失的回路。"
+  }
+}

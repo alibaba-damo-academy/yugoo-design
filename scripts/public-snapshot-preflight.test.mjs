@@ -369,8 +369,9 @@ test('generic filesystem and DSL regressions do not admit host-coupled or stale 
 })
 
 test('generic conditional slots and grounding checks exclude classified stale scaffolds but leave future gates under review', t => {
-  const reviewed = ['scripts/smoke-conditional-bundle-slots.mjs', 'scripts/smoke-kit-grounding-mapping.mjs']
-  const neighbors = ['scripts/smoke-kit-load.mjs', 'scripts/smoke-scaffold.mjs',
+  const reviewed = ['scripts/smoke-conditional-bundle-slots.mjs', 'scripts/smoke-kit-grounding-mapping.mjs',
+    'scripts/smoke-kit-load.mjs']
+  const neighbors = ['scripts/smoke-kit-load-future.mjs', 'scripts/smoke-scaffold.mjs',
     'scripts/smoke-future-grounding.mjs', 'scripts/smoke-future-bundle-slots.mjs']
   const f = fixture(t, Object.fromEntries([...reviewed, ...neighbors].map(path => [path, 'Synthetic source fixture\n'])))
   const actualPolicy = actualSelectionPolicy()
@@ -381,7 +382,7 @@ test('generic conditional slots and grounding checks exclude classified stale sc
     assert.equal(rules[0].kind, 'file')
     assert.equal(result.entries.find(entry => entry.path === path).action, 'include')
   }
-  assertNeighborActions(result, actualPolicy, neighbors, ['scripts/smoke-kit-load.mjs', 'scripts/smoke-scaffold.mjs'])
+  assertNeighborActions(result, actualPolicy, neighbors, ['scripts/smoke-scaffold.mjs'])
   assert.equal(result.classificationComplete, false)
   assert.equal(result.releaseApproved, false)
 })
@@ -666,8 +667,12 @@ test('task handoff guide and selected linked contracts do not approve future sib
   assert.equal(rules[0].kind, 'file')
   assert.equal(rules[0].action, 'include')
   const document = readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
-  assert.ok(document.includes('已完成的代表性新会话开发与反馈闭环及其范围见下文'))
-  assert.ok(document.includes('这些结果不代表所有宿主、Kit 或完整视觉验收'))
+  assert.ok(document.includes('[验证记录](#代表性验证记录)'))
+  const verification = document.split('## 代表性验证记录')[1]?.split('\n## ')[0]
+  assert.ok(verification, 'representative verification remains discoverable')
+  assert.ok(verification.includes('一个没有原设计对话的接收 Agent'))
+  assert.ok(verification.includes('同一候选的后继受控设计变更也已完成'))
+  assert.ok(verification.includes('不代表所有宿主、Kit 或完整视觉验收'))
   assert.ok(document.includes('验收必须使用同一已安装发行候选'))
   assert.ok(document.includes('不能套用 Web App 的文件名或字段'))
   assert.ok(document.includes('本指南不授予发布、部署'))

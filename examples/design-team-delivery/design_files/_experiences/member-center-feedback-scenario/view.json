@@ -1,0 +1,35 @@
+{
+  "id": "member-center-feedback-scenario",
+  "version": "16def26a-9354-4075-ad19-3ab6141ca6d1",
+  "title": "新增会员中心反馈处理场景",
+  "purpose": "演示同一条超出范围的反馈（FB-DEMO-002）如何从设计师判断流转到负责人决策，以及「确认安排」与「退回补充」两种选择的含义区别。",
+  "sourceVersions": {
+    "flow_design/flow_design.json": "9a85737a71ed5db7cd63f9f08f41059c26f930ecb51948a616da6c5dd5615d51",
+    "business_rules/business_rules.json": "28b93c9bb17dccc6838d9f83c9fe4236cb65fad05d8247fede20910ea728e90d",
+    "page_design/pages/feedback-detail.html": "3540b5b30c115d6075706ccaefeda513cd8732ec4c546af5735f43761edeeb18",
+    "page_design/pages/change-confirm.html": "2959a48435b77d1ff94e6e17551a221dd61342fb5cba54bb78e08b6a7353ef7b",
+    "design_style/tokens.css": "dc82120e37f017548dd3c7854f836df62e97461527ff9472acd74c9a54bc56ca"
+  },
+  "stylesheet": "design_style/tokens.css",
+  "sections": [
+    {
+      "id": "scenario-overview",
+      "title": "场景演示：从反馈到决策的完整路径",
+      "sources": [
+        "flow_design/flow_design.json",
+        "business_rules/business_rules.json",
+        "page_design/pages/feedback-detail.html",
+        "page_design/pages/change-confirm.html",
+        "design_style/tokens.css"
+      ],
+      "assumptions": [
+        "反馈 ID FB-DEMO-002 为合成示例，不代表实际业务数据",
+        "示例节点 A/B/C 为演示占位符，不构成实际交期承诺",
+        "待团队评估表示工期尚未确定，不是已确认的工作量估算",
+        "按钮点击仅演示流程走向，不触发真实系统操作",
+        "场景未涉及收费、合同条款或自动排期计算"
+      ],
+      "htmlFile": "_experiences/member-center-feedback-scenario/16def26a-9354-4075-ad19-3ab6141ca6d1/scenario-overview.html"
+    }
+  ]
+}

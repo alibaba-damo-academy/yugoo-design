@@ -1,0 +1,128 @@
+{
+  "schema_version": 7,
+  "stage": "mapped",
+  "common_spec": {
+    "layout": "独立页面布局，无全局侧边栏导航。每页自带顶部标题栏与面包屑，内容区居中最大宽度 1280px。",
+    "logo": {
+      "name": "项目交付工作台",
+      "description": "页面左上角显示字标「项目交付工作台」，蓝色主色。"
+    },
+    "navigation": [],
+    "shared_components": [
+      "页面标题栏",
+      "状态标签",
+      "反馈卡片",
+      "范围对照面板",
+      "影响分析区",
+      "操作按钮组",
+      "表单输入"
+    ],
+    "visual_pattern_refs": [
+      "feedback_card",
+      "scope_comparison",
+      "confirmation_action_bar",
+      "status_badge"
+    ],
+    "source": "design_style"
+  },
+  "pages": {
+    "feedback-list": {
+      "id": "feedback-list",
+      "name": "反馈与交付总览",
+      "purpose": "按项目查看待判断反馈、当前范围及交付节点。",
+      "page_type": "list",
+      "uses_shared_layout": false,
+      "audience": [
+        "设计师",
+        "项目负责人"
+      ],
+      "key_content": [
+        "客户反馈",
+        "关联交付物",
+        "当前处理状态"
+      ],
+      "key_actions": [
+        "记录反馈",
+        "查看影响"
+      ],
+      "artifact_file": "page_design/pages/feedback-list.html",
+      "function_refs": []
+    },
+    "feedback-detail": {
+      "id": "feedback-detail",
+      "name": "反馈详情与范围对照",
+      "purpose": "帮助人看清原范围与本次意见，判断是否需要重新确认安排。",
+      "page_type": "detail",
+      "uses_shared_layout": false,
+      "parent_id": "feedback-list",
+      "audience": [
+        "设计师",
+        "项目负责人"
+      ],
+      "key_content": [
+        "原始反馈",
+        "范围依据",
+        "交期影响",
+        "具体确认内容"
+      ],
+      "key_actions": [
+        "补充说明",
+        "交负责人确认"
+      ],
+      "artifact_file": "page_design/pages/feedback-detail.html",
+      "function_refs": []
+    },
+    "change-confirm": {
+      "id": "change-confirm",
+      "name": "变更确认",
+      "purpose": "由负责人明确本次纳入的范围与交期，保留确认记录。",
+      "page_type": "form",
+      "uses_shared_layout": false,
+      "parent_id": "feedback-detail",
+      "audience": [
+        "项目负责人"
+      ],
+      "key_content": [
+        "影响说明",
+        "确认范围",
+        "承诺节点"
+      ],
+      "key_actions": [
+        "确认安排",
+        "退回补充"
+      ],
+      "artifact_file": "page_design/pages/change-confirm.html",
+      "function_refs": []
+    }
+  },
+  "page_order": [
+    "feedback-list",
+    "feedback-detail",
+    "change-confirm"
+  ],
+  "entry_page_ids": [
+    "feedback-list"
+  ],
+  "connections": {
+    "open-feedback": {
+      "id": "open-feedback",
+      "source_page_id": "feedback-list",
+      "target_page_id": "feedback-detail",
+      "label": "查看反馈",
+      "source_element_id": "feedback-item-2",
+      "source_element_label": "新增会员中心反馈卡片"
+    },
+    "confirm-change": {
+      "id": "confirm-change",
+      "source_page_id": "feedback-detail",
+      "target_page_id": "change-confirm",
+      "label": "需要重新确认安排",
+      "source_element_id": "btn-confirm-change",
+      "source_element_label": "提交负责人确认"
+    }
+  },
+  "connection_order": [
+    "open-feedback",
+    "confirm-change"
+  ]
+}

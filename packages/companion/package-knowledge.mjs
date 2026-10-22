@@ -27,7 +27,7 @@ export async function packageKnowledge(target, { mode = 'directory', outputDirec
     assert.equal(target, undefined, 'Portable output uses only its explicit outputDirectory')
     assert.ok(typeof outputDirectory === 'string' && isAbsolute(outputDirectory), 'Portable output requires an absolute outputDirectory')
     assert.deepEqual(Object.keys(runtimeDependencies ?? {}).sort(), ['@ladybugdb/wasm-core', '@huggingface/transformers', 'onnxruntime-common', 'undici'].sort(), 'Explicit portable runtime dependency set required')
-    for (const [name, version] of Object.entries({ '@huggingface/transformers': '3.8.1', 'onnxruntime-common': '1.21.0', undici: '8.10.0' })) {
+    for (const [name, version] of Object.entries({ '@huggingface/transformers': '3.8.1', 'onnxruntime-common': '1.21.0', undici: '8.10.2' })) {
       assert.equal(runtimeDependencies[name], version, `Unsupported portable dependency version: ${name}`)
     }
     validateLadybugDependency(runtimeDependencies['@ladybugdb/wasm-core'])

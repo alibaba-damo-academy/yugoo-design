@@ -36,7 +36,8 @@
   "ladybugVersion": "0.21.1",
   "reviewedWorkspaceOverrides": {
     "dompurify": "3.4.16",
-    "rolldown": "1.2.4"
+    "rolldown": "1.2.4",
+    "undici": "8.10.2"
   },
   "ladybugSource": "registry",
   "ladybugIntegrity": "sha512-DEPxsl0f974p++WonWK868jXZraWCsRURG8LWNQyLiop0p8AYMx3QWRhF/bmv9MPEHWreplEuRgmzb306mDyaQ==",
