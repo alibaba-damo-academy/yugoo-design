@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "63027aef572447bf3a46f7bb9d13953cefe28e57",
+  "revision": "f7b01b1e05e12e3895023053ff3757ac577486df",
   "policySha256": "0536324583dfa50f478a2cf609307206d0d0aec86a1298d81e8731c5e6dbce50",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -4200,7 +4200,7 @@
       "mode": "100644"
     },
     "packages/knowledge-ladybug/src/semantic-index.ts": {
-      "sha256": "50ff8446aad460e4a136ba0e4d7020b1981b5fb19c93c08fd63e94ba1b142e70",
+      "sha256": "5b89a0e763f8a99c2885c1903f2d2d62f4b805ce1b8b6f4b1fc7ebec73ad72cc",
       "mode": "100644"
     },
     "packages/knowledge-ladybug/test/dsh-plugin.test.mjs": {

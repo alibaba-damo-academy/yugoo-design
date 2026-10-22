@@ -1,4 +1,4 @@
-import { fork, type ChildProcess } from 'node:child_process'
+import { fork, type ChildProcess, type ForkOptions, type SpawnOptions } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { resolve, isAbsolute } from 'node:path'
@@ -155,7 +155,11 @@ export class DesignSemanticIndex {
         const built = new URL('./embedding-worker.js', import.meta.url)
         // ONNX's native addon cannot reliably reload in successive worker threads.
         // A bounded child process also releases native memory when the job ends.
-        worker = fork(existsSync(built) ? built : new URL('./embedding-worker.mjs', import.meta.url), [], { windowsHide: true, execArgv: ['--max-old-space-size=512'], stdio: ['ignore', 'ignore', 'ignore', 'ipc'] })
+        // Node forwards fork options to spawn; @types/node omits windowsHide from ForkOptions.
+        const options: ForkOptions & Pick<SpawnOptions, 'windowsHide'> = {
+          windowsHide: true, execArgv: ['--max-old-space-size=512'], stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
+        }
+        worker = fork(existsSync(built) ? built : new URL('./embedding-worker.mjs', import.meta.url), [], options)
       }
       for (let start = 0; start < missing.length; start += 4) {
         signal.throwIfAborted()
