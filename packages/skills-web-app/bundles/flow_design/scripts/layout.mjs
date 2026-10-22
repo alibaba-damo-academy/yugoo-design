@@ -84,7 +84,7 @@ const DEFAULT_NODE_SIZE = { width: 100, height: 80 };
 // the document for provenance. Merely reading an older revision must NOT
 // migrate or rearrange it; only explicit authoring/re-layout runs this script.
 const AUTOAGENT_LAYOUT_NAMESPACE = 'https://autoagent.ai/bpmn/layout';
-const AUTOAGENT_LAYOUT_REVISION = '12';
+const AUTOAGENT_LAYOUT_REVISION = '13';
 
 // Search uses a deterministic expansion budget, not a wall-clock deadline.
 // Measure end-to-end runtime separately; grid building also consumes time.

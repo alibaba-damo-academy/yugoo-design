@@ -6,7 +6,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
-import {build} from 'tsdown';
+import {buildFlowScripts} from '../../../scripts/build-companion-npm-candidate.mjs';
 
 const here=fileURLToPath(new URL('.',import.meta.url));
 const entry=join(here,'../bundles/flow_design/scripts/layout.mjs');
@@ -16,18 +16,15 @@ const root=await mkdtemp(join(tmpdir(),'flow-layout-production-'));
 const run=(script,input,overrides={})=>{
   const result=spawnSync(process.execPath,[script],{input,encoding:'utf8',cwd:root,env:{...env,...overrides},timeout:60000,maxBuffer:16000000});
   assert.equal(result.status,0,result.stderr);
-  assert.match(result.stdout,/layoutRevision="12"/);
+  assert.match(result.stdout,/layoutRevision="13"/);
   const metrics=JSON.parse(result.stderr.match(/reading-metrics (\{[^\n]+\})/)[1]);
   assert.equal(metrics.preference,'balanced');assert.ok(metrics.channels);
   return result.stdout;
 };
 try {
-  await build({config:false,entry:{layout:entry},outDir:root,format:'esm',platform:'node',target:'node22',tsconfig:false,dts:false,clean:false,
-    deps:{alwaysBundle:[/.*/],onlyBundle:false},
-    plugins:[{name:'no-unbundled-layout-imports',generateBundle(_options,bundle){
-      for(const output of Object.values(bundle))if(output.type==='chunk')for(const name of [...output.imports,...output.dynamicImports])
-        assert.ok(name.startsWith('node:')||bundle[name],`Unbundled dependency: ${name}`);
-    }}]});
+  // Exercise the same standalone dependency handling used by Companion rather
+  // than maintaining a second bundler configuration for this parity check.
+  await buildFlowScripts(join(here,'../bundles/flow_design/scripts'),root);
   for(const name of ['P-001.bpmn','P-004.bpmn','P-009.bpmn']) {
     const input=await readFile(new URL(`../../../examples/research-platform-comparison/good/design_files/flow_design/${name}`,import.meta.url),'utf8');
     const production=run(entry,input);

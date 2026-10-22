@@ -17,6 +17,8 @@ Windows 中也可用文件资源管理器复制整个 `examples/design-team-deli
 
 ## 在 Yugoo Design 中继续
 
+本示例的流程图使用布局修订 13，需要包含该布局更新的 Web App Kit。如果迁移校验提示只支持 `layoutRevision=9, 10, 11 or 12`，请先更新到支持修订 13 的插件版本；开发者也可按[开发指南](https://github.com/alibaba-damo-academy/yugoo-design/blob/main/docs/wiki/development.md)使用当前源码。不要手动修改 BPMN 的版本标记来跳过校验。
+
 先按[安装指南](https://github.com/alibaba-damo-academy/yugoo-design/blob/main/docs/wiki/getting-started.md)启用插件和 Web App Kit，再把副本的绝对路径交给宿主。DSH 可以使用：
 
 ```text

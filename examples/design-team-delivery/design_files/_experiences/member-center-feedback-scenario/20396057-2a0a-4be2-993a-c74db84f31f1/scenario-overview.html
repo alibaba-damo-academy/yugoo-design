@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--ds-body-font);
+  font-size: var(--ds-base-font-size);
+  line-height: var(--ds-line-height);
+  color: var(--ds-text);
+  background: var(--ds-background);
+}
+
+.scene-container {
+  max-width: var(--ds-content-width);
+  margin: 0 auto;
+  padding: var(--ds-space-6);
+}
+
+/* Context block */
+.context-block {
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  padding: var(--ds-space-5);
+  margin-bottom: var(--ds-space-6);
+  border-left: 4px solid var(--ds-primary);
+}
+.context-title {
+  font-size: var(--ds-font-size-lg);
+  font-weight: var(--ds-heading-weight);
+  color: var(--ds-text);
+  margin-bottom: var(--ds-space-2);
+}
+.context-desc {
+  font-size: var(--ds-base-font-size);
+  color: var(--ds-text-secondary);
+  line-height: var(--ds-line-height-relaxed);
+}
+.context-tags {
+  display: flex;
+  gap: var(--ds-space-2);
+  margin-top: var(--ds-space-3);
+  flex-wrap: wrap;
+}
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--ds-space-2);
+  border-radius: var(--ds-radius-full);
+  font-size: var(--ds-font-size-xs);
+  font-weight: var(--ds-heading-weight);
+}
+.tag-flow { background: var(--ds-primary-light); color: var(--ds-primary); }
+.tag-rule { background: #FEF3C7; color: var(--ds-warning); }
+.tag-demo { background: #F1F5F9; color: var(--ds-secondary); }
+
+/* Section */
+.section {
+  margin-bottom: var(--ds-space-7);
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  margin-bottom: var(--ds-space-4);
+}
+.step-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--ds-radius-full);
+  background: var(--ds-primary);
+  color: white;
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-heading-weight);
+  flex-shrink: 0;
+}
+.section-title {
+  font-size: var(--ds-font-size-xl);
+  font-weight: var(--ds-heading-weight);
+  color: var(--ds-text);
+}
+
+/* Lead-in text */
+.lead-in {
+  font-size: var(--ds-base-font-size);
+  color: var(--ds-text-secondary);
+  margin-bottom: var(--ds-space-4);
+  line-height: var(--ds-line-height-relaxed);
+}
+
+/* Demo region */
+.demo-region {
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  overflow: hidden;
+  box-shadow: var(--ds-shadow);
+}
+.demo-header {
+  padding: var(--ds-space-3) var(--ds-space-4);
+  background: var(--ds-background);
+  border-bottom: 1px solid var(--ds-border);
+  font-size: var(--ds-font-size-sm);
+  color: var(--ds-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+}
+.demo-header svg { width: var(--ds-icon-size-sm); height: var(--ds-icon-size-sm); }
+.demo-body { padding: var(--ds-space-5); }
+
+/* Comparison grid */
+.comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--ds-space-4);
+}
+.panel {
+  background: var(--ds-background);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  overflow: hidden;
+}
+.panel-header {
+  padding: var(--ds-space-3) var(--ds-space-4);
+  border-bottom: 1px solid var(--ds-border);
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-heading-weight);
+  color: var(--ds-text-secondary);
+  background: var(--ds-surface);
+}
+.panel-body { padding: var(--ds-space-4); }
+
+/* Feedback quote */
+.feedback-quote {
+  font-size: var(--ds-base-font-size);
+  line-height: var(--ds-line-height-relaxed);
+  color: var(--ds-text);
+  padding: var(--ds-space-3) var(--ds-space-4);
+  background: var(--ds-primary-light);
+  border-radius: var(--ds-radius);
+  border-left: 3px solid var(--ds-primary);
+}
+
+/* Scope list */
+.scope-list {
+  list-style: none;
+  padding: 0;
+}
+.scope-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-2) 0;
+  font-size: var(--ds-font-size-sm);
+  color: var(--ds-text);
+}
+.scope-check {
+  color: var(--ds-success);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Action buttons */
+.action-row {
+  display: flex;
+  gap: var(--ds-space-3);
+  margin-top: var(--ds-space-4);
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-2) var(--ds-space-4);
+  border-radius: var(--ds-radius);
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-heading-weight);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+.btn-primary {
+  background: var(--ds-primary);
+  color: white;
+}
+.btn-primary:hover { background: var(--ds-primary-dark); }
+.btn-secondary {
+  background: white;
+  color: var(--ds-text);
+  border-color: var(--ds-border);
+}
+.btn-secondary:hover { background: var(--ds-background); }
+
+/* Caption */
+.caption {
+  margin-top: var(--ds-space-3);
+  padding: var(--ds-space-3) var(--ds-space-4);
+  background: var(--ds-background);
+  border-radius: var(--ds-radius);
+  font-size: var(--ds-font-size-sm);
+  color: var(--ds-text-secondary);
+  line-height: var(--ds-line-height-relaxed);
+}
+
+/* Assumptions */
+.assumptions {
+  margin-top: var(--ds-space-8);
+  padding: var(--ds-space-4) var(--ds-space-5);
+  background: #FFF7ED;
+  border: 1px solid #FED7AA;
+  border-radius: var(--ds-radius);
+}
+.assumptions-title {
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-heading-weight);
+  color: var(--ds-warning);
+  margin-bottom: var(--ds-space-2);
+}
+.assumptions-list {
+  list-style: disc;
+  padding-left: var(--ds-space-5);
+  font-size: var(--ds-font-size-xs);
+  color: var(--ds-text-secondary);
+  line-height: var(--ds-line-height-relaxed);
+}
+.assumptions-list li { margin-bottom: var(--ds-space-1); }
+
+@media (max-width: 700px) {
+  .comparison-grid { grid-template-columns: 1fr; }
+  .action-row { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+<div class="scene-container">
+
+  <!-- Context -->
+  <div class="context-block">
+    <div class="context-title">场景背景</div>
+    <div class="context-desc">
+      客户在会员中心页面提交了一条关于「订单列表」的修改意见（FB-DEMO-002），要求增加按日期范围筛选的功能。
+      这条反馈超出了原定交付范围（原范围仅包含基础列表展示），需要设计师判断影响后由负责人决定是否纳入。
+    </div>
+    <div class="context-tags">
+      <span class="tag tag-flow">流程 P-001</span>
+      <span class="tag tag-rule">BR-002 新增范围</span>
+      <span class="tag tag-demo">合成示例数据</span>
+    </div>
+  </div>
+
+  <!-- Step 1: Designer judges -->
+  <div class="section">
+    <div class="section-header">
+      <div class="step-number">1</div>
+      <div class="section-title">设计师查看反馈并对照原范围</div>
+    </div>
+    <div class="lead-in">
+      设计师在反馈详情页看到客户原始意见，同时对照该项目已约定的交付物清单。系统保留了反馈来源和关联的交付物，便于判断是否超出范围。
+    </div>
+    <div class="demo-region">
+      <div class="demo-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+        feedback-detail.html — 反馈详情与范围对照
+      </div>
+      <div class="demo-body">
+        <div class="feedback-quote">
+          「订单列表能不能加个按日期范围筛选？最近三个月的订单太多了，翻起来很麻烦。」
+        </div>
+        <div style="margin-top: var(--ds-space-4);">
+          <div style="font-size: var(--ds-font-size-sm); font-weight: var(--ds-heading-weight); color: var(--ds-text-secondary); margin-bottom: var(--ds-space-2);">原定交付范围</div>
+          <ul class="scope-list">
+            <li class="scope-item"><span class="scope-check">✓</span> 订单列表页（基础展示、分页、状态标签）</li>
+            <li class="scope-item"><span class="scope-check">✓</span> 订单详情页（含物流追踪入口）</li>
+            <li class="scope-item"><span class="scope-check">✓</span> 订单导出功能（CSV 格式）</li>
+          </ul>
+        </div>
+        <div class="caption">
+          设计师判断：「按日期范围筛选」不在上述范围内，属于新增功能需求。根据 BR-002，需要负责人确认范围和交期后才能执行。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Two paths -->
+  <div class="section">
+    <div class="section-header">
+      <div class="step-number">2</div>
+      <div class="section-title">两条处理路径：确认安排 vs 退回补充</div>
+    </div>
+    <div class="lead-in">
+      设计师完成判断后，系统提供两个操作入口。选择不同路径会触发不同的后续流程和记录方式。
+    </div>
+    <div class="demo-region">
+      <div class="demo-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="M2 12h20"/></svg>
+        分支决策点
+      </div>
+      <div class="demo-body">
+        <div class="comparison-grid">
+          <!-- Path A: Confirm -->
+          <div class="panel">
+            <div class="panel-header">路径 A：确认安排</div>
+            <div class="panel-body">
+              <div style="font-size: var(--ds-font-size-sm); color: var(--ds-text); margin-bottom: var(--ds-space-3);">
+                适用情况：影响说明充分，可以明确新增范围和交期安排。
+              </div>
+              <div class="action-row">
+                <button class="btn btn-primary">确认安排</button>
+              </div>
+              <div class="caption" style="margin-top: var(--ds-space-3);">
+                → 跳转至 change-confirm.html<br>
+                → 负责人填写具体范围和节点<br>
+                → 产生 confirmation 记录<br>
+                → 通知相关参与者
+              </div>
+            </div>
+          </div>
+          <!-- Path B: Return -->
+          <div class="panel">
+            <div class="panel-header">路径 B：退回补充</div>
+            <div class="panel-body">
+              <div style="font-size: var(--ds-font-size-sm); color: var(--ds-text); margin-bottom: var(--ds-space-3);">
+                适用情况：影响说明模糊、缺少具体工期估算、或范围边界不清。
+              </div>
+              <div class="action-row">
+                <button class="btn btn-secondary">退回补充说明</button>
+              </div>
+              <div class="caption" style="margin-top: var(--ds-space-3);">
+                → 不产生承诺记录<br>
+                → 通知客户补充信息<br>
+                → 反馈保持待判断状态<br>
+                → 等待补充后重新进入判断
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">
+      <strong>关键区别：</strong>确认是作出承诺（产生 confirmation 记录），退回是要求更多信息（不产生承诺）。
+      流程 P-001 的异常处理明确规定：退回是因为"影响说明不足以作出具体承诺"，而非拒绝变更本身。
+      这保证了每次确认都有明确的范围和节点，避免模糊的"同意"。
+    </div>
+  </div>
+
+  <!-- Assumptions -->
+  <div class="assumptions">
+    <div class="assumptions-title">演示假设与边界</div>
+    <ul class="assumptions-list">
+      <li>本场景使用的反馈 ID（FB-DEMO-002）、客户名称、反馈内容均为合成示例，不代表实际业务数据。</li>
+      <li>"示例节点 A/B/C"为演示用占位符，不构成任何实际交期承诺；真实项目中需替换为具体里程碑。</li>
+      <li>"待团队评估"表示工期尚未确定，不是已确认的工作量估算。</li>
+      <li>按钮点击仅用于演示流程走向，不会触发真实的系统操作或数据写入。</li>
+      <li>场景中未涉及收费、合同条款或自动排期计算，这些不在当前设计范围内。</li>
+      <li>流程依据：flow_design.json (P-001)、business_rules.json (BR-001/BR-002)。</li>
+      <li>页面依据：feedback-detail.html、change-confirm.html、tokens.css（均已修订至统一反馈 ID）。</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>

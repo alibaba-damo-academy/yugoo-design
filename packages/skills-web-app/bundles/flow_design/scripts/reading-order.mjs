@@ -6,6 +6,7 @@ import { boxOverlap } from './router.mjs';
 
 const center = (node, axis) => node.bounds[axis] + node.bounds[axis === 'x' ? 'width' : 'height'] / 2;
 const median = values => [...values].sort((a,b)=>a-b)[Math.floor(values.length/2)];
+const ALIGNMENT_EPS = .5;
 const gap = (a,b,axis) => Math.max(a.bounds[axis],b.bounds[axis])
   - Math.min(a.bounds[axis]+a.bounds[axis==='x'?'width':'height'],b.bounds[axis]+b.bounds[axis==='x'?'width':'height']);
 
@@ -40,7 +41,10 @@ export function discoverReadingGroups(state) {
         && (shared(outgoing,a,b)||shared(incoming,a,b));
       return between<=480 && distance<=(siblings?144:40);
     }
-    return between<=180 && distance<=40;
+    // A lane may contain several parallel tracks. Preserve a true column's
+    // intent across its whole spine, not only the nearby pairs; do not join
+    // coincident coordinates from different lanes or merge distant tracks.
+    return a.laneId===b.laneId && (distance<=ALIGNMENT_EPS || between<=180 && distance<=40);
   };
   const groups=[];
   for (const axis of ['x','y']) {
@@ -70,6 +74,20 @@ export function createReadingObjective(seed, options = {}) {
   const seedCost=options.seedCost ?? diagramCost({nodes:seed.nodes,lanes:seed.lanes,
     edges:seed.edges.map(e=>({...e,waypoints:seed.routes.get(e.id)||[]}))});
   const groups=discoverReadingGroups(seed);
+  const spreads = state => {
+    const nodes=new Map(state.nodes.map(n=>[n.id,n]));
+    return groups.map(group=>{
+      const values=group.ids.map(id=>center(nodes.get(id),group.axis));
+      return Math.max(...values)-Math.min(...values);
+    });
+  };
+  const seedSpreads=spreads(seed);
+  // Once a frozen row/column is aligned, neither another group's gain nor a
+  // routing improvement may split it. Near seed groups are only heuristic
+  // candidates: until aligned, keep the original preference/tolerance/debt
+  // trade-offs rather than imposing monotonic spread on every loose group.
+  const preservesAlignment = (state,previous) => spreads(state).every((value,index)=>
+    Number.isFinite(value) && (previous[index]>ALIGNMENT_EPS || value<=ALIGNMENT_EPS + 1e-9));
   const original=new Map(seed.nodes.map(n=>[n.id,n]));
   const laneById=new Map(seed.lanes.map(l=>[l.id,l]));
   const error = state => {
@@ -92,6 +110,7 @@ export function createReadingObjective(seed, options = {}) {
   const routing = cost => normalized(cost,{crossing:4,collinear:2,parallel:1,laneExtra:1,length:.5,bend:1,extraBend:1,exterior:2});
   const score = (state,cost) => reading(state,cost)+policy.routeWeight*routing(cost);
   const legalGeometry = state => {
+    if(!preservesAlignment(state,seedSpreads))return false;
     const nodes=new Map(state.nodes.map(n=>[n.id,n]));
     for(const n of state.nodes) {
       const b=n.bounds,lane=laneById.get(n.laneId);
@@ -121,6 +140,7 @@ export function createReadingObjective(seed, options = {}) {
   return {groups,error,alignment,reading,routing,score,legalGeometry,preference,policy,allowsCost,
     better(next,nextCost,prev,prevCost) {
       if(!legalGeometry(next)||nextCost.counts.nodeOverlap>0)return false;
+      if(!preservesAlignment(next,spreads(prev)))return false;
       const a=alignment(next),b=alignment(prev),tolerance=policy.tolerancePx;
       // Bound debt against the INITIAL layout, not the last accepted move:
       // otherwise many small concessions accumulate into a large regression.

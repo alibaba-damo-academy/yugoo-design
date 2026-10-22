@@ -15,7 +15,7 @@ function xml(nodes,edges,lanes=true,participant=false){
 }
 async function verify(name,input){
   const output=run(input),moddle=new BpmnModdle();
-  assert.match(output,/layoutRevision="12"/);
+  assert.match(output,/layoutRevision="13"/);
   const {rootElement:r,warnings}=await moddle.fromXML(output);assert.equal(warnings.length,0);
   const shapes=r.diagrams[0].plane.planeElement.filter(e=>e.$type==='bpmndi:BPMNShape'&&!['bpmn:Lane','bpmn:Participant'].includes(e.bpmnElement.$type));
   const edges=r.diagrams[0].plane.planeElement.filter(e=>e.$type==='bpmndi:BPMNEdge');

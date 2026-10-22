@@ -12,28 +12,35 @@
     },
     {
       "path": "docs/images/readme-flow.png",
-      "oid": "f6ffb2be94d1726aa63dbc0238c35900abb1fc55",
-      "bytes": 281553,
+      "oid": "899b5377443b0ec09b962b36b554be3d626e60cc",
+      "bytes": 278063,
       "findings": [
         "binary_manual_review"
       ],
-      "reason": "Actual full DeepSeek Harness workspace capture of the synthetic design-team-delivery project and the complete current P-001 vertical four-lane BPMN, including both return paths and start/end. Native conversation and BPMN.io attribution retained; no fabricated interface, credentials or private customer data. Framing change only, not a new auto-layout implementation or installed-package acceptance."
+      "reason": "Directly reviewed actual DSH workspace capture of the synthetic design-team-delivery project after native publication of layout revision 13. Shows the complete P-001 four-lane process, aligned nodes, both return paths and genuine business discussion; semantics are unchanged. BPMN.io attribution retained. Remaining long aspect ratio and external labels are visible, not retouched. No fabricated interface, credentials, private customer data or installed-package acceptance claim."
     },
     {
       "path": "docs/images/readme-flow.gif",
-      "oid": "49a995a8ed49021b601619686ce6a7eec4d28509",
-      "bytes": 1677571,
+      "oid": "725347b5b8d98bd786e8971faf31e400618f16eb",
+      "bytes": 1087471,
       "findings": ["large_file_manual_review"],
-      "reason": "Directly reviewed actual DSH workspace screenshots and decoded GIF keyframes: same P-001 full vertical process, scope/timing decision close-up, then lead return-for-information loop and full context again. Crops only enlarge captured pixels; no BPMN data or layout edits. Full frames retain conversation and BPMN.io attribution. No credentials or private customer data; no installed-host or layout-algorithm improvement claim."
+      "reason": "Directly reviewed actual DSH screenshots and decoded GIF keyframes of the same natively published revision-13 P-001: full process, native branch zoom, captured-pixel close-up of decisions and return path, then full context again. Business conversation and BPMN.io attribution remain in full frames. No image reconstruction or manual DI editing; remaining label placement is visible. No credentials, private customer data or installed-package acceptance claim."
     },
     {
       "path": "docs/images/readme-design-exploration.gif",
-      "oid": "348c6863bff48bf20d98b3f05ad54acafbfbc667",
-      "bytes": 4645471,
+      "oid": "c97377a255fa8c88a75dc7adcfc9d687efec019e",
+      "bytes": 577575,
       "findings": [
-        "large_file_manual_review"
+        "binary_manual_review"
       ],
-      "reason": "Directly reviewed actual DSH screenshots and decoded GIF keyframes from one synthetic design-team-delivery project: page map, UI detail/confirmation, native Research R-001 conclusion, guided Scene overview/decision and current native PRD. Full workspace frames preserve conversation and source context; crops enlarge those same pixels. Research distinguishes references from product decisions; Scene is not business execution and PRD retains unresolved decisions. No fabricated interface, credentials or private customer data."
+      "reason": "Directly reviewed all three decoded frames from one synthetic design-team-delivery project: Research, UI design and Page map. Only full actual DSH workspace captures are used, with the same conversation and U78/S84/T65 context; no camera crops, Scene or PRD mixed into this animation. Research distinguishes references from product decisions. No fabricated interface, credentials or private customer data."
+    },
+    {
+      "path": "docs/images/readme-scene.png",
+      "oid": "4181f34cb6bef44118c2521fd11982f266c0553f",
+      "bytes": 402886,
+      "findings": ["binary_manual_review"],
+      "reason": "Directly reviewed full actual DSH workspace capture of the synthetic project's current Scene experience after exact restoration and native publication of the original scenario HTML. Shows the client's added-page request, original scope and impact interpretation with business conversation intact. Current source state and unconfirmed-demo indication are genuine; no business execution or acceptance claim. No credentials or private customer data."
     },
     {
       "path": "docs/images/readme-design-advice.png",
@@ -62,12 +69,12 @@
     },
     {
       "path": "docs/images/readme-prd.png",
-      "oid": "f570a90e501026db8c2e694b496a66de5e554149",
-      "bytes": 311426,
+      "oid": "c27bd350dd4638bfad67344588ae25128a58f66f",
+      "bytes": 346308,
       "findings": [
         "binary_manual_review"
       ],
-      "reason": "Directly reviewed actual full DSH workspace screenshot of the current native r43 PRD for the synthetic design-team-delivery project. Retains conversation, eleven-section navigation, source controls and explicit unresolved draft material. The corresponding committed HTML contains the current vertical P-001 and four materialized PNGs; this capture shows the document introduction, not product acceptance. No credentials or private customer data."
+      "reason": "Directly reviewed actual full DSH workspace screenshot of the native PRD after refreshing its visual regions from the current design sources. Retains business conversation, eleven-section navigation, source controls and unresolved draft material. The committed HTML preserves non-visual prose and four PNGs and uses the same revision-13 P-001 as the Flow screenshots; this capture shows the introduction, not product acceptance. No credentials or private customer data."
     },
     {
       "path": "docs/images/readme-studio.gif",
@@ -190,6 +197,42 @@
       "path": "examples/design-team-delivery/README.md",
       "action": "include",
       "reason": "Portable copy and migrate instructions for the complete synthetic design-team-delivery example; official public documentation links and explicit historical-record limitations."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/_experiences/member-center-feedback-scenario/20396057-2a0a-4be2-993a-c74db84f31f1/draft.json",
+      "action": "include",
+      "reason": "Retained historical synthetic Scene draft from an unsuccessful refresh; not the current scenario or an accepted design decision. Preserved with the complete example history."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/_experiences/member-center-feedback-scenario/20396057-2a0a-4be2-993a-c74db84f31f1/resources/design_style/tokens.css",
+      "action": "include",
+      "reason": "Retained public Web App style resource used by a historical synthetic Scene draft; no private Kit or host configuration."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/_experiences/member-center-feedback-scenario/20396057-2a0a-4be2-993a-c74db84f31f1/scenario-overview.html",
+      "action": "include",
+      "reason": "Historical synthetic Scene output from an unsuccessful refresh, retained as project history only. The current view points to the restored original scenario; no private data or credentials."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/_experiences/member-center-feedback-scenario/89aefc8b-ef5a-4e65-9f3e-849b14a3f319/draft.json",
+      "action": "include",
+      "reason": "Current synthetic Scene draft after normal native publication; references the existing design sources and keeps assumptions explicit."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/_experiences/member-center-feedback-scenario/89aefc8b-ef5a-4e65-9f3e-849b14a3f319/resources/design_style/tokens.css",
+      "action": "include",
+      "reason": "Public Web App style resource accompanying the restored current synthetic Scene; original notices remain with the complete example."
+    },
+    {
+      "kind": "file",
+      "path": "examples/design-team-delivery/design_files/_experiences/member-center-feedback-scenario/89aefc8b-ef5a-4e65-9f3e-849b14a3f319/scenario-overview.html",
+      "action": "include",
+      "reason": "Current synthetic Scene HTML exactly restores the preserved original bytes; demonstrates added-scope feedback without a new business decision or credentials."
     },
     {
       "kind": "file",
@@ -460,7 +503,13 @@
       "kind": "file",
       "path": "docs/images/readme-design-exploration.gif",
       "action": "include",
-      "reason": "Reviewed same-project real-workspace sequence: page map, UI design, Research conclusion, guided Scene experience and current PRD. Full-context frames and readable camera crops; no fabricated UI or product acceptance claim."
+      "reason": "Reviewed same-project real-workspace sequence of Research, UI design and Page map only. Full context preserved; Scene and PRD have their own independent stills. No fabricated UI or product acceptance claim."
+    },
+    {
+      "kind": "file",
+      "path": "docs/images/readme-scene.png",
+      "action": "include",
+      "reason": "Reviewed full native Scene experience screenshot from the synthetic example project, with conversation and honest source-freshness indication retained; independent from the three-Panel GIF and PRD still."
     },
     {
       "kind": "file",
@@ -490,7 +539,7 @@
       "kind": "file",
       "path": "docs/images/readme-flow.gif",
       "action": "include",
-      "reason": "Reviewed complete P-001 plus actual scope/timing and return-for-information close-ups, restoring full context at the end. No diagram reconstruction, private data or new layout-algorithm claim."
+      "reason": "Reviewed the natively published revision-13 P-001 and actual scope/timing and return-for-information close-up, restoring full context at the end. No image reconstruction, manual DI editing, private data or installed-package acceptance claim."
     },
     {
       "kind": "file",

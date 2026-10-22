@@ -37,14 +37,20 @@ export function toCostModel(state) {
 }
 
 /**
- * Route coordinate descent at fixed geometry: reroute one edge at a time and
- * keep the candidate only when the FULL diagram cost strictly decreases.
+ * Route coordinate descent at fixed geometry: reroute one edge at a time,
+ * With a reading objective, try bounded shared-end pairs when single-edge
+ * descent stalls at a crossing instead of breaking aligned geometry.
+ * Keep a candidate only when the FULL diagram objective strictly improves.
  * The legacy inner loop accepted by a local quality proxy; the global cost is
  * the same arbiter here as for every layout move.
  */
 export function routeDescent(state, grid, passes = 2, objective) {
   let routes = new Map(state.routes);
   let cost = diagramCost(toCostModel({ ...state, routes }));
+  const routeModel = { nodes: state.nodes.map((n) => ({ id: n.id, bounds: n.bounds })), edges: state.edges };
+  const better = (trial, trialCost) => objective
+    ? objective.better({...state,routes:trial},trialCost,{...state,routes},cost)
+    : trialCost.total < cost.total - 0.01;
   for (let pass = 0; pass < passes; pass += 1) {
     let improved = false;
     const ids = state.edges
@@ -54,7 +60,7 @@ export function routeDescent(state, grid, passes = 2, objective) {
     for (const id of ids) {
       const edge = state.edges.find((e) => e.id === id);
       const candidate = routeEdge(
-        { nodes: state.nodes.map((n) => ({ id: n.id, bounds: n.bounds })), edges: state.edges },
+        routeModel,
         grid,
         edge,
         routes,
@@ -63,11 +69,41 @@ export function routeDescent(state, grid, passes = 2, objective) {
       const trial = new Map(routes);
       trial.set(id, candidate);
       const trialCost = diagramCost(toCostModel({ ...state, routes: trial }));
-      if (objective ? objective.better({...state,routes:trial},trialCost,{...state,routes},cost)
-        : trialCost.total < cost.total - 0.01) {
+      if (better(trial, trialCost)) {
         routes = trial;
         cost = trialCost;
         improved = true;
+      }
+    }
+    if (objective && !improved && cost.counts.crossing > 0 && grid.budget.remaining > 0) {
+      // At a fork/join the routes compete for the same docks. Either edge
+      // alone can be locally optimal while swapping both removes a crossing.
+      // Release both old routes and try both deterministic orders atomically:
+      // no intermediate regression is committed and no aligned node moves.
+      // Limit candidates as well as A* expansions; do not turn descent into
+      // an unbounded all-edge permutation search.
+      const edges = [...state.edges].sort((a,b)=>a.id.localeCompare(b.id));
+      let pairs = 0;
+      pairsLoop: for (let i=0;i<edges.length;i++) for (let j=i+1;j<edges.length;j++) {
+        const a=edges[i],b=edges[j];
+        if(a.sourceId!==b.sourceId && a.targetId!==b.targetId)continue;
+        if(!routes.has(a.id)||!routes.has(b.id))continue;
+        const pairCost=diagramCost({nodes:[],lanes:[],edges:[a,b].map(e=>({...e,waypoints:routes.get(e.id)}))});
+        if(pairCost.counts.crossing===0)continue;
+        if(pairs++>=8 || grid.budget.remaining<=0)break pairsLoop;
+        for(const order of [[a,b],[b,a]]) {
+          const trial=new Map(routes);
+          trial.delete(a.id);trial.delete(b.id);
+          for(const edge of order) {
+            const fresh=routeEdge(routeModel,grid,edge,trial);
+            if(!fresh)break;
+            trial.set(edge.id,fresh);
+          }
+          if(!trial.has(a.id)||!trial.has(b.id))continue;
+          const trialCost=diagramCost(toCostModel({...state,routes:trial}));
+          if(trialCost.counts.nodeOverlap>0 || !better(trial,trialCost))continue;
+          routes=trial;cost=trialCost;improved=true;
+        }
       }
     }
     if (!improved) break;

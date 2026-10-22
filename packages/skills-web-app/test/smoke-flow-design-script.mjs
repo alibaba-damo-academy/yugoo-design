@@ -116,7 +116,7 @@ assert.deepEqual(JSON.parse(fileCandidate.stdout), { valid: true, diagnostics: [
 const laidOut = run(layoutScript, [], xml)
 assert.equal(laidOut.status, 0, laidOut.stderr)
 assert.match(laidOut.stdout, /<bpmndi:BPMNDiagram/)
-assert.match(laidOut.stdout, /layoutRevision="12"/)
+assert.match(laidOut.stdout, /layoutRevision="13"/)
 assert.match(laidOut.stderr, /"preference":"balanced"/)
 assert.match(laidOut.stderr, /"channels":/)
 
@@ -130,8 +130,8 @@ if (process.argv.includes('--dependency-layout-only')) {
   process.exit(0)
 }
 // Already-saved supported diagrams remain valid without rewriting coordinates.
-for (const revision of ['9','10','11']) {
-  const previous=laidOut.stdout.replace('layoutRevision="12"',`layoutRevision="${revision}"`)
+for (const revision of ['9','10','11','12']) {
+  const previous=laidOut.stdout.replace('layoutRevision="13"',`layoutRevision="${revision}"`)
   const result=run(validateScript,['validate-final-bpmn-file'],`${JSON.stringify({process_id:'P-001',process:processRecord})}\n${previous}`)
   assert.equal(result.status,0,result.stdout||result.stderr)
 }

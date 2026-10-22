@@ -9,7 +9,7 @@
 [![Qoder CLI](https://img.shields.io/badge/Qoder_CLI-6AD86C)](docs/wiki/hosts.md#qoder-cli)
 [![千问办公 QwenWork](https://img.shields.io/badge/%E5%8D%83%E9%97%AE%E5%8A%9E%E5%85%AC_QwenWork-39D377)](docs/wiki/hosts.md#千问办公-qwenwork)
 [![WorkBuddy](https://img.shields.io/badge/WorkBuddy-00C29A)](docs/wiki/hosts.md#workbuddy)
-[![Companion release](https://img.shields.io/badge/Companion_release-2088FF?logo=githubactions&logoColor=white)](https://github.com/alibaba-damo-academy/yugoo-design/actions/workflows/publish-companion.yml)
+[![npm 发布](https://img.shields.io/badge/npm_%E5%8F%91%E5%B8%83-2088FF?logo=githubactions&logoColor=white)](https://github.com/alibaba-damo-academy/yugoo-design/actions/workflows/publish-companion.yml)
 
 **让构思看得见，让细节有把握。**
 
@@ -98,7 +98,9 @@ AI 结合你的目标、已有设计和反馈，判断当前还缺什么：是�
 
 沿用快速开始中的六人工作室：把客户修改请求的处理约定，转成项目交付平台的流程、规则、权限与页面。在 DeepSeek Harness 中，你可以在左侧与 AI 讨论，在右侧对照设计面板修改；定制套件时再打开 Studio。
 
-示例使用虚构的业务数据。你可以从[快速开始](#快速开始)的目标重新构思，也可以复制[完整示例项目](examples/design-team-delivery/README.md)，按说明迁移后，对照[协作教程](docs/wiki/web-app-demo.md)继续修改。下面展示一次讨论如何推进，不要求每次都按相同顺序使用所有面板。
+示例使用虚构的业务数据。你可以从[快速开始](#快速开始)的目标重新构思，也可以复制[完整示例项目](examples/design-team-delivery/README.md)，按说明迁移后，对照[协作教程](docs/wiki/web-app-demo.md)继续修改。
+
+这里展示的是基于 **Web App Kit** 的一种使用流程，不是框架唯一的用法，也不要求每次按相同顺序使用所有面板。你可以[定制自己的 Kit、Bundle 和交互界面](#从应用设计开始按需扩展)，让专业方法、信息表达与交互体验更贴合具体领域和使用目标。
 
 ### 1. 在面板中确认关键背景
 
@@ -136,13 +138,17 @@ AI 展开**业务流程面板**，用纵向泳道区分客户、设计师、负�
 
 ### 你还可以继续展开……
 
-**页面地图、UI 设计与调研。** 先从页面地图梳理客户提交反馈、设计师判断影响、负责人确认安排之间的跳转，再展开具体页面的 UI 与交互原型。有需要查证的问题时，转到调研面板，整理问题、来源与结论，为下一项设计决定补充依据。
+**研究调研、UI 设计、页面地图等等面板。** 需要查证时，用调研面板整理问题、来源与结论；想看清具体界面时，展开 UI 设计与交互原型；需要梳理页面之间的关系时，打开页面地图，检查客户提交反馈、设计师判断影响、负责人确认安排之间的跳转。你可以从当前最需要深入的部分继续。
+
+![在同一项目中切换研究调研、UI 设计和页面地图面板](docs/images/readme-design-exploration.gif)
 
 **场景体验。** 选择“客户临时追加一个页面”这样的情境，把流程、规则和界面放在一起试走。发现某一步不清楚，点击“在主对话讨论当前内容”，把问题带回设计；体验中的操作用于演示，不会直接改写设计文件。
 
+![在场景体验中对照客户新增页面的请求、原定范围和影响判断](docs/images/readme-scene.png)
+
 **PRD 与开发交接。** 把当前设计整合为 PRD 草案，按章节检查方案，保留来源与未决问题。进入开发时，再结合具体任务准备 spec，关联相应设计依据。
 
-![按顺序浏览同一项目的页面地图、UI 设计、调研面板、场景体验和 PRD 草案](docs/images/readme-design-exploration.gif)
+![在 PRD 面板中按章节阅读整合后的设计，并查看来源与待确认内容](docs/images/readme-prd.png)
 
 还需要深入时，你们可以设计反馈、交付物和变更的数据关系，细化权限与业务规则，或通过 **AI 能力面板**明确应用中的 AI 如何整理反馈、需要哪些 Skills 和工具，以及哪些承诺仍由人决定。
 

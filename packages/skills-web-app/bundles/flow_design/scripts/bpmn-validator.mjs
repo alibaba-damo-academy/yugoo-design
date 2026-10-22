@@ -327,9 +327,9 @@ function structureOnlyBpmn(xml) {
 function layoutErrors(xml) {
 	const diagnostics = [];
 	if (!/<bpmndi:BPMNDiagram\b/u.test(xml) || !/<bpmndi:BPMNPlane\b/u.test(xml)) diagnostics.push("must contain a BPMNDiagram and BPMNPlane produced by the Bundle layout script");
-	// Preserve previously supported revisions; revision 12 is balanced reading
-	// order plus route-only channel spacing. Validation never re-lays out files.
-	if (!/autoagent:layoutRevision=["'](9|10|11|12)["']/u.test(xml)) diagnostics.push("must carry supported autoagent:layoutRevision=9, 10, 11 or 12 from the Bundle layout script");
+	// Revision 13 preserves each established reading row/column independently.
+	// Keep saved revisions valid; validation never re-lays out existing files.
+	if (!/autoagent:layoutRevision=["'](9|10|11|12|13)["']/u.test(xml)) diagnostics.push("must carry supported autoagent:layoutRevision=9, 10, 11, 12 or 13 from the Bundle layout script");
 	const refs = (tag) => new Set([...xml.matchAll(new RegExp(`<bpmndi:${tag}\\b([^>]*)>`, "giu"))].map((match) => /\bbpmnElement=["']([^"']+)["']/u.exec(match[1] ?? "")?.[1]).filter(Boolean));
 	const shapeRefs = refs("BPMNShape");
 	const edgeRefs = refs("BPMNEdge");

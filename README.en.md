@@ -9,7 +9,7 @@
 [![Qoder CLI](https://img.shields.io/badge/Qoder_CLI-6AD86C)](docs/wiki/hosts.md#qoder-cli)
 [![千问办公 QwenWork](https://img.shields.io/badge/%E5%8D%83%E9%97%AE%E5%8A%9E%E5%85%AC_QwenWork-39D377)](docs/wiki/hosts.md#千问办公-qwenwork)
 [![WorkBuddy](https://img.shields.io/badge/WorkBuddy-00C29A)](docs/wiki/hosts.md#workbuddy)
-[![Companion release](https://img.shields.io/badge/Companion_release-2088FF?logo=githubactions&logoColor=white)](https://github.com/alibaba-damo-academy/yugoo-design/actions/workflows/publish-companion.yml)
+[![npm publish](https://img.shields.io/badge/npm_publish-2088FF?logo=githubactions&logoColor=white)](https://github.com/alibaba-damo-academy/yugoo-design/actions/workflows/publish-companion.yml)
 
 **See your ideas. Shape the details.**
 
@@ -99,7 +99,9 @@ Reuse, combine, or customize Kits and Bundles to adapt professional methods, out
 
 Continue with the six-person studio from the quick start: turn its agreements for handling client change requests into the platform's processes, rules, permissions, and pages. In DeepSeek Harness, discuss the design with AI on the left and edit the corresponding Panel on the right. Open Studio when you want to customize a Kit.
 
-The business data is fictional. Start from the goal in the [quick start](#quick-start), or copy the [complete example project](examples/design-team-delivery/README.md), migrate it as instructed, and continue with the [tutorial (中文)](docs/wiki/web-app-demo.md). This illustrates how one discussion develops, not a mandatory sequence of panels for every task.
+The business data is fictional. Start from the goal in the [quick start](#quick-start), or copy the [complete example project](examples/design-team-delivery/README.md), migrate it as instructed, and continue with the [tutorial (中文)](docs/wiki/web-app-demo.md).
+
+This walkthrough shows one way to use the **Web App Kit**, not the framework's only use or a mandatory sequence of panels. You can [customize your own Kits, Bundles, and interactive interfaces](#start-with-software-design-then-extend-it) to adapt the professional methods, information presentation, and interaction experience to your domain and goals.
 
 ### 1. Confirm the important context in a panel
 
@@ -137,13 +139,17 @@ That is the collaboration loop: **describe a goal → examine and edit the Panel
 
 ### You can also explore further…
 
-**Page map, UI design, and Research.** Use the page map to connect the client's feedback submission, the designer's impact assessment, and the lead's confirmation. Then develop individual pages through UI design and interactive prototypes. When a question needs investigation, use the Research panel to organize questions, sources, and findings that inform the next design decision.
+**Research, UI design, Page map, and other panels.** Use Research to organize questions, sources, and findings; develop individual screens through UI design and interactive prototypes; or open the Page map to check the transitions between the client's feedback submission, the designer's impact assessment, and the lead's confirmation. Continue with whichever part needs more attention.
+
+![Switch between Research, UI design, and Page map panels in the same project](docs/images/readme-design-exploration.gif)
 
 **Scene experience (场景体验).** Choose a situation such as “the client adds a page at the last minute” and walk through the process, rules, and interface together. If a step is unclear, choose “在主对话讨论当前内容” (discuss the current content in the main conversation) to bring the question back into the design. Interactions in the experience are demonstrations; they do not directly change design files.
 
+![Explore the client's request for an additional page alongside the agreed scope and impact assessment](docs/images/readme-scene.png)
+
 **PRD and implementation handoff.** Assemble the current design into a PRD draft. Review the proposal chapter by chapter, retaining sources and unresolved questions. For implementation, prepare a spec for the particular task and link its design evidence.
 
-![Follow the same project's page map, UI design, Research panel, Scene experience, and PRD draft in order](docs/images/readme-design-exploration.gif)
+![Read the assembled design by chapter in the PRD panel, with sources and unresolved questions](docs/images/readme-prd.png)
 
 For greater detail, develop the data relationships between feedback, deliverables, and changes, refine permissions and business rules, or use the **AI capabilities panel** to define how the application's AI organizes feedback, which Skills and tools it needs, and which commitments remain human decisions.
 
