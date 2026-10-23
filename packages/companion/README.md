@@ -430,6 +430,33 @@ receipt. A stale catalog or old host session is not a reason to download the
 same runtime again. A different required release gets a new retained directory;
 do not overwrite an installed runtime or copy only part of its dependency tree.
 
+Node is a shared prerequisite, separate from the retained Companion package.
+Reuse an existing user/system Node installation or a Node version manager;
+installing another host adapter does not download another Node. New installer
+plans select `--node-executable` or `YUGOO_NODE_EXECUTABLE` first, then inspect
+PATH and standard Node installation locations. They verify the real executable,
+version, platform, architecture and SHA-256, and bind the same absolute path to
+the owned MCP/Hook configuration. An invalid explicit choice fails rather than
+silently switching to another Node. Preview directories, plugin caches,
+application resources and temporary runtimes cannot become shared prerequisites.
+
+If the acquired release lists `resolve-node` in its help, inspect the selection
+without registering a host or changing configuration:
+
+```sh
+npx --no-install design-system resolve-node
+```
+
+If no compatible Node exists, prepare it once through the system's Node installer
+or a version manager and rerun the installer. This route does not download Node,
+change global PATH, or own/delete an external Node during plugin removal. It does
+not implement a product-managed Node download or garbage collector. DSH Desktop
+continues to use its official pinned Electron/Loader entry; do not replace that
+host-internal executable with the Companion's standalone Node selection.
+Windows desktop preparation validates an existing Node on Windows. Preparation
+from another operating system requires an explicit Windows path and reports that
+locator as unverified; it does not establish target runtime acceptance.
+
 ```sh
 ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm install --ignore-scripts=false --save-exact <package-selector> --registry=https://registry.npmjs.org
 npx --no-install design-system --help

@@ -168,6 +168,33 @@ relations:
 
 每个 Kit 的本体类型与属性 shape 会由现有 `schema.yaml` 自动编译，因此 Kit 作者无需创建 `ontology.yaml`，也不需要在 Design Files 中维护 `designRoles`。图谱详情会显示实例的自动类型，Studio 展示可选关系扩展及其约束，编辑与发布按实际安装版本支持的入口进行。
 
+## 声明可选的知识投影
+
+Bundle 作者可以在 `schema.yaml` 的字段上使用 `knowledge`，区分技术元数据、明确引用和内容粒度。声明只影响派生知识图谱，不删除设计文件中的值，也不要求用户另填一组图谱分类字段。没有声明时保留普通内容，不根据字段名或 Bundle 名猜测元数据和业务关系。
+
+```yaml
+type: object
+properties:
+  schema_version:
+    type: number
+    knowledge: { role: metadata }
+  records:
+    type: map
+    value:
+      type: object
+      properties:
+        name: { type: string }
+  selected_record:
+    type: string
+    knowledge: { role: reference, target: '#/records' }
+```
+
+- `metadata` 将该字段或子树排除于图节点、节点上下文及下游语义索引之外，原值仍保留。业务中的 `version` 等名称不会自动被当作技术元数据。
+- `reference` 声明字符串叶子的明确引用；数组引用在 `items` 上声明。可选 `target` 是当前文件的 `#/集合路径`，或其他规范文件的 `bundle/bundle.json#/集合路径`。它限定匹配范围，不授予文件访问或跨 Bundle 写入权限；缺失或歧义引用保留原文证据并产生诊断。
+- `content` 配合 `granularity: container | unit | property`，分别表达内容容器、独立内容单元或所属内容的属性；可选 `label` 提供可读标题，不改变身份或源事实。例如[功能详情 schema](../../packages/skills-web-app/bundles/function_modules/schema.yaml)将详情分为核心行为、输入、结果和边界，[风格 schema](../../packages/skills-web-app/bundles/design_style/schema.yaml)区分风格容器与具体规范。
+
+这些是可选的内容投影声明，不是职责分类 `designRoles`。创建或修订后，使用目标版本已有的 schema 与 Bundle 校验入口，再核对节点、引用和来源是否表达了原设计；不要为了图形好看改变业务数据。独立来源与汇总产物的区别见[知识来源规则](../design-knowledge-source-policy.md)，读图方式见[使用指南](usage.md#查看-kag-与索引状态)。
+
 ## Bundle 文件责任
 
 - `SKILL.md`：frontmatter 提供能力描述；正文定义专业方法、已有产物修订方式、验证和收尾要求。

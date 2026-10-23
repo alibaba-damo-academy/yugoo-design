@@ -80,7 +80,7 @@ test('public installer help returns JSON usage without configuration or registra
     assert.equal(result.kind,'installer-help')
     assert.equal(result.status,'not-applicable') // The existing public bin treats this as exit 0.
     assert.equal(JSON.parse(JSON.stringify(result)).usage,'design-system <command> [options]')
-    assert.deepEqual(Object.keys(result.commands),['prepare-desktop','install','plugin-directory','check-runtime','recover','uninstall'])
+    assert.deepEqual(Object.keys(result.commands),['resolve-node','prepare-desktop','install','plugin-directory','check-runtime','recover','uninstall'])
     assert.ok(result.options['--help, -h'])
   }
   assert.deepEqual(await readdir(root),[])
@@ -1230,8 +1230,9 @@ async function legacyCodexReceipt(t) {
   const inventory=async root=>Object.fromEntries(Object.entries(await userSnapshot(root)).map(([path,bytes])=>[path.slice(root.length+1),hash(bytes)]))
   await f.put(join(f.overlay,'.codex-plugin/plugin.json'),json({name:'design-system',version:'1.0.0',skills:'./skills/',mcpServers:'./.mcp.json'}))
   await rename(join(f.overlay,'skills/yugoo'),join(f.overlay,'skills/design'))
-  const {planSha256:unused,...body}=planned
+  const {planSha256:unused,nodeRuntime:removedNodeSelection,...body}=planned
   const plan={...body,selector:'design-system@personal',packageInventorySha256:digest(await inventory(f.npmRoot)),overlayInventorySha256:digest(await inventory(f.overlay))}
+  assert.equal(plan.nodeRuntime,undefined,'Legacy receipt predates explicit Node binding')
   plan.planSha256=digest(plan)
   const id='68a5d19a-b065-47d0-a435-c74b16890e30',receiptPath=join(f.receiptDirectory,id+'.receipt.json')
   await mkdir(dirname(plan.target),{recursive:true});await cp(f.overlay,plan.target,{recursive:true})
@@ -1304,4 +1305,38 @@ test('Codex native preflight detects old selectors in other catalogs and legacy 
   await compensation.compensate()
   await assert.rejects(lstat(cache),{code:'ENOENT'})
   assert.ok(calls.some(args=>args[1]==='remove'&&args[2]===selector))
+})
+
+
+test('new Codex registration binds its selected Node without changing the npm overlay',async t=>{
+  const f=await fixture(t),before=await readFile(join(f.overlay,'.mcp.json'))
+  const plan=await planInstallation({...f.options,nodeExecutable:process.execPath})
+  const receipt=await applyInstallation(plan,{adapter:f.adapter,runtimeReceipt:f.runtimeReceipt})
+  const mcp=JSON.parse(await readFile(join(plan.target,'.mcp.json'),'utf8'))
+  assert.equal(mcp.mcpServers['design-system'].command,plan.nodeRuntime.executable)
+  assert.notEqual(mcp.mcpServers['design-system'].command,'node')
+  assert.deepEqual(await readFile(join(f.overlay,'.mcp.json')),before)
+  const repeat=await planInstallation(f.options) // Same bytes, different discovery provenance.
+  assert.equal((await applyInstallation(repeat,{adapter:f.adapter,runtimeReceipt:f.runtimeReceipt})).idempotent,true)
+  const mutated=structuredClone(plan);mutated.nodeRuntime.sha256='0'.repeat(64)
+  await assert.rejects(planInstallation({...f.options,nodeRuntime:mutated.nodeRuntime}),/changed/)
+  assert.equal(receipt.hostRegistered,true)
+})
+
+test('resolve-node needs neither a host nor an acquired package and rejects unrelated flags',async()=>{
+  const selected=await installerMain(['resolve-node','--node-executable',process.execPath])
+  assert.equal(selected.kind,'node-runtime-selection');assert.equal(selected.verified,true)
+  assert.equal(selected.executable,await realpath(process.execPath));assert.equal(selected.installed,false)
+  await assert.rejects(installerMain(['resolve-node','--host','codex']),/accepts only/)
+})
+
+test('check-runtime consumes the saved Node selection and rejects substituted plans',async t=>{
+  const f=await fixture(t),plan=await installerMain(['install','--dry-run','--host','codex','--disable-embedding','--node-executable',process.execPath,'--receipt-dir',f.receiptDirectory],f.options)
+  const receipt=await installerMain(['check-runtime','--host','codex','--plan',plan.planFile,'--receipt-dir',f.receiptDirectory],f.options)
+  assert.equal(receipt.status,'disabled');assert.equal(receipt.observation.execPath,plan.nodeRuntime.executable)
+  assert.equal(receipt.observation.node,plan.nodeRuntime.version)
+  await assert.rejects(installerMain(['check-runtime','--host','claude-code','--plan',plan.planFile,'--receipt-dir',f.receiptDirectory],f.options),/host mismatch/)
+  await assert.rejects(installerMain(['check-runtime','--host','codex','--plan',plan.planFile,'--node-executable',process.execPath,'--receipt-dir',f.receiptDirectory],f.options),/cannot be combined/)
+  const body=JSON.parse(await readFile(plan.planFile,'utf8'));body.nodeRuntime.executable='/substituted/node';await f.put(plan.planFile,json(body))
+  await assert.rejects(installerMain(['check-runtime','--host','codex','--plan',plan.planFile,'--receipt-dir',f.receiptDirectory],f.options),/digest mismatch/)
 })

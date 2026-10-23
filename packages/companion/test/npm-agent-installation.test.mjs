@@ -42,6 +42,15 @@ test('six hosts report only their missing prerequisites, without an automatic pa
   await assert.rejects(installerMain(['install', '--host', 'made-up-host'], { npmRoot: '/not-read' }), /supported host/)
 })
 
+test('native Windows desktop discovery does not request a separate Node for each adapter', async () => {
+  const native = await agentInstallation({ host: 'workbuddy' }, { platform: 'win32', invoke: noOperation, desktopPrepare: noOperation })
+  assert.ok(!native.missing.includes('node-executable'))
+  const cross = await agentInstallation({ host: 'workbuddy' }, { platform: 'linux', invoke: noOperation, desktopPrepare: noOperation })
+  assert.ok(cross.missing.includes('node-executable'))
+  assert.ok(cross.missing.includes('npm-root-windows'))
+  assert.ok(cross.missing.includes('destination-windows'))
+})
+
 test('cross-host flags and unknown versions are not silently ignored', async () => {
   for (const [host, extras] of [['qoder', { 'codex-executable': '/codex' }], ['codex', { profile: 'other' }],
     ['dsh', { 'disable-embedding': true }], ['claude-code', { destination: '/elsewhere' }]])
@@ -55,12 +64,15 @@ test('cross-host flags and unknown versions are not silently ignored', async () 
 test('Codex direct install retains owning plan and runtime receipt before one native apply', async () => {
   const h = nativeHarness([{ planFile: '/receipts/exact.plan.json', applySupported: true, package: identity },
     { status: 'disabled', receiptFile: '/receipts/runtime.json' }, { phase: 'verified', hostRegistered: true, receiptPath: '/receipts/native.json' }])
-  const result = await agentInstallation({ host: 'codex', 'receipt-dir': '/receipts', 'codex-executable': '/native/codex', 'disable-embedding': true }, h)
+  const result = await agentInstallation({ host: 'codex', 'receipt-dir': '/receipts', 'codex-executable': '/native/codex', 'disable-embedding': true, 'node-executable': '/public-node/bin/node' }, h)
   assert.equal(h.calls.length, 3); assert.ok(h.calls[0].includes('--dry-run'))
   assert.equal(h.calls[1][0], 'check-runtime'); assert.ok(h.calls[1].includes('--disable-embedding'))
+  assert.equal(valueOf(h.calls[1], 'plan'), '/receipts/exact.plan.json', 'check the same selected Node retained by the plan')
   assert.ok(h.calls[2].includes('--apply')); assert.equal(valueOf(h.calls[2], 'plan'), '/receipts/exact.plan.json')
   assert.equal(valueOf(h.calls[2], 'runtime-receipt'), '/receipts/runtime.json')
   assert.ok(!h.calls[2].includes('--disable-embedding'))
+  assert.equal(valueOf(h.calls[0], 'node-executable'), '/public-node/bin/node')
+  assert.ok(!h.calls[2].includes('--node-executable'), 'apply consumes the saved selection without reselecting Node')
   assert.equal(result.installation.registration, 'verified'); assert.equal(result.installation.acquisition, 'available')
   assert.equal(result.installation.registryAcquisitionVerified, false)
   assert.equal(result.installation.activation, 'required'); assert.equal(result.installation.usability, 'unverified'); assert.equal(result.usable, false)

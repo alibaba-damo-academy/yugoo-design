@@ -6,6 +6,7 @@ import { lstat, mkdir, mkdtemp, readFile, readdir, realpath } from 'node:fs/prom
 import { createRequire } from 'node:module'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { promisify } from 'node:util'
+import { verifyNodeRuntime } from './npm-node-runtime.mjs'
 
 const execute = promisify(execFile)
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
@@ -97,15 +98,21 @@ export function assertGitRuntimeReceipt(receipt,current) {
   for(const key of ['execPath','node','platform','arch'])assert.equal(load.observation?.[key],current.observation[key],'Git check '+key+' mismatch')
   assert.equal(load.externalGitCalls,0);assert.deepEqual(load.checks,GIT_CHECKS)
 }
-export async function inspectRuntime({npmRoot,disableEmbedding=false,host}={}) {
+export async function inspectRuntime({npmRoot,disableEmbedding=false,host,nodeRuntime}={}) {
+  nodeRuntime=nodeRuntime?structuredClone(nodeRuntime):undefined
   assert.equal(typeof disableEmbedding,'boolean')
   const root=resolve(npmRoot)
   await assertRuntimePath(root);assert.equal(await realpath(root),root)
-  const observation={execPath:process.execPath,node:process.versions.node,platform:process.platform,arch:process.arch,
+  if(nodeRuntime) {
+    await verifyNodeRuntime(nodeRuntime)
+    assert.equal(nodeRuntime.platform,process.platform,'Selected Node platform must match the installer')
+    assert.equal(nodeRuntime.arch,process.arch,'Selected Node architecture must match the installer')
+  }
+  const observation={execPath:nodeRuntime?.executable??process.execPath,node:nodeRuntime?.version??process.versions.node,platform:process.platform,arch:process.arch,
     libc:process.platform==='linux'?(process.report?.getReport().header.glibcVersionRuntime?'glibc':'musl'):'not-applicable'}
   const result={schemaVersion:1,npmRoot:root,observation,
     embedding:{provider:disableEmbedding?'disabled':'local',selection:disableEmbedding?'explicit-cli':'default-local',runningServerConfigurationVerified:false},
-    status:'unverified',pins:[...await treePins(root),await filePin(await realpath(process.execPath))],nativeHostRegistrationVerified:false,transformersVerified:false,
+    status:'unverified',pins:[...await treePins(root),await filePin(await realpath(observation.execPath))],nativeHostRegistrationVerified:false,transformersVerified:false,
     semanticKagVerified:false,graVerified:false,licenseObligationsAccepted:false}
   const finalize=()=>{
     result.pins.sort((a,b)=>a.path.localeCompare(b.path))

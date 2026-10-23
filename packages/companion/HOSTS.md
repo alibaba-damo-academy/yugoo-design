@@ -82,6 +82,11 @@ the host-specific sections below are optional overrides and adapter details.
 
 ```text
 请在我当前使用的 Agent 宿主中安装或更新语构设计系统（Yugoo Design）。
+先复用用户指定或系统/版本管理器提供的 Node.js >=22.19.0；不要借用
+Preview、其他应用资源或插件包里的 Node。缺少合规 Node 时明确说明依赖，
+统一准备一次，不为每个宿主适配器重复下载，也不擅改全局 PATH。
+随包帮助包含 resolve-node 时先检查选择结果；新安装应让验证和后续启动使用同一 Node。
+DSH Desktop 保持官方 Electron/Loader 入口，不将宿主内部执行程序替换为通用 Node。
 首发使用 CPU 本地嵌入。首次取包前，在 npm/npx 安装子进程环境中设置
 ONNXRUNTIME_NODE_INSTALL_CUDA=skip，并保持依赖生命周期脚本开启；
 后续需要取依赖的宿主安装子进程也使用该设置。不要用全局 ignore-scripts
@@ -105,6 +110,13 @@ ONNXRUNTIME_NODE_INSTALL_CUDA=skip，并保持依赖生命周期脚本开启；
 
 ```text
 Install or update Yugoo Design in the Agent host I am using now.
+Reuse Node.js >=22.19.0 from an explicit user selection, the system or a Node
+version manager. Do not borrow Node from Preview deployments, another app's
+resources or a plugin package. If it is missing, explain the prerequisite and
+prepare it once; do not download a separate Node for each adapter or change
+global PATH. When the acquired help exposes resolve-node, inspect its selection
+and bind verification and subsequent startup to the same Node. DSH Desktop keeps
+its official Electron/Loader entry rather than replacing it with standalone Node.
 Use CPU local embedding for this first release. Before the first acquisition,
 set ONNXRUNTIME_NODE_INSTALL_CUDA=skip in the npm/npx installation child's
 environment, with dependency lifecycle scripts enabled; apply it to subsequent

@@ -26,6 +26,7 @@ async function fixture(t,{retainKnownMarketplace=false}={}) {
   await put(join(overlay,'.claude-plugin/plugin.json'),encode({name:'yugoo-design',version:'1.0.0'}))
   await put(join(overlay,'.mcp.json'),encode({mcpServers:{'design-system':{command:'node',args:['${CLAUDE_PLUGIN_ROOT}/scripts/design.mjs','mcp']}}}))
   for(const file of ['scripts/design.mjs','skills/yugoo/SKILL.md','skills/design-panel/SKILL.md'])await put(join(overlay,file),'fixture source\n')
+  await put(join(overlay,'hooks/hooks.json'),encode({hooks:{SessionStart:[{hooks:[{type:'command',command:'node',args:['${CLAUDE_PLUGIN_ROOT}/scripts/claude-context.mjs']}]}]}}))
   const config=join(userRoot,'.claude'),target=join(userRoot,'.local/share/yugoo-design/claude-code')
   const foreignMarket={name:'other-market',source:'directory',path:join(root,'foreign'),installLocation:join(root,'foreign')}
   const foreignPlugin={id:'other@other-market',scope:'user',version:'9',enabled:true,installPath:join(root,'foreign-cache')}
@@ -429,9 +430,10 @@ async function legacyClaudeReceipt(t) {
   }
   await f.put(join(f.overlay,'.claude-plugin/plugin.json'),encode({name:'design-system',version:'1.0.0'}))
   await rename(join(f.overlay,'skills/yugoo'),join(f.overlay,'skills/design'))
-  const {planSha256:unused,...body}=planned
+  const {planSha256:unused,nodeRuntime:removedNodeSelection,...body}=planned
   const plan={...body,selector:'design-system@'+MARKET,paths:{...body.paths,plugin:join(f.target,'plugins/design-system')},
     packageInventorySha256:digest(await inventory(f.npmRoot)),overlayInventory:await inventory(f.overlay)}
+  assert.equal(plan.nodeRuntime,undefined,'Legacy receipt predates explicit Node binding')
   plan.planSha256=digest(plan)
   const id='0c5f0ecb-131c-4a0e-a076-3590bfe6a941',receiptFile=join(f.receiptDirectory,id+'.claude-receipt.json')
   await mkdir(dirname(plan.paths.plugin),{recursive:true});await cp(f.overlay,plan.paths.plugin,{recursive:true})
@@ -482,4 +484,18 @@ test('Claude new install rejects legacy and mixed registrations before staging',
     assert.equal(f.mutations().length,0)
     await assert.rejects(lstat(f.target),{code:'ENOENT'})
   })
+})
+
+
+test('Claude MCP and Hook bind the same verified Node while retained inputs stay unchanged',async t=>{
+  const f=await fixture(t),mcpBefore=await readFile(join(f.overlay,'.mcp.json')),hooksBefore=await readFile(join(f.overlay,'hooks/hooks.json'))
+  const plan=await planClaudeInstallation({...f.options,nodeExecutable:process.execPath})
+  const result=await applyClaudeInstallation(plan,{adapter:f.adapter,runtimeReceipt:f.runtimeReceipt})
+  const plugin=join(f.target,'plugins/yugoo-design')
+  const mcp=JSON.parse(await readFile(join(plugin,'.mcp.json'),'utf8')),hooks=JSON.parse(await readFile(join(plugin,'hooks/hooks.json'),'utf8'))
+  assert.equal(mcp.mcpServers['design-system'].command,plan.nodeRuntime.executable)
+  assert.equal(hooks.hooks.SessionStart[0].hooks[0].command,plan.nodeRuntime.executable)
+  assert.deepEqual(hooks.hooks.SessionStart[0].hooks[0].args,['${CLAUDE_PLUGIN_ROOT}/scripts/claude-context.mjs'])
+  assert.deepEqual(await readFile(join(f.overlay,'.mcp.json')),mcpBefore);assert.deepEqual(await readFile(join(f.overlay,'hooks/hooks.json')),hooksBefore)
+  await recoverClaudeInstallation(result,{adapter:f.adapter,uninstall:true})
 })

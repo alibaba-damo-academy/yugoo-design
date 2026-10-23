@@ -8,6 +8,7 @@ import { parseArgs } from 'node:util'
 import { deflateRawSync } from 'node:zlib'
 import { createReadStream } from 'node:fs'
 import { isPathWithin } from './npm-installer-paths.mjs'
+import { resolveDesktopNodeRuntime, verifyNodeRuntime } from './npm-node-runtime.mjs'
 
 const encode = value => JSON.stringify(value, null, 2) + '\n'
 const sha = value => createHash('sha256').update(value).digest('hex')
@@ -54,6 +55,15 @@ async function verifyMaterials(root) {
   return sha(bytes)
 }
 function windowsPath(value) { assert.ok(typeof value === 'string' && win32.isAbsolute(value) && !/[\r\n\0]/.test(value), 'Explicit absolute Windows preparation path required'); return win32.normalize(value) }
+async function qwenNodeConfiguration(configuration, node) {
+  const projected = structuredClone(configuration)
+  const supplied = process.platform === 'win32' ? await realpath(windowsPath(projected.nodeExecutable)) : windowsPath(projected.nodeExecutable)
+  assert.equal(win32.normalize(supplied).toLowerCase(), node.toLowerCase(), 'QwenWork Node configuration mismatch')
+  // Resolve a version manager's junction without changing the caller's config
+  // or any of its native executable/worker identity and byte pins.
+  projected.nodeExecutable = node
+  return projected
+}
 function outsideHostProfile(path) {
   const parts = path.split(/[\\/]/).map(p => p.toLowerCase())
   return !parts.some(p => ['.workbuddy', '.qwenworkcn', '.codebuddy'].includes(p)) && !(parts.includes('appdata') && parts.some(p => ['qwenworkcn', 'workbuddy', 'codebuddy'].includes(p)))
@@ -119,7 +129,8 @@ export async function prepareDesktopPackage({ npmRoot, packageName, packageVersi
   const windowsOutput = windowsPath(destinationWindows ?? (process.platform === 'win32' ? output : undefined))
   assert.ok(outsideHostProfile(windowsOutput), 'Do not prepare inside native host profiles')
   if (process.platform === 'win32') { assert.equal(windowsNpm.toLowerCase(), win32.normalize(root).toLowerCase()); assert.equal(windowsOutput.toLowerCase(), win32.normalize(output).toLowerCase()) }
-  const node = windowsPath(nodeExecutable), runtimeWindows = win32.join(windowsNpm, 'payload/shared')
+  const nodeRuntime = await resolveDesktopNodeRuntime(nodeExecutable ?? qwenworkRuntime?.nodeExecutable)
+  const node = windowsPath(nodeRuntime.executable), runtimeWindows = win32.join(windowsNpm, 'payload/shared')
   const prior = previousReceiptFile ? await priorReceipt(resolve(previousReceiptFile)) : undefined
   if (prior) {
     assert.equal(prior.body.destination, output); assert.equal(prior.body.target, target); assert.equal(prior.body.package.name, packageName)
@@ -132,7 +143,7 @@ export async function prepareDesktopPackage({ npmRoot, packageName, packageVersi
   if (qwen) {
     qwen.validateQwenWorkRuntime(qwenworkRuntime)
     assert.deepEqual(Object.keys(qwenworkRuntime).sort(), ['executable', 'executableSha256', 'nodeExecutable', 'worker', 'workerSha256'], 'Only native path and byte pins belong in preparation configuration')
-    assert.equal(win32.normalize(qwenworkRuntime.nodeExecutable).toLowerCase(), node.toLowerCase(), 'QwenWork Node configuration mismatch')
+    qwenworkRuntime = await qwenNodeConfiguration(qwenworkRuntime, node)
     if (process.platform === 'win32') for (const [path, expected] of [[qwenworkRuntime.executable, qwenworkRuntime.executableSha256], [qwenworkRuntime.worker, qwenworkRuntime.workerSha256]]) assert.equal(await streamHash(path), expected, 'QwenWork native bytes do not match provided pins')
   }
   if (!prior) await mkdir(output)
@@ -191,9 +202,10 @@ export async function prepareDesktopPackage({ npmRoot, packageName, packageVersi
     assert.equal(sha(await file(join(root, 'package.json'))), sha(manifestBytes), 'Acquired npm manifest changed during preparation')
     assert.equal(sha(await file(join(runtime, 'scripts/design.mjs'))), sha(entry), 'Acquired runtime changed during preparation')
     assert.equal(await verifyMaterials(materials), materialSha256, 'Acquired desktop resources changed during preparation')
+    if (nodeRuntime.verified) await verifyNodeRuntime(nodeRuntime)
     body = { schemaVersion: 1, kind: 'desktop-package-preparation', status: 'prepared', target, destination: output, suiteVersion,
       package: { name: packageName, version: packageVersion, npmRoot: root, manifestSha256: sha(manifestBytes), runtimeEntrySha256: sha(entry), materialSha256 },
-      windows: { npmRoot: windowsNpm, destination: windowsOutput, nodeExecutable: node, runtimeRoot: runtimeWindows, targetPathsVerified: process.platform === 'win32' },
+      windows: { npmRoot: windowsNpm, destination: windowsOutput, nodeExecutable: node, nodeRuntime, runtimeRoot: runtimeWindows, targetPathsVerified: process.platform === 'win32' },
       priorReceiptSha256: prior?.sha256 ?? null, nativeImport, assets: await inventory(output, ['receipts', '.preparation.lock']),
       acquiredManifestVerified: true, registryAcquisitionVerified: false, nativeRegistered: false, loadedVersionVerified: false, runtimeAdmissionVerified: false, releaseValidated: false }
     await mkdir(join(output, 'receipts'), { recursive: true })
@@ -239,10 +251,12 @@ export async function desktopPreparationReuseMain(args, { npmRoot } = {}) {
   assert.ok(outsideHostProfile(windowsOutput), 'Do not prepare inside native host profiles')
   if (process.platform === 'win32') { assert.equal(windowsNpm.toLowerCase(), win32.normalize(root).toLowerCase()); assert.equal(windowsOutput.toLowerCase(), win32.normalize(output).toLowerCase()) }
   assert.equal(body.windows.npmRoot, windowsNpm); assert.equal(body.windows.destination, windowsOutput)
-  assert.equal(body.windows.nodeExecutable, windowsPath(values['node-executable']), 'Same-version Node path changed')
+  const nodeRuntime = await resolveDesktopNodeRuntime(values['node-executable'] ?? body.windows.nodeExecutable)
+  assert.equal(body.windows.nodeExecutable, windowsPath(nodeRuntime.executable), 'Same-version Node path changed')
+  if (body.windows.nodeRuntime?.verified) await verifyNodeRuntime(body.windows.nodeRuntime)
   if (body.target === 'qwenwork') {
     assert.equal(body.nativeImport.includeMcp, !values['separate-mcp'], 'Same-version connector policy changed')
-    const nativePins = JSON.parse(await file(resolve(values['qwenwork-runtime'])))
+    const nativePins = await qwenNodeConfiguration(JSON.parse(await file(resolve(values['qwenwork-runtime']))), nodeRuntime.executable)
     assert.deepEqual(nativePins, JSON.parse(await file(join(dirname(body.nativeImport.suite), 'runtime-pins.json'))), 'Same-version native pins changed')
     if (process.platform === 'win32') for (const [path, expected] of [[nativePins.executable, nativePins.executableSha256], [nativePins.worker, nativePins.workerSha256]])
       assert.equal(await streamHash(path), expected, 'QwenWork native bytes do not match provided pins')
@@ -263,8 +277,8 @@ export async function desktopPreparationReuseMain(args, { npmRoot } = {}) {
 
 export async function desktopPreparationMain(args, { npmRoot } = {}) {
   const values = preparationArguments(args)
-  if (values.help) return { kind: 'desktop-preparation-help', status: 'not-applicable', usage: 'design-system prepare-desktop --target qwenwork|workbuddy --package-name EXACT_SCOPED_NAME --package-version EXACT_NPM_VERSION --suite-version NATIVE_RELEASE_VERSION --destination EXTERNAL_DIRECTORY --node-executable ABSOLUTE_WINDOWS_NODE',
-    options: { '--qwenwork-runtime': 'Explicit JSON with existing QwenWork executable/worker/Node paths and exact executable/worker hashes.', '--separate-mcp': 'QwenWork only: omit the suite connector and emit one external connector JSON for organization policy.', '--previous-receipt': 'Verified successful preparation receipt for an owned new-version update; preserves the same WorkBuddy market.', '--npm-root-windows, --destination-windows': 'Explicit target path mapping required for cross-platform preparation; native Windows paths must match actual roots.' },
+  if (values.help) return { kind: 'desktop-preparation-help', status: 'not-applicable', usage: 'design-system prepare-desktop --target qwenwork|workbuddy --package-name EXACT_SCOPED_NAME --package-version EXACT_NPM_VERSION --suite-version NATIVE_RELEASE_VERSION --destination EXTERNAL_DIRECTORY [--node-executable ABSOLUTE_WINDOWS_NODE]',
+    options: { '--node-executable': 'Reuse an existing Node >=22.19.0. On Windows, omission discovers a compatible public installation; cross-platform preparation requires an explicit Windows locator and does not verify its executable. Preview/plugin/temporary runtimes are rejected. No Node is downloaded or owned.', '--qwenwork-runtime': 'Explicit JSON with existing QwenWork executable/worker/Node paths and exact executable/worker hashes.', '--separate-mcp': 'QwenWork only: omit the suite connector and emit one external connector JSON for organization policy.', '--previous-receipt': 'Verified successful preparation receipt for an owned new-version update; preserves the same WorkBuddy market.', '--npm-root-windows, --destination-windows': 'Explicit target path mapping required for cross-platform preparation; native Windows paths must match actual roots.' },
     limits: ['Preparation does not acquire from registry, register a host, grant native admission, verify loaded versions or alter a host profile.', 'Acquire the exact npm release first; retain its durable installation and old version until the native update is verified.'] }
   return prepareDesktopPackage({ npmRoot, target: values.target, packageName: values['package-name'], packageVersion: values['package-version'], destination: values.destination,
     nodeExecutable: values['node-executable'], suiteVersion: values['suite-version'], npmRootWindows: values['npm-root-windows'], destinationWindows: values['destination-windows'],

@@ -1,3 +1,6 @@
+import { resolveNodeRuntime } from '../src/npm-node-runtime.mjs'
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
@@ -104,4 +107,22 @@ test('real stalled loader is killed within the production bound and leaves no ch
   const start=Date.now(),receipt=await checkRuntime(f)
   assert.equal(receipt.status,'failed');assert.equal(receipt.load.signal,'SIGKILL')
   assert.equal(receipt.load.childAbsent,true);assert.ok(Date.now()-start<20000)
+})
+
+
+test('runtime inspection and loader use the selected Node, and reject a changed executable pin',async t=>{
+  const f=await fixture(t)
+  const selected=await resolveNodeRuntime({nodeExecutable:process.env.YUGOO_TEST_ALTERNATE_NODE??process.execPath})
+  const bad={...selected,sha256:'0'.repeat(64)}
+  await assert.rejects(inspectRuntime({...f,nodeRuntime:bad}),/changed/)
+  const receipt=await checkRuntime({...f,nodeRuntime:selected,scope:'isolated-test-contract',testRunner:async(command,_args,options)=>{
+    assert.equal(command,selected.executable)
+    // Real selected process; fixture JSON is not native addon acceptance.
+    return promisify(execFile)(command,['--input-type=commonjs','--eval',
+      'console.log(JSON.stringify({execPath:process.execPath,node:process.versions.node,native:'+JSON.stringify([f.native])+',versions:{fixture:true}}))'],options)
+  }})
+  assert.equal(receipt.status,'load-verified');assert.equal(receipt.scope,'isolated-test-contract')
+  assert.equal(receipt.observation.execPath,selected.executable);assert.equal(receipt.observation.node,selected.version)
+  assert.equal(receipt.load.observation.execPath,selected.executable);assert.equal(receipt.load.observation.node,selected.version)
+  if(process.env.YUGOO_TEST_ALTERNATE_NODE)assert.notEqual(selected.version,process.versions.node)
 })

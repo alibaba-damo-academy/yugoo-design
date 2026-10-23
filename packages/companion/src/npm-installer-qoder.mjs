@@ -1,4 +1,6 @@
 /** Persistent native Qoder registration. Reuses the npm overlay; never launches a model. */
+import { resolveNodeRuntime, verifyNodeRuntime } from './npm-node-runtime.mjs'
+import { nodeRegistrationFiles, writeNodeRegistrationFiles, nodeRuntimePin } from './npm-node-registration.mjs'
 import assert from 'node:assert/strict'
 import {execFile} from 'node:child_process'
 import {createHash} from 'node:crypto'
@@ -36,7 +38,7 @@ async function inventory(root,prefix='') {
 function launcher(entry) {
   return `import { existsSync } from 'node:fs'\nconst entry = new URL(${JSON.stringify(pathToFileURL(entry).href)})\nif (!existsSync(entry)) throw new Error('Missing shared Companion entry: ' + entry.href + '; retain or restore the registered npm version')\nawait import(entry.href)\n`
 }
-async function owned(row,{npmRoot,version,files}) {
+async function owned(row,{npmRoot,version,files,nodeRuntime}) {
   assert.equal(row.id,'yugoo-design@local','Unexpected Qoder plugin identity')
   assert.equal(row.scope,'user','Existing plugin is not user scoped')
   assert.ok(row.enabled===true,'Existing plugin is disabled in this working directory')
@@ -46,6 +48,7 @@ async function owned(row,{npmRoot,version,files}) {
   try {proof=await json(join(path,marker))} catch {throw new Error('Existing yugoo-design plugin is not owned by this npm installer')}
   assert.equal(proof.schemaVersion,1,'Unknown plugin ownership marker')
   assert.equal(proof.npmRoot,npmRoot,'Existing plugin belongs to another npm installation')
+  assert.deepEqual(nodeRuntimePin(proof.nodeRuntime),nodeRuntimePin(nodeRuntime),'Node selection changed; explicit native uninstall is required before rebinding')
   assert.equal(proof.version,version,'Existing plugin version differs; explicit native uninstall is required before replacement')
   assert.deepEqual(proof.files,files,'Packaged overlay changed; explicit native uninstall is required before replacement')
   assert.deepEqual(await inventory(path),proof.files,'Installed owned plugin was modified; refusing replacement')
@@ -63,7 +66,8 @@ async function receiptParent(path) {
   }
 }
 
-export async function installQoderPlugin({npmRoot,executable='qodercli',configDir,cwd=process.cwd(),stageRoot,run=runNative}) {
+export async function installQoderPlugin({npmRoot,executable='qodercli',configDir,cwd=process.cwd(),stageRoot,run=runNative,nodeExecutable,nodeRuntime}) {
+  nodeRuntime=nodeRuntime?structuredClone(nodeRuntime):undefined
   const root=await directory(resolve(npmRoot))
   await directory(resolve(cwd))
   if(configDir)await directory(resolve(configDir))
@@ -92,17 +96,19 @@ export async function installQoderPlugin({npmRoot,executable='qodercli',configDi
   if((await readFile(join(overlay,'scripts/native-hook-transport.mjs'),'utf8')).includes('./windows-private-storage.mjs'))
     for(const path of ['scripts/windows-private-storage.mjs','scripts/windows-native-platform.mjs'])
       assert.ok((await lstat(join(overlay,path))).isFile(),`Missing Qoder asset: ${path}`)
-  const expectedFiles=await inventory(overlay)
+  nodeRuntime??=await resolveNodeRuntime({nodeExecutable}); await verifyNodeRuntime(nodeRuntime)
+  const nodeFiles=await nodeRegistrationFiles(overlay,'qoder',nodeRuntime)
+  const expectedFiles={...await inventory(overlay),...Object.fromEntries(Object.entries(nodeFiles).map(([path,text])=>[path,digest(text)]))}
   expectedFiles['scripts/design.mjs']=digest(launcher(entry))
   const beforeRows=await list()
   const prior=beforeRows.filter(ownRow)
   assert.ok(!prior.some(row=>row.name===LEGACY||row.id?.split('@')[0]===LEGACY),'Legacy design-system plugin found. Use Qoder native uninstall for its exact old selector and scope before installing yugoo-design; no changes made.')
   const receipt={schemaVersion:1,kind:'native-qoder-registration',host:'qoder',scope:'user',npmRoot:root,package:{name:pkg.name,version:pkg.version},
     cwd:resolve(cwd),...(configDir?{configDir:resolve(configDir)}:{}),hostLaunched:false,modelLaunched:false,
-    runtimeAcceptance:false,limitations:['Native persistent registration only; no model, MCP startup, panel, GRA or KAG acceptance.','Retain this exact npm installation; the copied plugin imports its absolute shared entry.']}
+    nodeRuntime,runtimeAcceptance:false,limitations:['Native persistent registration only; no model, MCP startup, panel, GRA or KAG acceptance.','Retain this exact npm installation; the copied plugin imports its absolute shared entry.']}
   if(prior.length) {
     assert.equal(prior.length,1,'Multiple existing yugoo-design installations; refusing precedence ambiguity')
-    const installedPath=await owned(prior[0],{npmRoot:root,version:pkg.version,files:expectedFiles})
+    const installedPath=await owned(prior[0],{npmRoot:root,version:pkg.version,files:expectedFiles,nodeRuntime})
     return {...receipt,status:'already-registered',hostRegistered:true,pluginId:prior[0].id,installedPath}
   }
   await receiptParent(resolve(stageRoot))
@@ -112,9 +118,12 @@ export async function installQoderPlugin({npmRoot,executable='qodercli',configDi
   try {
     await cp(overlay,plugin,{recursive:true,errorOnExist:true,force:false})
     await writeFile(join(plugin,'scripts/design.mjs'),launcher(entry))
+    await writeNodeRegistrationFiles(plugin,nodeFiles)
+    await verifyNodeRuntime(nodeRuntime)
     const files=await inventory(plugin)
     assert.deepEqual(files,expectedFiles,'Packaged overlay changed during staging')
-    await writeFile(join(plugin,marker),JSON.stringify({schemaVersion:1,npmRoot:root,version:pkg.version,files},null,2)+'\n',{flag:'wx'})
+    await writeFile(join(plugin,marker),JSON.stringify({schemaVersion:1,npmRoot:root,version:pkg.version,nodeRuntime,files},null,2)+'\n',{flag:'wx'})
+    await verifyNodeRuntime(nodeRuntime)
     const installed=JSON.parse((await invoke(['plugin','install',plugin,'--scope','user','--json'])).stdout)
     assert.equal(installed.ok,true,'Native Qoder install did not confirm success')
     assert.equal(installed.pluginId,'yugoo-design@local','Native Qoder install returned wrong identity')
@@ -123,7 +132,7 @@ export async function installQoderPlugin({npmRoot,executable='qodercli',configDi
     const rows=afterRows.filter(ownRow)
     assert.equal(rows.length,1,'Fresh-process Qoder list did not confirm unique registration')
     assert.equal(rows[0].version,pkg.version,'Native Qoder version mismatch')
-    const installedPath=await owned(rows[0],{npmRoot:root,version:pkg.version,files:expectedFiles})
+    const installedPath=await owned(rows[0],{npmRoot:root,version:pkg.version,files:expectedFiles,nodeRuntime})
     assert.equal(await realpath(installed.path),installedPath,'Install/list cache path mismatch')
     const result={...receipt,status:'registered',hostRegistered:true,pluginId:rows[0].id,installedPath,receiptFile}
     await writeFile(receiptFile,JSON.stringify(result,null,2)+'\n')

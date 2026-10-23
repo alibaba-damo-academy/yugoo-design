@@ -202,10 +202,14 @@ test('candidate uses fixed versions and deterministic inventory; source and lice
   const selection=execute(join(first.target,'bin/design-system.mjs'),['install'],root,2)
   assert.equal(selection.status,'host-selection-required'); assert.equal(selection.hostRegistered,false)
   assert.deepEqual(selection.hosts,['dsh','codex','claude-code','qoder','qwenwork','workbuddy'])
+  const nodeSelection=execute(join(first.target,'bin/design-system.mjs'),['resolve-node','--node-executable',process.execPath],root,0)
+  assert.equal(nodeSelection.kind,'node-runtime-selection'); assert.equal(nodeSelection.verified,true)
+  assert.equal(nodeSelection.version,process.versions.node); assert.match(nodeSelection.sha256,/^[a-f0-9]{64}$/)
+  assert.equal(nodeSelection.ownership,'external'); assert.equal(nodeSelection.installed,false)
   const desktopPending=execute(join(first.target,'bin/design-system.mjs'),['install','--host','workbuddy'],root,2)
   assert.equal(desktopPending.status,'inputs-required'); assert.equal(desktopPending.usable,false)
   assert.ok(first.inventory.assets['bin/npm-installer-dsh.mjs'])
-  for (const name of ['npm-installer-dsh-desktop.mjs', 'npm-installer-paths.mjs', 'npm-agent-installation.mjs', 'windows-private-storage.mjs', 'windows-native-platform.mjs']) {
+  for (const name of ['npm-installer-dsh-desktop.mjs', 'npm-installer-paths.mjs', 'npm-agent-installation.mjs', 'npm-node-runtime.mjs', 'npm-node-registration.mjs', 'windows-private-storage.mjs', 'windows-native-platform.mjs']) {
     assert.ok(first.inventory.assets['bin/' + name])
     assert.deepEqual(await readFile(join(first.target, 'bin', name)), await readFile(join(workspace, 'packages/companion/src', name)))
   }

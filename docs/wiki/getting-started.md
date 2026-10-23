@@ -4,6 +4,8 @@
 
 安装需要 **Node.js `>=22.19.0`**。获取旧版时，仍以该精确版本的 `engines.node` 为准。插件使用宿主已有的对话模型、搜索和工具，所需服务由用户配置。宿主范围见[兼容指南](hosts.md)，首次本地模型准备见本页后面的[环境与安装细节](#环境与安装细节)。默认随主插件提供 Web App Kit。
 
+Node 优先复用系统或版本管理器中已有的合规安装；新增宿主适配器无需另装一份。不要将开发预览、其他应用私有目录或临时测试目录里的 Node 作为长期依赖。缺少合规版本时先统一准备 Node，再继续安装；所选版本的[安装指南](../../packages/companion/README.md#npm-candidate-and-native-installation-boundary)说明如何检查并指定路径。移除插件注册与清理运行时是不同操作，Yugoo 不删除复用的外部 Node。
+
 ## 1. 复制通用提示词
 
 把[通用安装提示词](../../packages/companion/HOSTS.md#default-prompt-any-supported-host)复制到当前宿主的 Agent 输入框。首次安装和更新使用同一入口，Agent 按真实宿主上下文选择安装方式；你不需要判断内部应安装 DSH 还是 Companion，也不会一次安装本机所有宿主。

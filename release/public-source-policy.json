@@ -170,6 +170,24 @@
   "rules": [
     {
       "kind": "file",
+      "path": "docs/internal/README.md",
+      "action": "exclude",
+      "reason": "Internal navigation for historical records, experiment evidence and source-preserving documentation inventory; not public product guidance."
+    },
+    {
+      "kind": "prefix",
+      "path": "docs/internal/documentation-organization/",
+      "action": "exclude",
+      "reason": "Per-file internal documentation inventory, original-path retention mappings and local untracked-file preservation records; not a second public documentation source."
+    },
+    {
+      "kind": "prefix",
+      "path": "docs/internal/history/",
+      "action": "exclude",
+      "reason": "Reviewed historical plans and implementation or acceptance records relocated from docs root, retaining their content and source context; not current product or runtime contracts."
+    },
+    {
+      "kind": "file",
       "path": "examples/design-team-delivery/LICENSE",
       "action": "include",
       "reason": "Exact project Apache-2.0 license retained inside the reusable example so a separately copied project carries its license text."

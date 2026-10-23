@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": "ccc83e0013738e7d0f13e1bdd6baf2eddc66a9db",
-  "policySha256": "79c720058dc7577d58df13761c38f96a5f96079160e2ac3cf580bc8f3c8d59af",
+  "revision": "8d2005a93f3c7ff4197b83227ab522fc9d7db2c9",
+  "policySha256": "5816800c0186126ef3befc7f68fd6da6bce4b5c300f195625d0d276661936481",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
       "sha256": "9689903cd86839d8805125d1c199b38ea0eb828e5171da23ca178a5c3ec20866",
@@ -116,7 +116,7 @@
       "mode": "100644"
     },
     "docs/README.md": {
-      "sha256": "6bfed069a4d77897d983a2c2f9ca1477d973b80d3b3e99fa415cb082d0680a72",
+      "sha256": "1693f2fbec7dd182fbd1f70a5c7e003661eda852732201f95547afcc9b5174f0",
       "mode": "100644"
     },
     "docs/a2ui-component-catalog-contract.md": {
@@ -236,7 +236,7 @@
       "mode": "100644"
     },
     "docs/public-document-sync.md": {
-      "sha256": "9208dd8b08e6c94e1854ba2546e5d4a42ebf6133ec971653d5397e63210e29cb",
+      "sha256": "0751d3da99eed8f62e82da81b8478bd5f263ba7de78747e920581f5611de9e58",
       "mode": "100644"
     },
     "docs/standalone-roadmap.md": {
@@ -276,11 +276,11 @@
       "mode": "100644"
     },
     "docs/wiki/extending.md": {
-      "sha256": "bb046d5e48cb30b0386cdd9dcf1b13975bc8987fef7ba1e903d9298f9d42551b",
+      "sha256": "377ae8d07fb0b297e70ced4dee9e01e7c309e6742fdc3208db1c098e97d7cc50",
       "mode": "100644"
     },
     "docs/wiki/getting-started.md": {
-      "sha256": "e37fd3219e45c1766b93a1db8bd55f19feafa6c42e56d5c110d86fe49da34f97",
+      "sha256": "4eebbff0ec3083a3e9624f2b32bb555d0e41d3d666febf0cbcfa87c54488d4aa",
       "mode": "100644"
     },
     "docs/wiki/hosts.md": {
@@ -288,7 +288,7 @@
       "mode": "100644"
     },
     "docs/wiki/kit-sharing.md": {
-      "sha256": "aed52a2c3847f815180bb44cc7b1b30c13f109fcc697f19b6aa41623c365d799",
+      "sha256": "363054f677abff02a2f798e09cc97c7d5f3e2b30783a6b00166a009fa92236af",
       "mode": "100644"
     },
     "docs/wiki/non-web-kit-demo.md": {
@@ -320,7 +320,7 @@
       "mode": "100644"
     },
     "docs/wiki/usage.md": {
-      "sha256": "fd6ffbee608b22609d5ee7add66487a3e28aa46e1621491ee174cd5b7e1c7897",
+      "sha256": "a1aee52bf8e16794d1ef922feeeac77863524be676d2afc31e1b41839d513460",
       "mode": "100644"
     },
     "docs/wiki/web-app-demo.md": {
@@ -640,11 +640,11 @@
       "mode": "100644"
     },
     "packages/companion/HOSTS.md": {
-      "sha256": "1dff4f033a0f6512d2dc6929ee63f2b84e2ed6529f9cf5e924e624b29b99118f",
+      "sha256": "9b352c035cd23753349f26c3182bf584c5d143bff29501a15d5c0e2105ae91a8",
       "mode": "100644"
     },
     "packages/companion/README.md": {
-      "sha256": "f9d83ba3fda6ee13bc6148ef49d6e4ae44e9cd507d9ad1666175d6c9bef9c6e8",
+      "sha256": "b53047f2f45bbe74e3890de653291d3554d9bc4e2c38d38b5b43879b0ac9b966",
       "mode": "100644"
     },
     "packages/companion/build-plugin.mjs": {
@@ -988,15 +988,15 @@
       "mode": "100644"
     },
     "packages/companion/src/npm-agent-installation.mjs": {
-      "sha256": "4851c6f7145ece1b4b0da7d56e10d73d4b47669328b77680c436cb0b6c3d4ca6",
+      "sha256": "9edfd9ee1fbeddfe77b1e7c7084d14e6d54c3ca68226dcb0736381dad3c79638",
       "mode": "100644"
     },
     "packages/companion/src/npm-desktop-preparation.mjs": {
-      "sha256": "1a4598ef080540204aefb74de8155b19d009576488d17d5c35c58a9d8bc9a24e",
+      "sha256": "eee178116e2734b76c64e3312eee5001abadd92da5510c36876132bc8f0324f5",
       "mode": "100644"
     },
     "packages/companion/src/npm-installer-claude.mjs": {
-      "sha256": "cf525ab6da00f4db0f5df0fa5f2af9d3c28db33bf94e2e94d8bda5fb444e29af",
+      "sha256": "e34a681b3fa9d7f40518103fb4230e083077347e3d6aaa14dceeba609d5fd310",
       "mode": "100644"
     },
     "packages/companion/src/npm-installer-codex.mjs": {
@@ -1016,15 +1016,23 @@
       "mode": "100644"
     },
     "packages/companion/src/npm-installer-qoder.mjs": {
-      "sha256": "2434ec9a8bd0943f0fd200395581c8bb8d9dd14086818117f6f12250d46f3e1e",
+      "sha256": "ab5767c26a14c153e881850454c2fe7234e3f28455c69428271fbffcc0bb7d36",
       "mode": "100644"
     },
     "packages/companion/src/npm-installer.mjs": {
-      "sha256": "2bb1fb22c386fafa13868e29a29c5ceebfe25819bee415faa7d9cf35cc06f143",
+      "sha256": "c412ebfcc2a684d2c380131bad6807e2230e5fea33593c02787ef749e1d8531d",
+      "mode": "100644"
+    },
+    "packages/companion/src/npm-node-registration.mjs": {
+      "sha256": "79a419dd1e0ceaa581158b4243b2fbb95b4f791c33d1dd2e1a97f2d9f166716c",
+      "mode": "100644"
+    },
+    "packages/companion/src/npm-node-runtime.mjs": {
+      "sha256": "323602ecae6a906ccba2dbd194e6e6e1dba3b2910529f844a2e2d7a6691a1ff9",
       "mode": "100644"
     },
     "packages/companion/src/npm-runtime-check.mjs": {
-      "sha256": "aa95a67bfd7e48a06a09b2a164e3f3e74471ebddf504d145e6d1a1bea87a0a0e",
+      "sha256": "5a14001be697b1ffdcbbc921a88b69baad1e47879e7819ec4496f90de624affb",
       "mode": "100644"
     },
     "packages/companion/src/plugin-cli.mjs": {
@@ -1504,15 +1512,15 @@
       "mode": "100644"
     },
     "packages/companion/test/npm-agent-installation.test.mjs": {
-      "sha256": "fde6021a75010c29b5b93f0ccdaa60547319e770b436dfb5a4fa4a4efa79113a",
+      "sha256": "47e425992c62bf44542b0430db455d54f14aa95a16e9e3d98ef4f3d8b44b393a",
       "mode": "100644"
     },
     "packages/companion/test/npm-desktop-preparation.test.mjs": {
-      "sha256": "c783649d1ae56f15fc562c83ad4cd39950b75c4eb207aad0101ac622df34f357",
+      "sha256": "c4b741c110e42958fa5a5d05cf05bc5fe6ebb07540b69f9606a8d0448b060c53",
       "mode": "100644"
     },
     "packages/companion/test/npm-installer-claude.test.mjs": {
-      "sha256": "abe5cf398cf82a87eacefa21dbcdbc4800120de7c349755a041c22abb8994358",
+      "sha256": "70ee6a50f9fe623f926cefce0c1e4092ae4153bffd4a97fdf7c3f9a3cde02c6d",
       "mode": "100644"
     },
     "packages/companion/test/npm-installer-dsh-desktop.test.mjs": {
@@ -1528,19 +1536,27 @@
       "mode": "100644"
     },
     "packages/companion/test/npm-installer-qoder.test.mjs": {
-      "sha256": "68d90ca15f1119663cc0e961bceda386e4e44de299fd0d945621294f5d7a7539",
+      "sha256": "83d2d1b633a44ec87cf7205ce32746f8af353c1cad674033204be834c017c39e",
       "mode": "100644"
     },
     "packages/companion/test/npm-installer.test.mjs": {
-      "sha256": "dcaf98f88f1ecd7a0ff94e454d05586ca91e120d87c4e774281ee0f6a89991bc",
+      "sha256": "7e371602b0dbd4d5939a0de745ad49cdb80757c09a34b071d7efb05a4935f74e",
       "mode": "100644"
     },
     "packages/companion/test/npm-native-directory.test.mjs": {
       "sha256": "90368fa4a234284d2aac362f0854d3db5a89b6d6117c02c1b81fb93bb55212e6",
       "mode": "100644"
     },
+    "packages/companion/test/npm-node-registration.test.mjs": {
+      "sha256": "5f162534a6fe33b09dbe73ed770cf72c1d18871c599bb003d7fd42fb3745fe0f",
+      "mode": "100644"
+    },
+    "packages/companion/test/npm-node-runtime.test.mjs": {
+      "sha256": "aa4b4914c819dcf6777fb28b8afb64ca7865ef1408f55dae17768187442b2516",
+      "mode": "100644"
+    },
     "packages/companion/test/npm-runtime-check.test.mjs": {
-      "sha256": "75be7713f5e431a059e1f02a3e41efc4e7769963c81341013a7c90e72441980a",
+      "sha256": "8ad8b0b8f8924380edb571d49e468d8d8077a68365b98d1fdc5cc7d94c5ae3d5",
       "mode": "100644"
     },
     "packages/companion/test/panel-handoff.test.mjs": {
@@ -8404,7 +8420,7 @@
       "mode": "100644"
     },
     "release/companion-version.json": {
-      "sha256": "7b835338f6c1b6767daec34bac9fc74c9a2edd5cd584195e86e16f7fc701ac89",
+      "sha256": "f2ffc5a9de7d74f3b4f0b1879b8f91cf77d2838417dcfda3dd4b1f0a3c5b869a",
       "mode": "100644"
     },
     "release/dsh-distribution-materials.json": {
@@ -8416,7 +8432,7 @@
       "mode": "100644"
     },
     "release/public-source-policy.json": {
-      "sha256": "77f5e947c135840abb4928f1910aa2e14f86c66a929d885b20dcdcfa4a3c8f40",
+      "sha256": "9793266423d3bff2bc15522c54998246de7df318dc9f108ea2fa5a2d2071cdaa",
       "mode": "100644"
     },
     "release/public-source-test-selection.json": {
@@ -8492,11 +8508,11 @@
       "mode": "100644"
     },
     "scripts/companion-npm-candidate.mjs": {
-      "sha256": "8e6fe2ced867fc8a333b84eca33073a8464180b77981b25a01640bd13c602fe2",
+      "sha256": "a3edbf4f29b12318c86e5dea1c11820cdb3ab0209145ae31cab849525d7f4edb",
       "mode": "100644"
     },
     "scripts/companion-npm-candidate.test.mjs": {
-      "sha256": "edf67387029476761db8605e774b0428b62f7312c84ff346f6b35409e64bc5b8",
+      "sha256": "83a793f50e6b97ddf6f7d0e00104e359a9fceb5a8e4058bd712c02484c67eea6",
       "mode": "100644"
     },
     "scripts/companion-output-module-map.mjs": {

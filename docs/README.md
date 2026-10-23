@@ -4,6 +4,14 @@
 
 [项目首页](../README.md) · [English README](../README.en.md) · [用户 Wiki](wiki/README.md) · [贡献指南](../CONTRIBUTING.md)
 
+## 选择阅读路径
+
+- **第一次使用：** [开始使用](wiki/getting-started.md) → [工作室协作教程](wiki/web-app-demo.md) → [日常使用](wiki/usage.md)。安装与可用范围查所选版本的[宿主指南](wiki/hosts.md)。
+- **定制专业方法或面板：** [最小定制教程](wiki/custom-kit-tutorial.md) → [扩展开发](wiki/extending.md) → [分享与恢复](wiki/kit-sharing.md)。
+- **修改系统实现：** [开发指南](wiki/development.md) → [架构基线](system-design-baseline.md) → 下方对应的技术契约与所属包 README。
+
+操作指南说明如何完成任务；技术契约说明数据、执行和接口必须满足的条件。同一主题的入口链接到原文，不另复制一套正文。带日期的文件不一定过时，历史方案与实验结论也不自动代表当前实现。
+
 ## 安装与使用
 
 | 想做什么 | 阅读入口 |
@@ -62,6 +70,9 @@
 
 - `docs/wiki/`：面向使用者和套件作者的教程、操作指南、概念及排障入口。
 - `docs/` 下的技术文档：架构说明与可直接引用的契约，保留各自的稳定路径；从本目录按主题进入。
+- `docs/internal/`：开发维护记录、历史方案和文档处置清单，不作为公共产品指南。
+- `docs/experiments/`：实验输入、输出、脚本与限定验收证据；保留实验自身的版本和运行边界。
+- `docs/reference/`：原始设计背景、来源及配套材料；现行技术约束仍以当前契约为准。
 - `packages/*/README.md` 与创作技能：所属模块的开发说明及可执行的创作方法。
 - `examples/` 与 `docs/images/`：教程样例和界面演示资源，与正文一起维护。
 

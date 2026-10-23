@@ -1,4 +1,6 @@
 import { isPathWithin } from './npm-installer-paths.mjs'
+import { resolveNodeRuntime, verifyNodeRuntime } from './npm-node-runtime.mjs'
+import { nodeRegistrationFiles, writeNodeRegistrationFiles, nodeRuntimePin } from './npm-node-registration.mjs'
 import { assertWindowsPrivate, ensureWindowsPrivateDirectory } from './windows-private-storage.mjs'
 import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
@@ -78,7 +80,8 @@ function managedEntry(value,target,userRoot) {
   return entry??null
 }
 
-export async function planInstallation({ npmRoot,host,userRoot=homedir(),receiptDirectory,adapter=codexAdapter,disableEmbedding=false }) {
+export async function planInstallation({ npmRoot,host,userRoot=homedir(),receiptDirectory,adapter=codexAdapter,disableEmbedding=false,nodeExecutable,nodeRuntime }) {
+  nodeRuntime=nodeRuntime?structuredClone(nodeRuntime):undefined
   assert.ok(INSTALL_HOSTS.includes(host),'An explicit supported host is required; installed binaries are not active-host identity')
   const root=resolve(npmRoot),home=resolve(userRoot),receipts=resolve(receiptDirectory)
   await safePath(root);await safePath(home);await safePath(receipts)
@@ -91,11 +94,12 @@ export async function planInstallation({ npmRoot,host,userRoot=homedir(),receipt
   assert.match(manifest.version,/^[A-Za-z0-9_.+-]+$/u,'Unsafe package version')
   const packageFiles=await inventory(root)
   assert.ok(packageFiles['payload/shared/scripts/design.mjs'],'Missing shared CLI')
-  const common={schemaVersion:1,host,route:host==='dsh'?'dsh-package':'companion-registration',npmRoot:root,
+  if(host==='codex') { nodeRuntime??=await resolveNodeRuntime({nodeExecutable}); await verifyNodeRuntime(nodeRuntime) }
+  const common={...(nodeRuntime?{nodeRuntime}:{}),schemaVersion:1,host,route:host==='dsh'?'dsh-package':'companion-registration',npmRoot:root,
     userRoot:home,receiptDirectory:receipts,package:{name:manifest.name,version:manifest.version},
     packageInventorySha256:digest(packageFiles),fixture:manifest['x-design-release-review']?.fixture===true,
     platform:process.platform,arch:process.arch,node:process.versions.node,disableEmbedding,
-    runtimePrerequisites:await inspectRuntime({npmRoot:root,host,disableEmbedding}),
+    runtimePrerequisites:await inspectRuntime({npmRoot:root,host,disableEmbedding,nodeRuntime}),
     hostRegistered:false,mcpReady:false,bundleCycleVerified:false,panelVerified:false,graVerified:false,kagVerified:false,releaseValidated:false }
   if(host!=='codex') {
     const plan={...common,registrationPending:true,applySupported:false,
@@ -128,6 +132,8 @@ export async function planInstallation({ npmRoot,host,userRoot=homedir(),receipt
     assert.equal(owner.host,'codex')
     const actual={...beforeTarget};delete actual[OWNER]
     assert.deepEqual(actual,owner.assetHashes,'Managed registration was edited')
+    if(owner.npmRoot===root&&owner.version===manifest.version)
+      assert.deepEqual(nodeRuntimePin(owner.nodeRuntime),nodeRuntimePin(nodeRuntime),'Node selection changed; use an owned version update or original uninstall receipt before rebinding')
     if(owner.npmRoot!==root||owner.version!==manifest.version) {
       assert.ok(admission!==null,'Upgrade requires an admitted native adapter')
       assert.notEqual(owner.version,manifest.version,'Same-version package relocation is not an upgrade')
@@ -317,13 +323,14 @@ export async function applyInstallation(plan,{adapter=codexAdapter,checkpoint=as
     await cp(plan.overlay,stage,{recursive:true,errorOnExist:true,force:false})
     const entry=pathToFileURL(join(plan.npmRoot,'payload/shared/scripts/design.mjs')).href
     await writeFile(join(stage,'scripts/design.mjs'),`const entry=new URL(${JSON.stringify(entry)});await import(entry.href)\n`)
+    if(plan.nodeRuntime)await writeNodeRegistrationFiles(stage,await nodeRegistrationFiles(plan.overlay,'codex',plan.nodeRuntime))
     const assetHashes=await inventory(stage)
-    await writeFile(join(stage,OWNER),encode({host:'codex',npmRoot:plan.npmRoot,version:plan.package.version,assetHashes,
+    await writeFile(join(stage,OWNER),encode({host:'codex',npmRoot:plan.npmRoot,version:plan.package.version,...(plan.nodeRuntime?{nodeRuntime:plan.nodeRuntime}:{}),assetHashes,
       transactionId:id,planSha256:plan.planSha256,receiptPath}))
     receipt.ownedTargetSha256=digest(await inventory(stage));receipt.phase='staged';await save();await checkpoint('staged')
     assert.equal(digest(await inventory(stage)),receipt.ownedTargetSha256,'Staged registration changed')
     assert.equal((await planInstallation({...plan,adapter})).planSha256,plan.planSha256,'Inputs changed before publication')
-    runtimeGate(plan,boundRuntime,await inspectRuntime({npmRoot:plan.npmRoot,host:plan.host,disableEmbedding:plan.disableEmbedding}),boundRuntimeHash)
+    runtimeGate(plan,boundRuntime,await inspectRuntime({npmRoot:plan.npmRoot,host:plan.host,disableEmbedding:plan.disableEmbedding,nodeRuntime:plan.nodeRuntime}),boundRuntimeHash)
     assert.equal(await inventory(plan.target),null,'Destination appeared during transaction')
     await safePath(plan.target);await mkdir(dirname(plan.target),{recursive:true});await rename(stage,plan.target);moved=true
     receipt.phase='target-published';await save();await checkpoint('target-published')
@@ -333,6 +340,7 @@ export async function applyInstallation(plan,{adapter=codexAdapter,checkpoint=as
       policy:{installation:'AVAILABLE',authentication:'ON_INSTALL'},category:'Productivity'}
     catalog.plugins.push(receipt.afterEntry);await save();await casMarketplace(plan.marketplace,text,encode(catalog))
     receipt.phase='configured';await save();await checkpoint('configured')
+    if(plan.nodeRuntime)await verifyNodeRuntime(plan.nodeRuntime)
     receipt.nativeAttempted=true;await save();await adapter.register(structuredClone(receipt))
     assert.equal(await adapter.readback(plan),true,'Native registration readback failed')
     receipt.hostRegistered=true;receipt.phase='verified';await save();await checkpoint('verified')
@@ -376,14 +384,15 @@ async function applyUpgrade(plan,{adapter,checkpoint,runtimeReadiness,boundRunti
     await safePath(receipt.stage);await cp(plan.overlay,receipt.stage,{recursive:true,errorOnExist:true,force:false})
     const entry=pathToFileURL(join(plan.npmRoot,'payload/shared/scripts/design.mjs')).href
     await writeFile(join(receipt.stage,'scripts/design.mjs'),`const entry=new URL(${JSON.stringify(entry)});await import(entry.href)\n`)
+    if(plan.nodeRuntime)await writeNodeRegistrationFiles(receipt.stage,await nodeRegistrationFiles(plan.overlay,'codex',plan.nodeRuntime))
     const assetHashes=await inventory(receipt.stage)
-    await writeFile(join(receipt.stage,OWNER),encode({host:'codex',npmRoot:plan.npmRoot,version:plan.package.version,assetHashes,
+    await writeFile(join(receipt.stage,OWNER),encode({host:'codex',npmRoot:plan.npmRoot,version:plan.package.version,...(plan.nodeRuntime?{nodeRuntime:plan.nodeRuntime}:{}),assetHashes,
       transactionId:id,planSha256:plan.planSha256,receiptPath:receipt.receiptPath}))
     receipt.ownedTargetSha256=digest(await inventory(receipt.stage))
     receipt.newNativeTree=await adapter.upgradeSource({...receipt,target:receipt.stage})
     receipt.phase='staged';await save();await checkpoint('staged')
     assert.equal((await planInstallation({...plan,adapter})).planSha256,plan.planSha256,'Upgrade inputs changed before backup')
-    runtimeGate(plan,boundRuntime,await inspectRuntime({npmRoot:plan.npmRoot,host:plan.host,disableEmbedding:plan.disableEmbedding}),boundRuntimeHash)
+    runtimeGate(plan,boundRuntime,await inspectRuntime({npmRoot:plan.npmRoot,host:plan.host,disableEmbedding:plan.disableEmbedding,nodeRuntime:plan.nodeRuntime}),boundRuntimeHash)
     await safePath(receipt.previousCache)
     await cp(plan.upgrade.native.cache,receipt.previousCache,{recursive:true,errorOnExist:true,force:false})
     assert.deepEqual(await adapter.upgradeSource({...receipt,target:receipt.previousCache}),plan.upgrade.native.tree,'Old native cache backup differs')
@@ -401,6 +410,7 @@ async function applyUpgrade(plan,{adapter,checkpoint,runtimeReadiness,boundRunti
     assert.equal(marketText===null?null:sha(marketText),plan.beforeMarketplaceSha256,'Marketplace changed during upgrade')
     assert.deepEqual(await adapter.upgradeSource({...receipt,target:receipt.previous}),plan.upgrade.native.tree,'Previous source backup changed before native replacement')
     assert.deepEqual(await adapter.upgradeSource({...receipt,target:receipt.previousCache}),plan.upgrade.native.tree,'Previous cache backup changed before native replacement')
+    if(plan.nodeRuntime)await verifyNodeRuntime(plan.nodeRuntime)
     receipt.nativeAttempted=true;await save()
     await adapter.replaceUpgrade(receipt,{expected:{[plan.upgrade.previousReceipt.package.version]:plan.upgrade.native.tree,
       [plan.package.version]:receipt.newNativeTree},ownedConfig:plan.upgrade.native.ownedConfig})
@@ -806,6 +816,7 @@ export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=cod
     schemaVersion:1,kind:'installer-help',status:'not-applicable',
     usage:'design-system <command> [options]',
     commands:{
+      'resolve-node':'Discover and verify an existing compatible Node without a host, npm package or configuration writes.',
       'prepare-desktop':'Prepare a small QwenWork suite or stable WorkBuddy market from this exact acquired npm package. Uses --target, --package-name/--package-version, --suite-version, --node-executable and an external --destination; does not register a host. Updates use the previous preparation receipt.',
       install:'The current Agent selects --host from trusted context or one user choice. Direct install orchestrates the existing DSH/Codex saved-plan routes, native Claude/Qoder registration, or QwenWork/WorkBuddy import preparation. Missing inputs and pending activation are explicit. Existing --dry-run / --apply remain available.',
       'plugin-directory':'Inspect the optional Claude/Qoder session-only --plugin-dir entry; this is not persistent installation.',
@@ -834,7 +845,7 @@ export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=cod
       '--registry <https-url>':'DSH install only: explicit credential-free HTTPS download registry or mirror; defaults to the product mapping. Preserves the exact mapped aggregate and binds the saved plan/receipt; no automatic fallback. Required for old or unbound candidates.',
       '--destination <directory>':'QwenWork/WorkBuddy direct install: exclusive external preparation directory, or the same owned directory with --previous-receipt.',
       '--suite-version <version>':'QwenWork/WorkBuddy: exact native suite version, separate from the acquired npm version.',
-      '--node-executable <path>':'QwenWork/WorkBuddy: absolute Windows Node path used by the imported suite.',
+      '--node-executable <path>':'Existing compatible Node for a new CLI installation/runtime check or desktop preparation; selected absolute executable is bound to owned native launchers. DSH retains its own host runtime.',
       '--qwenwork-runtime <file>':'QwenWork: verified native executable/worker/Node paths and byte pins. Agent obtains these through supported native inspection; no credentials.',
       '--separate-mcp':'QwenWork: emit one external connector instead of bundling it when organization policy requires this.',
       '--previous-receipt <file>':'DSH: successful source-bound installation receipt for an owned update or repeat; sparse/manual receipts cannot be adopted. Desktop: reuse an owned preparation or prepare a newer native suite/npm version.',
@@ -845,6 +856,10 @@ export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=cod
       'Uninstall requires a successful owned receipt. Package installation is not Bundle/Panel/GRA/KAG acceptance.'],
   }
   assert.equal(positionals.length,1,'Exactly one installer command required')
+  if(positionals[0]==='resolve-node') {
+    assert.ok(Object.keys(values).every(key=>key==='node-executable'),'resolve-node accepts only --node-executable')
+    return {schemaVersion:1,kind:'node-runtime-selection',...await resolveNodeRuntime({nodeExecutable:values['node-executable']})}
+  }
   if(agentDispatch&&positionals[0]==='install'&&!values['dry-run']&&!values.apply) {
     const context={npmRoot,userRoot,adapter,dshAdapterFactory,claudeAdapterFactory,qoderInstaller,agentDispatch:false,signal,dshInstallTimeoutMs}
     return agentInstallation(values,{npmRoot,admittedCodexAdapter:adapter!==codexAdapter,
@@ -852,7 +867,8 @@ export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=cod
       desktopPrepare:nextArgs=>desktopPreparationMain(nextArgs,{npmRoot}),
       desktopReuse:nextArgs=>desktopPreparationReuseMain(nextArgs,{npmRoot})})
   }
-  for(const key of DESKTOP_INSTALL_OPTIONS)if(!(key==='previous-receipt'&&values.host==='dsh'&&positionals[0]==='install'))
+  for(const key of DESKTOP_INSTALL_OPTIONS)if(!(key==='previous-receipt'&&values.host==='dsh'&&positionals[0]==='install')
+    && !(key==='node-executable'&&['codex','claude-code','qoder'].includes(values.host)&&['install','check-runtime'].includes(positionals[0])))
     assert.ok(!Object.hasOwn(values,key),`--${key} is only valid for direct desktop install`)
   if(positionals[0]==='plugin-directory'&&['claude-code','qoder'].includes(values.host)) {
     assert.deepEqual(Object.keys(values),['host'],'Native directory entry accepts only --host; transaction/runtime options must not be silently ignored')
@@ -865,10 +881,10 @@ export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=cod
     assert.ok(values.host==='qoder'&&positionals[0]==='install',`${key} is only valid for install --host qoder`)
   if(values.host==='qoder'&&positionals[0]!=='check-runtime') {
     assert.equal(positionals[0],'install','Qoder recovery/uninstall uses its native CLI; inspect the saved registration receipt')
-    const allowed=new Set(['host','receipt-dir','qoder-executable','qoder-config-dir'])
+    const allowed=new Set(['host','receipt-dir','qoder-executable','qoder-config-dir','node-executable'])
     assert.ok(Object.keys(values).every(key=>allowed.has(key)),'Qoder install accepts only host, receipt-dir and Qoder executable/config options')
     assert.ok(values['receipt-dir'],'External receipt directory required')
-    const receipt=await qoderInstaller({npmRoot,executable:values['qoder-executable']??'qodercli',configDir:values['qoder-config-dir'],cwd:process.cwd(),stageRoot:values['receipt-dir']})
+    const receipt=await qoderInstaller({npmRoot,executable:values['qoder-executable']??'qodercli',configDir:values['qoder-config-dir'],cwd:process.cwd(),stageRoot:values['receipt-dir'],nodeExecutable:values['node-executable']})
     return {...receipt,next:'Start Qoder CLI normally in your project and use /yugoo-design:yugoo. No --plugin-dir argument is needed; retain the installed npm package. Registration does not establish runtime dependency readiness; use check-runtime separately.'}
   }
   if(values.host==='claude-code')assert.ok(!values['codex-executable'],'Codex executable is invalid for Claude host')
@@ -881,7 +897,7 @@ export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=cod
     if(command==='install') {
       assert.ok(directInstall||values['dry-run']!==values.apply,'Choose Claude dry-run or apply')
       assert.ok(!values.receipt,'Install cannot take a recovery receipt')
-      if(values.apply)assert.ok(values.plan&&values['runtime-receipt']&&!values['receipt-dir']&&!values['disable-embedding'],'Claude apply requires saved plan and runtime receipt only')
+      if(values.apply)assert.ok(values.plan&&values['runtime-receipt']&&!values['receipt-dir']&&!values['disable-embedding']&&!values['node-executable'],'Claude apply requires saved plan and runtime receipt only')
       else assert.ok(values['receipt-dir']&&!values.plan&&!values['runtime-receipt'],'Claude dry-run requires external receipt directory only')
     } else assert.ok(values.receipt&&!values.apply&&!values['dry-run']&&!values.plan&&!values['receipt-dir']&&!values['runtime-receipt']&&!values['disable-embedding'],'Claude recovery/uninstall requires only persisted receipt')
     const native=await claudeAdapterFactory({executable:values['claude-executable'],userRoot:profile,nativeCwd:resolve(npmRoot),scope:values['dry-run']?'plan-only':'production'})
@@ -895,17 +911,18 @@ export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=cod
       assert.equal(plan.npmRoot,resolve(npmRoot),'Claude plan npm root mismatch');assert.equal(plan.userRoot,profile,'Claude plan profile mismatch')
       return applyClaudeInstallation(plan,{adapter:native,runtimeReceipt:JSON.parse(await optional(resolve(values['runtime-receipt'])))})
     }
-    const plan=await planClaudeInstallation({npmRoot,userRoot:profile,receiptDirectory:values['receipt-dir'],adapter:native,disableEmbedding:values['disable-embedding']??false})
+    const plan=await planClaudeInstallation({npmRoot,userRoot:profile,receiptDirectory:values['receipt-dir'],adapter:native,disableEmbedding:values['disable-embedding']??false,nodeExecutable:values['node-executable']})
     await mkdir(plan.receiptDirectory,{recursive:true})
     const path=join(plan.receiptDirectory,plan.planSha256+'.claude-plan.json')
     await atomic(path,encode(plan))
     if(directInstall) {
-      const runtimeReceipt=await checkRuntime({npmRoot,host:'claude-code',disableEmbedding:plan.disableEmbedding,receiptDirectory:plan.receiptDirectory})
+      const runtimeReceipt=await checkRuntime({npmRoot,host:'claude-code',disableEmbedding:plan.disableEmbedding,receiptDirectory:plan.receiptDirectory,nodeRuntime:plan.nodeRuntime})
       const receipt=await applyClaudeInstallation(plan,{adapter:native,runtimeReceipt})
       return {...receipt,hostRegistered:true,installationScope:'user',next:'Start Claude Code normally in your project and use /yugoo-design:yugoo. No --plugin-dir argument is needed; retain the installed npm package.'}
     }
     return {...plan,planFile:path}
   }
+  if(values.apply)assert.ok(!values['node-executable'],'Apply uses the saved plan Node; do not select another executable')
   if(values.host==='dsh'&&positionals[0]==='install')return dshInstallerEntry(values,{npmRoot,dshAdapterFactory,args,signal,dshInstallTimeoutMs})
   if(adapter===codexAdapter&&values['codex-executable']&&positionals[0]!=='check-runtime') {
     assert.equal(values.host,'codex','Native executable is only valid for the Codex host')
@@ -914,10 +931,20 @@ export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=cod
     adapter=await createCodexNativeAdapter({executable:values['codex-executable'],userRoot:profile})
   }
   if(positionals[0]==='check-runtime') {
-    assert.ok(!values.apply&&!values['dry-run']&&!values.plan&&!values.receipt,'check-runtime does not install or apply a plan')
+    assert.ok(!values.apply&&!values['dry-run']&&!values.receipt,'check-runtime does not install or apply a plan')
     assert.ok(INSTALL_HOSTS.includes(values.host),'An explicit supported host is required')
     assert.ok(values['receipt-dir'],'Explicit external receipt directory required')
-    const receipt=await checkRuntime({npmRoot,host:values.host,disableEmbedding:values['disable-embedding']??false,receiptDirectory:values['receipt-dir']})
+    let nodeRuntime,disableEmbedding=values['disable-embedding']??false
+    if(values.plan) {
+      assert.ok(['codex','claude-code'].includes(values.host)&&!values['node-executable'],'Saved runtime plan cannot be combined with a new Node selection')
+      const plan=JSON.parse(await optional(resolve(values.plan))),{planSha256,...body}=plan
+      assert.equal(digest(body),planSha256,'Runtime plan digest mismatch')
+      assert.equal(plan.host,values.host,'Runtime plan host mismatch');assert.equal(plan.npmRoot,resolve(npmRoot),'Runtime plan npm root mismatch')
+      assert.ok(plan.nodeRuntime,'Saved plan has no bound Node; use its original installed checker')
+      if(Object.hasOwn(values,'disable-embedding'))assert.equal(disableEmbedding,plan.disableEmbedding,'Runtime plan embedding policy mismatch')
+      nodeRuntime=plan.nodeRuntime;disableEmbedding=plan.disableEmbedding
+    } else if(['codex','claude-code','qoder'].includes(values.host))nodeRuntime=await resolveNodeRuntime({nodeExecutable:values['node-executable']})
+    const receipt=await checkRuntime({npmRoot,host:values.host,disableEmbedding,receiptDirectory:values['receipt-dir'],nodeRuntime})
     const directory=resolve(values['receipt-dir'])
     await mkdir(directory,{recursive:true})
     const path=join(directory,digest(receipt)+'.runtime.json')
@@ -950,7 +977,7 @@ export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=cod
     return applyInstallation(plan,{adapter,runtimeReceipt:JSON.parse(await optional(resolve(values['runtime-receipt'])))})
   }
   assert.ok(values['receipt-dir'],'Explicit external receipt directory required')
-  const plan=await planInstallation({npmRoot,host:values.host,userRoot:values['user-root']??userRoot,receiptDirectory:values['receipt-dir'],adapter,disableEmbedding:values['disable-embedding']??false})
+  const plan=await planInstallation({npmRoot,host:values.host,userRoot:values['user-root']??userRoot,receiptDirectory:values['receipt-dir'],adapter,disableEmbedding:values['disable-embedding']??false,nodeExecutable:values['node-executable']})
   await mkdir(plan.receiptDirectory,{recursive:true})
   const path=join(plan.receiptDirectory,plan.planSha256+'.plan.json')
   await atomic(path,encode(plan));return {...plan,planFile:path}

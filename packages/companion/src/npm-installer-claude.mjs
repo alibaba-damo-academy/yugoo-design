@@ -1,4 +1,6 @@
 /** Claude user-scope transactions. No model sessions, direct settings rollback or cache purge. */
+import { resolveNodeRuntime, verifyNodeRuntime } from './npm-node-runtime.mjs'
+import { nodeRegistrationFiles, writeNodeRegistrationFiles, nodeRuntimePin } from './npm-node-registration.mjs'
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
@@ -196,7 +198,8 @@ function validatePlan(plan) {
   assert.deepEqual(plan.paths,locations(plan.userRoot,pluginName(plan.selector)),'Claude plan path mismatch')
 }
 /** Read-only plan, before any ownership or host registration writes. */
-export async function planClaudeInstallation({npmRoot,userRoot,receiptDirectory,adapter,disableEmbedding=false}) {
+export async function planClaudeInstallation({npmRoot,userRoot,receiptDirectory,adapter,disableEmbedding=false,nodeExecutable,nodeRuntime}) {
+  nodeRuntime=nodeRuntime?structuredClone(nodeRuntime):undefined
   const s=await state(adapter),root=resolve(npmRoot),home=resolve(userRoot),receipts=resolve(receiptDirectory)
   assert.equal(home,s.userRoot,'Claude profile mismatch')
   for(const path of [root,home,receipts])await assertRuntimePath(path)
@@ -210,10 +213,11 @@ export async function planClaudeInstallation({npmRoot,userRoot,receiptDirectory,
   const plugin=await json(join(overlay,'.claude-plugin/plugin.json'));assert.equal(plugin.name,PLUGIN);assert.equal(plugin.version,manifest.version)
   assert.deepEqual((await json(join(overlay,'.mcp.json'))).mcpServers?.['design-system'],{command:'node',args:['${CLAUDE_PLUGIN_ROOT}/scripts/design.mjs','mcp']},'Unexpected Claude MCP entry')
   for(const name of ['scripts/design.mjs','skills/yugoo/SKILL.md'])assert.ok(overlayFiles[name],`Missing Claude overlay: ${name}`)
-  const plan={schemaVersion:1,host:'claude-code',route:'claude-local-marketplace',scope:'user',selector:SELECTOR,npmRoot:root,userRoot:home,receiptDirectory:receipts,
+  nodeRuntime??=await resolveNodeRuntime({nodeExecutable}); await verifyNodeRuntime(nodeRuntime)
+  const plan={nodeRuntime,schemaVersion:1,host:'claude-code',route:'claude-local-marketplace',scope:'user',selector:SELECTOR,npmRoot:root,userRoot:home,receiptDirectory:receipts,
     package:{name:manifest.name,version:manifest.version},fixture:manifest['x-design-release-review']?.fixture===true,
     paths,overlay,packageInventorySha256:digest(files),overlayInventory:overlayFiles,protocol:protocolIdentity(s),disableEmbedding,
-    runtimePrerequisites:await inspectRuntime({npmRoot:root,host:'claude-code',disableEmbedding}),releaseValidated:false}
+    runtimePrerequisites:await inspectRuntime({npmRoot:root,host:'claude-code',disableEmbedding,nodeRuntime}),releaseValidated:false}
   const before=await tree(paths.target),rows=await lists(s)
   assert.ok(!rows.plugins.some(row=>row.id.startsWith(LEGACY+'@')),'Legacy design-system plugin found. Uninstall using its original receipt or native exact selector before installing yugoo-design; no changes made.')
   if(before) {
@@ -227,6 +231,7 @@ export async function planClaudeInstallation({npmRoot,userRoot,receiptDirectory,
     assert.equal(owner.userRoot,home);assert.equal(owner.receiptDirectory,receipts)
     const old=await json(join(receipts,owner.id+'.claude-receipt.json'))
     validatePlan(old.plan)
+    assert.deepEqual(nodeRuntimePin(old.plan.nodeRuntime),nodeRuntimePin(nodeRuntime),'Node selection changed; use the original uninstall receipt before rebinding')
     assert.deepEqual(old.plan.protocol,protocolIdentity(s),'Previous Claude protocol changed')
     assert.equal(old.phase,'verified','Incomplete Claude transaction requires recovery')
     assert.equal(old.id,owner.id);assert.equal(old.plan.npmRoot,root);assert.equal(old.plan.userRoot,home)
@@ -307,7 +312,8 @@ export async function applyClaudeInstallation(plan,{adapter,runtimeReceipt,check
     const owner={id,npmRoot:plan.npmRoot,package:plan.package,userRoot:plan.userRoot,receiptDirectory:plan.receiptDirectory}
     const launcher=`import { existsSync } from 'node:fs'\nconst entry=new URL(${JSON.stringify(pathToFileURL(join(plan.npmRoot,'payload/shared/scripts/design.mjs')).href)})\nif(!existsSync(entry))throw new Error('Retained npm Companion entry is missing')\nawait import(entry.href)\n`
     const marketplace={name:MARKET,owner:{name:'yugoo-design'},plugins:[{name:PLUGIN,source:'./plugins/'+PLUGIN}]}
-    const cacheFiles={...plan.overlayInventory,'scripts/design.mjs':sha(launcher)}
+    const nodeFiles=plan.nodeRuntime?await nodeRegistrationFiles(plan.overlay,'claude-code',plan.nodeRuntime):{}
+    const cacheFiles={...plan.overlayInventory,...Object.fromEntries(Object.entries(nodeFiles).map(([path,text])=>[path,sha(text)])),'scripts/design.mjs':sha(launcher)}
     const sourceFiles={'.claude-plugin':null,plugins:null,['plugins/'+PLUGIN]:null,
       [OWNER]:sha(encode(owner)),'.claude-plugin/marketplace.json':sha(encode(marketplace)),
       ...Object.fromEntries(Object.entries(cacheFiles).map(([name,pin])=>['plugins/'+PLUGIN+'/'+name,pin]))}
@@ -320,15 +326,18 @@ export async function applyClaudeInstallation(plan,{adapter,runtimeReceipt,check
       await mkdir(join(target,'.claude-plugin'));await mkdir(join(target,'plugins'))
       await cp(plan.overlay,plan.paths.plugin,{recursive:true,errorOnExist:true,force:false})
       await writeFile(join(plan.paths.plugin,'scripts/design.mjs'),launcher)
+      await writeNodeRegistrationFiles(plan.paths.plugin,nodeFiles)
       await writeFile(plan.paths.marketplace,encode(marketplace),{flag:'wx'})
       assert.deepEqual(await tree(target),receipt.sourceFiles,'Published Claude source differs from plan')
       receipt.publicationCompleted=true;receipt.phase='published';await atomic(receipt.receiptFile,receipt)
       await checkpoint('published',structuredClone(receipt))
       const before=await lists(s);assert.ok(!ownedRows(before,plan).market&&!ownedRows(before,plan).plugin,'Native state changed before registration')
       const foreign=await foreignState(s,before,plan)
+      if(plan.nodeRuntime)await verifyNodeRuntime(plan.nodeRuntime)
       receipt.marketAttempted=true;receipt.phase='market-add-intent';await atomic(receipt.receiptFile,receipt)
       await call(s,['plugin','marketplace','add',target,'--scope','user'])
       const added=await lists(s);assert.ok(ownedRows(added,plan).market);assert.deepEqual(await foreignState(s,added,plan),foreign,'Foreign state changed during marketplace add')
+      if(plan.nodeRuntime)await verifyNodeRuntime(plan.nodeRuntime)
       receipt.installAttempted=true;receipt.phase='install-intent';await atomic(receipt.receiptFile,receipt)
       await call(s,['plugin','install',SELECTOR,'--scope','user'])
       const installed=await lists(s);await verifyCache(plan,ownedRows(installed,plan),receipt.cacheFiles);assert.deepEqual(await foreignState(s,installed,plan),foreign,'Foreign state changed during install')

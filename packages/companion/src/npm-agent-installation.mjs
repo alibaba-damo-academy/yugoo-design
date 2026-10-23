@@ -9,9 +9,9 @@ export const DESKTOP_INSTALL_OPTIONS = ['destination', 'node-executable', 'suite
   'destination-windows', 'qwenwork-runtime', 'separate-mcp', 'previous-receipt']
 const nativeOptions = {
   dsh: ['host', 'receipt-dir', 'dsh-config', 'profile', 'aggregate-selector', 'registry', 'previous-receipt'],
-  codex: ['host', 'receipt-dir', 'codex-executable', 'user-root', 'disable-embedding'],
-  'claude-code': ['host', 'receipt-dir', 'claude-executable', 'user-root', 'disable-embedding'],
-  qoder: ['host', 'receipt-dir', 'qoder-executable', 'qoder-config-dir'],
+  codex: ['host', 'receipt-dir', 'codex-executable', 'user-root', 'disable-embedding', 'node-executable'],
+  'claude-code': ['host', 'receipt-dir', 'claude-executable', 'user-root', 'disable-embedding', 'node-executable'],
+  qoder: ['host', 'receipt-dir', 'qoder-executable', 'qoder-config-dir', 'node-executable'],
 }
 
 function argv(command, values, keys) {
@@ -81,7 +81,8 @@ export async function agentInstallation(values, { npmRoot, invoke, desktopPrepar
   const desktop = host === 'qwenwork' || host === 'workbuddy'
   const allowed = desktop ? ['host', ...DESKTOP_INSTALL_OPTIONS] : nativeOptions[host]
   for (const key of Object.keys(values)) assert.ok(allowed.includes(key), `${host} install accepts only ${allowed.map(k => '--' + k).join(', ')}; unsupported option --${key}`)
-  const required = desktop ? ['destination', 'node-executable', 'suite-version'] : ['receipt-dir']
+  const required = desktop ? ['destination', 'suite-version'] : ['receipt-dir']
+  if (desktop && platform !== 'win32') required.push('node-executable')
   if (host === 'dsh') required.push('dsh-config', 'profile')
   if (host === 'codex' && !admittedCodexAdapter) required.push('codex-executable')
   if (host === 'claude-code') required.push('claude-executable')
@@ -115,12 +116,14 @@ export async function agentInstallation(values, { npmRoot, invoke, desktopPrepar
     assert.ok(plan.planFile, 'The owning installer did not retain an installation plan')
     if (host === 'codex') {
       assert.equal(plan.applySupported, true, 'Codex native installation is not admitted by the owning adapter')
-      const runtime = await invoke(argv('check-runtime', values, ['host', 'receipt-dir', 'disable-embedding']))
+      const runtimeArgs = argv('check-runtime', values, ['host', 'receipt-dir', 'disable-embedding'])
+      runtimeArgs.push('--plan', plan.planFile)
+      const runtime = await invoke(runtimeArgs)
       if (!['load-verified', 'disabled'].includes(runtime.status)) return {
         ...pending(host, 'runtime-not-ready', [], 'Inspect the runtime receipt. No native apply was attempted; repair the reported prerequisites before re-running install.'),
         runtimeReceipt: runtime, planFile: plan.planFile }
       assert.ok(runtime.receiptFile, 'The owning runtime checker did not retain its receipt')
-      const applyArgs = argv('install', values, allowed.filter(key => !['receipt-dir', 'disable-embedding'].includes(key)))
+      const applyArgs = argv('install', values, allowed.filter(key => !['receipt-dir', 'disable-embedding', 'node-executable'].includes(key)))
       applyArgs.push('--apply', '--plan', plan.planFile, '--runtime-receipt', runtime.receiptFile)
       return installationResult(host, await invoke(applyArgs), plan.package)
     }

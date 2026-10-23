@@ -54,6 +54,21 @@ test('WorkBuddy stages from exact acquired package, retaining native protocol an
   assert.deepEqual(await readFile(join(f.npmRoot, 'package.json')), before)
   const receipt = await json(result.receiptFile); assert.equal(receipt.sha256, result.receiptSha256); assert.equal(receipt.body.package.runtimeEntrySha256, hash(await readFile(join(f.runtime, 'scripts/design.mjs'))))
   assert.equal(INSTALL_HOSTS.includes('workbuddy'), false, 'Preparation must not invent generic native apply support')
+  if (process.platform !== 'win32') {
+    assert.equal(result.windows.nodeRuntime.verified, false)
+    assert.equal(result.windows.nodeRuntime.version, null)
+    assert.equal(result.windows.nodeRuntime.source, 'explicit-cross-platform')
+  }
+  assert.equal(result.windows.nodeRuntime.ownership, 'external')
+  assert.equal(result.windows.nodeRuntime.installed, false)
+})
+
+test('Preview Node is rejected before desktop import files or ownership are created', async t => {
+  const f = await fixture(t), manifest = await readFile(join(f.npmRoot, 'package.json'))
+  await assert.rejects(prepareDesktopPackage({ ...f.options,
+    nodeExecutable: 'C:\\Users\\me\\AppData\\Local\\YuGoo\\QwenWorkPreview\\tools\\node.exe' }), /Preview/)
+  await assert.rejects(readFile(join(f.destination, '.preparation-owner.json')), { code: 'ENOENT' })
+  assert.deepEqual(await readFile(join(f.npmRoot, 'package.json')), manifest)
 })
 
 test('exact npm prerelease preparation and update retain prior runtime without accepting unresolved tags', async t => {
