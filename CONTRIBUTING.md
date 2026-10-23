@@ -78,17 +78,24 @@ The [Companion workflow](.github/workflows/publish-companion.yml) covers only
 
 For a beta release, update `version` in
 [`release/companion-version.json`](release/companion-version.json) to a new exact
-`X.Y.Z-beta.N` value alongside the reviewed changes. Synchronizing that version
-change to the public repository's `main` automatically builds, checks and publishes
-the package with the `beta` tag. The version change is the release decision; no
-second click in Actions is required. Ordinary documentation or source pushes
-without a change to this file do not publish a package.
+`X.Y.Z-beta.N` value alongside the reviewed changes. After synchronizing the
+reviewed commit to the public repository's `main`, create and push its matching
+Git tag, `vX.Y.Z-beta.N`, in that repository. This tag push automatically builds,
+checks and publishes the package. The tag must match the version file at that
+exact commit, and the tagged commit must belong to `origin/main` history.
+Ordinary `main` pushes, including version-file changes, do not publish a package.
+
+The Git release tag identifies the source commit. npm's `--tag beta` selects the
+package's distribution channel; it does not create a Git tag.
 
 For a build-only check, use **Actions → Prepare or publish Companion beta → Run
 workflow** and leave **publish** unchecked. Both automatic and manual runs use
 the version file in the selected source revision. The optional **version** input
 is an expected-version check: if supplied, it must match that file.
 The manual entry also remains available for an explicit publication retry.
+Dispatch that retry against the matching release tag with **publish** enabled;
+the same tag/version and `main`-history checks apply. Publication requests against
+branches or other refs fail explicitly.
 Read the receipt summary in the run's logs. Prepared archives remain on the
 temporary runner; the workflow does not upload downloadable artifacts.
 Compilation, pack checks, installed runtime/Host acceptance and registry
@@ -96,7 +103,22 @@ publication are separate results. The preparation receipt retains flags for
 checks that have not yet passed.
 
 The workflow uses GitHub-hosted Ubuntu, Node `22.22.3`, pnpm `11.7.0` and explicit
-npm `11.21.0`. Public exports currently omit the internal lockfile: on that input,
+npm `11.21.0` for preparation and publication. The package declares Node.js
+`>=22.19.0`; CI focuses on Node 22 and 24 without imposing a major-version cap.
+Before publishing, CI installs the
+same prepared tarball into separate empty directories using
+`npm install --engine-strict` on Node `22.22.3` and `24.22.1`. It exercises the
+product's `check-runtime` checks for native Git and Sharp and the existing
+Ladybug WAL check, then returns to Node `22.22.3` for OIDC publication. These
+package-runtime checks do not establish model readiness, browser behavior or
+actual Host installation. To run that check locally under each selected Node
+version, use the same tarball and expected version with a separate output directory:
+
+```sh
+node scripts/check-companion-node-runtime.mjs /absolute/PREPARED.tgz X.Y.Z-beta.N /absolute/NEW_OUTPUT
+```
+
+Public exports currently omit the internal lockfile: on that input,
 CI first resolves a public-registry lock, then performs a strict frozen install.
 The resolved lock is a run input, not a committed reproducibility guarantee.
 Dependency caching is explicitly disabled in both setup Actions.
@@ -121,13 +143,16 @@ its **Trusted Publisher** for GitHub organization `alibaba-damo-academy`,
 repository `yugoo-design`, workflow filename `publish-companion.yml` (filename
 only), and no environment name. Enable direct **npm publish** in Allowed actions;
 new connections otherwise default to staged publishing. The manual dry-run job
-has no OIDC permission. A release-version push or explicit manual publication
-request on this repository's `main` selects the publication job. That job installs dependencies, builds
-once, checks the archive against its receipt and publishes it on the same runner,
+has no OIDC permission. A matching release-tag push or explicit publication retry
+against that tag in the public repository selects the publication job. The job
+checks that the fixed tagged commit is in `origin/main` history, installs
+dependencies, builds once, checks the archive against its receipt and publishes
+it on the same runner,
 without Artifact transfer. Its OIDC permission covers the whole job, including
-installation and build steps: publication therefore trusts the reviewed `main`
-source, approved dependency scripts and toolchain. A publication request on
-another ref fails explicitly in the unprivileged job. No npm token secret is
+installation and build steps: publication therefore trusts the reviewed tagged
+source from `main` history, approved dependency scripts and toolchain. Invalid
+refs, mismatched tags and commits outside `main` history are rejected before
+publication. No npm token secret is
 needed. See [npm's trusted publishing instructions](https://docs.npmjs.com/trusted-publishers/).
 The packaged repository URL must match this public repository; it is maintained
 in the package template, never patched into a prepared archive.

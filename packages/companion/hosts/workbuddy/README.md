@@ -550,7 +550,8 @@ entry with the verified Node path, external preparation destination and
 an explicit native suite version (the recorded beta.18 preparation used
 `--suite-version 0.3.30`). Select the version for the acquired package; an update
 must be greater than the previous receipt's version. The acquired manifest
-requires Node `>=22.19.0 <23`.
+selects the required Node range. The updated package supports Node.js
+`>=22.19.0`; older versions retain their original engine requirements.
 Import the returned `nativeImport.market` directory through WorkBuddy's normal
 marketplace importer, then enable the `yugoo-design` suite and its MCP connection.
 The new market is named `yugoo-design`; no historical test installation or

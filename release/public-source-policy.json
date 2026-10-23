@@ -449,7 +449,13 @@
       "kind": "file",
       "path": "scripts/companion-release-ci.test.mjs",
       "action": "include",
-      "reason": "Focused synthetic tests for version-triggered and manual publication routing, archive identity and exact native dependency approvals; not installed Host or OIDC acceptance."
+      "reason": "Focused synthetic tests for matching Git beta tag and manual publication routing, Node engine minimum, archive identity and exact native dependency approvals; not installed Host or OIDC acceptance."
+    },
+    {
+      "kind": "file",
+      "path": "scripts/check-companion-node-runtime.mjs",
+      "action": "include",
+      "reason": "Isolated consumer install orchestration for the same prepared archive on CI Node versions, reusing product check-runtime and the existing synthetic Ladybug WAL regression; no real Host registration, model access or publication."
     },
     {
       "kind": "file",
@@ -467,7 +473,7 @@
       "kind": "file",
       "path": ".github/workflows/publish-companion.yml",
       "action": "include",
-      "reason": "Companion-only OIDC build/pack/publication workflow: public main release-version changes publish automatically; manual build-only and publication retry remain explicit. No stored token, Host configuration or DSH chain publication."
+      "reason": "Companion-only OIDC build/pack/publication workflow: matching Git beta version tags from reviewed main history publish after same-archive Node22/24 consumer checks; manual build-only and tagged publication retry remain explicit. No stored token, Host configuration or DSH chain publication."
     },
     {
       "kind": "file",

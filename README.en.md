@@ -23,7 +23,7 @@ Start with the **Web App Kit**, included with the plugin by default, to design a
 
 ## Quick start
 
-You need **Node.js `>=22.19.0 <23`** and an Agent Host with a configured model. The plugin uses your host's existing model, conversation, and tools; see [getting started (中文)](docs/wiki/getting-started.md) for environment setup.
+You need **Node.js `>=22.19.0`** and an Agent Host with a configured model. The plugin uses your host's existing model, conversation, and tools; see [getting started (中文)](docs/wiki/getting-started.md) for environment setup.
 
 1. **Install the plugin.** Give the agent in your current host the [shared installation prompt](packages/companion/HOSTS.md#default-prompt-any-supported-host). Follow its instructions for authorization, import, activation, and any restart or new session.
 

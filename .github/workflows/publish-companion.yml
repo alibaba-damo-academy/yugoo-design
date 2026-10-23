@@ -2,8 +2,7 @@ name: Prepare or publish Companion beta
 
 on:
   push:
-    branches: [main]
-    paths: [release/companion-version.json]
+    tags: ['v*-beta.*']
   workflow_dispatch:
     inputs:
       version:
@@ -27,7 +26,7 @@ jobs:
   dryrun:
     # This workflow covers only Companion, not the separate DSH package chain.
     # Manual recovery/dry-runs stay available; invalid publication refs fail here.
-    if: github.repository == 'alibaba-damo-academy/yugoo-design' && github.event_name == 'workflow_dispatch' && (inputs.publish != true || github.ref != 'refs/heads/main')
+    if: github.repository == 'alibaba-damo-academy/yugoo-design' && github.event_name == 'workflow_dispatch' && (inputs.publish != true || !startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env: &companion-env
@@ -37,6 +36,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: pnpm/action-setup@v6.1.0
         with:
           version: 11.7.0
@@ -50,16 +50,21 @@ jobs:
         id: release
         env:
           EXPECTED_RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_REF: ${{ github.ref }}
+          REQUIRE_RELEASE_TAG: ${{ github.job == 'publish' }}
           CHECK_RELEASE_PUBLISHED: ${{ github.job == 'publish' }}
         run: node scripts/prepare-companion-release.mjs select
       - name: Install the explicit OIDC-capable npm CLI
         if: steps.release.outputs.skip != 'true'
         run: npm install --global npm@11.21.0 --registry=https://registry.npmjs.org
-      - name: Require main for an explicitly requested publication
-        if: inputs.publish == true && github.ref != 'refs/heads/main'
+      - name: Require a version tag for an explicitly requested publication
+        if: inputs.publish == true && !startsWith(github.ref, 'refs/tags/v')
         run: |
-          echo 'Companion publication requires the reviewed main branch.' >&2
+          echo 'Companion publication requires a matching vX.Y.Z-beta.N tag.' >&2
           exit 1
+      - name: Require the tagged source to belong to reviewed main history
+        if: github.job == 'publish' && steps.release.outputs.skip != 'true'
+        run: git merge-base --is-ancestor HEAD origin/main
       - name: Resolve the public source lock and install with reviewed build permissions
         if: steps.release.outputs.skip != 'true'
         run: |
@@ -88,6 +93,28 @@ jobs:
         if: steps.release.outputs.skip != 'true'
         id: verify
         run: node scripts/prepare-companion-release.mjs verify "$RUNNER_TEMP/companion-release/release-receipt.json"
+      - name: Install and check the same archive on Node 22
+        if: steps.release.outputs.skip != 'true'
+        env:
+          RELEASE_TARBALL: ${{ steps.verify.outputs.tarball }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: node scripts/check-companion-node-runtime.mjs "$RELEASE_TARBALL" "$RELEASE_VERSION" "$RUNNER_TEMP/companion-node22"
+      - uses: actions/setup-node@v7.1.0
+        if: steps.release.outputs.skip != 'true'
+        with:
+          node-version: 24.22.1
+          package-manager-cache: false
+      - name: Install and check the same archive on Node 24
+        if: steps.release.outputs.skip != 'true'
+        env:
+          RELEASE_TARBALL: ${{ steps.verify.outputs.tarball }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: node scripts/check-companion-node-runtime.mjs "$RELEASE_TARBALL" "$RELEASE_VERSION" "$RUNNER_TEMP/companion-node24"
+      - uses: actions/setup-node@v7.1.0
+        if: steps.release.outputs.skip != 'true'
+        with:
+          node-version: 22.22.3
+          package-manager-cache: false
       - name: Publish only the exact prepared archive through npm OIDC
         if: github.job == 'publish' && steps.release.outputs.skip != 'true'
         env:
@@ -95,7 +122,7 @@ jobs:
         run: npm publish "$RELEASE_TARBALL" --access public --tag beta --registry=https://registry.npmjs.org
 
   publish:
-    if: github.repository == 'alibaba-damo-academy/yugoo-design' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' && inputs.publish == true)
+    if: github.repository == 'alibaba-damo-academy/yugoo-design' && startsWith(github.ref, 'refs/tags/v') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' && inputs.publish == true)
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     # Publication deliberately trusts this reviewed job's install/build steps too.

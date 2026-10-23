@@ -23,7 +23,7 @@
 
 ## 快速开始
 
-准备好 **Node.js `>=22.19.0 <23`**，以及一个已配置模型的智能体宿主（Agent Host）。插件沿用宿主已有的模型、会话与工具；安装环境见[开始使用](docs/wiki/getting-started.md)。
+准备好 **Node.js `>=22.19.0`**，以及一个已配置模型的智能体宿主（Agent Host）。插件沿用宿主已有的模型、会话与工具；安装环境见[开始使用](docs/wiki/getting-started.md)。
 
 1. **安装插件。** 把[通用安装提示词](packages/companion/HOSTS.md#default-prompt-any-supported-host)复制给当前宿主的智能体（Agent），按它的提示完成授权、导入或启用，以及必要的重启或新建会话。
 

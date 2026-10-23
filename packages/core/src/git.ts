@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { isAbsolute, join, resolve } from 'node:path'
 import type { NativeGitOperation, NativeGitResult, NativeGitFile, NativeGitInspection } from './git-native-contract.ts'
 import { isDesignProjectAuxiliaryPath } from './design-project-record-paths.ts'
+import { executeNativeGitRequest } from './git-native-executor.ts'
 
 export interface NativeGitRequest {
   readonly cwd: string
@@ -151,7 +152,6 @@ export class GitVersioning {
     signal?.throwIfAborted()
     const request = { cwd: this.repoRoot, operation, signal }
     if (this.spawn.native !== undefined) return this.spawn.native(request)
-    const { executeNativeGitRequest } = await import('./git-native-executor.ts')
     return executeNativeGitRequest(request)
   }
 

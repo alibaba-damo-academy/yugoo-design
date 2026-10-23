@@ -6,7 +6,7 @@
   "description": "Interactive Design System as a pure dsh plugin: Mindset-gated Design Bundles, declarative design panels, and git-versioned Design Files.",
   "packageManager": "pnpm@11.7.0",
   "engines": {
-    "node": "^22.19.0 || >=24.0.0"
+    "node": ">=22.19.0"
   },
   "scripts": {
     "build": "pnpm -r build",

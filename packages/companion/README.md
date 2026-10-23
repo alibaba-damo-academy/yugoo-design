@@ -415,7 +415,8 @@ This beta is experimental. Native installation, tools, Panel saving, KAG and GRA
 must be verified for the actual host version and platform. A successful package
 installation or runtime-load check does not establish all of those capabilities.
 
-Use Node.js `>=22.19.0 <23` and a durable npm or pnpm installation directory. The current
+Use Node.js `>=22.19.0` and a durable npm or pnpm installation directory.
+Older package versions retain their own `engines.node` requirements. The current
 release uses the packaged native Git library for normal Design versioning without
 system Git. It bundles Windows x64 MSVC and Linux x64 GNU runtimes; other platforms
 are unsupported. System Git is separate and needed only for the explicit CLI
@@ -935,7 +936,7 @@ node test/browser-conversation.mjs
 
 ### Build from an independent public-source checkout
 
-Use Node.js 22+, Git, and the pnpm version declared by the source root's
+Use Node.js `>=22.19.0`, Git, and the pnpm version declared by the source root's
 `packageManager` (currently `pnpm@11.7.0`). Run these commands from that root:
 
 ```sh
@@ -1044,7 +1045,7 @@ rejected; absent evidence is reported as unavailable. Native agent tools belong
 to the host session: Companion's inability to spawn foreground agents says
 nothing about whether that session exposes native subagent tools.
 
-Prerequisites: Node.js 22+, Git and a Codex CLI with `plugin add` support. Individual
+Prerequisites: Node.js `>=22.19.0`, Git and a Codex CLI with `plugin add` support. Individual
 Kit scripts can additionally require their declared browser/npm dependencies.
 This remains a local development distribution, not a published marketplace release.
 
@@ -1420,7 +1421,7 @@ entry Skill, native Hooks and MCP connector configuration. The full Companion
 runtime stays outside the suite because QwenWork 1.2.5 limits local ZIP imports
 to 50 MiB. `packageQwenWorkExpertKit` in `qwenwork-package.mjs` creates this thin
 suite from an already assembled runtime and an explicit Windows runtime path.
-Node 22.19+ or 24+ is an external prerequisite; do not borrow a DSH installation.
+Node.js `>=22.19.0` is an external prerequisite; do not borrow a DSH installation.
 
 Build the normal runtime with `build-plugin.mjs --qwenwork --runtime-config PATH`.
 The JSON config requires `executable`, `worker`, `nodeExecutable` (absolute Windows

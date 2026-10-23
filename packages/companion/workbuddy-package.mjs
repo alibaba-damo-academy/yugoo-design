@@ -103,7 +103,8 @@ Do not read transcript contents or reveal connection tokens.
 Acquire the exact @yugoo-design/companion npm version in a persistent user-owned
 directory, then run its install --host workbuddy command with the verified Node
 path, preparation destination and --suite-version ${version}. Use Node
->=22.19.0 <23, as required by the acquired package manifest.
+>=22.19.0 for the updated package; check the acquired exact version's
+engines.node because older packages retain their original requirements.
 Import the emitted nativeImport.market directory through WorkBuddy's native
 marketplace importer, then enable its yugoo-design suite and MCP connection.
 This preparation uses the ${marketName} market. A fresh installation needs no

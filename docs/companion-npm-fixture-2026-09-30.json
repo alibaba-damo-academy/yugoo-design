@@ -5,7 +5,7 @@
   "license": "Apache-2.0",
   "repository": { "type": "git", "url": "git+https://github.com/alibaba-damo-academy/yugoo-design.git" },
   "type": "module",
-  "engines": { "node": ">=22.19.0 <23" },
+  "engines": { "node": ">=22.19.0" },
   "publishConfig": { "access": "public" },
   "bin": { "design-system": "bin/design-system.mjs" },
   "files": ["bin", "payload", "licenses", "release-manifest.json", "README.md", "LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"],

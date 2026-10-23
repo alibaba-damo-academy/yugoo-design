@@ -13,12 +13,17 @@ export function validateReleaseVersion(version) {
   return version
 }
 /** The committed version file is authoritative; manual input can only confirm it. */
-export async function selectCompanionRelease({ manifest, expectedVersion, checkPublished = false, fetchImpl = fetch }) {
+export async function selectCompanionRelease({ manifest, expectedVersion, releaseRef, requireTag = false, checkPublished = false, fetchImpl = fetch }) {
   assert.ok(manifest && typeof manifest === 'object' && !Array.isArray(manifest), 'Release version object required')
   assert.deepEqual(Object.keys(manifest), ['version'], 'Only the tracked release version is supported')
   const version = validateReleaseVersion(manifest.version)
   if (expectedVersion !== undefined && expectedVersion !== '') {
     assert.equal(validateReleaseVersion(expectedVersion), version, 'Manual version must match release/companion-version.json')
+  }
+  assert.equal(typeof requireTag, 'boolean', 'Explicit release tag requirement required')
+  assert.ok(releaseRef === undefined || releaseRef === '' || typeof releaseRef === 'string' && /^refs\/(?:heads|tags)\//u.test(releaseRef), 'Expected a branch or tag ref')
+  if (requireTag || releaseRef?.startsWith('refs/tags/')) {
+    assert.equal(releaseRef, `refs/tags/v${version}`, 'Release tag must match release/companion-version.json exactly')
   }
   assert.equal(typeof checkPublished, 'boolean', 'Explicit publication lookup selection required')
   if (!checkPublished) return { version, skip: false }
@@ -119,9 +124,12 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       assert.equal(args.length, 0, 'Version selection reads only release/companion-version.json')
       const lookup = process.env.CHECK_RELEASE_PUBLISHED ?? 'false'
       assert.ok(['true', 'false'].includes(lookup), 'CHECK_RELEASE_PUBLISHED must be true or false')
+      const requireTag = process.env.REQUIRE_RELEASE_TAG ?? 'false'
+      assert.ok(['true', 'false'].includes(requireTag), 'REQUIRE_RELEASE_TAG must be true or false')
       const selected = await selectCompanionRelease({
         manifest: JSON.parse(await readFile(new URL('../release/companion-version.json', import.meta.url))),
-        expectedVersion: process.env.EXPECTED_RELEASE_VERSION, checkPublished: lookup === 'true',
+        expectedVersion: process.env.EXPECTED_RELEASE_VERSION, releaseRef: process.env.RELEASE_REF,
+        requireTag: requireTag === 'true', checkPublished: lookup === 'true',
       })
       if (process.env.GITHUB_OUTPUT) await appendFile(process.env.GITHUB_OUTPUT, `version=${selected.version}\nskip=${selected.skip}\n`)
       console.log(JSON.stringify({ ...selected, message: selected.skip ? 'Exact version already published; skipping' : 'Tracked version selected' }))
