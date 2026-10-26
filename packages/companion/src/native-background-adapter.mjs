@@ -2,6 +2,7 @@
 import { createWorkBuddyReviewTranscript, readWorkBuddyBackgroundReadiness, verifyWorkBuddyChild } from './workbuddy-native.mjs'
 import { workBuddyBackgroundProtocol } from './workbuddy-background.mjs'
 import { createQwenWorkBackgroundTranscript, qwenWorkBackgroundProtocol, readQwenWorkBackgroundReadiness, verifyQwenWorkBackgroundChild } from './qwenwork-background.mjs'
+import { createCodexDesktopBackgroundAdapter } from './codex-desktop-background.mjs'
 
 // This is capability, not project policy or a promise to launch a native task.
 // Both desktop adapters rely on cooperative Agent calls; neither owns a public
@@ -15,8 +16,12 @@ function capability(readiness) {
     diagnostics: readiness.diagnostics ?? { issues: [] } }
 }
 
-export function createNativeBackgroundAdapter({ host, sessionId, projectRoot, mainTranscriptPath, readinessSince }) {
+export function createNativeBackgroundAdapter({ host, sessionId, projectRoot, mainTranscriptPath, readinessSince, codexDesktop = false, getConnectionPath }) {
   const context = { sessionId, projectRoot, mainTranscriptPath }
+  if (host === 'codex' && codexDesktop) {
+    const adapter = createCodexDesktopBackgroundAdapter({ ...context, readinessSince, getConnectionPath })
+    return { ...adapter, readReadiness: async () => capability(await adapter.readReadiness()) }
+  }
   if (host === 'workbuddy') return {
     readReadiness: async () => capability(await readWorkBuddyBackgroundReadiness({ ...context, readinessSince })),
     protocol: workBuddyBackgroundProtocol,

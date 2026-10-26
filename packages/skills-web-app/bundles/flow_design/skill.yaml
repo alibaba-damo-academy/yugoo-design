@@ -2,7 +2,7 @@
 
 # Stable internal id; must equal this directory name.
 name: flow_design
-version: "1.0"
+version: "1.1"
 
 # Bilingual FE heading and progress title.
 title:

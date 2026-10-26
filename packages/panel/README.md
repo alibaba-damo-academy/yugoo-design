@@ -18,6 +18,15 @@ discovery, compilation and rendering have separate entry points.
 Public npm specifiers use the `@yugoo-design/` scope. Development source uses
 the unscoped workspace specifiers shown above.
 
+Browser builds retain the standalone image resizer and the reducer's embedded
+resizer as separate pinned inputs. The browser dependency plugin compiles fixed
+classic Worker scripts only when each package entry is loaded. Browser entries
+that load these dependencies emit a `pica-static-workers-<entry>.json` inventory with source pins, precise
+Parent patch ranges and the actual task, empty-probe and OffscreenCanvas
+capability scripts. Their build-time checks cover script source and finite
+adapter seams; Pool behavior and browser/Host execution require their own checks.
+Upstream source or compiler drift fails the build until its pins are reviewed.
+
 Browser adapters inject `PanelSelect` from the separately built `select` entry
 into a neutral control port without loading the Panel/DSL workspace or canvas
 dependencies. The broad `client-api` retains compatible re-exports but is not a
@@ -89,6 +98,14 @@ from the Host frame; a safe two-line height is retained instead of claiming exac
 divider alignment where the Host has no visible information bar.
 
 ## Save continuation and assessment
+
+The shared `DesignContinuationBar` presents Runtime `user_continue` descriptors
+in Host chrome, once per visible workspace. Hosts provide the ordinary native
+prompt handler and can disable it with a readable status while edits or delivery
+are unresolved. Adjust is rendered only when the Host supplies an actual
+composer-focus handler; it preserves the draft. Later dismisses locally, with an
+optional Host callback to retain dismissal across composer visibility changes.
+The component neither guesses a Bundle stage nor consumes a Runtime gate.
 
 Saving and assessment are separate stages. A multi-Panel save collects the
 actual successful save receipts; a partial save failure does not submit the

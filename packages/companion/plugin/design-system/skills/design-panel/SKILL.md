@@ -1,6 +1,6 @@
 ---
 name: design-panel
-description: Open the local Design Project Panels, receive saved user edits, and coordinate Bundle generation using native Codex Producer and Worker subagents with independent background design reviews.
+description: Open Design Project Panels in the current Codex CLI or Mac desktop conversation, receive saved edits, and run authorized design work according to the host's verified capabilities.
 ---
 
 # Design Project Panel
@@ -10,7 +10,21 @@ save path. Codex remains the Agent host. No DSH process or second model is start
 The plugin root is two directories above this skill directory; resolve that
 location from this skill's installed path, not from the current working directory.
 
-## Open an existing project
+## Choose the current Codex entry
+
+In the macOS Codex desktop app, use [the desktop entry](codex-desktop.md) for
+startup, right-side Panel presentation and original-conversation notifications.
+Its desktop entry selects only the native execution route available in this
+Host. Bundle Producer/Worker binding and background GRA readiness are independent.
+Do not apply CLI startup/queue or managed execution to that route. Check the
+current connection's actual capabilities before selecting an execution mode.
+
+For a Codex CLI conversation, use the CLI steps below. Installed executables
+do not identify the current host. If the host is unclear, inspect trusted native
+context before starting a transport; do not choose a CLI fallback after a
+desktop admission or notification failure.
+
+## Open an existing project in Codex CLI
 
 Use the existing project path supplied by the user. First inspect it:
 

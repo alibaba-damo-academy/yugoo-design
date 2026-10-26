@@ -20,6 +20,7 @@
 // waypoint matches its source/target shape boundary midpoint to <1px.
 
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { gridFor, seedRoutes } from './router.mjs';
 import { detectFeedbackEdges } from './feedback.mjs';
 import { jointSearch, routeDescent } from './search.mjs';
@@ -28,24 +29,21 @@ import { createReadingObjective } from './reading-order.mjs';
 import { channelCrowding, spaceChannels } from './channel-spacing.mjs';
 import { layoutPolicy } from './layout-policy.mjs';
 
-// Resolve only the directly declared packages. Import-time failures inside a
-// present package (including missing transitive dependencies) remain original
-// exceptions, rather than being mislabeled as a missing direct dependency.
-for (const [packageName, specifier] of [
-  ['bpmn-moddle', 'bpmn-moddle'],
-  ['elkjs', 'elkjs/lib/elk.bundled.js'],
-]) {
-  try {
-    import.meta.resolve(specifier);
-  } catch (error) {
-    if (error.code !== 'ERR_MODULE_NOT_FOUND'
-      || !error.message.startsWith(`Cannot find package '${packageName}' imported from `)) throw error;
-    process.stderr.write(`[flow_design:dependency] Missing package "${packageName}". Install the dependencies declared in the Kit package.json before running Flow layout.\n`);
-    process.exit(2);
-  }
+// Literal imports enter the normal packaged closure. Classify only this exact
+// entry's missing direct package; dependency initialization/transitive failures
+// and missing emitted chunks retain their original exception.
+function missingDirectDependency(error, packageName) {
+  if (error?.code !== 'ERR_MODULE_NOT_FOUND'
+    || error.message !== `Cannot find package '${packageName}' imported from ${fileURLToPath(import.meta.url)}`) throw error;
+  process.stderr.write(`[flow_design:dependency] Missing package "${packageName}". Install the dependencies declared in the Kit package.json before running Flow layout.\n`);
+  process.exit(2);
 }
-const BpmnModdleModule = await import('bpmn-moddle');
-const { default: ELK } = await import('elkjs/lib/elk.bundled.js');
+let BpmnModdleModule;
+try { BpmnModdleModule = await import('bpmn-moddle'); }
+catch (error) { missingDirectDependency(error, 'bpmn-moddle'); }
+let ELK;
+try { ({ default: ELK } = await import('elkjs/lib/elk.bundled.js')); }
+catch (error) { missingDirectDependency(error, 'elkjs'); }
 
 // bpmn-moddle has shipped both default and named export across versions
 // (v9 → default `SimpleBpmnModdle`, v10 → named `{ BpmnModdle }`). We

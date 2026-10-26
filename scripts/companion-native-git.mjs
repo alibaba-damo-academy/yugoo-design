@@ -7,6 +7,8 @@ import { createRequire } from 'node:module'
 
 export const COMPANION_NATIVE_GIT_IMPORT = '../git-native/index.cjs'
 export const COMPANION_GIT_WORKER = 'git-native-worker.js'
+const ARTIFACTS = ['native/yugoo_git.darwin-arm64.node', 'native/yugoo_git.linux-x64.node', 'native/yugoo_git.win32-x64.node']
+const SUPPORTED = ['linux-gnu-x64', 'windows-msvc-x64', 'macos-arm64']
 export const isNativeGitBuildCache = path => path === 'native-source/target'
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 const safe = path => typeof path === 'string' && path && !isAbsolute(path)
@@ -73,7 +75,7 @@ export async function prepareCompanionNativeGit(workspaceRoot, { artifactRoot = 
   assert.equal(manifest.name, 'yugoo-design-git-native')
   assert.equal(manifest.license, 'MIT')
   const source = JSON.parse(await regular(sourceRoot, 'SOURCE.json'))
-  assert.deepEqual(source.artifacts.map(item => item.path).sort(), ['native/yugoo_git.linux-x64.node', 'native/yugoo_git.win32-x64.node'])
+  assert.deepEqual(source.artifacts.map(item => item.path).sort(), ARTIFACTS)
   for (const item of source.inputs) assert.equal(sha(await regular(sourceRoot, item.path)), item.sha256, 'Native Git source input changed: ' + item.path)
   async function add(path) {
     if (isNativeGitBuildCache(path)) return
@@ -105,8 +107,8 @@ export async function stageCompanionNativeGit(sharedRoot, prepared) {
     files[path] = { bytes: bytes.length, sha256: sha(bytes) }
   }
   const receipt = { schemaVersion: 1, sourceSha256: prepared.sourceSha256, version: prepared.version,
-    scope: 'unchanged-source-binding-and-two-pinned-prebuilds', files,
-    supported: ['linux-gnu-x64', 'windows-msvc-x64'], platformsExecuted: [] }
+    scope: 'unchanged-source-binding-and-three-pinned-prebuilds', files,
+    supported: [...SUPPORTED], platformsExecuted: [] }
   await writeFile(join(root, 'runtime-manifest.json'), JSON.stringify(receipt, null, 2) + '\n', { flag: 'wx' })
   await mkdir(join(sharedRoot, 'scripts'), { recursive: true })
   await writeFile(join(sharedRoot, 'scripts/package.json'), '{"type":"module"}\n', { flag: 'wx' })
@@ -122,7 +124,9 @@ export async function verifyCompanionNativeGit(sharedRoot) {
   assert.equal(sha(await regular(root, 'SOURCE.json')), receipt.sourceSha256)
   assert.equal(JSON.parse(await regular(sharedRoot, 'scripts/package.json')).type, 'module')
   assert.ok(receipt.files['index.cjs'] && receipt.files.LICENSE && receipt.files.NOTICE)
-  assert.deepEqual(source.artifacts.map(x => x.path).sort(), ['native/yugoo_git.linux-x64.node', 'native/yugoo_git.win32-x64.node'])
+  assert.deepEqual(source.artifacts.map(x => x.path).sort(), ARTIFACTS)
+  assert.equal(receipt.scope, 'unchanged-source-binding-and-three-pinned-prebuilds')
+  assert.deepEqual(receipt.supported, SUPPORTED)
   const actual = []
   async function walk(path = '') {
     for (const name of await readdir(join(root, path))) {

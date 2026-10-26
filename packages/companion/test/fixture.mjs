@@ -1,4 +1,4 @@
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -10,7 +10,9 @@ export const threadId = '00000000-0000-4000-8000-000000000001'
 const sourceKitRoot = fileURLToPath(new URL('../../skills-web-app/', import.meta.url))
 
 export async function fixture({ withTranscript = false, smartQuestionsMode = 'subagent', researchMode = 'subagent', serverOptions = {} } = {}) {
-  const root = await mkdtemp(join(tmpdir(), 'design-companion-test-'))
+  // We own this new tree: supply physical roots to strict source/storage ports
+  // even when the OS spells its temporary parent through a directory alias.
+  const root = await realpath(await mkdtemp(join(tmpdir(), 'design-companion-test-')))
   // Producer tests choose their topology explicitly, independently of the
   // shipped Smart Questions default. Never rewrite the shared source Kit.
   const kitRoot = join(root, 'kit')

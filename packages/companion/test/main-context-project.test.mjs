@@ -17,7 +17,7 @@ test('main UST uses the real project lane and a later evaluator cannot replace i
   await mkdir(join(kitRoot, 'skills'), { recursive: true })
   await cp(fileURLToPath(new URL('../../skills-web-app/kits/web_app/mindset.md', import.meta.url)), join(kitRoot, 'mindset.md'))
   await cp(fileURLToPath(new URL('../../skills-web-app/bundles', import.meta.url)), join(kitRoot, 'skills'), { recursive: true })
-  await new DesignProjectManager().create({ root: projectRoot, name: 'Main UST fixture', knowledge: { provider: 'ladybug-wasm' }, kit: { name: 'web_app', version: '1.0' } })
+  await new DesignProjectManager().create({ root: projectRoot, name: 'Main UST fixture', knowledge: { provider: 'ladybug-wasm' }, kit: { name: 'web_app', version: '1.1' } })
   const connectionPath = join(root, 'private.json')
   const transcriptPath = join(root, 'synthetic-native.jsonl'); await writeFile(transcriptPath, '{}\n')
   const project = await openCompanionProject({ projectRoot, kitRoot, stateRoot, connection: { threadId, send: async () => ({ accepted: true }) }, getConnectionPath: () => connectionPath })

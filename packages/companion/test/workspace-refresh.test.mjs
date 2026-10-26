@@ -20,7 +20,7 @@ for (const host of ['codex', 'claude-code', 'qoder']) test(`${host}: live files 
   try {
     const registry = new core.DesignProjectRegistry({ projectsRoot: join(root, 'projects'), stateRoot: join(root, 'registry') })
     const created = await registry.create('fixture', { provider: 'ladybug-wasm' })
-    await registry.setKitPin(created.projectId, { name: 'web_app', version: '1.0' })
+    await registry.setKitPin(created.projectId, { name: 'web_app', version: '1.1' })
     const project = await openCompanionProject({ projectRoot: created.root,
       kitRoot: fileURLToPath(new URL('../../skills-web-app/', import.meta.url)), stateRoot: join(root, 'runtime'),
       connection: { host, threadId: '11111111-1111-4111-8111-111111111111' } })

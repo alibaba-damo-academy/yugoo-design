@@ -12,7 +12,7 @@ test('portable Companion save uses the same relationship validators and preserve
   const root = await mkdtemp(join(tmpdir(), 'business-native-parity-'))
   t.after(() => rm(root, {recursive:true, force:true}))
   const projectRoot = join(root, 'project'), stateRoot = join(root, 'journal')
-  await new DesignProjectManager().create({root:projectRoot, name:'Business parity', knowledge:{provider:'ladybug-wasm'}, kit:{name:'web_app', version:'1.0'}})
+  await new DesignProjectManager().create({root:projectRoot, name:'Business parity', knowledge:{provider:'ladybug-wasm'}, kit:{name:'web_app', version:'1.1'}})
   const options = {projectRoot,kitRoot,stateRoot,connection:{host:'codex',threadId:'00000000-0000-4000-8000-000000000001'}}
   const context = await openCompanionProject(options)
   assert.equal((await context.prepareBundle({skill:'business_data'})).version, '1.0')

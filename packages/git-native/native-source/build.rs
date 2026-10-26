@@ -8,6 +8,9 @@ fn main() {
     napi_build::setup();
   }
   match compile_target.as_str() {
+    "aarch64-apple-darwin" => {
+      println!("cargo:rustc-link-arg=-Wl,-install_name,@rpath/yugoo_git.darwin-arm64.node");
+    }
     "x86_64-unknown-linux-gnu" => {
       println!("cargo:rustc-link-search=/usr/lib");
     }

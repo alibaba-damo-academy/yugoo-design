@@ -13,6 +13,7 @@ import { copyOwnLicenseMaterials, OWN_LICENSE_FILES } from '../../scripts/releas
 import { readOfficialDshJsonInput } from '../../scripts/official-dsh-json-input.mjs'
 import { preparePanelAuthoringMaterial, writePanelAuthoringMaterial } from '../../scripts/companion-authoring-material.mjs'
 import { copyComponentSkill } from './component-skill-package.mjs'
+import { configureCodexDesktopPackage } from './codex-desktop-package.mjs'
 import { prepareCompanionNativeGit, stageCompanionNativeGit, verifyCompanionNativeGit } from '../../scripts/companion-native-git.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -62,8 +63,35 @@ export async function copyNativeExecutionReference(target, { host, companionRoot
   return path
 }
 
-export async function packagePlugin(destination, { host = 'codex', qwenworkRuntime, nativeGitArtifactRoot } = {}) {
-  if (!['codex', 'qoder', 'claude-code', 'qwenwork'].includes(host)) throw new Error('Unsupported package host.')
+/** The normal standalone Flow script closure, exercised without a whole package copy. */
+export async function packageFlowLayout(target) {
+  return build({
+    config: false,
+    entry: { layout: join(here, '../skills-web-app/bundles/flow_design/scripts/layout.mjs') },
+    outDir: join(target, 'bundles/flow_design/scripts'),
+    format: 'esm', platform: 'node', target: 'node22',
+    tsconfig: false, dts: false, clean: false,
+    deps: { alwaysBundle: [/.*/], onlyBundle: false },
+    plugins: [{
+      name: 'portable-kit-script-imports',
+      generateBundle(_options, bundle) {
+        for (const output of Object.values(bundle)) {
+          if (output.type !== 'chunk') continue
+          for (const dependency of [...output.imports, ...output.dynamicImports]) {
+            if (!dependency.startsWith('node:') && !bundle[dependency]) {
+              throw new Error(`Unbundled Kit script dependency: ${dependency}`)
+            }
+          }
+        }
+      },
+    }],
+  })
+}
+
+export async function packagePlugin(destination, { host = 'codex', qwenworkRuntime, nativeGitArtifactRoot, nodeExecutable } = {}) {
+  if (!['codex', 'codex-desktop', 'qoder', 'claude-code', 'qwenwork'].includes(host)) throw new Error('Unsupported package host.')
+  const overlayHost = host === 'codex-desktop' ? 'codex' : host
+  if (nodeExecutable && host !== 'codex-desktop') throw new Error('Explicit package Node mapping is only supported by --codex-desktop.')
   if (host === 'qwenwork') validateQwenWorkRuntime(qwenworkRuntime)
   const officialInputs = await readOfficialDshJsonInput()
   const authoring = await preparePanelAuthoringMaterial(join(here, '../..'))
@@ -75,10 +103,10 @@ export async function packagePlugin(destination, { host = 'codex', qwenworkRunti
   if (!['yugoo-design', 'design-system'].includes(basename(target))) throw new Error('Output folder must be named yugoo-design (legacy design-system is also accepted).')
   // Deliberately fail if it exists: never clean an arbitrary output or plugin install.
   await mkdir(target)
-  const overlay = { codex: 'plugin', qoder: 'plugin-qoder', 'claude-code': 'plugin-claude', qwenwork: 'plugin-qwenwork' }[host]
-  const manifestDirectory = { codex: '.codex-plugin', qoder: '.qoder-plugin', 'claude-code': '.claude-plugin', qwenwork: '.claude-plugin' }[host]
+  const overlay = { codex: 'plugin', qoder: 'plugin-qoder', 'claude-code': 'plugin-claude', qwenwork: 'plugin-qwenwork' }[overlayHost]
+  const manifestDirectory = { codex: '.codex-plugin', qoder: '.qoder-plugin', 'claude-code': '.claude-plugin', qwenwork: '.claude-plugin' }[overlayHost]
   await copyTree(join(here, overlay, 'design-system'), target)
-  if (host !== 'codex') await copyComponentSkill(target)
+  if (overlayHost !== 'codex') await copyComponentSkill(target)
   await writePanelAuthoringMaterial(target, authoring)
   await copyOwnLicenseMaterials(join(here, '../..'), target)
   const manifestPath = join(target, manifestDirectory, 'plugin.json')
@@ -86,7 +114,7 @@ export async function packagePlugin(destination, { host = 'codex', qwenworkRunti
   manifest.version = `${manifest.version.split('+')[0]}+${host}.${Date.now()}-${randomUUID().slice(0, 8)}`
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
   if (host === 'codex') await cp(join(here, 'install-codex.mjs'), join(target, 'install-codex.mjs'))
-  else {
+  else if (overlayHost !== 'codex') {
     const prefix = host === 'qwenwork' ? 'qwenwork' : host === 'qoder' ? 'qoder' : 'claude'
     await copyNativeHookModules(target, { host })
     if (host === 'qwenwork') await configureQwenWorkPackage(target, qwenworkRuntime)
@@ -111,27 +139,7 @@ export async function packagePlugin(destination, { host = 'codex', qwenworkRunti
   // Agent-facing scripts run as separate Node processes, outside design.mjs.
   // Bundle their runtime imports at publication time, not in a user's session.
   // Keep the source Kit (and the native DSH execution path) unchanged.
-  await build({
-    config: false,
-    entry: { layout: join(here, '../skills-web-app/bundles/flow_design/scripts/layout.mjs') },
-    outDir: join(target, 'bundles/flow_design/scripts'),
-    format: 'esm', platform: 'node', target: 'node22',
-    tsconfig: false, dts: false, clean: false,
-    deps: { alwaysBundle: [/.*/], onlyBundle: false },
-    plugins: [{
-      name: 'portable-kit-script-imports',
-      generateBundle(_options, bundle) {
-        for (const output of Object.values(bundle)) {
-          if (output.type !== 'chunk') continue
-          for (const dependency of [...output.imports, ...output.dynamicImports]) {
-            if (!dependency.startsWith('node:') && !bundle[dependency]) {
-              throw new Error(`Unbundled Kit script dependency: ${dependency}`)
-            }
-          }
-        }
-      },
-    }],
-  })
+  await packageFlowLayout(target)
   // Separate third-party notice: the bundled JSON utility comes from upstream DSH.
   await mkdir(join(target, 'licenses'))
   await writeFile(join(target, 'licenses/DSH-LICENSE'), officialInputs.licenseBytes, { flag: 'wx' })
@@ -139,12 +147,13 @@ export async function packagePlugin(destination, { host = 'codex', qwenworkRunti
   await copyBrowserLicenseMaterials(browserLicenseEntries, target)
   await copyBundledJsLicenseMaterials(bundledJsLicenseEntries, target)
   await appendFile(join(target, 'NOTICE'), BROWSER_LICENSE_NOTICE + BUNDLED_JS_LICENSE_NOTICE)
+  if (host === 'codex-desktop') await configureCodexDesktopPackage(target, { nodeExecutable })
   return target
 }
 
 async function main() {
   const args = process.argv.slice(2)
-  const hostFlag = { '--qoder': 'qoder', '--claude': 'claude-code', '--qwenwork': 'qwenwork' }[args[0]]
+  const hostFlag = { '--codex-desktop': 'codex-desktop', '--qoder': 'qoder', '--claude': 'claude-code', '--qwenwork': 'qwenwork' }[args[0]]
   const host = hostFlag ? (args.shift(), hostFlag) : 'codex'
   let qwenworkRuntime
   if (host === 'qwenwork') {
@@ -157,7 +166,13 @@ async function main() {
     if (!args[0] || args[0].startsWith('--')) throw Error('--native-git-artifacts requires a pinned artifact directory')
     nativeGitArtifactRoot = resolve(args.shift())
   }
-  if (args.length > 1 || args.some(arg => arg.startsWith('--'))) throw new Error('Usage: node build-plugin.mjs [--qoder|--claude|--qwenwork --runtime-config PATH] [--native-git-artifacts PATH] [new-output-directory/yugoo-design]')
+  let nodeExecutable
+  if (args[0] === '--node-executable') {
+    args.shift()
+    if (!args[0] || args[0].startsWith('--')) throw Error('--node-executable requires an existing public Node executable')
+    nodeExecutable = resolve(args.shift())
+  }
+  if (args.length > 1 || args.some(arg => arg.startsWith('--'))) throw new Error('Usage: node build-plugin.mjs [--codex-desktop|--qoder|--claude|--qwenwork --runtime-config PATH] [--native-git-artifacts PATH] [--node-executable PUBLIC_NODE] [new-output-directory/yugoo-design]')
   for (const config of ['tsdown.config.ts', 'tsdown.server.config.ts']) {
     const result = await run('pnpm', ['exec', 'tsdown', '--config', config], { cwd: here, maxBuffer: 1024 * 1024 })
     process.stderr.write(result.stdout)
@@ -169,7 +184,7 @@ async function main() {
     const parent = await mkdtemp(join(here, 'dist-plugin/build-'))
     destination = join(parent, 'yugoo-design')
   }
-  console.log(await packagePlugin(destination, { host, qwenworkRuntime, nativeGitArtifactRoot }))
+  console.log(await packagePlugin(destination, { host, qwenworkRuntime, nativeGitArtifactRoot, nodeExecutable }))
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

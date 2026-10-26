@@ -1,6 +1,7 @@
 import { defineConfig } from 'tsdown'
 import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { createRequire } from 'node:module'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { dshClientStyles } from '../../scripts/tsdown-client-styles.ts'
 import { cssResourceBuildOptions } from '../../scripts/css-resource-build-options.mjs'
 import { graphLayoutWorker } from '../../scripts/graph-layout-worker.ts'
@@ -27,6 +28,10 @@ const PLATFORM_MODULES = [
 ]
 
 const ID = 'dsh-design-panel'
+const configRequire = createRequire(import.meta.url)
+const { esmExternalRequirePlugin } = await import(pathToFileURL(
+  createRequire(configRequire.resolve('tsdown')).resolve('rolldown/plugins'),
+).href)
 // One descriptor per fresh release build; watch/cache reuse is not supported here.
 const interpreterAssets = canvasBrowserAssets(import.meta.url)
 const clientAssets = canvasBrowserAssets(import.meta.url)
@@ -69,8 +74,10 @@ export default defineConfig([
     clean: false,
     // Exact package roots do not cover CSS subpaths in tsdown's dependency matcher.
     // Keep this stylesheet in the graph so the original scoped-CSS preprocessor runs.
-    noExternal: ['elkjs', '@excalidraw/excalidraw', '@excalidraw/excalidraw/index.css', 'bpmn-js'],
-    plugins: [canvasBrowserDependencies(import.meta.url), interpreterAssets.plugin,
+    // Let the ESM peer plugin see CJS React edges before automatic peer
+    // externalization makes them opaque browser require helpers.
+    noExternal: ['react', 'elkjs', '@excalidraw/excalidraw', '@excalidraw/excalidraw/index.css', 'bpmn-js'],
+    plugins: [esmExternalRequirePlugin({ external: ['react'] }), canvasBrowserDependencies(import.meta.url), interpreterAssets.plugin,
       dshClientStyles(ID, import.meta.url, { preprocessCss: interpreterAssets.preprocessCss, resources: cssResourceBuildOptions('dsh-design-panel-renderer') })],
   },
   // Browser client half: a closure-factory artifact. The bundle calls

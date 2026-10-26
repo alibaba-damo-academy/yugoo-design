@@ -29,7 +29,7 @@ const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 const rootRequire = createRequire(import.meta.url)
 const inputRoots = [
   'packages/git-native', 'scripts/companion-native-git.mjs', 'scripts/companion-source-labels.mjs',
-  'packages/companion/build-plugin.mjs', 'packages/companion/qwenwork-package.mjs',
+  'packages/companion/build-plugin.mjs', 'packages/companion/codex-desktop-package.mjs', 'packages/companion/qwenwork-package.mjs',
   'packages/companion/README.md',
   'scripts/companion-output-module-map.mjs',
   'scripts/companion-bundled-license.mjs', 'third-party/companion',
@@ -43,6 +43,8 @@ const inputRoots = [
   'scripts/tsdown-client-styles.ts', 'scripts/component-skill-resource.ts', 'packages/companion/component-skill-package.mjs', 'scripts/graph-layout-worker.ts', 'scripts/graph-browser-dependencies.ts', 'scripts/official-dsh-json-input.mjs',
   'scripts/known-browser-loader-proof.mjs', 'scripts/companion-packaged-knowledge.mjs', 'scripts/emitted-loader-check.mjs', 'scripts/release-own-license.mjs', 'scripts/companion-npm-candidate.mjs', 'scripts/build-companion-npm-candidate.mjs', 'scripts/test-fixtures/official-dsh-json',
   'scripts/pica-worker-evidence.mjs', 'scripts/probe-companion-pica-worker.mjs',
+  'scripts/static-pica-emission-proof.mjs', 'scripts/pica-static-worker-compiler.mjs',
+  'scripts/pica-static-worker-adapter.mjs', 'scripts/canvas-browser-dependencies.ts', 'scripts/known-flat-browser-loader-proof.mjs',
   'scripts/known-node-loader-proof.mjs',
   'scripts/companion-ladybug-dependency.mjs',
   'scripts/embedded-image-loader-proof.mjs', 'scripts/ui-blob-chain-evidence.mjs', 'scripts/probe-companion-ui-blob-chain.mjs',
@@ -143,14 +145,6 @@ export async function buildFlowScripts(source, outDir, records = [], emittedMaps
       deps: { alwaysBundle: [/.*/], onlyBundle: false },
       plugins: [{
         name: 'standalone-kit-no-runtime-imports',
-        transform(code, id) {
-          if (name !== 'layout' || id !== entry) return null
-          // Direct dependencies are resolved by the bundler; retain the source
-          // diagnostic for source execution, and reject an unknown precheck.
-          const sourcePrecheck = "for (const [packageName, specifier] of [\n  ['bpmn-moddle', 'bpmn-moddle'],\n  ['elkjs', 'elkjs/lib/elk.bundled.js'],\n]) {\n  try {\n    import.meta.resolve(specifier);\n  } catch (error) {\n    if (error.code !== 'ERR_MODULE_NOT_FOUND'\n      || !error.message.startsWith(`Cannot find package '${packageName}' imported from `)) throw error;\n    process.stderr.write(`[flow_design:dependency] Missing package \"${packageName}\". Install the dependencies declared in the Kit package.json before running Flow layout.\\n`);\n    process.exit(2);\n  }\n}\n"
-          assert.equal(code.split(sourcePrecheck).length, 2, 'Flow dependency precheck changed')
-          return { code: code.replace(sourcePrecheck, '// Direct dependencies bundled at build time.\n'), map: null }
-        },
         resolveId(specifier, importer) {
           if (name === 'layout-search' && importer === entry && specifier === './layout-metrics.mjs') return { id: specifier, external: true }
           return null
@@ -274,8 +268,14 @@ export async function buildSameSourceCandidate({ ladybugDependency, nativeGitArt
       if (host !== 'codex') await copyNativeHookModules(target, { host, sourceDirectory: join(companion, 'src') })
     }
     await stage('residual-imports', async () => {
-      report.emitted = await inspectStagedPayload(shared, template.dependencies)
-      report.staticUnknown = pendingRuntimeTasks(report.emitted)
+      report.emitted = await inspectStagedPayload(shared, template.dependencies, {
+        webModuleMap: report.emittedModuleMaps.find(mapping => mapping.label === 'web'),
+      })
+      report.pendingTasks = pendingRuntimeTasks(report.emitted)
+      // Historical compatibility projection: this field has held pending task
+      // records, not raw loader ranges. Each emitted record keeps its actual
+      // unverified array; static-Worker tasks do not invent legacy unknowns.
+      report.staticUnknown = report.pendingTasks
       report.nonliteralLoadCallsVerified = false
     })
     await stage('candidate', async () => {
@@ -306,11 +306,11 @@ export async function buildSameSourceCandidate({ ladybugDependency, nativeGitArt
 
 
 /** Ordinary checks remain active; the two fixed task boundaries stay pending. */
-export async function inspectStagedPayload(shared, runtimeDependencies, { embeddedImageEvidenceRequired = true } = {}) {
+export async function inspectStagedPayload(shared, runtimeDependencies, { embeddedImageEvidenceRequired = true, webModuleMap } = {}) {
   await verifyCompanionNativeGit(shared)
   const emitted = {
     server: await checkEmitted(join(shared, 'scripts'), new Set(), { packageRoot: shared, knownNodeRuntime: true, relativeArtifacts: { '../knowledge/runtime.mjs': 'knowledge/runtime.mjs', [PACKAGED_CLI_LIFECYCLE_IMPORT]: 'knowledge/cli-lifecycle.mjs', [COMPANION_NATIVE_GIT_IMPORT]: 'git-native/index.cjs' } }),
-    web: await checkEmitted(join(shared, 'web'), new Set(), { knownBrowserShims: true, picaWorkerEvidenceRequired: true, embeddedImageEvidenceRequired }),
+    web: await checkEmitted(join(shared, 'web'), new Set(), { knownBrowserShims: true, picaWorkerEvidenceRequired: true, embeddedImageEvidenceRequired, staticPicaModuleMap: webModuleMap }),
     knowledge: await checkEmitted(join(shared, 'knowledge'), new Set(Object.keys(runtimeDependencies))),
     flow: await checkEmitted(join(shared, 'bundles/flow_design/scripts'), new Set()),
   }
@@ -318,8 +318,23 @@ export async function inspectStagedPayload(shared, runtimeDependencies, { embedd
   return emitted
 }
 
-function pendingRuntimeTasks(emitted, embedded = true) {
+export function pendingRuntimeTasks(emitted, embedded = true) {
   const pending = emitted.web.filter(record => record.runtimeEvidenceRequired)
+  const staticTasks = pending.filter(record => record.runtimeEvidenceRequired.kind === 'static-pica-worker-task')
+  if (staticTasks.length) {
+    assert.ok(embedded, 'Legacy single-worker evidence cannot certify static Pica tasks')
+    assert.equal(pending.length, 2, 'Static Pica cannot mix with legacy runtime tasks')
+    assert.deepEqual(staticTasks.map(record => record.runtimeEvidenceRequired.sourceKind).sort(), ['embedded', 'standalone'], 'Exact static source roles required')
+    for (const record of staticTasks) {
+      const task = record.runtimeEvidenceRequired
+      assert.equal(record.unverified.length, 0, 'Static tasks cannot mask unknown loaders')
+      assert.equal(task.rule, 'pica-static-source-compiler-v1')
+      assert.equal(task.parentWorkerBindingVerified, true)
+      assert.equal(task.browserExecutionVerified, false); assert.equal(task.boundedWorkerTaskVerified, false)
+      assert.equal(task.dynamicClosureVerified, false)
+    }
+    return pending.map(record => ({ file: record.file, ...record.runtimeEvidenceRequired }))
+  }
   assert.equal(pending.length, embedded ? 2 : 1, 'Exact fixed runtime finding groups required')
   const ui = pending.filter(record => record.runtimeEvidenceRequired.kind === 'injected-ui-blob-chain')
   assert.equal(ui.length, embedded ? 1 : 0, 'Exact embedded UI finding group required')
@@ -369,10 +384,14 @@ export async function verifyStagedUiCandidateAssociations({ buildReportFile, bui
   assert.deepEqual(inventory,report.candidateInputs)
   assert.equal(inventorySha256(inventory),report.candidateInventorySha256,'Candidate inventory drift')
   assert.deepEqual(JSON.parse(await regularFile(candidate,'package.json')).dependencies,report.runtimeDependencies)
-  const emitted = await inspectStagedPayload(join(candidate,'payload/shared'),report.runtimeDependencies)
+  const webMaps = (report.emittedModuleMaps ?? []).filter(mapping => mapping.label === 'web')
+  assert.ok(webMaps.length <= 1, 'Duplicate web module map')
+  if (report.staticUnknown?.some(task => task.kind === 'static-pica-worker-task')) assert.equal(webMaps.length, 1, 'Static report requires its captured web module map')
+  const emitted = await inspectStagedPayload(join(candidate,'payload/shared'),report.runtimeDependencies, { webModuleMap: webMaps[0] })
   const pending = pendingRuntimeTasks(emitted)
   assert.deepEqual(pending,report.staticUnknown,'Static finding association drift')
-  return { scope:'staged-static-runtime-task-associations',evidenceAssociationsVerified:true,staticUnknown:pending,
+  if (Object.hasOwn(report, 'pendingTasks')) assert.deepEqual(pending, report.pendingTasks, 'Pending task association drift')
+  return { scope:'staged-static-runtime-task-associations',evidenceAssociationsVerified:true,staticUnknown:pending,pendingTasks:pending,
     browserExecutionVerified:false,injectedUiBlobChainVerified:false,embeddedDefaultWorkerVerified:false,
     candidateAccepted:false,dynamicClosureVerified:false,bundlePanelGraKagVerified:false,publishReady:false }
 }

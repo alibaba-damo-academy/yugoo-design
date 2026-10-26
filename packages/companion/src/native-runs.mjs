@@ -271,6 +271,7 @@ export async function createNativeRuns({ project, stateRoot, threadId, nativeCwd
           for (const [key, value] of Object.entries(next)) if (existing[key] !== value) throw new Error('Native run cannot be rebound to another target.')
           return { registered: true, runId }
         }
+        if (parent?.finished) throw new Error('Worker must belong to this active Bundle Producer; a finished Producer cannot accept new Workers.')
         const log = await observer(next).read()
         if (!log.available) { observers.delete(runId); throw new Error(log.error ?? 'Native transcript identity not ready.') }
         await bindNativeProject({ stateRoot, runId, projectId: project.project.metadata.id, host, sessionId: threadId })
@@ -289,6 +290,12 @@ export async function createNativeRuns({ project, stateRoot, threadId, nativeCwd
         if (binding.role === 'producer' && binding.finished && binding.settlement) {
           if (binding.settledScope !== scope || binding.settledOutcome !== (outcome ?? (scope === 'state' ? 'pause' : 'complete'))) throw new Error('Native run already settled with another outcome.')
           return { accepted: true, settlement: binding.settlement }
+        }
+        if (binding.role === 'producer') {
+          for (const child of bindings.filter(item => item.role === 'worker' && item.parentRunId === runId)) {
+            const log = await observer(child).read()
+            if (!log.available || !['completed', 'failed', 'interrupted'].includes(log.recordedStatus)) throw new Error('Native Producer still has an active or unobservable Worker; wait or cancel it before settlement.')
+          }
         }
         let receipt
         if (binding.role === 'worker') {

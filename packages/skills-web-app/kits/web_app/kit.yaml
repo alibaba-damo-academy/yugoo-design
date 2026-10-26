@@ -32,7 +32,7 @@ mounts:
   # Map human and system responsibilities, steps, branches and handoffs with BPMN.
   - bindingKey: flow_design
     name: flow_design
-    version: "1.0"
+    version: "1.1"
 
   # 视觉风格：定义配色、字体和组件语言，并用代表性界面展示视觉方向。
   # Define colors, typography and component language, illustrated by a representative UI preview.

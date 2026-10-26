@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, writeFile } from 'node:fs/promises'
 import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -87,7 +87,9 @@ test('portable ws bundle has only builtin loaders and preserves masking and UTF-
 })
 
 test('standalone Flow CLIs preserve layout, metrics and search with no exported loader chunks', { timeout: 60000 }, async t => {
-  const root = await mkdtemp(join(tmpdir(), 'companion-standalone-flow-'))
+  // macOS tmpdir has a /var symlink ancestor; keep the real output association
+  // guard strict and create this fixture's output below its canonical path.
+  const root = await realpath(await mkdtemp(join(tmpdir(), 'companion-standalone-flow-')))
   t.after(() => rm(root, { recursive: true, force: true }))
   const source = fileURLToPath(new URL('../packages/skills-web-app/bundles/flow_design/scripts/', import.meta.url))
   const out = join(root, 'out')
@@ -212,18 +214,18 @@ test('strict default still rejects pica; driver staging preserves the exact unkn
 
 test('staging rejects changed pica, unrelated loaders, missing assets and extra consumers', async t => {
   const mutations = [
-    async f => { const path = join(f.web, 'pica-DGw4b28J.js'); await writeFile(path, (await readFile(path, 'utf8')) + '\n') },
-    f => writeFile(join(f.web, 'unknown.js'), "const alias=require;alias('unknown')"),
-    f => writeFile(join(f.shared, 'scripts/unknown.mjs'), "import './missing.mjs'"),
-    f => writeFile(join(f.shared, 'bundles/flow_design/scripts/unknown.mjs'), 'require(dynamicName)'),
-    f => rm(join(f.web, 'rolldown-runtime-CEgmsyvS.js')),
-    f => cp(join(f.web, 'pica-DGw4b28J.js'), join(f.web, 'duplicate-pica.js')),
-    f => rm(join(f.web,'image-blob-reduce.esm-BvXskEpO.js')),
-    f => cp(join(f.web,'image-blob-reduce.esm-BvXskEpO.js'),join(f.web,'duplicate-image.js')),
-    async f => {const p=join(f.web,'client.js');await writeFile(p,(await readFile(p,'utf8')).replace('[\"js\", \"wasm\"]','[\"js\", \"ww\"]'))},
-    f => writeFile(join(f.web, 'escape.js'), "import('./rolldown-runtime-CEgmsyvS.js').then(m=>m.i('unknown'))"),
+    [async f => { const path = join(f.web, 'pica-DGw4b28J.js'); await writeFile(path, (await readFile(path, 'utf8')) + '\n') }, /Unreviewed pica artifact bytes/],
+    [f => writeFile(join(f.web, 'unknown.js'), "const alias=require;alias('unknown')"), /Unverified emitted loader/],
+    [f => writeFile(join(f.shared, 'scripts/unknown.mjs'), "import './missing.mjs'"), /ENOENT.*missing\.mjs/],
+    [f => writeFile(join(f.shared, 'bundles/flow_design/scripts/unknown.mjs'), 'require(dynamicName)'), /Unverified emitted loader/],
+    [f => rm(join(f.web, 'rolldown-runtime-CEgmsyvS.js')), /Missing or additional Rolldown loader source/],
+    [f => cp(join(f.web, 'pica-DGw4b28J.js'), join(f.web, 'duplicate-pica.js')), /Unexpected Rolldown loader consumers|Exact fixed runtime finding groups/],
+    [f => rm(join(f.web,'image-blob-reduce.esm-BvXskEpO.js')), /ENOENT.*image-blob-reduce/],
+    [f => cp(join(f.web,'image-blob-reduce.esm-BvXskEpO.js'),join(f.web,'duplicate-image.js')), /Exact fixed runtime finding groups/],
+    [async f => {const p=join(f.web,'client.js');await writeFile(p,(await readFile(p,'utf8')).replace('[\"js\", \"wasm\"]','[\"js\", \"ww\"]'))}, /Changed UI consumer\/configuration/],
+    [f => writeFile(join(f.web, 'escape.js'), "import('./rolldown-runtime-CEgmsyvS.js').then(m=>m.i('unknown'))"), /Dynamic or non-static known-loader module entry is unverified/],
   ]
-  for (const mutate of mutations) { const f = await setup(t); await mutate(f); await assert.rejects(inspectStagedPayload(f.shared, {})) }
+  for (const [mutate, expected] of mutations) { const f = await setup(t); await mutate(f); await assert.rejects(inspectStagedPayload(f.shared, {}), expected) }
 })
 
 test('real server and Knowledge compilation preserve the empty server dependency set', {timeout:30000}, async t => {
@@ -279,8 +281,13 @@ async function association(t) {
   Object.assign(report, { kind: 'candidate-relocated-pica-worker-probe', root: evidence, source: f.web, picaFile: 'pica-DGw4b28J.js',
     candidateDirectory: f.candidate, candidateInputs, candidateInventorySha256: inventoryHash, runnerSha256: runnerHash,
     inputs: await artifactInventory(f.web), inputsUnchanged: true, copyUnchanged: true, candidateUnchanged: true })
+  // Match the existing sourceInputsFixture pattern in pica-worker-evidence.test:
+  // reconstruct archived metadata only in this test-owned disposable tree.
+  const sourceRoot = join(f.root, 'source-inputs')
+  for (const name of ['pica', 'webworkify']) await cp(join(fixture, 'source', name), join(sourceRoot, name), { recursive: true })
+  await rename(join(sourceRoot, 'pica/upstream-package.json'), join(sourceRoot, 'pica/package.json'))
   const options = { buildReportFile: join(f.root, 'build-report.json'), evidenceDirectory: evidence, runnerSha256: runnerHash,
-    sourceInputs: { picaDirectory: join(fixture, 'source/pica'), webworkifyDirectory: join(fixture, 'source/webworkify') },
+    sourceInputs: { picaDirectory: await realpath(join(sourceRoot, 'pica')), webworkifyDirectory: await realpath(join(sourceRoot, 'webworkify')) },
     versions: { browserVersion: '149.0.7827.55', playwrightVersion: '1.61.1', nodeVersion: '22.22.3' } }
   async function save() {
     const b = JSON.stringify(buildReport), r = JSON.stringify(report)
@@ -303,19 +310,27 @@ test('synthetic post-probe association cannot promote runtime or candidate accep
 
 test('no candidate promotion on old/missing evidence, report drift or newly broken ordinary imports', async t => {
   const mutations = [
-    async f => { f.report.kind = 'retained-relocated-pica-worker-probe'; await f.save() },
-    f => rm(join(f.options.evidenceDirectory, 'report.json')),
-    async f => { f.buildReport.sourceStable = false; await f.save() },
-    async f => { f.buildReport.candidateAccepted = true; await f.save() },
-    f => writeFile(f.options.buildReportFile, '{}'),
-    async f => {
+    { mutate: async f => { f.report.kind = 'retained-relocated-pica-worker-probe'; await f.save() },
+      expected: /Retained diagnostic cannot certify candidate/ },
+    { mutate: f => rm(join(f.options.evidenceDirectory, 'report.json')),
+      expected: error => error.code === 'ENOENT' && error.path.endsWith('report.json') },
+    { mutate: async f => { f.buildReport.sourceStable = false; await f.save() },
+      expected: { code: 'ERR_ASSERTION', actual: false, expected: true } },
+    { mutate: async f => { f.buildReport.candidateAccepted = true; await f.save() },
+      expected: { code: 'ERR_ASSERTION', actual: true, expected: false } },
+    { mutate: f => writeFile(f.options.buildReportFile, '{}'), expected: /Build report drift/ },
+    { mutate: async f => {
       await writeFile(join(f.shared, 'scripts/new-loader.mjs'), 'require(dynamicName)')
       f.buildReport.candidateInputs = await artifactInventory(f.candidate)
       f.buildReport.candidateInventorySha256 = inventorySha256(f.buildReport.candidateInputs)
       await f.save()
-    },
+    }, expected: /Unverified emitted loader/ },
   ]
-  for (const mutate of mutations) { const f = await association(t); await mutate(f); await assert.rejects(verifySameSourceCandidateEvidence(f.options)) }
+  for (const { mutate, expected } of mutations) {
+    const f = await association(t)
+    await mutate(f)
+    await assert.rejects(verifySameSourceCandidateEvidence(f.options), expected)
+  }
 })
 
 async function stagedAssociation(t) {

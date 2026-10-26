@@ -13,10 +13,11 @@ import { parseArgs } from 'node:util'
 import { codexAdapter, assertCodexAdmission, createCodexNativeAdapter } from './npm-installer-codex.mjs'
 import { createClaudeNativeAdapter, planClaudeInstallation, applyClaudeInstallation, recoverClaudeInstallation } from './npm-installer-claude.mjs'
 import { installQoderPlugin } from './npm-installer-qoder.mjs'
-import { checkRuntime, inspectRuntime, assertGitRuntimeReceipt } from './npm-runtime-check.mjs'
+import { checkRuntime, inspectRuntime, assertInstalledRuntimeReceipt } from './npm-runtime-check.mjs'
 import { runDesktopDshInstaller } from './npm-installer-dsh-desktop.mjs'
 import { desktopPreparationMain, desktopPreparationReuseMain } from './npm-desktop-preparation.mjs'
 import { agentInstallation, AGENT_INSTALL_HOSTS, DESKTOP_INSTALL_OPTIONS } from './npm-agent-installation.mjs'
+import { installCodexDesktopFromNpm } from './npm-installer-codex-desktop.mjs'
 import { createDshInstallerAdapter, planDshInstallation, applyDshInstallation, validateReleaseHosts } from './npm-installer-dsh.mjs'
 
 export const INSTALL_HOSTS = ['dsh','codex','claude-code','qoder','codex-desktop','qwenwork']
@@ -246,41 +247,7 @@ function testContract(adapter,userRoot) {
   for(const name of ['probe','register','readback','compensate'])assert.equal(typeof adapter[name],'function')
 }
 
-function runtimeGate(plan,receipt,current,receiptSha256) {
-  assert.ok(receipt&&typeof receipt==='object'&&!Array.isArray(receipt),'An explicit runtime-check receipt is required')
-  assertGitRuntimeReceipt(receipt,current)
-  assert.ok(['installed-runtime-readonly','isolated-test-contract'].includes(receipt.scope),'Unknown runtime receipt scope')
-  assert.equal(receipt.npmRoot,plan.npmRoot,'Runtime receipt npmRoot mismatch')
-  assert.equal(receipt.identitySha256,current.identitySha256,'Runtime receipt identity drift')
-  for(const key of ['observation','embedding','pins','runtime','native','sharp','prerequisites'])
-    assert.deepEqual(receipt[key],current[key],`Runtime receipt ${key} mismatch`)
-  for(const key of ['nativeHostRegistrationVerified','transformersVerified','semanticKagVerified','graVerified','licenseObligationsAccepted','releaseValidated'])
-    assert.equal(receipt[key],false,`Runtime receipt must not claim ${key}`)
-  if(plan.disableEmbedding===true) {
-    assert.equal(current.status,'disabled','Runtime configuration is not disabled')
-    assert.equal(receipt.status,'disabled','Explicit disabled configuration requires matching receipt')
-    assert.equal(receipt.embedding.provider,'disabled')
-    assert.equal(receipt.embedding.selection,'explicit-cli')
-    assert.equal(receipt.load?.status,'not-run')
-  } else {
-    assert.equal(current.status,'present','Required local runtime prerequisites are not present')
-    assert.equal(receipt.status,'load-verified','Required local runtime load was not verified')
-    assert.equal(receipt.embedding.provider,'local')
-    assert.equal(receipt.load?.status,'passed','Required local runtime load failed')
-    assert.equal(receipt.load.code,0,'Runtime loader did not exit successfully')
-    assert.equal(receipt.load.signal,null,'Runtime loader was signalled')
-    assert.equal(receipt.load.observation?.node,current.observation.node,'Runtime loader Node mismatch')
-    assert.equal(receipt.load.observation?.execPath,current.observation.execPath,'Runtime loader executable mismatch')
-    assert.ok(receipt.load.observation?.native?.includes(current.native.path),'Runtime loader native path mismatch')
-    if(receipt.scope==='installed-runtime-readonly') {
-      assert.ok(Number.isInteger(receipt.load.childPid)&&receipt.load.childPid>0,'Runtime loader PID evidence missing')
-      assert.equal(receipt.load.childAbsent,true,'Runtime loader child cleanup was not verified')
-    }
-  }
-  return {receiptSha256,identitySha256:current.identitySha256,status:receipt.status,
-    scope:receipt.scope,embedding:receipt.embedding,loadStatus:receipt.load.status,
-    transformersVerified:false,semanticKagVerified:false,graVerified:false,licenseObligationsAccepted:false,releaseValidated:false}
-}
+const runtimeGate = assertInstalledRuntimeReceipt
 
 /** Owned transaction shared by admitted native adapters and isolated test harnesses. */
 export async function applyInstallation(plan,{adapter=codexAdapter,checkpoint=async()=>{},runtimeReceipt}={}) {
@@ -818,7 +785,7 @@ export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=cod
     commands:{
       'resolve-node':'Discover and verify an existing compatible Node without a host, npm package or configuration writes.',
       'prepare-desktop':'Prepare a small QwenWork suite or stable WorkBuddy market from this exact acquired npm package. Uses --target, --package-name/--package-version, --suite-version, --node-executable and an external --destination; does not register a host. Updates use the previous preparation receipt.',
-      install:'The current Agent selects --host from trusted context or one user choice. Direct install orchestrates the existing DSH/Codex saved-plan routes, native Claude/Qoder registration, or QwenWork/WorkBuddy import preparation. Missing inputs and pending activation are explicit. Existing --dry-run / --apply remain available.',
+      install:'The current Agent selects --host from trusted context or one user choice. Direct install orchestrates existing native routes or Codex Desktop/QwenWork/WorkBuddy preparation. Missing inputs and pending activation are explicit. Existing --dry-run / --apply remain available.',
       'plugin-directory':'Inspect the optional Claude/Qoder session-only --plugin-dir entry; this is not persistent installation.',
       'check-runtime':'Check runtime prerequisites and write an external runtime receipt; does not install.',
       recover:'Recover an owned Codex or Claude installation transaction using --receipt.',
@@ -826,13 +793,13 @@ export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=cod
     },
     options:{
       '--help, -h':'Show this JSON usage without reading configuration or registering a host.',
-      '--host <host>':`Current host: ${AGENT_INSTALL_HOSTS.join(', ')}. Omission requests one choice; installed binaries are not active-host identity. Explicit legacy codex-desktop remains plan-only.`,
+      '--host <host>':`Current host: ${AGENT_INSTALL_HOSTS.join(', ')}. Omission requests one choice; installed binaries are not active-host identity. Codex Desktop prepares an owned npm-backed local source and personal catalog; native UI activation remains required.`,
       '--dry-run':'Prepare an install plan; requires --receipt-dir and writes that plan.',
-      '--apply':'Apply a saved plan. Codex and Claude require --runtime-receipt; DSH requires explicit pins and external --receipt-dir.',
+      '--apply':'Apply a saved plan. Codex Desktop updates only the owned personal catalog. Codex CLI and Claude require --runtime-receipt; DSH requires explicit pins and external --receipt-dir.',
       '--plan <file>':'Saved installation plan used by --apply.',
       '--receipt-dir <directory>':'External output directory for install plans or runtime receipts.',
       '--receipt <file>':'Owned transaction receipt used by recover or uninstall.',
-      '--runtime-receipt <file>':'Runtime-check receipt used by --apply.',
+      '--runtime-receipt <file>':'Runtime-check receipt for native apply, or an exact existing receipt bound during Codex Desktop source preparation.',
       '--claude-executable <path>':'Explicit Claude executable for user-scope installation. Native capabilities are checked and selected executable bytes remain pinned during the operation.',
       '--qoder-executable <path>':'Qoder CLI executable for native user-scope install (default: qodercli on PATH).',
       '--qoder-config-dir <directory>':'Optional existing Qoder configuration directory; omission preserves native environment/default resolution.',
@@ -843,7 +810,7 @@ export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=cod
       '--profile <name>':'DSH install only: explicitly selected existing profile; never initialized implicitly.',
       '--aggregate-selector <name@version>':'DSH install only: optional exact aggregate override matching the product release mapping; required for old or unbound candidates.',
       '--registry <https-url>':'DSH install only: explicit credential-free HTTPS download registry or mirror; defaults to the product mapping. Preserves the exact mapped aggregate and binds the saved plan/receipt; no automatic fallback. Required for old or unbound candidates.',
-      '--destination <directory>':'QwenWork/WorkBuddy direct install: exclusive external preparation directory, or the same owned directory with --previous-receipt.',
+      '--destination <directory>':'Codex Desktop: new immutable source inside the selected user root. QwenWork/WorkBuddy: external preparation directory, or the same owned directory with --previous-receipt.',
       '--suite-version <version>':'QwenWork/WorkBuddy: exact native suite version, separate from the acquired npm version.',
       '--node-executable <path>':'Existing compatible Node for a new CLI installation/runtime check or desktop preparation; selected absolute executable is bound to owned native launchers. DSH retains its own host runtime.',
       '--qwenwork-runtime <file>':'QwenWork: verified native executable/worker/Node paths and byte pins. Agent obtains these through supported native inspection; no credentials.',
@@ -860,15 +827,20 @@ export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=cod
     assert.ok(Object.keys(values).every(key=>key==='node-executable'),'resolve-node accepts only --node-executable')
     return {schemaVersion:1,kind:'node-runtime-selection',...await resolveNodeRuntime({nodeExecutable:values['node-executable']})}
   }
+  if(positionals[0]==='install' && values.host==='codex-desktop' && (values['dry-run'] || values.apply))
+    return installCodexDesktopFromNpm(values,{npmRoot,userRoot,
+      invokeRuntime:nextArgs=>installerMain(nextArgs,{npmRoot,userRoot,agentDispatch:false})})
   if(agentDispatch&&positionals[0]==='install'&&!values['dry-run']&&!values.apply) {
     const context={npmRoot,userRoot,adapter,dshAdapterFactory,claudeAdapterFactory,qoderInstaller,agentDispatch:false,signal,dshInstallTimeoutMs}
     return agentInstallation(values,{npmRoot,admittedCodexAdapter:adapter!==codexAdapter,
       invoke:nextArgs=>installerMain(nextArgs,context),
       desktopPrepare:nextArgs=>desktopPreparationMain(nextArgs,{npmRoot}),
+      codexDesktopPrepare:nextValues=>installCodexDesktopFromNpm(nextValues,{npmRoot,userRoot,
+        invokeRuntime:nextArgs=>installerMain(nextArgs,context)}),
       desktopReuse:nextArgs=>desktopPreparationReuseMain(nextArgs,{npmRoot})})
   }
   for(const key of DESKTOP_INSTALL_OPTIONS)if(!(key==='previous-receipt'&&values.host==='dsh'&&positionals[0]==='install')
-    && !(key==='node-executable'&&['codex','claude-code','qoder'].includes(values.host)&&['install','check-runtime'].includes(positionals[0])))
+    && !(key==='node-executable'&&['codex','codex-desktop','claude-code','qoder'].includes(values.host)&&['install','check-runtime'].includes(positionals[0])))
     assert.ok(!Object.hasOwn(values,key),`--${key} is only valid for direct desktop install`)
   if(positionals[0]==='plugin-directory'&&['claude-code','qoder'].includes(values.host)) {
     assert.deepEqual(Object.keys(values),['host'],'Native directory entry accepts only --host; transaction/runtime options must not be silently ignored')
@@ -943,7 +915,7 @@ export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=cod
       assert.ok(plan.nodeRuntime,'Saved plan has no bound Node; use its original installed checker')
       if(Object.hasOwn(values,'disable-embedding'))assert.equal(disableEmbedding,plan.disableEmbedding,'Runtime plan embedding policy mismatch')
       nodeRuntime=plan.nodeRuntime;disableEmbedding=plan.disableEmbedding
-    } else if(['codex','claude-code','qoder'].includes(values.host))nodeRuntime=await resolveNodeRuntime({nodeExecutable:values['node-executable']})
+    } else if(['codex','codex-desktop','claude-code','qoder'].includes(values.host))nodeRuntime=await resolveNodeRuntime({nodeExecutable:values['node-executable']})
     const receipt=await checkRuntime({npmRoot,host:values.host,disableEmbedding,receiptDirectory:values['receipt-dir'],nodeRuntime})
     const directory=resolve(values['receipt-dir'])
     await mkdir(directory,{recursive:true})

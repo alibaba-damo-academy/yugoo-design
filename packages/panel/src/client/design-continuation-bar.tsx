@@ -2,8 +2,8 @@
  * Native continuation bar for the host composer area.
  *
  * When the Runtime exposes a current user-continue gate,
- * the host presents Continue / Later / Adjust
- * above the chat composer instead of a panel-owned button. Continue sends the
+ * the host presents Continue / Later above the composer or in Host chrome.
+ * Adjust is available when the Host can focus a composer. Continue sends the
  * manifest-owned resume label through the ordinary composer path, opening a
  * new user turn; Later dismisses only the current local rendering; Adjust
  * focuses the composer so the user can rephrase. This host-owned interaction
@@ -71,15 +71,19 @@ export interface IDesignContinuationBarProps {
   descriptor?: DesignContinuationDescriptor
   /** Sends the exact resume label through the ordinary composer path. */
   onContinue: (label: string) => void
-  /** Focuses the empty composer so the user can adjust the request. */
+  /** Focuses an available composer, preserving its draft. Omit without one. */
   onAdjust?: () => void
+  /** Host admission and submission feedback; does not consume the Runtime gate. */
+  disabled?: boolean
+  status?: string
+  /** Let a host retain this local dismissal when its composer is hidden. */
+  onLater?: () => void
 }
 
 /**
  * Render Continue / Later / Adjust for one pending continuation. Later only
  * dismisses the current local rendering (no durable state is consumed); the
- * bar returns whenever the projection still carries the same pending
- * descriptor after a remount.
+ * bar returns after a remount unless its Host retains that local dismissal.
  * @param props - descriptor plus host continue/adjust handlers.
  * @returns the bar element, or null when gated out or locally dismissed.
  */
@@ -96,27 +100,29 @@ export function DesignContinuationBar(props: IDesignContinuationBarProps): React
       <div className='dsh-design-continuation-text'>
         <span className='dsh-design-continuation-skill'>{continuationSkillTitleOf(descriptor)}</span>
         {descriptor.summary === undefined ? null : <span>{descriptor.summary}</span>}
+        {props.status ? <span role="status">{props.status}</span> : null}
       </div>
       <div className='dsh-design-continuation-actions'>
         <button
           type='button'
           data-testid='dsh-design-continuation-continue'
           className='dsh-design-continuation-continue'
+          disabled={props.disabled}
           onClick={() => props.onContinue(label)}
         >
           {label}
         </button>
-        <button
+        {props.onAdjust && <button
           type='button'
           data-testid='dsh-design-continuation-adjust'
           onClick={() => props.onAdjust?.()}
         >
           {isZh ? '调整' : 'Adjust'}
-        </button>
+        </button>}
         <button
           type='button'
           data-testid='dsh-design-continuation-later'
-          onClick={() => setDismissed(key)}
+          onClick={() => { setDismissed(key); props.onLater?.() }}
         >
           {isZh ? '稍后' : 'Later'}
         </button>

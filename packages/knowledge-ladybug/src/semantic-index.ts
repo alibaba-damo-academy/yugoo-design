@@ -2,12 +2,20 @@ import { fork, type ChildProcess, type ForkOptions, type SpawnOptions } from 'no
 import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { resolve, isAbsolute } from 'node:path'
+import { readEmbeddingDiagnostic, embeddingDiagnosticSuffix } from './embedding-diagnostic.ts'
+import { prepareDefaultEmbeddingAssets, EmbeddingAssetError, embeddingChildEnvironment } from './embedding-model-assets.ts'
 import { semanticDigest, semanticEdges, normalizeVector, SEMANTIC_TEXT_VERSION, type DesignGraph, type DesignFieldGraphEdge as DesignGraphEdge, type SemanticStatus } from 'dsh-design-core'
 
 const localEmbeddingFailures: Record<string, string> = {
   runtime: '本地 embedding 运行依赖不可用；请按当前操作系统安装依赖（包括原生模块），不要复用其他平台的 node_modules。',
   model: '本地 embedding 模型加载失败；请检查固定版本模型缓存，离线模式需要先准备完整模型文件。',
   inference: '本地 embedding 推理失败；请检查输入限制和本地内存、CPU 运行资源。',
+}
+const modelAssetFailures = {
+  missing: '本地 embedding 模型资源缺失或不完整；离线模式不能下载，请先准备固定版本资源。',
+  download: '本地 embedding 模型资源下载未完成；请检查网络及代理后显式重试，本次未开始模型加载。',
+  integrity: '本地 embedding 模型资源校验失败；完整性通过后才能加载，本次未发布语义索引。',
+  busy: '本地 embedding 模型资源正由另一进程准备；本次未开始模型加载，可在准备完成后重试。',
 }
 
 export interface EmbeddingConfig {
@@ -84,8 +92,10 @@ export class DesignSemanticIndex {
         if (current.abort.signal.aborted) return
         try { await this.build(snapshot, cache, current) } catch (error) {
           const phase = (error as { embeddingFailure?: string })?.embeddingFailure
-          const detail = phase && Object.hasOwn(localEmbeddingFailures, phase) ? localEmbeddingFailures[phase] : '语义索引失败；请检查本地运行资源或已配置的 embedding 服务。'
-          if (!current.abort.signal.aborted) current.status = { ...current.status, state: 'error', message: detail + ' 保留结构图，不自动上传或重试。' }
+          const detail = error instanceof EmbeddingAssetError ? modelAssetFailures[error.code]
+            : phase && Object.hasOwn(localEmbeddingFailures, phase) ? localEmbeddingFailures[phase] : '语义索引失败；请检查本地运行资源或已配置的 embedding 服务。'
+          const diagnostic = embeddingDiagnosticSuffix((error as { embeddingDiagnostic?: unknown })?.embeddingDiagnostic)
+          if (!current.abort.signal.aborted) current.status = { ...current.status, state: 'error', message: detail + ' 保留结构图，不自动上传或重试。' + diagnostic }
         }
       })
       current.settled = this.tail
@@ -132,6 +142,11 @@ export class DesignSemanticIndex {
   }
   cancelProject(project: string) { const job = this.jobs.get(project); clearTimeout(job?.idle); job?.abort.abort(); this.jobs.delete(project) }
   async close() { this.closed = true; for (const project of this.jobs.keys()) this.cancelProject(project); await this.tail }
+  private async prepareLocalAssets(job: Job) {
+    await prepareDefaultEmbeddingAssets(this.config, job.abort.signal, (done, total) => {
+      job.status.message = `正在准备固定版本模型资源 ${done}/${total} 字节；设计文本不上传`
+    })
+  }
   private async build(graph: Pick<DesignGraph, 'checkpoint' | 'semanticUnits'>, cache: SemanticCache | undefined, job: Job) {
     const units = graph.semanticUnits ?? [], vectors: number[][] = [], missing: number[] = []
     const signal = job.abort.signal
@@ -152,12 +167,16 @@ export class DesignSemanticIndex {
     signal.addEventListener('abort', kill, { once: true })
     try {
       if (missing.length && this.config.provider === 'local') {
+        // Resource transfer/checks finish before the bounded native inference child.
+        await this.prepareLocalAssets(job)
+        signal.throwIfAborted()
         const built = new URL('./embedding-worker.js', import.meta.url)
         // ONNX's native addon cannot reliably reload in successive worker threads.
         // A bounded child process also releases native memory when the job ends.
         // Node forwards fork options to spawn; @types/node omits windowsHide from ForkOptions.
         const options: ForkOptions & Pick<SpawnOptions, 'windowsHide'> = {
           windowsHide: true, execArgv: ['--max-old-space-size=512'], stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
+          env: await embeddingChildEnvironment(),
         }
         worker = fork(existsSync(built) ? built : new URL('./embedding-worker.mjs', import.meta.url), [], options)
       }
@@ -191,9 +210,11 @@ export class DesignSemanticIndex {
     return new Promise((resolveBatch, reject) => {
       const cleanup = () => { clearTimeout(timer); worker.off('message', message); worker.off('error', failure); worker.off('exit', failure); job.abort.signal.removeEventListener('abort', failure) }
       const failure = () => { cleanup(); reject(new Error('Embedding worker stopped')) }
-      const message = (data: { progress?: string; error?: string; vectors?: unknown[] }) => {
+      const message = (data: { progress?: string; error?: string; vectors?: unknown[]; diagnostic?: unknown }) => {
         if (data.progress) { job.status.message = data.progress; return }
-        cleanup(); if (data.error || !data.vectors) reject(Object.assign(new Error('Embedding worker failed'), { embeddingFailure: data.error })); else resolveBatch(data.vectors)
+        cleanup(); if (data.error || !data.vectors) reject(Object.assign(new Error('Embedding worker failed'), {
+          embeddingFailure: data.error, embeddingDiagnostic: readEmbeddingDiagnostic(data.diagnostic),
+        })); else resolveBatch(data.vectors)
       }
       const timer = setTimeout(() => { failure(); worker.kill('SIGTERM') }, 180_000)
       worker.on('message', message); worker.once('error', failure); worker.once('exit', failure)

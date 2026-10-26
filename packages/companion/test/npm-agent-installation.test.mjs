@@ -29,7 +29,7 @@ test('missing conversation identity asks one host choice without inspecting a pa
   assert.equal(explicit.host, 'qoder'); assert.equal(explicit.installation.usability, 'unverified')
 })
 
-test('six hosts report only their missing prerequisites, without an automatic package or native operation', async () => {
+test('supported hosts report only their missing prerequisites, without an automatic package or native operation', async () => {
   for (const host of AGENT_INSTALL_HOSTS) {
     const result = await agentInstallation({ host }, { npmRoot: '/not-read', invoke: noOperation, desktopPrepare: noOperation, platform: 'win32' })
     assert.equal(result.status, 'inputs-required'); assert.equal(result.hostRegistered, false)
@@ -37,8 +37,9 @@ test('six hosts report only their missing prerequisites, without an automatic pa
     assert.equal(result.installation.registration, 'not-performed')
     assert.equal(result.missing.includes('qwenwork-runtime'), host === 'qwenwork')
   }
-  const unsupported = await installerMain(['install', '--host', 'codex-desktop'], { npmRoot: '/not-read' })
-  assert.equal(unsupported.status, 'unsupported-host'); assert.equal(unsupported.usable, false)
+  const desktop = await installerMain(['install', '--host', 'codex-desktop'], { npmRoot: '/not-read' })
+  assert.equal(desktop.status, 'inputs-required'); assert.equal(desktop.usable, false)
+  assert.deepEqual(desktop.missing, ['receipt-dir', 'destination'])
   await assert.rejects(installerMain(['install', '--host', 'made-up-host'], { npmRoot: '/not-read' }), /supported host/)
 })
 

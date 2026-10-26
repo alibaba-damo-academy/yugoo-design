@@ -1,7 +1,7 @@
 /** Source plane, no HTTP/UI/installed-host claim; HTTP still has a 12 MiB limit. */
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { mkdtemp, mkdir, writeFile, readFile, readdir, stat, symlink, chmod, truncate, rm } from 'node:fs/promises'
+import { mkdtemp, mkdir, writeFile, readFile, readdir, stat, symlink, chmod, truncate, realpath, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { prepareStudioContentImport } from '../../studio/src/content-archive.ts'
@@ -10,7 +10,7 @@ import { createStudioContentArchives } from '../src/studio-content-archive.mjs'
 const pin = { name: 'archive_fixture', version: '1.0' }
 const origin = { source: 'fixture:synthetic-byte-snapshot', license: 'Apache-2.0' }
 async function fixture(t) {
-  const root = await mkdtemp(join(tmpdir(), 'yugoo-studio-archive-'))
+  const root = await realpath(await mkdtemp(join(tmpdir(), 'yugoo-studio-archive-')))
   t.after(() => rm(root, { recursive: true, force: true }))
   const stateRoot = join(root, 'state'), kitRoot = join(root, 'kit')
   await mkdir(stateRoot, { mode: 0o700 }); await mkdir(kitRoot)

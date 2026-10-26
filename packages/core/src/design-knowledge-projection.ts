@@ -21,19 +21,18 @@ const canonical = (value: unknown): string => JSON.stringify(value, (_key, v) =>
 const digest = (value: unknown) => createHash('sha256').update(canonical(value)).digest('hex')
 const owns = (record: DesignKnowledgeEntity | DesignKnowledgeRelation) => record.provenance.producer === 'design-file-projection' && record.properties.projection === projection
 
-/** Call from the existing per-project mutation queue. Never accepts a partial UI graph. */
-export async function materializeDesignFilesKnowledge(options: {
+interface ProjectionSource {
   readonly store: DesignFilesStore
-  readonly service: DesignKnowledgeService
-  readonly projectId: DesignProjectId
   readonly schemas?: Record<string, SchemaSpec>
   readonly ontology?: CompiledDesignOntologyContract
   readonly signal?: AbortSignal
-  readonly pageSize?: number
-  /** Existing publication commit with identical Design evidence, proved by the caller. */
+  /** Original source pin; equivalent current commits are verified by the host. */
   readonly checkpoint?: string
-}) {
-  const { store, service, projectId, signal } = options
+}
+
+/** The same pure source read defines both writes and source-only read proof. */
+async function prepareSourceProjection(options: ProjectionSource) {
+  const { store, signal } = options
   const checkpoint = options.checkpoint ?? await store.head(signal)
   if (!checkpoint) throw new Error('Knowledge projection requires a published checkpoint')
   const graph = await readDesignGraph(store, checkpoint, signal, options.schemas, { purpose: 'storage', ontology: options.ontology })
@@ -65,6 +64,17 @@ export async function materializeDesignFilesKnowledge(options: {
     provenance: { producer: 'design-file-projection', checkpoint,
       evidence: [...nodes.get(edge.from)!.provenance.evidence, ...nodes.get(edge.to)!.provenance.evidence] },
   }))
+  return { checkpoint, entities, relations, warnings: graph.warnings }
+}
+
+/** Call from the existing per-project mutation queue. Never accepts a partial UI graph. */
+export async function materializeDesignFilesKnowledge(options: ProjectionSource & {
+  readonly service: DesignKnowledgeService
+  readonly projectId: DesignProjectId
+  readonly pageSize?: number
+}) {
+  const { store, service, projectId, signal } = options
+  const { checkpoint, entities, relations, warnings } = await prepareSourceProjection(options)
   const { revision, entities: beforeEntities, relations: beforeRelations } = await readCompleteDesignKnowledge(service, { projectId, limit: options.pageSize ?? 100 }, signal)
   const nextEntities = new Set(entities.map(node => String(node.id)))
   const nextRelations = new Set(relations.map(edge => String(edge.id)))
@@ -90,7 +100,7 @@ export async function materializeDesignFilesKnowledge(options: {
         changedEvidence.add(edge.id)
         if (before === undefined || after === undefined) {
           const warning = `Knowledge evidence unavailable: ${evidence.source}#${evidence.locator ?? ''}; derived relation retired`
-          if (!graph.warnings.includes(warning)) graph.warnings.push(warning)
+          if (!warnings.includes(warning)) warnings.push(warning)
         }
         break
       }
@@ -113,12 +123,52 @@ export async function materializeDesignFilesKnowledge(options: {
     throw new Error('Design checkpoint changed during Knowledge projection')
   }
   if (!upsertEntities.length && !upsertRelations.length && !removeEntities.length && !removeRelations.length) {
-    return { checkpoint, revision, changed: false, nodes: entities.length, relations: relations.length, warnings: graph.warnings }
+    return { checkpoint, revision, changed: false, nodes: entities.length, relations: relations.length, warnings }
   }
   const changes = { upsertEntities, upsertRelations, removeEntities, removeRelations }
   const result = await service.applyDelta({ ...changes,
     mutationId: DesignKnowledgeMutationId(`${projection}:${digest({ projectId, checkpoint, revision, changes })}`),
     pin: { projectId, inputCheckpoint: checkpoint, observedCheckpoint: checkpoint, expectedRevision: revision },
   })
-  return { checkpoint, revision: result.revision, changed: true, nodes: entities.length, relations: relations.length, warnings: graph.warnings }
+  return { checkpoint, revision: result.revision, changed: true, nodes: entities.length, relations: relations.length, warnings }
+}
+
+/** Verify a source-only view against the complete source set at its existing pin.
+ * No projection, cache pointer or semantic publication is created by this read. */
+export async function readSourceDesignKnowledge(options: ProjectionSource & {
+  readonly service: Pick<DesignKnowledgeService, 'revision' | 'query'>
+  readonly projectId: DesignProjectId
+  readonly revision?: import('./design-knowledge.ts').DesignKnowledgeRevision
+}) {
+  const { store, signal } = options
+  const checkpoint = options.checkpoint ?? await store.head(signal)
+  if (!checkpoint) throw new Error('Knowledge source read requires a published checkpoint')
+  const snapshot = await readCompleteDesignKnowledge(options.service, {
+    projectId: options.projectId, revision: options.revision, limit: 100,
+  }, signal)
+  const entities = snapshot.entities.filter(owns), relations = snapshot.relations.filter(owns)
+  if (!entities.length) throw new Error('Knowledge source projection is not available')
+  const sourceCheckpoint = entities[0].provenance.checkpoint
+  if (!sourceCheckpoint || [...entities, ...relations].some(record => record.provenance.checkpoint !== sourceCheckpoint)) {
+    throw new Error('Knowledge source projection has mixed checkpoints')
+  }
+  if (sourceCheckpoint !== checkpoint && !await store.sameDesignEvidenceAt?.(sourceCheckpoint, checkpoint, signal)) {
+    throw new Error('Knowledge source projection is stale; read the current Design Files')
+  }
+  const expected = await prepareSourceProjection({ ...options, checkpoint: sourceCheckpoint })
+  const sameRecords = (actual: readonly (DesignKnowledgeEntity | DesignKnowledgeRelation)[], wanted: readonly (DesignKnowledgeDeltaEntity | DesignKnowledgeDeltaRelation)[]) => {
+    const byId = new Map(actual.map(record => [String(record.id), canonical(record)]))
+    return byId.size === actual.length && actual.length === wanted.length
+      && wanted.every(record => byId.get(String(record.id)) === canonical(record))
+  }
+  if (!sameRecords(entities, expected.entities) || !sameRecords(relations, expected.relations)) {
+    throw new Error('Knowledge source projection does not match the complete pinned source set')
+  }
+  signal?.throwIfAborted()
+  const current = await store.head(signal)
+  if (current !== checkpoint && (!current || !await store.sameDesignEvidenceAt?.(checkpoint, current, signal))) {
+    throw new Error('Design checkpoint changed during Knowledge source read')
+  }
+  return { sourceCheckpoint, sourceFiles: [...new Set(entities.map(entity => String(entity.properties.file)))].sort(), warnings: expected.warnings,
+    graph: { revision: snapshot.revision, entities, relations, ...(snapshot.generation ? { generation: snapshot.generation } : {}) } }
 }

@@ -2,7 +2,7 @@
 'use strict'
 const { join } = require('node:path')
 const target = `${process.platform}-${process.arch}`
-const supported = new Set(['linux-x64', 'win32-x64'])
+const supported = new Set(['linux-x64', 'win32-x64', 'darwin-arm64'])
 if (!supported.has(target)) throw new Error(`Yugoo Design native Git: unsupported platform ${target}`)
 if (target === 'linux-x64' && !process.report.getReport().header.glibcVersionRuntime) {
   throw new Error('Yugoo Design native Git: Linux musl is not supported by this build')

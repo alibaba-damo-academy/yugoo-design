@@ -11,7 +11,7 @@ import { prepareStudioPanelPreview } from '../../studio/src/panel-preview.ts'
 const packageRoot = fileURLToPath(new URL('../../skills-web-app/', import.meta.url))
 const originalPin = { name: 'business_rules', version: '1.0' }
 const otherPin = { name: 'smart_questions', version: '1.0' }
-const kitPin = { name: 'web_app', version: '1.0' }
+const kitPin = { name: 'web_app', version: '1.1' }
 const sourceId = 'trusted:studio-adapter-test'
 const entry = (path, text) => ({ path, base64: Buffer.from(text).toString('base64') })
 const textOf = (files, path) => Buffer.from(files.find(file => file.path === path).base64, 'base64').toString('utf8')

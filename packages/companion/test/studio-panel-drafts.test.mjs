@@ -20,7 +20,7 @@ before(async () => {
   await cp(join(packageRoot, 'bundles'), join(kitRoot, 'skills'), { recursive: true })
 })
 after(async () => { if (kitRoot) await rm(kitRoot, { recursive: true, force: true }) })
-const kit = { name: 'web_app', version: '1.0' }
+const kit = { name: 'web_app', version: '1.1' }
 const bundle = { name: 'business_rules', version: '1.0' }
 const sampleSource = JSON.stringify({ schema_version: 4, rules: { r1: { id: 'r1', title: 'A sample rule' } }, rule_order: ['r1'] })
 
@@ -30,7 +30,7 @@ test('independent closure retains mounted source bytes, pins and trusted origins
   const ownedKit = join(temporary, 'source/kits/web_app'), ownedBundles = join(temporary, 'source/bundles')
   await cp(join(packageRoot, 'kits/web_app'), ownedKit, { recursive: true })
   await cp(join(packageRoot, 'bundles'), ownedBundles, { recursive: true })
-  const locations = (await readdir(ownedBundles)).map(name => ({ name, version: '1.0', rootDir: join(ownedBundles, name), sourceId: 'fixture:trusted-deployment' }))
+  const locations = (await readdir(ownedBundles)).map(name => ({ name, version: name === 'flow_design' ? '1.1' : '1.0', rootDir: join(ownedBundles, name), sourceId: 'fixture:trusted-deployment' }))
   const installed = await loadStudioKit(companionFs, ownedKit, { bundles: locations })
   // The trusted port returns Core retained resource roots, not browser-selected paths.
   const options = { stateRoot: join(temporary, 'state'), kitRoot: ownedKit, readInstalledKit: () => installed,

@@ -7,7 +7,7 @@ import { COMPANION_NATIVE_GIT_IMPORT } from '../../scripts/companion-native-git.
 const officialInputs = await readOfficialDshJsonInput()
 
 export default defineConfig({
-  entry: { 'workbuddy-panel-service':'src/workbuddy-panel-service.mjs', design: 'src/plugin-cli.mjs', 'knowledge-snapshot-query':'src/knowledge-snapshot-query.mjs', 'git-native-worker': '../core/src/git-native-worker.ts', 'git-runtime-check': 'src/git-runtime-check.mjs' },
+  entry: { 'codex-desktop-marketplace': 'src/codex-desktop-marketplace.mjs', 'codex-desktop-bridge': 'src/codex-desktop-bridge.mjs', 'workbuddy-panel-service':'src/workbuddy-panel-service.mjs', design: 'src/plugin-cli.mjs', 'knowledge-snapshot-query':'src/knowledge-snapshot-query.mjs', 'git-native-worker': '../core/src/git-native-worker.ts', 'git-runtime-check': 'src/git-runtime-check.mjs' },
   outDir: 'dist-server', format: 'esm', platform: 'node', target: 'node22',
   tsconfig: false, dts: false, clean: true, failOnWarn: true,
   // Portable servers use ws' supported JS masking and Node UTF-8 fallback;

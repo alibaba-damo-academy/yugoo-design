@@ -72,8 +72,10 @@ async function describeGit(root,observation,pins) {
   const pathFor=path=>{assert.ok(typeof path==='string'&&path&&!path.includes('\\')&&!path.split('/').some(p=>!p||p==='.'||p==='..'),'Unsafe Git manifest path');const target=resolve(nativeRoot,path);assert.ok(inside(nativeRoot,target)&&target!==nativeRoot);return target}
   for(const [path,identity] of Object.entries(recipe.files))assert.equal(pin(pathFor(path)).sha256,identity.sha256,'Installed Git material changed')
   for(const input of [...source.inputs,...source.artifacts])assert.equal(pin(pathFor(input.path)).sha256,input.sha256,'Installed Git source/prebuild changed')
-  assert.deepEqual(source.artifacts.map(x=>x.path).sort(),['native/yugoo_git.linux-x64.node','native/yugoo_git.win32-x64.node'])
-  assert.ok(['linux','win32'].includes(observation.platform)&&observation.arch==='x64'&&(observation.platform!=='linux'||observation.libc==='glibc'),'Unsupported installed Git platform')
+  assert.deepEqual(source.artifacts.map(x=>x.path).sort(),['native/yugoo_git.darwin-arm64.node','native/yugoo_git.linux-x64.node','native/yugoo_git.win32-x64.node'])
+  const supported = observation.platform==='darwin' && observation.arch==='arm64'
+    || ['linux','win32'].includes(observation.platform)&&observation.arch==='x64'&&(observation.platform!=='linux'||observation.libc==='glibc')
+  assert.ok(supported,'Unsupported installed Git platform')
   const descriptor={required:true,status:'present',backend:'native',
     worker:pin(join(shared,'scripts/git-native-worker.js')),probe:pin(join(shared,'scripts/git-runtime-check.mjs')),
     loader:pin(join(nativeRoot,'index.cjs')),materials:pin(join(nativeRoot,'runtime-manifest.json')),
@@ -230,4 +232,41 @@ export async function checkRuntime(options) {
   if(after.identitySha256!==before.identitySha256)receipt.load={...receipt.load,status:'failed',reason:'Runtime prerequisites changed during load check'}
   receipt.status=receipt.load.status==='passed'?'load-verified':'failed'
   return receipt
+}
+
+/** Shared receipt gate for owned native registration and npm-backed desktop preparation. */
+export function assertInstalledRuntimeReceipt(plan,receipt,current,receiptSha256) {
+  assert.ok(receipt&&typeof receipt==='object'&&!Array.isArray(receipt),'An explicit runtime-check receipt is required')
+  assertGitRuntimeReceipt(receipt,current)
+  assert.ok(['installed-runtime-readonly','isolated-test-contract'].includes(receipt.scope),'Unknown runtime receipt scope')
+  assert.equal(receipt.npmRoot,plan.npmRoot,'Runtime receipt npmRoot mismatch')
+  assert.equal(receipt.identitySha256,current.identitySha256,'Runtime receipt identity drift')
+  for(const key of ['observation','embedding','pins','runtime','native','sharp','prerequisites'])
+    assert.deepEqual(receipt[key],current[key],`Runtime receipt ${key} mismatch`)
+  for(const key of ['nativeHostRegistrationVerified','transformersVerified','semanticKagVerified','graVerified','licenseObligationsAccepted','releaseValidated'])
+    assert.equal(receipt[key],false,`Runtime receipt must not claim ${key}`)
+  if(plan.disableEmbedding===true) {
+    assert.equal(current.status,'disabled','Runtime configuration is not disabled')
+    assert.equal(receipt.status,'disabled','Explicit disabled configuration requires matching receipt')
+    assert.equal(receipt.embedding.provider,'disabled')
+    assert.equal(receipt.embedding.selection,'explicit-cli')
+    assert.equal(receipt.load?.status,'not-run')
+  } else {
+    assert.equal(current.status,'present','Required local runtime prerequisites are not present')
+    assert.equal(receipt.status,'load-verified','Required local runtime load was not verified')
+    assert.equal(receipt.embedding.provider,'local')
+    assert.equal(receipt.load?.status,'passed','Required local runtime load failed')
+    assert.equal(receipt.load.code,0,'Runtime loader did not exit successfully')
+    assert.equal(receipt.load.signal,null,'Runtime loader was signalled')
+    assert.equal(receipt.load.observation?.node,current.observation.node,'Runtime loader Node mismatch')
+    assert.equal(receipt.load.observation?.execPath,current.observation.execPath,'Runtime loader executable mismatch')
+    assert.ok(receipt.load.observation?.native?.includes(current.native.path),'Runtime loader native path mismatch')
+    if(receipt.scope==='installed-runtime-readonly') {
+      assert.ok(Number.isInteger(receipt.load.childPid)&&receipt.load.childPid>0,'Runtime loader PID evidence missing')
+      assert.equal(receipt.load.childAbsent,true,'Runtime loader child cleanup was not verified')
+    }
+  }
+  return {receiptSha256,identitySha256:current.identitySha256,status:receipt.status,
+    scope:receipt.scope,embedding:receipt.embedding,loadStatus:receipt.load.status,
+    transformersVerified:false,semanticKagVerified:false,graVerified:false,licenseObligationsAccepted:false,releaseValidated:false}
 }

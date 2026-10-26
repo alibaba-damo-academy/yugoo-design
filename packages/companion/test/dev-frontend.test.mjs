@@ -6,7 +6,7 @@ import { startCompanion } from '../src/server.mjs'
 
 test('development presentation is opt-in and preserves same-origin API authority and lifecycle', async () => {
   let htmlCalls = 0, assets = 0, closed = 0
-  const f = await fixture({ serverOptions: { devFrontend: async ({ server, origin }) => {
+  const f = await fixture({ serverOptions: { browserDefaultView: 'panel-only', devFrontend: async ({ server, origin }) => {
     assert.ok(server.listening); assert.match(origin, /^http:\/\/127\.0\.0\.1:\d+$/)
     return {
       async html(url, html) { htmlCalls++; assert.equal(url, '/?view=studio'); return html + '<!-- development entry -->' },
@@ -21,7 +21,10 @@ test('development presentation is opt-in and preserves same-origin API authority
   try {
     const origin = f.server.origin
     const html = await fetch(origin + '/?view=studio')
-    assert.equal(html.status, 200); assert.match(await html.text(), /development entry/)
+    assert.equal(html.status, 200)
+    const entry = await html.text()
+    assert.match(entry, /development entry/)
+    assert.match(entry, /<meta name="design-companion-default-view" content="panel-only">/)
     assert.equal(html.headers.get('x-frame-options'), 'DENY')
     assert.equal(htmlCalls, 1)
     assert.equal((await fetch(origin + '/@vite/client')).status, 200)

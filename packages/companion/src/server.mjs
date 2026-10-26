@@ -1,5 +1,6 @@
 import {createWorkBuddyChildTranscript,verifyWorkBuddyChild} from './workbuddy-native.mjs'
 import {createNativeBackgroundAdapter} from './native-background-adapter.mjs'
+import {createCodexDesktopExecutionAdapter} from './codex-desktop-execution.mjs'
 import {createCompanionMainContext} from './main-context.mjs'
 import {derivedServicesStatus} from './derived-services-status.mjs'
 import {nativeCapabilityStatus} from './native-capability-status.mjs'
@@ -8,7 +9,7 @@ import { createQwenWorkPanelConnection, resolveQwenWorkInputMode } from './qwenw
 import { createQwenWorkTranscript, verifyQwenWorkChild } from './qwenwork-transcript.mjs'
 import { createServer } from 'node:http'
 import { staticAssetRequest } from './static-asset-request.mjs'
-import { resolveBrowserAccess, browserMethods, browserRequestAllowed } from './browser-access.mjs'
+import { resolveBrowserAccess, resolveBrowserDefaultView, browserMethods, browserRequestAllowed } from './browser-access.mjs'
 import { loadPackagedCssAssets } from '../../../scripts/css-asset-manifest.mjs'
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { readFile, readdir, mkdir, writeFile, rm } from 'node:fs/promises'
@@ -17,6 +18,7 @@ import { fileURLToPath } from 'node:url'
 import { openCompanionProject } from './project.mjs'
 import { finishWithAutoPanel } from './auto-panel-completion.mjs'
 import { createCodexConnection } from './codex-connection.mjs'
+import { createCodexDesktopRelay } from './codex-desktop-relay.mjs'
 import { notificationErrorResponse } from './notification-delivery.mjs'
 import { createCodexTranscript } from './codex-transcript.mjs'
 import { createDesignConversationObserver } from './conversation-start.mjs'
@@ -56,17 +58,34 @@ export async function startCompanion(options) {
   }
   const trialInputGate = createStudioTrialInputGate(options.trialInput)
   const browserAccess = resolveBrowserAccess(options.browserAccess)
+  const browserDefaultView = resolveBrowserDefaultView(options.browserDefaultView)
   const host = options.host ?? options.connection?.host ?? 'codex'
+  const codexDesktop = options.codexDesktop === true
+  if (codexDesktop && browserAccess !== 'local') {
+    throw Error('Codex desktop requires explicit browserAccess="local" (--browser-access local); default/token browser access cannot protect its private bridge.')
+  }
+  if (codexDesktop && (host !== 'codex' || options.codexRemote !== undefined || options.backgroundReviews === true)) {
+    throw Error('Codex desktop requires the Codex host without CLI remote or managed background reviews.')
+  }
   if (!['codex', 'qoder', 'claude-code', 'qwenwork', 'workbuddy'].includes(host)) throw new Error('Unsupported native host.')
   resolveQwenWorkInputMode({ ...options, host })
-  const nativeAgentsAvailable = host !== 'workbuddy' || options.workbuddyProducer === true
-  const nativeReviewsAvailable = host !== 'workbuddy' || nativeAgentsAvailable
+  if (options.codexDesktopNativeBundles === true && !codexDesktop) throw Error('Native desktop Bundles require the explicit Codex desktop route.')
+  const nativeCwd = options.nativeCwd ?? options.projectRoot
   const readinessSince = Date.now()
+  let nativeRuns
+  const desktopExecutionAdapter = codexDesktop && options.codexDesktopNativeBundles === true
+    ? await createCodexDesktopExecutionAdapter({ sessionId: options.threadId, projectRoot: nativeCwd,
+      mainTranscriptPath: options.transcriptPath, startedAt: readinessSince,
+      getParentBinding: runId => nativeRuns?.getBinding(runId) }) : undefined
+  const nativeAgentsAvailable = !!desktopExecutionAdapter || !codexDesktop && (host !== 'workbuddy' || options.workbuddyProducer === true)
+  const nativeWorkersAvailable = !!desktopExecutionAdapter || !codexDesktop && host !== 'workbuddy'
+  const nativeReviewsAvailable = !codexDesktop && (host !== 'workbuddy' || nativeAgentsAvailable)
+  const nativeUnavailableHost = codexDesktop ? 'Codex desktop' : 'WorkBuddy'
   let backgroundReviewReadiness = { state: 'unverified' }, mainContext, reviewScheduler
   // Transport reception and native child identity do not prove detached execution.
   // A host's own current-connection proof gates new detached dispatch. Ordinary
   // Producer identity never proves that an Agent executed in the background.
-  let nativeReviewExecutionAvailable = ['codex', 'qoder', 'claude-code'].includes(host)
+  let nativeReviewExecutionAvailable = !codexDesktop && ['codex', 'qoder', 'claude-code'].includes(host)
   const reviewUnavailableReason = 'Native background reviewer execution is not verified for this host. Ask the user whether to turn automatic GRA off or run this review in the main conversation. Until they choose, keep requests pending and policy unchanged; never automatically substitute synchronous execution.'
   let reviewDispatchOwner = nativeReviewExecutionAvailable ? (options.backgroundReviews === true ? 'companion' : 'main') : 'unavailable'
   const presentReviews = rows => nativeReviewExecutionAvailable ? rows : rows.map(row => row.executionMode==='foreground' ? row : ({...row,
@@ -83,20 +102,24 @@ export async function startCompanion(options) {
   const managedEnabled=options.backgroundReviews===true
   if(managedEnabled && host!=='codex')throw new Error('Managed background reviews currently support Codex only; this host adapter has not been verified.')
   const executeReview=managedEnabled ? options.reviewExecutor ?? createReviewExecutor({host,model:options.reviewModel}) : undefined
-  const nativeCwd = options.nativeCwd ?? options.projectRoot
   const connection = options.connection ?? (host === 'qwenwork'
     ? await createQwenWorkPanelConnection({ sessionId: options.threadId, nativeCwd, transcriptPath: options.transcriptPath,
       qwenworkDesktop: options.qwenworkDesktop, qwenworkEventsOnly: options.qwenworkEventsOnly })
     : host === 'qoder'
     ? await createQoderHookConnection({ sessionId: options.threadId, nativeCwd })
     : host === 'claude-code' ? await createClaudeHookConnection({ sessionId: options.threadId, nativeCwd })
+      : codexDesktop ? createCodexDesktopRelay(options.threadId)
       : createCodexConnection(options.threadId, undefined, { remote: options.codexRemote }))
+  if (codexDesktop && (connection.host !== 'codex' || connection.inputMode !== 'desktop' || connection.threadId !== options.threadId)) throw Error('Codex desktop requires its exact bound desktop connection.')
+  let connectionPath
   const backgroundAdapter = createNativeBackgroundAdapter({ host, sessionId: connection.threadId,
-    projectRoot: nativeCwd, mainTranscriptPath: options.transcriptPath, readinessSince })
-  const nativeReviewProtocolAvailable = ['codex', 'qoder', 'claude-code'].includes(host) || !!backgroundAdapter && nativeAgentsAvailable
+    projectRoot: nativeCwd, mainTranscriptPath: options.transcriptPath, readinessSince, codexDesktop,
+    getConnectionPath: () => connectionPath })
+  const desktopReviewAdapter = codexDesktop && !!backgroundAdapter
+  const nativeReviewProtocolAvailable = desktopReviewAdapter || !codexDesktop && (['codex', 'qoder', 'claude-code'].includes(host) || !!backgroundAdapter && nativeAgentsAvailable)
   const refreshReviewCapability = async () => {
     if (!backgroundAdapter) return
-    backgroundReviewReadiness = nativeAgentsAvailable
+    backgroundReviewReadiness = nativeAgentsAvailable || desktopReviewAdapter
       ? await backgroundAdapter.readReadiness()
       : { state: 'unverified', reason: 'The native background adapter is unavailable.' }
     nativeReviewExecutionAvailable = backgroundReviewReadiness.state === 'ready' && backgroundReviewReadiness.canDispatch === true
@@ -104,7 +127,8 @@ export async function startCompanion(options) {
     // Pure observation. Publication, explicit recheck/policy changes and normal
     // scheduler lifecycle own dispatch; a status read must never resume a queue.
   }
-  const hostCapabilities = () => ({ mainBundles: true, foregroundReviews: true, nativeSubagents: nativeAgentsAvailable, nativeWorkers: host !== 'workbuddy', backgroundReviews: nativeReviewExecutionAvailable,
+  const hostCapabilities = () => ({ mainBundles: true, foregroundReviews: true, nativeSubagents: nativeAgentsAvailable, nativeWorkers: nativeWorkersAvailable, backgroundReviews: nativeReviewExecutionAvailable,
+    ...(desktopExecutionAdapter ? { nativeExecutionProtocol: desktopExecutionAdapter.protocol } : {}),
     ...(backgroundAdapter ? { ...nativeCapabilityStatus(backgroundReviewReadiness), backgroundReviewProtocol: backgroundAdapter.protocol(backgroundReviewReadiness) } : {}) })
   try {
   const project = await openCompanionProject({ ...options, connection, nativeCwd, transcriptPath: options.transcriptPath,
@@ -128,35 +152,38 @@ export async function startCompanion(options) {
     void knowledge.notify().catch(error => console.error('Knowledge startup refresh:', String(error.message ?? error)))
   }
   const knowledgeReads = new KnowledgeReadProgress()
-  const childObserver = !nativeAgentsAvailable ? () => { throw Error('WorkBuddy native subagent observation is not supported yet.') } : host === 'workbuddy'
+  const childObserver = desktopExecutionAdapter?.createObserver ?? (!nativeAgentsAvailable ? () => { throw Error(`${nativeUnavailableHost} native subagent observation is not supported yet.`) } : host === 'workbuddy'
     ? input => createWorkBuddyChildTranscript({...input,sessionId:connection.threadId,mainTranscriptPath:options.transcriptPath})
     : host === 'qwenwork'
     ? input => createQwenWorkTranscript({ ...input, sessionId: connection.threadId, agentId: input.threadId })
     : host === 'qoder'
     ? input => createQoderTranscript({ ...input, sessionId: connection.threadId, agentId: input.threadId })
-    : host === 'claude-code' ? input => createClaudeTranscript({ ...input, sessionId: connection.threadId, agentId: input.threadId }) : createCodexTranscript
-  const verifyChild = !nativeAgentsAvailable ? () => { throw Error('WorkBuddy native subagent binding is not supported yet.') } : host === 'workbuddy'
+    : host === 'claude-code' ? input => createClaudeTranscript({ ...input, sessionId: connection.threadId, agentId: input.threadId }) : createCodexTranscript)
+  const verifyChild = desktopExecutionAdapter?.verifyChild ?? (!nativeAgentsAvailable ? () => { throw Error(`${nativeUnavailableHost} native subagent binding is not supported yet.`) } : host === 'workbuddy'
     ? input => verifyWorkBuddyChild({...input,sessionId:connection.threadId,mainTranscriptPath:options.transcriptPath})
     : host === 'qwenwork'
     ? input => verifyQwenWorkChild({ ...input, sessionId: connection.threadId })
     : host === 'qoder'
     ? input => verifyQoderChild({ ...input, sessionId: connection.threadId })
-    : host === 'claude-code' ? input => verifyClaudeChild({ ...input, sessionId: connection.threadId }) : verifyNativeChild
-  const nativeRuns = await createNativeRuns({ project, stateRoot: options.stateRoot, threadId: connection.threadId, nativeCwd,
+    : host === 'claude-code' ? input => verifyClaudeChild({ ...input, sessionId: connection.threadId }) : verifyNativeChild)
+  nativeRuns = await createNativeRuns({ project, stateRoot: options.stateRoot, threadId: connection.threadId, nativeCwd,
     host, createObserver: childObserver, verifyChild, readMainTranscript: () => transcript?.read() })
-  const resolveRun = input => resolveNativeRun(input,{host,threadId:connection.threadId,mainTranscriptPath:options.transcriptPath,
-    parentBinding:input.parentRunId && input.parentRunId!==connection.threadId ? nativeRuns.getBinding(input.parentRunId) : undefined})
+  const resolveExecutionRun = input => desktopExecutionAdapter ? desktopExecutionAdapter.resolveRun(input)
+    : resolveNativeRun(input,{host,threadId:connection.threadId,mainTranscriptPath:options.transcriptPath,
+      parentBinding:input.parentRunId && input.parentRunId!==connection.threadId ? nativeRuns.getBinding(input.parentRunId) : undefined})
+  const resolveRun = input => backgroundAdapter?.resolveRun ? backgroundAdapter.resolveRun(input) : resolveExecutionRun(input)
   const settings = await createCompanionSettings(options.stateRoot)
   // Studio inspects installed resources even before the project selects a Kit.
   const studio = await createCompanionStudio(() => project.installedKit, options.kitRoot, options.stateRoot, project.contentLibrary)
   let trials
   const getTrials = () => {
+    if (codexDesktop) throw new Error('Codex desktop Studio trial execution is not verified yet.')
     if (options.studioTrial) throw new Error('Nested Studio trials are disabled. Return to the originating Studio.')
     return trials ??= createStudioTrials({ stateRoot: options.stateRoot, kitRoot: options.kitRoot,
       readInstalledKit: () => project.installedKit,
       readInstalledBundle: pin => project.contentLibrary.store.resolveBundle(pin), connection, startCompanion,
       parentOrigin: origin,
-      companionOptions: { host, nativeCwd, transcriptPath: options.transcriptPath, staticRoot, indexPath: options.indexPath, codexRemote: options.codexRemote, devFrontend: options.devFrontend },
+      companionOptions: { host, nativeCwd, transcriptPath: options.transcriptPath, staticRoot, indexPath: options.indexPath, codexRemote: options.codexRemote, codexDesktop: options.codexDesktop, devFrontend: options.devFrontend },
     })
   }
   const reviewObservers = new Map()
@@ -244,7 +271,8 @@ export async function startCompanion(options) {
     if (!workspace.access?.writable) return []
     native ??= await nativeRuns.read(workspace)
     const rows = await reviews.readReviewStatus({ workspace, activeWork: observedWork(native) })
-    return presentReviews(nativeReviewsAvailable ? rows : rows.filter(row=>row.executionMode==='foreground'))
+    // Desktop review state is independent of general Bundle subagent support.
+    return presentReviews(nativeReviewsAvailable || desktopReviewAdapter ? rows : rows.filter(row=>row.executionMode==='foreground'))
   }
   // A successful file save must not turn into a reported failure if review reads fail.
   // Successful Design publication maintains KAG independently of graph reads
@@ -341,6 +369,10 @@ export async function startCompanion(options) {
         // This is service activity, never proof that its native input bridge is
         // online. Unauthenticated/static requests cannot extend the lifetime.
         lastAuthenticatedActivityAt = Date.now()
+        if (method === 'desktopBridge') {
+          if (!codexDesktop || typeof connection.desktopBridge !== 'function') throw Error('Codex desktop bridge is unavailable.')
+          return send(response, 200, await connection.desktopBridge(params))
+        }
         if (method === 'readConversation') {
           // This bound, read-only Host projection verifies its native identity
           // and durable boundary on every read. It does not require a readable
@@ -373,8 +405,9 @@ export async function startCompanion(options) {
         // parameter cannot turn a background request into an unbound main run.
         const foregroundOperation = method==='recheckReviews' && params.executionMode==='foreground'
           || reviewRequest?.executionMode==='foreground' && typeof reviewRequest.manualRequestId==='string'
-        if (!foregroundOperation && !nativeAgentsAvailable && ['registerNativeRun','finishNativeRun','focusArtifact','readExecutionLog','prepareReview','prepareReviews','bindReviewRun','bindReviewRuns','submitReview','readReview','recheckReviews'].includes(method)) throw Error('WorkBuddy native agents and background reviews are not supported by this adapter yet.')
-        if (!foregroundOperation && !nativeReviewsAvailable && ['prepareReview','prepareReviews','bindReviewRun','bindReviewRuns','submitReview','readReview','recheckReviews'].includes(method)) throw Error('WorkBuddy background reviews are not supported yet.')
+        const reviewOperation = ['prepareReview','prepareReviews','bindReviewRun','bindReviewRuns','submitReview','readReview','recheckReviews'].includes(method)
+        if (!foregroundOperation && !nativeAgentsAvailable && ['registerNativeRun','finishNativeRun','focusArtifact','readExecutionLog', ...(desktopReviewAdapter ? [] : ['prepareReview','prepareReviews','bindReviewRun','bindReviewRuns','submitReview','readReview','recheckReviews'])].includes(method)) throw Error(`${nativeUnavailableHost} native agents and background reviews are not supported by this adapter yet.`)
+        if (!foregroundOperation && !nativeReviewsAvailable && !desktopReviewAdapter && reviewOperation) throw Error(`${nativeUnavailableHost} background reviews are not supported yet.`)
         if (!foregroundOperation && !nativeReviewExecutionAvailable && ['prepareReview','prepareReviews','bindReviewRun','bindReviewRuns','recheckReviews'].includes(method)) throw Error(reviewUnavailableReason)
         if (host === 'workbuddy' && method === 'registerNativeRun' && params.role !== 'producer') throw Error('WorkBuddy Workers are not verified; Producer must execute serially.')
         // No Kit means no Bundle/review execution, not a failed project startup.
@@ -441,15 +474,15 @@ export async function startCompanion(options) {
         if (method === 'knowledgeStatus') return send(response, 200, await knowledge.status())
         if (method === 'refreshKnowledge') return send(response, 200, await knowledge.requestMaintenance())
         if (method === 'knowledgeContext') {
-          try { return send(response, 200, { available: true, ...await knowledge.captureReview(await project.store.head()), method: KNOWLEDGE_AGENTIC_GUIDANCE }) }
+          try { return send(response, 200, { available: true, ...await knowledge.captureContext(await project.store.head()), method: KNOWLEDGE_AGENTIC_GUIDANCE }) }
           catch (error) { return send(response, 200, { available: false, error: String(error.message ?? error), method: KNOWLEDGE_AGENTIC_GUIDANCE }) }
         }
         if (method === 'prepareBundle') {
           const prepared = await project.prepareBundle(params)
-          if (!nativeAgentsAvailable && prepared.execution.mode !== 'main') throw Error('This Bundle requires an isolated native Producer; WorkBuddy support is not verified. The Bundle will not be run in main as a fallback.')
+          if (!nativeAgentsAvailable && prepared.execution.mode !== 'main') throw Error(`This Bundle requires an isolated native Producer; ${nativeUnavailableHost} support is not verified. The Bundle will not be run in main as a fallback.`)
           return send(response, 200, { ...prepared, knowledgeMethod: KNOWLEDGE_AGENTIC_GUIDANCE,
             cooperationMethod: DESIGN_EXECUTOR_EVIDENCE_GUIDANCE,
-            ...(host !== 'workbuddy' ? { workerMethod: DESIGN_WORKER_EVIDENCE_GUIDANCE } : {}) })
+            ...(nativeWorkersAvailable ? { workerMethod: DESIGN_WORKER_EVIDENCE_GUIDANCE } : {}) })
         }
         if (method === 'readWorkspace') {
           const workspace = await project.readWorkspace({ displayOnly: true })
@@ -462,7 +495,7 @@ export async function startCompanion(options) {
             // Keep the existing access reason as the recovery authority; reads
             // never start an assessment merely to fill this display snapshot.
             : { reviews: [], clarity: { assessment: null, needsReassessment: true }, advisories: [] }
-          const reviewStates = presentReviews(nativeReviewsAvailable ? reviewPresentation.reviews
+          const reviewStates = presentReviews(nativeReviewsAvailable || desktopReviewAdapter ? reviewPresentation.reviews
             : reviewPresentation.reviews.filter(row=>row.executionMode==='foreground'))
           // The browser reads history independently. Legacy tool readers keep
           // the full projection; conversation-only updates do not retransmit a
@@ -598,8 +631,16 @@ export async function startCompanion(options) {
           await withReviewStatus(await finishWithAutoPanel({ method, params, nativeRuns, project })))
         if (method === 'registerNativeRun' || method === 'beginMainBundle') {
           await trialInputGate.assertExecution(params)
-          return send(response, 200, method === 'registerNativeRun'
-            ? await nativeRuns.registerNativeRun({ ...params, ...await resolveRun(params) }) : await nativeRuns.beginMainBundle(params))
+          if (method === 'registerNativeRun') {
+            const binding = await resolveExecutionRun(params)
+            if (desktopExecutionAdapter) {
+              const skill = project.kit.skills.find(skill => skill.name === params.skill)
+              await desktopExecutionAdapter.verifyAssignment(binding, skill && { skill: skill.name, version: skill.version,
+                kit: { name: project.kit.name, version: project.kit.version }, designFiles: project.project.designFilesRoot }, connectionPath)
+            }
+            return send(response, 200, await nativeRuns.registerNativeRun({ ...params, ...binding }))
+          }
+          return send(response, 200, await nativeRuns.beginMainBundle(params))
         }
         if (method === 'retainAutoPanel') return send(response, 200, await project.retainAutoPanel(params))
         if (method === 'prepareAutoPanel' || method === 'submitAutoPanel') return send(response, 200, await project[method](params))
@@ -624,7 +665,15 @@ export async function startCompanion(options) {
       // Query parameters cannot grant embedding authority or relax API authentication.
       const trialPanel = trialEmbedOrigin !== undefined && name === 'index.html' && request.url === '/?view=trial-panel'
       const bytes = await readFile(name === 'index.html' ? options.indexPath ?? join(staticRoot, '../index.html') : join(staticRoot, name))
-      const html = devFrontend && name === 'index.html' ? await devFrontend.html(request.url, bytes.toString('utf8')) : bytes
+      let html = devFrontend && name === 'index.html' ? await devFrontend.html(request.url, bytes.toString('utf8')) : bytes
+      if (name === 'index.html') {
+        const page = html.toString('utf8')
+        const meta = `<meta name="design-companion-default-view" content="${browserDefaultView}">`
+        // Custom API-test entries may use an implicit head; retain their doctype.
+        html = /<head\b[^>]*>/i.test(page)
+          ? page.replace(/<head\b[^>]*>/i, head => head + meta)
+          : page.replace(/^(?:<!doctype[^>]*>)?/i, doctype => doctype + meta)
+      }
       response.writeHead(200, {
         'Content-Type': type, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer',
         'X-Content-Type-Options': 'nosniff',
@@ -648,9 +697,9 @@ export async function startCompanion(options) {
       throw error
     }
   }
-  const connectionPath = join(options.stateRoot, 'connections', `${token.slice(0, 24)}.json`)
+  connectionPath = join(options.stateRoot, 'connections', `${token.slice(0, 24)}.json`)
   await mkdir(dirname(connectionPath), { recursive: true, mode: 0o700 })
-  await writeFile(connectionPath, JSON.stringify({ origin, token, host, threadId: connection.threadId, projectRoot: project.project.root, nativeCwd }), { mode: 0o600, flag: 'wx' })
+  await writeFile(connectionPath, JSON.stringify({ origin, token, host, threadId: connection.threadId, projectRoot: project.project.root, nativeCwd, ...(codexDesktop ? { codexDesktop: true } : {}) }), { mode: 0o600, flag: 'wx' })
   await nativeReviewScheduler?.resumePending()
   return { origin, token, connectionPath, browserAccess, browserGeneration, inputMode: connection.inputMode,
     url: browserAccess === 'local' ? `${origin}${browserBase}` : `${origin}/#${token}`, project, knowledge,

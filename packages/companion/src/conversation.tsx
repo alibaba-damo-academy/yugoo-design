@@ -38,7 +38,7 @@ export interface RecordedConversation {
     questions?: { id: string; question: string; options: { label: string; description: string }[] }[] }[]
 }
 
-export function Conversation({ hostLabel = '原生 Agent', value, thread, visible, onClose, send, attempts = [], readExecutionLog, beforeComposer }: { hostLabel?: string; value?: RecordedConversation; thread?: string; visible: boolean; onClose: () => void; send: (text: string) => Promise<void>; attempts?: DesignPanelWorkspaceRead['executionAttempts']; readExecutionLog?: (runId: string, afterSeq?: number) => Promise<DesignExecutionLogRead>; beforeComposer?: ReactNode }) {
+export function Conversation({ hostLabel = '原生 Agent', value, thread, visible, onClose, send, attempts = [], readExecutionLog, beforeComposer, continuation }: { hostLabel?: string; value?: RecordedConversation; thread?: string; visible: boolean; onClose: () => void; send: (text: string) => Promise<void>; attempts?: DesignPanelWorkspaceRead['executionAttempts']; readExecutionLog?: (runId: string, afterSeq?: number) => Promise<DesignExecutionLogRead>; beforeComposer?: ReactNode; continuation?: ReactNode }) {
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
@@ -114,6 +114,7 @@ export function Conversation({ hostLabel = '原生 Agent', value, thread, visibl
       </div>)}
     </div>
     {beforeComposer}
+    {continuation}
     <form data-composer-card onSubmit={async event => {
       event.preventDefault()
       if (!thread || !draft.trim() || sending) return

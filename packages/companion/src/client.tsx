@@ -12,6 +12,7 @@ import { createTrialPanelBridge, type TrialPanelBinding } from './trial-panel-br
 import { NativePanelRegistry } from '../../panel/src/client/native-panel-registry.ts'
 import { registerWebAppNativePanels } from '../../provider-web-app/src/client/packs/web-app.tsx'
 import { DesignProjectSidebarEntry } from '../../panel/src/client/design-project-sidebar-entry.tsx'
+import { DesignContinuationBar, designContinuationOf, continuationDismissKey } from '../../panel/src/client/design-continuation-bar.tsx'
 import { CurrentProjectSidebarEntry } from '../../panel/src/client/current-project-sidebar-entry.tsx'
 import { subscribeLivePoll, requestLivePoll } from '../../panel/src/client/live-poll.ts'
 import { createWorkspacePollReader } from '../../panel/src/client/workspace-poll-reader.ts'
@@ -44,9 +45,11 @@ import '../../provider-web-app/src/client/ported/design/panel-shared.css'
 let entryStorage: Storage | undefined
 try { entryStorage = sessionStorage } catch { /* Some host webviews disable storage. */ }
 const transport = browserTransport(location, entryStorage)
-// Per-page presentation, never a host capability or a persisted preference.
+// An explicit per-page view overrides the adapter's presentation default.
+// Neither is a host capability or a persisted preference.
 // Keep the query when removing the credential so reload keeps this layout.
-const designOnly = companionView(new URLSearchParams(location.search).get('view')) === 'panel-only'
+const designOnly = companionView(new URLSearchParams(location.search).get('view'),
+  document.querySelector<HTMLMetaElement>('meta[name="design-companion-default-view"]')?.content) === 'panel-only'
 if (transport.removeFragment) history.replaceState(null, '', location.pathname + location.search)
 const studioPage = new URLSearchParams(location.search).get('view') === 'studio'
 const trialPanelPage = new URLSearchParams(location.search).get('view') === 'trial-panel'
@@ -189,10 +192,14 @@ function App() {
     ? { key: `${transport.headers['X-Design-Token']?.slice(0, 24) ?? transport.endpoint}:${workspace.projectId}`, projectId: workspace.projectId } : undefined,
     message => rpc('observePanelDraft', message))
   const [panelSaving, setPanelSaving] = useState(false)
+  const [panelDirty, setPanelDirty] = useState(false)
+  const [panelControlsReady, setPanelControlsReady] = useState(false)
   const publishControls = useCallback((value: DesignWorkspaceControls | undefined) => {
     publishTrialControls(value)
     drafts.observe(value)
     setPanelSaving(value?.saving ?? false)
+    setPanelDirty(value?.dirty ?? false)
+    setPanelControlsReady(value !== undefined)
   }, [publishTrialControls, drafts.observe])
   const [conversation, setConversation] = useState<RecordedConversation>()
   const [backgroundReviews, setBackgroundReviews] = useState<BackgroundReviews>()
@@ -234,6 +241,47 @@ function App() {
   const settingsDialog = useRef<HTMLDialogElement>(null)
   const locale = useCurrentLanguage()
   const chrome = (key: CompanionChromeKey, values?: { host: string }) => companionChromeText(key, locale, values)
+  const continuation = designContinuationOf(workspace?.continuations)
+  const continuationKey = continuation && thread && workspace?.projectId
+    ? JSON.stringify([thread, workspace.projectId, continuationDismissKey(continuation)]) : undefined
+  const [laterContinuation, setLaterContinuation] = useState<string>()
+  const [continuationAttempt, setContinuationAttempt] = useState<{ key: string; sending: boolean }>()
+  const attemptedContinuation = useRef<string>()
+  const unresolvedSave = !!savedContinuationError || savedContinuations.some(entry => entry.retryable || ['unknown', 'preparing'].includes(entry.status))
+  const continuationStatus = pollError || !panelControlsReady
+    ? (locale === 'zh_CN' ? '正在核对设计工作区，请稍后。' : 'Checking the design workspace. Please wait.')
+    : !workspace?.access.writable
+      ? (locale === 'zh_CN' ? '当前项目只读，不能继续执行。' : 'This project is read-only. Execution cannot continue.')
+      : panelDirty || drafts.notice
+        ? (locale === 'zh_CN' ? '请先保存或撤回面板修改，再继续。' : 'Save or discard the Panel edits before continuing.')
+        : panelSaving || recoveringNotification
+          ? (locale === 'zh_CN' ? '请等待当前保存或通知完成。' : 'Wait for the current save or notification to finish.')
+          : unresolvedSave
+            ? (locale === 'zh_CN' ? '请先核对保存后的通知状态。' : 'Check the saved notification status first.')
+            : continuationAttempt?.key === continuationKey && continuationAttempt?.sending
+              ? (locale === 'zh_CN' ? '正在发送继续请求…' : 'Sending the continuation request…')
+              : continuationAttempt?.key === continuationKey
+                ? (locale === 'zh_CN' ? '已尝试提交，请在原会话核对；不会自动重发。' : 'Submission attempted. Check the original conversation; it will not be replayed automatically.')
+                : undefined
+  // This is one Host entry for a Runtime descriptor, never a Bundle stage guess.
+  // Keep local dismissal/submission across conversation hide/show and polling.
+  const continuationBar = !trialPanelPage && continuation && continuationKey && laterContinuation !== continuationKey
+    ? <DesignContinuationBar key={continuationKey} descriptor={continuation} disabled={!!continuationStatus} status={continuationStatus}
+        onLater={() => setLaterContinuation(continuationKey)}
+        onAdjust={conversationVisible ? () => shellRoot.current?.querySelector<HTMLTextAreaElement>('[data-composer-card] textarea')?.focus() : undefined}
+        onContinue={label => {
+          const controls = trialControls.current
+          if (!thread || continuationStatus || !controls || controls.dirty || controls.saving
+            || panelStore.getSnapshot().saving || attemptedContinuation.current === continuationKey) return
+          attemptedContinuation.current = continuationKey
+          setContinuationAttempt({ key: continuationKey, sending: true })
+          // Reuse the ordinary one-shot native submission and its exact feedback.
+          // A resolved receipt is not proof of consumption; an error is not a retry.
+          void runtime.sendPrompt(thread, label, browserRandomUuid()).catch(() => {}).finally(() => {
+            setContinuationAttempt(current => current?.key === continuationKey ? { ...current, sending: false } : current)
+          })
+        }} /> : null
+
   useEffect(() => { document.documentElement.lang = companionDocumentLanguage(locale) }, [locale])
   const [language, setLanguage] = useState(companionLocale.getPreference)
   useEffect(() => bindDesignHostLocale(companionLocale), [])
@@ -351,8 +399,12 @@ function App() {
     if (designOnly) shellRoot.current?.querySelector<HTMLButtonElement>('.companion-sidebar .dsh-advisory-sidebar-trigger')?.focus({ preventScroll: true })
   }
   const advisoryInbox = advisoriesOpen && workspace?.projectId && thread && <section id="dsh-advisory-composer-inbox" className="dsh-advisory-inbox" aria-label="设计建议收件箱">
-        <div className="dsh-advisory-inbox-heading"><span>设计建议</span><button type="button" aria-label="收起设计建议" onClick={closeAdvisories}>收起</button></div>
-        <ReviewPolicyControl key={`${thread}:${workspace.projectId}`} sessionId={thread} runtime={runtime} />
+        <div className="dsh-advisory-inbox-heading">
+          <div className="dsh-advisory-inbox-title"><span>设计建议</span>
+            <ReviewPolicyControl key={`${thread}:${workspace.projectId}`} sessionId={thread} runtime={runtime} />
+          </div>
+          <button type="button" className="dsh-advisory-inbox-close" aria-label="收起设计建议" onClick={closeAdvisories}>×</button>
+        </div>
         <AdvisoryReviewCard entries={advisories} emptyText="暂无待处理的设计建议。"
           key={`${thread}:${workspace.projectId}`} readingScope={`${thread}:${workspace.projectId}`} preferredAdvisoryId={advisoryOpeningTarget}
           onRecordAccepted={async advisory => {
@@ -544,10 +596,11 @@ function App() {
       {!trialPanelPage && !designOnly && <Conversation hostLabel={nativeHostLabel} value={conversation} thread={thread} visible={conversationVisible} attempts={workspace?.executionAttempts}
         readExecutionLog={(runId, afterSeq) => runtime.readExecutionLog(thread!, runId, afterSeq)}
         onClose={() => { setConversationOpen(false); document.querySelector<HTMLButtonElement>('.companion-sidebar-action')?.focus() }} send={text => runtime.sendPrompt(thread!, text)}
-        beforeComposer={conversationVisible && advisoryInbox} />}
+        beforeComposer={conversationVisible && advisoryInbox} continuation={conversationVisible && continuationBar} />}
       {conversationVisible && <ConversationResize width={chatWidth} onChange={resizeChat} />}
       <div className="dsh-design-dock">
         {drafts.notice}
+        {!conversationVisible && continuationBar}
         {savedContinuationError && <p role="alert">{locale === 'zh_CN' ? savedContinuationError : 'Saved notification status is unavailable. Check the authoritative files in the original conversation; do not blindly resend.'}</p>}
         {!trialPanelPage && savedContinuations.some(entry => entry.retryable || ['unknown', 'preparing'].includes(entry.status)) && <section aria-label={locale === 'zh_CN' ? '保存后的通知状态' : 'Saved notification status'}>
           <span role="status">{savedContinuations.some(entry => ['unknown', 'preparing'].includes(entry.status))

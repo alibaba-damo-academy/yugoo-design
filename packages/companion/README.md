@@ -3,6 +3,12 @@
 For host-specific installation, startup and maintenance, start with the
 [host integration entry points](HOSTS.md).
 
+The [Mac Codex Desktop guide](hosts/codex-desktop/README.md) starts with
+npm-backed plugin preparation and native activation, followed by the existing
+source development route. Both keep the original conversation and use a
+host-launched notification bridge. Runtime checks, native loading and actual
+design use have separate verification boundaries.
+
 New projects use the system Documents directory under `YuGoo/Projects`, shared
 with the native DSH integration. Windows honors Documents redirection/OneDrive;
 Linux honors XDG user directories (WSL uses its Linux user); macOS uses
@@ -56,8 +62,12 @@ unchanged polling does not reopen a dismissed card.
 
 ### Embedded host panel-only view
 
-Use `?view=panel-only` on the existing browser entry (`view=design` remains an
-alias). This page keeps the design workspace, project tools, settings, review
+Embedded adapters declare startup `browserDefaultView: "panel-only"`; the Mac
+Codex desktop entry (`--codex-desktop`) sets it explicitly. Opening its returned
+browser URL without a `view` parameter then opens the Panel directly. Other
+entries default to `"full"`. A page can override the default with
+`?view=panel-only` (`view=design` remains an alias) or `?view=full`.
+The panel-only page keeps the design workspace, project tools, settings, review
 status and suggestions. It omits history/composer and the conversation toggle.
 Its right sidebar starts collapsed. The workspace omits the project header;
 Bundle tabs start at its top edge. A "Current project" entry in the right sidebar
@@ -72,9 +82,12 @@ beside the actual button in a bounded, non-modal popover, without a full-workspa
 backdrop. The design stays visible and usable. Outside click or Escape closes
 the popover; an open review-settings dialog handles its own Escape first.
 
-Layout belongs to each page URL, not a global preference. The same service can
-have a panel-only host page and an independent full browser window. Changing
-layout does not restart, select a project, rebind a conversation or grant access.
+The adapter default applies only when `view` is absent; explicit Studio and
+trial-panel routes retain their own presentation. It is not inferred from browser
+access policy, user agent or window size, and is not a global preference. The
+same service can have a panel-only host page and an independent `?view=full`
+browser window. Changing layout does not restart, select a project, rebind a
+conversation or grant access.
 
 ### Browser access policy
 
@@ -170,6 +183,19 @@ U/S/T context remains available from `design_main_context`, not duplicated in
 every Bundle preparation. Finish receipts retain commit, acceptance, repair and
 recovery diagnostics and generated-Panel follow-up, without retransmitting the
 whole state/diff. Accepted, committed, and completed remain different facts.
+
+When Runtime publishes a pending `user_continue` action, Companion presents the
+shared continuation bar above the conversation composer. In Panel-only view,
+or while the conversation is collapsed, the same single entry appears in Host
+chrome above the design workspace. Continue sends the declared action label
+through the ordinary native conversation path. Adjust focuses an available
+composer without changing its draft; it is absent when there is no composer.
+Later dismisses that invocation locally across polling and conversation toggles;
+a different invocation can appear again. Read-only access, unresolved edits and
+save/notification work disable Continue with a reason. A submission attempt is
+not replayed by polling or view changes; an uncertain receipt must be checked in
+the original conversation. Reloading never submits automatically. Studio trial
+Panels do not expose this execution entry.
 
 Save continuation reuses the actual saved diff. It is a change record, not a
 claim to contain the whole state. Read missing relevant evidence, finish the
@@ -568,6 +594,22 @@ preparation, verify the real project's semantic status separately. Preserve the
 reported model/runtime failure and existing Design Files rather than clearing the
 database or reinstalling the host to make the status appear successful.
 
+While embedding is unavailable, use `design_knowledge_context` and preserve its
+project, checkpoint, graph revision and `coverage.basis` (as query `basis`) for
+`design_query_knowledge`. This keeps the view stable when a later publication
+becomes available. If source
+projection has completed and still matches the pinned sources, context remains
+available with `coverage.basis: source-projection`: records, explicit references
+and literal-text queries work without semantic inference. Its coverage excludes
+embedding candidates and other non-file interpretations. The returned `status`
+still shows the semantic maintenance failure and any older latest-complete
+publication; basic context availability does not mean semantic KAG is current.
+These reads do not retry maintenance. An unprojected, incomplete or stale source
+view remains unavailable; use bounded reads of the Design Files in that case.
+Legacy queries without a basis retain their historical-snapshot behavior when a
+publication exists; their returned coverage does not assert semantic completeness
+or compatibility with the current projection policy.
+
 ### Install in the current native host
 
 Ask the Agent in your current host to install or update Yugoo Design as one
@@ -580,6 +622,7 @@ to an already published package. Users do not install DSH and Companion separate
 | Host | Native installation route |
 | --- | --- |
 | Codex | `install --host codex`: run the existing plan, runtime check and apply transaction, retaining each receipt. |
+| Codex Desktop | `install --host codex-desktop`: prepare a small npm-backed local source and owned personal catalog; install or update it through the native plugin UI. |
 | Claude Code | `install --host claude-code`: native user-scope registration. |
 | Qoder CLI | `install --host qoder`: native user-scope registration and independent readback. |
 | QwenWork | `install --host qwenwork`: prepare the expert suite and its MCP configuration; import and enable through the host. |
@@ -607,6 +650,17 @@ the entry returns `host-selection-required`; missing inputs return
 `inputs-required`, both with exit code 2 and no installation attempted. The
 Agent should obtain supported native facts itself and ask only for missing
 choices. Explicit saved-plan and `prepare-desktop` routes remain available.
+
+For Codex Desktop, choose a new `--destination` inside the intended user's home
+with an existing parent, an external `--receipt-dir`, and optionally an existing
+public `--node-executable`. Keep the exact npm installation at its acquired path:
+the small prepared source points to its shared runtime. An owned update uses a
+new npm directory and source destination with the old `--previous-receipt`,
+retaining the old inputs. `--dry-run` saves a source-bound plan; apply that exact
+`--plan` from the same package without choosing a new Node or destination.
+The returned catalog preparation still reports the plugin as not installed or
+loaded. Complete the native UI action, and return to the current conversation
+after a normal user-controlled restart if the host requires one.
 
 The Agent completes executable steps and reports only the required human
 authorization, import, enable, restart or new-session action. Report acquisition,
@@ -829,6 +883,44 @@ diagnostic route is not a substitute for the persistent installation above.
 
 ### Persistent registration transactions
 
+#### Codex Desktop: prepare from the acquired npm package
+
+Run the package's own command from a durable installation of an exact version:
+
+```sh
+npx --no-install design-system install --host codex-desktop --destination /absolute/user-home/plugins/yugoo-design/EXACT_VERSION --receipt-dir /absolute/external/receipts --node-executable /absolute/existing/public/node
+```
+
+Choose an existing parent for the new source directory. The destination must be
+inside the intended user's home, outside the acquired npm package, and unused.
+The command reuses the existing public Node, checks the acquired runtime, and
+prepares a small immutable plugin source plus the personal marketplace entry.
+Its launchers retain exact references to that npm installation; runtime files,
+dependencies and Node are not copied. Keep both the npm directory and prepared
+source at their recorded paths. `--user-root` selects an explicit profile root
+for preparation, including an isolated test profile.
+
+Preparation returns `hostRegistered: false`, `installed: false` and
+`loaded: false`. Install or update that exact local source through Codex Desktop's
+native plugin UI. If the host needs a normal restart, keep and return to the
+current conversation, then verify the loaded version and original-conversation
+save receipt. Preparing the catalog does not establish native activation.
+
+For an owned update, acquire the next exact npm version in a new stable directory,
+choose a new source directory, and pass the previous successful
+`--previous-receipt /absolute/receipt.desktop-marketplace.json`. The same selector
+is updated while the old source, npm version and receipt remain intact. Modified
+sources, runtime inputs or a conflicting Yugoo catalog entry are retained and rejected.
+
+`--dry-run` prepares the source and saves a plan without updating the catalog.
+Apply it using `install --host codex-desktop --apply --plan /absolute/saved-plan
+--receipt-dir /absolute/external/receipts` from the same acquired npm package.
+Do not add a new destination, Node selection or previous receipt during apply;
+the saved plan already binds them. An existing exact `--runtime-receipt` may be
+supplied during preparation instead of repeating its runtime check.
+
+#### Codex CLI registration transactions
+
 The Codex persistent npm installer currently admits only the reviewed local-plugin JSON protocol
 for Linux x64 `codex-cli 0.160.0` and `codex-cli 0.162.0`. The executable may reside
 at a different installation path, but its actual path and bytes are pinned and its SHA is
@@ -1007,6 +1099,16 @@ bundled module identities change;
 executable strings, original notices, physical module evidence and exact loader
 checks remain intact. This avoids path-only chunk hash drift without admitting
 changed worker code or borrowing older compiled output.
+
+Normal static Pica inspection uses the captured web output-module map to locate
+the two source roles, rather than historical chunk names. It checks the actual
+parent bindings and Worker strings against the pinned source, existing compiler
+bytes and AST contract, including the static manifest. The bounded expected
+parent normalization runs in memory with `write: false`; it does not rebuild
+the product or change the retained candidate. Historical Blob fixtures and
+probes keep their own exact byte pins and cannot certify this static branch.
+Both static Worker tasks remain pending actual runtime evidence; compilation
+does not establish browser execution, installed-host support or release acceptance.
 
 This produces a directory-style development plugin, not a portable npm release
 payload. Its packaged local inference dependencies are specific to the build
@@ -1206,6 +1308,10 @@ Shared defaults on every host (DSH and Companion):
   publication matching the authoritative Design Files head; `due` keeps the
   latest complete generation readable and always reports both heads;
   `running` requires a real pipeline/subagent, never a mere queue entry.
+  Ordinary Companion context also reports its read basis and coverage. A verified
+  source-only view can be available while semantic maintenance is `failed`;
+  its pinned queries use the same source-only view. Complete publication and
+  advisory review capture keep their existing stronger guarantees.
 - **`knowledgeAutoRefresh: true`** is an explicit host opt-in that restores
   the legacy on-open indexing behavior. The default is `false`. It never
   waits for the open response and never sends an implicit prompt.

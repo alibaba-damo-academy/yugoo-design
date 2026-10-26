@@ -7,6 +7,7 @@ const target = process.argv[2]
 const builds = {
   'x86_64-unknown-linux-gnu': { file: 'libyugoo_design_git_native.so', output: 'yugoo_git.linux-x64.node' },
   'x86_64-pc-windows-msvc': { file: 'yugoo_design_git_native.dll', output: 'yugoo_git.win32-x64.node' },
+  'aarch64-apple-darwin': { file: 'libyugoo_design_git_native.dylib', output: 'yugoo_git.darwin-arm64.node' },
 }
 const build = builds[target]
 if (!build) throw Error('Pass one declared target triple; unsupported targets never fall back to Git CLI.')

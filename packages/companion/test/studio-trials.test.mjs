@@ -21,12 +21,12 @@ before(async () => {
   await cp(join(packageRoot, 'bundles'), join(kitRoot, 'skills'), { recursive: true })
 })
 after(async () => { if (kitRoot) await rm(kitRoot, { recursive: true, force: true }) })
-const kit = { name: 'web_app', version: '1.0' }, bundle = { name: 'business_rules', version: '1.0' }
+const kit = { name: 'web_app', version: '1.1' }, bundle = { name: 'business_rules', version: '1.0' }
 const source = { kind: 'installed', kit, bundle }
 
 test('independent trial materializes the retained closure and overlays the real Bundle root', async t => {
   const sourceRoot = join(packageRoot, 'kits/web_app')
-  const locations = (await readdir(join(packageRoot, 'bundles'))).map(name => ({ name, version: '1.0', rootDir: join(packageRoot, 'bundles', name), sourceId: 'fixture:trial-origin' }))
+  const locations = (await readdir(join(packageRoot, 'bundles'))).map(name => ({ name, version: name === 'flow_design' ? '1.1' : '1.0', rootDir: join(packageRoot, 'bundles', name), sourceId: 'fixture:trial-origin' }))
   const installed = await loadStudioKit(companionFs, sourceRoot, { bundles: locations })
   const { service, options, starts } = await fixture(t, { kitRoot: sourceRoot, readInstalledKit: () => installed,
     readInstalledBundle: pin => { const entry = locations.find(location => location.name === pin.name); return { resourceRoot: entry.rootDir, sourceId: entry.sourceId } } })

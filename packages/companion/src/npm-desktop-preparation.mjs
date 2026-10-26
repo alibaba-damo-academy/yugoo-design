@@ -102,15 +102,20 @@ async function priorReceipt(path) {
   return envelope
 }
 
-export async function prepareDesktopPackage({ npmRoot, packageName, packageVersion, target, destination, nodeExecutable,
-  suiteVersion, npmRootWindows, destinationWindows, qwenworkRuntime, includeMcp = true, previousReceiptFile } = {}) {
-  assert.ok(['qwenwork', 'workbuddy'].includes(target), 'Explicit desktop preparation target required')
-  assert.ok(isAbsolute(npmRoot ?? '') && isAbsolute(destination ?? ''), 'Absolute npm/output roots required')
+/** Shared exact npm identity grammar for desktop preparation routes. */
+export function assertDesktopNpmIdentity(packageName, packageVersion) {
   assert.match(packageName ?? '', /^@[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/); assert.match(packageVersion ?? '', packageVersionPattern)
   assert.ok(packageVersion.length < 128, 'Package version too long')
   const [versionCore, metadata] = packageVersion.split('+'), pre = versionCore.split('-').slice(1).join('-')
   if (pre) assert.ok(pre.split('.').every(part => /^[0-9A-Za-z-]+$/.test(part) && !/^0[0-9]+$/.test(part)), 'Noncanonical npm prerelease version')
   if (metadata) assert.ok(metadata.split('.').every(part => /^[0-9A-Za-z-]+$/.test(part)), 'Noncanonical npm version metadata')
+}
+
+export async function prepareDesktopPackage({ npmRoot, packageName, packageVersion, target, destination, nodeExecutable,
+  suiteVersion, npmRootWindows, destinationWindows, qwenworkRuntime, includeMcp = true, previousReceiptFile } = {}) {
+  assert.ok(['qwenwork', 'workbuddy'].includes(target), 'Explicit desktop preparation target required')
+  assert.ok(isAbsolute(npmRoot ?? '') && isAbsolute(destination ?? ''), 'Absolute npm/output roots required')
+  assertDesktopNpmIdentity(packageName, packageVersion)
   assert.match(suiteVersion ?? '', suiteVersionPattern); assert.ok(suiteVersion.length < 64, 'Suite version too long')
   assert.equal(typeof includeMcp, 'boolean'); assert.ok(target === 'qwenwork' || qwenworkRuntime === undefined && includeMcp, 'QwenWork configuration cannot apply to WorkBuddy')
   const root = resolve(npmRoot), output = resolve(destination)

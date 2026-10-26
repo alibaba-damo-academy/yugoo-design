@@ -14,7 +14,8 @@
     "Repository.readObjectHeader returns ODB type/size or null on NotFound; other failures throw.",
     "Remove implicit global Git configuration creation.",
     "Lock Cargo dependencies, enable runtime Node-API dynamic symbols, and build local Git without unused SSH/HTTPS/OpenSSL transports.",
-    "Platform prebuilds are produced by the maintainer, never compiled on user installation."
+    "Platform prebuilds are produced by the maintainer, never compiled on user installation.",
+    "Add source-built macOS arm64 support with a relocatable Mach-O install name; retain Linux/Windows pins and no Git CLI fallback."
   ],
   "capabilities": {
     "gitScope": "local immutable objects, refs, trees, status and index operations",
@@ -22,7 +23,8 @@
     "fallbackToGitExecutable": false,
     "platforms": [
       "x86_64-unknown-linux-gnu",
-      "x86_64-pc-windows-msvc"
+      "x86_64-pc-windows-msvc",
+      "aarch64-apple-darwin"
     ]
   },
   "toolchain": {
@@ -51,6 +53,27 @@
         "target": "x86_64-pc-windows-gnu",
         "url": "https://static.rust-lang.org/dist/2026-10-15/rust-std-1.99.1-x86_64-pc-windows-gnu.tar.xz",
         "sha256": "b17e3bc962ff24b3bc47a750d838defed85b280746250e3a3ad029e6c1a29dd7"
+      },
+      {
+        "name": "cargo",
+        "target": "aarch64-apple-darwin",
+        "url": "https://static.rust-lang.org/dist/2026-10-15/cargo-1.99.1-aarch64-apple-darwin.tar.xz",
+        "sha256": "685e563d94db1f003ffa5f5831439eec02569b9950b69867953c8213269c1eaf",
+        "bytes": 8950664
+      },
+      {
+        "name": "rustc",
+        "target": "aarch64-apple-darwin",
+        "url": "https://static.rust-lang.org/dist/2026-10-15/rustc-1.99.1-aarch64-apple-darwin.tar.xz",
+        "sha256": "23948a0a9c162fd2952defb3fb0462c44e8fcfd1a4ab8a274a1e1bdb2cf810a3",
+        "bytes": 50728492
+      },
+      {
+        "name": "rust-std",
+        "target": "aarch64-apple-darwin",
+        "url": "https://static.rust-lang.org/dist/2026-10-15/rust-std-1.99.1-aarch64-apple-darwin.tar.xz",
+        "sha256": "fe79d6ab5a0321de26463999d8c112b8ad3eafbcbcf822d66a2300b45dde1031",
+        "bytes": 30709240
       }
     ]
   },
@@ -93,12 +116,13 @@
     "artifactCopy": "scripts/build.cjs",
     "linux": "Native GNU compiler; installed Rust release from the hashed official channel archives.",
     "windows": "LLVM clang-cl/lld-link cross compilation with xwin CRT/SDK in an isolated directory. No user profile or installed Host modifications.",
-    "limits": "Source/build correspondence and exact artifact hashes are recorded; this is not a claim of independently reproduced bit-for-bit builds or untested platform support."
+    "limits": "Source/build correspondence and exact artifact hashes are recorded; this is not a claim of independently reproduced bit-for-bit builds or untested platform support.",
+    "macos": "Apple clang 21.0.0 (clang-2100.1.1.101), Command Line Tools SDK 26.5; Rust 1.99.1 aarch64-apple-darwin components from the hashed official 2026-10-15 manifest; isolated CARGO_HOME/CARGO_TARGET_DIR and DYLD_FALLBACK_LIBRARY_PATH set to the isolated Rust install/lib for rust-objcopy. No user-install compilation."
   },
   "inputs": [
     {
       "path": "index.cjs",
-      "sha256": "8854c59a74d40ae017fbfc0fae88c71000da55aa52a6644a29fef5cd56243bd6"
+      "sha256": "ecb8f87cae0c4502df3a8b7cd4b3fae32a430a21ba753a20845db125b4c970c2"
     },
     {
       "path": "index.d.ts",
@@ -114,11 +138,11 @@
     },
     {
       "path": "native-source/UPSTREAM.patch",
-      "sha256": "f76191afe688da268a71e7b130940a902ddf12b1ade34aae4e77175203a8b420"
+      "sha256": "bb9739b6a3c6aa9e8d91977fe92fbf03dea5790a3cc2fc91f7c1b0ca3513e340"
     },
     {
       "path": "native-source/build.rs",
-      "sha256": "2b2cfa263b66c171758c043627771d594addedba2ddac3819b3d23ecb9d8c590"
+      "sha256": "0453b9db097ccdf8d7f25183793fba937e67fd467e63f76a4c6d15c2fffa3775"
     },
     {
       "path": "native-source/src/blame.rs",
@@ -222,11 +246,11 @@
     },
     {
       "path": "scripts/build.cjs",
-      "sha256": "1a7125d5b4f8ed43a0e86f21ad37a851c3b25c82bb04f66ede37c737dbd10758"
+      "sha256": "54431b1473bd3b65f3c04ae3ef66d6cf813704fc09e7097e8a4257b261dec72c"
     },
     {
       "path": "scripts/check-artifacts.cjs",
-      "sha256": "694c378e01ca0a2230fa62fd860bf701caa3ca85d9821ef308c21b3097743313"
+      "sha256": "bb885f9d26a184dacd53bdfabefa85f85635f06ba8fc98606c7fc906eb365566"
     },
     {
       "path": "third-party/CARGO-SOURCES.json",
@@ -245,6 +269,12 @@
       "target": "x86_64-pc-windows-msvc",
       "bytes": 3343360,
       "sha256": "521b4280777f5e9af2a12c1c8ef872dc05e8ba77375d57a1245cdf2a0cbed9a6"
+    },
+    {
+      "path": "native/yugoo_git.darwin-arm64.node",
+      "target": "aarch64-apple-darwin",
+      "bytes": 2577872,
+      "sha256": "bd1cbdecb327b42335f674bb94e4b1cbde4d153eb975f2bfc2a8a79ae0b50713"
     }
   ],
   "crateSources": "third-party/CARGO-SOURCES.json",

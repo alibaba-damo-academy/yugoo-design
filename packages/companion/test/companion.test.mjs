@@ -14,6 +14,37 @@ import { callCompanion } from '../src/connection-file.mjs'
 import { startCompanion } from '../src/server.mjs'
 import { staticFixture } from './static-fixture.mjs'
 
+test('browser default view is an explicit presentation setting on HTML entries only', async () => {
+  for (const browserAccess of ['token', 'local']) {
+    for (const browserDefaultView of [undefined, 'panel-only']) {
+      const f = await fixture({ serverOptions: { browserAccess, browserDefaultView } })
+      try {
+        for (const view of ['', '?view=full', '?view=studio', '?view=trial-panel', '?view=design', '?view=unknown']) {
+          const entry = new URL(f.server.url)
+          entry.search = view
+          const response = await fetch(entry)
+          assert.equal(response.status, 200)
+          assert.equal(response.headers.get('x-frame-options'), 'DENY')
+          const html = await response.text()
+          assert.match(html, /^<!doctype html>/i)
+          assert.ok(html.includes(`<meta name="design-companion-default-view" content="${browserDefaultView ?? 'full'}">`))
+          assert.ok(html.includes('/client.js'))
+        }
+        // Both implicit and explicit head elements retain their declaration.
+        await writeFile(f.options.indexPath, '<!doctype html><html><head><title>Panel</title></head><body></body></html>')
+        const html = await (await fetch(f.server.url)).text()
+        assert.match(html, /<head><meta name="design-companion-default-view" content="(?:full|panel-only)"><title>/)
+        assert.equal(await (await fetch(f.server.origin + '/client.js')).text(), '// Synthetic API server fixture; no browser execution.\n')
+        assert.deepEqual(f.messages, [], 'presentation never submits a native message')
+      } finally { await f.close() }
+    }
+  }
+})
+
+test('invalid browser default view fails before acquiring a native connection', async () => {
+  await assert.rejects(startCompanion({ browserDefaultView: 'studio' }), /browserDefaultView must be full or panel-only/)
+})
+
 
 test('failed project startup closes the already acquired native transport', async () => {
   const root = await mkdtemp(join(tmpdir(), 'companion-startup-close-'))
@@ -238,13 +269,13 @@ test('real files, native Kit validation, atomic save and failed notification rec
     assert.equal(f.messages.length, 1)
     assert.match(f.messages[0], /本地保存后的答案/)
     assert.match(f.messages[0], /Do not call a write tool/)
-    assert.match(f.messages[0], /After this Panel save, read design_status once and inspect its reviews summary/)
+    assert.match(f.messages[0], /After this Panel save, read design_status once\./)
     assert.ok(f.messages[0].includes(`Exact Companion connection file: ${JSON.stringify(f.server.connectionPath)}`))
-    assert.match(f.messages[0], /Call design_status with connection set to this exact path/)
+    assert.match(f.messages[0], /Pass the path only; do not read, print, or copy its token or file contents/)
     assert.ok(f.messages[0].includes(`node ${JSON.stringify(statusEntryPath)} call --connection ${JSON.stringify(f.server.connectionPath)} --request /absolute/temporary-status-request.json`))
     assert.ok(f.messages[0].includes('The temporary request must contain {"method":"readWorkspace","params":{}}'))
     assert.ok(!f.messages[0].includes(f.server.token), 'notification carries the exact path, not connection secrets')
-    assert.match(f.messages[0], /do not wait for GRA before continuing the foreground task/)
+    assert.match(f.messages[0], /do not wait for background GRA, busy-poll, or automatically retry failed reviews/)
     assert.equal(await api.store.head(), saved.commit, 'notification-only recovery never writes again')
     const reopened = await openCompanionProject(f.options)
     assert.deepEqual(await reopened.savePanel(event), saved, 'Core Git event ID prevents a repeated commit after restart')

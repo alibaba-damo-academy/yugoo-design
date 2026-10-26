@@ -8,7 +8,7 @@ export async function stageNativeInventoryFixture(shared) {
   const files = new Map([['index.cjs', Buffer.from('// inventory fixture; no executable binding')],
     ['LICENSE', Buffer.from('fixture license')], ['NOTICE', Buffer.from('fixture notice')]])
   const artifacts = []
-  for (const target of ['linux-x64', 'win32-x64']) {
+  for (const target of ['linux-x64', 'win32-x64', 'darwin-arm64']) {
     const path = `native/yugoo_git.${target}.node`, bytes = Buffer.from('not executable: ' + target)
     files.set(path, bytes); artifacts.push({ path, bytes: bytes.length, sha256: sha(bytes) })
   }

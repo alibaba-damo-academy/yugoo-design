@@ -53,7 +53,10 @@ try {
     async listDir(path) { return readdirSync(path) },
     async isDirectory(path) { return statSync(path).isDirectory() },
   }, fileURLToPath(new URL('../', import.meta.url)), { sourceId: 'fixture:page-file-contract' })
-  assert.equal(kit.version, '1.0')
+  assert.equal(kit.version, '1.1')
+  assert.equal(kit.skills.length, 15)
+  assert.equal(kit.skills.find(skill => skill.name === 'flow_design').version, '1.1')
+  assert.ok(kit.skills.filter(skill => skill.name !== 'flow_design').every(skill => skill.version === '1.0'))
   assert.equal(kit.skills.find(skill => skill.name === 'page_design').version, '1.0')
   const contract = kit.resources['page_design/reference/artifact-contract.md']
   assert.match(contract, /input_files/)

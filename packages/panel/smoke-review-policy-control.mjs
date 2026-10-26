@@ -4,8 +4,14 @@ import { JSDOM } from 'jsdom'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ReviewPolicyControl } from './src/client/review-policy-control.tsx'
+import { ADVISORY_CSS } from './src/client/styles.ts'
 
-const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost' })
+const dom = new JSDOM('<div id="root" style="font-weight:600"></div>', { url: 'http://localhost' })
+// The advisory slot must work before a Dock ever mounts. Do not load the
+// Dock's utility sheet here: its presence used to conceal Host dependencies.
+const advisoryStyles = dom.window.document.createElement('style')
+advisoryStyles.textContent = ADVISORY_CSS
+dom.window.document.head.append(advisoryStyles)
 globalThis.window = dom.window
 globalThis.document = dom.window.document
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
@@ -25,9 +31,13 @@ try {
   const dialog = document.querySelector('dialog')
   assert.equal(dialog.open, false, 'the form is hidden initially')
   assert.equal(document.querySelector('.dsh-review-settings-trigger').textContent.trim(), '设置')
+  const triggerStyle = dom.window.getComputedStyle(document.querySelector('.dsh-review-settings-trigger'))
+  assert.ok(parseFloat(triggerStyle.minHeight) >= 24, 'standalone settings retain a usable action target without Dock utilities')
+  assert.equal(document.querySelector('.dsh-design-dock'), null, 'the test must not borrow the Dock stylesheet lifetime')
   assert.equal(document.querySelector('details'), null, 'settings do not expand the advisory inbox')
   await click('.dsh-review-settings-trigger')
   assert.equal(dialog.open, true)
+  assert.ok(['normal', '400'].includes(dom.window.getComputedStyle(dialog).fontWeight), 'modal copy must not inherit the inbox heading weight')
   assert.equal(document.getElementById(dialog.getAttribute('aria-labelledby'))?.textContent, 'GRA 评审设置')
   assert.equal(document.querySelector('input')?.value, '30')
   await click('.dsh-review-settings-save')

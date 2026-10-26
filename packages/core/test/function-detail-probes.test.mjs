@@ -55,8 +55,9 @@ test('real registry selects the project pin, not latest; old versions are only p
     const text = await fs.readText(path)
     if (path.endsWith('/function_modules/schema.yaml')) return schemaText
     // Distinct fixture-only pins prove registry behavior. Production manifest
-    // versions remain 1.0 until public release; fixtures are not live upgrades.
-    if (path.endsWith('/mindset.md') || path.endsWith('/function_modules/skill.yaml')) return text?.replace('version: "1.0"', 'version: "0.0"')
+    // pins remain untouched by this source projection; fixtures are not live upgrades.
+    if (path.endsWith('/mindset.md')) return text?.replace('version: "1.1"', 'version: "0.0"')
+    if (path.endsWith('/function_modules/skill.yaml')) return text?.replace('version: "1.0"', 'version: "0.0"')
     if (path.endsWith('/kits/web_app/kit.yaml')) return text?.replace(/(name: function_modules\n\s+version:) "1.0"/, '$1 "0.0"')
     if (path.endsWith('/function_modules/panel.yaml')) {
       // Freeze a coherent overview-only old Panel alongside the closed v1 schema;
@@ -73,7 +74,7 @@ test('real registry selects the project pin, not latest; old versions are only p
   const kit = await loadDesignKit(legacyFs, root, options)
   const functionSkill = kit.skills.find(skill => skill.name === 'function_modules')
   assert.ok(functionSkill)
-  assert.equal(kit.version, '0.0'); assert.equal(candidate.version, '1.0')
+  assert.equal(kit.version, '0.0'); assert.equal(candidate.version, '1.1')
   // The real registry and project-selection methods; driver installation is
   // outside this pin probe, hence only that independent check is stubbed.
   const create = () => { const design = Object.create(DesignService.prototype)

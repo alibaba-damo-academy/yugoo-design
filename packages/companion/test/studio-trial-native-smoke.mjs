@@ -16,7 +16,7 @@ try {
   const projectRoot = join(root, 'source-project'), stateRoot = join(root, 'state'), config = join(root, 'claude')
   await mkdir(stateRoot); await mkdir(config)
   const threadId = randomUUID(), messages = []
-  await new DesignProjectManager().create({ root: projectRoot, name: 'Isolated Studio native check', kit: { name: 'web_app', version: '1.0' }, knowledge: { provider: 'ladybug-wasm' } })
+  await new DesignProjectManager().create({ root: projectRoot, name: 'Isolated Studio native check', kit: { name: 'web_app', version: '1.1' }, knowledge: { provider: 'ladybug-wasm' } })
   const transcriptPath = join(config, 'projects', projectRoot.replace(/[^a-zA-Z0-9]/g, '-'), `${threadId}.jsonl`)
   server = await startCompanion({ projectRoot, stateRoot, kitRoot: resolve('packages/skills-web-app'),
     staticRoot: resolve('packages/companion/dist'), host: 'claude-code', nativeCwd: projectRoot, transcriptPath,
@@ -25,7 +25,7 @@ try {
     connection: { host: 'claude-code', threadId, send: async text => { messages.push(text); return { accepted: true } } },
   })
   const call = (method, params = {}) => callCompanion(server.connectionPath, { method, params })
-  const trial = await call('studioTrialStart', { source: { kind: 'installed', kit: { name: 'web_app', version: '1.0' }, bundle: { name: 'smart_questions', version: '1.0' } } })
+  const trial = await call('studioTrialStart', { source: { kind: 'installed', kit: { name: 'web_app', version: '1.1' }, bundle: { name: 'smart_questions', version: '1.0' } } })
   assert.equal(trial.status, 'preparing', JSON.stringify(trial))
   const trialRoot = join(stateRoot, 'studio-trials', trial.id, 'project')
   const mcp = JSON.stringify({ mcpServers: { design: { command: process.execPath, args: [resolve('packages/companion/dist-server/design.mjs'), 'mcp'] } } })

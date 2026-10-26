@@ -4,7 +4,14 @@ export function resolveBrowserAccess(value = 'token') {
   return value
 }
 
-export function companionView(value) {
+/** Presentation is declared by the adapter, independently of browser admission. */
+export function resolveBrowserDefaultView(value = 'full') {
+  if (value !== 'full' && value !== 'panel-only') throw new Error('browserDefaultView must be full or panel-only.')
+  return value
+}
+
+export function companionView(value, defaultView = 'full') {
+  if (value === null || value === undefined) return defaultView === 'panel-only' ? 'panel-only' : 'full'
   return value === 'panel-only' || value === 'design' ? 'panel-only' : 'full'
 }
 

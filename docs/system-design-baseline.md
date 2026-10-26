@@ -489,6 +489,27 @@ Graph syntax is generic; design semantics are Kit- and Bundle-owned. A Grounding
 
 G/R/A, impact analysis, and the Alignment Workspace use bounded provider-neutral reads such as query, trace, and impact. A separate projection/materialization lifecycle owns graph deltas, rebuild, and decision projection; it does not expose mutation authority to review profiles. Studio remains a separate catalog, working-copy, validation, preview, and publication capability; Studio-level advisory profiles may consume Design Knowledge without making the Studio repository part of the graph. Raw SurrealQL, Cypher, database record ids, and provider-specific indexes never cross the knowledge API. The experimental default local provider is LadybugDB's Node WASM build, with one persistent database per Design Project under its external runtime state root. It must pass the shared provider conformance suite and real Node 22 Linux, macOS, and Windows gates before the experimental qualifier is removed. Ladybug Native is an optional compatible-host optimization; SurrealDB remains an optional future provider rather than a fallback after failing the initial embedded transaction and current-host packaging gates. A configured Neo4j provider may serve remote team deployments. Provider changes are explicit pause, export, import, validate, switch, and resume operations. There is no silent fallback, dual writer, or dual authority.
 
+File projection and complete semantic publication have separate read guarantees.
+An embedding failure does not invalidate already projected source facts. Ordinary
+Companion Knowledge context and pinned queries may expose a source-only view of
+one existing provider revision after comparing every projected entity and relation
+with the complete pinned source set through the original projection rules. Equal
+node checkpoints alone do not prove that a projection completed. Empty,
+incomplete, mixed, or stale projections remain unavailable. This read creates no
+projection, publication pointer, or alternative graph authority.
+
+Source-only context reports its original source checkpoint, graph revision,
+bounded coverage and the unchanged Knowledge status. It includes file-derived
+records, explicit references and literal-text evidence; it excludes semantic
+candidates and other non-file interpretations. A semantic maintenance failure
+remains `failed`, and an older latest-complete publication keeps its original
+pins and freshness. Ordinary source availability never marks semantic publication
+`current` or relaxes the complete-publication guard on advisory review capture.
+The derived read basis travels with Companion query pins so a source view cannot
+silently become a mixed or complete view after later publication. Existing
+unqualified historical queries keep their read contract and are identified as
+historical snapshots, without asserting current semantic completeness.
+
 Grounding, reflection, and alignment are the three advisory review profiles; impact analysis supplies affected-context discovery:
 
 - Grounding checks cross-file consistency. It reports a correction only when at least two Design File facets disagree and an existing authoritative Design File fact makes the repair deterministic; the affected owning Bundles remain the only normal write path.

@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process'
 import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { downloadNativeDonor, stageNativeDonor } from './companion-release-native-donor.mjs'
+import { acquireNativeInputs } from './companion-release-native-donor.mjs'
 
 export const COMPANION_REPOSITORY = 'git+https://github.com/alibaba-damo-academy/yugoo-design.git'
 export function validateReleaseVersion(version) {
@@ -71,7 +71,7 @@ export async function prepareRelease({ version, output, nativeArtifactRoot }) {
   await mkdir(output) // exclusive; no replacement of previous evidence
   const native = nativeArtifactRoot ?? join(output, 'native-artifacts')
   let nativeMaterials
-  if (!nativeArtifactRoot) nativeMaterials = await stageNativeDonor({ workspace, destination: native, archive: await downloadNativeDonor() })
+  if (!nativeArtifactRoot) nativeMaterials = await acquireNativeInputs({ workspace, destination: native })
   // An explicit artifact root uses the assembler's same current SOURCE gate.
   const { buildSameSourceCandidate, verifyStagedUiCandidateAssociations } = await import('./build-companion-npm-candidate.mjs')
   const build = await buildSameSourceCandidate({ ladybugDependency: '0.21.1', nativeGitArtifactRoot: native,

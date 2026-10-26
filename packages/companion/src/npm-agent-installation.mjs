@@ -3,8 +3,9 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { lstat, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { CODEX_DESKTOP_INSTALL_OPTIONS } from './npm-installer-codex-desktop.mjs'
 
-export const AGENT_INSTALL_HOSTS = ['dsh', 'codex', 'claude-code', 'qoder', 'qwenwork', 'workbuddy']
+export const AGENT_INSTALL_HOSTS = ['dsh', 'codex', 'codex-desktop', 'claude-code', 'qoder', 'qwenwork', 'workbuddy']
 export const DESKTOP_INSTALL_OPTIONS = ['destination', 'node-executable', 'suite-version', 'npm-root-windows',
   'destination-windows', 'qwenwork-runtime', 'separate-mcp', 'previous-receipt']
 const nativeOptions = {
@@ -32,6 +33,9 @@ function pending(host, status, missing, message) {
 function activationActions(host, result) {
   const verify = { action: 'verify-native-session', automatic: true,
     message: 'In the intended native conversation, verify the actually loaded Yugoo Design version and tools; then open a project and verify Panel save/reopen and original-conversation receipt. Registration alone is not usability.' }
+  if (host === 'codex-desktop') return [
+    { action: 'activate-native-plugin', automatic: false, path: result.marketplacePath,
+      message: 'Install or update this exact prepared local Yugoo Design source through Codex Desktop. If a normal restart is required, keep and return to the current conversation. Retain the exact npm version and previous owned source until the loaded version is verified.' }, verify]
   if (host === 'qwenwork') return [
     { action: 'import-expert-suite', automatic: false, path: result.nativeImport?.archive,
       message: 'Import this exact expert-suite ZIP through QwenWork. If bundled MCP is disabled by organization policy, use the emitted connector configuration and retain exactly one Yugoo Design connector.' },
@@ -53,7 +57,7 @@ function activationActions(host, result) {
 /** Project only verified facts from the owning native/preparation receipt. */
 export function installationResult(host, result, packageIdentity) {
   const failed = result.status === 'failed-partial-state-retained'
-  const desktop = host === 'qwenwork' || host === 'workbuddy'
+  const desktop = host === 'qwenwork' || host === 'workbuddy' || host === 'codex-desktop'
   const registered = !desktop && !failed && (result.hostRegistered === true
     || host === 'dsh' && result.status === 'registered-config-parsed' && result.readback?.bundleRegistered === true)
   const identity = result.package ?? packageIdentity
@@ -69,14 +73,20 @@ export function installationResult(host, result, packageIdentity) {
         : activationActions(host, result) } }
 }
 
-export async function agentInstallation(values, { npmRoot, invoke, desktopPrepare, desktopReuse,
+export async function agentInstallation(values, { npmRoot, invoke, desktopPrepare, desktopReuse, codexDesktopPrepare,
   admittedCodexAdapter = false, platform = process.platform } = {}) {
   const host = values.host
   // Installed executables, PATH, host profiles and process names cannot identify this conversation.
   if (!host) return { ...pending(null, 'host-selection-required', ['host'],
     'Select the host of this conversation. If trusted native context identifies it, the current Agent should supply --host; otherwise ask one host-selection question.'), hosts: AGENT_INSTALL_HOSTS }
-  if (host === 'codex-desktop') return pending(host, 'unsupported-host', [],
-    'Codex Desktop native registration is not implemented by this entry. Select the actual supported host; do not substitute a CLI or infer usability from a prepared plan.')
+  if (host === 'codex-desktop') {
+    for (const key of Object.keys(values)) assert.ok(CODEX_DESKTOP_INSTALL_OPTIONS.includes(key), 'Codex Desktop install accepts only its preparation options; unsupported --' + key)
+    const missing = ['receipt-dir', 'destination'].filter(key => typeof values[key] !== 'string' || !values[key])
+    if (missing.length) return pending(host, 'inputs-required', missing,
+      'Select an external receipt directory and a new immutable source destination inside the intended user root. Native UI activation remains a separate step.')
+    assert.equal(typeof codexDesktopPrepare, 'function', 'Owning Codex Desktop npm preparer required')
+    return installationResult(host, await codexDesktopPrepare(values))
+  }
   assert.ok(AGENT_INSTALL_HOSTS.includes(host), 'Explicit supported host required')
   const desktop = host === 'qwenwork' || host === 'workbuddy'
   const allowed = desktop ? ['host', ...DESKTOP_INSTALL_OPTIONS] : nativeOptions[host]

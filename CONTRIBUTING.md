@@ -128,11 +128,26 @@ Pica/UI artifact verification used that compiler version. Recheck those artifact
 before reusing their evidence with a different compiler. Installation executes the approved native scripts
 within the isolated runner, not within a user Host/profile.
 
-Native Git materials are acquired from the fixed public Companion `beta.16`
-archive, verified against its complete pinned SRI, and checked against the
-current `packages/git-native/SOURCE.json` by the existing builder. CI never
-rebuilds or substitutes those binaries. A changed source/prebuild identity fails
-until the maintained donor selection is reviewed. See the
+Native Git inputs use the fixed public Companion `beta.16` archive for Linux
+and Windows, plus the fixed raw Darwin arm64 addon from this repository's
+`native-inputs-git-darwin-arm64-bd1cbdec` input Release. The archive's complete
+SRI and historical SOURCE identity remain pinned; its two artifact declarations
+must match the current `packages/git-native/SOURCE.json` exactly. The current
+SOURCE alone owns all three binary sizes and hashes. Preparation then runs the
+unchanged current source, native and original-notice checks. CI never rebuilds
+or substitutes binaries, and an unknown source/input fails without fallback.
+
+The input Release is separate from the Companion npm beta. Its raw addon,
+provenance and original license materials must be reviewed against the final
+public source commit before that input Release is published. Its tag does not
+match the npm workflow's beta-tag trigger. Publishing the inputs, running the
+default unauthenticated acquisition, preparing a Companion archive and publishing
+that archive are separate steps. Local preparation with an explicit native root
+does not prove that the public input assets are available. Until those assets
+exist, default preparation fails before downloading the larger legacy donor.
+The Darwin request permits only HTTPS GitHub-to-reviewed-CDN delivery, omits
+credentials, and enforces the current byte/hash pin and a bounded deadline.
+A changed input identity needs a reviewed source/routing update. See the
 [preparation entry](scripts/prepare-companion-release.mjs) for the same local
 `prepare VERSION ABS_OUTPUT [ABS_NATIVE_ROOT]` dry-run; use `node --import tsx`
 after preparing source dependencies. The optional artifact root still passes

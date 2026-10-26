@@ -136,6 +136,9 @@ export async function buildCompanionCandidate({ payloadSource, destination, lice
   delete template['x-design-release-review'].payloadImplemented
   Object.assign(template['x-design-release-review'], { fixture, distribution, payloadAssembled:true, installImplemented:false, releaseValidated:false })
   template['x-design-release-review'].nativeGit = 'shared-core-library'
+  template['x-design-release-review'].desktopPreparation = { 'codex-desktop': {
+    source: 'npm-backed', scope: 'owned-local-source-and-personal-catalog', nativeActivationRequired: true,
+  } }
   if (distribution === 'beta') template.publishConfig = { access: 'public', tag: 'beta' }
   template.dependencies['@ladybugdb/wasm-core'] = selectedLadybug
   if (selectedLadybug === '0.21.1') assert.ok(portableFiles.has('shared/knowledge/runtime-manifest.json'), 'Official Ladybug candidate requires a knowledge runtime manifest')
@@ -217,6 +220,8 @@ export async function buildCompanionCandidate({ payloadSource, destination, lice
   for(const [source,name] of [['npm-installer.mjs','installer.mjs'],['npm-agent-installation.mjs','npm-agent-installation.mjs'],['npm-desktop-preparation.mjs','npm-desktop-preparation.mjs'],['npm-installer-codex.mjs','npm-installer-codex.mjs'],['npm-installer-dsh.mjs','npm-installer-dsh.mjs'],['npm-installer-dsh-desktop.mjs','npm-installer-dsh-desktop.mjs'],['npm-installer-claude.mjs','npm-installer-claude.mjs'],['npm-installer-qoder.mjs','npm-installer-qoder.mjs'],['npm-runtime-check.mjs','npm-runtime-check.mjs'],['npm-installer-paths.mjs','npm-installer-paths.mjs'],['npm-node-runtime.mjs','npm-node-runtime.mjs'],['npm-node-registration.mjs','npm-node-registration.mjs']]) {
     await cp(new URL('../packages/companion/src/'+source,import.meta.url),join(target,'bin',name),{errorOnExist:true,force:false})
   }
+  for (const name of ['npm-codex-desktop-source.mjs', 'npm-installer-codex-desktop.mjs'])
+    await cp(new URL('../packages/companion/src/' + name, import.meta.url), join(target, 'bin', name), { errorOnExist: true, force: false })
   const bin = `#!/usr/bin/env node
 import { fileURLToPath } from 'node:url'
 import { installerMain } from './installer.mjs'

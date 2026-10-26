@@ -41,4 +41,28 @@ pnpm run build
 pnpm test
 ```
 
+### Local embedding resources
+
+The default model is fixed to one repository revision. Its configuration,
+tokenizer and quantized ONNX weights must match the recorded sizes and Git/LFS
+hashes before a native inference child starts. Resource transfer has a separate
+bounded preparation lifetime; the existing 180-second inference budget is unchanged.
+
+Offline mode verifies the existing files and reports missing or incomplete
+resources without network access. When download is permitted, interrupted
+transfers remain in resumable staging files. Only a complete checksum-verified
+file replaces the canonical cache entry; an invalid previous entry is retained.
+Failure ends that maintenance pass. A later explicit maintenance request can
+resume preparation; display/status reads do not retry it.
+Companion's normal `serve --embedding-cache /absolute/cache` can select an
+explicit prepared cache, including an isolated cache for installation checks.
+Omitting it retains the existing per-user default location.
+
+On macOS, explicit HTTP(S) proxy environment variables take precedence. Otherwise
+the resource downloader and the model child use the existing manual system HTTPS
+proxy and its bypass list. The parent environment, OS settings and TLS validation
+are unchanged. PAC discovery and proxy authentication are not configured here.
+Custom model/revision configurations retain their existing loader behavior; this
+fixed asset inventory describes only the default model.
+
 DesignJournal remains the only human-decision authority. The `./dsh` host entry registers `ladybug-wasm` as the DSH composition's explicit default, derives each database root from external project runtime state, and exposes only `DesignKnowledgeService` to Core consumers. G/R/A scheduling, Studio, compaction, and future Codex/Claude integration remain outside this storage provider.

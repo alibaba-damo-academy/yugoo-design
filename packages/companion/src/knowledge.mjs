@@ -6,6 +6,7 @@ import {
   readDesignKnowledgePublication, readPublishedDesignKnowledge, advanceDesignKnowledgePublication,
   readAdvisoryDesignKnowledge, publishKnowledgeReview, parseSchemaYaml,
   knowledgeQueryFilters, knowledgeReadResult, DesignKnowledgeRevision,
+  readSourceDesignKnowledge, queryKnowledgeSnapshot,
   DesignKnowledgeIndex, designOntologyCoverage, deriveDesignKnowledgeStatus,
   restoreDesignKnowledgeRecords, saveDesignKnowledgeRecords, commitDesignProjectRecords,
 } from '../../core/lib/index.js'
@@ -81,6 +82,13 @@ export function createCompanionKnowledge({ project, stateRoot, loadRuntime = run
   }
   const schemas = () => Object.fromEntries(project.kit.skills.filter(skill => typeof skill.metadata?.schemaYaml === 'string')
     .map(skill => [`${skill.name}/${skill.name}.json`, parseSchemaYaml(skill.metadata.schemaYaml)]))
+  const readCoverage = (source, basis = 'complete-publication') => ({
+    basis: source ? 'source-projection' : basis,
+    semantic: source ? 'not-published-for-source' : basis === 'complete-publication' ? 'complete' : 'not-asserted',
+    ...(source ? { sourceFiles: source.sourceFiles.slice(0, 64), sourceFileCount: source.sourceFiles.length,
+      sourceFilesTruncated: source.sourceFiles.length > 64, warnings: source.warnings } : {}),
+    note: 'Bounded source evidence; absence is not proof of missing design. Semantic status and latest-complete remain separate.',
+  })
   async function refresh(compute = false, background = false) {
     const service = await open()
     return refreshDesignKnowledge({ projectId, service, store: project.store, schemas: schemas(), ontology: project.kit.ontologyContract, signal: abort.signal,
@@ -265,21 +273,67 @@ export function createCompanionKnowledge({ project, stateRoot, loadRuntime = run
     async query(args) {
       if (!args.project || !args.checkpoint || !args.revision) throw new Error('Knowledge query requires exact project, checkpoint and revision pins')
       if (args.project !== projectId) throw new Error('Knowledge query project does not match connection')
+      if (args.basis !== undefined && !['source-projection', 'complete-publication'].includes(args.basis)) throw new Error('Invalid Knowledge read basis')
       const filters = knowledgeQueryFilters(args), service = await open()
       return project.mutateKnowledge(async () => {
         await check()
         const currentCheckpoint = await project.store.head()
+        const publication = await readDesignKnowledgePublication(service)
         if (!await sameCheckpoint(currentCheckpoint, args.checkpoint)) {
-          const publication = await readDesignKnowledgePublication(service)
           if (publication?.checkpoint !== args.checkpoint || publication.revision !== args.revision) {
             throw new Error('Knowledge checkpoint changed; refresh the snapshot')
           }
         }
-        const graph = await service.query({ ...filters, offset: args.offset ?? 0, projectId,
-          revision: DesignKnowledgeRevision(args.revision), limit: args.limit ?? 30 })
+        const request = { ...filters, offset: args.offset ?? 0, projectId,
+          revision: DesignKnowledgeRevision(args.revision), limit: args.limit ?? 30 }
+        // New context pins the read basis as well as revision/checkpoint. Old
+        // callers retain explicit historical reads when a publication exists;
+        // those reads are never represented as a current complete publication.
+        const complete = publication?.revision === args.revision
+          && await sameCheckpoint(publication.checkpoint, args.checkpoint)
+        if (args.basis === 'complete-publication' && !complete) throw new Error('Knowledge complete-publication pins changed; refresh the context')
+        const source = args.basis !== 'source-projection' && publication ? undefined : await readSourceDesignKnowledge({
+          service, projectId, store: project.store, checkpoint: args.checkpoint,
+          revision: request.revision, schemas: schemas(), ontology: project.kit.ontologyContract, signal: abort.signal,
+        })
+        const graph = source ? queryKnowledgeSnapshot(source.graph, request) : await service.query(request)
+        const status = await api.status()
         await check()
         if (!await sameCheckpoint(currentCheckpoint, await project.store.head())) throw new Error('Knowledge checkpoint changed during query')
-        return knowledgeReadResult(projectId, args.checkpoint, graph)
+        return { ...knowledgeReadResult(projectId, args.checkpoint, graph), status,
+          ...(source ? { sourceCheckpoint: source.sourceCheckpoint } : complete ? { sourceCheckpoint: publication.checkpoint } : {}),
+          coverage: readCoverage(source, complete ? 'complete-publication' : 'historical-snapshot') }
+      })
+    },
+    /** Ordinary Agent context is independent of complete semantic publication.
+     * Review capture remains strict below; a source view never grants review
+     * writeback or marks the semantic layer current. */
+    async captureContext(checkpoint) {
+      return project.mutateKnowledge(async () => {
+        await check()
+        if (!checkpoint || !await sameCheckpoint(checkpoint, await project.store.head())) throw new Error('Knowledge context checkpoint changed')
+        const service = await open()
+        const publication = await readDesignKnowledgePublication(service)
+        const complete = !!publication && await sameCheckpoint(publication.checkpoint, checkpoint)
+        let source, knowledge
+        if (complete) {
+          knowledge = await readAdvisoryDesignKnowledge({ project: projectId, checkpoint }, service, 30, {}, publication.revision, publication.checkpoint)
+        } else {
+          source = await readSourceDesignKnowledge({ service, projectId, store: project.store, checkpoint,
+            schemas: schemas(), ontology: project.kit.ontologyContract, signal: abort.signal })
+          knowledge = await readAdvisoryDesignKnowledge({ project: projectId, checkpoint }, {
+            revision: async () => source.graph.revision,
+            query: async request => queryKnowledgeSnapshot(source.graph, request),
+          }, 30, {}, source.graph.revision, source.sourceCheckpoint)
+        }
+        knowledgeReadResult(projectId, checkpoint, knowledge.graph)
+        const status = await api.status()
+        await check()
+        if (!await sameCheckpoint(checkpoint, await project.store.head())) throw new Error('Knowledge context checkpoint changed')
+        const coverage = readCoverage(source)
+        const context = JSON.parse(knowledge.context)
+        return { ...knowledge, coverage, status,
+          context: JSON.stringify({ ...context, coverage: { ...context.coverage, ...coverage }, status }) }
       })
     },
     async captureReview(checkpoint) {

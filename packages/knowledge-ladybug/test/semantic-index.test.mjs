@@ -20,6 +20,64 @@ const settled = async (instance, project, input, storage = cache) => {
   assert.fail('queued job did not settle')
 }
 
+test('local resource preparation failure prevents inference and keeps a failed generation failed', async () => {
+  const instance = new DesignSemanticIndex({ localOnly: true }); let prepare = 0, inference = 0
+  instance.prepareLocalAssets = async () => { prepare++; throw Error('resource fixture failure') }
+  instance.localBatch = async () => { inference++; assert.fail('inference cannot precede verified resources') }
+  try {
+    await assert.rejects(instance.compute('assets', graph('assets-1')))
+    await assert.rejects(instance.compute('assets', graph('assets-1')))
+    assert.equal(prepare, 1); assert.equal(inference, 0)
+    assert.equal(instance.read('assets', graph('assets-1')).status.state, 'error')
+  } finally { await instance.close() }
+})
+
+test('built resource preparation preserves bounded missing, download, integrity and busy reasons in status', async t => {
+  const { mkdtemp, mkdir, writeFile, symlink, rm } = await import('node:fs/promises')
+  const { tmpdir } = await import('node:os')
+  const { join } = await import('node:path')
+  const { lock } = await import('proper-lockfile')
+  for (const [failure, expected] of [
+    ['missing', /资源缺失或不完整/], ['download', /资源下载未完成/],
+    ['integrity', /资源校验失败/], ['busy', /资源正由另一进程准备/],
+  ]) await t.test(failure, { skip: failure === 'integrity' && process.platform === 'win32' }, async () => {
+    const root = await mkdtemp(join(tmpdir(), 'PRIVATE_ASSET_CACHE-'))
+    const modelRoot = join(root, 'Xenova/multilingual-e5-small/761b726dd34fb83930e26aab4e9ac3899aa1fa78')
+    await mkdir(modelRoot, { recursive: true })
+    const instance = new DesignSemanticIndex({ cacheDir: root, localOnly: failure !== 'download' })
+    const names = ['https_proxy', 'HTTPS_PROXY', 'http_proxy', 'HTTP_PROXY']
+    const previous = Object.fromEntries(names.map(name => [name, process.env[name]]))
+    let release
+    try {
+      if (failure === 'download') {
+        // Invalid syntax is rejected by the real dispatcher before any socket/request.
+        for (const name of names) delete process.env[name]
+        process.env.https_proxy = 'http://[PRIVATE_INVALID_PROXY'
+      }
+      if (failure === 'busy') release = await lock(modelRoot, { retries: 0 })
+      if (failure === 'integrity') {
+        const outside = join(root, 'PRIVATE_OUTSIDE')
+        await writeFile(outside, 'PRIVATE_CONTENT')
+        await symlink(outside, join(modelRoot, 'config.json'))
+      }
+      await assert.rejects(instance.compute(failure, graph(failure)), expected)
+      const before = instance.read(failure, graph(failure))
+      assert.equal(before.status.state, 'error')
+      assert.match(before.status.message, expected)
+      assert.match(before.status.message, /不自动上传或重试/)
+      assert.doesNotMatch(before.status.message, /PRIVATE|https?:|\/Users\/|\/tmp\//)
+      await assert.rejects(instance.compute(failure, graph(failure)), expected)
+      assert.deepEqual(instance.read(failure, graph(failure)), before)
+    } finally {
+      for (const name of names) {
+        if (previous[name] === undefined) delete process.env[name]
+        else process.env[name] = previous[name]
+      }
+      await release?.(); await instance.close(); await rm(root, { recursive: true, force: true })
+    }
+  })
+})
+
 test('background compute awaits the existing job without polling and rejects partial failures', async () => {
   const instance = index()
   try {
@@ -221,7 +279,7 @@ test('worker catches native import, model load and inference errors at the IPC b
     const root = await mkdtemp(join(tmpdir(), 'embedding-phase-'))
     let worker
     try {
-      for (const name of ['embedding-worker.mjs', 'embedding-text.mjs']) await copyFile(new URL('../src/' + name, import.meta.url), join(root, name))
+      for (const name of ['embedding-worker.mjs', 'embedding-text.mjs', 'embedding-diagnostic.ts']) await copyFile(new URL('../src/' + name, import.meta.url), join(root, name))
       const moduleRoot = join(root, 'node_modules/@huggingface/transformers')
       await mkdir(moduleRoot, { recursive: true })
       await writeFile(join(moduleRoot, 'package.json'), JSON.stringify({ type: 'module', exports: './index.js' }))
@@ -236,9 +294,184 @@ test('worker catches native import, model load and inference errors at the IPC b
         worker.once('error', error => { clearTimeout(timer); reject(error) })
       })
       worker.send({ texts: ['PRIVATE_INPUT'], config: { prefix: 'query: ', localOnly: true, cacheDir: root } })
-      assert.deepEqual(await result, { error: phase })
+      assert.deepEqual(await result, { error: phase, diagnostic: {
+        ...(phase === 'runtime' ? {} : { localOnly: true, remoteAllowed: false }), name: 'Error',
+      } })
     } finally { if (worker) await stopEmbeddingChild(worker); await rm(root, { recursive: true, force: true }) }
   }
+})
+
+// Exercise the built parent and built child together, replacing only the model
+// dependency in a disposable package. Never run the installed model or fetch it.
+async function diagnosticFixture(t, transformer, workerSource) {
+  const { mkdtemp, mkdir, readdir, copyFile, writeFile, rm } = await import('node:fs/promises')
+  const { tmpdir } = await import('node:os')
+  const { join } = await import('node:path')
+  const { fork } = await import('node:child_process')
+  const root = await mkdtemp(join(tmpdir(), 'embedding-diagnostic-'))
+  const lib = join(root, 'lib'), dependencies = join(root, 'node_modules/@huggingface/transformers')
+  await mkdir(lib); await mkdir(dependencies, { recursive: true })
+  await writeFile(join(root, 'package.json'), '{"type":"module"}')
+  for (const name of await readdir(new URL('../lib/', import.meta.url))) {
+    if (name.endsWith('.js')) await copyFile(new URL('../lib/' + name, import.meta.url), join(lib, name))
+  }
+  await writeFile(join(dependencies, 'package.json'), '{"type":"module","exports":"./index.js"}')
+  await writeFile(join(dependencies, 'index.js'), transformer)
+  if (workerSource) await writeFile(join(lib, 'embedding-worker.js'), workerSource)
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const env = { ...process.env }
+  for (const name of ['HTTP_PROXY','HTTPS_PROXY','http_proxy','https_proxy','ALL_PROXY','all_proxy','NO_PROXY','no_proxy']) delete env[name]
+  return () => fork(join(lib, 'embedding-worker.js'), { env, execArgv: [], windowsHide: true, stdio: ['ignore', 'ignore', 'ignore', 'ipc'] })
+}
+function useDiagnosticWorker(instance, spawnWorker, observations = []) {
+  // This fixture replaces the model dependency; resource transfer is tested separately.
+  instance.prepareLocalAssets = async () => {}
+  const localBatch = instance.localBatch
+  let calls = 0
+  instance.localBatch = async (_unused, texts, job) => {
+    calls++
+    const worker = spawnWorker()
+    worker.on('message', value => observations.push(value))
+    try { return await localBatch.call(instance, worker, texts, job) }
+    finally { await stopEmbeddingChild(worker) }
+  }
+  return () => calls
+}
+const fakeEnvironment = 'export const env={backends:{onnx:{wasm:{}}}}; '
+
+test('built worker diagnostics survive parent compute/read and do not expose exception text', async t => {
+  const cases = [
+    ['DNS', 'model', 'throw new TypeError("PRIVATE_URL?token=PRIVATE_TOKEN", {cause:Object.assign(new Error("PRIVATE_HOST"),{code:"ENOTFOUND"})})', /causeCode=ENOTFOUND/],
+    ['TLS depth three', 'model', 'throw new TypeError("PRIVATE_URL", {cause:new Error("PRIVATE_PATH",{cause:Object.assign(new Error("PRIVATE_CERT"),{code:"UNABLE_TO_VERIFY_LEAF_SIGNATURE"})})})', /causeCode=UNABLE_TO_VERIFY_LEAF_SIGNATURE/],
+    ['cache permission', 'model', 'throw Object.assign(new Error("PRIVATE_CACHE_PATH"),{code:"EACCES"})', /code=EACCES/],
+    ['JSON', 'model', 'throw new SyntaxError("PRIVATE_MODEL_CONTENT")', /name=SyntaxError/],
+    ['ONNX session unknown', 'model', 'throw new Error("invalid protobuf PRIVATE_MODEL_PATH")', /name=Error/],
+    ['native import', 'runtime', 'throw Object.assign(new Error("PRIVATE_NATIVE_PATH"),{code:"ERR_DLOPEN_FAILED"})', /code=ERR_DLOPEN_FAILED/],
+    ['inference', 'inference', 'throw Object.assign(new RangeError("PRIVATE_DESIGN_TEXT"),{code:"UNKNOWN_PRIVATE_CODE"})', /name=RangeError/],
+    ['hostile fields', 'model', 'throw Object.assign(new Error("https://user:password@PRIVATE_HOST/?token=PRIVATE_TOKEN"),{name:"PRIVATE_NAME",code:"PRIVATE_CODE",stack:"PRIVATE_STACK",headers:{Authorization:"Bearer PRIVATE_TOKEN"},body:"PRIVATE_DESIGN_TEXT",apiKey:"PRIVATE_SECRET"})', /localOnly=false; remoteAllowed=true|remoteAllowed=true/],
+    ['cycle', 'model', 'const a=new Error("PRIVATE_A"),b=new Error("PRIVATE_B");a.cause=b;b.cause=a;throw a', /name=Error/],
+    ['too-deep cause', 'model', 'throw new Error("PRIVATE_1",{cause:new Error("PRIVATE_2",{cause:new Error("PRIVATE_3",{cause:Object.assign(new Error("PRIVATE_4"),{code:"ENOTFOUND"})})})})', /name=Error/],
+    ['broken getter', 'model', 'const e=new Error("PRIVATE_MESSAGE");Object.defineProperty(e,"code",{get(){throw Error("PRIVATE_GETTER")}});throw e', /name=Error/],
+  ]
+  for (const [name, phase, failure, expected] of cases) await t.test(name, async t => {
+    const code = phase === 'runtime' ? fakeEnvironment + failure : fakeEnvironment + `export async function pipeline(){${phase === 'model' ? failure : `return Object.assign(async()=>{${failure}},{tokenizer:{encode:()=>[1]}})`}}`
+    const spawnWorker = await diagnosticFixture(t, code), observations = []
+    const instance = new DesignSemanticIndex({ localOnly: false })
+    const calls = useDiagnosticWorker(instance, spawnWorker, observations)
+    try {
+      await assert.rejects(instance.compute('p', graph('1')), expected)
+      const result = instance.read('p', graph('1'))
+      assert.equal(result.status.state, 'error'); assert.deepEqual(result.edges, [])
+      assert.match(result.status.message, expected)
+      assert.match(result.status.message, /不自动上传或重试/)
+      assert.doesNotMatch(JSON.stringify([observations, result]), /PRIVATE_|user:password|token=|https:\/\//)
+      const diagnostic = observations.find(value => value.error)?.diagnostic
+      assert.equal(observations.at(-1).error, phase)
+      if (phase === 'runtime') assert.equal(diagnostic.remoteAllowed, undefined)
+      else { assert.equal(diagnostic.localOnly, false); assert.equal(diagnostic.remoteAllowed, true) }
+      if (['ONNX session unknown', 'hostile fields', 'cycle', 'too-deep cause', 'broken getter'].includes(name)) {
+        assert.equal(diagnostic.code, undefined); assert.equal(diagnostic.causeCode, undefined)
+      }
+      await assert.rejects(instance.compute('p', graph('1')))
+      for (let i = 0; i < 10; i++) instance.read('p', graph('1'))
+      assert.equal(calls(), 1, 'a failed unchanged job cannot silently retry')
+      assert.ok(result.status.message.slice(result.status.message.indexOf(' [embedding:')).length <= 256)
+    } finally { await instance.close() }
+  })
+})
+
+test('child reports download policy only after actually applying it', async t => {
+  for (const localOnly of [false, true]) await t.test(String(localOnly), async t => {
+    const spawnWorker = await diagnosticFixture(t, fakeEnvironment + `export async function pipeline(){if(env.allowRemoteModels!==${!localOnly})throw new SyntaxError('wrong effective policy');throw Object.assign(new Error('PRIVATE_PATH'),{code:'ENOENT'})}`)
+    const instance = new DesignSemanticIndex({ localOnly }), observations = []
+    useDiagnosticWorker(instance, spawnWorker, observations)
+    try {
+      await assert.rejects(instance.compute('p', graph('1')), /code=ENOENT/)
+      assert.deepEqual(observations.at(-1).diagnostic, { localOnly, remoteAllowed: !localOnly, name: 'Error', code: 'ENOENT' })
+    } finally { await instance.close() }
+  })
+  await t.test('configuration setter failed before policy was applied', async t => {
+    const spawnWorker = await diagnosticFixture(t, fakeEnvironment + `Object.defineProperty(env,'cacheDir',{set(){throw Object.assign(new Error('PRIVATE_CACHE_PATH'),{code:'EACCES'})}});export async function pipeline(){throw Error('not reached')}`)
+    const instance = new DesignSemanticIndex({ localOnly: false }), observations = []
+    useDiagnosticWorker(instance, spawnWorker, observations)
+    try {
+      await assert.rejects(instance.compute('p', graph('1')), /code=EACCES/)
+      assert.deepEqual(observations.at(-1).diagnostic, { name: 'Error', code: 'EACCES' })
+    } finally { await instance.close() }
+  })
+})
+
+test('pinned Hub text yields only exact library-derived HTTP tokens', async t => {
+  const prefixes = [
+    [400, 'Bad request error occurred while trying to load file'], [401, 'Unauthorized access to file'],
+    [403, 'Forbidden access to file'], [404, 'Could not locate file'],
+    [408, 'Request timeout error occurred while trying to load file'], [500, 'Internal server error error occurred while trying to load file'],
+    [502, 'Bad gateway error occurred while trying to load file'], [503, 'Service unavailable error occurred while trying to load file'],
+    [504, 'Gateway timeout error occurred while trying to load file'],
+  ]
+  for (const [status, prefix] of prefixes) await t.test(String(status), async t => {
+    const errorText = prefix + ': "https://user:password@PRIVATE_HOST/file?token=PRIVATE_TOKEN".'
+    const spawnWorker = await diagnosticFixture(t, fakeEnvironment + `export async function pipeline(){throw Error(${JSON.stringify(errorText)})}`)
+    const instance = new DesignSemanticIndex({ localOnly: false }); useDiagnosticWorker(instance, spawnWorker)
+    try {
+      await assert.rejects(instance.compute('p', graph('1')), new RegExp(`hubText=hf3.8.1-http-${status}`))
+      assert.doesNotMatch(instance.read('p', graph('1')).status.message, /PRIVATE_|https|password|token=/)
+    } finally { await instance.close() }
+  })
+  for (const text of ['noise Unauthorized access to file: "PRIVATE_URL".', 'unauthorized access to file: "PRIVATE_URL".', 'Unauthorized access to file: "PRIVATE_URL". suffix', 'fetch network PRIVATE_URL', 'Error (418) occurred while trying to load file: "PRIVATE_URL".']) await t.test(text.split('PRIVATE')[0], async t => {
+    const spawnWorker = await diagnosticFixture(t, fakeEnvironment + `export async function pipeline(){throw Error(${JSON.stringify(text)})}`)
+    const instance = new DesignSemanticIndex({ localOnly: true }); useDiagnosticWorker(instance, spawnWorker)
+    try { await assert.rejects(instance.compute('p', graph('1'))); assert.doesNotMatch(instance.read('p', graph('1')).status.message, /hubText|PRIVATE|network/) }
+    finally { await instance.close() }
+  })
+  await t.test('inference text cannot masquerade as a Hub load failure', async t => {
+    const spawnWorker = await diagnosticFixture(t, fakeEnvironment + 'export async function pipeline(){return Object.assign(async()=>{throw Error(\'Unauthorized access to file: "PRIVATE_INPUT".\')},{tokenizer:{encode:()=>[1]}})}')
+    const instance = new DesignSemanticIndex({ localOnly: true }); useDiagnosticWorker(instance, spawnWorker)
+    try { await assert.rejects(instance.compute('p', graph('1'))); assert.doesNotMatch(instance.read('p', graph('1')).status.message, /hubText|PRIVATE/) }
+    finally { await instance.close() }
+  })
+})
+
+test('parent validates hostile IPC and keeps the exact legacy phase-only message', async t => {
+  const legacy = '本地 embedding 模型加载失败；请检查固定版本模型缓存，离线模式需要先准备完整模型文件。 保留结构图，不自动上传或重试。'
+  for (const diagnostic of [undefined, { name:'PRIVATE_NAME', code:'PRIVATE_TOKEN', causeCode:'ECONNRESET', hubText:'PRIVATE_URL', localOnly:'false', remoteAllowed:true, message:'PRIVATE_MESSAGE', stack:'PRIVATE_STACK' }, { name:'PRIVATE', code:'PRIVATE' }, { name:'AggregateError', code:'UNABLE_TO_GET_ISSUER_CERT_LOCALLY', causeCode:'UNABLE_TO_VERIFY_LEAF_SIGNATURE', hubText:'hf3.8.1-http-504', remoteAllowed:true }]) await t.test(diagnostic ? JSON.stringify(Object.keys(diagnostic)) : 'legacy', async t => {
+    const payload = { error: 'model', ...(diagnostic ? { diagnostic } : {}), unexpected: 'PRIVATE_INPUT' }
+    const spawnWorker = await diagnosticFixture(t, '', `process.on('message',()=>process.send(${JSON.stringify(payload)}))`)
+    const instance = new DesignSemanticIndex({ localOnly: true }); useDiagnosticWorker(instance, spawnWorker)
+    try {
+      await assert.rejects(instance.compute('p', graph('1')))
+      const message = instance.read('p', graph('1')).status.message
+      assert.doesNotMatch(message, /PRIVATE_|localOnly=/)
+      if (diagnostic?.causeCode) { assert.match(message, new RegExp('causeCode=' + diagnostic.causeCode)); assert.match(message, /remoteAllowed=true/); assert.ok(message.slice(legacy.length).length <= 256) }
+      else assert.equal(message, legacy)
+    } finally { await instance.close() }
+  })
+})
+
+test('child exit, abort and the unchanged 180-second deadline remain failures', async t => {
+  for (const mode of ['exit', 'abort', 'timeout']) await t.test(mode, async t => {
+    if (mode === 'timeout') t.mock.timers.enable({ apis: ['setTimeout'] })
+    const spawnWorker = await diagnosticFixture(t, '', `process.on('message',()=>${mode === 'exit' ? 'process.exit(9)' : 'process.send({progress:"waiting-fixture"})'})`)
+    const instance = new DesignSemanticIndex({ localOnly: true }), abort = new AbortController()
+    const calls = useDiagnosticWorker(instance, spawnWorker)
+    try {
+      const pending = instance.compute('p', graph('1'), undefined, abort.signal)
+      const rejected = assert.rejects(pending)
+      if (mode !== 'exit') {
+        const before = Date.now()
+        while (instance.read('p', graph('1')).status.message !== 'waiting-fixture') {
+          assert.ok(Date.now() - before < 10000, 'fixture child did not start'); await new Promise(resolve => setImmediate(resolve))
+        }
+        if (mode === 'abort') abort.abort()
+        else { t.mock.timers.tick(179999); assert.equal(instance.read('p', graph('1')).status.state, 'indexing'); t.mock.timers.tick(1) }
+      }
+      await rejected
+      const result = instance.read('p', graph('1'))
+      assert.notEqual(result.status.state, 'ready'); assert.deepEqual(result.edges, [])
+      assert.doesNotMatch(result.status.message, /code=|causeCode=|remoteAllowed=/)
+      assert.equal(calls(), 1)
+    } finally { await instance.close(); t.mock.timers.reset() }
+  })
 })
 
 test('embedding model fetch honors the installed proxy agent and NO_PROXY on Node 22', { timeout: 15000 }, async t => {
@@ -276,7 +509,7 @@ test('embedding model fetch honors the installed proxy agent and NO_PROXY on Nod
   })
   await new Promise(resolve => origin.listen(0, '127.0.0.1', resolve))
   await new Promise(resolve => proxy.listen(0, '127.0.0.1', resolve))
-  for (const name of ['embedding-worker.mjs', 'embedding-text.mjs']) {
+  for (const name of ['embedding-worker.mjs', 'embedding-text.mjs', 'embedding-diagnostic.ts']) {
     await copyFile(new URL('../src/' + name, import.meta.url), join(root, name))
   }
   const transformers = join(root, 'node_modules/@huggingface/transformers')

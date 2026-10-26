@@ -13,7 +13,7 @@ const source = {
 }
 const original = await source.readText(`${root}/bundles/business_rules/panel.yaml`)
 const request = {
-  kit: { name: 'web_app', version: '1.0' },
+  kit: { name: 'web_app', version: '1.1' },
   bundle: { name: 'business_rules', version: '1.0' },
   revision: 3,
   panelSource: `${original}\n# Studio draft only\n`,
@@ -68,7 +68,7 @@ mutable.sampleSource = '{}'
 const captured = await pending
 assert.deepEqual(captured.diagnostics, [])
 assert.equal(captured.preview.revision, 3)
-assert.equal(captured.preview.kit.version, '1.0')
+assert.equal(captured.preview.kit.version, '1.1')
 assert.equal(captured.preview.bundle.name, 'business_rules')
 assert.notEqual(captured.preview.sample, valid.preview.sample)
 console.log('STUDIO PANEL PREVIEW: real loader, exact pins, schema sample, source isolation, revision capture PASS')

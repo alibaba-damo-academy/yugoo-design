@@ -1,8 +1,10 @@
 import { embeddingWindows, combineEmbeddingWindows } from './embedding-text.mjs'
+import { captureEmbeddingDiagnostic } from './embedding-diagnostic.ts'
 let extractor
 process.on('disconnect', () => process.exit(0))
 process.on('message', async ({ texts, config }) => {
   let phase = 'runtime'
+  let effective
   try {
     // Load native dependencies inside the error boundary; import failures must
     // reach the parent as a bounded category, never raw paths or input text.
@@ -15,6 +17,7 @@ process.on('message', async ({ texts, config }) => {
     phase = 'model'
     env.cacheDir = config.cacheDir
     env.allowRemoteModels = !config.localOnly
+    effective = { localOnly: config.localOnly, remoteAllowed: env.allowRemoteModels }
     extractor ??= await pipeline('feature-extraction', config.model, {
       revision: config.revision, dtype: 'q8', device: 'cpu',
       session_options: { intraOpNumThreads: 2, interOpNumThreads: 1 },
@@ -34,5 +37,8 @@ process.on('message', async ({ texts, config }) => {
       offset += group.length
       return result
     }) })
-  } catch { process.send?.({ error: phase }) }
+  } catch (error) {
+    const diagnostic = captureEmbeddingDiagnostic(error, phase, effective)
+    process.send?.({ error: phase, ...(diagnostic ? { diagnostic } : {}) })
+  }
 })

@@ -209,6 +209,9 @@ for (const host of ['codex', 'claude-code', 'qoder']) test(`${host}: Panel read 
     assert.ok(queried.entities[0].properties.fields.some(field => field.pointer === '/pages/p/parent_id' && field.text === 'missing'))
     const historical = await call('queryKnowledge', { ...pins, revision: before.knowledgeRevision, limit: 100 })
     assert.ok(historical.entities.some(n => n.properties.fields.some(field => field.pointer === '/schema_version')))
+    assert.equal(historical.coverage.basis, 'historical-snapshot')
+    assert.equal(historical.coverage.semantic, 'not-asserted')
+    await assert.rejects(call('queryKnowledge', { ...pins, revision: before.knowledgeRevision, basis: 'source-projection', limit: 100 }), /complete pinned source set/, 'a historical schema snapshot cannot claim current source-projection coverage')
     assert.equal((JSON.parse((await call('readGraph')).content)).knowledgeRevision, after.knowledgeRevision)
     assert.equal(await readFile(file, 'utf8'), source)
     assert.equal(await project.store.sameDesignEvidenceAt(checkpoint, await project.store.head()), true)
@@ -273,7 +276,11 @@ for (const managedExecution of [false, true]) test(`${managedExecution ? 'manage
     assert.equal(await project.store.sameDesignEvidenceAt(request.knowledge.sourceCheckpoint, request.revision.checkpoint), true)
     const replica = await knowledge.reviewSnapshot(request.revision.checkpoint,request.knowledge.knowledgeRevision)
     const pins = {project:replica.project,checkpoint:replica.checkpoint,revision:replica.graph.revision,limit:1,offset:0}
-    assert.deepEqual(queryReviewSnapshot(replica,pins),await knowledge.query(pins),'replica and live pinned query have identical semantics')
+    const { coverage, status, sourceCheckpoint, ...livePage } = await knowledge.query(pins)
+    assert.deepEqual(queryReviewSnapshot(replica,pins),livePage,'replica and live pinned query have identical graph semantics')
+    assert.equal(coverage.basis,'complete-publication')
+    assert.equal(status.latestComplete.revision,pins.revision)
+    assert.equal(sourceCheckpoint,request.knowledge.sourceCheckpoint)
     assert.throws(()=>queryReviewSnapshot(replica,{...pins,checkpoint:'foreign'}),/pins/)
     const nodes = request.knowledge.graph.entities.filter(x=>x.entityType==='design-record')
     const [a,b] = ['论文引用实验结果','实验输出测量结果'].map(text=>nodes.find(n=>n.properties.fields.some(f=>f.text===text)))
@@ -475,6 +482,189 @@ test('a failed companion generation stays failed until an explicit request re-ad
     const again = await knowledge.requestMaintenance()
     assert.equal(again.outcome, 'accepted')
     assert.equal(again.reason, 'failed-generation-retry-accepted')
+  } finally { await knowledge?.close(); await f.close() }
+})
+
+test('first embedding failure keeps verified basic context and pinned queries available through HTTP and MCP', async () => {
+  let attempts = 0, fail = true
+  class FailingIndex extends runtime.DesignSemanticIndex {
+    publicationIdentity = 'unavailable-model:source-context-test'
+    async prepareLocalAssets() {} // Deterministic vectors do not use the real model/cache boundary.
+    async compute(...args) { attempts++; if (fail) throw Error('fixture embedding unavailable'); return super.compute(...args) }
+    async localBatch(_child, texts) { return texts.map(() => [1,0,0,0,0,0,0,0]) }
+  }
+  const f = await fixture({ serverOptions: { host: 'codex', embedding: { localOnly: true },
+    knowledgeRuntime: async () => ({ ...runtime, DesignSemanticIndex: FailingIndex }) } })
+  const call = (method, params = {}) => callCompanion(f.server.connectionPath, { method, params })
+  let client, mcp
+  try {
+    const cold = await call('knowledgeContext')
+    assert.equal(cold.available, false, 'an unopened/unprojected graph cannot claim source coverage')
+    assert.equal(attempts, 0, 'context does not authorize embedding or projection')
+    await f.server.project.store.write('smart_questions', { questions: { goal: { prompt: '目标', kind: 'text', answer: '基础设计证据Alpha' } } }, { origin: 'agent', settleEvent: async () => {} })
+    await f.server.project.store.write('page_design', { skill_name: 'page_design', schema_version: 7,
+      page_order: ['parent', 'child'], pages: {
+        parent: { id: 'parent', name: '资料总览', purpose: '浏览资料' },
+        child: { id: 'child', name: '资料详情', purpose: '读取资料', parent_id: 'parent' },
+      },
+    }, { origin: 'agent', settleEvent: async () => {} })
+    assert.equal((await call('refreshKnowledge')).outcome, 'accepted')
+    let status
+    for (let i = 0; i < 80; i++) { status = await call('knowledgeStatus'); if (status.state === 'failed') break; await new Promise(resolve => setTimeout(resolve, 25)) }
+    assert.equal(status.state, 'failed'); assert.equal(status.latestComplete, undefined)
+    const context = await call('knowledgeContext')
+    assert.equal(context.available, true)
+    assert.equal(context.status.state, 'failed'); assert.equal(context.status.freshness, 'none')
+    assert.equal(context.coverage.basis, 'source-projection')
+    assert.equal(context.coverage.semantic, 'not-published-for-source')
+    assert.ok(context.coverage.sourceFileCount > 0)
+    assert.ok(context.graph.entities.length > 0); assert.ok(context.graph.relations.length > 0)
+    assert.ok(context.graph.relations.every(edge => edge.provenance.producer === 'design-file-projection'))
+    const rendered = JSON.parse(context.context)
+    assert.equal(rendered.coverage.basis, 'source-projection'); assert.equal(rendered.status.state, 'failed')
+    const pins = { project: context.project, checkpoint: context.checkpoint, revision: context.knowledgeRevision, basis: context.coverage.basis }
+    const id = context.graph.entities[0].id, relationId = context.graph.relations.find(edge => edge.properties.relationSemantics?.meaning === 'references')?.id
+    assert.ok(relationId, 'the fixture must contain an explicit page parent reference')
+    assert.deepEqual((await call('queryKnowledge', { ...pins, entityIds: [id] })).entities.map(node => node.id), [id])
+    const reference = await call('queryKnowledge', { ...pins, relationIds: [relationId] })
+    assert.deepEqual(reference.relations.map(edge => edge.id), [relationId])
+    assert.equal(reference.relations[0].reading.meaning, 'references')
+    assert.equal(reference.relations[0].reading.origin, 'file')
+    assert.equal(reference.coverage.basis, 'source-projection'); assert.equal(reference.status.state, 'failed')
+    assert.ok((await call('queryKnowledge', { ...pins, text: '基础设计证据Alpha' })).entities.length > 0)
+    await assert.rejects(call('queryKnowledge', { ...pins, revision: 'rev:0' }), /not available/)
+    await assert.rejects(call('queryKnowledge', { ...pins, revision: 'rev:99999' }), /revision/i)
+    await assert.rejects(call('queryKnowledge', { ...pins, project: 'wrong-project' }), /project does not match/)
+    await assert.rejects(call('queryKnowledge', { ...pins, basis: 'invented' }), /Invalid Knowledge read basis/)
+    await assert.rejects(call('queryKnowledge', { ...pins, basis: 'complete-publication' }), /complete-publication pins changed/)
+    const { Client } = await import('@modelcontextprotocol/sdk/client/index.js')
+    const { InMemoryTransport } = await import('@modelcontextprotocol/sdk/inMemory.js')
+    const { createDesignMcp } = await import('../src/mcp.mjs')
+    mcp = createDesignMcp(); client = new Client({ name: 'basic-kag-context-test', version: '1' })
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
+    await Promise.all([client.connect(clientTransport), mcp.connect(serverTransport)])
+    const response = await client.callTool({ name: 'design_knowledge_context', arguments: { connection: f.server.connectionPath } })
+    assert.ok(!response.isError, JSON.stringify(response))
+    const modelContext = JSON.parse(response.content[0].text)
+    assert.equal(modelContext.coverage.basis, 'source-projection'); assert.equal(modelContext.status.state, 'failed')
+    assert.equal(modelContext.revision, pins.revision); assert.equal(modelContext.sourceCheckpoint, context.sourceCheckpoint)
+    const queryResponse = await client.callTool({ name: 'design_query_knowledge', arguments: { connection: f.server.connectionPath, ...pins, relationIds: [relationId] } })
+    assert.ok(!queryResponse.isError, JSON.stringify(queryResponse))
+    assert.equal(JSON.parse(queryResponse.content[0].text).coverage.basis, 'source-projection')
+    const invalidBasis = await client.callTool({ name: 'design_query_knowledge', arguments: { connection: f.server.connectionPath, ...pins, basis: 'invented' } })
+    assert.ok(invalidBasis.isError, 'MCP validates the derived read basis before dispatch')
+    for (let i = 0; i < 3; i++) { assert.equal((await call('knowledgeContext')).available, true); assert.equal((await call('knowledgeStatus')).state, 'failed') }
+    assert.equal(attempts, 1, 'basic reads never retry the failed semantic job')
+    await assert.rejects(f.server.knowledge.captureReview(context.checkpoint), /still indexing/)
+    fail = false
+    assert.equal((await call('refreshKnowledge')).outcome, 'accepted')
+    for (let i = 0; i < 80; i++) { status = await call('knowledgeStatus'); if (status.state === 'current') break; await new Promise(resolve => setTimeout(resolve, 25)) }
+    assert.equal(status.state, 'current'); assert.equal(attempts, 2)
+    const complete = await call('knowledgeContext')
+    assert.equal(complete.coverage.basis, 'complete-publication')
+    assert.ok(complete.graph.relations.some(edge => edge.provenance.producer !== 'design-file-projection'), 'the fixture publishes actual deterministic semantic candidates')
+    const stable = await call('queryKnowledge', { ...pins, relationIds: [relationId] })
+    assert.equal(stable.coverage.basis, 'source-projection'); assert.equal(stable.revision, pins.revision)
+    const { basis: _basis, ...legacyPins } = pins
+    const legacy = await call('queryKnowledge', legacyPins)
+    assert.equal(legacy.coverage.basis, 'historical-snapshot'); assert.equal(legacy.coverage.semantic, 'not-asserted')
+    await assert.rejects(call('queryKnowledge', { ...pins, basis: 'complete-publication' }), /complete-publication pins changed/)
+    const sourcePins = { project: complete.project, checkpoint: complete.checkpoint, revision: complete.knowledgeRevision, basis: 'source-projection' }
+    const source = await call('queryKnowledge', { ...sourcePins, limit: 100 })
+    assert.ok(source.relations.every(edge => edge.provenance.producer === 'design-file-projection'))
+    const paged = { entities: [], relations: [] }
+    for (let offset = 0; offset < Math.max(source.page.totalEntities, source.page.totalRelations); offset++) {
+      const page = await call('queryKnowledge', { ...sourcePins, offset, limit: 1 })
+      assert.equal(page.coverage.basis, 'source-projection')
+      paged.entities.push(...page.entities); paged.relations.push(...page.relations)
+    }
+    assert.deepEqual(paged, { entities: source.entities, relations: source.relations }, 'pagination uses the filtered source view before offsets, even after semantic publication')
+    await f.server.project.store.write('smart_questions', { questions: { goal: { prompt: '目标', kind: 'text', answer: '改后的新事实' } } }, { origin: 'agent', settleEvent: async () => {} })
+    await assert.rejects(call('queryKnowledge', pins), /checkpoint changed/)
+    const stale = await call('knowledgeContext')
+    assert.equal(stale.available, false, 'unrefreshed source projection cannot be relabeled current')
+    assert.equal(attempts, 2)
+    assert.equal(f.messages.length, 0)
+  } finally { await client?.close(); await mcp?.close(); await f.close() }
+})
+
+test('built child diagnostics reach maintenance status without replacing latest-complete or retrying', async () => {
+  const { mkdir, readdir, copyFile, writeFile } = await import('node:fs/promises')
+  const { fork } = await import('node:child_process')
+  const { stopEmbeddingChild } = await import('../../knowledge-ladybug/lib/semantic-index.js')
+  const f = await fixture({ serverOptions: { host: 'codex' } })
+  const root = join(f.root, 'diagnostic-child'), lib = join(root, 'lib')
+  const dependency = join(root, 'node_modules/@huggingface/transformers')
+  await mkdir(lib, { recursive: true }); await mkdir(dependency, { recursive: true })
+  await writeFile(join(root, 'package.json'), '{"type":"module"}')
+  for (const name of await readdir(new URL('../../knowledge-ladybug/lib/', import.meta.url))) {
+    if (name.endsWith('.js')) await copyFile(new URL('../../knowledge-ladybug/lib/' + name, import.meta.url), join(lib, name))
+  }
+  await writeFile(join(dependency, 'package.json'), '{"type":"module","exports":"./index.js"}')
+  await writeFile(join(dependency, 'index.js'), `
+    export const env={backends:{onnx:{wasm:{}}}};
+    export async function pipeline(){throw new TypeError('PRIVATE_URL?token=PRIVATE_TOKEN',{
+      cause:Object.assign(new Error('PRIVATE_CERT_PATH'),{code:'UNABLE_TO_VERIFY_LEAF_SIGNATURE'})
+    })}
+  `)
+  const env = { ...process.env }
+  for (const key of ['HTTP_PROXY','HTTPS_PROXY','http_proxy','https_proxy','ALL_PROXY','all_proxy','NO_PROXY','no_proxy']) delete env[key]
+  let fail = false, failedCalls = 0, knowledge
+  class ControlledIndex extends runtime.DesignSemanticIndex {
+    async prepareLocalAssets() {} // Disposable fake model, not the real asset boundary.
+    async localBatch(_unused, texts, job) {
+      // Establish a complete prior publication with deterministic vectors only.
+      if (!fail) return texts.map(() => [1,0,0,0,0,0,0,0])
+      failedCalls++
+      const child = fork(join(lib, 'embedding-worker.js'), { env, execArgv: [], windowsHide: true, stdio: ['ignore','ignore','ignore','ipc'] })
+      try { return await super.localBatch(child, texts, job) }
+      finally { await stopEmbeddingChild(child) }
+    }
+  }
+  try {
+    const write = answer => f.server.project.store.write('smart_questions', { questions: { goal: { prompt: '目标', kind: 'text', answer } } }, { origin: 'agent', settleEvent: async () => {} })
+    await write('第一版稳定证据')
+    knowledge = createCompanionKnowledge({ project: f.server.project, stateRoot: f.options.stateRoot,
+      embedding: { localOnly: false }, loadRuntime: async () => ({ ...runtime, DesignSemanticIndex: ControlledIndex }) })
+    const waitFor = async state => {
+      for (let i = 0; i < 100; i++) {
+        const status = await knowledge.status()
+        if (status.state === state) return status
+        await new Promise(resolve => setTimeout(resolve, 25))
+      }
+      assert.fail(`Knowledge did not settle to ${state}`)
+    }
+    assert.equal((await knowledge.requestMaintenance()).outcome, 'accepted')
+    const first = await waitFor('current')
+    assert.ok(first.latestComplete)
+    await write('第二版需要重新推断的完整证据')
+    fail = true
+    assert.equal((await knowledge.requestMaintenance()).outcome, 'accepted')
+    const failed = await waitFor('failed')
+    assert.equal(failed.lastFailure.target, 'companion-maintenance')
+    assert.equal(failed.freshness, 'different')
+    assert.deepEqual(failed.latestComplete, first.latestComplete)
+    assert.match(failed.lastFailure.message, /causeCode=UNABLE_TO_VERIFY_LEAF_SIGNATURE/)
+    assert.match(failed.lastFailure.message, /localOnly=false; remoteAllowed=true|remoteAllowed=true/)
+    assert.match(failed.lastFailure.message, /不自动上传或重试/)
+    assert.doesNotMatch(JSON.stringify(failed), /PRIVATE_|token=|https:\/\//)
+    const checkpoint = await f.server.project.store.head()
+    const basic = await knowledge.captureContext(checkpoint)
+    assert.equal(basic.coverage.basis, 'source-projection')
+    assert.equal(basic.status.state, 'failed')
+    assert.deepEqual(basic.status.latestComplete, first.latestComplete)
+    assert.ok(basic.graph.relations.every(edge => edge.provenance.producer === 'design-file-projection'))
+    await assert.rejects(knowledge.captureReview(checkpoint), /still indexing/, 'ordinary source context cannot relax the review publication guard')
+    const historical = await knowledge.query({ project: basic.project, checkpoint: first.latestComplete.checkpoint,
+      revision: first.latestComplete.revision, limit: 10 })
+    assert.equal(historical.revision, first.latestComplete.revision, 'old complete publication retains its immutable pins')
+    for (let i = 0; i < 10; i++) {
+      const unchanged = await knowledge.status()
+      assert.equal(unchanged.state, 'failed')
+      assert.deepEqual(unchanged.latestComplete, first.latestComplete)
+    }
+    assert.equal(failedCalls, 1, 'status reads cannot retry the failed child')
+    assert.equal(f.messages.length, 0, 'diagnostics do not dispatch a host message')
   } finally { await knowledge?.close(); await f.close() }
 })
 

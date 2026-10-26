@@ -201,7 +201,12 @@ test('candidate uses fixed versions and deterministic inventory; source and lice
   assert.ok(first.inventory.assets['bin/design-system.mjs'])
   const selection=execute(join(first.target,'bin/design-system.mjs'),['install'],root,2)
   assert.equal(selection.status,'host-selection-required'); assert.equal(selection.hostRegistered,false)
-  assert.deepEqual(selection.hosts,['dsh','codex','claude-code','qoder','qwenwork','workbuddy'])
+  assert.deepEqual(selection.hosts,['dsh','codex','codex-desktop','claude-code','qoder','qwenwork','workbuddy'])
+  for (const file of ['bin/npm-codex-desktop-source.mjs','bin/npm-installer-codex-desktop.mjs'])
+    assert.ok(first.inventory.assets[file], 'Acquired npm must contain its desktop preparation dependency: ' + file)
+  assert.deepEqual(review.desktopPreparation['codex-desktop'], {
+    source: 'npm-backed', scope: 'owned-local-source-and-personal-catalog', nativeActivationRequired: true,
+  })
   const nodeSelection=execute(join(first.target,'bin/design-system.mjs'),['resolve-node','--node-executable',process.execPath],root,0)
   assert.equal(nodeSelection.kind,'node-runtime-selection'); assert.equal(nodeSelection.verified,true)
   assert.equal(nodeSelection.version,process.versions.node); assert.match(nodeSelection.sha256,/^[a-f0-9]{64}$/)
@@ -444,7 +449,7 @@ test('public bin routes pending Companion plans and requires explicit DSH and Cl
     assert.equal(result.hostRegistered,false)
     assert.deepEqual((await executeMcpMetadata(pluginRoot,host,root)).args,['mcp'])
   }
-  for (const host of [...Object.keys(hosts).filter(host=>!['claude-code','qoder'].includes(host)), 'codex-desktop', 'qwenwork']) {
+  for (const host of [...Object.keys(hosts).filter(host=>!['claude-code','qoder'].includes(host)), 'qwenwork']) {
     const output = execute(bin, ['install', '--dry-run', '--host', host, '--receipt-dir', receipts, '--user-root', userRoot], root)
     assert.equal(output.hostRegistered, false)
     assert.equal(output.applySupported, false)
@@ -453,6 +458,8 @@ test('public bin routes pending Companion plans and requires explicit DSH and Cl
     assert.equal(output.npmRoot, relocated)
     assert.equal(JSON.parse(await readFile(output.planFile)).planSha256, output.planSha256)
   }
+  const desktop=spawnSync(process.execPath,[bin,'install','--dry-run','--host','codex-desktop','--receipt-dir',receipts,'--user-root',userRoot],{cwd:root,encoding:'utf8'})
+  assert.notEqual(desktop.status,0);assert.match(desktop.stderr,/New immutable --destination required/)
   const dshReceipts=join(root,'DSH rejected receipts')
   const qoder=spawnSync(process.execPath,[bin,'install','--dry-run','--host','qoder','--receipt-dir',receipts],{cwd:root,encoding:'utf8'})
   assert.notEqual(qoder.status,0);assert.match(qoder.stderr,/Qoder install accepts only/)

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -9,11 +9,12 @@ import { pathToFileURL } from 'node:url'
 const validateScript = new URL('../bundles/flow_design/scripts/bpmn-validator.mjs', import.meta.url)
 const layoutScript = new URL('../bundles/flow_design/scripts/layout.mjs', import.meta.url)
 
-function run(script, args, input) {
+function run(script, args, input, options = {}) {
   return spawnSync(process.execPath, [script.pathname, ...args], {
     encoding: 'utf8',
     input: typeof input === 'string' ? input : JSON.stringify(input),
     maxBuffer: 8 * 1024 * 1024,
+    ...options,
   })
 }
 
@@ -52,6 +53,21 @@ function checkMissingDependencies() {
     assert.match(internalFailure.stderr, /ERR_MODULE_NOT_FOUND/)
     assert.match(internalFailure.stderr, /missing-transitive\.js/)
     assert.doesNotMatch(internalFailure.stderr, /\[flow_design:dependency\]/)
+    fixturePackage('bpmn-moddle', 'index.js', 'throw Error("BPMN_INITIALIZATION_FAILED");\n')
+    const initializationFailure = run(isolatedScript, [], '')
+    assert.notEqual(initializationFailure.status, 0)
+    assert.match(initializationFailure.stderr, /BPMN_INITIALIZATION_FAILED/)
+    assert.doesNotMatch(initializationFailure.stderr, /\[flow_design:dependency\]/)
+    fixturePackage('bpmn-moddle', 'index.js', 'throw null;\n')
+    const nonErrorFailure = run(isolatedScript, [], '')
+    assert.notEqual(nonErrorFailure.status, 0)
+    assert.match(nonErrorFailure.stderr, /null/)
+    assert.doesNotMatch(nonErrorFailure.stderr, /TypeError|\[flow_design:dependency\]/)
+    fixturePackage('bpmn-moddle', 'index.js', 'throw Object.assign(Error("Cannot find package \'bpmn-moddle\' imported from /another-entry.mjs"), { code: "ERR_MODULE_NOT_FOUND" });\n')
+    const foreignImporterFailure = run(isolatedScript, [], '')
+    assert.notEqual(foreignImporterFailure.status, 0)
+    assert.match(foreignImporterFailure.stderr, /another-entry\.mjs/)
+    assert.doesNotMatch(foreignImporterFailure.stderr, /\[flow_design:dependency\]/)
   } finally {
     rmSync(scratch, { recursive: true, force: true })
   }
@@ -125,6 +141,42 @@ const fileFinal = run(validateScript, ['validate-final-bpmn-file'], `${JSON.stri
 })}\n${laidOut.stdout}`)
 assert.equal(fileFinal.status, 0, fileFinal.stdout || fileFinal.stderr)
 assert.deepEqual(JSON.parse(fileFinal.stdout), { valid: true, diagnostics: [] })
+
+// Use the actual normal package builder; source-only success misses relocated
+// bare-package resolution guards left behind after imports are bundled.
+const packagedScratch = mkdtempSync(join(tmpdir(), 'flow-normal-emitted-'))
+try {
+  const { packageFlowLayout } = await import('../../companion/build-plugin.mjs')
+  const target = join(packagedScratch, 'yugoo-design')
+  await packageFlowLayout(target)
+  const entry = pathToFileURL(join(target, 'bundles/flow_design/scripts/layout.mjs'))
+  const isolated = { cwd: packagedScratch, env: { ...process.env, NODE_PATH: '', NODE_OPTIONS: '' } }
+  const dependencyProbe = spawnSync(process.execPath, ['--input-type=module', '-e',
+    'for (const name of ["bpmn-moddle", "elkjs"]) { try { import.meta.resolve(name); process.exitCode=1; } catch(error) { if(error.code!=="ERR_MODULE_NOT_FOUND") throw error; } }'],
+    { ...isolated, encoding: 'utf8' })
+  assert.equal(dependencyProbe.status, 0, 'emitted test must have no externally resolvable Flow packages')
+  const emitted = run(entry, [], xml, isolated)
+  assert.equal(emitted.error, undefined)
+  assert.equal(emitted.status, 0, emitted.stderr)
+  assert.match(emitted.stdout, /<bpmndi:BPMNDiagram/)
+  assert.match(emitted.stdout, /<bpmndi:BPMNShape/)
+  assert.match(emitted.stdout, /<bpmndi:BPMNEdge/)
+  const accepted = run(validateScript, ['validate-final-bpmn-file'], `${JSON.stringify({ process_id: 'P-001', process: processRecord })}\n${emitted.stdout}`, isolated)
+  assert.equal(accepted.status, 0, accepted.stdout || accepted.stderr)
+  assert.deepEqual(JSON.parse(accepted.stdout), { valid: true, diagnostics: [] })
+  const dependency = [...readFileSync(entry, 'utf8').matchAll(/import\(["'](\.\/[^"']+\.mjs)["']\)/gu)][0]?.[1]
+  assert.ok(dependency, 'normal emitted entry must retain its actual bundled dependency')
+  const dependencyFile = new URL(dependency, entry)
+  renameSync(dependencyFile, new URL(dependency + '.hidden', entry))
+  const missingChunk = run(entry, [], xml, isolated)
+  assert.notEqual(missingChunk.status, 0)
+  assert.equal(missingChunk.stdout, '', 'missing emitted chunk must not produce fallback geometry')
+  assert.match(missingChunk.stderr, /ERR_MODULE_NOT_FOUND/)
+  assert.doesNotMatch(missingChunk.stderr, /\[flow_design:dependency\]/)
+  console.log('Flow normal emitted closure OK outside repo; missing emitted chunk retains original error')
+} finally {
+  rmSync(packagedScratch, { recursive: true, force: true })
+}
 if (process.argv.includes('--dependency-layout-only')) {
   console.log('Flow existing four-node layout and final validation OK')
   process.exit(0)

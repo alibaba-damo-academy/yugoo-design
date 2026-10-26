@@ -117,10 +117,11 @@ if (!reformattedSkill?.metadata?.skillYaml?.startsWith('\n')) throw new Error('w
 // Identity is the declared name+version: every Bundle pins the explicit
 // version its skill.yaml declares, and content edits never move it
 // (same-version hot update).
-// Internal Web App releases stay at 1.0; content updates must not force project upgrades.
-if (kit.version !== '1.0') throw new Error(`kit version ${kit.version} does not match the declared 1.0`)
+// The official Web App 1.1 release explicitly pins corrected Flow 1.1.
+// Other Bundle pins remain 1.0; ordinary resource edits below do not retarget them.
+if (kit.version !== '1.1') throw new Error(`kit version ${kit.version} does not match the declared 1.1`)
 for (const skill of kit.skills) {
-  const expectedVersion = '1.0'
+  const expectedVersion = skill.name === 'flow_design' ? '1.1' : '1.0'
   if (skill.version !== expectedVersion) throw new Error(`skill ${skill.name} version ${skill.version} does not match ${expectedVersion}`)
 }
 

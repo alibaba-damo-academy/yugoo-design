@@ -243,19 +243,23 @@ export const ADVISORY_CSS = `
 .dsh-advisory-empty{padding:16px 4px;color:var(--dsw-alias-label-tertiary,#64748b);font-size:13px;text-align:center}
 .dsh-advisory-inbox-title{display:flex;align-items:center;gap:8px}
 .dsh-advisory-inbox-actions{display:flex;align-items:center;gap:8px}
-.dsh-advisory-inbox-close{display:inline-flex;align-items:center;justify-content:center;flex:none;width:28px;height:28px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary,#475569);font-size:20px;line-height:1;cursor:pointer}
+.dsh-advisory-inbox-close{display:inline-flex;align-items:center;justify-content:center;flex:none;width:28px;height:28px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary,var(--ds-text-secondary,#4c4c4c));font:400 20px/1 var(--ds-font-main,system-ui,sans-serif);cursor:pointer}
 .dsh-advisory-inbox-close:hover{background:var(--dsw-alias-bg-secondary,#f1f5f9)}
 .dsh-advisory-inbox-close:focus-visible{outline:2px solid var(--ds-brand-6,#663ae8);outline-offset:2px}
 .dsh-review-settings{margin:0;display:inline-flex}
-.dsh-review-settings-trigger{display:inline;width:auto;padding:2px 0;border:0;background:transparent;color:var(--ds-brand-6,#663ae8);font:inherit;font-size:12px;font-weight:400;white-space:nowrap;cursor:pointer;text-underline-offset:3px}
-.dsh-review-settings-trigger:hover{text-decoration:underline}
-.dsh-review-settings-dialog{position:fixed;inset:0;margin:auto;box-sizing:border-box;width:360px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 48px);overflow:auto;padding:20px;border:1px solid var(--dsw-alias-border-normal,#e2e8f0);border-radius:14px;background:var(--dsw-alias-bg-base,#fff);color:var(--dsw-alias-label-primary,#0f172a);box-shadow:0 20px 70px rgba(15,23,42,.22);font-size:13px;line-height:1.5}
+/* The advisory slot can outlive the Dock: keep its controls in this shared
+   shell stylesheet rather than depending on Dock-only utility CSS. */
+.dsh-review-settings-trigger{display:inline-flex;box-sizing:border-box;align-items:center;justify-content:center;gap:4px;min-height:28px;width:auto;padding:4px 8px;border:1px solid var(--dsw-alias-border-normal,var(--ds-border-default,#dfdfdf));border-radius:var(--ds-radius-4,8px);background:var(--dsw-alias-bg-base,var(--ds-static-white,#fff));color:var(--dsw-alias-label-primary,var(--ds-text-primary,#272727));font:400 12px/18px var(--ds-font-main,system-ui,sans-serif);white-space:nowrap;cursor:pointer}
+.dsh-review-settings-trigger>svg{flex:none}
+.dsh-review-settings-trigger:hover{background:var(--dsw-alias-interactive-bg-hover,var(--ds-bg-white-hover,#f7f7f7))}
+.dsh-review-settings-trigger:active{background:var(--dsw-alias-bg-secondary,var(--ds-bg-white-active,#f1f1f1))}
+.dsh-review-settings-dialog{position:fixed;inset:0;margin:auto;box-sizing:border-box;width:360px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 48px);overflow:auto;padding:20px;border:1px solid var(--dsw-alias-border-normal,#e2e8f0);border-radius:14px;background:var(--dsw-alias-bg-base,#fff);color:var(--dsw-alias-label-primary,#0f172a);box-shadow:0 20px 70px rgba(15,23,42,.22);font-family:var(--ds-font-main,system-ui,sans-serif);font-size:13px;font-weight:400;line-height:1.5}
 .dsh-review-settings-dialog::backdrop{background:rgba(15,23,42,.3)}
 .dsh-review-settings-dialog:not([open]){display:none}
 .dsh-review-settings-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px}
 .dsh-review-settings-header h2{margin:0;font-size:15px;font-weight:600}
 .dsh-review-settings-header p,.dsh-review-settings-help{margin:6px 0 0;color:var(--dsw-alias-label-tertiary,#64748b);font-size:12px;line-height:1.6}
-.dsh-review-settings-close{flex:none;width:26px;height:26px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary,#475569);font-size:20px;cursor:pointer}
+.dsh-review-settings-close{flex:none;width:28px;height:28px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary,var(--ds-text-secondary,#4c4c4c));font:400 20px/1 var(--ds-font-main,system-ui,sans-serif);cursor:pointer}
 .dsh-review-settings-fields{display:flex;flex-direction:column;gap:14px}
 .dsh-review-settings-fields label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:500}
 .dsh-review-settings-fields input,.dsh-review-settings-fields select{box-sizing:border-box;width:100%;min-width:0;height:36px;padding:7px 10px;border:1px solid var(--dsw-alias-border-normal,#cbd5e1);border-radius:7px;background:var(--dsw-alias-bg-base,#fff);color:var(--dsw-alias-label-primary,#0f172a);font:inherit;font-weight:400}
@@ -344,6 +348,7 @@ export const CONTINUATION_CSS = `
   background:var(--dsw-alias-bg-base,#fff);color:var(--dsw-alias-label-primary,#0f172a);
   padding:4px 10px;font-size:12px;cursor:pointer}
 .dsh-design-continuation-actions button:hover{background:var(--dsw-alias-bg-secondary,#f8fafc)}
+.dsh-design-continuation-actions button:disabled{cursor:default;opacity:.5}
 .dsh-design-continuation-continue{border-color:var(--dsw-alias-state-business-primary,#2563eb)!important;
   background:var(--dsw-alias-state-business-primary,#2563eb)!important;color:#fff!important}
 .dsh-design-continuation-continue:hover{opacity:.9;background:var(--dsw-alias-state-business-primary,#2563eb)}

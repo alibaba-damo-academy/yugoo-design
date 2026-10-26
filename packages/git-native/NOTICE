@@ -4,3 +4,7 @@ Derived from @napi-rs/simple-git 1.2.0, upstream commit 0cdb713269151a7af05718c7
 Original binding copyright and MIT license are retained in LICENSE. Yugoo Design modifications are identified in SOURCE.json and native-source/UPSTREAM.patch.
 
 libgit2, zlib, Rust and Cargo dependencies retain their own licenses. See third-party/ for unmodified license texts and exact source archive checksums. The wrapper MIT license does not relicense these components.
+
+The macOS arm64 build links Apple's installed system libraries and frameworks;
+it does not redistribute the Apple SDK, frameworks or Command Line Tools. Its
+Rust and crate materials use the same retained source licenses above.

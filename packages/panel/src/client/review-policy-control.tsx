@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type ReactElement } from 'react'
 import { browserRandomUuid } from '../browser-uuid.ts'
+import { Settings } from 'lucide-react'
 import type { DesignRuntime } from './workspace.tsx'
 
 export function ReviewPolicyControl({ sessionId, runtime }: { sessionId: string; runtime: DesignRuntime }): ReactElement {
@@ -24,7 +25,7 @@ export function ReviewPolicyControl({ sessionId, runtime }: { sessionId: string;
   }, [runtime, sessionId])
   return <div className='dsh-review-settings'>
     <button type='button' className='dsh-review-settings-trigger' aria-haspopup='dialog' onClick={() => settingsDialog.current?.showModal()}>
-      设置
+      <Settings size={14} aria-hidden='true' />设置
     </button>
     <dialog ref={settingsDialog} className='dsh-review-settings-dialog' aria-labelledby={titleId}>
     <header className='dsh-review-settings-header'>

@@ -92,6 +92,13 @@ Retention mapping for the user-authorized detail simplification:
   not rewritten. Native-reference implementations are
   retained; this change targets the official declarative Panel, not old renderers.
 
+The 1.0 decision above records the internal Function detail update. The Flow
+execution-resource correction declares `flow_design@1.1`, mounted by
+`web_app@1.1`, for its next content release; the other 14 Bundles retain 1.0.
+Existing project pins and retained snapshots stay unchanged. Adopting new
+content requires an explicit upgrade through a Host with verified native
+migration isolation; a plugin update alone does not upgrade a project.
+
 Verification is reported separately for conversion/validation, rendered edits,
 durable save/reopen and native-model consumption; these claims are not implied
 by this mapping. Fixed optional inputs are a view choice, not schema requiredness.

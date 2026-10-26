@@ -53,15 +53,44 @@ test('cold maintenance never starts without a published head, including a failed
 test('an ordinary cold graph-open failure remains visible without status retrying it', async () => {
   let loads = 0
   const project = { project: { metadata: { id: '11111111-1111-4111-8111-111111111111', knowledge: { provider: 'ladybug-wasm' } } },
-    requireWritable: async () => {}, store: { head: async () => 'head' } }
+    requireWritable: async () => {}, store: { head: async () => 'head' }, mutateKnowledge: operation => operation() }
   const knowledge = createCompanionKnowledge({ project, stateRoot: '/unused-open-failure',
     loadRuntime: async () => { loads++; throw new Error('Controlled graph-open failure') } })
   try {
     await assert.rejects(knowledge.readGraph(), /Controlled graph-open failure/)
+    await assert.rejects(knowledge.captureContext('head'), /Controlled graph-open failure/)
+    await assert.rejects(knowledge.query({ project: project.project.metadata.id, checkpoint: 'head', revision: 'rev:0' }), /Controlled graph-open failure/)
     const status = await knowledge.status()
     assert.equal(status.state, 'failed')
     assert.equal(status.lastFailure.target, 'knowledge-store')
     assert.equal(loads, 1)
+  } finally { await knowledge.close() }
+})
+
+test('ordinary context without a published checkpoint does not acquire or rebuild the provider', async () => {
+  let loads = 0
+  const project = { project: { metadata: { id: '11111111-1111-4111-8111-111111111111', knowledge: { provider: 'ladybug-wasm' } } },
+    requireWritable: async () => {}, store: { head: async () => undefined }, mutateKnowledge: operation => operation() }
+  const knowledge = createCompanionKnowledge({ project, stateRoot: '/unused-no-context-head',
+    loadRuntime: async () => { loads++; throw Error('must not open') } })
+  try { await assert.rejects(knowledge.captureContext(undefined), /checkpoint changed/); assert.equal(loads, 0) }
+  finally { await knowledge.close() }
+})
+
+test('failed recovery cannot supply basic context or queries and reads do not retry it', async () => {
+  let opens = 0
+  const project = { project: { metadata: { id: '11111111-1111-4111-8111-111111111111', knowledge: { provider: 'ladybug-wasm' } } },
+    requireWritable: async () => {}, store: { head: async () => 'head' }, mutateKnowledge: operation => operation() }
+  const knowledge = createCompanionKnowledge({ project, stateRoot: '/unused-recovery-context',
+    loadRuntime: async () => ({ LadybugDesignKnowledgeProvider: { open: async (_project, _options, recovery) => {
+      opens++; recovery.onState({ state: 'error', message: 'fixture recovery failed' }); throw Error('fixture recovery failed')
+    } }, DesignSemanticIndex: class { constructor() { assert.fail('failed recovery must not construct an index') } } }) })
+  try {
+    await assert.rejects(knowledge.captureContext('head'), /recovery failed/)
+    await assert.rejects(knowledge.query({ project: project.project.metadata.id, checkpoint: 'head', revision: 'rev:0' }), /recovery failed/)
+    const status = await knowledge.status()
+    assert.equal(status.state, 'failed'); assert.equal(status.recovery.state, 'error')
+    assert.equal(opens, 1)
   } finally { await knowledge.close() }
 })
 

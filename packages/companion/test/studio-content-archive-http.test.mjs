@@ -1,15 +1,105 @@
 /** Local transport/staging/adoption proof. No browser, model or publication. */
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFile, writeFile, readdir, lstat } from 'node:fs/promises'
+import { readFile, writeFile, readdir, lstat, mkdtemp, mkdir, symlink, chmod, realpath, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { createHash } from 'node:crypto'
-import { join } from 'node:path'
+import { join, sep } from 'node:path'
 import { fixture } from './fixture.mjs'
 import { callCompanion } from '../src/connection-file.mjs'
 import { createCompanionStudio } from '../src/studio.mjs'
+import { createStudioContentArchives } from '../src/studio-content-archive.mjs'
 
 const hash = value => createHash('sha256').update(value).digest('hex')
 const resign = value => { const { sha256, ...data } = value; return { ...data, sha256: hash(JSON.stringify(data)) } }
+const directoryLink = process.platform === 'win32' ? 'junction' : 'dir'
+
+test('authenticated archive storage accepts a trusted parent-directory alias without weakening noLinks', async () => {
+  const temporary = await realpath(await mkdtemp(join(tmpdir(), 'studio-archive-parent-alias-')))
+  let f
+  try {
+    const parent = join(temporary, 'physical'), alias = join(temporary, 'alias')
+    await mkdir(parent); await symlink(parent, alias, directoryLink)
+    const physicalState = join(parent, 'state'), stateRoot = join(alias, 'state')
+    await mkdir(physicalState, { mode: 0o755 })
+    const stateMode = (await lstat(physicalState)).mode
+    f = await fixture({ serverOptions: { stateRoot } })
+    const call = (method, params = {}) => callCompanion(f.server.connectionPath, { method, params })
+    assert.equal(f.root, await realpath(f.root), 'the fixture owns canonical source roots')
+    assert.equal((await lstat(alias)).isSymbolicLink(), true)
+    assert.deepEqual(await call('studioContentImportList'), [])
+    const installed = f.server.project.installedKit
+    assert.equal(installed.sourceRoot, await realpath(installed.sourceRoot))
+    for (const skill of installed.skills) assert.equal(skill.resourceRoot, await realpath(skill.resourceRoot))
+    const source = await call('studioContentExport', { kind: 'kit', pin: { name: installed.name, version: String(installed.version) },
+      provenance: { source: 'synthetic parent alias test', license: 'Apache-2.0' } })
+    const imported = await call('studioContentImport', { source })
+    assert.equal(imported.validation.valid, true)
+    assert.equal(imported.executionGranted, false)
+    assert.deepEqual(await call('studioContentImportRead', { id: imported.id }), imported)
+    const reopened = await createCompanionStudio(installed, f.options.kitRoot, stateRoot)
+    assert.deepEqual(await reopened.readContentImport({ id: imported.id }), imported)
+    assert.equal((await call('studioContentImportList')).length, 1)
+    assert.equal((await lstat(physicalState)).mode, stateMode, 'normalization never repairs host directory permissions')
+    const privateRoot = join(stateRoot, 'studio-content-state')
+    assert.equal(await realpath(privateRoot), await realpath(join(physicalState, 'studio-content-state')))
+    // Only the trusted caller normalizes its root. Direct storage callers still
+    // cannot supply a path containing a symlink, including this same parent alias.
+    await assert.rejects(createStudioContentArchives({ stateRoot: privateRoot, kitRoot: f.options.kitRoot,
+      readInstalledKit: () => installed }), /symlink|canonical/)
+    assert.equal(f.messages.length, 0)
+  } finally { if (f) await f.close(); await rm(temporary, { recursive: true, force: true }) }
+})
+
+test('archive caller rejects state leaf symlinks including trailing separators and regular files', async () => {
+  const f = await fixture()
+  try {
+    const target = join(f.root, 'leaf-target'), alias = join(f.root, 'state-link')
+    await mkdir(target, { mode: 0o700 }); await symlink(target, alias, directoryLink)
+    const open = async path => (await createCompanionStudio(f.server.project.installedKit, f.options.kitRoot, path)).listContentImports()
+    for (const path of [alias, alias + sep]) await assert.rejects(open(path), /existing canonical directory/)
+    assert.deepEqual(await readdir(target), [], 'a rejected leaf link never creates private archive storage in its target')
+    const file = join(f.root, 'state-file'); await writeFile(file, 'unchanged')
+    await assert.rejects(open(file), /existing canonical directory/)
+    assert.equal(await readFile(file, 'utf8'), 'unchanged')
+  } finally { await f.close() }
+})
+
+test('normalized archive roots retain private-child link and permission rejection without repairs', async () => {
+  const f = await fixture()
+  try {
+    const stateRoot = join(f.root, 'private-state'), target = join(f.root, 'private-target')
+    await mkdir(stateRoot); await mkdir(target, { mode: 0o700 })
+    const privateRoot = join(stateRoot, 'studio-content-state')
+    await symlink(target, privateRoot, directoryLink)
+    const open = async () => (await createCompanionStudio(f.server.project.installedKit, f.options.kitRoot, stateRoot)).listContentImports()
+    await assert.rejects(open(), /symlink/)
+    assert.deepEqual(await readdir(target), [])
+    await rm(privateRoot); await mkdir(privateRoot, { mode: 0o700 })
+    if (process.platform !== 'win32') {
+      await chmod(privateRoot, 0o755)
+      await assert.rejects(open(), /private owned directory/)
+      assert.equal((await lstat(privateRoot)).mode & 0o777, 0o755)
+    }
+  } finally { await f.close() }
+})
+
+test('archive Kit nesting checks use canonical roots in both directions through a parent alias', async () => {
+  const f = await fixture()
+  try {
+    const alias = join(f.root, 'parent-alias'); await symlink(f.root, alias, directoryLink)
+    const installed = f.server.project.installedKit
+    const nestedState = join(alias, 'kit')
+    const withinKit = await createCompanionStudio(installed, f.options.kitRoot, nestedState)
+    await assert.rejects(withinKit.listContentImports(), /must not be nested/)
+    await assert.rejects(lstat(join(f.options.kitRoot, 'studio-content-state')), { code: 'ENOENT' })
+    const stateRoot = join(f.root, 'reverse-state'), nestedKit = join(stateRoot, 'studio-content-state', 'kit')
+    await mkdir(nestedKit, { recursive: true })
+    const withinState = await createCompanionStudio({ ...installed, sourceRoot: nestedKit }, nestedKit, join(alias, 'reverse-state'))
+    await assert.rejects(withinState.listContentImports(), /must not be nested/)
+    assert.deepEqual(await readdir(nestedKit), [])
+  } finally { await f.close() }
+})
 
 test('authenticated archive adoption retains Kit closures and independent Bundles without source writes or execution', async () => {
   const f = await fixture()

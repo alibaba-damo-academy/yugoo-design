@@ -15,7 +15,7 @@ async function isolated(run) {
   try {
     const projectRoot = join(root, 'project')
     await new DesignProjectManager().create({ root: projectRoot, name: 'Synthetic experience',
-      knowledge: { provider: 'ladybug-wasm' }, kit: { name: 'web_app', version: '1.0' } })
+      knowledge: { provider: 'ladybug-wasm' }, kit: { name: 'web_app', version: '1.1' } })
     const api = await openCompanionProject({ projectRoot,
       kitRoot: fileURLToPath(new URL('../../skills-web-app/', import.meta.url)),
       stateRoot: join(root, 'state'), connection: { host: 'codex', threadId: 'experience-test' } })

@@ -251,8 +251,11 @@ export async function createCompanionStudio(kit, kitRoot, stateRoot, contentLibr
     return contentArchiveService ??= import('./studio-content-archive.mjs').then(async ({ createStudioContentArchives }) => {
       // Do not chmod the host's existing state directory. This new, dedicated
       // parent is private; the adapter validates it and all path ancestors.
-      const state = await realpath(stateRoot)
-      if (state !== resolve(stateRoot) || !(await lstat(state)).isDirectory()) throw new Error('Studio archive state must be an existing canonical directory.')
+      // The host may name an OS-aliased parent (for example /var on macOS).
+      // Reject a linked leaf before resolving that trusted root for noLinks.
+      const statePath = resolve(stateRoot)
+      if (!(await lstat(statePath)).isDirectory()) throw new Error('Studio archive state must be an existing canonical directory.')
+      const state = await realpath(statePath)
       const privateRoot = join(state, 'studio-content-state')
       const inside = (base, target) => { const rel = relative(base, target); return !isAbsolute(rel) && rel !== '..' && !rel.startsWith(`..${sep}`) }
       if (inside(root, privateRoot) || inside(privateRoot, root)) throw new Error('Studio archive state and installed Kit must not be nested.')

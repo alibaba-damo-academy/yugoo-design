@@ -177,6 +177,26 @@ Agent follows the acquired version's actual help rather than inventing flags.
 
 See [Codex registration and recovery](README.md#persistent-registration-transactions).
 
+### Install or update: Codex Desktop on macOS arm64
+
+> Install or update Yugoo Design in this Mac Codex Desktop conversation. Resolve
+> an exact release of `@yugoo-design/companion`, retain its integrity, and acquire
+> it in a durable version directory. Read that package's actual help and the
+> Desktop guide below. Reuse an existing compatible public Node. Use its
+> `install --host codex-desktop` route to prepare a new immutable source under
+> my home and review the saved personal catalog plan. For an owned update,
+> supply the previous successful receipt; keep the old source and npm directory.
+> Apply only that owned plan, then install or update the exact source through
+> the native Plugins UI and select it in this conversation. If a normal restart
+> is needed, give me that step and return to this same conversation afterwards.
+> Confirm the actual loaded version and entry, then check a meaningful Panel
+> edit/save/reopen and original-Agent consumption. Report missing capabilities;
+> preserve project pins, credentials and unrelated plugins.
+
+See [npm preparation and native activation](hosts/codex-desktop/README.md#install-or-update-from-npm).
+A prepared catalog is not native installation or loading. Keep the acquired npm
+directory and its small prepared source at their recorded paths.
+
 ### Install or update: Claude Code CLI
 
 > Install or update Yugoo Design in this Claude Code CLI environment. Verify
@@ -352,6 +372,7 @@ If setup requires restarting the host, explain it and let the user restart norma
 | --- | --- | --- | --- |
 | DSH | [DSH package](../dsh/README.md), [Cordis patch](../dsh/cordis.patch.yml) | Native DSH provider; embedded shared Panel | Native interaction and event integration; do not launch Companion as a replacement host |
 | Codex CLI | [Codex Skill](plugin/design-system/skills/yugoo/SKILL.md), [installer](src/npm-installer-codex.mjs) | `design.mjs serve --host codex` | [Original-thread queue](src/codex-connection.mjs); accepted queue entry is not completion |
+| Codex Desktop on macOS arm64 | [Owning guide](hosts/codex-desktop/README.md), [npm installer](src/npm-installer-codex-desktop.mjs) | Installed desktop entry: `design.mjs serve --host codex --codex-desktop` | [Host-launched bridge](src/codex-desktop-bridge.mjs); original-Agent consumption requires its own receipt |
 | Claude Code | [Claude Skill](plugin-claude/design-system/skills/yugoo/SKILL.md), [installer](src/npm-installer-claude.mjs) | `design.mjs serve --host claude-code` | [Native Hook adapter](src/claude-hook-transport.mjs); verify native consumption separately |
 | Qoder CLI | [Qoder Skill](plugin-qoder/design-system/skills/yugoo/SKILL.md), [installer](src/npm-installer-qoder.mjs) | `design.mjs serve --host qoder` | [Native Hook adapter](src/qoder-hook-transport.mjs); native approval and delivery policy still apply |
 | QwenWork Windows preview | [QwenWork Skill](plugin-qwenwork/design-system/skills/yugoo/SKILL.md), [suite packaging](qwenwork-package.mjs), [setup and evidence](hosts/qwenwork/README.md) | `design.mjs serve --host qwenwork` defaults to verified desktop user input; `--qwenwork-events-only` explicitly selects limited events | [Desktop user input](src/qwenwork-desktop-input.mjs) and separate [Hook events](src/qwenwork-hook-transport.mjs) |
@@ -398,8 +419,15 @@ UI-method allowlist. Connection-file tool API and original-conversation relay
 keys remain independent in both modes. A browser URL cannot change the mode or
 choose a different project/native destination. DSH does not consume this policy.
 
-One live Companion connection can have an independent full-view browser and a
-host browser using `?view=panel-only`. Both use the same files, save semantics and
+An embedded adapter explicitly declares startup `browserDefaultView: "panel-only"`;
+the service default is `"full"`. Mac Codex `--codex-desktop` supplies the embedded
+default. The service places this presentation declaration in its HTML entry;
+the client uses it only when the URL has no `view`. Browser admission, user agent
+and window size do not select this default. Explicit `view=full`, `view=panel-only`
+and its legacy `design` alias take precedence, as do Studio/trial routes.
+
+One live Companion connection can have an independent `?view=full` browser and a
+panel-only host browser. Both use the same files, save semantics and
 native destination. Changing that page's layout does not issue another token or
 start another service. The design view hides history/composer and makes no
 foreground-history requests; native verification and save transport remain
@@ -550,6 +578,9 @@ repository-wide directory migration or proof of installed-host acceptance.
 
 Host-specific setup, evidence and limits belong to the owning guides:
 
+- [Mac Codex Desktop](hosts/codex-desktop/README.md): npm-backed source and owned
+  catalog updates, native activation, original-conversation bridge and shared
+  Panels; source development and execution capabilities retain separate limits.
 - [QwenWork](hosts/qwenwork/README.md): suite/MCP separation, native Hook events,
   experimental desktop user input, normal-start preconfiguration, KAG status.
 - [WorkBuddy](hosts/workbuddy/README.md): official plugin/MCP ecosystem and dated

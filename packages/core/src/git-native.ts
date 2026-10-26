@@ -273,7 +273,9 @@ export async function executeNativeGit(root: string, operation: NativeGitOperati
             if (file.oid !== undefined) throw new NativeGitError('invalid-request')
             frozen.push(file); continue
           }
-          if (resolve(dirname(file.source)) !== resolve(staging) || !(await lstat(file.source)).isFile()) throw new NativeGitError('invalid-request')
+          // Both directories may use an OS alias, such as /var -> /private/var.
+          // Keep the file itself non-symlink while comparing canonical parents.
+          if (await realpath(dirname(file.source)) !== staging || !(await lstat(file.source)).isFile()) throw new NativeGitError('invalid-request')
           const bytes = await readFile(file.source)
           signal?.throwIfAborted()
           const expected = createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex')

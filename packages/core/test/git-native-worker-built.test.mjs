@@ -3,12 +3,12 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { Worker } from 'node:worker_threads'
 import { createHash } from 'node:crypto'
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { NativeGitExecutor } from '../src/git-native-executor.ts'
 
-test('packaged worker runs structured init, publish and exact blob reads without PATH Git', async t => {
+test('packaged worker publishes through a staging directory alias and reads exact blobs without PATH Git', async t => {
   const root = await mkdtemp(join(tmpdir(), 'native-worker-built-'))
   let starts = 0
   const executor = new NativeGitExecutor(() => {
@@ -23,7 +23,9 @@ test('packaged worker runs structured init, publish and exact blob reads without
   assert.equal(init.head, undefined)
   const stagingRoot = join(root, 'staged')
   await mkdir(stagingRoot)
-  const source = join(stagingRoot, 'exact')
+  const alias = join(root, 'staged-alias')
+  await symlink(stagingRoot, alias, process.platform === 'win32' ? 'junction' : 'dir')
+  const source = join(alias, 'exact')
   const bytes = Buffer.from([0, 128, 255, 13, 10, 0])
   await writeFile(source, bytes)
   const oid = createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex')

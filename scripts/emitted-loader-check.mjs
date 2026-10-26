@@ -2,10 +2,13 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { isBuiltin, createRequire } from 'node:module'
 import { lstat, readdir, readFile, realpath } from 'node:fs/promises'
-import { dirname, relative, resolve } from 'node:path'
+import { dirname, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { proveKnownBrowserLoaders } from './known-browser-loader-proof.mjs'
 import { proveKnownNodeLoaders } from './known-node-loader-proof.mjs'
+import { proveKnownBrowserLodash as proveBrowserLodash } from './known-browser-lodash-proof.mjs'
+import { proveKnownFlatBrowserLoaders as proveFlatBrowserLoaders, indexBrowserBindings } from './known-flat-browser-loader-proof.mjs'
+import { proveKnownFlatEmbeddedLoaders as proveFlatEmbeddedLoaders } from './known-flat-embedded-loader-proof.mjs'
 import { proveEmbeddedImageLoader, EMBEDDED_IMAGE_PINS } from './embedded-image-loader-proof.mjs'
 
 const require = createRequire(import.meta.url)
@@ -52,9 +55,85 @@ const key = property => property.computed ? literal(property.key) : property.key
 const moduleId = value => typeof value === 'number' ? Number.isSafeInteger(value) && value > 0 : typeof value === 'string' && value.length > 0 && !['__proto__', 'constructor', 'prototype'].includes(value)
 const children = node => Object.entries(node).flatMap(([field, value]) =>
   field === 'parent' ? [] : Array.isArray(value) ? value.filter(x => x?.type) : value?.type ? [value] : [])
+const prototypeKeys = new Set(['__proto__', 'constructor', 'prototype', '__defineGetter__', '__defineSetter__', '__lookupGetter__', '__lookupSetter__', 'hasOwnProperty', 'isPrototypeOf', 'propertyIsEnumerable', 'toLocaleString', 'toString', 'valueOf'])
+
+// One mapping authority. The default path retains its existing validation;
+// the explicit embedded proof additionally rejects prototype keys/async factories.
+function validateBrowserifyTable(node, invoke, { strict = false } = {}) {
+  const [table, cache, entries] = node.arguments
+  assert.equal(node.arguments.length, 3, 'Unverified Browserify dispatcher arguments')
+  assert.ok(table?.type === 'ObjectExpression' && cache?.type === 'ObjectExpression' && cache.properties.length === 0 && entries?.type === 'ArrayExpression', 'Unverified Browserify table/cache/entries')
+  assert.ok(invoke?.type === 'CallExpression' && invoke.callee === node && invoke.arguments.length === 1, 'Unverified Browserify entry invocation')
+  const modules = new Map()
+  for (const property of table.properties) {
+    assert.ok(property.type === 'Property' && !property.computed && property.kind === 'init', 'Unverified Browserify module property')
+    const id = String(key(property)), pair = property.value
+    assert.ok(moduleId(key(property)) && !modules.has(id) && pair.type === 'ArrayExpression' && pair.elements.length === 2, 'Invalid Browserify module')
+    if (strict) assert.ok(!prototypeKeys.has(id), 'Invalid embedded Browserify prototype module key')
+    const [factory, mapping] = pair.elements
+    assert.ok(factory.type === 'FunctionExpression' && factory.params.length === 3 && ['require', '_dereq_'].includes(factory.params[0].name) && factory.params.every(p => p.type === 'Identifier') && new Set(factory.params.map(p => p.name)).size === 3 && mapping.type === 'ObjectExpression', 'Unverified Browserify factory')
+    if (strict) assert.ok(!factory.async && !factory.generator, 'Embedded Browserify factory must be synchronous')
+    const map = new Map()
+    for (const link of mapping.properties) {
+      assert.ok(link.type === 'Property' && !link.computed && link.kind === 'init' && moduleId(literal(link.value)) && !map.has(String(key(link))), 'Invalid Browserify mapping')
+      if (strict) assert.ok(moduleId(key(link)) && !prototypeKeys.has(String(key(link))), 'Invalid embedded Browserify mapping key')
+      map.set(String(key(link)), String(literal(link.value)))
+    }
+    modules.set(id, { factory, map })
+  }
+  for (const { map } of modules.values()) for (const target of map.values()) assert.ok(modules.has(target), `Missing Browserify mapping target: ${target}`)
+  for (const entry of [...entries.elements, ...invoke.arguments]) assert.ok(literal(entry) !== undefined && modules.has(String(literal(entry))), 'Missing Browserify entry target')
+  return modules
+}
+
+/** Explicit standalone-browser evidence; the default classifier remains strict. */
+export function proveKnownBrowserLodash(code, options = {}) {
+  return proveBrowserLodash(code, { ...options, parse })
+}
+
+// The source descriptor is frozen and weakly owns this AST. A copied/serialized
+// proof safely reparses; default callers retain their original parse path.
+const flatPrograms = new WeakMap()
+export function proveKnownFlatBrowserLoaders(code, { fileName = 'emitted.js', includeLodash = false, includeEmbedded = false } = {}) {
+  const program = parse(code), sharedParse = source => source === code ? program : parse(source)
+  const bindingIndex = includeEmbedded ? indexBrowserBindings(program) : undefined
+  const result = proveFlatBrowserLoaders(code, { fileName, parse: sharedParse, dispatcher: BROWSERIFY_DISPATCHER, bindingIndex })
+  if (includeEmbedded) {
+    const embedded = proveFlatEmbeddedLoaders(code, { fileName, parse: sharedParse, dispatcher: BROWSERIFY_DISPATCHER, validateTable: validateBrowserifyTable, bindingIndex })
+    result.browserifyDispatchers.push(...embedded.browserifyDispatchers); result.proof.push(...embedded.proof)
+    result.embeddedBrowserSource = embedded.embeddedBrowserSource
+  }
+  if (includeLodash) {
+    const lodash = proveBrowserLodash(code, { fileName, parse: sharedParse })
+    result.skip.push(...lodash.skip); result.proof.push(...lodash.proof)
+    result.browserLodashSource = lodash.browserLodashSource
+  }
+  flatPrograms.set(result.flatBrowserSource, program)
+  return result
+}
+
+/** Independent explicit B entry for finite fixtures; composition uses one AST/index above. */
+export function proveKnownFlatEmbeddedLoaders(code, { fileName = 'emitted.js' } = {}) {
+  const program = parse(code)
+  const result = proveFlatEmbeddedLoaders(code, { fileName, parse: source => source === code ? program : parse(source), dispatcher: BROWSERIFY_DISPATCHER, validateTable: validateBrowserifyTable })
+  flatPrograms.set(result.embeddedBrowserSource, program)
+  return result
+}
 
 export function analyzeEmittedLoaders(code, knownProof) {
-  const program = parse(code), parents = new WeakMap(), factoryMaps = new WeakMap(), dispatchers = new WeakSet()
+  if (knownProof?.staticPicaSource) {
+    assert.equal(createHash('sha256').update(code).digest('hex'), knownProof.staticPicaSource.sha256, 'Static Pica parent proof source changed')
+  }
+  if (knownProof?.browserLodashSource) {
+    assert.equal(createHash('sha256').update(code).digest('hex'), knownProof.browserLodashSource.sha256, 'Browser lodash proof source pin changed')
+  }
+  if (knownProof?.flatBrowserSource) {
+    assert.equal(createHash('sha256').update(code).digest('hex'), knownProof.flatBrowserSource.sha256, 'Flat browser proof source pin changed')
+  }
+  if (knownProof?.embeddedBrowserSource) {
+    assert.equal(createHash('sha256').update(code).digest('hex'), knownProof.embeddedBrowserSource.sha256, 'Embedded browser proof source pin changed')
+  }
+  const program = flatPrograms.get(knownProof?.flatBrowserSource) ?? flatPrograms.get(knownProof?.embeddedBrowserSource) ?? parse(code), parents = new WeakMap(), factoryMaps = new WeakMap(), dispatchers = new WeakSet()
   const loads = [], internalLoads = [], resolveOnly = [], unverified = [], browserify = [], codeEvaluations = []
   const knownLoaderIds = new WeakSet()
   function index(node) { for (const child of children(node)) { parents.set(child, node); index(child) } }
@@ -74,29 +153,8 @@ export function analyzeEmittedLoaders(code, knownProof) {
   function discover(node) {
     if (node.type === 'CallExpression' && node.callee.type === 'CallExpression' &&
         node.callee.arguments.length === 0 && (shape(node.callee.callee) === dispatcherShape || knownProof?.browserifyDispatchers?.some(range => range.start === node.callee.callee.start && range.end === node.callee.callee.end))) {
-      const [table, cache, entries] = node.arguments, invoke = parents.get(node)
-      assert.equal(node.arguments.length, 3, 'Unverified Browserify dispatcher arguments')
-      assert.ok(table?.type === 'ObjectExpression' && cache?.type === 'ObjectExpression' && cache.properties.length === 0 && entries?.type === 'ArrayExpression', 'Unverified Browserify table/cache/entries')
-      assert.ok(invoke?.type === 'CallExpression' && invoke.callee === node && invoke.arguments.length === 1, 'Unverified Browserify entry invocation')
-      const modules = new Map()
-      for (const property of table.properties) {
-        assert.ok(property.type === 'Property' && !property.computed && property.kind === 'init', 'Unverified Browserify module property')
-        const id = String(key(property)), pair = property.value
-        assert.ok(moduleId(key(property)) && !modules.has(id) && pair.type === 'ArrayExpression' && pair.elements.length === 2, 'Invalid Browserify module')
-        const [factory, mapping] = pair.elements
-        assert.ok(factory.type === 'FunctionExpression' && factory.params.length === 3 && ['require', '_dereq_'].includes(factory.params[0].name) && factory.params.every(p => p.type === 'Identifier') && new Set(factory.params.map(p => p.name)).size === 3 && mapping.type === 'ObjectExpression', 'Unverified Browserify factory')
-        const map = new Map()
-        for (const link of mapping.properties) {
-          assert.ok(link.type === 'Property' && !link.computed && link.kind === 'init' && moduleId(literal(link.value)) && !map.has(String(key(link))), 'Invalid Browserify mapping')
-          map.set(String(key(link)), String(literal(link.value)))
-        }
-        modules.set(id, { factory, map })
-      }
-      for (const { factory, map } of modules.values()) {
-        for (const target of map.values()) assert.ok(modules.has(target), `Missing Browserify mapping target: ${target}`)
-        factoryMaps.set(factory, map)
-      }
-      for (const entry of [...entries.elements, ...invoke.arguments]) assert.ok(literal(entry) !== undefined && modules.has(String(literal(entry))), 'Missing Browserify entry target')
+      const invoke = parents.get(node), modules = validateBrowserifyTable(node, invoke)
+      for (const { factory, map } of modules.values()) factoryMaps.set(factory, map)
       dispatchers.add(node.callee.callee)
       browserify.push({ modules: [...modules.keys()], entry: literal(invoke.arguments[0]), externalFallback: 'closed by checked literal mappings; nonliteral or escaped loaders block acceptance' })
     }
@@ -171,7 +229,7 @@ export function analyzeEmittedLoaders(code, knownProof) {
     knownEmbeddedImageProofs: (knownProof?.proof ?? []).filter(p => p.kind === 'known-embedded-image-loader'), dynamicClosureVerified: false }
 }
 
-export async function checkEmitted(root, allowedPackages, { packageRoot = root, relativeArtifacts = {}, knownBrowserShims = false, knownNodeRuntime = false, picaWorkerEvidenceRequired = false, embeddedImageEvidenceRequired = false } = {}) {
+export async function checkEmitted(root, allowedPackages, { packageRoot = root, relativeArtifacts = {}, knownBrowserShims = false, knownNodeRuntime = false, picaWorkerEvidenceRequired = false, embeddedImageEvidenceRequired = false, staticPicaModuleMap } = {}) {
   assert.ok(!picaWorkerEvidenceRequired || knownBrowserShims, 'Pica staging requires the ordinary browser forwarding-chain checks')
   assert.ok(!embeddedImageEvidenceRequired || knownBrowserShims, 'Embedded staging requires the ordinary browser forwarding-chain checks')
   const records = []
@@ -200,8 +258,16 @@ export async function checkEmitted(root, allowedPackages, { packageRoot = root, 
       skip: [...browserProof.skip, ...nodeProof.skip], definitions: [...browserProof.definitions, ...nodeProof.definitions],
       trackedLoads: [...browserProof.trackedLoads, ...nodeProof.trackedLoads], proof: [...browserProof.proof, ...nodeProof.proof] } : nodeProof)
   }
-  let uiInputs
-  if (embeddedImageEvidenceRequired) {
+  let uiInputs, staticPicaInputs, legacyPicaArtifact
+  let hasStaticManifest = false
+  try { await lstat(join(root, 'pica-static-workers-client.json')); hasStaticManifest = true }
+  catch (error) { if (error.code !== 'ENOENT') throw error }
+  if (hasStaticManifest && picaWorkerEvidenceRequired) {
+    assert.ok(embeddedImageEvidenceRequired, 'Static Pica cannot use the legacy single-worker gate')
+    const { verifyStaticPicaEmission } = await import('./static-pica-emission-proof.mjs')
+    legacyPicaArtifact = (await import('./pica-worker-evidence.mjs')).PICA_WORKER_PINS.artifact
+    staticPicaInputs = await verifyStaticPicaEmission(root, { moduleMap: staticPicaModuleMap })
+  } else if (embeddedImageEvidenceRequired) {
     // This helper imports the checker: defer until this async entry executes.
     const { verifyUiBlobInputs } = await import('./ui-blob-chain-evidence.mjs')
     uiInputs = await verifyUiBlobInputs(root)
@@ -219,7 +285,20 @@ export async function checkEmitted(root, allowedPackages, { packageRoot = root, 
         proof = proof ? { ...proof, browserifyDispatchers: [...(proof.browserifyDispatchers ?? []), ...embeddedProof.browserifyDispatchers],
           proof: [...proof.proof, ...embeddedProof.proof] } : embeddedProof
       }
+      const staticProof = staticPicaInputs?.loaderProofs[relative(root, path).replaceAll('\\', '/')]
+      if (staticProof) proof = { ...proof, ...staticProof,
+        skip: [...(proof?.skip ?? []), ...staticProof.skip],
+        definitions: [...(proof?.definitions ?? []), ...staticProof.definitions],
+        trackedLoads: [...(proof?.trackedLoads ?? []), ...staticProof.trackedLoads],
+        browserifyDispatchers: [...(proof?.browserifyDispatchers ?? []), ...staticProof.browserifyDispatchers],
+        proof: [...(proof?.proof ?? []), ...staticProof.proof] }
       const result = analyzeEmittedLoaders(code, proof)
+      if (staticPicaInputs) assert.ok(![legacyPicaArtifact, EMBEDDED_IMAGE_PINS.artifact].includes(createHash('sha256').update(code).digest('hex')), 'Static Pica cannot mix with legacy artifacts')
+      const staticTask = staticPicaInputs?.pending.find(task => task.file === relative(root, path).replaceAll('\\', '/'))
+      if (staticTask) {
+        assert.equal(result.unverified.length, 0, 'Static parent has an unverified emitted loader')
+        result.runtimeEvidenceRequired = { ...staticTask, consumer: staticPicaInputs.consumer }
+      }
       if (embeddedProof) {
         assert.deepEqual(result.unverified, embeddedProof.proof[0].staticUnknown, 'Embedded findings changed')
         assert.deepEqual(result.unverified, uiInputs.staticUnknown)

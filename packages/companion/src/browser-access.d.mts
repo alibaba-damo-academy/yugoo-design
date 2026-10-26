@@ -1,5 +1,6 @@
 export function resolveBrowserAccess(value?: unknown): 'token' | 'local'
-export function companionView(value: unknown): 'panel-only' | 'full'
+export function resolveBrowserDefaultView(value?: unknown): 'panel-only' | 'full'
+export function companionView(value: unknown, defaultView?: unknown): 'panel-only' | 'full'
 export const browserMethods: ReadonlySet<string>
 export function browserRequestAllowed(headers: Record<string, string | string[] | undefined>, origin: string): boolean
 export function localBrowserBase(pathname: string): string | undefined

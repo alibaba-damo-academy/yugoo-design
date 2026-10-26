@@ -56,6 +56,29 @@ test('portable official dependency remains exact in the recorded closure', async
   assert.deepEqual(JSON.parse(await readFile(join(result.destination, 'runtime-manifest.json'))).runtimeDependencies, runtimeDependencies)
 })
 
+test('normal portable compilation bundles the private diagnostic helper inside the existing assets', async t => {
+  const { checkEmitted } = await import('../../../scripts/emitted-loader-check.mjs')
+  const root = await mkdtemp(join(await realpath(tmpdir()), 'portable diagnostic build '))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const runtimeDependencies = { ...dependencies(), '@ladybugdb/wasm-core': '0.21.1' }
+  const result = await packageKnowledge(undefined, { mode: 'portable', outputDirectory: join(root, 'knowledge'), runtimeDependencies })
+  assert.equal(result.manifest.buildAdapter, 'tsdown')
+  assert.deepEqual(Object.keys(result.manifest.assets).sort(), ['cli-lifecycle.mjs', 'embedding-worker.js', 'embedding-worker.mjs', 'package.json', 'runtime.mjs'].sort())
+  for (const name of ['runtime.mjs', 'embedding-worker.js', 'embedding-worker.mjs']) {
+    const code = await readFile(join(result.destination, name), 'utf8')
+    assert.match(code, /UNABLE_TO_VERIFY_LEAF_SIGNATURE/)
+  }
+  const records = await checkEmitted(result.destination, new Set(Object.keys(runtimeDependencies)))
+  assert.ok(records.length >= 4)
+  assert.ok(records.every(record => record.unverified.length === 0))
+  // Inspect parsed loader nodes: bundled dependency JSDoc may contain import('*.d.ts').
+  assert.ok(records.every(record => [...record.loads, ...record.resolveOnly].every(load =>
+    typeof load.source !== 'string' || (!load.source.includes('embedding-diagnostic') && !/\.tsx?$/.test(load.source)))),
+  'private helpers must not become runtime source loaders')
+  assert.equal(result.manifest.modelIncluded, false)
+  assert.equal(result.manifest.publishReady, false)
+})
+
 test('portable destinations are exclusive, absolute, outside source and cannot be mixed with a directory target', async t => {
   const { options } = await setup(t)
   await packageKnowledge(undefined, options)

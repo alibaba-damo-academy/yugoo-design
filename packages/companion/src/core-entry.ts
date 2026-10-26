@@ -44,6 +44,7 @@ export { refreshDesignKnowledge, readDesignKnowledgePublication, readPublishedDe
 export { DesignKnowledgeIndex } from '../../core/src/design-knowledge-index.ts'
 export { KnowledgeReadProgress } from '../../core/src/knowledge-read-progress.ts'
 export { readCompleteDesignKnowledge } from '../../core/src/design-knowledge-snapshot.ts'
+export { readSourceDesignKnowledge } from '../../core/src/design-knowledge-projection.ts'
 export { storedKnowledgeGraph } from '../../core/src/design-knowledge-semantic.ts'
 export { readAdvisoryDesignKnowledge } from '../../core/src/advisory-knowledge.ts'
 export { queryKnowledgeSnapshot, knowledgeQueryFilters, knowledgeReadResult, KNOWLEDGE_AGENTIC_GUIDANCE } from '../../core/src/design-knowledge-query.ts'

@@ -3,8 +3,10 @@ import { promisify } from 'node:util'
 import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
 import { lstat, mkdir, readFile, readdir, realpath, rename, rmdir, unlink, writeFile } from 'node:fs/promises'
-import { dirname, join, relative, resolve } from 'node:path'
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { tmpdir, homedir } from 'node:os'
+import { verifyNodeRuntime } from './npm-node-runtime.mjs'
+import { verifyCodexDesktopNpmSource } from './npm-codex-desktop-source.mjs'
 
 const exec = promisify(execFile)
 
@@ -46,6 +48,242 @@ export const codexAdapter = Object.freeze({ scope:'codex-native-plan-only', prob
   compensate:async()=>assertCodexAdmission(codexAdapter) })
 
 const hash = value => createHash('sha256').update(typeof value==='string'||Buffer.isBuffer(value)?value:JSON.stringify(value)).digest('hex')
+const DESKTOP_PLAN_FIELDS = ['schemaVersion', 'scope', 'source', 'userRoot', 'version', 'selector', 'marketplacePath', 'entry',
+  'sourceSha256', 'beforeSha256', 'alreadyPresent', 'hostRegistered', 'installed', 'loaded', 'nodeRuntime']
+function outsideDesktopRoot(root, path) {
+  const delta = relative(root, path)
+  return delta === '..' || delta.startsWith('..' + sep) || isAbsolute(delta)
+}
+async function desktopFutureRealpath(path) {
+  let parent = path
+  const suffix = []
+  while (true) {
+    try { return join(await realpath(parent), ...suffix) }
+    catch (error) {
+      if (error.code !== 'ENOENT') throw error
+      suffix.unshift(basename(parent)); parent = dirname(parent)
+    }
+  }
+}
+
+async function previousDesktopPreparation(path, { home, selector, marketplacePath, currentEntry, nextSource }) {
+  const receiptPath = resolve(path)
+  await safe(receiptPath)
+  const info = await lstat(receiptPath)
+  assert.ok(info.isFile() && (process.getuid === undefined || info.uid === process.getuid())
+    && (process.platform === 'win32' || !(info.mode & 0o077)), 'Previous desktop receipt must be a private owned regular file')
+  const bytes = await readFile(receiptPath), old = JSON.parse(bytes)
+  assert.equal(old.scope, 'codex-desktop-marketplace-preparation')
+  assert.equal(old.marketplacePrepared, true, 'Previous desktop preparation did not succeed')
+  assert.match(old.id ?? '', /^[0-9a-f-]{36}$/u)
+  assert.equal(basename(receiptPath), old.id + '.desktop-marketplace.json', 'Previous desktop receipt identity changed')
+  if (old.receiptPath !== undefined) assert.equal(old.receiptPath, receiptPath)
+  const fields = old.schemaVersion === 1 ? DESKTOP_PLAN_FIELDS : [...DESKTOP_PLAN_FIELDS, 'action', 'previousReceipt', 'changes']
+  if (old.schemaVersion === 1) {
+    // Compatibility with the already-prepared original desktop receipt. Its
+    // exact historical plan field order is retained for digest verification.
+    assert.equal(hash(Object.fromEntries(fields.map(key => [key, old[key]]))), old.planSha256, 'Previous desktop receipt plan changed')
+  } else {
+    assert.equal(old.schemaVersion, 2, 'Unsupported desktop receipt version')
+    const { planSha256, ...snapshot } = old.planSnapshot ?? {}
+    assert.equal(planSha256, old.planSha256)
+    assert.equal(hash(snapshot), planSha256, 'Previous desktop receipt snapshot changed')
+    for (const key of fields) assert.deepEqual(old[key], old.planSnapshot[key], 'Previous desktop receipt identity changed: ' + key)
+    assert.equal(old.phase, 'prepared-native-install-pending')
+  }
+  assert.equal(old.userRoot, home); assert.equal(old.selector, selector); assert.equal(old.marketplacePath, marketplacePath)
+  for (const field of ['hostRegistered', 'installed', 'loaded']) assert.equal(old[field], false)
+  assert.deepEqual(currentEntry, old.entry, 'Current Yugoo entry differs from the previous owned entry; retained')
+  assert.equal(typeof old.source, 'string')
+  assert.ok(!outsideDesktopRoot(home, old.source), 'Previous source is outside this profile')
+  await safe(old.source); assert.equal(await realpath(old.source), old.source)
+  assert.ok(outsideDesktopRoot(old.source, receiptPath) && outsideDesktopRoot(nextSource, receiptPath), 'Previous receipt must remain outside immutable closures')
+  assert.deepEqual(old.entry.source, { source: 'local', path: './' + relative(home, old.source).split(sep).join('/') })
+  assert.equal(hash(await tree(old.source)), old.sourceSha256, 'Previous immutable desktop source changed')
+  const manifest = JSON.parse(await text(join(old.source, '.codex-plugin/plugin.json')))
+  assert.equal(manifest.name, 'yugoo-design'); assert.equal(manifest.version, old.version, 'Previous desktop version changed')
+  const mapping = JSON.parse(await text(join(old.source, 'codex-desktop.json')))
+  if (mapping.source !== undefined) await verifyCodexDesktopNpmSource(old.source, mapping)
+  return { path: receiptPath, sha256: hash(bytes), id: old.id, planSha256: old.planSha256,
+    source: old.source, version: old.version, sourceSha256: old.sourceSha256, expectedEntry: old.entry }
+}
+
+/** Desktop registration starts with a catalog only. The native desktop owns
+ * install/cache/enabled state; these functions never admit a CLI adapter. */
+export async function planCodexDesktopMarketplace({ pluginRoot, userRoot = homedir(), previousReceipt }) {
+  const source = resolve(pluginRoot), home = resolve(userRoot)
+  await safe(source); await safe(home)
+  assert.equal(await realpath(source), source); assert.equal(await realpath(home), home)
+  const path = relative(home, source)
+  assert.ok(path && !outsideDesktopRoot(home, source), 'Desktop source must be retained inside the selected user home')
+  const manifest = JSON.parse(await text(join(source, '.codex-plugin/plugin.json')))
+  const mapping = JSON.parse(await text(join(source, 'codex-desktop.json')))
+  assert.equal(manifest.name, 'yugoo-design'); assert.equal(manifest.requires_local_executor, true)
+  assert.match(manifest.version ?? '', /^[A-Za-z0-9_.+-]+$/u, 'Exact desktop plugin version required')
+  assert.equal(mapping.host, 'codex-desktop'); await verifyNodeRuntime(mapping.nodeRuntime)
+  const files = await tree(source)
+  const npmPackage = mapping.source !== undefined ? await verifyCodexDesktopNpmSource(source, mapping) : null
+  if (!npmPackage) {
+    for (const file of ['scripts/design.mjs', 'scripts/codex-desktop-bridge.mjs', 'scripts/codex-desktop-marketplace.mjs',
+      'skills/design-panel/codex-desktop.md', 'skills/yugoo/SKILL.md', 'web/index.html']) {
+      assert.ok(files.files[file], 'Missing desktop closure input: ' + file)
+    }
+  }
+  assert.deepEqual(JSON.parse(await text(join(source, '.mcp.json'))), { mcpServers: { 'design-system': {
+    command: mapping.nodeRuntime.executable, args: ['scripts/design.mjs', 'mcp'], cwd: '.',
+  } } }, 'Desktop MCP must resolve from the native loaded plugin root')
+  const marketplacePath = join(home, '.agents/plugins/marketplace.json')
+  await safe(marketplacePath)
+  const before = await text(marketplacePath)
+  const catalog = before === null ? { name: 'personal', plugins: [] } : JSON.parse(before)
+  assert.match(catalog.name ?? '', /^[A-Za-z0-9_-]+$/u); assert.ok(Array.isArray(catalog.plugins))
+  assert.ok(!catalog.plugins.some(p => p.name === 'design-system'), 'Legacy design-system entry requires its existing uninstall flow')
+  let entry = { name: 'yugoo-design', source: { source: 'local', path: './' + path.split(sep).join('/') },
+    policy: { installation: 'AVAILABLE', authentication: 'ON_INSTALL' }, category: 'Productivity' }
+  const existing = catalog.plugins.filter(p => p.name === entry.name)
+  assert.ok(existing.length <= 1, 'Duplicate Yugoo Design entries')
+  const selector = 'yugoo-design@' + catalog.name
+  let previous = null, action = existing.length ? 'reuse' : 'add'
+  if (previousReceipt) {
+    assert.equal(existing.length, 1, 'Owned desktop update requires its exact existing entry')
+    previous = await previousDesktopPreparation(previousReceipt, { home, selector, marketplacePath, currentEntry: existing[0], nextSource: source })
+    assert.notEqual(source, previous.source, 'Desktop update requires a new immutable source')
+    assert.notEqual(manifest.version, previous.version, 'Desktop update requires a new exact version')
+    entry = { ...existing[0], source: entry.source }
+    action = 'update'
+  } else if (existing.length) {
+    assert.deepEqual(existing[0].source, entry.source, 'Existing Yugoo Design has another source; retained')
+    entry = structuredClone(existing[0])
+  }
+  const plan = { schemaVersion: 2, scope: 'codex-desktop-marketplace-preparation', source, userRoot: home,
+    ...(npmPackage ? { npmPackage } : {}),
+    version: manifest.version, selector: 'yugoo-design@' + catalog.name, marketplacePath, entry,
+    sourceSha256: hash(files), beforeSha256: before === null ? null : hash(before), alreadyPresent: existing.length === 1,
+    hostRegistered: false, installed: false, loaded: false, nodeRuntime: mapping.nodeRuntime,
+    action, previousReceipt: previous,
+    changes: { before: existing[0] ?? null, after: entry,
+      sourceBefore: previous ? { path: previous.source, version: previous.version, sha256: previous.sourceSha256 } : null,
+      sourceAfter: { path: source, version: manifest.version, sha256: hash(files) } } }
+  return { ...plan, planSha256: hash(plan) }
+}
+
+async function desktopReceiptDirectory(plan, receiptDirectory) {
+  const receipts = resolve(receiptDirectory)
+  // The same no-link authority protects planning and applying. Validate before
+  // mkdir so an aliased ancestor cannot create even a directory in a closure.
+  await safe(receipts)
+  for (const [root, label] of [[plan.source, 'fixed plugin'], [plan.previousReceipt?.source, 'previous immutable']]) {
+    if (!root) continue
+    await safe(root)
+    assert.equal(await realpath(root), root, 'Desktop source must remain canonical')
+    assert.ok(outsideDesktopRoot(root, receipts), 'Desktop receipts must remain outside the ' + label + ' closure')
+  }
+  // Resolve the existing parent before creating missing children. On a
+  // case-insensitive volume, a case alias is not a symlink but can still name
+  // an immutable root; do not create directories there before detecting it.
+  const prospective = await desktopFutureRealpath(receipts)
+  assert.equal(prospective, receipts, 'Desktop receipt directory must be canonical before creation')
+  for (const root of [plan.source, plan.previousReceipt?.source].filter(Boolean)) {
+    assert.ok(outsideDesktopRoot(root, prospective), 'Desktop receipts resolve inside an immutable closure')
+  }
+  await mkdir(receipts, { recursive: true, mode: 0o700 })
+  await safe(receipts)
+  const canonical = await realpath(receipts)
+  assert.equal(canonical, receipts, 'Desktop receipt directory must remain canonical')
+  for (const root of [plan.source, plan.previousReceipt?.source].filter(Boolean)) {
+    assert.ok(outsideDesktopRoot(root, canonical), 'Desktop receipts resolved inside an immutable closure')
+  }
+  return canonical
+}
+
+export async function saveCodexDesktopMarketplacePlan(plan, { receiptDirectory }) {
+  const { planSha256, ...body } = plan
+  assert.equal(hash(body), planSha256, 'Desktop marketplace plan changed')
+  assert.equal(plan.scope, 'codex-desktop-marketplace-preparation')
+  assert.equal(plan.schemaVersion, 2)
+  const receipts = await desktopReceiptDirectory(plan, receiptDirectory)
+  const path = join(receipts, planSha256 + '.desktop-plan.json')
+  await safe(path)
+  await writeFile(path, JSON.stringify(plan, null, 2) + '\n', { flag: 'wx', mode: 0o600 })
+  return path
+}
+
+export async function applyCodexDesktopMarketplace(plan, { receiptDirectory, checkpoint = async () => {} }) {
+  const { planSha256, ...body } = plan
+  assert.equal(planSha256, hash(body), 'Desktop marketplace plan changed')
+  assert.equal(plan.scope, 'codex-desktop-marketplace-preparation')
+  assert.equal(plan.schemaVersion, 2, 'Create a current desktop plan before applying')
+  assert.equal(plan.marketplacePath, join(resolve(plan.userRoot), '.agents/plugins/marketplace.json'), 'Desktop profile catalog path changed')
+  const receipts = await desktopReceiptDirectory(plan, receiptDirectory)
+  // Profile-scoped exclusion follows the existing install transaction's
+  // mkdir + dev/ino ownership pattern, independent of a caller's receipt dir.
+  await safe(plan.marketplacePath)
+  await mkdir(dirname(plan.marketplacePath), { recursive: true, mode: 0o700 })
+  const lock = join(dirname(plan.marketplacePath), '.yugoo-desktop-marketplace.lock')
+  try { await mkdir(lock, { mode: 0o700 }) }
+  catch (error) {
+    if (error.code !== 'EEXIST') throw error
+    throw Object.assign(Error('Another desktop marketplace preparation owns the profile lock; retained for inspection'), { code: 'CODEX_DESKTOP_MARKETPLACE_BUSY', lockPath: lock })
+  }
+  const lockIdentity = await lstat(lock), id = randomUUID()
+  const receiptPath = join(receipts, id + '.desktop-marketplace.json')
+  let committed = false
+  let transaction = { ...plan, planSnapshot: structuredClone(plan), id, pid: process.pid, receiptPath, lock, phase: 'reserved', marketplacePrepared: false,
+    concurrency: { scope: 'cooperating Yugoo desktop preparations', finalReadBeforeRename: true, atomicCompareAndSwap: false },
+    limitation: 'The profile lease excludes this tool only. A native or other noncooperating writer can still race the final read and filesystem rename.' }
+  const save = async () => {
+    const staged = receiptPath + '.' + randomUUID() + '.tmp'
+    await writeFile(staged, JSON.stringify(transaction, null, 2) + '\n', { flag: 'wx', mode: 0o600 })
+    await rename(staged, receiptPath)
+  }
+  try {
+    await save()
+    const fresh = await planCodexDesktopMarketplace({ pluginRoot: plan.source, userRoot: plan.userRoot, previousReceipt: plan.previousReceipt?.path })
+    assert.equal(fresh.planSha256, planSha256, 'Desktop package or marketplace changed; no write performed')
+    const before = await text(plan.marketplacePath)
+    assert.equal(before === null ? null : hash(before), plan.beforeSha256, 'Marketplace changed before preparation')
+    const catalog = before === null ? { name: 'personal', plugins: [] } : JSON.parse(before)
+    const mutates = plan.action !== 'reuse'
+    if (plan.action === 'update') catalog.plugins[catalog.plugins.findIndex(entry => entry.name === 'yugoo-design')] = plan.entry
+    else if (plan.action === 'add') catalog.plugins.push(plan.entry)
+    const next = mutates ? JSON.stringify(catalog, null, 2) + '\n' : before
+    const backupPath = before === null ? null : join(receipts, id + '.marketplace-before.json')
+    if (backupPath) await writeFile(backupPath, before, { flag: 'wx', mode: 0o600 })
+    transaction = { ...transaction, phase: 'prepared', backupPath, expectedAfterSha256: hash(next) }
+    if (mutates) {
+      const staged = plan.marketplacePath + '.' + id + '.tmp'
+      transaction.staged = staged
+      await writeFile(staged, next, { flag: 'wx', mode: 0o600 })
+      await save()
+      await checkpoint('after-staging', { staged, marketplacePath: plan.marketplacePath, receiptPath, lock })
+      await safe(plan.marketplacePath)
+      // This check occurs AFTER staging, directly before committing. Preserve
+      // the staged candidate, backup and journal if an external edit is seen.
+      const current = await text(plan.marketplacePath)
+      if (current !== before) throw Object.assign(Error('Marketplace changed after staging; current catalog retained'), { code: 'CODEX_DESKTOP_MARKETPLACE_CONFLICT' })
+      await rename(staged, plan.marketplacePath)
+      committed = true
+      transaction.phase = 'committed'
+    }
+    const after = await text(plan.marketplacePath)
+    if (after !== next) throw Object.assign(Error('Marketplace changed after preparation; no automatic rollback'), { code: 'CODEX_DESKTOP_MARKETPLACE_CONFLICT' })
+    transaction = { ...transaction, phase: 'prepared-native-install-pending', marketplacePrepared: true, afterSha256: hash(after),
+      next: 'Install this exact local plugin through the desktop native plugin UI, verify its loaded cache, and use a normal user-controlled restart if needed. Keep the current conversation.' }
+    await save()
+    return transaction
+  } catch (error) {
+    transaction = { ...transaction, phase: committed ? 'commit-unconfirmed' : 'not-committed',
+      marketplacePrepared: false, errorCode: error.code ?? 'PREPARATION_FAILED' }
+    await save()
+    throw Object.assign(error, { recoveryPath: receiptPath, stagedPath: transaction.staged })
+  } finally {
+    await safe(lock)
+    const current = await lstat(lock)
+    assert.ok(current.dev === lockIdentity.dev && current.ino === lockIdentity.ino, 'Desktop preparation lock replaced; retained')
+    await rmdir(lock)
+  }
+}
+
 async function text(path) { try { assert.ok((await lstat(path)).isFile(),'Expected native config file');return await readFile(path,'utf8') }catch(e){if(e.code==='ENOENT')return null;throw e} }
 async function safe(path) {
   for(let cursor=resolve(path);;cursor=dirname(cursor)) {

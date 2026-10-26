@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { mkdtemp, mkdir, readFile, writeFile, rm, symlink } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, writeFile, rm, symlink, realpath } from 'node:fs/promises'
 import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
@@ -10,7 +10,7 @@ import { checkRuntime, inspectRuntime, assertGitRuntimeReceipt } from '../packag
 
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 async function fixture(t) {
-  const root = await mkdtemp(join(tmpdir(), 'companion-native-assets-'))
+  const root = await realpath(await mkdtemp(join(tmpdir(), 'companion-native-assets-')))
   t.after(() => rm(root, { recursive: true, force: true }))
   const source = join(root, 'packages/git-native'), artifacts = join(root, 'prebuilds'), shared = join(root, 'runtime')
   const put = async (base, path, bytes) => { await mkdir(dirname(join(base, path)), { recursive: true }); await writeFile(join(base, path), bytes) }
@@ -25,7 +25,7 @@ async function fixture(t) {
   for (const [name, bytes] of Object.entries({ 'package.json': JSON.stringify({ name: 'yugoo-design-git-native', version: '0.1.0-beta.2', license: 'MIT' }),
     'index.cjs': loader, 'index.d.ts': '// fixture types', LICENSE: 'fixture MIT', NOTICE: 'fixture source notice' })) await put(source, name, bytes)
   const builds = []
-  for (const platform of ['linux-x64', 'win32-x64']) {
+  for (const platform of ['linux-x64', 'win32-x64', 'darwin-arm64']) {
     const path = `native/yugoo_git.${platform}.node`, bytes = Buffer.from(`inventory fixture ${platform}; not executable`)
     await put(artifacts, path, bytes)
     builds.push({ path, bytes: bytes.length, sha256: sha(bytes) })
@@ -37,13 +37,15 @@ async function fixture(t) {
   return { root, source, artifacts, shared, put, prepare: () => prepareCompanionNativeGit(root, { artifactRoot: artifacts }) }
 }
 
-test('native Git physical closure preserves the original loader/materials and both exact prebuilds', async t => {
+test('native Git physical closure preserves the original loader/materials and all three exact prebuilds', async t => {
   const f = await fixture(t), prepared = await f.prepare()
   const receipt = await stageCompanionNativeGit(f.shared, prepared)
   const result = await verifyCompanionNativeGit(f.shared)
   assert.equal(result.files, prepared.files.size)
   assert.deepEqual(result.platformsExecuted, [])
   assert.equal(result.loaderSha256, receipt.files['index.cjs'].sha256)
+  assert.deepEqual(receipt.supported, ['linux-gnu-x64', 'windows-msvc-x64', 'macos-arm64'])
+  assert.equal(receipt.scope, 'unchanged-source-binding-and-three-pinned-prebuilds')
   assert.deepEqual(await readFile(join(f.shared, 'git-native/index.cjs')), await readFile(join(f.source, 'index.cjs')))
 })
 
@@ -53,6 +55,17 @@ test('missing or changed prebuild fails before staging, without a CLI fallback',
   await assert.rejects(f.prepare(), /ENOENT/)
   await f.put(f.artifacts, 'native/yugoo_git.win32-x64.node', 'wrong binary')
   await assert.rejects(f.prepare(), /prebuild size changed/)
+})
+
+test('Darwin is mandatory in the normal inventory and its runtime bytes stay pinned', async t => {
+  const f = await fixture(t), path = 'native/yugoo_git.darwin-arm64.node'
+  const bytes = await readFile(join(f.artifacts, path))
+  await rm(join(f.artifacts, path))
+  await assert.rejects(f.prepare(), /ENOENT/)
+  await f.put(f.artifacts, path, bytes)
+  await stageCompanionNativeGit(f.shared, await f.prepare())
+  await f.put(f.shared, 'git-native/' + path, Buffer.from(bytes.map(byte => byte ^ 1)))
+  await assert.rejects(verifyCompanionNativeGit(f.shared), /runtime bytes changed/)
 })
 
 test('dependency notices and original README do not masquerade as a standalone license file', async t => {
@@ -128,7 +141,7 @@ test('same-source input snapshot excludes only the native Rust target cache', { 
 })
 
 test('normal source worker and installed diagnostic use Core without system Git, independently of embedding', { timeout: 60000 }, async t => {
-  const root = await mkdtemp(join(tmpdir(), 'companion-installed-library-git-'))
+  const root = await realpath(await mkdtemp(join(tmpdir(), 'companion-installed-library-git-')))
   t.after(() => rm(root, { recursive: true, force: true }))
   const workspace = fileURLToPath(new URL('../', import.meta.url)), shared = join(root, 'consumer/payload/shared')
   const { build } = await import('tsdown')

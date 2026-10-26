@@ -49,6 +49,11 @@ as `--host-cwd`, independently of the design project root, and the verified
 current transcript when available. All native children retain this native cwd;
 pass absolute Design Files paths in their tasks. Files remain in the selected
 project, not in the CLI working directory.
+In the Mac Codex desktop app, that Panel guide's desktop entry starts the shared
+service and a separately host-launched notification bridge, then opens the real
+right-side browser. Preserve the current conversation; plugin setup does not
+require choosing a replacement conversation. Actual availability after a host
+restart must be checked in the current conversation.
 
 When switching or closing, first finish/cancel active work with the user as
 appropriate; do not leave old Producers writing while silently moving projects.
@@ -60,6 +65,10 @@ project files to implement it.
 
 For actual design work read [native execution](../design-panel/native-execution.md):
 native Producer/Worker children, file validation/settlement and GRA execution choices.
+The desktop route first checks its current hostCapabilities; unverified native
+Producers, Workers or background reviewers must not be launched through CLI
+instructions. Main execution and an explicitly chosen foreground check remain
+subject to the shared Bundle policy and user authorization.
 Returned Core prompts can name DSH operations: map Kit selection to the
 command above and Bundle operations to that native execution guide. Do not call
 nonexistent DSH tools. Keep automatic GRA off the foreground task queue. If

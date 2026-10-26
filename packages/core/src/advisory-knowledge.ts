@@ -22,7 +22,7 @@ export type AdvisoryKnowledgeReadPort = Pick<DesignKnowledgeService, 'revision' 
 /** One stable bounded graph snapshot shared by all advisory review loops. */
 export interface AdvisoryDesignKnowledge {
   readonly project: string
-  /** Original publication pin; may differ from the equivalent review commit. */
+  /** Original Knowledge source pin; may differ from an equivalent current commit. */
   readonly sourceCheckpoint: string
   readonly checkpoint: string
   readonly knowledgeRevision: DesignKnowledgeRevision
@@ -46,7 +46,7 @@ export interface AdvisoryDesignKnowledge {
  */
 export async function readAdvisoryDesignKnowledge(
   selection: AdvisoryKnowledgeSelection,
-  port: AdvisoryKnowledgeReadPort,
+  port: Pick<AdvisoryKnowledgeReadPort, 'revision' | 'query'>,
   limit: number,
   query: Omit<DesignKnowledgeQuery, 'projectId' | 'revision' | 'limit'> = {},
   revision?: DesignKnowledgeRevision,
@@ -67,7 +67,7 @@ export async function readAdvisoryDesignKnowledge(
     checkpoint: selection.checkpoint,
     sourceCheckpoint,
     ...(sourceCheckpoint === selection.checkpoint ? {} : {
-      sourceEquivalence: 'The original KAG publication and this review commit have the same verified Design evidence tree. Use this snapshot for read-only context; do not write Knowledge observations against the older source checkpoint.',
+      sourceEquivalence: 'The pinned Knowledge source and this requested commit have the same verified Design evidence tree. Use this snapshot for read-only context; do not write Knowledge observations against the older source checkpoint.',
     }),
     knowledgeRevision,
     entities: graph.entities,

@@ -693,6 +693,7 @@ export {
 } from './design-knowledge-refresh.ts'
 export { DesignKnowledgeIndex } from './design-knowledge-index.ts'
 export { KnowledgeReadProgress } from './knowledge-read-progress.ts'
+export { readSourceDesignKnowledge } from './design-knowledge-projection.ts'
 export { queryKnowledgeSnapshot, knowledgeQueryFilters, knowledgeReadResult, KNOWLEDGE_AGENTIC_GUIDANCE, type KnowledgeReadArguments, type KnowledgeReadResult } from './design-knowledge-query.ts'
 export { DESIGN_EXECUTOR_EVIDENCE_GUIDANCE, DESIGN_WORKER_EVIDENCE_GUIDANCE, availableDesignKnowledgeTools } from './design-generation-guidance.ts'
 export { knowledgeRelationReading, type KnowledgeRelationReading } from './design-knowledge-reading.ts'
