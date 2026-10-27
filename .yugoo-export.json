@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "a359f934ee39b56bb19ab787875ee3b838fd408b",
+  "revision": "5e3c556141a2871f60d3734b4dc718f1147c510a",
   "policySha256": "d5212fd6b3958473fcc2d0ec6f51a5f45e15d6e44debcdf322588656c344a876",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -8692,11 +8692,11 @@
       "mode": "100644"
     },
     "scripts/dsh-release-observations.mjs": {
-      "sha256": "2541b43d72f268ef4048e457767474755959d42cc2986d763f9f2bafc617b022",
+      "sha256": "e2e25abc10e256faed939d6264a89fe5a9f2342fc08a8569ed3926076a4611b9",
       "mode": "100644"
     },
     "scripts/dsh-release-observations.test.mjs": {
-      "sha256": "80911e83ec488db7b27db3167212652f6862c72526cf6dcebaf52d8bd3d5ea18",
+      "sha256": "2b68623e88335cfe98e7024c032d610d83238123aa40bf93778d120737d5db19",
       "mode": "100644"
     },
     "scripts/embedded-image-loader-proof.mjs": {

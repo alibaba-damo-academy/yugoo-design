@@ -24,6 +24,23 @@ test('fonts are associated by actual decoded data bytes, not old chunk names', (
   const font = Buffer.from('font fixture'), code = 'x="data:font/woff2;base64,' + font.toString('base64') + '"'
   assert.deepEqual(dataUrls(code), [{ mediaType: 'font/woff2', bytes: font.length, sha256: sha(font) }])
 })
+test('large embedded resources in a bundle with non-ASCII UI text retain their decoded identity', () => {
+  const bytes = Buffer.alloc(8 * 1024 * 1024, 42)
+  const code = '// 中文界面\nconst font="data:font/woff2;base64,' + bytes.toString('base64') + '";'
+  assert.deepEqual(dataUrls(code), [{ mediaType: 'font/woff2', bytes: bytes.length, sha256: sha(bytes) }])
+})
+test('data URL scanning preserves multiple resources, padding and unsupported header boundaries', () => {
+  const code = `data:;base64,eA== data:text/plain;charset=utf8;base64,eA==
+    data:text/plain;BASE64,eA== data:text/plain;base64,!
+    "data:text/plain;base64,eA===" 'data:font/woff2;base64,+/8='
+    data:text/plain;base64,eA`
+  const text = Buffer.from('x'), binary = Buffer.from([251, 255])
+  assert.deepEqual(dataUrls(code), [
+    { mediaType: 'text/plain', bytes: text.length, sha256: sha(text) },
+    { mediaType: 'font/woff2', bytes: binary.length, sha256: sha(binary) },
+    { mediaType: 'text/plain', bytes: text.length, sha256: sha(text) },
+  ])
+})
 test('hydration keeps maintained identities/materials and rejects forged component/font bindings', () => {
   const base = { components: [component], fonts: [{ sha256: 'b'.repeat(64), licensePath: 'original/OFL.txt' }], materials: [{ path: 'licenses/example', sha256: 'c'.repeat(64) }], limitations: ['existing limitation'], historicalObservation: { retained: true } }
   const observed = { observedOutputSha256: { 'lib/new.js': 'd'.repeat(64) }, componentBindings: [{ componentIndex: 0, outputs: ['lib/new.js'] }],

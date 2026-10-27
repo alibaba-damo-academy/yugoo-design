@@ -81,9 +81,31 @@ export function bindObservedComponents(selection, modulesByOutput) {
 }
 export function dataUrls(code) {
   const result = []
-  for (const match of code.matchAll(/data:([^;,\s'"()]+);base64,([A-Za-z0-9+/]+={0,2})/gu)) {
-    const bytes = Buffer.from(match[2], 'base64')
-    result.push({ mediaType: match[1], bytes: bytes.length, sha256: sha(bytes) })
+  let cursor = 0
+  while (cursor < code.length) {
+    const start = code.indexOf('data:', cursor)
+    if (start < 0) break
+    const typeStart = start + 5
+    let typeEnd = typeStart
+    while (typeEnd < code.length && !/[;,\s'"()]/u.test(code[typeEnd])) typeEnd++
+    cursor = typeEnd + 1
+    if (typeEnd === typeStart || !code.startsWith(';base64,', typeEnd)) continue
+    const bodyStart = typeEnd + 8
+    let bodyEnd = bodyStart
+    // A quantified Unicode regexp can exhaust V8's stack on large data URLs
+    // in a bundle containing non-ASCII UI text. Scan the ASCII body directly.
+    while (bodyEnd < code.length) {
+      const char = code.charCodeAt(bodyEnd)
+      if (!(char >= 65 && char <= 90 || char >= 97 && char <= 122
+        || char >= 48 && char <= 57 || char === 43 || char === 47)) break
+      bodyEnd++
+    }
+    cursor = bodyEnd
+    if (bodyEnd === bodyStart) continue
+    for (let padding = 0; padding < 2 && code[bodyEnd] === '='; padding++) bodyEnd++
+    cursor = bodyEnd
+    const bytes = Buffer.from(code.slice(bodyStart, bodyEnd), 'base64')
+    result.push({ mediaType: code.slice(typeStart, typeEnd), bytes: bytes.length, sha256: sha(bytes) })
   }
   return result
 }
