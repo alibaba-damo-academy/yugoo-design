@@ -4,7 +4,13 @@
 
 ## 反馈一个问题
 
-可以通过联系邮箱 [yangjianfeng.yjf@alibaba-inc.com](mailto:yangjianfeng.yjf@alibaba-inc.com) 反馈问题或建议。公开仓库的 Issues 入口和问题模板仍待配置。
+可以通过联系邮箱 [yangjianfeng.yjf@alibaba-inc.com](mailto:yangjianfeng.yjf@alibaba-inc.com) 反馈问题或建议。
+
+可以使用 [GitHub Issues](https://github.com/alibaba-damo-academy/yugoo-design/issues) 提交，并在同一条 Issue 中补充信息、查看讨论和状态；无法访问 GitHub 时，也可使用上述邮箱反馈。
+
+普通反馈不包含敏感细节。不要提交凭据、完整认证 URL、真实私密项目或会话日志；涉及敏感信息或安全问题，先按[安全报告说明](../../SECURITY.md)确认私密渠道。
+
+## 报告缺陷
 
 建议包含：
 

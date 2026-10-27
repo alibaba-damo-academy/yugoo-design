@@ -13,7 +13,7 @@
 
 **See your ideas. Shape the details.**
 
-Yugoo Design (语构设计系统) is an open-source plugin for leading AI agent applications that adds interactive Design Panels to professional skills. AI helps develop a proposal; you examine the details and express your judgment through diagrams, tables, cards, and prototypes. Saved designs give you and AI a shared basis for the next discussion and revision.
+Yugoo Design (语构设计系统) is an open-source plugin for leading AI agent applications, built on a general-purpose ideation and design framework. It adds interactive Design Panels to professional skills. AI helps develop a proposal; you examine the details and express your judgment through diagrams, tables, cards, and prototypes. Saved designs give you and AI a shared basis for the next discussion and revision.
 
 ![Yugoo Design concept: turn scattered ideas into coherent designs through interactive Panels, gap-driven collaboration, and KAG/GRA integration, with ongoing feedback and revision](docs/images/yugoo-design-concept.webp)
 
@@ -36,6 +36,8 @@ You need **Node.js `>=22.19.0`** and an Agent Host with a configured model. The 
    ```
 
    In DeepSeek Harness, you can also use `/yugoo new design-team-delivery` and `/yugoo kit web_app`. See the [command reference (中文)](docs/wiki/commands.md) for all commands and parameters.
+
+   For an existing application, [reconstruct its design from a code repository](#reconstruct-design-from-an-existing-code-repository) to create a separate Design Project directly. There is no need to create an empty project first.
 3. **Describe this round's goal.** For example:
 
    ```text
@@ -88,6 +90,12 @@ Explore processes, rules, and prototypes in concrete scenarios to assess how the
 ### Projects you can return to
 
 A **Design Project** keeps design files, related artifacts, and version history. Reopen it after a discussion to continue from existing work with AI. Ask, for example, “Show the latest changes and explain what changed in the process and rules.” Git history traces how the proposal took shape. The plugin includes its version-control runtime, so normal Design operations require no separate Git installation. See the [usage guide (中文)](docs/wiki/usage.md#4-管理与恢复) for history, migration of existing projects, and reconstruction from materials. The shared design can accumulate over time instead of living only in one conversation.
+
+### Reconstruct design from an existing code repository
+
+When taking over an application, filling gaps in its design documentation, or planning changes, start from the existing implementation. Give the installed `yugoo` entry the repository's absolute path and ask AI to reconstruct its current design. The agent examines actual entry points and relevant implementation within your scope, then organizes supported features, processes, rules, data, and interfaces into a new Design Project for you to inspect, edit, and develop further in Panels.
+
+Understanding how the application works gives you a basis for deciding what to change. The source repository stays read-only; reconstruction does not execute or modify product code. Unexamined areas, behavior that source alone cannot establish, and inferences remain explicit. The result is not an exhaustive scan or proof of runtime behavior. See the [reconstruction guide (中文)](docs/wiki/usage.md#5-从既有材料重建设计) for entry points, examples, and result checks. Use migration for existing Yugoo Design Files.
 
 ### Custom Kits and panels: tools that fit your field
 
@@ -191,7 +199,7 @@ Before changing the project, read [AGENTS.md](AGENTS.md) and the [contribution g
 
 Contributions of code, professional methods, Kits, documentation, translations, and examples are welcome. We would also like to hear about design tasks in your field. See the [contribution guide](CONTRIBUTING.md).
 
-When reporting an issue, include the version, steps, expected result, and actual result; see the [feedback guide (中文)](docs/wiki/support.md). Contact: [yangjianfeng.yjf@alibaba-inc.com](mailto:yangjianfeng.yjf@alibaba-inc.com). Follow the [security reporting policy](SECURITY.md) for sensitive information or security issues.
+See the [feedback guide (中文)](docs/wiki/support.md) for contact options and reporting outlines. You can email [yangjianfeng.yjf@alibaba-inc.com](mailto:yangjianfeng.yjf@alibaba-inc.com) or use [GitHub Issues](https://github.com/alibaba-damo-academy/yugoo-design/issues) to submit feedback and follow the discussion. For bugs, include the version, reproduction steps, and expected and actual results; for feature requests, describe the use case, obstacle, and desired outcome. Follow the [security reporting policy](SECURITY.md) for sensitive information or security issues.
 
 ## License and attribution
 

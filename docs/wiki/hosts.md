@@ -19,6 +19,7 @@
 - 呈现方式：宿主内嵌 Design Panel 与 Studio。桌面端目前只有 DSH 能承载完整功能与一体化交互体验；其他桌面宿主的支持范围分别说明，不以桌面应用名称推断同等能力。
 - 安装入口：[DSH 专用提示词](../../packages/companion/HOSTS.md#install-or-update-deepseek-harness)与[DSH 安装指南](../../packages/dsh/README.md#candidate-npm-installer-dsh-route-and-recovery-limits)。本地工作区路线用于发布前预检。
 - 现有公开指南记录官方 DSH `0.1.2-rc.1` 的本地候选安装路线；开发仓的 submodule pin 是另一组开发输入。
+- 已发布 Companion `0.1.0-beta.23` 随包的 `release-hosts.json` 固定 DSH 聚合包 `0.1.0-beta.2`。这是该安装器的精确分发映射，与 registry 当前另有 `beta.7` 聚合包分开；取得 Companion 最新版不等于自动选择 DSH registry 的最高版本。
 - 模型、搜索和用户配置由 DSH 管理。插件通过公开扩展点接入。
 
 安装候选与具体功能的验证范围见 [DSH 指南](../../packages/dsh/README.md)和[预览状态](preview-status.md)。
@@ -28,7 +29,8 @@
 - 呈现方式：绑定原生会话的 Companion UI。
 - 安装入口：[Companion 指南](../../packages/companion/README.md)，按其中的 Codex 插件/注册路线选择。
 - 原生会话识别、执行和消息返回依赖实际 Codex 版本，不能套用其他宿主的注册命令。
-- 当前测试范围为 Codex CLI；ChatGPT 桌面应用（Codex 模式）的接入列入第二轮开发目标，尚未完成。当前官方桌面入口和模式见[OpenAI 使用说明](https://learn.chatgpt.com/docs/use-chatgpt)，CLI 验收不代替桌面验收。
+- Codex Desktop 在 macOS arm64 上已有独立接入入口，采用随包插件准备和宿主原生启用流程，见 [Mac Codex Desktop 指南](../../packages/companion/hosts/codex-desktop/README.md)。
+- 已发布 Companion `0.1.0-beta.23` 纳入了已验收的 Mac/Codex 切片，复用本地构建、安装更新，以及 Web App 生成、面板编辑保存、原 Agent 消费和重开的实机证据。发布后的真实 npm registry 重新安装及整轮 UI/模型推理没有额外重跑；后续 Studio 原生创作增强不在这一支持声明内。
 
 安装后按[首次协作步骤](getting-started.md#3-创建设计项目)创建项目、请求结果并检查保存与继续；原生接线和执行限制以本候选的 [Companion 指南](../../packages/companion/README.md)为准。
 
@@ -92,7 +94,7 @@ U/S/T 清晰度评估由主 Agent 报告，KAG 通过自己的投影与维护流
 
 兼容性需同时说明插件候选、宿主版本、平台、呈现方式和实际功能。前台 Bundle、嵌套 Worker、后台 GRA 及 KAG 可能有不同支持状态。
 
-macOS 的原生宿主功能与性能尚未完成实机测试。Node.js 能在某个平台运行，并不意味着插件已支持该平台；请同时核对运行库、宿主接入和界面功能。各版本的安装与功能检查结果见[预览状态](preview-status.md)。
+macOS 的 Codex Desktop 按上方已验收的 arm64 支持范围使用；其他 macOS 宿主、架构和功能分别核对安装版指南。Node.js 能在某个平台运行，并不意味着所有宿主接入和界面功能等价。各版本的安装与功能检查结果见[预览状态](preview-status.md)。
 
 首页的宿主徽章链接到本页的对应入口。
 

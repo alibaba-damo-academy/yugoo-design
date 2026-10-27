@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "5b3e43fb60afdb0478376faaad2667b9647c8d79",
+  "revision": "9831edd1781b117f67cc4ba14642ff116a55384f",
   "policySha256": "81ac33dff296a7a008658c5e854dfe93a3c568e87f45c544f0ed68924b68c860",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -100,11 +100,11 @@
       "mode": "100644"
     },
     "README.en.md": {
-      "sha256": "60447dd456cf0ef8039e61d9c63b631c18bc4ec9d415152ab645dc6e52f718ec",
+      "sha256": "cad1c2df7d2cd222d59c7e19542337d314f8806f4c8d340cf66dcc3288f68b41",
       "mode": "100644"
     },
     "README.md": {
-      "sha256": "efb89d58238fcd3f6a9bedd5b304001e9b9632933a65bf444cd016e2585154e6",
+      "sha256": "2c3aa0dafe76187b30cae55926a7590a6e741683304fa107bb03cdcf96c2e9e3",
       "mode": "100644"
     },
     "SECURITY.md": {
@@ -260,7 +260,7 @@
       "mode": "100644"
     },
     "docs/wiki/commands.md": {
-      "sha256": "dbb0858c1bd3f493aaf6a454679b3d8b260417f47858c360226986d340e60cab",
+      "sha256": "56bbeffbdae53a1f95fc3833d6374e4fa8dd5a696540325b3fe0328757166362",
       "mode": "100644"
     },
     "docs/wiki/concepts.md": {
@@ -280,11 +280,11 @@
       "mode": "100644"
     },
     "docs/wiki/getting-started.md": {
-      "sha256": "4eebbff0ec3083a3e9624f2b32bb555d0e41d3d666febf0cbcfa87c54488d4aa",
+      "sha256": "763263be9274bc1f34fc042f0fc34baeaa88773b2f3b1b3b3df89c397190e803",
       "mode": "100644"
     },
     "docs/wiki/hosts.md": {
-      "sha256": "45342ae7258baa993384e73d134cbeb0066ab69be3de970cd41986ccd46eac7f",
+      "sha256": "389d6a4758c6f68b5cb54a0a533d00355e4d2c3ace42973660f2af4127ab0a9e",
       "mode": "100644"
     },
     "docs/wiki/kit-sharing.md": {
@@ -308,7 +308,7 @@
       "mode": "100644"
     },
     "docs/wiki/support.md": {
-      "sha256": "1515ed13a14384a31da3f99ea73a2301af55fb5c38829d66b19f3370b8e7d074",
+      "sha256": "9a396d2b0ad79288f7d3435dab1e4b4935cfe2eab47083f4aa3b03ea6331e02e",
       "mode": "100644"
     },
     "docs/wiki/terminology.md": {
@@ -320,7 +320,7 @@
       "mode": "100644"
     },
     "docs/wiki/usage.md": {
-      "sha256": "a1aee52bf8e16794d1ef922feeeac77863524be676d2afc31e1b41839d513460",
+      "sha256": "5d4b848927176c4b584fa7828d35092205c7991ffbd9a7493b3798ef29663806",
       "mode": "100644"
     },
     "docs/wiki/web-app-demo.md": {
@@ -644,7 +644,7 @@
       "mode": "100644"
     },
     "packages/companion/README.md": {
-      "sha256": "3f2bb50e152b0d0d1895f0638a008502c0494fa18a5ebd6a81278c1a5a35fbec",
+      "sha256": "ecf8bd874ac107210a66b227e1ac4cfff1dd8c667add0af9e7bcd59c1b69f778",
       "mode": "100644"
     },
     "packages/companion/build-plugin.mjs": {
@@ -8520,7 +8520,7 @@
       "mode": "100644"
     },
     "release/companion-version.json": {
-      "sha256": "9c9242d26870595d28eb5da14b164ae66995f03afccca5d5ad142067c8d277cd",
+      "sha256": "bba461327e9f0b86d8dc8e2ca4349a304a71dd121e864458706736ee57030dae",
       "mode": "100644"
     },
     "release/dsh-distribution-materials.json": {
@@ -10984,7 +10984,7 @@
       "mode": "100644"
     },
     "packages/dsh/package.json": {
-      "sha256": "50c1fa8877b3330b8a8f97714dd8fa135a63a5519f25177c9662f70d10782149",
+      "sha256": "67262cd4a85ed347e21cd2ac05321a87ef44f72bbe44633d68259e7a027c2715",
       "mode": "100644"
     },
     "packages/git-native/package.json": {
@@ -11071,9 +11071,9 @@
       },
       {
         "path": "packages/dsh/package.json",
-        "sourceOid": "bcb8fb2b00577a384ccf419b9d3e9e1a5d1a9d34",
-        "sourceSHA256": "50c1fa8877b3330b8a8f97714dd8fa135a63a5519f25177c9662f70d10782149",
-        "outputSHA256": "50c1fa8877b3330b8a8f97714dd8fa135a63a5519f25177c9662f70d10782149"
+        "sourceOid": "be6d0c2f88ec6f484ddb265a6d6d94193a1be676",
+        "sourceSHA256": "67262cd4a85ed347e21cd2ac05321a87ef44f72bbe44633d68259e7a027c2715",
+        "outputSHA256": "67262cd4a85ed347e21cd2ac05321a87ef44f72bbe44633d68259e7a027c2715"
       },
       {
         "path": "packages/git-native/package.json",

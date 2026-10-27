@@ -4,6 +4,15 @@
   "license": "Apache-2.0",
   "type": "module",
   "description": "Yugoo Design (yugoo-design) installation plugin for DeepSeek Harness.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alibaba-damo-academy/yugoo-design.git",
+    "directory": "packages/dsh"
+  },
+  "homepage": "https://github.com/alibaba-damo-academy/yugoo-design#readme",
+  "bugs": {
+    "url": "https://github.com/alibaba-damo-academy/yugoo-design/issues"
+  },
   "exports": {
     ".": "./index.js",
     "./package.json": "./package.json"

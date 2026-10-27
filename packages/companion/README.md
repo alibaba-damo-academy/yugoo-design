@@ -18,9 +18,9 @@ server. Registry, selection, connection files and caches keep their existing
 locations. Previously registered projects remain at their exact roots; they are
 not moved, and opening them does not require the new Documents destination.
 
-The 2026-10-21 registry readback confirmed Companion `0.1.0-beta.19` on npm's
-`beta` channel; `latest` still selected `0.1.0-beta.10`. Resolve the chosen channel
-again before a new acquisition, then retain its exact version and integrity.
+The 2026-10-27 registry readback confirmed Companion `0.1.0-beta.23` on both
+npm's `latest` and `beta` channels. Resolve the chosen channel again before a
+new acquisition, then retain its exact version and integrity.
 Published artifacts, later main-branch changes and installed-host acceptance
 remain separate; publication does not mean every host's installation or update
 has passed. See the
