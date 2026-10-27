@@ -217,7 +217,18 @@ listing does not establish that a configuration is absent.
 
 npm requires a package to exist before its Trusted Publisher can be configured.
 For a new package name, resolve that one-time registry setup with its maintainer
-before attempting an OIDC release. This prerequisite does not authorize local
+before attempting an OIDC release. With explicit maintainer authorization, the
+same tag-triggered workflow supports one-time first publication: store a short-lived
+publish-capable token in the `NPM_BOOTSTRAP_TOKEN` repository Secret and set the
+`PRODUCT_BOOTSTRAP_TAG` repository variable to the exact authorized tag, such as
+`v0.1.0`. Only the matching tag's publish job receives the token, and only in the
+publish and dist-tag steps after all build/archive/registry checks pass. These
+steps deliberately use token authentication, store only an environment-variable
+placeholder in a temporary npmrc, and remove it on exit. A missing token stops
+that mode; OIDC failures never automatically enable it. Dry runs and other tags
+remain OIDC-only without token injection. After successful publication, delete the
+bootstrap variable and Secret, revoke the temporary token, and configure the
+package's Trusted Publisher for subsequent releases. This does not authorize local
 publication or a hidden token fallback. See [npm trust prerequisites](https://docs.npmjs.com/cli/v11/commands/npm-trust/)
 and [Trusted Publisher settings](https://docs.npmjs.com/trusted-publishers/).
 

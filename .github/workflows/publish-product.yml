@@ -39,7 +39,8 @@ jobs:
     env: &product-env
       ONNXRUNTIME_NODE_INSTALL_CUDA: skip
       RELEASE_REF: ${{ github.ref }}
-      REQUIRE_RELEASE_TAG: ${{ github.job == 'publish' || inputs.publish == true }}
+      REQUIRE_RELEASE_TAG: ${{ github.event_name == 'push' || inputs.publish == true }}
+      BOOTSTRAP_NPM: ${{ vars.PRODUCT_BOOTSTRAP_TAG != '' && github.ref == format('refs/tags/{0}', vars.PRODUCT_BOOTSTRAP_TAG) && (github.event_name == 'push' || inputs.publish == true) }}
     steps: &product-steps
       - uses: actions/checkout@v7.0.1
         with:
@@ -154,9 +155,21 @@ jobs:
         run: node scripts/prepare-product-release.mjs verify-artifact "$RUNNER_TEMP/product-release"
       - name: Preflight every registry version and actual archive integrity before any publication
         run: node scripts/prepare-product-release.mjs preflight "$RUNNER_TEMP/product-release/release-receipt.json"
-      - name: Publish missing archives in dependency order through npm OIDC
+      - name: Publish missing archives in dependency order
         if: github.job == 'publish'
+        env:
+          NODE_AUTH_TOKEN: ${{ env.BOOTSTRAP_NPM == 'true' && secrets.NPM_BOOTSTRAP_TOKEN || '' }}
         run: |
+          # Explicit first-publication mode; never an OIDC failure fallback.
+          if [ "$BOOTSTRAP_NPM" = true ]; then
+            test -n "$NODE_AUTH_TOKEN" || { echo '::error::NPM_BOOTSTRAP_TOKEN is required for the selected bootstrap tag'; exit 1; }
+            unset ACTIONS_ID_TOKEN_REQUEST_URL ACTIONS_ID_TOKEN_REQUEST_TOKEN
+            NPM_CONFIG_USERCONFIG="$(mktemp "$RUNNER_TEMP/product-bootstrap.XXXXXX")"
+            export NPM_CONFIG_USERCONFIG
+            trap 'rm -f "$NPM_CONFIG_USERCONFIG"' EXIT
+            printf '//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}\n' > "$NPM_CONFIG_USERCONFIG"
+            echo "Using authorized first-publication authentication for $GITHUB_REF"
+          fi
           node scripts/prepare-product-release.mjs diagnostics
           npm --version
           for index in {0..10}; do
@@ -181,7 +194,18 @@ jobs:
           RELEASE_CHAIN: product
           RELEASE_VERSION: ${{ steps.release.outputs.version }}
           RELEASE_RECEIPT: ${{ runner.temp }}/product-release/release-receipt.json
+          NODE_AUTH_TOKEN: ${{ env.BOOTSTRAP_NPM == 'true' && secrets.NPM_BOOTSTRAP_TOKEN || '' }}
         run: |
+          # Explicit first-publication mode; never an OIDC failure fallback.
+          if [ "$BOOTSTRAP_NPM" = true ]; then
+            test -n "$NODE_AUTH_TOKEN" || { echo '::error::NPM_BOOTSTRAP_TOKEN is required for the selected bootstrap tag'; exit 1; }
+            unset ACTIONS_ID_TOKEN_REQUEST_URL ACTIONS_ID_TOKEN_REQUEST_TOKEN
+            NPM_CONFIG_USERCONFIG="$(mktemp "$RUNNER_TEMP/product-bootstrap.XXXXXX")"
+            export NPM_CONFIG_USERCONFIG
+            trap 'rm -f "$NPM_CONFIG_USERCONFIG"' EXIT
+            printf '//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}\n' > "$NPM_CONFIG_USERCONFIG"
+            echo "Using authorized first-publication authentication for $GITHUB_REF"
+          fi
           export NPM_CLI="$(readlink -f "$(command -v npm)")"
           for index in {0..10}; do
             plan_file="$RUNNER_TEMP/product-latest-$index.json"

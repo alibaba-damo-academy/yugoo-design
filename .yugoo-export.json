@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "455578ccc48bae263a3acd022032db20827b389a",
+  "revision": "c56d6816f42026efd0670f3b96ce8c75a59a3fbe",
   "policySha256": "076d5e9b5a483b0cad3b7a7bf3885faef9d6050dab7a919268aa573bdf1fae91",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -76,7 +76,7 @@
       "mode": "100644"
     },
     ".github/workflows/publish-product.yml": {
-      "sha256": "987275cbb8c8921e4c87a5a0f45cf2500f21e8bffd074b002b7e3abb0e9b80de",
+      "sha256": "e728be0ce994d32980fbea6c465fba7af65b831452e6ea67ceaec085da2d5706",
       "mode": "100644"
     },
     ".gitignore": {
@@ -88,7 +88,7 @@
       "mode": "100644"
     },
     "CONTRIBUTING.md": {
-      "sha256": "9a2f8adc4de3b396c2cc3c20bbf009873a3b3d028eb2775d1892324fad61a77d",
+      "sha256": "d91e61a5c7ea07ddfdf066e2dcfa10d0294017951069f7513341e3d81c8d424f",
       "mode": "100644"
     },
     "LICENSE": {
@@ -8848,7 +8848,7 @@
       "mode": "100644"
     },
     "scripts/product-release-ci.test.mjs": {
-      "sha256": "31e9f53ffa0e257204347c0dd23f8449a1ff031ebb75fd4c12c040a2203a3efb",
+      "sha256": "3a8101fd71150977e8f95d6acd53e65befb84aeb33560537c1eab02b071f64c7",
       "mode": "100644"
     },
     "scripts/product-release.mjs": {

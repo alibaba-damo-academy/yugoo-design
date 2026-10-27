@@ -188,7 +188,7 @@ test('archive receipt rejects changed source, bytes, paths or publication order'
   await writeFile(file, JSON.stringify(receipt)); await writeFile(join(folder, rows[0].filename), Buffer.alloc(bytes.length))
   await assert.rejects(verifyProductReceipt(file, { sourceCommit }), /Prepared tarball changed/)
 })
-test('product workflow has unified triggers, fixed-source fences and GHA-only OIDC publication', async t => {
+test('product workflow has unified triggers, fixed-source fences and GHA-only publication', async t => {
   const text = await readFile(new URL('../.github/workflows/publish-product.yml', import.meta.url), 'utf8')
   const flow = YAML.parse(text)
   assert.deepEqual(flow.on.push.tags, ['v[0-9]+.[0-9]+.[0-9]+'])
@@ -241,10 +241,55 @@ test('product workflow has unified triggers, fixed-source fences and GHA-only OI
   assert.ok(flow.on.workflow_dispatch.inputs.resume_run_id && flow.on.workflow_dispatch.inputs.resume_artifact_id)
   assert.ok(steps.findIndex(x => x.run?.includes('PRODUCT_REGISTRY_STATE_DIR=')) < preflightStep)
   assert.doesNotMatch(JSON.stringify(flow.jobs.publish.env), /runner\.temp/u)
-  assert.doesNotMatch(text, /NODE_AUTH_TOKEN|NPM_TOKEN|dist-tag rm|unpublish|continue-on-error/)
+  assert.doesNotMatch(text, /secrets\.NPM_TOKEN|dist-tag rm|unpublish|continue-on-error/)
   for(const file of ['publish-companion.yml','publish-dsh.yml']) await assert.rejects(readFile(new URL('../.github/workflows/'+file,import.meta.url)),{code:'ENOENT'})
   const helper = await readFile(new URL('./prepare-product-release.mjs', import.meta.url), 'utf8')
   assert.doesNotMatch(helper, /spawnSync\([^\n]+['"]publish['"]|execFileSync\([^\n]+['"]publish['"]/)
+})
+
+test('bootstrap credentials are exact-tag-only, never reach build steps, and are cleaned on success or failure', async t => {
+  const flow = YAML.parse(await readFile(new URL('../.github/workflows/publish-product.yml', import.meta.url), 'utf8'))
+  const expression = flow.jobs.publish.env.BOOTSTRAP_NPM.replace(/^\$\{\{\s*|\s*\}\}$/gu, '')
+  const eligible = new Function('github', 'vars', 'inputs', 'format', `return (${expression})`)
+  assert.doesNotMatch(JSON.stringify(flow.jobs.publish.env), /github\.job/u, 'Job-level environment cannot depend on step-only context')
+  for (const event_name of ['push', 'workflow_dispatch']) for (const publish of [false, true]) {
+    for (const ref of ['refs/heads/main', 'refs/tags/v0.1.0', 'refs/tags/v0.2.0']) for (const tag of ['', 'v0.1.0']) {
+      assert.equal(eligible({ ref, event_name }, { PRODUCT_BOOTSTRAP_TAG: tag }, { publish }, (_, tag) => `refs/tags/${tag}`),
+        ref === 'refs/tags/v0.1.0' && tag === 'v0.1.0' && (event_name === 'push' || publish))
+    }
+  }
+  assert.doesNotMatch(JSON.stringify(flow.jobs.publish.env), /secrets\.|NODE_AUTH_TOKEN/u)
+  const authorizedSteps = flow.jobs.publish.steps.filter(step => JSON.stringify(step).includes('secrets.NPM_BOOTSTRAP_TOKEN'))
+  assert.equal(authorizedSteps.length, 2)
+  const root = await mkdtemp(join(tmpdir(), 'product-auth-boundary-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const marker = 'SYNTHETIC_TOKEN_MUST_NOT_APPEAR_IN_OUTPUT_OR_NPMRC'
+  for (const step of authorizedSteps) {
+    assert.equal(step.if, "github.job == 'publish'")
+    assert.equal(step.env.NODE_AUTH_TOKEN, "${{ env.BOOTSTRAP_NPM == 'true' && secrets.NPM_BOOTSTRAP_TOKEN || '' }}")
+    assert.match(step.run, /npm publish|npm dist-tag add/u)
+    const prefix = step.run.slice(0, step.run.indexOf('\nfi\n') + 4)
+    assert.ok(prefix.includes('unset ACTIONS_ID_TOKEN_REQUEST_URL ACTIONS_ID_TOKEN_REQUEST_TOKEN'))
+    const environment = { PATH: process.env.PATH, RUNNER_TEMP: root, GITHUB_REF: 'refs/tags/v0.1.0',
+      ACTIONS_ID_TOKEN_REQUEST_URL: 'synthetic-oidc-url', ACTIONS_ID_TOKEN_REQUEST_TOKEN: 'synthetic-oidc-token' }
+    const probe = `node -e 'const f=require("fs"),p=process.env.NPM_CONFIG_USERCONFIG;console.log(JSON.stringify({path:p||null,content:p?f.readFileSync(p,"utf8"):null,mode:p?f.statSync(p).mode&511:null,oidc:!!process.env.ACTIONS_ID_TOKEN_REQUEST_URL,token:!!process.env.NODE_AUTH_TOKEN}))'`
+    const run = (bootstrap, token = '') => execFileSync('bash', ['-e', '-c', prefix + probe],
+      { env: { ...environment, BOOTSTRAP_NPM: bootstrap, NODE_AUTH_TOKEN: token }, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+    assert.deepEqual(JSON.parse(run('false').trim()), { path: null, content: null, mode: null, oidc: true, token: false })
+    const output = run('true', marker)
+    assert.ok(!output.includes(marker))
+    const enabled = JSON.parse(output.trim().split('\n').at(-1))
+    assert.equal(enabled.content, '//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}\n')
+    assert.equal(enabled.mode, 0o600); assert.equal(enabled.oidc, false); assert.equal(enabled.token, true)
+    await assert.rejects(readFile(enabled.path), { code: 'ENOENT' })
+    assert.throws(() => run('true'), error => error.status === 1 && error.stdout.toString().includes('NPM_BOOTSTRAP_TOKEN is required'))
+    let failed
+    try { execFileSync('bash', ['-e', '-c', prefix + probe + '\nexit 23'],
+      { env: { ...environment, BOOTSTRAP_NPM: 'true', NODE_AUTH_TOKEN: marker }, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }) } catch (error) { failed = error }
+    assert.equal(failed.status, 23); assert.ok(!failed.stdout.includes(marker)); assert.ok(!failed.stderr.includes(marker))
+    const failurePath = JSON.parse(failed.stdout.trim().split('\n').at(-1)).path
+    await assert.rejects(readFile(failurePath), { code: 'ENOENT' })
+  }
 })
 
 const artifactContext = changes => ({ repository: REPOSITORY, repositoryId: '42', workflowPath: PRODUCT_WORKFLOW,
