@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "a9b1fc06fde796fde1c0f5554d0f0598abca41dc",
+  "revision": "a359f934ee39b56bb19ab787875ee3b838fd408b",
   "policySha256": "d5212fd6b3958473fcc2d0ec6f51a5f45e15d6e44debcdf322588656c344a876",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -92,7 +92,7 @@
       "mode": "100644"
     },
     "CONTRIBUTING.md": {
-      "sha256": "4f40a97be143639e1a85e197331cb7a8e8b7ecbcce351df9922ee512af2f86a1",
+      "sha256": "964e292ba0a35e390164a476125e4a179f2d1954daab1f5dfa371b35ebbc6b5c",
       "mode": "100644"
     },
     "LICENSE": {
@@ -8528,11 +8528,11 @@
       "mode": "100644"
     },
     "release/dsh-distribution-materials.json": {
-      "sha256": "42ae7d8165b770a49c488a009c830b61299f1862ed91a2dfaac37426425d9839",
+      "sha256": "7f2a8a12d274649246766eb28afe8dfb5e4e9e9d548219f58397f070496b6f09",
       "mode": "100644"
     },
     "release/public-source-baseline.json": {
-      "sha256": "7aef1c34e9cef24ceb04a2ecc48b1cab2a95bab8243ed38d7f93bbdffb684e9b",
+      "sha256": "a0f208e4cea76f628e46547375b24d94420d985313ee792d4907e88306930911",
       "mode": "100644"
     },
     "release/public-source-policy.json": {
@@ -8684,7 +8684,7 @@
       "mode": "100644"
     },
     "scripts/dsh-distribution-materials.test.mjs": {
-      "sha256": "fbe4bec96d3f9ed3d272d84d75076221a30a44111d2f46f600b20aca1b31d5a8",
+      "sha256": "8908b29a7c6e0e0914fdbbbcc1e23fdcd5ccb9ed5386d13f4a40b8151c7130a4",
       "mode": "100644"
     },
     "scripts/dsh-release-ci.test.mjs": {
@@ -8912,11 +8912,11 @@
       "mode": "100644"
     },
     "scripts/public-source-config.mjs": {
-      "sha256": "312bbfb595de6390d6bc4132dd463734c24eca47d7d6885272cfcb2ff7983249",
+      "sha256": "5e3f68091c3e860760a414e0f6900f9d856392e1134ec74d95fef973d7e10760",
       "mode": "100644"
     },
     "scripts/public-source-config.test.mjs": {
-      "sha256": "76ea7aab6c0b70780d9aef5131d7bba39b2c5c240225c06dfedff5dafe6e097f",
+      "sha256": "f8da281f73d104b7e50e067d26155b536a02cc9347e2c8ada0b74101ae71d2a3",
       "mode": "100644"
     },
     "scripts/public-sync-apply.mjs": {
@@ -11000,7 +11000,7 @@
       "mode": "100644"
     },
     "pnpm-workspace.yaml": {
-      "sha256": "fd3a805f93686ccccf139b60b3c859518a28d30536e028998c17fda0d337745d",
+      "sha256": "fe4d5bc0d020bcecc0338137ceaa023e5de572b5ff0415ad700b753cb02833c4",
       "mode": "100644"
     },
     "packages/companion-dev/package.json": {
@@ -11063,8 +11063,8 @@
     "inputs": [
       {
         "path": "release/public-source-baseline.json",
-        "sourceOid": "fdc248b09fc589c3ae9927a309d1216cd6cbfff2",
-        "sourceSHA256": "7aef1c34e9cef24ceb04a2ecc48b1cab2a95bab8243ed38d7f93bbdffb684e9b"
+        "sourceOid": "e88cfdd863fc90d777495fa57664f8126a8741a7",
+        "sourceSHA256": "a0f208e4cea76f628e46547375b24d94420d985313ee792d4907e88306930911"
       },
       {
         "path": "release/public-source-test-selection.json",
@@ -11081,9 +11081,9 @@
       },
       {
         "path": "pnpm-workspace.yaml",
-        "sourceOid": "237a4c4c9cc6ac1ebdc34319a8fe02513d34e853",
-        "sourceSHA256": "0654d2257bd52df82d0a7c9a618a1e2be82734a331522cea7e651e148a30b140",
-        "outputSHA256": "fd3a805f93686ccccf139b60b3c859518a28d30536e028998c17fda0d337745d"
+        "sourceOid": "1e67d3e8decf5843958627482731e2e41c295525",
+        "sourceSHA256": "b93d59c853fdfccccd82788f4cc8efffb47a7d2826bf22ed2b88a670f2d80d51",
+        "outputSHA256": "fe4d5bc0d020bcecc0338137ceaa023e5de572b5ff0415ad700b753cb02833c4"
       },
       {
         "path": "packages/companion-dev/package.json",

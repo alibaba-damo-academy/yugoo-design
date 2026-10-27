@@ -6319,6 +6319,60 @@
             }
           ],
           "correspondence": "exact-original-bytes-from-observed-local-package"
+        },
+        {
+          "name": "@radix-ui/react-popover",
+          "version": "1.1.23",
+          "declaredLicense": "MIT",
+          "packageMetadataSha256": "fa96ab7453c1418f69f8c13e820298ed434ac98bc71a47a12ffc41fa0818cdaf",
+          "author": null,
+          "outputs": [],
+          "materials": [
+            {
+              "path": "licenses/bundled-js/@radix-ui/react-popover@1.1.23/LICENSE",
+              "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138"
+            }
+          ],
+          "correspondence": "exact official npm archive metadata and original LICENSE; current outputs require observed matching module identity",
+          "source": {
+            "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-popover/1.1.23",
+            "tarball": "https://registry.npmjs.org/@radix-ui/react-popover/-/react-popover-1.1.23.tgz",
+            "integrity": "sha512-mw58MrBlyHWFisTOYignD0vf/3gdcgAR+9of1s9G/38CbFiUwH1nCDkc0AUM9IrXFgN5Ue8n45j9WCgyM1sbiQ==",
+            "archiveSha256": "c003d54e1716f00bafc5b7ccd4f3f126ffeded2ada9ae4146c272d1cb463e639",
+            "archiveBytes": 13670,
+            "manifestMember": "package/package.json",
+            "licenseMember": "package/LICENSE",
+            "licenseBytes": 1063,
+            "topLevelNoticeMembers": [],
+            "scope": "Exact target package bytes and retained original grant; no upstream Git-head, complete inventory or release license acceptance claim"
+          }
+        },
+        {
+          "name": "@radix-ui/react-arrow",
+          "version": "1.1.15",
+          "declaredLicense": "MIT",
+          "packageMetadataSha256": "76c8934b13d667ef82e1aa03ad0f9eea47f0ce1e5f5109f29cdaeefeaed7f7ac",
+          "author": null,
+          "outputs": [],
+          "materials": [
+            {
+              "path": "licenses/bundled-js/@radix-ui/react-arrow@1.1.15/LICENSE",
+              "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138"
+            }
+          ],
+          "correspondence": "exact official npm archive metadata and original LICENSE; current outputs require observed matching module identity",
+          "source": {
+            "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-arrow/1.1.15",
+            "tarball": "https://registry.npmjs.org/@radix-ui/react-arrow/-/react-arrow-1.1.15.tgz",
+            "integrity": "sha512-v4zggRcjadnI+ClKDuijlQEW4tw3NoaeHc/PwpKnLoLLKNUG4InLegkstooLcRIUWCs+8L22dGURCVuFfOKfnA==",
+            "archiveSha256": "c727584bac33ac1b33f88463a7b9016175bd7b1d063a1c57d75a2258ea884148",
+            "archiveBytes": 3425,
+            "manifestMember": "package/package.json",
+            "licenseMember": "package/LICENSE",
+            "licenseBytes": 1063,
+            "topLevelNoticeMembers": [],
+            "scope": "Exact target package bytes and retained original grant; no upstream Git-head, complete inventory or release license acceptance claim"
+          }
         }
       ],
       "materials": [
@@ -7601,6 +7655,16 @@
           "source": "third-party/companion/bundled-js/zustand@4.5.7/LICENSE",
           "path": "licenses/bundled-js/zustand@4.5.7/LICENSE",
           "sha256": "c1e6e266563517467b1bf874817d23e426f3149252bd7d42758cd697514b8417"
+        },
+        {
+          "source": "third-party/companion/bundled-js/@radix-ui/react-compose-refs@1.1.5/LICENSE",
+          "path": "licenses/bundled-js/@radix-ui/react-popover@1.1.23/LICENSE",
+          "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138"
+        },
+        {
+          "source": "third-party/companion/bundled-js/@radix-ui/react-compose-refs@1.1.5/LICENSE",
+          "path": "licenses/bundled-js/@radix-ui/react-arrow@1.1.15/LICENSE",
+          "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138"
         }
       ],
       "fonts": [
@@ -13851,6 +13915,60 @@
             }
           ],
           "correspondence": "exact-original-bytes-from-observed-local-package"
+        },
+        {
+          "name": "@radix-ui/react-popover",
+          "version": "1.1.23",
+          "declaredLicense": "MIT",
+          "packageMetadataSha256": "fa96ab7453c1418f69f8c13e820298ed434ac98bc71a47a12ffc41fa0818cdaf",
+          "author": null,
+          "outputs": [],
+          "materials": [
+            {
+              "path": "licenses/bundled-js/@radix-ui/react-popover@1.1.23/LICENSE",
+              "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138"
+            }
+          ],
+          "correspondence": "exact official npm archive metadata and original LICENSE; current outputs require observed matching module identity",
+          "source": {
+            "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-popover/1.1.23",
+            "tarball": "https://registry.npmjs.org/@radix-ui/react-popover/-/react-popover-1.1.23.tgz",
+            "integrity": "sha512-mw58MrBlyHWFisTOYignD0vf/3gdcgAR+9of1s9G/38CbFiUwH1nCDkc0AUM9IrXFgN5Ue8n45j9WCgyM1sbiQ==",
+            "archiveSha256": "c003d54e1716f00bafc5b7ccd4f3f126ffeded2ada9ae4146c272d1cb463e639",
+            "archiveBytes": 13670,
+            "manifestMember": "package/package.json",
+            "licenseMember": "package/LICENSE",
+            "licenseBytes": 1063,
+            "topLevelNoticeMembers": [],
+            "scope": "Exact target package bytes and retained original grant; no upstream Git-head, complete inventory or release license acceptance claim"
+          }
+        },
+        {
+          "name": "@radix-ui/react-arrow",
+          "version": "1.1.15",
+          "declaredLicense": "MIT",
+          "packageMetadataSha256": "76c8934b13d667ef82e1aa03ad0f9eea47f0ce1e5f5109f29cdaeefeaed7f7ac",
+          "author": null,
+          "outputs": [],
+          "materials": [
+            {
+              "path": "licenses/bundled-js/@radix-ui/react-arrow@1.1.15/LICENSE",
+              "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138"
+            }
+          ],
+          "correspondence": "exact official npm archive metadata and original LICENSE; current outputs require observed matching module identity",
+          "source": {
+            "metadataUrl": "https://registry.npmjs.org/%40radix-ui%2Freact-arrow/1.1.15",
+            "tarball": "https://registry.npmjs.org/@radix-ui/react-arrow/-/react-arrow-1.1.15.tgz",
+            "integrity": "sha512-v4zggRcjadnI+ClKDuijlQEW4tw3NoaeHc/PwpKnLoLLKNUG4InLegkstooLcRIUWCs+8L22dGURCVuFfOKfnA==",
+            "archiveSha256": "c727584bac33ac1b33f88463a7b9016175bd7b1d063a1c57d75a2258ea884148",
+            "archiveBytes": 3425,
+            "manifestMember": "package/package.json",
+            "licenseMember": "package/LICENSE",
+            "licenseBytes": 1063,
+            "topLevelNoticeMembers": [],
+            "scope": "Exact target package bytes and retained original grant; no upstream Git-head, complete inventory or release license acceptance claim"
+          }
         }
       ],
       "materials": [
@@ -15308,6 +15426,16 @@
           "source": "third-party/companion/bundled-js/comma-separated-tokens@2.0.3/license",
           "path": "licenses/bundled-js/zwitch@2.0.4/license",
           "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d"
+        },
+        {
+          "source": "third-party/companion/bundled-js/@radix-ui/react-compose-refs@1.1.5/LICENSE",
+          "path": "licenses/bundled-js/@radix-ui/react-popover@1.1.23/LICENSE",
+          "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138"
+        },
+        {
+          "source": "third-party/companion/bundled-js/@radix-ui/react-compose-refs@1.1.5/LICENSE",
+          "path": "licenses/bundled-js/@radix-ui/react-arrow@1.1.15/LICENSE",
+          "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138"
         }
       ],
       "fonts": [

@@ -102,6 +102,33 @@ test('already selected exact registry Ladybug and explicitly reviewed registry o
   ]) { const bad = structuredClone(before); mutate(bad); assert.throws(() => proposePublicSourceConfig(bad)) }
 })
 
+test('reviewed bounded overrides preserve compatibility and cannot bypass package ownership', () => {
+  const input = fixture()
+  input.workspace.overrides = {
+    '@radix-ui/react-popover@^1.1.15': '1.1.23',
+    'react@^18.2.0': '18.3.1',
+    'clsx@~2.1.0': '2.1.1',
+  }
+  input.reviewedWorkspaceOverrides = structuredClone(input.workspace.overrides)
+  assert.deepEqual(proposePublicSourceConfig(input).workspace.overrides, input.workspace.overrides)
+  const missingReview = structuredClone(input)
+  delete missingReview.reviewedWorkspaceOverrides['react@^18.2.0']
+  assert.throws(() => proposePublicSourceConfig(missingReview), /exact explicit review/)
+  for (const overrides of [
+    { 'react@^18.2.0': '19.0.0' },
+    { 'react@*': '18.3.1' },
+    { 'parent>react@^18.2.0': '18.3.1' },
+    { '@deepseek-ai/dsh-agent@^0.1.2': '0.1.2' },
+    { '@ladybugdb/wasm-core@^0.21.1': '0.21.1' },
+    { 'core@^0.1.0': '0.1.0' },
+    { 'react@^18.2.0': 'file:../private' },
+  ]) {
+    const bad = fixture()
+    bad.workspace.overrides = bad.reviewedWorkspaceOverrides = overrides
+    assert.throws(() => proposePublicSourceConfig(bad))
+  }
+})
+
 test('development scripts, ambiguous root/workspace policies and invalid identities fail explicitly', () => {
   const mutations = [
     input => { input.rootScripts = ['dogfood'] },

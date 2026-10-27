@@ -132,7 +132,11 @@ CI first resolves a public-registry lock, then performs a strict frozen install.
 The resolved lock is a run input, not a committed reproducibility guarantee.
 Dependency caching is explicitly disabled in both setup Actions.
 Build permissions come only from `pnpm-workspace.yaml`; preserve exact approved
-versions and explicit denials. Keep the Rolldown override at `1.2.4`: the retained
+versions and explicit denials. The existing workspace overrides also pin reviewed
+direct runtime inputs when public CI resolves its lock. Keep pins inside the
+original dependency ranges and preserve other major versions; an additional
+package identity requires its own exact provenance and original materials.
+Keep the Rolldown override at `1.2.4`: the retained
 Pica/UI artifact verification used that compiler version. Recheck those artifacts
 before reusing their evidence with a different compiler. Installation executes the approved native scripts
 within the isolated runner, not within a user Host/profile.

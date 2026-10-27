@@ -6,6 +6,9 @@ import { join, dirname } from 'node:path'
 import { createHash } from 'node:crypto'
 import { copyDshDistributionMaterials } from './dsh-distribution-materials.mjs'
 import { EMBEDDED_PICA_LICENSE_SOURCE_PATHS } from './companion-bundled-license.mjs'
+import { parse } from 'yaml'
+import { satisfies, subset, valid, validRange } from 'semver'
+import { releasePackagesFor } from './release-consumer-config.mjs'
 
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 
@@ -111,4 +114,81 @@ test('material packaging retains diagnostic observations but rejects changed out
   await assert.rejects(copyDshDistributionMaterials({ source, target, sourceName: 'example', packageName: '@yugoo-design/example' }), /observation is stale: example\/lib\/index\.js \(missing current output\)/)
   await writeFile(join(target, 'lib/renamed-current.js'), 'export const example = 1;\n')
   await assert.rejects(copyDshDistributionMaterials({ source, target, sourceName: 'example', packageName: '@yugoo-design/example' }), /observation is stale: example\/lib\/index\.js \(missing current output\)/)
+})
+
+
+test('reviewed direct runtime ranges are pinned compatibly without forcing unrelated major versions', async () => {
+  const readJson = async path => JSON.parse(await readFile(new URL('../' + path, import.meta.url)))
+  const materials = await readJson('release/dsh-distribution-materials.json')
+  const config = parse(await readFile(new URL('../pnpm-workspace.yaml', import.meta.url), 'utf8'))
+  const reviewed = new Map()
+  for (const [owner, selection] of Object.entries(materials.packages)) {
+    if (owner.includes('decision-modeling')) continue
+    for (const component of selection.components ?? []) {
+      const versions = reviewed.get(component.name) ?? new Set()
+      versions.add(component.version); reviewed.set(component.name, versions)
+    }
+  }
+  const effectivePin = (name, specifier) => config.overrides[name] ?? Object.entries(config.overrides).find(([selector]) => {
+    const at = selector.lastIndexOf('@')
+    return at > 0 && selector.slice(0, at) === name && validRange(selector.slice(at + 1)) && subset(specifier, selector.slice(at + 1))
+  })?.[1]
+  let checked = 0
+  for (const directory of Object.values(releasePackagesFor({ ladybugSource: 'registry' }))) {
+    const manifest = await readJson(directory + '/package.json')
+    for (const [name, specifier] of Object.entries(manifest.dependencies ?? {})) {
+      const approved = reviewed.get(name)
+      if (!approved || valid(specifier) || !validRange(specifier) || ![...approved].some(version => satisfies(version, specifier))) continue
+      const pin = effectivePin(name, specifier)
+      assert.ok(valid(pin) === pin && approved.has(pin), `Exact reviewed runtime pin required: ${name}@${specifier}`)
+      assert.ok(satisfies(pin, specifier), `Pin cannot override the declared compatibility floor: ${name}`)
+      checked++
+    }
+  }
+  assert.ok(checked > 20)
+  assert.equal(effectivePin('clsx', '1.1.1'), undefined)
+  assert.equal(effectivePin('react', '^19.0.0'), undefined)
+  const zod = materials.packages['dsh-design-core'].components.find(row => row.name === 'zod')
+  assert.equal(config.overrides.zod, zod.version)
+})
+
+test('new Radix targets retain exact archive provenance and existing original grant, preserving prior versions', async () => {
+  const materials = JSON.parse(await readFile(new URL('../release/dsh-distribution-materials.json', import.meta.url)))
+  const lock = parse(await readFile(new URL('../pnpm-lock.yaml', import.meta.url), 'utf8'))
+  for (const owner of ['dsh-design-panel', 'dsh-design-provider-web-app']) {
+    const selection = materials.packages[owner]
+    for (const [name, previousVersion, version] of [['@radix-ui/react-popover', '1.1.6', '1.1.23'], ['@radix-ui/react-arrow', '1.1.2', '1.1.15']]) {
+      assert.ok(selection.components.find(row => row.name === name && row.version === previousVersion), 'prior target provenance must remain')
+      const current = selection.components.find(row => row.name === name && row.version === version)
+      assert.ok(current)
+      assert.deepEqual(current.outputs, [], 'current output membership must come from the normal build receipt')
+      assert.equal(current.source.integrity, lock.packages[name + '@' + version].resolution.integrity)
+      assert.match(current.source.archiveSha256, /^[a-f0-9]{64}$/u)
+      assert.equal(current.source.manifestMember, 'package/package.json')
+      assert.equal(current.source.licenseMember, 'package/LICENSE')
+      assert.equal(current.source.gitHead, undefined)
+      for (const grant of current.materials) {
+        const copied = selection.materials.find(row => row.path === grant.path)
+        assert.ok(copied)
+        assert.equal(sha(await readFile(new URL('../' + copied.source, import.meta.url))), grant.sha256)
+        assert.equal(copied.sha256, grant.sha256)
+      }
+    }
+  }
+})
+
+test('exact new metadata binds the new target while third-party drift remains rejected', async () => {
+  const { bindObservedComponents } = await import('./dsh-release-observations.mjs')
+  const materials = JSON.parse(await readFile(new URL('../release/dsh-distribution-materials.json', import.meta.url)))
+  const selection = materials.packages['dsh-design-provider-web-app']
+  for (const name of ['@radix-ui/react-popover', '@radix-ui/react-arrow']) {
+    const component = selection.components.find(row => row.name === name && row.source?.manifestMember === 'package/package.json')
+    const input = { name, version: component.version, packageMetadataSha256: component.packageMetadataSha256 }
+    const bound = bindObservedComponents(selection, { 'lib/current.js': [input] })
+    assert.equal(selection.components[bound.componentBindings[0].componentIndex], component)
+    assert.throws(() => bindObservedComponents(selection, { 'lib/current.js': [{ ...input, packageMetadataSha256: 'f'.repeat(64) }] }), /component identity changed/)
+  }
+  assert.throws(() => bindObservedComponents(materials.packages['dsh-design-core'], {
+    'lib/client.js': [{ name: 'zod', version: '4.6.7', packageMetadataSha256: 'f'.repeat(64) }],
+  }), /component identity changed/)
 })
