@@ -8,6 +8,14 @@ const local = value => /^(?:file:|link:|workspace:|portal:|\.\.?\/|\/)/u.test(va
 const host = name => /^@deepseek-ai\/(?:dsh-[a-z0-9-]+|cordis|schemastery)$/u.test(name)
 const digestable = value => JSON.stringify(value)
 function overrideSelector(selector) {
+  if (selector.includes('>')) {
+    // Pin one observed incoming edge without narrowing another consumer's peer.
+    // Parent ranges, child selectors and multi-hop paths need separate review.
+    const match = /^((?:@[a-z0-9._-]+\/)?[a-z0-9._-]+)@([^>]+)>((?:@[a-z0-9._-]+\/)?[a-z0-9._-]+)$/u.exec(selector)
+    assert.ok(match, 'Only a single exact parent version and bare child name are supported')
+    assert.equal(valid(match[2]), match[2], 'Override parent must use an exact canonical version')
+    return { name: match[3], parent: match[1], range: null }
+  }
   const match = /^((?:@[a-z0-9._-]+\/)?[a-z0-9._-]+)(?:@([~^])(.+))?$/u.exec(selector)
   assert.ok(match, 'Only package names or single bounded version selectors are supported')
   if (match[2]) assert.equal(valid(match[3]), match[3], 'Override selector must use a canonical version')
@@ -32,8 +40,9 @@ export function proposePublicSourceConfig({ root, workspace, packages, officialV
     && !Array.isArray(reviewedWorkspaceOverrides), 'Explicit reviewed workspace overrides required')
   assert.deepEqual(workspace.overrides ?? {}, reviewedWorkspaceOverrides, 'Workspace overrides require exact explicit review')
   for (const [selector, version] of Object.entries(reviewedWorkspaceOverrides)) {
-    const { name, range } = overrideSelector(selector)
-    assert.ok(!host(name) && name !== '@ladybugdb/wasm-core', 'Host and Ladybug selections use their explicit version inputs')
+    const { name, parent, range } = overrideSelector(selector)
+    assert.ok([name, parent].filter(Boolean).every(value => !host(value) && value !== '@ladybugdb/wasm-core'),
+      'Host and Ladybug selections use their explicit version inputs')
     assert.equal(typeof version, 'string', 'Override must be an exact registry version')
     assert.equal(valid(version), version, 'Override must be an exact canonical registry version')
     if (range) assert.ok(satisfies(version, range), 'Override must preserve the selected compatibility range')
@@ -70,7 +79,10 @@ export function proposePublicSourceConfig({ root, workspace, packages, officialV
     assert.ok(!names.has(manifest.name), 'Duplicate own package identity')
     names.set(manifest.name, path)
   }
-  assert.ok(Object.keys(reviewedWorkspaceOverrides).every(selector => !names.has(overrideSelector(selector).name)), 'Own package overrides require a separate release mapping')
+  assert.ok(Object.keys(reviewedWorkspaceOverrides).every(selector => {
+    const { name, parent } = overrideSelector(selector)
+    return !names.has(name) && !names.has(parent)
+  }), 'Own package overrides require a separate release mapping')
   for (const [path, source] of Object.entries(packages)) {
     const manifest = output.packages[path]
     for (const key of ['overrides', 'resolutions', 'pnpm']) assert.ok(!Object.hasOwn(source, key), `${path}: ${key} requires review`)

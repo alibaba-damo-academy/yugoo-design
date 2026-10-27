@@ -129,6 +129,53 @@ test('reviewed bounded overrides preserve compatibility and cannot bypass packag
   }
 })
 
+test('reviewed exact parent edges preserve scoped names and reject broader or protected selections', () => {
+  const input = fixture()
+  input.workspace.overrides = {
+    'mermaid@11.17.2>cytoscape': '3.34.2',
+    '@scope/parent@1.2.3>@other/child': '4.5.6',
+  }
+  input.reviewedWorkspaceOverrides = structuredClone(input.workspace.overrides)
+  const before = structuredClone(input)
+  assert.deepEqual(proposePublicSourceConfig(input).workspace.overrides, before.workspace.overrides)
+  assert.deepEqual(input, before)
+  const unreviewed = structuredClone(input)
+  delete unreviewed.reviewedWorkspaceOverrides['mermaid@11.17.2>cytoscape']
+  assert.throws(() => proposePublicSourceConfig(unreviewed), /exact explicit review/)
+  for (const selector of [
+    'mermaid>cytoscape', 'mermaid@^11.17.2>cytoscape', 'mermaid@~11.17.2>cytoscape',
+    'mermaid@*>cytoscape', 'mermaid@11>cytoscape', 'mermaid@v11.17.2>cytoscape',
+    'mermaid@file:../private>cytoscape', 'mermaid@11.17.2>cytoscape@^3.34.0',
+    'mermaid@11.17.2>cytoscape>other', 'mermaid@11.17.2>*',
+    'bad/name@1.0.0>child', 'parent@1.0.0>bad/name',
+    '@deepseek-ai/dsh-agent@0.1.2>child', 'parent@1.0.0>@deepseek-ai/dsh-agent',
+    '@ladybugdb/wasm-core@0.21.1>child', 'parent@1.0.0>@ladybugdb/wasm-core',
+    'core@1.0.0>child', 'parent@1.0.0>panel',
+  ]) {
+    const bad = fixture()
+    bad.workspace.overrides = bad.reviewedWorkspaceOverrides = { [selector]: '3.34.2' }
+    assert.throws(() => proposePublicSourceConfig(bad), selector)
+  }
+  for (const version of ['^3.34.2', 'v3.34.2', 'file:../private', null]) {
+    const bad = fixture()
+    bad.workspace.overrides = bad.reviewedWorkspaceOverrides = { 'mermaid@11.17.2>cytoscape': version }
+    assert.throws(() => proposePublicSourceConfig(bad))
+  }
+})
+
+test('the reviewed Mermaid edge keeps Cytoscape peer consumers on their compatible version', () => {
+  const repo = new URL('../', import.meta.url)
+  const workspace = YAML.parse(readFileSync(new URL('pnpm-workspace.yaml', repo), 'utf8'))
+  const lock = YAML.parse(readFileSync(new URL('pnpm-lock.yaml', repo), 'utf8'))
+  assert.equal(workspace.overrides['mermaid@11.17.2>cytoscape'], '3.34.2')
+  assert.ok(!Object.keys(workspace.overrides).some(key => /^cytoscape(?:@|$)/u.test(key)))
+  assert.equal(lock.packages['cytoscape-fcose@2.2.0'].peerDependencies.cytoscape, '^3.2.0')
+  const fcose = lock.snapshots['cytoscape-fcose@2.2.0(cytoscape@3.33.1)']
+  const mermaid = lock.snapshots['mermaid@11.17.2']
+  assert.equal(fcose.dependencies.cytoscape, '3.33.1')
+  assert.equal(mermaid.dependencies.cytoscape, '3.34.2')
+})
+
 test('development scripts, ambiguous root/workspace policies and invalid identities fail explicitly', () => {
   const mutations = [
     input => { input.rootScripts = ['dogfood'] },

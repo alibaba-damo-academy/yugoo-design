@@ -133,8 +133,10 @@ The resolved lock is a run input, not a committed reproducibility guarantee.
 Dependency caching is explicitly disabled in both setup Actions.
 Build permissions come only from `pnpm-workspace.yaml`; preserve exact approved
 versions and explicit denials. The existing workspace overrides also pin reviewed
-direct runtime inputs when public CI resolves its lock. Keep pins inside the
-original dependency ranges and preserve other major versions; an additional
+direct runtime inputs and observed transitive drift when public CI resolves its
+lock. Keep pins inside the original incoming dependency ranges and preserve
+coexisting versions. A reviewed `parent@exact-version>child` rule fixes one incoming
+edge when a package-wide pin would conflict with another consumer's peer. An additional
 package identity requires its own exact provenance and original materials.
 Keep the Rolldown override at `1.2.4`: the retained
 Pica/UI artifact verification used that compiler version. Recheck those artifacts
