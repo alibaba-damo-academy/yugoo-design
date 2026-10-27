@@ -199,3 +199,9 @@ Preserve native-reference implementations, provenance and third-party notices.
 Apache-2.0 project licensing does not override a dependency's or imported Kit's
 license. Source commits, public-source synchronization, npm packaging and publishing
 are distinct operations; do not claim or perform one merely because another passed.
+
+All official npm packages are published only by GitHub Actions from reviewed
+public `main` history and a matching release tag. Local development, testing,
+building and `npm pack` are allowed; direct local `npm publish` is prohibited.
+The separate DSH chain uses the same Actions-only boundary. Do not substitute
+a local publisher, token or account change for a missing workflow/OIDC setup.

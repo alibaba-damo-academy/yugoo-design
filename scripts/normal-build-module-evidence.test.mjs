@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdtemp, mkdir, readFile, writeFile, rm, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { normalBuildModuleEvidence } from './normal-build-module-evidence.mjs'
+import { normalBuildModuleEvidence, withNormalBuildEvidence } from './normal-build-module-evidence.mjs'
 
 test('normal build observation is opt-in and confined outside the workspace', () => {
   assert.deepEqual(normalBuildModuleEvidence('web', { evidenceDirectory: undefined }), {})
@@ -52,14 +52,20 @@ test('installed tsdown invokes the observer on real isolated emitted outputs', a
   await mkdir(workspaceRoot)
   const entry = join(workspaceRoot, 'entry.mjs')
   await writeFile(entry, 'export const value = 42;\n')
-  const bundles = await build({ config: false, entry: { entry }, outDir: outputRoot,
+  const previousEvidence = process.env.YUGOO_BUILD_MODULE_EVIDENCE_DIR
+  process.env.YUGOO_BUILD_MODULE_EVIDENCE_DIR = evidenceDirectory
+  t.after(() => { if (previousEvidence === undefined) delete process.env.YUGOO_BUILD_MODULE_EVIDENCE_DIR; else process.env.YUGOO_BUILD_MODULE_EVIDENCE_DIR = previousEvidence })
+  let existingHookCalls = 0
+  const bundles = await build(withNormalBuildEvidence('isolated', { config: false, entry: { entry }, outDir: outputRoot,
     format: 'esm', platform: 'node', target: 'node22', tsconfig: false, dts: false, clean: false,
-    hooks: normalBuildModuleEvidence('isolated', { evidenceDirectory, workspaceRoot }),
-  })
+    hooks: { 'build:done': async () => { existingHookCalls++ } },
+  }))
   try {
-    const result = JSON.parse(await readFile(join(evidenceDirectory, 'isolated-output-modules.json'), 'utf8'))
+    const result = JSON.parse(await readFile(join(evidenceDirectory, 'isolated-0-output-modules.json'), 'utf8'))
     const chunk = result.outputs.find(row => row.type === 'chunk')
     assert.ok(chunk)
+    assert.equal(existingHookCalls, 1)
+    assert.match(result.inputFileSha256[entry], /^[a-f0-9]{64}$/u)
     assert.equal(result.diskAssociationVerified, true)
     assert.ok(chunk.moduleIds.some(row => row.rawId === entry))
     assert.equal(result.completeBundledInventory, false)

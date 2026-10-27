@@ -3,16 +3,51 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFile, writeFile, mkdir, lstat } from 'node:fs/promises'
 import { dirname, join, isAbsolute } from 'node:path'
+import { execFileSync } from 'node:child_process'
 import { prepareEmbeddedPicaLicenseMaterials, copyEmbeddedPicaLicenseMaterials } from './companion-bundled-license.mjs'
 
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 const safe = path => typeof path === 'string' && path && !isAbsolute(path)
   && !path.includes('\\') && !path.split('/').some(part => !part || part === '.' || part === '..')
 
-export async function copyDshDistributionMaterials({ source, target, sourceName, packageName }) {
-  const manifest = JSON.parse(await readFile(join(source, 'release/dsh-distribution-materials.json'), 'utf8'))
+export const FIRST_PARTY_MATERIAL = 'first-party fixed normal-build input; original project license and notice'
+export async function readCurrentFirstPartyIdentity({ source, manifestPath, sourceCommit }) {
+  assert.ok(safe(manifestPath) && /^packages\/[^/]+\/package\.json$/u.test(manifestPath), 'Current workspace manifest path required')
+  assert.match(sourceCommit ?? '', /^[a-f0-9]{40}$/u, 'Fixed current source commit required')
+  let cursor = source
+  for (const part of manifestPath.split('/')) {
+    cursor = join(cursor, part)
+    assert.ok(!(await lstat(cursor)).isSymbolicLink(), 'Current workspace manifest symlink rejected')
+  }
+  const bytes = await readFile(cursor), manifest = JSON.parse(bytes)
+  const committed = execFileSync('git', ['show', `${sourceCommit}:${manifestPath}`], { cwd: source })
+  assert.equal(sha(bytes), sha(committed), 'Current workspace metadata differs from fixed source')
+  return { manifestPath, sourceCommit, name: manifest.name, version: manifest.version, packageMetadataSha256: sha(bytes) }
+}
+
+export async function copyDshDistributionMaterials({ source, target, sourceName, packageName, observationFile, observationSha256 }) {
+  const manifestBytes = await readFile(join(source, 'release/dsh-distribution-materials.json'))
+  const manifest = JSON.parse(manifestBytes)
   assert.equal(manifest.schemaVersion, 1)
-  const selection = manifest.packages[sourceName]
+  let selection = manifest.packages[sourceName]
+  if (observationFile !== undefined) {
+    assert.ok(isAbsolute(observationFile), 'Absolute current observation receipt required')
+    const bytes = await readFile(observationFile)
+    assert.equal(sha(bytes), observationSha256, 'Current observation receipt changed')
+    const receipt = JSON.parse(bytes)
+    assert.equal(receipt.kind, 'dsh-current-normal-observations')
+    assert.equal(receipt.sourceManifestSha256, sha(manifestBytes), 'Maintained material authority changed')
+    const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: source, encoding: 'utf8' }).trim()
+    assert.equal(receipt.sourceCommit, head, 'Observation source commit changed')
+    const observed = receipt.packages[sourceName], firstPartyIdentities = {}
+    for (const binding of observed?.componentBindings ?? []) {
+      if (selection.components[binding.componentIndex]?.correspondence !== FIRST_PARTY_MATERIAL) continue
+      assert.ok(binding.currentIdentity, 'Explicit current first-party identity required')
+      firstPartyIdentities[binding.componentIndex] = await readCurrentFirstPartyIdentity({ source,
+        manifestPath: binding.currentIdentity.manifestPath, sourceCommit: head })
+    }
+    selection = hydrateDshSelection(selection, observed, { firstPartyIdentities })
+  } else assert.equal(observationSha256, undefined, 'Observation hash requires an explicit receipt')
   assert.ok(selection, 'Explicit DSH package material selection required')
   // Bind the recorded module observations to the actual adapted code being packed.
   // Changed output requires a refreshed observation, never a silent old coverage claim.
@@ -61,6 +96,7 @@ export async function copyDshDistributionMaterials({ source, target, sourceName,
     sourceArchiveObserved: selection.observedArchiveSha256,
     outputSha256: selection.observedOutputSha256,
     normalBuildMaps: selection.normalBuildMaps,
+    ...(selection.currentBuildAssociation ? { currentBuildAssociation: selection.currentBuildAssociation } : {}),
     components: selection.components, fonts: selection.fonts,
     embeddedBpmnFonts: selection.embeddedBpmnFonts ?? [],
     unresolvedEmbeddedFonts: selection.unresolvedEmbeddedFonts ?? [],
@@ -83,4 +119,40 @@ export async function copyDshDistributionMaterials({ source, target, sourceName,
     + 'Existing third-party materials retain their individual terms.\n'
     + 'Historical Companion/source observations are not claims of complete coverage for this DSH archive.\n')
   return { copiedMaterials: copied, index: 'licenses/dsh-distribution.json' }
+}
+
+/** Hydrate only current associations. Source still owns every component/material/font identity. */
+export function hydrateDshSelection(base, observed, { firstPartyIdentities = {} } = {}) {
+  assert.ok(observed && typeof observed === 'object')
+  for (const [path, hash] of Object.entries(observed.observedOutputSha256)) {
+    assert.ok(safe(path)); assert.match(hash, /^[a-f0-9]{64}$/u)
+  }
+  const components = observed.componentBindings.map(({ componentIndex, outputs, currentIdentity }) => {
+    assert.ok(Number.isSafeInteger(componentIndex) && base.components[componentIndex], 'Unknown source component')
+    assert.ok(outputs.length && outputs.every(path => Object.hasOwn(observed.observedOutputSha256, path)), 'Unbound component output')
+    const component = base.components[componentIndex]
+    if (component.correspondence === FIRST_PARTY_MATERIAL) {
+      assert.ok(currentIdentity && firstPartyIdentities[componentIndex], 'Verified current first-party identity required')
+      assert.deepEqual(currentIdentity, firstPartyIdentities[componentIndex], 'Current first-party identity differs from fixed source')
+      assert.equal(currentIdentity.name, component.name)
+      assert.equal(currentIdentity.version, component.version)
+      return { ...component, outputs, packageMetadataSha256: currentIdentity.packageMetadataSha256, currentSourceIdentity: currentIdentity }
+    }
+    assert.equal(currentIdentity, undefined, 'Third-party identity cannot use a current workspace override')
+    return { ...component, outputs }
+  })
+  const fonts = observed.fontBindings.map(({ fontIndex, matchingDataUrls }) => {
+    const font = base.fonts[fontIndex]; assert.ok(font, 'Unknown source font')
+    for (const match of matchingDataUrls) {
+      assert.equal(match.sha256, font.sha256)
+      assert.ok(Object.hasOwn(observed.observedOutputSha256, match.output), 'Unbound font output')
+    }
+    return { ...font, matchingDataUrls }
+  })
+  return { ...base, observedArchiveSha256: null, observedOutputSha256: observed.observedOutputSha256,
+    normalBuildMaps: observed.normalBuildMaps, components, fonts, embeddedBpmnFonts: observed.embeddedBpmnFonts,
+    currentBuildAssociation: { historicalComponentsWithoutCurrentAssociation: observed.historicalComponentsWithoutCurrentAssociation,
+      unassociatedObservedModules: observed.unassociatedObservedModules,
+      historicalObservation: base,
+      limitation: 'Unassociated prior components remain historical only. Current module observations are bounded; complete inventory and license acceptance remain false.' } }
 }

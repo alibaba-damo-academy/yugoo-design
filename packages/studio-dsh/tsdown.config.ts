@@ -1,3 +1,4 @@
+import { withNormalBuildEvidence } from '../../scripts/normal-build-module-evidence.mjs'
 import { defineConfig } from 'tsdown'
 import { normalBuildModuleEvidence } from '../../scripts/normal-build-module-evidence.mjs'
 
@@ -11,7 +12,7 @@ const PLATFORM_MODULES = [
   '@deepseek-ai/dsh-client-ui-slots',
 ]
 
-export default defineConfig([
+export default withNormalBuildEvidence('dsh-release-studio-dsh', defineConfig([
   {
     entry: ['src/index.ts', 'src/client-adapter.tsx', 'src/page.ts', 'src/page-rpc.ts', 'src/page-path.ts', 'src/typert.host.ts', 'src/typert.remote-client.ts'],
     external: [/^@deepseek-ai\//, /^dsh-design-/, 'zod'],
@@ -64,4 +65,4 @@ export default defineConfig([
     define: { 'process.env.NODE_ENV': JSON.stringify('production') },
     outputOptions: { entryFileNames: 'page-client.js' },
   },
-])
+]))

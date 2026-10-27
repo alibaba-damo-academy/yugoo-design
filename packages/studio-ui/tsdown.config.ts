@@ -1,6 +1,7 @@
+import { withNormalBuildEvidence } from '../../scripts/normal-build-module-evidence.mjs'
 import { defineConfig } from 'tsdown'
 
-export default defineConfig({
+export default withNormalBuildEvidence('dsh-release-studio-ui', defineConfig({
   entry: ['src/index.ts'],
   external: ['react', 'react/jsx-runtime', 'react-dom', 'dsh-design-studio'],
   outDir: 'lib',
@@ -10,4 +11,4 @@ export default defineConfig({
   fixedExtension: false,
   dts: true,
   clean: true,
-})
+}))

@@ -1,3 +1,4 @@
+import { withNormalBuildEvidence } from '../../scripts/normal-build-module-evidence.mjs'
 import { defineConfig } from 'tsdown'
 
 /**
@@ -18,7 +19,7 @@ const PLATFORM_MODULES = [
   '@deepseek-ai/dsh-client-ui-primitives',
 ]
 
-export default defineConfig([
+export default withNormalBuildEvidence('dsh-release-core', defineConfig([
   {
     entry: ['src/index.ts', 'src/design-source-reference.ts', 'src/panel-dsl.ts', 'src/kit-loader.ts', 'src/kit-loader-plugin.ts', 'src/panel-remote.ts', 'src/typert.host.ts', 'src/typert.remote-client.ts', 'src/dsh-advisory-plugin.ts', 'src/dsh-design-execution-plugin.ts', 'src/design-continuation.ts', 'src/experience-view.ts'],
     // Protocol-backed Service bindings, the declaration-merged session event
@@ -73,4 +74,4 @@ export default defineConfig([
       intro: 'var module = { exports: {} }; var exports = module.exports;',
     },
   },
-])
+]))

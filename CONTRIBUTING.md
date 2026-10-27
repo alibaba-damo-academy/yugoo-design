@@ -71,6 +71,15 @@ prepare, verify and apply workflow. The complete commands, exact-hash approval a
 target-conflict rules are maintained in the [source export procedure](docs/public-document-sync.md#准备与核准源码导出).
 Source synchronization, Git push and npm publication are separate operations.
 
+## Official npm publication boundary
+
+All official npm packages are published **only by GitHub Actions**, from a reviewed
+commit in the public repository's `main` history and a matching release tag.
+Local development, tests, builds and `npm pack` are allowed. Direct local
+`npm publish` is prohibited, including for the separate DSH package chain.
+Missing Actions or Trusted Publisher configuration must be resolved at that
+boundary; it does not authorize a token-based or local publication workaround.
+
 ## Prepare or publish the Companion npm beta
 
 The [Companion workflow](.github/workflows/publish-companion.yml) covers only
@@ -181,6 +190,61 @@ Host accounts. npm can supply provenance automatically for eligible public
 repositories; OIDC on a private repository does not establish public attestation.
 Provenance does not prove independent native binary reproduction or complete
 product acceptance.
+
+## Prepare or publish the DSH npm beta
+
+The [DSH workflow](.github/workflows/publish-dsh.yml) prepares the ten packages in
+[the DSH dependency closure](packages/dsh/README.md). Its single version authority
+is `hosts.dsh.aggregateVersion` in
+[`release/release-hosts.json`](release/release-hosts.json), also consumed by the
+Companion installer. All ten use that exact version. Companion retains its own
+version file, workflow and publication result.
+
+Update that existing DSH field with the reviewed source, synchronize the fixed
+commit to public `main`, then push `dsh-vX.Y.Z-beta.N` at that commit. This tag
+triggers only DSH publication. `vX.Y.Z-beta.N` remains the Companion trigger;
+ordinary `main` pushes publish neither chain. For preparation only, choose
+**Actions → Prepare or publish DSH beta → Run workflow** and leave **publish**
+unchecked. The optional version input can only confirm the tracked value.
+A publication retry must select the same matching DSH tag with **publish** enabled.
+Branches, mismatched versions and tags outside reviewed `main` history fail.
+
+The same Node, pnpm, npm, public lock-resolution and native-input policies described
+above apply. CI runs each existing normal package build once, with optional
+module observation hooks, then passes an explicit current observation receipt
+to the existing ten-package assembler. The maintained material manifest still
+owns component identities, original material hashes, fonts and prior observations.
+Current raw output hashes and component/font associations come from that build;
+third-party component metadata changes fail rather than inheriting an old
+association. A workspace component carries its actual current manifest identity,
+checked against both the disk file and the fixed Git source blob; its prior
+metadata hash remains historical. Missing or forged current identities fail.
+Unassociated historical components remain identified as historical only. Current
+observations and package receipts retain the incomplete-inventory and
+unaccepted-license flags; packing does not establish installed Host acceptance.
+The runner retains the ten archives and bounded JSON receipts until its job ends;
+this workflow does not upload archives or install a real Host.
+
+Before any publication, CI checks all ten exact registry versions. Only a version
+404 means absent. An existing version is skipped only when registry metadata SRI
+and the downloaded tarball's actual size and SHA-512 match the newly prepared
+archive. Any mismatch or network/registry error stops the job. Missing packages
+are published in dependency order, with the aggregate last, through OIDC using
+only the verified tarballs and `--tag beta`. Dependencies must be visible with
+matching bytes before a dependent package is published; every publication and
+the final complete set are checked again. A retry that builds different bytes
+fails safely and requires a reviewed input/version decision; it never overwrites,
+unpublishes, moves a separate dist-tag or blindly skips an existing version.
+
+For **each of the ten scoped packages**, its npm maintainer must verify the
+Trusted Publisher identity: GitHub organization `alibaba-damo-academy`, repository
+`yugoo-design`, workflow filename **`publish-dsh.yml`**, no environment name, and
+Allowed actions including direct **npm publish**. The publish job has
+`contents: read` and `id-token: write`; the dry-run job has no OIDC permission.
+No stored npm token is used. Preserve Companion's existing
+`publish-companion.yml` identity. An inaccessible trust listing does not prove
+that a publisher is absent; configuration and a successful OIDC publication
+remain separate from source checks. See [npm's Trusted Publisher configuration](https://docs.npmjs.com/trusted-publishers/).
 
 ## Recover an interrupted source export
 

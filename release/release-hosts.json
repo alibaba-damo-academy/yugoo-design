@@ -3,7 +3,7 @@
   "hosts": {
     "dsh": {
       "aggregatePackage": "@yugoo-design/dsh-design-system-dsh",
-      "aggregateVersion": "0.1.0-beta.2",
+      "aggregateVersion": "0.1.0-beta.9",
       "registry": "https://registry.npmjs.org"
     }
   }

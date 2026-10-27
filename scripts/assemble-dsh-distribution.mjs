@@ -62,7 +62,7 @@ export function projectDistributionCode(code, mapping, file) {
 }
 
 /** Preserve native build inputs and original licensing; own-code uses its existing material authority. */
-export async function prepareDshPackageMaterials({ source, target, sourceName, manifest }) {
+export async function prepareDshPackageMaterials({ source, target, sourceName, manifest, observationFile, observationSha256 }) {
   if (sourceName === 'yugoo-design-git-native') {
     assert.match(manifest.name, /^(?:@[a-z0-9][a-z0-9._-]*\/)?yugoo-design-git-native$/u)
     // The release mapping owns the scoped npm identity. All source/build inputs
@@ -81,7 +81,7 @@ export async function prepareDshPackageMaterials({ source, target, sourceName, m
     try { await readFile(join(target, name)) }
     catch (error) { if (error.code !== 'ENOENT') throw error; await cp(join(source, name), join(target, name)) }
   }
-  await copyDshDistributionMaterials({ source, target, sourceName, packageName: manifest.name })
+  await copyDshDistributionMaterials({ source, target, sourceName, packageName: manifest.name, observationFile, observationSha256 })
 }
 /** One manifest projection shared by selection checks and actual staging. */
 export function createDshDistributionManifest(report, sourceName) {
@@ -149,7 +149,7 @@ export function selectDshDistributionPackages(report, { packageNames = Object.ke
   return { packageNames: [...packageNames], retained }
 }
 
-export async function assembleDshDistribution({ source, destination, npmCli, scope = '@yugoo-design', version, versions, packageNames, retainedManifests }) {
+export async function assembleDshDistribution({ source, destination, npmCli, scope = '@yugoo-design', version, versions, packageNames, retainedManifests, observationFile, observationSha256 }) {
   source = resolve(source); destination = resolve(destination)
   assert.ok(isAbsolute(npmCli), 'Absolute npm CLI required')
   assert.ok(destination !== source && !relative(source, destination).startsWith('.' + '/') && !destination.startsWith(source + '/'), 'Output must be outside source')
@@ -189,7 +189,7 @@ export async function assembleDshDistribution({ source, destination, npmCli, sco
         await writeFile(output, stringify(project(data)))
       } else await cp(join(original, path), output)
     }
-    await prepareDshPackageMaterials({ source, target, sourceName: originalName, manifest })
+    await prepareDshPackageMaterials({ source, target, sourceName: originalName, manifest, observationFile, observationSha256 })
     await writeFile(join(target, 'package.json'), JSON.stringify(manifest, null, 2) + '\n')
     const packed = JSON.parse(execFileSync(process.execPath, [npmCli, 'pack', '--json', '--ignore-scripts', '--pack-destination', archiveRoot], { cwd: target, encoding: 'utf8' }))[0]
     assert.equal(packed.name, item.name); assert.equal(packed.version, item.version)

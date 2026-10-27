@@ -1,3 +1,4 @@
+import { withNormalBuildEvidence } from '../../scripts/normal-build-module-evidence.mjs'
 import { defineConfig } from 'tsdown'
 import { dirname, join } from 'node:path'
 import { createRequire } from 'node:module'
@@ -36,7 +37,7 @@ const { esmExternalRequirePlugin } = await import(pathToFileURL(
 const interpreterAssets = canvasBrowserAssets(import.meta.url)
 const clientAssets = canvasBrowserAssets(import.meta.url)
 
-export default defineConfig([
+export default withNormalBuildEvidence('dsh-release-panel', defineConfig([
   // Node half: exists so the Loader row mounts and the ClientModuleRegistry can
   // discover the dsh.client manifest.
   {
@@ -138,4 +139,4 @@ export default defineConfig([
       },
     }, dshClientStyles(ID, import.meta.url, { preprocessCss: clientAssets.preprocessCss, resources: cssResourceBuildOptions('dsh-design-panel-client') }), graphLayoutWorker(), graphBrowserDependencies()],
   },
-])
+]))

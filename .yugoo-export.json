@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": "0229b3e84e7889b9d450ec62178d1bdaf87b9df1",
-  "policySha256": "81ac33dff296a7a008658c5e854dfe93a3c568e87f45c544f0ed68924b68c860",
+  "revision": "e3c403caa90201b4901785b743a8acde0f7769c6",
+  "policySha256": "41dc4b7cf5aa8f8765e93368161f18f0fe50c0db560bce4d10aafa1e6b7a1ea9",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
       "sha256": "9689903cd86839d8805125d1c199b38ea0eb828e5171da23ca178a5c3ec20866",
@@ -79,16 +79,20 @@
       "sha256": "279e102cbfa27e968ca0d951b413de5931f9c89c9435175430998456d3e789da",
       "mode": "100644"
     },
+    ".github/workflows/publish-dsh.yml": {
+      "sha256": "8299982df5ecf6abcec312fee14b6ec0656101edbe975ac946b8029d222e9041",
+      "mode": "100644"
+    },
     ".gitignore": {
       "sha256": "3c66e283dd94e30d1a3295470a397963d7e26e4d283640bf9ac2f6efc834c815",
       "mode": "100644"
     },
     "AGENTS.md": {
-      "sha256": "51ed647f5b81cfcec8061d54219710b86e80f59088124dba5dc5534adf3a2cc7",
+      "sha256": "c9ed6490701771f55782e51875f99404bd7f989cafe1073e67cf5664c136dacf",
       "mode": "100644"
     },
     "CONTRIBUTING.md": {
-      "sha256": "b0e50d17d4cb0fb901cc252d0fa986a6514de1eb74fef919daf5e0093afba631",
+      "sha256": "a27bf6a4f356b6820ab6c47ee025e6fca0ad1959f0aa69d0edf454c95a5bdc8c",
       "mode": "100644"
     },
     "LICENSE": {
@@ -236,7 +240,7 @@
       "mode": "100644"
     },
     "docs/public-document-sync.md": {
-      "sha256": "0751d3da99eed8f62e82da81b8478bd5f263ba7de78747e920581f5611de9e58",
+      "sha256": "d1e6c7f64ddce069f115d769f606fe5e03d0c8af4e80430124f055c976722792",
       "mode": "100644"
     },
     "docs/standalone-roadmap.md": {
@@ -3504,7 +3508,7 @@
       "mode": "100644"
     },
     "packages/core/tsdown.config.ts": {
-      "sha256": "0a3919f8309ec312275ad08eea2db11264e2f4c965d7d5a4798a2cecbee69da2",
+      "sha256": "3f8fa8fe57367339bfaa78d3487d89fa5ca700a46ae665477fd8ee5e2219cb54",
       "mode": "100644"
     },
     "packages/dsh/LICENSE": {
@@ -4464,7 +4468,7 @@
       "mode": "100644"
     },
     "packages/knowledge-ladybug/tsdown.config.ts": {
-      "sha256": "ab8470581d13e873cb3da3c380ce6f9ef8aeb84c863b1b957a9bbe093e483536",
+      "sha256": "511ea263aa6a011fe4035c48167c458a02db2a404aca8ddd5ff39a74cbd50ae2",
       "mode": "100644"
     },
     "packages/panel/LICENSE": {
@@ -6184,7 +6188,7 @@
       "mode": "100644"
     },
     "packages/panel/tsdown.config.ts": {
-      "sha256": "9706600a14a088669c388d36f528a91d4d443c10c0d6b0b48884a33a56430668",
+      "sha256": "ab08fd1ff3b98c490d3b306c761465d76a08b373eec9341621ced01de573cec0",
       "mode": "100644"
     },
     "packages/provider-web-app/LICENSE": {
@@ -7036,7 +7040,7 @@
       "mode": "100644"
     },
     "packages/provider-web-app/tsdown.config.ts": {
-      "sha256": "617ba95e5cb03a58ce7149e5e0b2300e5658f04af454ac4bb00cd2adbc06fdc2",
+      "sha256": "8da7d2d4663a42c848e6e7721e0d7b2049895b0eb747f92fa216dc2bdb7184c2",
       "mode": "100644"
     },
     "packages/skills-a2ui-test/README.md": {
@@ -8212,7 +8216,7 @@
       "mode": "100644"
     },
     "packages/studio-dsh/tsdown.config.ts": {
-      "sha256": "e73ddc7079d92bb2a6a7fbca30a9237ddae0ad7222275eebfd5ace6e16067a9c",
+      "sha256": "dff48bd407b297c6d8aea5f2262673eb4a1852f24900e96c611ec5ad1a7f175d",
       "mode": "100644"
     },
     "packages/studio-ui/LICENSE": {
@@ -8396,7 +8400,7 @@
       "mode": "100644"
     },
     "packages/studio-ui/tsdown.config.ts": {
-      "sha256": "53e6739cef4e930eb31fd2642a4971771e2f7ffafd3f346c4f00e831399bffde",
+      "sha256": "a5c9ec5cf47314b51e13007fd96cf2d30bef89a6320ea269113a51cd58c75602",
       "mode": "100644"
     },
     "packages/studio/LICENSE": {
@@ -8516,7 +8520,7 @@
       "mode": "100644"
     },
     "packages/studio/tsdown.config.ts": {
-      "sha256": "001570354b035774e1479065c8e793b7cfdc56e47d80e7417f2bec4c5951ddb5",
+      "sha256": "ee81cebbe82a8c410fcf5cd54de7e7c85a71c8e5ccac4f6ca714871133508575",
       "mode": "100644"
     },
     "release/companion-version.json": {
@@ -8532,7 +8536,7 @@
       "mode": "100644"
     },
     "release/public-source-policy.json": {
-      "sha256": "b76b7c62ddcaacd58ba495f28e03322ebb23ea49af011d9913984970ab34cb11",
+      "sha256": "facb89bf2a79ba98606686a11d9cacef9cc3a73f27d3eba61172df37dbb3170c",
       "mode": "100644"
     },
     "release/public-source-test-selection.json": {
@@ -8540,11 +8544,11 @@
       "mode": "100644"
     },
     "release/release-hosts.json": {
-      "sha256": "766d5f19685b79de830b67544cc84be2e3cb3c4e39653af17d480844787cb580",
+      "sha256": "df31ad6601f85f016fde4315206c79c75d72c356b889c23b073577cac20d69de",
       "mode": "100644"
     },
     "scripts/assemble-dsh-distribution.mjs": {
-      "sha256": "e1509c8fe3a267972640690b3bc2ef53670ef4bf87efd6900c12671e1bad1833",
+      "sha256": "cef3cf74c60135b1dd3d626633ef920100388f37e58715934d73de65f0b28a74",
       "mode": "100644"
     },
     "scripts/assemble-dsh-distribution.test.mjs": {
@@ -8676,11 +8680,23 @@
       "mode": "100644"
     },
     "scripts/dsh-distribution-materials.mjs": {
-      "sha256": "b863b20d9f289f7508203b80f242dc1383cc6889a97a6d0ecf536e4e947d33f2",
+      "sha256": "d23e5b5317005f9d5686947cc62de6c740bbc4cc2e21373c5d648cb82968a1c0",
       "mode": "100644"
     },
     "scripts/dsh-distribution-materials.test.mjs": {
       "sha256": "fbe4bec96d3f9ed3d272d84d75076221a30a44111d2f46f600b20aca1b31d5a8",
+      "mode": "100644"
+    },
+    "scripts/dsh-release-ci.test.mjs": {
+      "sha256": "bba4c029dbb8df2c4b75415a94a4026a27371df4fb3f5c956e1322bfb8b5e166",
+      "mode": "100644"
+    },
+    "scripts/dsh-release-observations.mjs": {
+      "sha256": "b655c52c66ba496689046dcc93078690ac83793d5cc46b0491c3efb381771301",
+      "mode": "100644"
+    },
+    "scripts/dsh-release-observations.test.mjs": {
+      "sha256": "80911e83ec488db7b27db3167212652f6862c72526cf6dcebaf52d8bd3d5ea18",
       "mode": "100644"
     },
     "scripts/embedded-image-loader-proof.mjs": {
@@ -8780,11 +8796,11 @@
       "mode": "100644"
     },
     "scripts/normal-build-module-evidence.mjs": {
-      "sha256": "674796535e964e03e52b80a8b358c8621f491764f7cf9443c10da629d0b04ae3",
+      "sha256": "fb4e137e8123d09c0c1019c65246a2ec8f497fca4864c4d2da39d3ff5b58dad3",
       "mode": "100644"
     },
     "scripts/normal-build-module-evidence.test.mjs": {
-      "sha256": "3caaa13d99517cfef712c67eb13d0a4c3bb34e69cf77eb63fb48c49a4d10ddb0",
+      "sha256": "cbe8c21f74b16cec75cb37aadb4217c682788d5593fa1aae0be76f8cadd79e33",
       "mode": "100644"
     },
     "scripts/official-dsh-json-input.mjs": {
@@ -8821,6 +8837,10 @@
     },
     "scripts/prepare-companion-release.mjs": {
       "sha256": "cf766fcb9d514b42aefe4966da6e2622fa2d7950990c8585573a4dcde749bab5",
+      "mode": "100644"
+    },
+    "scripts/prepare-dsh-release.mjs": {
+      "sha256": "1c1534d5e5265c1e9503beceb792ec64d717e29c7520f3ebd0a4f7292800652e",
       "mode": "100644"
     },
     "scripts/probe-companion-pica-worker.mjs": {

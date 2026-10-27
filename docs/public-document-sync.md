@@ -32,7 +32,7 @@
 
 `release/public-source-policy.json` 是现有分类 authority；规则按顺序匹配，新文件必须有明确分类及理由。
 
-Companion 发布工作流 `.github/workflows/publish-companion.yml`、发行版本文件 `release/companion-version.json` 及其准备、原生材料获取与定点检查脚本按精确路径选入；维护者操作说明集中在 [CONTRIBUTING.md](../CONTRIBUTING.md#prepare-or-publish-the-companion-npm-beta)。它们与文档一起从固定提交导出，不在公开目录维护另一份。公开仓库推送 `vX.Y.Z-beta.N` Git 标签后，工作流自动构建、校验并发布到 npm 的 `beta` 频道；标签必须与该提交的发行版本文件一致，且提交位于公开 `main` 历史中。普通 `main` 推送（含版本文件变更）不发包。手动入口保留仅构建检查；明确的发布重试必须选择同样有效的版本标签。npm 的 `beta` 频道不创建 Git 标签。DSH 独立发布链不在该工作流范围内。
+Companion 发布工作流 `.github/workflows/publish-companion.yml`、发行版本文件 `release/companion-version.json` 及其准备、原生材料获取与定点检查脚本按精确路径选入；维护者操作说明集中在 [CONTRIBUTING.md](../CONTRIBUTING.md#prepare-or-publish-the-companion-npm-beta)。它们与文档一起从固定提交导出，不在公开目录维护另一份。公开仓库推送 `vX.Y.Z-beta.N` Git 标签后，工作流自动构建、校验并发布到 npm 的 `beta` 频道；标签必须与该提交的发行版本文件一致，且提交位于公开 `main` 历史中。普通 `main` 推送（含版本文件变更）不发包。手动入口保留仅构建检查；明确的发布重试必须选择同样有效的版本标签。npm 的 `beta` 频道不创建 Git 标签。DSH 独立发布链不在该工作流范围内。DSH 十包由独立的 `.github/workflows/publish-dsh.yml` 从同一固定提交导出，复用 `release/release-hosts.json` 中的 DSH 版本字段，以匹配的 `dsh-vX.Y.Z-beta.N` 标签触发；当前正常构建观察、既有装配器和实际 tarball integrity 校验是该链的输入与守卫。两条链的官方 npm 发布均只能在 GitHub Actions 内执行，本机开发、测试、构建和 pack 不授权本机发布。操作说明见 [DSH 发布入口](../CONTRIBUTING.md#prepare-or-publish-the-dsh-npm-beta)。
 
 | 内容 | 处理 |
 | --- | --- |

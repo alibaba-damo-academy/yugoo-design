@@ -1,6 +1,7 @@
+import { withNormalBuildEvidence } from '../../scripts/normal-build-module-evidence.mjs'
 import { defineConfig } from 'tsdown'
 
-export default defineConfig({
+export default withNormalBuildEvidence('dsh-release-studio', defineConfig({
   entry: ['src/index.ts'],
   // The Design Core domain model stays external; the Studio consumes its
   // public Kit/Bundle loader and validation as the single authority.
@@ -12,4 +13,4 @@ export default defineConfig({
   fixedExtension: false,
   dts: true,
   clean: true,
-})
+}))

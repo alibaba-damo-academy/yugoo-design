@@ -1,3 +1,4 @@
+import { withNormalBuildEvidence } from '../../scripts/normal-build-module-evidence.mjs'
 import { defineConfig } from 'tsdown'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -51,7 +52,7 @@ export function webAppBrowserDependencies() {
   }
 }
 
-export default defineConfig([
+export default withNormalBuildEvidence('dsh-release-provider-web-app', defineConfig([
   {
     entry: ['src/index.ts'],
     external: [
@@ -96,4 +97,4 @@ export default defineConfig([
     plugins: [canvasBrowserDependencies(import.meta.url), clientAssets.plugin, webAppBrowserDependencies(),
       dshClientStyles(ID, import.meta.url, { preprocessCss: clientAssets.preprocessCss, resources: cssResourceBuildOptions('dsh-design-provider-web-app-client') })],
   },
-])
+]))
