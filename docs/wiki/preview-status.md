@@ -6,6 +6,41 @@ Check the release and known host limits before installing. Setup steps are in
 
 ## Current release and use
 
+**Release preparation, 2026-10-27:** the unified public npm package is
+`yugoo-design`, its CLI is `yugoo-design`, and the first stable target is `0.1.0`.
+This package has not been published; its registry entry is unavailable. The
+[shared installation prompt](../../packages/companion/HOSTS.md#default-prompt-any-supported-host)
+checks the required exact version and integrity before acquisition. Stop when
+that version is missing. The old `@yugoo-design/companion` package and its `beta`
+channel are historical distribution records, not the default entry or a
+compatibility package for this release.
+
+Existing Mac acceptance covers Codex Desktop on macOS arm64: local candidate
+installation/update, Web App generation, meaningful Panel editing and saving,
+reopening, and consumption by the original Agent. Existing DSH results retain
+their exact host and candidate boundaries; the current DSH guide targets official
+Web/Desktop `0.2.0-rc.2`. Neither record establishes a fresh registry installation
+of the unified package. See [host compatibility](hosts.md) and the
+[Mac owning guide](../../packages/companion/hosts/codex-desktop/README.md).
+Studio authoring enhancements and current KAG visual acceptance remain outside
+this release claim. Source capabilities, dated screenshots and local checks are
+described separately below.
+
+**Project commands:** current source uses `/yugoo kit <kit>` and
+`/yugoo migrate <source-project-path>`. Use the acquired package's own help and
+release manifest; later source changes do not update an installed plugin.
+
+Product npm versions, native suite versions and Kit/Bundle pins are separate.
+Preserve the old runtime and receipts when preparing an owned update; the
+unified name does not silently migrate an old registration or Design Project.
+
+## Historical publication and candidate records
+
+The following records retain their dates, candidates and failures. They describe
+what was checked then; current acquisition starts from the section above.
+
+### Companion registry and use checkpoint, 2026-10-21
+
 **Release checked on 2026-10-21 UTC:** the official registry returned
 `@yugoo-design/companion@0.1.0-beta.19` with its exact integrity. At that time,
 `beta` selected beta.19 and `latest` selected beta.10. Use the
@@ -30,10 +65,14 @@ Companion npm versions, native suite versions and Kit/Bundle pins are separate.
 Older archives may also have different command spelling or default packages.
 The dated publication, download and installation checks are retained below.
 
-## Historical publication and candidate records
+### Companion registry checkpoint, 2026-10-27
 
-The following records retain their dates, candidates and failures. They describe
-what was checked then; current acquisition starts from the section above.
+The registry readback recorded Companion `0.1.0-beta.23` on both npm's `latest`
+and `beta` channels. That package included the bounded Mac/Codex design-session
+slice, reusing local build, installation/update, generation, save/reopen and
+original-Agent consumption evidence. A fresh registry installation and full
+UI/model run were not repeated after that publication. This historical package
+does not establish availability or acceptance of `yugoo-design@0.1.0`.
 
 ### Historical beta.2 source assembly
 
@@ -59,10 +98,11 @@ or publish it. Omitting `--candidate-mode` selects the exploratory fixture route
 
 ### Companion publication record, 2026-10-21
 
-Companion publication and registry readback are confirmed; they do not verify
-cryptographic provenance or every host's installed behavior. The current manual
-[Companion publishing route](../../CONTRIBUTING.md#prepare-or-publish-the-companion-npm-beta)
-is separate from public-source synchronization and DSH package publication.
+Companion publication and registry readback were confirmed at this checkpoint;
+they did not verify cryptographic provenance or every host's installed behavior.
+At that time, Companion publication, public-source synchronization and DSH
+package publication were separate operations. The current unified release route
+is maintained in the [product publishing guide](../../CONTRIBUTING.md).
 Later changes in main require another package release; they do not modify beta.19.
 Native suite numbers, Kit pins and the Companion npm version remain independent.
 
@@ -196,8 +236,10 @@ this documentation does not withdraw packages or rewrite their frozen bytes.
 Use the acquired installer's exact mapping for DSH, independently of the
 Companion release number.
 
-The corrected source default below contains ten physical DSH package identities
-under `@yugoo-design`, including the native Git helper, plus Companion. The helper
+The retained DSH composition below contains ten physical package identities
+under `@yugoo-design`, including the native Git helper. The product installer
+is now being prepared as `yugoo-design`; its version and release mapping must be
+verified independently of these historical package versions. The helper
 is a runtime dependency,
 not an additional Loader entry or a package users must install separately.
 The development workspace remains private; its internal package manifests are
@@ -222,8 +264,8 @@ was still incomplete. Neither record established a complete host installation.
 
 Internal dependencies and peers retain exact version selectors and point to an
 earlier layer. The corrected DSH aggregate selects the nine preceding packages,
-including the native Git helper used by Core. Companion bundles its payload and
-its DSH installer selects the exact aggregate through
+including the native Git helper used by Core. The product distribution bundles
+the Companion payload, and its DSH installer selects the exact aggregate through
 `release-hosts.json`. That runtime installation relationship is not an npm
 dependency edge. Users should not install the internal modules manually.
 Web App is supplied with the main installation: bundled in Companion and a
@@ -310,8 +352,10 @@ or changing project pins. These are distinct outcomes, not a publishing marketpl
 
 The operations-modeling Kit's current migration, real solve/rerun and independent
 contributor/recipient flow require their own acceptance. The earlier decision-brief
-example below does not prove them. macOS native-host acceptance remains untested
-in these records; Node portability does not substitute for that verification.
+example below does not prove them. These Studio records do not establish current
+macOS authoring or visual acceptance. The separate Mac Codex Desktop design-session
+results above do not extend that scope; Node portability does not substitute
+for verification.
 
 
 

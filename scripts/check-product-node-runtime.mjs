@@ -41,7 +41,7 @@ Object.assign(env, {
   ONNXRUNTIME_NODE_INSTALL_CUDA: 'skip',
 })
 const receipt = {
-  scope: 'isolated-companion-node-install', version,
+  scope: 'isolated-product-node-install', version,
   node: process.versions.node, execPath: node, platform: process.platform, arch: process.arch,
   tarball, tarballSha256: createHash('sha256').update(await readFile(tarball)).digest('hex'),
   nativeHostRegistrationVerified: false, semanticKagVerified: false, published: false,
@@ -62,12 +62,12 @@ async function run(label, args, extraEnv = {}) {
 try {
   await run('npm-install', [npmCli, 'install', '--prefix', directories.consumer, '--engine-strict', '--no-audit', '--no-fund',
     '--registry=https://registry.npmjs.org', '--userconfig', userconfig, '--globalconfig', globalconfig, '--cache', directories.cache, tarball])
-  const installed = join(directories.consumer, 'node_modules/@yugoo-design/companion')
+  const installed = join(directories.consumer, 'node_modules/yugoo-design')
   const manifest = JSON.parse(await readFile(join(installed, 'package.json'), 'utf8'))
-  assert.equal(manifest.name, '@yugoo-design/companion')
+  assert.equal(manifest.name, 'yugoo-design')
   assert.equal(manifest.version, version)
   receipt.installed = { root: installed, engines: manifest.engines }
-  const result = JSON.parse(await run('check-runtime', [join(installed, 'bin/design-system.mjs'), 'check-runtime', '--host', 'codex', '--receipt-dir', directories.receipts]))
+  const result = JSON.parse(await run('check-runtime', [join(installed, 'bin/yugoo-design.mjs'), 'check-runtime', '--host', 'codex', '--receipt-dir', directories.receipts]))
   assert.equal(result.scope, 'installed-runtime-readonly')
   assert.equal(result.observation.node, process.versions.node)
   assert.equal(await realpath(result.observation.execPath), node)

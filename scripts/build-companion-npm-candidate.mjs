@@ -48,7 +48,7 @@ const inputRoots = [
   'scripts/known-node-loader-proof.mjs',
   'scripts/companion-ladybug-dependency.mjs',
   'scripts/embedded-image-loader-proof.mjs', 'scripts/ui-blob-chain-evidence.mjs', 'scripts/probe-companion-ui-blob-chain.mjs',
-  'release/release-hosts.json', 'docs/companion-npm-fixture-2026-09-30.json', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.base.json', ...OWN_LICENSE_FILES,
+  'scripts/product-release.mjs', 'release/release-hosts.json', 'release/product.json', 'release/product-package-template.json', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.base.json', ...OWN_LICENSE_FILES,
 ]
 
 export async function snapshotCompanionInputs(nativeGitArtifactRoot, { releaseHostsFile } = {}) {
@@ -204,8 +204,8 @@ export function parseSameSourceBuildArgs(args) {
     return { ladybugDependency, ...(nativeGitArtifactRoot ? { nativeGitArtifactRoot } : {}), ...releaseHosts, candidate: { fixture: true, scope: '@fixture-design-release', ...(version ? { version } : {}), ...(distribution ? { distribution } : {}) } }
   }
   const packageName = flags['--package-name']
-  assert.match(packageName ?? '', /^@[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/u, 'Explicit scoped candidate package name required')
-  const scope = packageName.split('/')[0]
+  assert.match(packageName ?? '', /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/u, 'Explicit candidate package name required')
+  const scope = packageName.startsWith('@') ? packageName.split('/')[0] : '@yugoo-design'
   assert.ok(!scope.startsWith('@fixture'), 'Fixture scopes cannot identify a non-fixture candidate')
   assert.ok(version, 'Non-fixture candidate requires an explicit version')
   assert.equal(ladybugDependency, '0.21.1', 'Non-fixture candidate requires the official exact Ladybug dependency')
@@ -227,7 +227,7 @@ export async function buildSameSourceCandidate({ ladybugDependency, nativeGitArt
     report.dirty = Boolean(spawnSync('git', ['--no-optional-locks', 'status', '--porcelain'], { cwd: workspace, encoding: 'utf8' }).stdout.trim())
     report.node = process.versions.node
     report.toolchain = { tsdownEntry: rootRequire.resolve('tsdown'), rolldownUtils: createRequire(rootRequire.resolve('tsdown')).resolve('rolldown/utils') }
-    const template = JSON.parse(await readFile(join(workspace, 'docs/companion-npm-fixture-2026-09-30.json'), 'utf8'))
+    const template = JSON.parse(await readFile(join(workspace, 'release/product-package-template.json'), 'utf8'))
     template.dependencies['@ladybugdb/wasm-core'] = selectedLadybug
     report.runtimeDependencies = template.dependencies
     report.ladybugDependency = selectedLadybug

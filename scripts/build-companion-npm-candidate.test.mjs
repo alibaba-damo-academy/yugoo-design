@@ -17,11 +17,12 @@ import { artifactInventory, inventorySha256, sha256 } from './pica-worker-eviden
 const fixture = fileURLToPath(new URL('./test-fixtures/pica-worker/', import.meta.url))
 
 test('non-fixture build identity requires exact public package and official dependency', () => {
-  const args = ['--ladybug-dependency', '0.21.1', '--candidate-mode', 'non-fixture', '--package-name', '@yugoo-design/companion', '--version', '0.1.0']
-  assert.deepEqual(parseSameSourceBuildArgs(args), { ladybugDependency: '0.21.1', candidate: { fixture: false, scope: '@yugoo-design', packageName: '@yugoo-design/companion', version: '0.1.0' } })
+  const args = ['--ladybug-dependency', '0.21.1', '--candidate-mode', 'non-fixture', '--package-name', 'yugoo-design', '--version', '0.1.0']
+  assert.deepEqual(parseSameSourceBuildArgs(args), { ladybugDependency: '0.21.1', candidate: { fixture: false, scope: '@yugoo-design', packageName: 'yugoo-design', version: '0.1.0' } })
   assert.equal(parseSameSourceBuildArgs(args.map(value => value === '0.1.0' ? '0.1.0-beta.1' : value)).candidate.version, '0.1.0-beta.1')
   const betaArgs = args.map(value => value === '0.1.0' ? '0.1.0-beta.1' : value)
-  assert.equal(parseSameSourceBuildArgs([...betaArgs, '--distribution', 'beta']).candidate.distribution, 'beta')
+  assert.equal(parseSameSourceBuildArgs([...args, '--distribution', 'stable']).candidate.distribution, 'stable')
+  assert.throws(() => parseSameSourceBuildArgs([...betaArgs, '--distribution', 'stable']))
   assert.equal(parseSameSourceBuildArgs([...args, '--native-git-artifacts', '/pinned/native']).nativeGitArtifactRoot, '/pinned/native')
   assert.throws(() => parseSameSourceBuildArgs([...args, '--native-git-artifacts', './relative']))
   const selected = parseSameSourceBuildArgs([...args, '--release-hosts-file', '/pinned/local-hosts.json', '--release-hosts-sha256', 'a'.repeat(64)])
@@ -38,7 +39,7 @@ test('non-fixture build identity requires exact public package and official depe
     args.slice(0, -2),
     [...args, '--version', '0.2.0'],
     args.map(value => value === '0.1.0' ? 'latest' : value),
-    args.map(value => value === '@yugoo-design/companion' ? '@fixture-design-release/companion' : value),
+    args.map(value => value === 'yugoo-design' ? '@fixture-design-release/companion' : value),
     args.map(value => value === '0.21.1' ? 'npm:@example/ladybug@0.21.1' : value),
     args.map(value => value === 'non-fixture' ? 'release' : value),
     [...args, '--publish', 'true'],

@@ -4,7 +4,8 @@ import { createHash } from 'node:crypto'
 import { appendFile, cp, lstat, mkdir, readFile, readdir, realpath, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { valid, prerelease } from 'semver'
+import { valid } from 'semver'
+import { readProductRelease, productReleaseHosts, validateReleaseVersion } from './product-release.mjs'
 import { copyOwnLicenseMaterials, OWN_LICENSE_FILES } from './release-own-license.mjs'
 import { OFFICIAL_DSH_JSON_AUTHORITY, readOfficialDshJsonInput } from './official-dsh-json-input.mjs'
 import { selectCandidateLadybug } from './companion-ladybug-dependency.mjs'
@@ -26,14 +27,14 @@ function launcher(entry) {
 
 /** Delivery copy is distinct from validation or permission to publish. */
 export function validateCompanionDistribution(distribution, { fixture, version }) {
-  assert.ok(['candidate', 'beta'].includes(distribution), 'Distribution must be candidate or beta')
-  if (distribution === 'beta') {
-    assert.equal(fixture, false, 'A fixture cannot become a beta package')
-    assert.ok(typeof version === 'string' && prerelease(version)?.[0] === 'beta', 'Beta delivery requires an exact beta prerelease version')
+  assert.ok(['candidate', 'stable'].includes(distribution), 'Distribution must be candidate or stable')
+  if (distribution === 'stable') {
+    assert.equal(fixture, false, 'A fixture cannot become a stable package')
+    validateReleaseVersion(version)
   }
 }
 
-async function betaReadme(packageName, version) {
+async function productReadme(packageName, version) {
   const source = 'packages/companion/README.md'
   const bytes = await readFile(new URL('../' + source, import.meta.url))
   const text = bytes.toString('utf8')
@@ -45,7 +46,7 @@ async function betaReadme(packageName, version) {
   const section = text.slice(start, stop).trim()
   assert.ok(section.includes('<package-selector>'), 'Maintained npm guide requires an exact package selector')
   return {
-    text: `# Yugoo Design Companion — beta\n\nPackage: \`${packageName}@${version}\`.\n\n` + section.replaceAll('<package-selector>', `${packageName}@${version}`) + '\n',
+    text: `# Yugoo Design\n\nPackage: \`${packageName}@${version}\`.\n\n` + section.replaceAll('<package-selector>', `${packageName}@${version}`) + '\n',
     source: { path: source, sourceSha256: sha(bytes), sectionSha256: sha(section) },
   }
 }
@@ -92,7 +93,13 @@ export async function readCompanionReleaseHosts({ licenseRoot, releaseHostsFile,
   if (!bytes) return { bytes: undefined, source: null, selection: null }
   const hash = sha(bytes)
   if (explicit) assert.equal(hash, releaseHostsSha256, 'Release hosts input hash changed')
-  return { bytes, source: { path, sha256: hash }, selection: validateReleaseHosts(JSON.parse(bytes)) }
+  const source = { path, sha256: hash }
+  if (!explicit) {
+    const product = await readProductRelease(licenseRoot)
+    source.product = product
+    bytes = Buffer.from(JSON.stringify(productReleaseHosts(product, JSON.parse(bytes)), null, 2) + '\n')
+  }
+  return { bytes, source, selection: validateReleaseHosts(JSON.parse(bytes)) }
 }
 
 export async function buildCompanionCandidate({ payloadSource, destination, licenseRoot, officialInputRoot, scope, packageName, version, ladybugVersion, ladybugDependency, fixture, distribution = 'candidate', releaseHostsFile, releaseHostsSha256 }) {
@@ -100,15 +107,22 @@ export async function buildCompanionCandidate({ payloadSource, destination, lice
   assert.match(scope ?? '', /^@[a-z0-9][a-z0-9._-]*$/u)
   assert.ok(typeof version === 'string' && valid(version) === version, 'Explicit canonical versions required')
   validateCompanionDistribution(distribution, { fixture, version })
-  const maintainedReadme = distribution === 'beta' ? await betaReadme(packageName, version) : undefined
+  const maintainedReadme = distribution === 'stable' ? await productReadme(packageName, version) : undefined
   const selectedLadybug = selectCandidateLadybug({ ladybugDependency, ladybugVersion, scope })
   if (!fixture) {
-    assert.match(packageName ?? '', /^@[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/u, 'Non-fixture candidate requires an explicit npm package name')
-    assert.ok(packageName.startsWith(scope + '/'), 'Package name must match the explicit scope')
+    assert.match(packageName ?? '', /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/u, 'Non-fixture candidate requires an explicit npm package name')
+    assert.ok(!packageName.startsWith('@') || packageName.startsWith(scope + '/'), 'Package name must match the explicit scope')
     assert.ok(!scope.startsWith('@fixture'), 'Fixture scopes cannot identify a non-fixture candidate')
     assert.equal(selectedLadybug, '0.21.1', 'Non-fixture candidate requires the official exact Ladybug dependency')
   } else assert.equal(packageName, undefined, 'Fixture names are generated from the fixture scope')
   const releaseHosts = await readCompanionReleaseHosts({ licenseRoot, releaseHostsFile, releaseHostsSha256 })
+  if (distribution === 'stable') {
+    const product = await readProductRelease(licenseRoot)
+    assert.equal(packageName, product.name, 'Stable package identity must match the product manifest')
+    assert.equal(version, product.version, 'Stable package version must match the product manifest')
+    assert.ok(releaseHosts.bytes, 'Stable product requires an exact host mapping')
+    assert.equal(JSON.parse(releaseHosts.bytes).hosts.dsh.aggregateVersion, version, 'Stable host mapping must use the product version')
+  }
   const payloadFiles = await files(payloadSource)
   await verifyCompanionNativeGit(join(payloadSource, 'shared'))
   const required = ['shared/scripts/design.mjs', 'shared/web/index.html', 'shared/knowledge/runtime.mjs', 'shared/knowledge/embedding-worker.js', 'shared/knowledge/cli-lifecycle.mjs', 'shared/kits/web_app/kit.yaml']
@@ -124,12 +138,12 @@ export async function buildCompanionCandidate({ payloadSource, destination, lice
   const browserLicenseEntries = await prepareBrowserLicenseMaterials(licenseRoot)
   const ladybugLicenseEntries = selectedLadybug === '0.21.1' ? await prepareLadybugLicenseMaterials(licenseRoot) : null
   const releaseHostsBytes = releaseHosts.bytes
-  const template = JSON.parse(await readFile(new URL('../docs/companion-npm-fixture-2026-09-30.json', import.meta.url), 'utf8'))
+  const template = JSON.parse(await readFile(new URL('../release/product-package-template.json', import.meta.url), 'utf8'))
   template.name = fixture ? `${scope}/design-system-companion` : packageName
   template.version = version
   if(releaseHostsBytes)template.files=[...new Set([...template.files,'release-hosts.json'])]
-  template.description = distribution === 'beta'
-    ? 'Yugoo Design Companion beta: interactive Design Projects and Panels in supported native Agent Hosts.'
+  template.description = distribution === 'stable'
+    ? 'Yugoo Design: shared Design Projects, Kits, Panels and Studio with native DSH and Companion host integrations.'
     : fixture
     ? 'Assembled Companion review candidate; installation and release validation remain incomplete.'
     : 'yugoo-design unpublished npm candidate; installation and release validation remain incomplete.'
@@ -139,7 +153,7 @@ export async function buildCompanionCandidate({ payloadSource, destination, lice
   template['x-design-release-review'].desktopPreparation = { 'codex-desktop': {
     source: 'npm-backed', scope: 'owned-local-source-and-personal-catalog', nativeActivationRequired: true,
   } }
-  if (distribution === 'beta') template.publishConfig = { access: 'public', tag: 'beta' }
+  if (distribution === 'stable') template.publishConfig = { access: 'public', tag: 'latest' }
   template.dependencies['@ladybugdb/wasm-core'] = selectedLadybug
   if (selectedLadybug === '0.21.1') assert.ok(portableFiles.has('shared/knowledge/runtime-manifest.json'), 'Official Ladybug candidate requires a knowledge runtime manifest')
   if (portableFiles.has('shared/knowledge/runtime-manifest.json')) {
@@ -180,7 +194,7 @@ export async function buildCompanionCandidate({ payloadSource, destination, lice
   await writeFile(join(target, 'README.md'), maintainedReadme?.text ?? (fixture
     ? 'Review fixture only. Use the single authoritative installation guide. No host was installed.\n'
     : [
-      '# yugoo-design Companion — unpublished npm candidate',
+      '# Yugoo Design — unpublished npm candidate',
       '',
       `Candidate: ${packageName}@${version}. This package is not a published or approved release.`,
       '',
@@ -199,12 +213,12 @@ export async function buildCompanionCandidate({ payloadSource, destination, lice
       'After installing this exact candidate tarball in your chosen test directory, run from that directory:',
       '',
       '```sh',
-      'npx --no-install design-system --help',
+      'npx --no-install yugoo-design --help',
       '```',
       '',
       'This prints the current commands, required host-specific inputs and limitations without registering a host. Do not substitute a fixture package or an unpinned latest version.',
       '',
-      'Claude Code: run `npx --no-install design-system install --host claude-code --claude-executable /absolute/path/to/claude --receipt-dir /absolute/external/receipts` once. Qoder CLI: run `npx --no-install design-system install --host qoder --qoder-executable /absolute/path/to/qodercli --receipt-dir /absolute/external/receipts` once. These use native user-scope persistent registration. Then start the host normally in your project and use `/yugoo-design:yugoo`; no --plugin-dir is required. Keep the npm installation at its registered path. Qoder supports an optional existing --qoder-config-dir; omission preserves native defaults. Qoder registration is not a runtime readiness test: use check-runtime separately. Claude direct install checks runtime before applying. No model is launched by registration. Linux CLI is the existing tested scope.',
+      'Claude Code: run `npx --no-install yugoo-design install --host claude-code --claude-executable /absolute/path/to/claude --receipt-dir /absolute/external/receipts` once. Qoder CLI: run `npx --no-install yugoo-design install --host qoder --qoder-executable /absolute/path/to/qodercli --receipt-dir /absolute/external/receipts` once. These use native user-scope persistent registration. Then start the host normally in your project and use `/yugoo-design:yugoo`; no --plugin-dir is required. Keep the npm installation at its registered path. Qoder supports an optional existing --qoder-config-dir; omission preserves native defaults. Qoder registration is not a runtime readiness test: use check-runtime separately. Claude direct install checks runtime before applying. No model is launched by registration. Linux CLI is the existing tested scope.',
       '',
       'The optional `plugin-directory --host claude-code` (or qoder) command returns a session-only diagnostic entry, not installation. Codex retains its saved-plan and matching runtime-receipt route. Claude also supports saved plans and owned receipt recovery/uninstall. Qoder preserves unknown or modified registrations and requires explicit native uninstall before replacement. DSH uses this product entry to install its mapped aggregate and internal modules automatically into an existing external DSH host; official CLI/Loader pins and an existing profile are required. Bound release-hosts.json supplies its aggregate selector and registry. DSH failures retain partial state without rollback.',
       '',
@@ -244,7 +258,7 @@ try {
   if(dshInstall) { process.off('SIGINT',cancel);process.off('SIGTERM',cancel) }
 }
 `
-  await writeFile(join(target, 'bin/design-system.mjs'), bin, { flag: 'wx', mode: 0o755 })
+  await writeFile(join(target, 'bin/yugoo-design.mjs'), bin, { flag: 'wx', mode: 0o755 })
   const currentReleaseHosts = await readCompanionReleaseHosts({ licenseRoot, releaseHostsFile, releaseHostsSha256 })
   assert.deepEqual(currentReleaseHosts.source, releaseHosts.source, 'Release hosts input drift during assembly')
   const assets = {}

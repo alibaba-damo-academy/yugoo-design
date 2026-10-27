@@ -100,7 +100,7 @@ Do not read transcript contents or reveal connection tokens.
   await copyFile(new URL('./plugin/design-system/skills/design-panel/native-execution.md', import.meta.url), join(target, 'skills/yugoo/native-execution.md'))
   await writeFile(join(target, 'README.md'), `# Yugoo Design for WorkBuddy
 
-Acquire the exact @yugoo-design/companion npm version in a persistent user-owned
+Acquire the exact yugoo-design npm version in a persistent user-owned
 directory, then run its install --host workbuddy command with the verified Node
 path, preparation destination and --suite-version ${version}. Use Node
 >=22.19.0 for the updated package; check the acquired exact version's

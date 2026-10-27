@@ -1,0 +1,48 @@
+{
+  "description": "Yugoo Design: shared design infrastructure with native DSH and Companion host integrations.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alibaba-damo-academy/yugoo-design.git"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "yugoo-design": "bin/yugoo-design.mjs"
+  },
+  "files": [
+    "bin",
+    "payload",
+    "licenses",
+    "release-manifest.json",
+    "README.md",
+    "LICENSE",
+    "NOTICE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "dependencies": {
+    "@ladybugdb/wasm-core": "0.21.1",
+    "@huggingface/transformers": "3.8.1",
+    "onnxruntime-common": "1.21.0",
+    "undici": "8.10.2"
+  },
+  "x-design-release-review": {
+    "fixture": true,
+    "publishReady": false,
+    "registryChecked": false,
+    "platformsVerified": [],
+    "sharedPayload": "payload/shared",
+    "hostOverlays": [
+      "codex",
+      "claude-code",
+      "qoder"
+    ],
+    "platformStrategy": "npm installs public runtime dependencies on the target; do not copy build-machine node_modules",
+    "modelIncluded": false
+  }
+}

@@ -104,7 +104,7 @@ async function priorReceipt(path) {
 
 /** Shared exact npm identity grammar for desktop preparation routes. */
 export function assertDesktopNpmIdentity(packageName, packageVersion) {
-  assert.match(packageName ?? '', /^@[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/); assert.match(packageVersion ?? '', packageVersionPattern)
+  assert.match(packageName ?? '', /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/); assert.match(packageVersion ?? '', packageVersionPattern)
   assert.ok(packageVersion.length < 128, 'Package version too long')
   const [versionCore, metadata] = packageVersion.split('+'), pre = versionCore.split('-').slice(1).join('-')
   if (pre) assert.ok(pre.split('.').every(part => /^[0-9A-Za-z-]+$/.test(part) && !/^0[0-9]+$/.test(part)), 'Noncanonical npm prerelease version')
@@ -282,7 +282,7 @@ export async function desktopPreparationReuseMain(args, { npmRoot } = {}) {
 
 export async function desktopPreparationMain(args, { npmRoot } = {}) {
   const values = preparationArguments(args)
-  if (values.help) return { kind: 'desktop-preparation-help', status: 'not-applicable', usage: 'design-system prepare-desktop --target qwenwork|workbuddy --package-name EXACT_SCOPED_NAME --package-version EXACT_NPM_VERSION --suite-version NATIVE_RELEASE_VERSION --destination EXTERNAL_DIRECTORY [--node-executable ABSOLUTE_WINDOWS_NODE]',
+  if (values.help) return { kind: 'desktop-preparation-help', status: 'not-applicable', usage: 'yugoo-design prepare-desktop --target qwenwork|workbuddy --package-name EXACT_PACKAGE_NAME --package-version EXACT_NPM_VERSION --suite-version NATIVE_RELEASE_VERSION --destination EXTERNAL_DIRECTORY [--node-executable ABSOLUTE_WINDOWS_NODE]',
     options: { '--node-executable': 'Reuse an existing Node >=22.19.0. On Windows, omission discovers a compatible public installation; cross-platform preparation requires an explicit Windows locator and does not verify its executable. Preview/plugin/temporary runtimes are rejected. No Node is downloaded or owned.', '--qwenwork-runtime': 'Explicit JSON with existing QwenWork executable/worker/Node paths and exact executable/worker hashes.', '--separate-mcp': 'QwenWork only: omit the suite connector and emit one external connector JSON for organization policy.', '--previous-receipt': 'Verified successful preparation receipt for an owned new-version update; preserves the same WorkBuddy market.', '--npm-root-windows, --destination-windows': 'Explicit target path mapping required for cross-platform preparation; native Windows paths must match actual roots.' },
     limits: ['Preparation does not acquire from registry, register a host, grant native admission, verify loaded versions or alter a host profile.', 'Acquire the exact npm release first; retain its durable installation and old version until the native update is verified.'] }
   return prepareDesktopPackage({ npmRoot, target: values.target, packageName: values['package-name'], packageVersion: values['package-version'], destination: values.destination,

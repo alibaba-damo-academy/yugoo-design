@@ -4,7 +4,7 @@
 
 Start with the [shared installation prompt](../../HOSTS.md#install-or-update-workbuddy)
 and [stable installation and updates](#stable-installation-and-updates).
-Companion npm versions and numeric native suite versions are independent.
+Product npm versions and numeric native suite versions are independent.
 On 2026-10-21 the user confirmed manual foreground GRA on WorkBuddy; the observed
 5.8.3 asynchronous path still occupied the main conversation. This is acceptance
 of the confirmed foreground flow, not nonblocking background execution or an
@@ -544,8 +544,8 @@ Conversation switching and actual-host cleanup checks remain pending.
 
 ## Stable installation and updates
 
-For a fresh installation, acquire the exact `@yugoo-design/companion` npm version
-in a persistent user-owned directory and use its `install --host workbuddy`
+For a fresh installation, check and acquire the exact `yugoo-design` npm version
+in a persistent user-owned directory and use `yugoo-design install --host workbuddy`
 entry with the verified Node path, external preparation destination and
 an explicit native suite version (the recorded beta.18 preparation used
 `--suite-version 0.3.30`). Select the version for the acquired package; an update

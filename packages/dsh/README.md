@@ -1,6 +1,23 @@
 # Yugoo Design for DeepSeek Harness
 
-The single external DeepSeek Harness installation bundle for Yugoo Design. Official DSH is a read-only Host compatibility target: this package uses public Cordis, command, tool, Agent, interaction, subagent, Remote, and client-module extension points and requires no DSH patch, fork, or Design-specific release. Installing it adds direct Loader rows for generic Core, Panel, Studio, Design Knowledge, the official Web App provider, and the official Web App content Kit. DeepSeek Harness discovers each package's browser plugin through its own `dsh.client` declaration; this distribution does not compile or hide a combined client. The Settings launcher opens the full-page `/design-studio/` workspace, which uses the same Typert Remote and storage-domain-backed Studio service without creating a Session or Agent.
+This package owns the internal DeepSeek Harness installation bundle for Yugoo
+Design. Users acquire the unified `yugoo-design` product, whose DSH adapter
+installs the exact aggregate and internal modules. The first stable product
+target is `0.1.0`, not yet published to npm; a missing release stops acquisition.
+
+Official DSH is a read-only Host compatibility target. This package uses public
+Cordis, command, tool, Agent, interaction, subagent, Remote, and client-module
+extension points and requires no DSH patch, fork, or Design-specific release.
+Installing it adds direct Loader rows for generic Core, Panel, Studio, Design
+Knowledge, the official Web App provider, and the official Web App content Kit.
+DeepSeek Harness discovers each package's browser plugin through its own
+`dsh.client` declaration; this distribution does not compile or hide a combined
+client.
+
+The Settings launcher source opens the full-page `/design-studio/` workspace,
+which uses the same Typert Remote and storage-domain-backed Studio service
+without creating a Session or Agent. These source mechanisms do not establish
+current Studio authoring or visual acceptance.
 
 `dsh-design-skills-web-app` contains one Mindset plus self-contained Bundle
 files, including optional ordinary Agent-facing scripts. Generic Core confines
@@ -95,7 +112,8 @@ Do not substitute the earlier WAL fork, an unpublished fixture alias, or `latest
 Copy the [shared installation prompt](../companion/HOSTS.md#default-prompt-any-supported-host)
 into the existing DSH conversation, or explicitly use the
 [DSH override](../companion/HOSTS.md#install-or-update-deepseek-harness).
-The Agent checks release availability, acquires the exact product installer
+The Agent checks availability of the required exact `yugoo-design` product installer,
+stopping if it is missing, then acquires it
 from npm and uses its `release-hosts.json` to install the aggregate and internal
 modules through the official host. Users do not install the internal modules or
 native helper manually.
@@ -126,7 +144,8 @@ beta.2 archives or their installation acceptance.
 Use the selected release's manifest and installation guide, rather than the
 versions recorded in [historical release checks](#historical-release-checks).
 Normal Design versioning uses the bundled native Git runtime, without
-system Git, on Windows x64 MSVC and Linux x64 GNU; other platforms are unsupported.
+system Git, on Windows x64 MSVC, Linux x64 GNU and macOS arm64. Actual DSH
+installation and functional scope still depend on the selected candidate.
 System Git remains separate for source development and explicit CLI diagnostics.
 
 If a selected release is missing, report it rather than partially installing a
@@ -392,10 +411,12 @@ and release.
 
 ### Candidate npm installer: DSH route and recovery limits
 
-The published Companion `0.1.0-beta.3` exposes an `install --host dsh`
-route. This is an installer adapter for the separately installed official DSH
+The product CLI route is `install --host dsh`; the historical Companion
+`0.1.0-beta.3` was an earlier distribution of this adapter. The unified
+`yugoo-design@0.1.0` product is not yet published. This is an installer adapter
+for the separately installed official DSH
 host, not a bundled DSH application or a desktop Companion runtime inside DSH.
-Yugoo design has one product installation entry. For DSH, that entry installs
+Yugoo Design has one product installation entry. For DSH, that entry installs
 the exact mapped aggregate and its internal modules automatically; users do
 not install the internal packages individually. DSH itself remains an external
 host. The Companion payload is not registered as a DSH bundle.
@@ -410,11 +431,11 @@ change the exact release version or the canonical origin in that mapping.
 Use the same effective registry for dry-run, apply and receipt-owned updates;
 neither origin nor transport migration is implicit. The plan/receipt records
 both, with no automatic fallback or global registry configuration change.
-For a beta set, use the exact aggregate version recorded in that product
+For a release set, use the exact aggregate version recorded in that product
 candidate's `release-hosts.json` and its default registry or an explicitly
 selected mirror with matching release integrity, preserving
 the complete dependency set's exact package pins, including any declared native
-Git helper. Do not substitute an earlier beta.
+Git helper. Do not substitute an earlier release or beta package.
 This identifies the intended release;
 it does not establish registry availability or authorize publication. Older or unbound candidates
 retain the explicit selector and registry compatibility route. Use `--dry-run`

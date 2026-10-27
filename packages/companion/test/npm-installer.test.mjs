@@ -79,7 +79,7 @@ test('public installer help returns JSON usage without configuration or registra
     const result=await installerMain(args,options)
     assert.equal(result.kind,'installer-help')
     assert.equal(result.status,'not-applicable') // The existing public bin treats this as exit 0.
-    assert.equal(JSON.parse(JSON.stringify(result)).usage,'design-system <command> [options]')
+    assert.equal(JSON.parse(JSON.stringify(result)).usage,'yugoo-design <command> [options]')
     assert.deepEqual(Object.keys(result.commands),['resolve-node','prepare-desktop','install','plugin-directory','check-runtime','recover','uninstall'])
     assert.ok(result.options['--help, -h'])
   }
@@ -1004,7 +1004,7 @@ async function dshEntryFixture(t) {
   async function put(path,value){await mkdir(dirname(path),{recursive:true});await writeFile(path,value)}
   await mkdir(npmRoot)
   await put(join(npmRoot,'package.json'),json({name:'@release/companion',version:'0.1.0-beta.1'}))
-  for(const file of ['design-system.mjs','installer.mjs','npm-installer-dsh.mjs','npm-agent-installation.mjs'])
+  for(const file of ['yugoo-design.mjs','installer.mjs','npm-installer-dsh.mjs','npm-agent-installation.mjs'])
     await put(join(npmRoot,'bin',file),'// synthetic acquired product '+file+'\n')
   await put(join(profile,'package.json'),json({name:'selected-profile',dsh:{profile:{bundles:[],patchReload:'startup'}},models:{keep:true}}))
   await put(join(profile,'cordis.patch.yml'),'[]\n');await put(join(home,'cordis.patch.yml'),'[]\n')

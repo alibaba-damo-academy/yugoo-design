@@ -10,16 +10,16 @@
 
 默认主路径是复制[同一段通用安装提示词](../../packages/companion/HOSTS.md#default-prompt-any-supported-host)，让当前宿主的 Agent 选择安装路径；需要时可显式指定宿主。已有符合所需精确版本、适配器和运行条件的安装可以复用，无需为刷新宿主重复取同一包。需要新版本时，再从 npm 获取到独立长期目录。
 
-2026-10-21 的官方 npm 仓库查询确认 Companion `0.1.0-beta.19` 已发布，当时 `beta` 指向 beta.19，`latest` 仍为 beta.10；安装前重新解析所选渠道并固定版本。历史发行、候选与宿主实测见[预览状态](preview-status.md#current-release-and-use)。取得新包后，仍需在宿主中完成登记或导入、启用和重载，再核对实际版本与面板保存是否可用。
+统一产品包与 CLI 均为 `yugoo-design`，首个正式版本计划为 `0.1.0`，目前尚未发布到 npm。所需版本缺失时停止安装，不回退到旧 `@yugoo-design/companion` 或 `beta` 渠道。历史发行、候选与宿主实测见[发行状态](preview-status.md#current-release-and-use)。取得新包后，仍需在宿主中完成登记或导入、启用和重载，再核对实际版本与面板保存是否可用。
 
 日常入口随宿主不同：DSH 使用 `/yugoo` 子命令，Codex 使用 `$yugoo` 或技能选择器，Claude Code/Qoder 使用已安装插件的 `/yugoo-design:yugoo`。千问办公和 WorkBuddy 在原生技能入口选择 `yugoo`，再向 Agent 用自然语言提出项目操作；不要把 DSH 的整套斜杠参数当作所有宿主都能直接解析的命令。
 
 ## DeepSeek Harness
 
-- 呈现方式：宿主内嵌 Design Panel 与 Studio。桌面端目前只有 DSH 能承载完整功能与一体化交互体验；其他桌面宿主的支持范围分别说明，不以桌面应用名称推断同等能力。
+- 呈现方式：宿主内嵌设计面板（Design Panel）；Studio 源码另有查看和创作入口，当前验收边界见[Studio 状态](preview-status.md#studio-source-capabilities-and-installed-acceptance)。其他桌面宿主的支持范围分别说明，不以桌面应用名称推断同等能力。
 - 安装入口：[DSH 专用提示词](../../packages/companion/HOSTS.md#install-or-update-deepseek-harness)与[DSH 安装指南](../../packages/dsh/README.md#candidate-npm-installer-dsh-route-and-recovery-limits)。本地工作区路线用于发布前预检。
-- 现有公开指南记录官方 DSH `0.1.2-rc.1` 的本地候选安装路线；开发仓的 submodule pin 是另一组开发输入。
-- 已发布 Companion `0.1.0-beta.23` 随包的 `release-hosts.json` 固定 DSH 聚合包 `0.1.0-beta.2`。这是该安装器的精确分发映射，与 registry 当前另有 `beta.7` 聚合包分开；取得 Companion 最新版不等于自动选择 DSH registry 的最高版本。
+- 当前 DSH 指南的目标为官方 Web/Desktop `0.2.0-rc.2`；既有候选的实际安装、生成、保存与原 Agent 消费记录，仍按其精确宿主和制品范围阅读。早期 `0.1.2-rc.1` 路线保留为历史记录。
+- DSH 聚合包和内部模块使用所取得产品包的 `release-hosts.json` 精确映射，不从 registry 挑选最高版本。旧 Companion `0.1.0-beta.23` 固定聚合包 `0.1.0-beta.2` 的事实保留为历史映射，不能作为统一 `0.1.0` 的分发声明。
 - 模型、搜索和用户配置由 DSH 管理。插件通过公开扩展点接入。
 
 安装候选与具体功能的验证范围见 [DSH 指南](../../packages/dsh/README.md)和[预览状态](preview-status.md)。
@@ -30,7 +30,7 @@
 - 安装入口：[Companion 指南](../../packages/companion/README.md)，按其中的 Codex 插件/注册路线选择。
 - 原生会话识别、执行和消息返回依赖实际 Codex 版本，不能套用其他宿主的注册命令。
 - Codex Desktop 在 macOS arm64 上已有独立接入入口，采用随包插件准备和宿主原生启用流程，见 [Mac Codex Desktop 指南](../../packages/companion/hosts/codex-desktop/README.md)。
-- 已发布 Companion `0.1.0-beta.23` 纳入了已验收的 Mac/Codex 切片，复用本地构建、安装更新，以及 Web App 生成、面板编辑保存、原 Agent 消费和重开的实机证据。发布后的真实 npm registry 重新安装及整轮 UI/模型推理没有额外重跑；后续 Studio 原生创作增强不在这一支持声明内。
+- macOS arm64 的 Codex Desktop 切片已有本地构建、安装更新、Web App 生成、面板编辑保存、原 Agent 消费和重开的实机证据。旧 Companion `0.1.0-beta.23` 曾纳入该切片；统一新包仍需自己的安装验证。真实 npm registry 新包安装、Studio 原生创作增强和 KAG 当前视觉验收不在这些既有结果内。
 
 安装后按[首次协作步骤](getting-started.md#3-创建设计项目)创建项目、请求结果并检查保存与继续；原生接线和执行限制以本候选的 [Companion 指南](../../packages/companion/README.md)为准。
 
@@ -38,7 +38,7 @@
 
 - 呈现方式：绑定原生会话的 Companion UI。
 - 安装入口：[Companion 持久注册指南](../../packages/companion/README.md#npm-candidate-and-native-installation-boundary)。
-- 使用指南中的 `design-system install --host claude-code` 路线注册所提供的候选；正常启动宿主后使用已安装的 Design skill。
+- 使用指南中的 `yugoo-design install --host claude-code` 路线注册所提供的候选；正常启动宿主后使用已安装的 Design skill。
 - 当前测试范围为 Claude Code CLI；桌面端接入尚未测试。
 
 正常启动并确认已安装入口后，按[首次协作步骤](getting-started.md#3-创建设计项目)检查项目、面板保存和原会话继续。持久注册、已有进程及执行限制仍按上述候选指南核对。
@@ -46,7 +46,7 @@
 ## Qoder CLI
 
 - 呈现方式：绑定原生会话的 Companion UI，沿用 Qoder 的模型和原生 Hooks。
-- 安装入口：[Companion 持久注册指南](../../packages/companion/README.md#claude-code-and-qoder-cli-persistent-native-registration)。从所提供候选的 npm 安装目录，按指南使用 `design-system install --host qoder` 完成原生注册。
+- 安装入口：[Companion 持久注册指南](../../packages/companion/README.md#claude-code-and-qoder-cli-persistent-native-registration)。从所提供候选的 npm 安装目录，按指南使用 `yugoo-design install --host qoder` 完成原生注册。
 - 注册后正常启动 Qoder CLI，在会话中使用 `/yugoo-design:yugoo`；已运行的宿主需要重启以加载注册。源码构建的临时插件目录路线另见 [Qoder CLI 预览指南](../../packages/companion/README.md#qoder-cli-preview)。
 - 已记录的原生进程绑定与 Hook 验证范围是 Linux/WSL、Qoder CLI `1.1.48`。其他平台、版本与后台能力按候选分别核实。
 

@@ -6,6 +6,8 @@
 
 Node 优先复用系统或版本管理器中已有的合规安装；新增宿主适配器无需另装一份。不要将开发预览、其他应用私有目录或临时测试目录里的 Node 作为长期依赖。缺少合规版本时先统一准备 Node，再继续安装；所选版本的[安装指南](../../packages/companion/README.md#npm-candidate-and-native-installation-boundary)说明如何检查并指定路径。移除插件注册与清理运行时是不同操作，Yugoo 不删除复用的外部 Node。
 
+统一产品包为 `yugoo-design`，CLI 为 `yugoo-design`，首个正式版本计划为 `0.1.0`。目前该包尚未发布到 npm；以下正常安装步骤需在精确版本可用后进行。发布前只有明确交付的候选可以按[候选预检](#发布前候选预检)验证。旧 `@yugoo-design/companion` 和 `beta` 渠道保留为历史记录，不作为新安装的默认入口。
+
 ## 1. 复制通用提示词
 
 把[通用安装提示词](../../packages/companion/HOSTS.md#default-prompt-any-supported-host)复制到当前宿主的 Agent 输入框。首次安装和更新使用同一入口，Agent 按真实宿主上下文选择安装方式；你不需要判断内部应安装 DSH 还是 Companion，也不会一次安装本机所有宿主。
@@ -14,18 +16,19 @@ Node 优先复用系统或版本管理器中已有的合规安装；新增宿主
 
 | 当前宿主 | 安装或更新入口 | 你将使用的界面 |
 | --- | --- | --- |
-| DeepSeek Harness | [操作指引](../../packages/companion/HOSTS.md#install-or-update-deepseek-harness) | 官方 DSH profile 中的对话、设计面板与 Studio |
+| DeepSeek Harness | [操作指引](../../packages/companion/HOSTS.md#install-or-update-deepseek-harness) | 官方 DSH profile 中的对话与设计面板；Studio 范围另见状态页 |
 | Codex CLI | [操作指引](../../packages/companion/HOSTS.md#install-or-update-codex-cli) | CLI 对话，浏览器中的设计面板 |
+| Codex Desktop（macOS arm64） | [操作指引](../../packages/companion/HOSTS.md#install-or-update-codex-desktop-on-macos-arm64) | 原生对话，连接同一会话的共享设计面板 |
 | Claude Code CLI | [操作指引](../../packages/companion/HOSTS.md#install-or-update-claude-code-cli) | CLI 对话，浏览器中的设计面板 |
 | Qoder CLI | [操作指引](../../packages/companion/HOSTS.md#install-or-update-qoder-cli) | CLI 对话，浏览器中的设计面板 |
 | 千问办公（QwenWork） | [操作指引](../../packages/companion/HOSTS.md#install-or-update-qwenwork) | 在宿主中导入专家套件及连接器后使用 |
 | WorkBuddy | [操作指引](../../packages/companion/HOSTS.md#install-or-update-workbuddy) | 在宿主中导入插件来源并按提示刷新或更新 |
 
-Codex 与 Claude Code 当前仅测试了 CLI 接入，桌面端尚未测试。完整安装参数、配置及恢复步骤见[宿主接入入口](../../packages/companion/HOSTS.md)。
+Codex Desktop 已有 macOS arm64 的独立候选验收记录；Claude Code 的当前记录仍限于 CLI。宿主表列出已有接入方式，具体版本与验收范围见[宿主兼容](hosts.md)，不代表统一新包已通过全部宿主验收。完整安装参数、配置及恢复步骤见[宿主接入入口](../../packages/companion/HOSTS.md)。
 
 ## 2. 让宿主 Agent 安装或更新
 
-Agent 会获取所选 `beta` 渠道的精确版本，阅读随包指南，再完成宿主注册或准备导入材料。需要授权、原生界面导入、重启或新会话时，按它的提示操作；千问办公和 WorkBuddy 的材料准备后还要完成宿主要求的界面确认。
+Agent 会先检查 `yugoo-design` 的所需精确发行版本是否可用，记录完整性，阅读随包指南，再完成宿主注册或准备导入材料。首个目标为 `yugoo-design@0.1.0`，尚未发布时应报告缺包并停止。需要授权、原生界面导入、重启或新会话时，按它的提示操作；千问办公和 WorkBuddy 的材料准备后还要完成宿主要求的界面确认。
 
 结束时，你应知道实际启用的版本、进入项目的方法，以及尚需手动完成的步骤。Agent 分别说明包获取、宿主登记或导入、激活和实际可用状态。只取得新包、或页面出现新文案，不代表宿主已经加载新版本；保留安装目录与回执，按原入口更新和恢复。
 
@@ -100,7 +103,7 @@ Agent 按 Kit 的方法澄清背景，或直接展开可讨论的结果。设计
 
 这些说明用于安装准备和排查，宿主的具体命令仍以[统一安装入口](../../packages/companion/HOSTS.md#agent-led-installation-and-updates)为准。
 
-- **版本管理：** 运行库随包提供，正常设计操作无需另装 Git。当前随包平台为 Windows x64/MSVC 和 Linux x64/GNU；其他平台与宿主范围见[预览状态](preview-status.md)。DSH 使用官方 profile 和同一产品安装器选择原生集成，无需额外运行 Companion 服务或逐个补装内部模块；Ladybug 是固定版本的第三方运行时依赖。
+- **版本管理：** 运行库随包提供，正常设计操作无需另装 Git。当前源码支持 Windows x64/MSVC、Linux x64/GNU 和 macOS arm64；具体安装候选与宿主范围见[预览状态](preview-status.md)。DSH 使用官方 profile 和同一产品安装器选择原生集成，无需额外运行 Companion 服务或逐个补装内部模块；Ladybug 是固定版本的第三方运行时依赖。
 - **本地向量化（Embedding）：** KAG 使用 CPU，无需 GPU。首次通过 npm/npx 获取包前，按统一入口为安装进程设置 `ONNXRUNTIME_NODE_INSTALL_CUDA=skip`，跳过 CUDA 下载并保留依赖所需的正常安装脚本。已经取得的包不能替先前的获取进程补设环境；GPU 加速不在首发支持范围内。
 - **本地模型文件：** 使用该版本要求的完整缓存，或在支持的入口显式允许下载固定模型。模型名称、缓存位置与各宿主的下载限制见[本地向量模型准备](../../packages/companion/README.md#local-embedding-model-preparation)。跳过 CUDA 不等于无需模型；宿主的对话模型也不能替代本地向量模型。
 - **宿主模型与搜索：** 用户在宿主侧配置，插件不提供共享密钥或额度。跳过搜索配置不代表调研能力已验证；安装了某个 CLI 也不能证明当前会话正在该宿主中运行。
@@ -112,7 +115,7 @@ Agent 按 Kit 的方法澄清背景，或直接展开可讨论的结果。设计
 
 ```sh
 ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm install --ignore-scripts=false --save-exact /absolute/path/to/RECEIVED_EXACT_TARBALL.tgz
-npx --no-install design-system --help
+npx --no-install yugoo-design --help
 ```
 
 CLI 宿主按 [Companion 指南](../../packages/companion/README.md#npm-candidate-and-native-installation-boundary)验证登记与运行；DSH 按收到的完整候选依赖清单及随包指南预检，[旧版官方宿主工作区路线](../../packages/dsh/README.md#unpublished-release-official-local-workspace-route)保留其对应制品的历史记录，不代表新候选的包数或验收。桌面候选按对应宿主材料与实际版本验证。旧候选的结果不会自动成为当前 npm 发行的验收结果。

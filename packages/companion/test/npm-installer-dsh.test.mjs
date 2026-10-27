@@ -295,7 +295,7 @@ async function productFixture(t) {
   const f=await fixture(t), npmRoot=join(f.root,'product'), configPath=join(f.root,'pins.json')
   await f.put(join(npmRoot,'package.json'),json({name:'@release/companion',version:'0.1.0-beta.1',
     dependencies:{'@ladybugdb/wasm-core':'0.21.1','@huggingface/transformers':'3.8.1','onnxruntime-common':'1.21.0',undici:'8.10.2'}}))
-  for(const file of ['design-system.mjs','installer.mjs','npm-installer-dsh.mjs','npm-agent-installation.mjs'])
+  for(const file of ['yugoo-design.mjs','installer.mjs','npm-installer-dsh.mjs','npm-agent-installation.mjs'])
     await f.put(join(npmRoot,'bin',file),'// isolated product entry '+file+'\n')
   await f.put(configPath,json({dshHome:f.home,...f.pins,hostVersion:f.adapterOptions.hostVersion,loaderVersion:f.adapterOptions.loaderVersion}))
   const mapping={schemaVersion:1,hosts:{dsh:{aggregatePackage:'@release/design-system-dsh',aggregateVersion:'1.2.3',registry:'https://registry.npmjs.org/'}}}
@@ -391,8 +391,8 @@ test('Node resolves a pnpm-style package link to pinned physical product bytes w
   await mkdir(dirname(physical), { recursive: true }); await rename(f.context.npmRoot, physical)
   const logical = join(f.root, 'consumer/node_modules/@release/companion')
   await mkdir(dirname(logical), { recursive: true }); await symlink(physical, logical, 'dir')
-  await f.put(join(physical, 'bin/design-system.mjs'), "import { fileURLToPath } from 'node:url'; export const npmRoot = fileURLToPath(new URL('../', import.meta.url));\n")
-  const { npmRoot } = await import(pathToFileURL(join(logical, 'bin/design-system.mjs')).href)
+  await f.put(join(physical, 'bin/yugoo-design.mjs'), "import { fileURLToPath } from 'node:url'; export const npmRoot = fileURLToPath(new URL('../', import.meta.url));\n")
+  const { npmRoot } = await import(pathToFileURL(join(logical, 'bin/yugoo-design.mjs')).href)
   const result = await installerMain([...f.args, '--registry', 'https://registry.npmmirror.com/'], { ...f.context, npmRoot })
   assert.equal(result.product.npmRoot, physical)
   assert.equal(result.status, 'registered-config-parsed'); assert.equal(f.calls.length, 1)
@@ -475,7 +475,7 @@ async function updateFixture(t, registry) {
   manifest.version = '0.1.0-beta.2'
   await f.put(join(npmRoot, 'package.json'), json(manifest))
   await f.put(join(npmRoot, 'release-hosts.json'), json({ ...f.mapping, hosts: { dsh: { ...f.mapping.hosts.dsh, aggregateVersion: '1.2.4' } } }))
-  for (const file of ['design-system.mjs', 'installer.mjs', 'npm-installer-dsh.mjs', 'npm-agent-installation.mjs'])
+  for (const file of ['yugoo-design.mjs', 'installer.mjs', 'npm-installer-dsh.mjs', 'npm-agent-installation.mjs'])
     await f.put(join(npmRoot, 'bin', file), await readFile(join(f.context.npmRoot, 'bin', file)))
   f.setAction(async () => {
     await f.install('1.2.4')
@@ -549,7 +549,7 @@ test('repeated observations keep the latest actual native update owner and permi
   await f.put(join(root, 'package.json'), json(m))
   const mapping = JSON.parse(await readFile(join(f.nextRoot, 'release-hosts.json'), 'utf8')); mapping.hosts.dsh.aggregateVersion = '1.2.5'
   await f.put(join(root, 'release-hosts.json'), json(mapping))
-  for (const file of ['design-system.mjs', 'installer.mjs', 'npm-installer-dsh.mjs', 'npm-agent-installation.mjs'])
+  for (const file of ['yugoo-design.mjs', 'installer.mjs', 'npm-installer-dsh.mjs', 'npm-agent-installation.mjs'])
     await f.put(join(root, 'bin', file), await readFile(join(f.nextRoot, 'bin', file)))
   f.setAction(() => f.install('1.2.5'))
   const c = await installerMain([...f.args, '--previous-receipt', input.receiptFile], { ...f.context, npmRoot: root })
@@ -771,7 +771,7 @@ test('owned retained-link update remains a separate optional co-install branch',
   const m = JSON.parse(await readFile(join(f.context.npmRoot, 'package.json'), 'utf8')); m.version = '0.1.0-beta.2'
   await f.put(join(bRoot, 'package.json'), json(m))
   await f.put(join(bRoot, 'release-hosts.json'), json({ ...f.mapping, hosts: { dsh: { ...f.mapping.hosts.dsh, aggregateVersion: '1.2.4' } } }))
-  for (const file of ['design-system.mjs', 'installer.mjs', 'npm-installer-dsh.mjs', 'npm-agent-installation.mjs'])
+  for (const file of ['yugoo-design.mjs', 'installer.mjs', 'npm-installer-dsh.mjs', 'npm-agent-installation.mjs'])
     await f.put(join(bRoot, 'bin', file), await readFile(join(f.context.npmRoot, 'bin', file)))
   const b = await retained(bRoot, '1.2.4'); f.setAction(() => linkInstall(b))
   const result = await installerMain([...f.args, '--previous-receipt', first.receiptFile], { ...f.context, npmRoot: bRoot })

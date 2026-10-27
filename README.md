@@ -27,9 +27,11 @@
 
 准备好 **Node.js `>=22.19.0`**，以及一个已配置模型的智能体宿主（Agent Host）。插件沿用宿主已有的模型、会话与工具；安装环境见[开始使用](docs/wiki/getting-started.md)。
 
+统一产品包为 `yugoo-design`，命令行入口为 `yugoo-design`，首个正式版本计划为 `0.1.0`，目前尚未发布到 npm。发布前请先核对[发行状态](docs/wiki/preview-status.md#current-release-and-use)；所需版本不存在时停止安装。下列步骤用于该版本发布后的安装与首次协作。
+
 1. **安装插件。** 把[通用安装提示词](packages/companion/HOSTS.md#default-prompt-any-supported-host)复制给当前宿主的智能体（Agent），按它的提示完成授权、导入或启用，以及必要的重启或新建会话。
 
-   目前支持 DeepSeek Harness（DSH）、Codex CLI、Claude Code CLI、Qoder CLI、千问办公（QwenWork）和 WorkBuddy。DSH 提供完整功能与一体化交互体验，将对话、设计面板和设计工作室（Studio）放在同一工作区。其他宿主的功能支持与交互方式各有不同，详见[宿主指南](docs/wiki/hosts.md)。
+   已有验收记录包括 macOS arm64 上的 Codex Desktop，以及 DeepSeek Harness（DSH）的具体安装候选。DSH 将对话与设计面板放在同一工作区；Codex Desktop 连接原生会话并显示共享面板。Codex CLI、Claude Code CLI、Qoder CLI、千问办公（QwenWork）和 WorkBuddy 的既有接入与版本边界，详见[宿主指南](docs/wiki/hosts.md)。各项记录不代替统一新包的安装验收。
 
 2. **创建设计项目。** 调用已安装的 `yugoo` 入口，直接请求：
 
@@ -102,13 +104,15 @@ AI 结合你的目标、已有设计和反馈，判断当前还缺什么：是�
 
 你可以复用、组合或定制 Kit 与 Bundle，调整专业方法、成果结构和交互方式，为自己的领域构建设计工具。面板可以通过**声明式 UI** 预先配置，也可以在支持的宿主中由 AI 通过 **A2UI** 从组件目录生成。两种方式共用组件与渲染能力；需要专门的表达时，还可以扩展 UI 组件或接入专业编辑器。
 
-**Studio** 提供查看、管理与定制入口，让方法和面板可以持续完善、重复使用。如何开始见[套件扩展](#从应用设计开始按需扩展)。
+**设计工作室（Studio）** 的源码能力提供查看、管理与定制入口，让方法和面板可以持续完善、重复使用。它的当前安装版与视觉验收范围见[发行状态](docs/wiki/preview-status.md#studio-source-capabilities-and-installed-acceptance)。如何开始见[套件扩展](#从应用设计开始按需扩展)。
 
 ## 一次完整的协作
 
 沿用快速开始中的六人工作室：把客户修改请求的处理约定，转成项目交付平台的流程、规则、权限与页面。在 DeepSeek Harness 中，你可以在左侧与 AI 讨论，在右侧对照设计面板修改；定制套件时再打开 Studio。
 
 示例使用虚构的业务数据。你可以从[快速开始](#快速开始)的目标重新构思，也可以复制[完整示例项目](examples/design-team-delivery/README.md)，按说明迁移后，对照[协作教程](docs/wiki/web-app-demo.md)继续修改。
+
+以下截图保留对话、面板和设计成果之间的协作上下文，展示其对应候选的使用过程。Studio 与关联图谱（KAG）的画面不代表统一 `0.1.0` 已发布或已完成当前视觉验收。
 
 这里展示的是基于 **Web App Kit** 的一种使用流程，不是框架唯一的用法，也不要求每次按相同顺序使用所有面板。你可以[定制自己的 Kit、Bundle 和交互界面](#从应用设计开始按需扩展)，让专业方法、信息表达与交互体验更贴合具体领域和使用目标。
 

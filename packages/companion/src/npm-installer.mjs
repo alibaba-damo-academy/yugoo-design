@@ -781,7 +781,7 @@ export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=cod
     ...Object.fromEntries(DESKTOP_INSTALL_OPTIONS.map(key=>[key,{type:key==='separate-mcp'?'boolean':'string'}]))}})
   if(values.help)return {
     schemaVersion:1,kind:'installer-help',status:'not-applicable',
-    usage:'design-system <command> [options]',
+    usage:'yugoo-design <command> [options]',
     commands:{
       'resolve-node':'Discover and verify an existing compatible Node without a host, npm package or configuration writes.',
       'prepare-desktop':'Prepare a small QwenWork suite or stable WorkBuddy market from this exact acquired npm package. Uses --target, --package-name/--package-version, --suite-version, --node-executable and an external --destination; does not register a host. Updates use the previous preparation receipt.',

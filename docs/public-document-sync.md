@@ -32,7 +32,11 @@
 
 `release/public-source-policy.json` 是现有分类 authority；规则按顺序匹配，新文件必须有明确分类及理由。
 
-Companion 发布工作流 `.github/workflows/publish-companion.yml`、发行版本文件 `release/companion-version.json` 及其准备、原生材料获取与定点检查脚本按精确路径选入；维护者操作说明集中在 [CONTRIBUTING.md](../CONTRIBUTING.md#prepare-or-publish-the-companion-npm-beta)。它们与文档一起从固定提交导出，不在公开目录维护另一份。公开仓库推送 `vX.Y.Z-beta.N` Git 标签后，工作流自动构建、校验并发布到 npm 的 `beta` 频道；标签必须与该提交的发行版本文件一致，且提交位于公开 `main` 历史中。普通 `main` 推送（含版本文件变更）不发包。手动入口保留仅构建检查；明确的发布重试必须选择同样有效的版本标签。npm 的 `beta` 频道不创建 Git 标签。DSH 独立发布链不在该工作流范围内。DSH 十包由独立的 `.github/workflows/publish-dsh.yml` 从同一固定提交导出，复用 `release/release-hosts.json` 中的 DSH 版本字段，以匹配的 `dsh-vX.Y.Z-beta.N` 标签触发；当前正常构建观察、既有装配器和实际 tarball integrity 校验是该链的输入与守卫。两条链的官方 npm 发布均只能在 GitHub Actions 内执行，本机开发、测试、构建和 pack 不授权本机发布。操作说明见 [DSH 发布入口](../CONTRIBUTING.md#prepare-or-publish-the-dsh-npm-beta)。两条正式发布工作流在各自发布验证完成后保留 `beta`，并将 `latest` 同步到当前已公开的最高语义版本（包含测试版）；旧标签重试不回退 `latest`，仅构建检查不写 registry 标签。此能力需相同 Trusted Publisher 另行允许 `npm dist-tag`；没有授权该权限时保留真实失败，不改走本机或 token。
+产品发布工作流 `.github/workflows/publish-product.yml`、产品清单 `release/product.json`、安装包模板 `release/product-package-template.json` 及准备、原生材料获取和定点检查脚本按精确路径选入。维护者操作说明集中在 [CONTRIBUTING.md](../CONTRIBUTING.md#publish-a-product-release)。它们与文档一起从固定提交导出，不在公开目录维护另一份。
+
+公开仓库推送与产品清单一致的 `vX.Y.Z` Git 标签后，工作流依次发布同版 DSH 依赖和统一 `yugoo-design` 产品包；源码必须位于公开 `main` 历史中。正式产品版本不含预发布后缀。DSH 宿主映射模板不再维护独立版本号，安装包中的精确版本从产品清单生成。普通 `main` 推送不发包；手动入口用于仅构建检查或匹配版本标签的发布恢复。原始包、依赖锁和完整性证据随同一固定源码绑定，不能用新打包结果冒充原包恢复。
+
+官方 npm 发布只在 GitHub Actions 内执行，本机开发、测试、构建和 pack 不授权本机发布。产品与内部包使用相同的 `publish-product.yml` Trusted Publisher 身份；实际账户配置仍须与包、仓库和允许动作一致。正式发布使用 `latest`，不再维护 `beta` 发布通道；重试不得回退到旧版本。
 
 | 内容 | 处理 |
 | --- | --- |

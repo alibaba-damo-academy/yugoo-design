@@ -1,4 +1,4 @@
-# yugoo-design Companion — shared Panels in native agent hosts
+# Yugoo Design — Companion host integration
 
 For host-specific installation, startup and maintenance, start with the
 [host integration entry points](HOSTS.md).
@@ -18,12 +18,13 @@ server. Registry, selection, connection files and caches keep their existing
 locations. Previously registered projects remain at their exact roots; they are
 not moved, and opening them does not require the new Documents destination.
 
-The 2026-10-27 registry readback confirmed Companion `0.1.0-beta.23` on both
-npm's `latest` and `beta` channels. Resolve the chosen channel again before a
-new acquisition, then retain its exact version and integrity.
-Published artifacts, later main-branch changes and installed-host acceptance
-remain separate; publication does not mean every host's installation or update
-has passed. See the
+The unified product package and CLI are `yugoo-design`, with first stable version
+`0.1.0` in preparation and not yet published to npm. Companion names the internal
+host integration and shared browser runtime, not a second product to install.
+The former `@yugoo-design/companion` package and its beta versions remain historical
+records; no compatibility package or beta default is provided for this release.
+Retain the required exact version and integrity when it becomes available.
+Source changes, publication and installed-host acceptance remain separate. See the
 [shared installation prompt and registry status](HOSTS.md#agent-led-installation-and-updates).
 The browser mounts the shared `DesignWorkspace` and project sidebar. Panel
 presentation follows the installed Kit: shared declarative components, retained
@@ -372,10 +373,10 @@ panel validation and save authority still govern authoring and edits.
 This increment has passed the source MCP regression, compiled-server calls, and
 actual stdio calls after an ordinary tarball npm installation outside the
 checkout (38 catalog entries, exact-name filtering and unknown-name rejection).
-Earlier checks used diagnostic candidates; the earlier fixed local candidates use
-the confirmed `@yugoo-design/companion@0.1.0` identity and are still unpublished.
-The next beta target is described in the installation section below; these checks
-do not establish that beta's native-host acceptance.
+Earlier checks used diagnostic candidates; the earlier fixed local candidates
+used `@yugoo-design/companion@0.1.0` and were unpublished. Their identity is a
+historical record, superseded by the unified `yugoo-design` product target below;
+these checks do not establish that product's native-host acceptance.
 Check the installed server's `tools/list` before relying on it; an older
 package does not gain this tool merely because the checkout has changed.
 
@@ -421,7 +422,7 @@ all Panel interactions, or final release acceptance.
 
 ### Maintained npm package guide
 
-The beta package README derives this section from the formal Companion README.
+The product package README derives this section from the formal Companion README.
 Replace `<package-selector>` with the exact package identity printed by the
 release or installed package. The assembler records the source and section hashes;
 this guide does not grant publication approval or complete host acceptance.
@@ -437,26 +438,27 @@ It combines domain methods, Design Projects, versioned Design Files and shared
 Panels. The Companion provides those Panels for hosts outside the native DSH UI;
 it uses the host's own models and conversation.
 
-This beta is experimental. Native installation, tools, Panel saving, KAG and GRA
-must be verified for the actual host version and platform. A successful package
+Native installation, tools, Panel saving, KAG and GRA must be verified for the
+actual host version and platform. A successful package
 installation or runtime-load check does not establish all of those capabilities.
 
 Use Node.js `>=22.19.0` and a durable npm or pnpm installation directory.
 Older package versions retain their own `engines.node` requirements. The current
-release uses the packaged native Git library for normal Design versioning without
-system Git. It bundles Windows x64 MSVC and Linux x64 GNU runtimes; other platforms
-are unsupported. System Git is separate and needed only for the explicit CLI
-diagnostic backend and development fixtures. Missing native support is reported
-rather than silently spawning system Git. Resolve the
-selected beta to the exact version and integrity before acquisition; keep the
-previous installed version available during updates. Do not substitute `latest`.
+payload uses the packaged native Git library for normal Design versioning without
+system Git. Its supported targets are Windows x64 MSVC, Linux x64 GNU and macOS
+arm64; host acceptance remains version-specific. System Git is separate and
+needed only for the explicit CLI diagnostic backend and development fixtures.
+Missing native support is reported rather than silently spawning system Git.
+Resolve the required product release to its exact version and integrity before acquisition;
+keep the previous installed version available during updates. Stop if that exact
+release is missing; do not substitute another package, channel or arbitrary version.
 If a retained installation already matches that exact release and provides the
 required host adapter and runtime, reuse it after checking its help and runtime
 receipt. A stale catalog or old host session is not a reason to download the
 same runtime again. A different required release gets a new retained directory;
 do not overwrite an installed runtime or copy only part of its dependency tree.
 
-Node is a shared prerequisite, separate from the retained Companion package.
+Node is a shared prerequisite, separate from the retained product package.
 Reuse an existing user/system Node installation or a Node version manager;
 installing another host adapter does not download another Node. New installer
 plans select `--node-executable` or `YUGOO_NODE_EXECUTABLE` first, then inspect
@@ -470,7 +472,7 @@ If the acquired release lists `resolve-node` in its help, inspect the selection
 without registering a host or changing configuration:
 
 ```sh
-npx --no-install design-system resolve-node
+npx --no-install yugoo-design resolve-node
 ```
 
 If no compatible Node exists, prepare it once through the system's Node installer
@@ -485,7 +487,7 @@ locator as unverified; it does not establish target runtime acceptance.
 
 ```sh
 ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm install --ignore-scripts=false --save-exact <package-selector> --registry=https://registry.npmjs.org
-npx --no-install design-system --help
+npx --no-install yugoo-design --help
 ```
 
 Alternatively, use an existing pnpm 11 installation (npm remains supported).
@@ -502,7 +504,7 @@ allowBuilds:
 
 ```sh
 ONNXRUNTIME_NODE_INSTALL_CUDA=skip pnpm add --save-exact <package-selector> --registry=https://registry.npmjs.org
-pnpm exec design-system --help
+pnpm exec yugoo-design --help
 ```
 
 Run either acquisition in its own retained version directory, not the Design
@@ -517,7 +519,7 @@ package directory or invoke Node with `--preserve-symlinks` flags.
 
 An explicitly selected HTTPS npm mirror is supported, for example
 `--registry=https://registry.npmmirror.com`. Use it both when acquiring this
-package and when invoking `design-system install --host dsh --registry=<url>`
+package and when invoking `yugoo-design install --host dsh --registry=<url>`
 with the required host inputs. The latter controls the official DSH CLI's
 package download registry; it does not replace that CLI with npm or pnpm.
 The exact aggregate version still comes from `release-hosts.json`, whose registry
@@ -573,7 +575,7 @@ Code, Qoder and QwenWork, the default is **local-only** model loading. Its runti
 help documents `--allow-embedding-download`: when explicitly allowed, this permits
 fetching the pinned model files if absent. Apply it only to that exact owned Panel
 startup with its existing host/session/project arguments. It is a runtime `serve`
-option, **not** a `design-system install` or `check-runtime` option. Conversely,
+option, **not** a `yugoo-design install` or `check-runtime` option. Conversely,
 `--disable-embedding` on that runtime entry keeps structure/evidence without
 semantic embeddings. Neither option changes host model credentials. Model-file
 download and CPU inference do not upload Design text.
@@ -587,7 +589,7 @@ host's service to bypass it. Authorized design work can continue from Design Fil
 and structural evidence; do not report semantic KAG as ready. DSH follows its own
 provider configuration rather than these Companion `serve` flags.
 
-`design-system check-runtime` verifies the declared runtime dependencies and its
+`yugoo-design check-runtime` verifies the declared runtime dependencies and its
 isolated native-load/Git checks. It does **not** fetch or validate the complete
 embedding model, run semantic inference or prove that KAG is current. After cache
 preparation, verify the real project's semantic status separately. Preserve the
@@ -645,7 +647,7 @@ advance beyond its previous receipt's suite version, even when an example here
 uses the old value. Desktop preparation writes that explicit version into the
 import; it does not prove the host loaded it.
 
-Supply the required host inputs shown by `design-system --help`. Without a host,
+Supply the required host inputs shown by `yugoo-design --help`. Without a host,
 the entry returns `host-selection-required`; missing inputs return
 `inputs-required`, both with exit code 2 and no installation attempted. The
 Agent should obtain supported native facts itself and ask only for missing
@@ -683,10 +685,14 @@ host's supported diagnostics, update, recovery and uninstall routes and retain
 their receipts; availability differs by host.
 <!-- npm-package-guide:end -->
 
-Assembly defaults to candidate copy. The explicit `--distribution beta` option
-uses the maintained guide for a non-fixture exact beta prerelease and sets the
-package's `publishConfig` to public access and the `beta` tag. It neither publishes
-nor marks runtime, registry or release validation complete.
+The marked npm guide above remains the assembler's maintained source, with
+`<package-selector>` replaced by the exact candidate identity and version. The
+unified product's release preparation and publication are separate operations.
+Assembly defaults to candidate copy. The current `--distribution stable` mode
+uses the maintained guide for the exact non-fixture product name and stable
+version, and sets public access with the `latest` tag. It neither publishes nor
+marks runtime, registry or release validation complete. Historical beta assembly
+records retain their original options; beta is no longer the current release mode.
 
 Directory development packages and npm releases use different installation
 routes. Use the acquired release's README and help for native installation;
@@ -707,12 +713,14 @@ credential-free HTTPS `--registry` selects a download mirror without changing
 that exact aggregate or the canonical release origin. Pass the same choice to
 dry-run and apply; existing receipt-owned updates must retain both their origin
 and effective registry. Registry migration is not implicit.
-The retained DSH mapping in `release/release-hosts.json` selects
-`@yugoo-design/dsh-design-system-dsh@0.1.0-beta.2` and
-`https://registry.npmjs.org`. That historical aggregate pins eleven owned DSH
-packages, including `@yugoo-design/yugoo-design-git-native`, to `0.1.0-beta.2`.
-It is distinct from the corrected source default and the Companion npm version;
-always inspect the acquired package's own `release-hosts.json`.
+The maintained DSH mapping keeps the internal
+`@yugoo-design/dsh-design-system-dsh` identity and `https://registry.npmjs.org`
+origin. The unified release preparation derives its exact aggregate version from
+the product version; always inspect the acquired package's own
+`release-hosts.json`. Earlier packaged mappings selected aggregate
+`0.1.0-beta.2` with eleven owned DSH packages, including
+`@yugoo-design/yugoo-design-git-native`, at that same beta version. Those frozen
+maps remain historical evidence rather than the unified product's release set.
 Native suite and Kit/Bundle content versions are separate.
 These target values do not establish
 registry availability or an accepted public installation. Older
@@ -720,34 +728,36 @@ or unbound candidates retain the explicit aggregate/registry compatibility
 route, while malformed mappings fail before invoking the host CLI.
 
 `scripts/companion-npm-candidate.mjs` accepts an explicit `fixture` boolean.
-A non-fixture candidate also requires a full scoped `packageName` matching its
-explicit `scope`, a canonical exact `version`, and the official exact
-`@ladybugdb/wasm-core@0.21.1` dependency. Fixture scopes cannot identify that
-candidate. Assembly leaves `publishReady` and `releaseValidated` false; it
-does not install a host or establish runtime, model or platform acceptance.
+A non-fixture candidate requires an explicit npm `packageName`, a canonical exact
+`version`, and the official exact `@ladybugdb/wasm-core@0.21.1` dependency.
+Fixture scopes cannot identify that
+candidate; scoped names must match the explicit scope. Stable mode requires the
+product name/version and matching DSH mapping. Assembly leaves `publishReady` and
+`releaseValidated` false; it does not install a host or establish runtime, model
+or platform acceptance.
 
 Maintainers preparing a new npm release should use the
-[current preparation and publishing guide](../../CONTRIBUTING.md#prepare-or-publish-the-companion-npm-beta).
+[current preparation and publishing guide](../../CONTRIBUTING.md).
 The [beta.2 build record](../../docs/wiki/preview-status.md#historical-beta2-source-assembly)
 retains its original command and verification limits.
 
 ### Registry acquisition by the host Agent
 
 Use the [shared prompt in the current host](HOSTS.md#default-prompt-any-supported-host).
-The Agent first resolves the selected beta channel or an explicit version,
+The Agent first checks the required exact `yugoo-design` version,
 records the exact release and integrity, then acquires it in a durable,
-version-specific directory. Run this example inside a new dedicated version
-directory; it resolves the chosen channel once, then uses that exact selector.
+version-specific directory. The first stable target is `0.1.0` and is not yet
+published. Run this example only when that exact release is available, inside a
+new dedicated version directory; a missing version must stop acquisition.
 Metadata availability does not establish complete archive acquisition or native
 installation. A missing required version is a failed
 availability check, not permission to use another package:
 
 ```sh
-companion_version=$(npm view @yugoo-design/companion@beta version --registry=https://registry.npmjs.org) || exit
-[ -n "$companion_version" ] || exit 1
-npm view "@yugoo-design/companion@$companion_version" version dist.integrity --registry=https://registry.npmjs.org || exit
-ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm install --ignore-scripts=false --save-exact "@yugoo-design/companion@$companion_version" --registry=https://registry.npmjs.org || exit
-npx --no-install design-system --help
+yugoo_version=0.1.0
+npm view "yugoo-design@$yugoo_version" version dist.integrity --registry=https://registry.npmjs.org || exit
+ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm install --ignore-scripts=false --save-exact "yugoo-design@$yugoo_version" --registry=https://registry.npmjs.org || exit
+npx --no-install yugoo-design --help
 ```
 
 This current acquisition example applies the CPU policy from the
@@ -762,18 +772,18 @@ owned receipts; follow that adapter's supported update or uninstall/re-registrat
 route. Normal host startup, the actually loaded version and the design cycle need
 their own verification. A received exact tarball can replace registry acquisition
 for pre-publication checks only. Neither this example nor the prompt publishes
-a package or establishes six-host installation acceptance.
+a package or establishes installation acceptance for every host.
 
 ### Claude Code and Qoder CLI: persistent native registration
 
 First acquire the exact release as above, then register the plugin once using
-the package's `design-system` executable.
+the package's `yugoo-design` executable.
 These examples run from that npm installation directory; replace each absolute
 path with your actual native executable and a separate receipt directory:
 
 ```sh
-npx --no-install design-system install --host claude-code --claude-executable /absolute/claude --receipt-dir /external/receipts
-npx --no-install design-system install --host qoder --qoder-executable /absolute/qodercli --receipt-dir /external/receipts
+npx --no-install yugoo-design install --host claude-code --claude-executable /absolute/claude --receipt-dir /external/receipts
+npx --no-install yugoo-design install --host qoder --qoder-executable /absolute/qodercli --receipt-dir /external/receipts
 ```
 
 Run registration from the intended native user's environment. Qoder optionally
@@ -799,7 +809,7 @@ registration and does not authorize deleting unrelated host state.
 
 Registration and separate native-list readback do not establish MCP startup,
 runtime dependency loading, model execution, panel saving/reopening or GRA/KAG
-success. Use `design-system check-runtime --host HOST --receipt-dir /external/diagnostics`
+success. Use `yugoo-design check-runtime --host HOST --receipt-dir /external/diagnostics`
 for dependency diagnostics, then check the tools/skill in a new ordinary native
 conversation and verify the intended design cycle separately. This is not
 all-version or all-platform certification.
@@ -807,9 +817,10 @@ all-version or all-platform certification.
 ### Desktop npm package preparation
 
 Desktop preparation creates QwenWork expert suites and a stable WorkBuddy
-market from an already acquired exact npm version. The published beta.1 exposes
-this through `prepare-desktop`; later releases also delegate
-`install --host qwenwork` and `install --host workbuddy` to the same preparer.
+market from an already acquired exact npm version. Use `prepare-desktop`, or
+`install --host qwenwork` and `install --host workbuddy`, which delegate to the
+same preparer. Historical beta.1 archives expose their original standalone
+preparation command and help.
 Neither route contacts npm, registers a host, edits a native profile, launches a
 model or verifies that the imported Skill is loaded. Native import and activation
 are still required, and the user's host starts normally.
@@ -822,8 +833,8 @@ lifecycle scripts enabled. A received verified tarball is the preflight
 alternative. Do not select an unreviewed `latest`. From that installed package:
 
 ```sh
-npx --no-install design-system prepare-desktop --help
-npx --no-install design-system prepare-desktop --target workbuddy --package-name @yugoo-design/companion --package-version EXACT_NPM_VERSION --suite-version EXACT_NATIVE_RELEASE_VERSION --node-executable ABSOLUTE_WINDOWS_NODE --destination EXTERNAL_PREPARATION_DIRECTORY
+npx --no-install yugoo-design prepare-desktop --help
+npx --no-install yugoo-design prepare-desktop --target workbuddy --package-name yugoo-design --package-version EXACT_NPM_VERSION --suite-version EXACT_NATIVE_RELEASE_VERSION --node-executable ABSOLUTE_WINDOWS_NODE --destination EXTERNAL_PREPARATION_DIRECTORY
 ```
 
 QwenWork uses `--target qwenwork` plus `--qwenwork-runtime ABSOLUTE_JSON`.
@@ -875,7 +886,7 @@ The old fixed candidate does not gain this command without a new separately
 identified build and installation.
 
 The old session-only route remains an optional diagnostic command:
-`design-system plugin-directory --host claude-code` or `--host qoder`.
+`yugoo-design plugin-directory --host claude-code` or `--host qoder`.
 It returns `launch.executable` and `launch.args` for native `--plugin-dir`
 loading without persistent registration. `plugin-directory-ready` means only
 that required files are present, not that the host or runtime has run. This
@@ -888,7 +899,7 @@ diagnostic route is not a substitute for the persistent installation above.
 Run the package's own command from a durable installation of an exact version:
 
 ```sh
-npx --no-install design-system install --host codex-desktop --destination /absolute/user-home/plugins/yugoo-design/EXACT_VERSION --receipt-dir /absolute/external/receipts --node-executable /absolute/existing/public/node
+npx --no-install yugoo-design install --host codex-desktop --destination /absolute/user-home/plugins/yugoo-design/EXACT_VERSION --receipt-dir /absolute/external/receipts --node-executable /absolute/existing/public/node
 ```
 
 Choose an existing parent for the new source directory. The destination must be

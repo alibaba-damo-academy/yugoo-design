@@ -14,12 +14,12 @@ registration, installed-package acceptance or support for other hosts.
 
 Acquire an exact Companion release in a durable version directory using the
 [shared installation entry](../../HOSTS.md#agent-led-installation-and-updates).
-Read the acquired package's actual `design-system --help`; older releases may
+Read the acquired package's actual `yugoo-design --help`; older releases may
 not expose the npm-backed Desktop route. From that installation's consumer
 directory, prepare a source and review its catalog plan:
 
 ```sh
-npx --no-install design-system install --host codex-desktop \
+npx --no-install yugoo-design install --host codex-desktop \
   --destination /absolute/user-home/plugins/yugoo-design/EXACT_VERSION \
   --receipt-dir /absolute/external/receipts \
   --node-executable /absolute/existing/public/node \
@@ -41,7 +41,7 @@ not prepare the embedding model cache or establish KAG/GRA acceptance.
 Apply the saved plan from the same acquired package:
 
 ```sh
-npx --no-install design-system install --host codex-desktop \
+npx --no-install yugoo-design install --host codex-desktop \
   --apply --plan /absolute/returned/plan.json \
   --receipt-dir /absolute/external/receipts
 ```

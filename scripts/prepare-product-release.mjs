@@ -1,4 +1,4 @@
-/** DSH CI preparation and read-only registry guards. Publication lives only in Actions. */
+/** Unified product preparation and read-only guards. Publication lives only in Actions. */
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { lstatSync } from 'node:fs'
@@ -8,35 +8,27 @@ import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { setTimeout as delay } from 'node:timers/promises'
-import { validateReleaseVersion } from './prepare-companion-release.mjs'
+import { PRODUCT_NAME, readProductRelease, validateProductRelease, validateReleaseVersion, selectProductRelease, productReleaseHosts } from './product-release.mjs'
+export { selectProductRelease } from './product-release.mjs'
 
 export const DSH_SOURCE_PACKAGES = Object.freeze(['yugoo-design-git-native', 'dsh-design-core', 'dsh-design-knowledge-ladybug', 'dsh-design-panel', 'dsh-design-provider-web-app', 'dsh-design-skills-web-app', 'dsh-design-studio', 'dsh-design-studio-ui', 'dsh-design-studio-dsh', 'dsh-design-system-dsh'])
 export const REGISTRY = 'https://registry.npmjs.org'
 export const REPOSITORY = 'alibaba-damo-academy/yugoo-design'
-export const DSH_WORKFLOW = '.github/workflows/publish-dsh.yml'
+export const RELEASE_SOURCE_PACKAGES = Object.freeze([...DSH_SOURCE_PACKAGES, PRODUCT_NAME])
+export const PRODUCT_WORKFLOW = '.github/workflows/publish-product.yml'
 export const ARTIFACT_STEPS = Object.freeze({
-  prepare: 'Build the fixed source once, bind current observations and pack ten archives',
-  seal: 'Seal thirteen files for immutable DSH recovery',
-  upload: 'Retain the prepared DSH archives before any publication',
+  prepare: 'Build the fixed source once, bind current observations and pack eleven archives',
+  seal: 'Seal fourteen files for immutable product recovery',
+  upload: 'Retain the prepared product archives before any publication',
 })
 const MAX_ARTIFACT_BYTES = 256 * 1024 * 1024
+export const packageNameFor = sourceName => sourceName === PRODUCT_NAME ? PRODUCT_NAME : '@yugoo-design/' + sourceName
+export const archiveNameFor = (sourceName, version) => packageNameFor(sourceName).replace(/^@/u, '').replace('/', '-') + '-' + version + '.tgz'
 const workspace = fileURLToPath(new URL('../', import.meta.url))
 export const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
 export const integrity = bytes => 'sha512-' + createHash('sha512').update(bytes).digest('base64')
 const json = async path => JSON.parse(await readFile(path, 'utf8'))
 const git = args => execFileSync('git', args, { cwd: workspace, encoding: 'utf8' }).trim()
-
-export function selectDshRelease({ manifest, expectedVersion, releaseRef, requireTag = false }) {
-  assert.equal(manifest?.schemaVersion, 1)
-  assert.equal(manifest.hosts?.dsh?.aggregatePackage, '@yugoo-design/dsh-design-system-dsh')
-  assert.equal(manifest.hosts.dsh.registry, REGISTRY)
-  const version = validateReleaseVersion(manifest.hosts.dsh.aggregateVersion)
-  if (expectedVersion !== undefined && expectedVersion !== '') assert.equal(validateReleaseVersion(expectedVersion), version, 'Expected version must match release/release-hosts.json')
-  assert.equal(typeof requireTag, 'boolean')
-  assert.ok(releaseRef === undefined || releaseRef === '' || typeof releaseRef === 'string' && /^refs\/(heads|tags)\//u.test(releaseRef), 'Expected branch or tag ref')
-  if (requireTag || releaseRef?.startsWith('refs/tags/')) assert.equal(releaseRef, `refs/tags/dsh-v${version}`, 'DSH tag must match release-hosts exactly')
-  return { version }
-}
 
 /** Verify the actual projected npm metadata before building or packing a release. */
 export function assertDshPublicationMetadata(manifests, mapping) {
@@ -49,6 +41,22 @@ export function assertDshPublicationMetadata(manifests, mapping) {
     }, `DSH publication repository metadata must match the public source: ${name}`)
   }
 }
+export function validateProductManifest(manifest, version) {
+  validateReleaseVersion(version)
+  assert.equal(manifest.name, PRODUCT_NAME); assert.equal(manifest.version, version)
+  assert.deepEqual(manifest.repository, { type: 'git', url: `git+https://github.com/${REPOSITORY}.git` })
+  assert.deepEqual(manifest.bin, { [PRODUCT_NAME]: 'bin/yugoo-design.mjs' })
+  assert.deepEqual(manifest.publishConfig, { access: 'public', tag: 'latest' })
+  assert.equal(manifest.engines?.node, '>=22.19.0', 'Maintained product Node minimum required')
+  assert.equal(manifest.dependencies?.['@ladybugdb/wasm-core'], '0.21.1')
+  assert.equal(manifest.scripts, undefined, 'Product release lifecycle scripts require explicit review')
+}
+export function validatePackInventory(pack, inputs, version) {
+  assert.equal(pack.name, PRODUCT_NAME); assert.equal(pack.version, version)
+  assert.equal(pack.filename, archiveNameFor(PRODUCT_NAME, version))
+  assert.deepEqual(pack.files.map(x => x.path).sort(), Object.keys(inputs).sort(), 'Product pack omitted or added files')
+  for (const file of pack.files) assert.equal(file.size, inputs[file.path].bytes, 'Product pack file size changed')
+}
 
 const decimalId = value => {
   assert.match(value ?? '', /^[1-9][0-9]*$/u, 'Canonical positive Actions ID required')
@@ -57,29 +65,29 @@ const decimalId = value => {
 function assertActionsOrigin(origin, version) {
   assert.equal(origin.repository, REPOSITORY)
   decimalId(origin.repositoryId); decimalId(origin.runId); decimalId(origin.runAttempt)
-  assert.equal(origin.workflowPath, DSH_WORKFLOW)
+  assert.equal(origin.workflowPath, PRODUCT_WORKFLOW)
   assert.ok(['dryrun', 'publish'].includes(origin.job), 'Known DSH preparation job required')
   assert.ok(['push', 'workflow_dispatch'].includes(origin.eventName), 'Untrusted Actions event')
   assert.ok(origin.ref === 'refs/heads/main' && origin.eventName === 'workflow_dispatch'
-    || origin.ref === `refs/tags/dsh-v${version}`, 'Reviewed main or matching fixed DSH tag required')
+    || origin.ref === `refs/tags/v${version}`, 'Reviewed main or matching fixed DSH tag required')
 }
-export function dshActionsContext(env = process.env) {
+export function productActionsContext(env = process.env) {
   assert.equal(env.GITHUB_ACTIONS, 'true', 'DSH artifact operations run only in Actions')
   assert.equal(env.GITHUB_REPOSITORY, REPOSITORY)
-  assert.equal(env.GITHUB_WORKFLOW_REF, `${REPOSITORY}/${DSH_WORKFLOW}@${env.GITHUB_REF}`)
+  assert.equal(env.GITHUB_WORKFLOW_REF, `${REPOSITORY}/${PRODUCT_WORKFLOW}@${env.GITHUB_REF}`)
   assert.match(env.GITHUB_SHA ?? '', /^[a-f0-9]{40}$/u)
   return { repository: env.GITHUB_REPOSITORY, repositoryId: decimalId(env.GITHUB_REPOSITORY_ID),
-    workflowPath: DSH_WORKFLOW, runId: decimalId(env.GITHUB_RUN_ID), runAttempt: decimalId(env.GITHUB_RUN_ATTEMPT),
+    workflowPath: PRODUCT_WORKFLOW, runId: decimalId(env.GITHUB_RUN_ID), runAttempt: decimalId(env.GITHUB_RUN_ATTEMPT),
     ref: env.GITHUB_REF, eventName: env.GITHUB_EVENT_NAME, job: env.GITHUB_JOB, sourceCommit: env.GITHUB_SHA }
 }
-export function dshArtifactName(version, sourceCommit, origin) {
+export function productArtifactName(version, sourceCommit, origin) {
   validateReleaseVersion(version); assert.match(sourceCommit, /^[a-f0-9]{40}$/u); assertActionsOrigin(origin, version)
-  return `dsh-release-${version}-${sourceCommit}-${origin.runId}-${origin.runAttempt}`
+  return `product-release-${version}-${sourceCommit}-${origin.runId}-${origin.runAttempt}`
 }
-export function dshArtifactPaths(version) {
+export function productArtifactPaths(version) {
   validateReleaseVersion(version)
-  return ['release-receipt.json', 'material-observations.json', 'pnpm-lock.yaml', ...DSH_SOURCE_PACKAGES.map(name =>
-    `distribution/tarballs/yugoo-design-${name}-${version}.tgz`)].sort()
+  return ['release-receipt.json', 'material-observations.json', 'pnpm-lock.yaml', ...RELEASE_SOURCE_PACKAGES.map(name =>
+    `distribution/tarballs/${archiveNameFor(name, version)}`)].sort()
 }
 async function regularFile(path, root) {
   let cursor = resolve(root)
@@ -110,10 +118,10 @@ function outsideWorkspace(path) {
     && !resolve(path).startsWith(resolve(workspace) + '/'), 'Absolute external artifact directory required')
 }
 
-/** The existing receipt remains the single archive authority; thirteen files only. */
-export async function sealDshRelease(receiptFile, destination, { context = dshActionsContext(), lockFile = join(workspace, 'pnpm-lock.yaml') } = {}) {
+/** The existing receipt remains the single archive authority; fourteen files only. */
+export async function sealProductRelease(receiptFile, destination, { context = productActionsContext(), lockFile = join(workspace, 'pnpm-lock.yaml'), sourceRoot = workspace } = {}) {
   outsideWorkspace(destination)
-  const receipt = await verifyDshReceipt(receiptFile, { sourceCommit: context.sourceCommit })
+  const receipt = await verifyProductReceipt(receiptFile, { sourceCommit: context.sourceCommit })
   assertActionsOrigin(context, receipt.version)
   const { sourceCommit, ...origin } = context
   const observations = await readFile(await regularFile('material-observations.json', dirname(receiptFile)))
@@ -127,14 +135,14 @@ export async function sealDshRelease(receiptFile, destination, { context = dshAc
   await writeFile(join(destination, 'release-receipt.json'), JSON.stringify(receipt, null, 2) + '\n', { flag: 'wx' })
   await writeFile(join(destination, 'material-observations.json'), observations, { flag: 'wx' })
   await writeFile(join(destination, 'pnpm-lock.yaml'), lock, { flag: 'wx' })
-  await verifyDshArtifactPayload(destination, { sourceCommit, version: receipt.version })
-  return { name: dshArtifactName(receipt.version, sourceCommit, origin), receiptSha256: sha256(await readFile(join(destination, 'release-receipt.json'))) }
+  await verifyProductArtifactPayload(destination, { sourceCommit, version: receipt.version, sourceRoot })
+  return { name: productArtifactName(receipt.version, sourceCommit, origin), receiptSha256: sha256(await readFile(join(destination, 'release-receipt.json'))) }
 }
 
-export async function verifyDshArtifactPayload(root, { sourceCommit, version }) {
-  assert.deepEqual(await payloadFiles(root), dshArtifactPaths(version), 'Exactly thirteen DSH artifact files required')
-  for (const path of dshArtifactPaths(version)) await regularFile(path, root)
-  const receipt = await verifyDshReceipt(join(root, 'release-receipt.json'), { sourceCommit })
+export async function verifyProductArtifactPayload(root, { sourceCommit, version, sourceRoot = workspace }) {
+  assert.deepEqual(await payloadFiles(root), productArtifactPaths(version), 'Exactly fourteen DSH artifact files required')
+  for (const path of productArtifactPaths(version)) await regularFile(path, root)
+  const receipt = await verifyProductReceipt(join(root, 'release-receipt.json'), { sourceCommit })
   assert.equal(receipt.version, version); assertActionsOrigin(receipt.actionsOrigin, version)
   const observations = await readFile(join(root, 'material-observations.json'))
   assert.equal(sha256(observations), receipt.observationSha256, 'Artifact observation changed')
@@ -150,12 +158,23 @@ export async function verifyDshArtifactPayload(root, { sourceCommit, version }) 
     catch { assert.fail('Prepared archive package metadata unavailable') }
     manifests[entry.sourceName] = JSON.parse(bytes)
     assert.equal(manifests[entry.sourceName].name, entry.name); assert.equal(manifests[entry.sourceName].version, version)
+    if (entry.sourceName === PRODUCT_NAME) {
+      validateProductManifest(manifests[entry.sourceName], version)
+      const product = await readProductRelease(sourceRoot)
+      assert.equal(product.version, version)
+      let hosts
+      try { hosts = JSON.parse(execFileSync('tar', ['-xOf', join(root, 'distribution/tarballs', entry.filename), 'package/release-hosts.json'],
+        { maxBuffer: 2 * 1024 * 1024, timeout: 30000, stdio: ['ignore', 'pipe', 'pipe'] })) }
+      catch { assert.fail('Product exact host mapping unavailable') }
+      assert.deepEqual(hosts, productReleaseHosts(product, await json(join(sourceRoot, 'release/release-hosts.json'))), 'Product exact host mapping changed')
+    } else {
     const directory = manifests[entry.sourceName].repository?.directory
     assert.match(directory ?? '', /^packages\/[a-z0-9-]+$/u, 'Safe source package directory required')
-    const source = await json(join(workspace, directory, 'package.json'))
+    const source = await json(join(sourceRoot, directory, 'package.json'))
     assert.equal(source.name, entry.sourceName, 'Artifact directory differs from fixed source package')
     assert.deepEqual(source.repository, manifests[entry.sourceName].repository, 'Artifact repository differs from fixed source')
     mapping[entry.sourceName] = { directory }
+    }
     for (const field of ['dependencies', 'optionalDependencies', 'peerDependencies']) {
       for (const [name, value] of Object.entries(manifests[entry.sourceName][field] ?? {})) {
         if (name.startsWith('@yugoo-design/')) assert.equal(value, version, 'Prepared own dependency version changed')
@@ -165,17 +184,17 @@ export async function verifyDshArtifactPayload(root, { sourceCommit, version }) 
       ...manifests[entry.sourceName].peerDependencies }).filter(name => name.startsWith('@yugoo-design/')).sort()
     assert.deepEqual(ownDependencies, [...entry.dependencies].sort(), 'Prepared archive publication graph changed')
   }
-  assertDshPublicationMetadata(manifests, mapping)
+  assertDshPublicationMetadata(Object.fromEntries(DSH_SOURCE_PACKAGES.map(name => [name, manifests[name]])), mapping)
   return receipt
 }
 
 /** Verify the actual downloaded ZIP before bounded, whitelist-only extraction. */
-export async function extractDshArtifactZip(bytes, digest, destination, version) {
+export async function extractProductArtifactZip(bytes, digest, destination, version) {
   assert.match(digest ?? '', /^sha256:[a-f0-9]{64}$/u)
   assert.ok(bytes.length > 0 && bytes.length <= MAX_ARTIFACT_BYTES, 'Artifact ZIP size exceeds bound')
   assert.equal('sha256:' + sha256(bytes), digest, 'Downloaded artifact ZIP digest differs')
   outsideWorkspace(destination)
-  const temporary = await mkdtemp(join(tmpdir(), 'dsh-artifact-zip-'))
+  const temporary = await mkdtemp(join(tmpdir(), 'product-artifact-zip-'))
   try {
     const archive = join(temporary, 'artifact.zip'); await writeFile(archive, bytes, { mode: 0o600, flag: 'wx' })
     execFileSync('python3', ['-c', String.raw`
@@ -184,7 +203,7 @@ archive, target, expected_json, bound = sys.argv[1:]
 expected = set(json.loads(expected_json)); bound = int(bound)
 with zipfile.ZipFile(archive) as source:
     infos = source.infolist()
-    assert len(infos) <= 15, 'Unexpected ZIP entries'
+    assert len(infos) <= 16, 'Unexpected ZIP entries'
     files = []; seen = set(); total = 0
     for item in infos:
         name = item.filename
@@ -200,7 +219,7 @@ with zipfile.ZipFile(archive) as source:
         if not name.endswith('.tgz'):
             assert item.file_size <= 16 * 1024 * 1024, 'Metadata exceeds bound'
         total += item.file_size; files.append(item)
-    assert {item.filename for item in files} == expected and len(files) == 13 and total <= bound, 'Incomplete ZIP payload'
+    assert {item.filename for item in files} == expected and len(files) == 14 and total <= bound, 'Incomplete ZIP payload'
     os.mkdir(target, 0o700)
     for item in files:
         output = os.path.join(target, *item.filename.split('/'))
@@ -214,14 +233,14 @@ with zipfile.ZipFile(archive) as source:
                 assert count <= item.file_size, 'ZIP content exceeds declared size'
                 dst.write(chunk)
         assert count == item.file_size, 'Truncated ZIP member'
-`, archive, destination, JSON.stringify(dshArtifactPaths(version)), String(MAX_ARTIFACT_BYTES)],
+`, archive, destination, JSON.stringify(productArtifactPaths(version)), String(MAX_ARTIFACT_BYTES)],
     { timeout: 60000, stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 4096 })
   } catch { assert.fail('DSH artifact ZIP extraction refused') }
   finally { await rm(temporary, { recursive: true, force: true }) }
 }
 
 /** Only fixed GitHub API paths receive the ephemeral token; redirects never do. */
-export function dshActionsApi({ token = process.env.GITHUB_TOKEN, fetchImpl = fetch } = {}) {
+export function productActionsApi({ token = process.env.GITHUB_TOKEN, fetchImpl = fetch } = {}) {
   assert.ok(typeof token === 'string' && token.length, 'Actions read token required')
   const request = async path => {
     assert.match(path, /^actions\/[a-zA-Z0-9_./?=&-]+$/u)
@@ -277,8 +296,8 @@ function assertArtifactRecord(artifact, { runId, sourceCommit, context }) {
 }
 
 /** Select one prior artifact. Missing/ambiguous rerun state never becomes a rebuild. */
-export async function selectDshArtifactRoute({ version, context = dshActionsContext(), resumeRunId = '', resumeArtifactId = '',
-  api = dshActionsApi(), fetchImpl = fetch }) {
+export async function selectProductArtifactRoute({ version, context = productActionsContext(), resumeRunId = '', resumeArtifactId = '',
+  api = productActionsApi(), fetchImpl = fetch }) {
   assertActionsOrigin(context, version)
   assert.equal(Boolean(resumeRunId), Boolean(resumeArtifactId), 'Resume run and artifact IDs must be paired')
   if (resumeRunId) {
@@ -290,7 +309,7 @@ export async function selectDshArtifactRoute({ version, context = dshActionsCont
   }
   if (BigInt(context.runAttempt) > 1n) {
     const artifacts = await actionPages(api, `actions/runs/${context.runId}/artifacts`, 'artifacts')
-    const prefix = `dsh-release-${version}-${context.sourceCommit}-${context.runId}-`
+    const prefix = `product-release-${version}-${context.sourceCommit}-${context.runId}-`
     const candidates = artifacts.filter(item => item.name?.startsWith(prefix) && /^[1-9][0-9]*$/u.test(item.name.slice(prefix.length))
       && BigInt(item.name.slice(prefix.length)) < BigInt(context.runAttempt))
     assert.equal(candidates.length, 1, 'Exactly one original artifact required; missing or ambiguous recovery cannot rebuild')
@@ -299,29 +318,29 @@ export async function selectDshArtifactRoute({ version, context = dshActionsCont
     return { mode: 'restore', runId: context.runId, artifactId: String(artifact.id), digest: artifact.digest }
   }
   // Without original bytes, even a fresh runner cannot recreate a partial release.
-  for (const sourceName of DSH_SOURCE_PACKAGES) {
-    const response = await fetchImpl(`${REGISTRY}/${encodeURIComponent('@yugoo-design/' + sourceName)}/${version}`,
+  for (const sourceName of RELEASE_SOURCE_PACKAGES) {
+    const response = await fetchImpl(`${REGISTRY}/${encodeURIComponent(packageNameFor(sourceName))}/${version}`,
       { redirect: 'error', credentials: 'omit', signal: AbortSignal.timeout(30000), headers: { accept: 'application/json' } })
     assert.equal(response.status, 404, 'Fresh preparation requires all exact versions absent; use the original artifact for a retry')
   }
   return { mode: 'prepare' }
 }
 
-export async function verifyDshArtifactProvenance({ receipt, artifact, sourceRun, workflow, jobs, context, runId, artifactId }) {
+export async function verifyProductArtifactProvenance({ receipt, artifact, sourceRun, workflow, jobs, context, runId, artifactId }) {
   assert.equal(String(artifact.id), artifactId)
   assertArtifactRecord(artifact, { runId, sourceCommit: context.sourceCommit, context })
   assert.equal(receipt.sourceCommit, context.sourceCommit)
   const origin = receipt.actionsOrigin; assertActionsOrigin(origin, receipt.version)
   assert.equal(origin.repositoryId, context.repositoryId); assert.equal(origin.runId, runId)
-  assert.equal(artifact.name, dshArtifactName(receipt.version, receipt.sourceCommit, origin))
+  assert.equal(artifact.name, productArtifactName(receipt.version, receipt.sourceCommit, origin))
   assert.equal(String(sourceRun.id), runId); assert.equal(sourceRun.head_sha, context.sourceCommit)
   assert.equal(String(sourceRun.repository?.id), context.repositoryId)
   assert.equal(String(sourceRun.head_repository?.id), context.repositoryId, 'Fork preparation refused')
   assert.equal(sourceRun.repository?.full_name, REPOSITORY)
   assert.equal(sourceRun.head_repository?.full_name, REPOSITORY)
-  assert.equal(sourceRun.path, DSH_WORKFLOW)
+  assert.equal(sourceRun.path, PRODUCT_WORKFLOW)
   decimalId(String(workflow.id))
-  assert.equal(workflow.path, DSH_WORKFLOW); assert.equal(String(sourceRun.workflow_id), String(workflow.id))
+  assert.equal(workflow.path, PRODUCT_WORKFLOW); assert.equal(String(sourceRun.workflow_id), String(workflow.id))
   assert.equal(sourceRun.event, origin.eventName)
   assert.equal(sourceRun.head_branch, origin.ref.replace(/^refs\/(?:heads|tags)\//u, ''))
   assert.ok(BigInt(origin.runAttempt) <= BigInt(String(sourceRun.run_attempt)), 'Unknown preparation attempt')
@@ -339,45 +358,45 @@ export async function verifyDshArtifactProvenance({ receipt, artifact, sourceRun
   // success, source identity and archive bytes are the recovery boundary.
 }
 
-export async function restoreDshArtifact({ version, destination, runId, artifactId, context = dshActionsContext(), api = dshActionsApi() }) {
+export async function restoreProductArtifact({ version, destination, runId, artifactId, context = productActionsContext(), api = productActionsApi(), sourceRoot = workspace }) {
   decimalId(runId); decimalId(artifactId); assertActionsOrigin(context, version)
   const artifact = await api.get(`actions/artifacts/${artifactId}`)
   assert.equal(String(artifact.id), artifactId)
   assertArtifactRecord(artifact, { runId, sourceCommit: context.sourceCommit, context })
   const sourceRun = await api.get(`actions/runs/${runId}`)
-  const workflow = await api.get('actions/workflows/publish-dsh.yml')
+  const workflow = await api.get('actions/workflows/publish-product.yml')
   // Check basic API source admission before downloading any potentially large ZIP.
-  assert.equal(sourceRun.head_sha, context.sourceCommit); assert.equal(sourceRun.path, DSH_WORKFLOW)
+  assert.equal(sourceRun.head_sha, context.sourceCommit); assert.equal(sourceRun.path, PRODUCT_WORKFLOW)
   assert.equal(String(sourceRun.repository?.id), context.repositoryId); assert.equal(String(sourceRun.head_repository?.id), context.repositoryId)
   assert.equal(String(sourceRun.workflow_id), String(workflow.id))
   assert.ok(['push', 'workflow_dispatch'].includes(sourceRun.event), 'Untrusted source event')
-  const prefix = `dsh-release-${version}-${context.sourceCommit}-${runId}-`
+  const prefix = `product-release-${version}-${context.sourceCommit}-${runId}-`
   assert.ok(artifact.name?.startsWith(prefix) && /^[1-9][0-9]*$/u.test(artifact.name.slice(prefix.length)), 'Unexpected source artifact name')
   const bytes = await api.download(artifactId)
-  await extractDshArtifactZip(bytes, artifact.digest, destination, version)
-  const receipt = await verifyDshArtifactPayload(destination, { version, sourceCommit: context.sourceCommit })
+  await extractProductArtifactZip(bytes, artifact.digest, destination, version)
+  const receipt = await verifyProductArtifactPayload(destination, { version, sourceCommit: context.sourceCommit, sourceRoot })
   const jobs = await actionPages(api, `actions/runs/${runId}/attempts/${decimalId(receipt.actionsOrigin.runAttempt)}/jobs`, 'jobs')
-  await verifyDshArtifactProvenance({ receipt, artifact, sourceRun, workflow, jobs, context, runId, artifactId })
+  await verifyProductArtifactProvenance({ receipt, artifact, sourceRun, workflow, jobs, context, runId, artifactId })
   return { artifactId, runId, runAttempt: receipt.actionsOrigin.runAttempt, digest: artifact.digest,
     receiptSha256: sha256(await readFile(join(destination, 'release-receipt.json'))) }
 }
 
-export async function recordDshUploadedArtifact({ directory, artifactId, digest, context = dshActionsContext(), api = dshActionsApi() }) {
+export async function recordProductUploadedArtifact({ directory, artifactId, digest, context = productActionsContext(), api = productActionsApi(), sourceRoot = workspace }) {
   decimalId(artifactId); assert.match(digest ?? '', /^[a-f0-9]{64}$/u)
   const receipt = await json(join(directory, 'release-receipt.json'))
-  await verifyDshArtifactPayload(directory, { sourceCommit: context.sourceCommit, version: receipt.version })
+  await verifyProductArtifactPayload(directory, { sourceCommit: context.sourceCommit, version: receipt.version, sourceRoot })
   const { sourceCommit, ...origin } = context
   assert.deepEqual(receipt.actionsOrigin, origin)
   const artifact = await api.get(`actions/artifacts/${artifactId}`)
   assert.equal(String(artifact.id), artifactId)
   assertArtifactRecord(artifact, { runId: context.runId, sourceCommit, context })
-  assert.equal(artifact.name, dshArtifactName(receipt.version, sourceCommit, origin))
+  assert.equal(artifact.name, productArtifactName(receipt.version, sourceCommit, origin))
   assert.equal(artifact.digest, 'sha256:' + digest, 'Upload/server artifact digest differs')
   return { runId: context.runId, runAttempt: context.runAttempt, artifactId, digest: artifact.digest,
     receiptSha256: sha256(await readFile(join(directory, 'release-receipt.json'))) }
 }
 
-export function dshOidcDiagnostics(env = process.env) {
+export function productOidcDiagnostics(env = process.env) {
   return { node: process.version, registry: REGISTRY,
     idTokenRequestUrlPresent: Boolean(env.ACTIONS_ID_TOKEN_REQUEST_URL),
     idTokenRequestTokenPresent: Boolean(env.ACTIONS_ID_TOKEN_REQUEST_TOKEN) }
@@ -394,10 +413,10 @@ async function recordArtifactSummary(record) {
   await appendFile(process.env.GITHUB_STEP_SUMMARY,
     `DSH original archives: run ${record.runId}, attempt ${record.runAttempt}, artifact ${record.artifactId}, digest ${record.digest}, receipt SHA256 ${record.receiptSha256}.\n`)
 }
-export function dshRegistryStateDirectory(receiptFile, env = process.env) {
-  if (!env.DSH_REGISTRY_STATE_DIR) return dirname(receiptFile)
-  assert.ok(isAbsolute(env.DSH_REGISTRY_STATE_DIR), 'Absolute registry state directory required')
-  const directory = resolve(env.DSH_REGISTRY_STATE_DIR)
+export function productRegistryStateDirectory(receiptFile, env = process.env) {
+  if (!env.PRODUCT_REGISTRY_STATE_DIR) return dirname(receiptFile)
+  assert.ok(isAbsolute(env.PRODUCT_REGISTRY_STATE_DIR), 'Absolute registry state directory required')
+  const directory = resolve(env.PRODUCT_REGISTRY_STATE_DIR)
   outsideWorkspace(directory)
   assert.ok(directory !== dirname(receiptFile) && !directory.startsWith(dirname(receiptFile) + '/'), 'Registry state must be outside immutable payload')
   for (let cursor = directory; ; cursor = dirname(cursor)) {
@@ -407,19 +426,20 @@ export function dshRegistryStateDirectory(receiptFile, env = process.env) {
   }
   return directory
 }
-export async function readDshRegistryState(receiptFile, filename) {
+export async function readProductRegistryState(receiptFile, filename) {
   assert.ok(['preflight-registry.json', 'complete-registry.json'].includes(filename), 'Known DSH registry state required')
-  if ((await json(receiptFile)).actionsOrigin) assert.ok(process.env.DSH_REGISTRY_STATE_DIR, 'Sealed payload requires separate registry state')
-  return json(await regularFile(filename, dshRegistryStateDirectory(receiptFile)))
+  if ((await json(receiptFile)).actionsOrigin) assert.ok(process.env.PRODUCT_REGISTRY_STATE_DIR, 'Sealed payload requires separate registry state')
+  return json(await regularFile(filename, productRegistryStateDirectory(receiptFile)))
 }
 
-/** Runtime and required own peers both participate; aggregate is always last. */
-export function publicationOrder(entries) {
-  assert.deepEqual(entries.map(x => x.sourceName).sort(), [...DSH_SOURCE_PACKAGES].sort(), 'Exactly ten DSH packages required')
+/** Required peers participate; the DSH aggregate follows internals, product is last. */
+export function publicationOrder(entries, { internalOnly = false } = {}) {
+  const sourceNames = internalOnly ? DSH_SOURCE_PACKAGES : RELEASE_SOURCE_PACKAGES
+  assert.deepEqual(entries.map(x => x.sourceName).sort(), [...sourceNames].sort(), 'Exactly the complete product package set required')
   const byName = new Map(entries.map(x => [x.name, x]))
-  assert.equal(byName.size, 10)
+  assert.equal(byName.size, sourceNames.length)
   for (const entry of entries) {
-    assert.equal(entry.name, '@yugoo-design/' + entry.sourceName)
+    assert.equal(entry.name, packageNameFor(entry.sourceName))
     validateReleaseVersion(entry.version)
     assert.equal(entry.version, entries[0].version, 'DSH release versions must be uniform')
     assert.ok(Array.isArray(entry.dependencies) && new Set(entry.dependencies).size === entry.dependencies.length)
@@ -428,16 +448,18 @@ export function publicationOrder(entries) {
   const aggregate = '@yugoo-design/dsh-design-system-dsh'
   const pending = new Set(byName.keys()), ordered = []
   while (pending.size) {
-    const next = [...pending].sort().find(name => (name !== aggregate || pending.size === 1) && byName.get(name).dependencies.every(dep => !pending.has(dep)))
+    const next = [...pending].sort().find(name => (name !== PRODUCT_NAME || pending.size === 1)
+      && (name !== aggregate || [...pending].every(value => value === aggregate || value === PRODUCT_NAME))
+      && byName.get(name).dependencies.every(dep => !pending.has(dep)))
     assert.ok(next, 'Cyclic DSH publication graph')
     ordered.push(byName.get(next)); pending.delete(next)
   }
   return ordered
 }
 
-export async function verifyDshReceipt(receiptFile, { sourceCommit = git(['rev-parse', 'HEAD']) } = {}) {
+export async function verifyProductReceipt(receiptFile, { sourceCommit = git(['rev-parse', 'HEAD']) } = {}) {
   const receipt = await json(receiptFile)
-  assert.equal(receipt.kind, 'dsh-same-source-release')
+  assert.equal(receipt.kind, 'yugoo-design-product-release')
   assert.equal(receipt.sourceCommit, sourceCommit, 'Prepared source commit changed')
   assert.equal(receipt.registry, REGISTRY)
   assert.equal(receipt.published, false)
@@ -446,7 +468,7 @@ export async function verifyDshReceipt(receiptFile, { sourceCommit = git(['rev-p
   assert.deepEqual(receipt.entries, ordered, 'Receipt publication order changed')
   for (const entry of ordered) {
     assert.equal(entry.version, receipt.version)
-    assert.equal(entry.filename, entry.name.slice(1).replace('/', '-') + '-' + entry.version + '.tgz')
+    assert.equal(entry.filename, archiveNameFor(entry.sourceName, entry.version))
     assert.equal(basename(entry.filename), entry.filename)
     const path = join(dirname(receiptFile), 'distribution/tarballs', entry.filename)
     assert.ok((await lstat(path)).isFile() && !(await lstat(path)).isSymbolicLink(), 'Regular prepared archive required')
@@ -460,8 +482,8 @@ export async function verifyDshReceipt(receiptFile, { sourceCommit = git(['rev-p
 
 /** Compare metadata AND downloaded bytes. No error except a version 404 means absent. */
 export async function registryState(entry, { fetchImpl = fetch, maxBytes = 128 * 1024 * 1024 } = {}) {
-  assert.ok(DSH_SOURCE_PACKAGES.includes(entry.sourceName))
-  assert.equal(entry.name, '@yugoo-design/' + entry.sourceName)
+  assert.ok(RELEASE_SOURCE_PACKAGES.includes(entry.sourceName))
+  assert.equal(entry.name, packageNameFor(entry.sourceName))
   validateReleaseVersion(entry.version)
   assert.match(entry.integrity, /^sha512-[A-Za-z0-9+/]{86}==$/u)
   const options = { redirect: 'error', credentials: 'omit', signal: AbortSignal.timeout(30000) }
@@ -491,14 +513,47 @@ export async function registryState(entry, { fetchImpl = fetch, maxBytes = 128 *
   return 'identical'
 }
 
+/** npm publish uses latest: an older missing archive must never move it backwards. */
+export async function assertLatestPublicationAllowed(entry, { fetchImpl = fetch } = {}) {
+  validateReleaseVersion(entry.version)
+  assert.ok(RELEASE_SOURCE_PACKAGES.map(packageNameFor).includes(entry.name), 'Official product package required')
+  const response = await fetchImpl(`${REGISTRY}/${encodeURIComponent(entry.name)}`, {
+    redirect: 'error', credentials: 'omit', signal: AbortSignal.timeout(30000), headers: { accept: 'application/json' },
+  })
+  if (response.status === 404) return // Only an actual missing package permits first publication.
+  assert.equal(response.status, 200, `Package history lookup failed: HTTP ${response.status}`)
+  const metadata = await response.json()
+  assert.equal(metadata.name, entry.name, 'Published package history identity changed')
+  assert.ok(metadata.versions && typeof metadata.versions === 'object' && !Array.isArray(metadata.versions), 'Published versions required')
+  const versions = Object.keys(metadata.versions)
+  assert.ok(versions.length, 'Published versions required')
+  // Loaded only at the publication boundary, after the frozen dependency install.
+  const { default: semver } = await import('semver')
+  for (const version of versions) {
+    assert.equal(semver.valid(version), version, 'Canonical published version required')
+    assert.equal(metadata.versions[version]?.name, entry.name)
+    assert.equal(metadata.versions[version]?.version, version)
+  }
+  const tags = metadata['dist-tags']
+  assert.ok(tags && typeof tags === 'object' && !Array.isArray(tags), 'Published dist-tags required')
+  for (const value of Object.values(tags)) assert.ok(versions.includes(value), 'Published dist-tag version required')
+  for (const version of versions.filter(version => semver.prerelease(version) === null)) {
+    assert.ok(!semver.gt(version, entry.version), `Refusing latest downgrade: ${entry.name}@${version} is newer than missing ${entry.version}`)
+  }
+}
+
 export async function preflight(entries, options) {
   publicationOrder(entries)
   const states = []
-  for (const entry of entries) states.push({ name: entry.name, version: entry.version, state: await registryState(entry, options) })
-  return states // write only after all ten succeed; no publication callback exists
+  for (const entry of entries) {
+    const state = await registryState(entry, options)
+    if (state === 'absent') await assertLatestPublicationAllowed(entry, options)
+    states.push({ name: entry.name, version: entry.version, state })
+  }
+  return states // write only after all eleven succeed; no publication callback exists
 }
 export async function nextPublication(receipt, index, options) {
-  assert.ok(Number.isInteger(index) && index >= 0 && index < 10, 'DSH package index required')
+  assert.ok(Number.isInteger(index) && index >= 0 && index < RELEASE_SOURCE_PACKAGES.length, 'DSH package index required')
   publicationOrder(receipt.entries)
   const entry = receipt.entries[index]
   const state = await registryState(entry, options)
@@ -506,6 +561,7 @@ export async function nextPublication(receipt, index, options) {
   for (const name of entry.dependencies) {
     assert.equal(await registryState(receipt.entries.find(x => x.name === name), options), 'identical', `Required dependency is not published: ${name}`)
   }
+  await assertLatestPublicationAllowed(entry, options)
   return { action: 'publish', entry }
 }
 export async function confirmPublication(entry, { attempts = 5, wait = () => delay(2000), ...options } = {}) {
@@ -516,9 +572,36 @@ export async function confirmPublication(entry, { attempts = 5, wait = () => del
   assert.fail(`Published version is not visible; stop without republishing: ${entry.name}`)
 }
 
-export async function prepareDshRelease({ version, output, npmCli }) {
+export async function prepareProductArchive({ version, output, nativeArtifactRoot, npmCli }) {
+  const { buildSameSourceCandidate, verifyStagedUiCandidateAssociations } = await import('./build-companion-npm-candidate.mjs')
+  const build = await buildSameSourceCandidate({ ladybugDependency: '0.21.1', nativeGitArtifactRoot: nativeArtifactRoot,
+    candidate: { fixture: false, scope: '@yugoo-design', packageName: PRODUCT_NAME, version, distribution: 'stable' } })
+  assert.equal(build.sameSourceBuildCompleted, true, 'Product same-source build failed')
+  assert.equal(build.head, git(['rev-parse', 'HEAD']), 'Product builder source differs')
+  const buildReportFile = join(build.root, 'build-report.json'), buildReportSha256 = sha256(await readFile(buildReportFile))
+  const associations = await verifyStagedUiCandidateAssociations({ buildReportFile, buildReportSha256 })
+  const manifest = await json(join(build.candidate, 'package.json'))
+  validateProductManifest(manifest, version)
+  const pack = args => {
+    const result = spawnSync(process.execPath, [npmCli, 'pack', '--ignore-scripts', '--json', ...args],
+      { cwd: build.candidate, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 })
+    if (result.error) throw result.error
+    assert.equal(result.status, 0, 'Product pack failed')
+    const records = JSON.parse(result.stdout); assert.equal(records.length, 1); return records[0]
+  }
+  const dry = pack(['--dry-run']); validatePackInventory(dry, build.candidateInputs, version)
+  const packed = pack(['--pack-destination', output]); validatePackInventory(packed, build.candidateInputs, version)
+  assert.deepEqual(packed.files, dry.files, 'Product pack inventory changed after dry-run')
+  const archive = join(output, packed.filename), bytes = await readFile(archive)
+  assert.equal(packed.size, bytes.length); assert.equal(packed.integrity, integrity(bytes))
+  return { manifest, archive, bytes, buildEvidence: { buildReportSha256,
+    candidateInventorySha256: build.candidateInventorySha256, associations,
+    completeBundledInventoryVerified: false, installedHostAccepted: false } }
+}
+
+export async function prepareProductRelease({ version, output, npmCli }) {
   validateReleaseVersion(version)
-  selectDshRelease({ manifest: await json(join(workspace, 'release/release-hosts.json')), expectedVersion: version })
+  selectProductRelease({ product: await readProductRelease(workspace), expectedVersion: version })
   assert.ok(isAbsolute(output) && !resolve(output).startsWith(resolve(workspace) + '/') && resolve(output) !== resolve(workspace), 'Absolute external output required')
   assert.ok(isAbsolute(npmCli), 'Absolute npm CLI required')
   assert.equal(git(['status', '--porcelain', '--untracked-files=no']), '', 'Clean tracked source required before preparation')
@@ -540,7 +623,7 @@ export async function prepareDshRelease({ version, output, npmCli }) {
   const manifests = Object.fromEntries(DSH_SOURCE_PACKAGES.map(name => [name, createDshDistributionManifest(report, name)]))
   assertDshPublicationMetadata(manifests, report.mapping)
   const graph = DSH_SOURCE_PACKAGES.map(sourceName => ({ sourceName, name: manifests[sourceName].name, version, dependencies: Object.keys({ ...manifests[sourceName].dependencies, ...manifests[sourceName].optionalDependencies, ...manifests[sourceName].peerDependencies }).filter(name => name.startsWith('@yugoo-design/')) }))
-  const ordered = publicationOrder(graph)
+  const ordered = publicationOrder(graph, { internalOnly: true })
   const buildSteps = []
   for (const entry of ordered) {
     const directory = join(workspace, releasePackagesFor({ ladybugSource: 'registry' })[entry.sourceName])
@@ -562,10 +645,17 @@ export async function prepareDshRelease({ version, output, npmCli }) {
     const bytes = await readFile(packed.archive)
     entries.push({ ...entry, filename: basename(packed.archive), bytes: bytes.length, sha256: sha256(bytes), integrity: integrity(bytes) })
   }
+  const product = await prepareProductArchive({ version, output: join(output, 'distribution/tarballs'),
+    nativeArtifactRoot: join(output, 'native-artifacts'), npmCli })
+  entries.push({ sourceName: PRODUCT_NAME, name: PRODUCT_NAME, version,
+    dependencies: Object.keys({ ...product.manifest.dependencies, ...product.manifest.optionalDependencies, ...product.manifest.peerDependencies })
+      .filter(name => name.startsWith('@yugoo-design/')),
+    filename: basename(product.archive), bytes: product.bytes.length, sha256: sha256(product.bytes), integrity: integrity(product.bytes) })
+  const completeEntries = publicationOrder(entries)
   assert.equal(git(['rev-parse', 'HEAD']), sourceCommit)
   assert.equal(git(['status', '--porcelain', '--untracked-files=no']), '', 'Build changed tracked source')
-  const receipt = { kind: 'dsh-same-source-release', version, sourceCommit, registry: REGISTRY, nativeMaterials: native, buildSteps,
-    observationSha256: sha256(await readFile(observationFile)), entries,
+  const receipt = { kind: 'yugoo-design-product-release', version, sourceCommit, registry: REGISTRY, nativeMaterials: native, buildSteps,
+    observationSha256: sha256(await readFile(observationFile)), entries: completeEntries, productBuild: product.buildEvidence,
     published: false, installedHostAccepted: false, completeBundledInventoryVerified: false, releaseLicenseAcceptance: false }
   await writeFile(join(output, 'release-receipt.json'), JSON.stringify(receipt, null, 2) + '\n', { flag: 'wx' })
   return receipt
@@ -578,57 +668,57 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       assert.equal(file, undefined)
       const requireTag = process.env.REQUIRE_RELEASE_TAG ?? 'false'
       assert.ok(['true', 'false'].includes(requireTag))
-      const selected = selectDshRelease({ manifest: await json(join(workspace, 'release/release-hosts.json')), expectedVersion: process.env.EXPECTED_RELEASE_VERSION, releaseRef: process.env.RELEASE_REF, requireTag: requireTag === 'true' })
+      const selected = selectProductRelease({ product: await readProductRelease(workspace), expectedVersion: process.env.EXPECTED_RELEASE_VERSION, releaseRef: process.env.RELEASE_REF, requireTag: requireTag === 'true' })
       if (process.env.GITHUB_OUTPUT) await appendFile(process.env.GITHUB_OUTPUT, `version=${selected.version}\n`)
       console.log(JSON.stringify(selected))
     } else if (command === 'route') {
-      const context = dshActionsContext()
+      const context = productActionsContext()
       assert.equal(context.sourceCommit, git(['rev-parse', 'HEAD']))
-      selectDshRelease({ manifest: await json(join(workspace, 'release/release-hosts.json')), expectedVersion: file,
+      selectProductRelease({ product: await readProductRelease(workspace), expectedVersion: file,
         releaseRef: context.ref, requireTag: process.env.REQUIRE_RELEASE_TAG === 'true' })
-      const route = await selectDshArtifactRoute({ version: file, context,
+      const route = await selectProductArtifactRoute({ version: file, context,
         resumeRunId: process.env.RESUME_RUN_ID ?? '', resumeArtifactId: process.env.RESUME_ARTIFACT_ID ?? '' })
       await writeActionOutputs(route); console.log(JSON.stringify(route))
     } else if (command === 'seal') {
-      const result = await sealDshRelease(resolve(file), resolve(argument))
+      const result = await sealProductRelease(resolve(file), resolve(argument))
       await writeActionOutputs(result); console.log(JSON.stringify(result))
     } else if (command === 'restore') {
-      const result = await restoreDshArtifact({ version: file, destination: resolve(argument),
+      const result = await restoreProductArtifact({ version: file, destination: resolve(argument),
         runId: process.env.SELECTED_RUN_ID, artifactId: process.env.SELECTED_ARTIFACT_ID })
       await recordArtifactSummary(result); console.log(JSON.stringify(result))
     } else if (command === 'uploaded') {
-      const result = await recordDshUploadedArtifact({ directory: resolve(file), artifactId: process.env.UPLOADED_ARTIFACT_ID,
+      const result = await recordProductUploadedArtifact({ directory: resolve(file), artifactId: process.env.UPLOADED_ARTIFACT_ID,
         digest: process.env.UPLOADED_ARTIFACT_DIGEST })
       await recordArtifactSummary(result); console.log(JSON.stringify(result))
     } else if (command === 'verify-artifact') {
-      const context = dshActionsContext()
+      const context = productActionsContext()
       assert.equal(git(['rev-parse', 'HEAD']), context.sourceCommit, 'Fixed artifact checkout changed')
       assert.equal(git(['status', '--porcelain', '--untracked-files=no']), '', 'Artifact checkout tracked source changed')
       const receipt = await json(join(resolve(file), 'release-receipt.json'))
-      await verifyDshArtifactPayload(resolve(file), { sourceCommit: context.sourceCommit, version: receipt.version })
-      console.log(JSON.stringify({ sourceCommit: receipt.sourceCommit, version: receipt.version, files: 13 }))
+      await verifyProductArtifactPayload(resolve(file), { sourceCommit: context.sourceCommit, version: receipt.version })
+      console.log(JSON.stringify({ sourceCommit: receipt.sourceCommit, version: receipt.version, files: 14 }))
     } else if (command === 'diagnostics') {
-      console.log(JSON.stringify(dshOidcDiagnostics()))
+      console.log(JSON.stringify(productOidcDiagnostics()))
     } else if (command === 'prepare') {
-      const receipt = await prepareDshRelease({ version: file, output: resolve(argument), npmCli: process.env.NPM_CLI })
+      const receipt = await prepareProductRelease({ version: file, output: resolve(argument), npmCli: process.env.NPM_CLI })
       console.log(JSON.stringify(receipt))
     } else {
       assert.ok(['preflight', 'next', 'confirm', 'complete'].includes(command), 'Unknown DSH release command; no local publish command')
-      const receiptFile = resolve(file), receipt = await verifyDshReceipt(receiptFile)
-      selectDshRelease({ manifest: await json(join(workspace, 'release/release-hosts.json')), expectedVersion: receipt.version, releaseRef: process.env.RELEASE_REF, requireTag: process.env.REQUIRE_RELEASE_TAG === 'true' })
+      const receiptFile = resolve(file), receipt = await verifyProductReceipt(receiptFile)
+      selectProductRelease({ product: await readProductRelease(workspace), expectedVersion: receipt.version, releaseRef: process.env.RELEASE_REF, requireTag: process.env.REQUIRE_RELEASE_TAG === 'true' })
       if (command === 'preflight' || command === 'complete') {
-        if (receipt.actionsOrigin) assert.ok(process.env.DSH_REGISTRY_STATE_DIR, 'Sealed payload requires separate registry state')
+        if (receipt.actionsOrigin) assert.ok(process.env.PRODUCT_REGISTRY_STATE_DIR, 'Sealed payload requires separate registry state')
         const states = await preflight(receipt.entries)
         if (command === 'complete') assert.ok(states.every(x => x.state === 'identical'), 'Incomplete DSH publication')
-        const stateDirectory = dshRegistryStateDirectory(receiptFile); await mkdir(stateDirectory, { recursive: true })
+        const stateDirectory = productRegistryStateDirectory(receiptFile); await mkdir(stateDirectory, { recursive: true })
         await writeFile(join(stateDirectory, `${command}-registry.json`), JSON.stringify({ sourceCommit: receipt.sourceCommit, states }, null, 2) + '\n', { flag: 'wx' })
         console.log(JSON.stringify(states))
       } else {
         const index = Number(argument)
-        assert.match(argument ?? '', /^(?:[0-9])$/u, 'Index from 0 through 9 required')
+        assert.match(argument ?? '', /^(?:[0-9]|10)$/u, 'Product package index from 0 through 10 required')
         if (command === 'confirm') await confirmPublication(receipt.entries[index])
         else {
-          const checked = await readDshRegistryState(receiptFile, 'preflight-registry.json')
+          const checked = await readProductRegistryState(receiptFile, 'preflight-registry.json')
           assert.equal(checked.sourceCommit, receipt.sourceCommit)
           assert.deepEqual(checked.states.map(x => x.name), receipt.entries.map(x => x.name), 'Full preflight required')
           const next = await nextPublication(receipt, index)

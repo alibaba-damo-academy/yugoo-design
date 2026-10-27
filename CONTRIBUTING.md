@@ -80,51 +80,50 @@ Local development, tests, builds and `npm pack` are allowed. Direct local
 Missing Actions or Trusted Publisher configuration must be resolved at that
 boundary; it does not authorize a token-based or local publication workaround.
 
-## Prepare or publish the Companion npm beta
+## Publish a product release
 
-The [Companion workflow](.github/workflows/publish-companion.yml) covers only
-`@yugoo-design/companion`; the DSH package publication chain is separate.
+`yugoo-design` is the single product installation package and CLI. It provides
+native DSH installation and Companion host integrations over the same design
+infrastructure. The ten native DSH packages retain their Loader identities and
+exact dependency boundaries; users acquire them through the product installer.
+The official DSH application remains an external host.
 
-For a beta release, update `version` in
-[`release/companion-version.json`](release/companion-version.json) to a new exact
-`X.Y.Z-beta.N` value alongside the reviewed changes. After synchronizing the
-reviewed commit to the public repository's `main`, create and push its matching
-Git tag, `vX.Y.Z-beta.N`, in that repository. This tag push automatically builds,
-checks and publishes the package. The tag must match the version file at that
-exact commit, and the tagged commit must belong to `origin/main` history.
-Ordinary `main` pushes, including version-file changes, do not publish a package.
+[`release/product.json`](release/product.json) is the sole product identity and
+version source. Use a canonical `X.Y.Z` version without prerelease or build
+metadata. The product package and all ten native packages use this same version.
+[`release/release-hosts.json`](release/release-hosts.json) is a host mapping
+template: preparation derives its packaged `aggregateVersion` from the product
+version. Do not maintain a separate Companion or DSH release version.
+The [package template](release/product-package-template.json) owns the installer
+metadata; exact package identity and version come from the product manifest.
 
-The Git release tag identifies the source commit. npm's `--tag beta` selects the
-package's distribution channel; it does not create a Git tag.
+Update the product version alongside the reviewed source, synchronize that fixed
+main commit to the public repository, then push its matching `vX.Y.Z` tag.
+The [product workflow](.github/workflows/publish-product.yml) builds, checks and
+publishes the complete release, with native dependencies first and the product
+installer last. Ordinary main pushes do not publish. Tags must match the product
+manifest exactly, and their commit must belong to reviewed public main history.
+There is no separate beta channel or legacy Companion package publication path.
 
-For a build-only check, use **Actions → Prepare or publish Companion beta → Run
-workflow** and leave **publish** unchecked. Both automatic and manual runs use
-the version file in the selected source revision. The optional **version** input
-is an expected-version check: if supplied, it must match that file.
-The manual entry also remains available for an explicit publication retry.
-Dispatch that retry against the matching release tag with **publish** enabled;
-the same tag/version and `main`-history checks apply. Publication requests against
-branches or other refs fail explicitly.
-Read the receipt summary in the run's logs. Prepared archives remain on the
-temporary runner; the workflow does not upload downloadable artifacts.
-Compilation, pack checks, installed runtime/Host acceptance and registry
-publication are separate results. The preparation receipt retains flags for
-checks that have not yet passed.
+For a build-only check, run the product workflow manually with **publish**
+unchecked. An optional version input confirms the tracked value; it cannot
+choose another version. Publication retries use the same matching tag with
+**publish** enabled. A registry error is not evidence that a version is unused.
 
-The workflow uses GitHub-hosted Ubuntu, Node `22.22.3`, pnpm `11.7.0` and explicit
-npm `11.21.0` for preparation and publication. The package declares Node.js
-`>=22.19.0`; CI focuses on Node 22 and 24 without imposing a major-version cap.
-Before publishing, CI installs the
-same prepared tarball into separate empty directories using
-`npm install --engine-strict` on Node `22.22.3` and `24.22.1`. It exercises the
-product's `check-runtime` checks for native Git and Sharp and the existing
-Ladybug WAL check, then returns to Node `22.22.3` for OIDC publication. These
-package-runtime checks do not establish model readiness, browser behavior or
-actual Host installation. To run that check locally under each selected Node
-version, use the same tarball and expected version with a separate output directory:
+### Preparation and runtime checks
+
+The workflow uses GitHub-hosted Ubuntu, Node `22.22.3`, pnpm `11.7.0` and npm
+`11.21.0`. The product requires Node `>=22.19.0`. CI installs the same prepared
+product archive into separate empty directories with `npm install --engine-strict`
+on Node `22.22.3` and `24.22.1`. It runs the existing native Git, Sharp and Ladybug
+WAL checks before publication. These checks do not establish model readiness,
+browser interaction or actual native Host installation. Keep each result's scope
+explicit and reuse unaffected Host evidence.
+
+The isolated archive check is also available locally under each selected Node:
 
 ```sh
-node scripts/check-companion-node-runtime.mjs /absolute/PREPARED.tgz X.Y.Z-beta.N /absolute/NEW_OUTPUT
+node scripts/check-product-node-runtime.mjs /absolute/PREPARED.tgz X.Y.Z /absolute/NEW_OUTPUT
 ```
 
 Public exports currently omit the internal lockfile: on that input,
@@ -152,149 +151,92 @@ SOURCE alone owns all three binary sizes and hashes. Preparation then runs the
 unchanged current source, native and original-notice checks. CI never rebuilds
 or substitutes binaries, and an unknown source/input fails without fallback.
 
-The input Release is separate from the Companion npm beta. Its raw addon,
+The input Release is separate from the product npm release. Its raw addon,
 provenance and original license materials must be reviewed against the final
 public source commit before that input Release is published. Its tag does not
-match the npm workflow's beta-tag trigger. Publishing the inputs, running the
-default unauthenticated acquisition, preparing a Companion archive and publishing
+match the product workflow's version-tag trigger. Publishing the inputs, running the
+default unauthenticated acquisition, preparing a product archive and publishing
 that archive are separate steps. Local preparation with an explicit native root
 does not prove that the public input assets are available. Until those assets
 exist, default preparation fails before downloading the larger legacy donor.
 The Darwin request permits only HTTPS GitHub-to-reviewed-CDN delivery, omits
 credentials, and enforces the current byte/hash pin and a bounded deadline.
 A changed input identity needs a reviewed source/routing update. See the
-[preparation entry](scripts/prepare-companion-release.mjs) for the same local
-`prepare VERSION ABS_OUTPUT [ABS_NATIVE_ROOT]` dry-run; use `node --import tsx`
-after preparing source dependencies. The optional artifact root still passes
+[product workflow](.github/workflows/publish-product.yml) for the exact preparation command and optional native-root input. Use `node --import tsx` after preparing source dependencies. The optional artifact root still passes
 the existing source/material gate.
 
-Before the first authorized publication, an npm package maintainer configures
-its **Trusted Publisher** for GitHub organization `alibaba-damo-academy`,
-repository `yugoo-design`, workflow filename `publish-companion.yml` (filename
-only), and no environment name. Enable both direct **npm publish** and
-**Allow npm dist-tag** in Allowed actions. These are independent permissions;
-new connections otherwise default to staged publishing. The manual dry-run job
-has no OIDC permission. A matching release-tag push or explicit publication retry
-against that tag in the public repository selects the publication job. The job
-checks that the fixed tagged commit is in `origin/main` history, installs
-dependencies, builds once, checks the archive against its receipt and publishes
-it on the same runner,
-without Artifact transfer. Its OIDC permission covers the whole job, including
-installation and build steps: publication therefore trusts the reviewed tagged
-source from `main` history, approved dependency scripts and toolchain. Invalid
-refs, mismatched tags and commits outside `main` history are rejected before
-publication. No npm token secret is
-needed. See [npm's trusted publishing instructions](https://docs.npmjs.com/trusted-publishers/).
-The packaged repository URL must match this public repository; it is maintained
-in the package template, never patched into a prepared archive.
+### Original archives and recovery
 
-Both automatic and manually requested publication build, check and publish only
-the exact prepared tarball with the `beta` tag through OIDC. An already published
-version is reported and skipped; a registry/network failure is not treated as an
-unused version. After publication, CI verifies the public archive's actual SRI
-against the prepared receipt, then advances `latest` to the highest currently
-published semantic version, including beta releases, while retaining `beta`.
-An existing-publication retry verifies public bytes without rebuilding or
-republishing and can finish the tag synchronization. It still passes the source,
-main-history and matching-tag fences and uses npm `11.21.0`. An old tag cannot
-select a version below a higher public release. Only the official publish job
-runs the guarded `npm dist-tag add`; dry-runs never write registry tags.
-The workflow does not publish workspace packages or configure real Host accounts. npm can supply provenance automatically for eligible public
-repositories; OIDC on a private repository does not establish public attestation.
-Provenance does not prove independent native binary reproduction or complete
-product acceptance.
+Each normal package build runs with the existing module observation hooks, then
+the existing assembler consumes the current observation receipt. Declaration
+outputs remain verified; declaration-only module IDs do not become physical
+runtime inputs. Missing runtime inputs still fail. The maintained material
+manifest owns component identities, original materials, fonts and historical
+observations. Current output hashes and associations come from the current build.
+Workspace component identities must match both their manifests and the fixed Git
+source; historical metadata is not current-source evidence. Unassociated
+historical components remain historical. Receipts retain incomplete inventory
+and license-acceptance flags; successful packing does not establish Host acceptance.
 
-## Prepare or publish the DSH npm beta
+Before publishing, CI retains the eleven original archives, release receipt,
+material observations and actual public lock. The bounded immutable artifact
+excludes native input trees, staged packages and node_modules. Its run, attempt,
+artifact ID, digest and receipt hash are recorded before npm publication; upload
+or identity verification failure stops publication. Retention is seven days.
 
-The [DSH workflow](.github/workflows/publish-dsh.yml) prepares the ten packages in
-[the DSH dependency closure](packages/dsh/README.md). Its single version authority
-is `hosts.dsh.aggregateVersion` in
-[`release/release-hosts.json`](release/release-hosts.json), also consumed by the
-Companion installer. All ten use that exact version. Companion retains its own
-version file, workflow and publication result.
+Keep the original producing run unchanged. Start a new workflow run and provide
+both **resume_run_id** and **resume_artifact_id**. Do not select **Re-run all jobs**
+on the producing run: its original artifact may become unavailable. Missing,
+expired or ambiguous artifacts fail. Recovery never rebuilds or repacks them.
+Fresh preparation requires every exact release version to be absent.
 
-Update that existing DSH field with the reviewed source, synchronize the fixed
-commit to public `main`, then push `dsh-vX.Y.Z-beta.N` at that commit. This tag
-triggers only DSH publication. `vX.Y.Z-beta.N` remains the Companion trigger;
-ordinary `main` pushes publish neither chain. For preparation only, choose
-**Actions → Prepare or publish DSH beta → Run workflow** and leave **publish**
-unchecked. The optional version input can only confirm the tracked value.
-A publication retry must select the same matching DSH tag with **publish** enabled.
-Branches, mismatched versions and tags outside reviewed `main` history fail.
-For a retry, preserve the original producing run and start a new run. Enter both
-**resume_run_id** and **resume_artifact_id** from the original run's artifact
-summary. Do not select **Re-run all jobs** on the producing run: its original
-artifact may become unavailable. Missing, expired or ambiguous artifacts fail;
-recovery never rebuilds or repacks the packages. A new preparation without an
-original artifact requires all ten exact versions to be absent.
+Recovery checks repository, workflow, permitted source ref and exact source SHA,
+including successful original build, seal and upload steps even when later
+publication failed. It verifies the downloaded ZIP digest and admits only the
+expected regular files. Every tarball's raw hashes, size, metadata and exact
+dependency pins must match. It restores the original frozen public lock. Fresh
+registry results live outside the immutable payload; saved registry state cannot
+authorize publication.
 
-The same Node, pnpm, npm, public lock-resolution and native-input policies described
-above apply. CI runs each existing normal package build once, with optional
-module observation hooks, then passes an explicit current observation receipt
-to the existing ten-package assembler. Declaration output bytes remain verified;
-dts plugin module IDs are recorded as declaration-only identities and do not
-receive physical runtime-source hashes. Missing runtime inputs still fail. The maintained material manifest still
-owns component identities, original material hashes, fonts and prior observations.
-Current raw output hashes and component/font associations come from that build;
-third-party component metadata changes fail rather than inheriting an old
-association. A workspace component carries its actual current manifest identity,
-checked against both the disk file and the fixed Git source blob; its prior
-metadata hash remains historical. Missing or forged current identities fail.
-Unassociated historical components remain identified as historical only. Current
-observations and package receipts retain the incomplete-inventory and
-unaccepted-license flags; packing does not establish installed Host acceptance.
-Before the first publication, the workflow uploads exactly thirteen files:
-the ten original archives, the release receipt, current material observations,
-and the public lock used by that build. The immutable artifact is retained for
-seven days; its run, attempt, artifact ID, digest and receipt hash appear in the
-job summary before npm is invoked. Upload or identity-recording failure prevents
-publication. Native input trees, staged packages and dependency directories are
-excluded. This workflow does not install a real Host.
+The workflow checks every exact registry version before publishing anything.
+Only a version 404 means absent. An existing version is skipped only after its
+metadata integrity and actual downloaded archive match the retained original.
+Dependencies must be visible with matching bytes before their dependents publish.
+The complete set is verified after publication. Mismatches and transport errors
+stop the job; recovery never overwrites, unpublishes or blindly skips packages.
+Official releases and retries share one concurrency group.
 
-Recovery requires the same repository, DSH workflow, trusted main or matching-tag
-origin, and exact source SHA. It verifies the original attempt's successful build,
-seal and upload even if publication later failed. It checks the downloaded ZIP's
-actual digest, safely admits only the thirteen expected files, and verifies each
-original archive's raw hashes, size, package metadata and exact dependency pins.
-It restores the original frozen public lock. Fresh registry results are written
-outside the immutable payload; saved registry state never authorizes a retry.
+### npm trust and the release channel
 
-Before any publication, CI checks all ten exact registry versions. Only a version
-404 means absent. An existing version is skipped only when registry metadata SRI
-and the downloaded tarball's actual size and SHA-512 match the retained original
-archive. Any mismatch or network/registry error stops the job. Missing packages
-are published in dependency order, with the aggregate last, through OIDC using
-only the verified tarballs and `--tag beta`. Dependencies must be visible with
-matching bytes before a dependent package is published; every publication and
-the final complete set are checked again. A retry with missing original bytes or
-different registry bytes fails and requires a reviewed input/version decision; it never overwrites,
-unpublishes or blindly skips an existing version. Only after the complete ten
-archive verification succeeds does the publish job synchronize each package's
-`latest` to its highest currently published semantic version, including beta,
-using the guarded planner and `npm dist-tag add`. It preserves `beta` and checks
-the resulting tags. Old-tag retries select the current public maximum, so they
-do not roll `latest` back to the older source version. The workflow concurrency
-group serializes official releases and retries for this package chain; dry-runs
-perform no tag mutation.
+Every package uses the same Trusted Publisher identity: GitHub organization
+`alibaba-damo-academy`, repository `yugoo-design`, workflow filename
+`publish-product.yml`, and no environment name. Enable direct **npm publish** and
+**Allow npm dist-tag**; these are independent permissions. A previous workflow's
+trust is not inherited by a new workflow or a new package. An inaccessible trust
+listing does not establish that a configuration is absent.
 
-For **each of the ten scoped packages**, its npm maintainer must verify the
-Trusted Publisher identity: GitHub organization `alibaba-damo-academy`, repository
-`yugoo-design`, workflow filename **`publish-dsh.yml`**, no environment name, and
-Allowed actions including direct **npm publish** and **Allow npm dist-tag**.
-OIDC dist-tag management requires npm `11.21.0` or later in the npm 11 series;
-the workflow pins `11.21.0`. Publish permission alone does not grant tag access.
-The publish job has
-`contents: read`, `actions: read` and `id-token: write`; the dry-run job has only
-the two read permissions. No Actions or repository write permission is needed.
-Before publication, diagnostics report Node/npm versions, the public registry
-and whether the two OIDC request environment variables exist. They never print
-their URL/token values or upload authentication debug logs. An authentication
-failure still requires investigation; environment presence does not verify the
-Trusted Publisher configuration or exchange permissions.
-No stored npm token is used. Preserve Companion's existing
-`publish-companion.yml` identity. An inaccessible trust listing does not prove
-that a publisher is absent; configuration and a successful OIDC publication
-remain separate from source checks. See [npm's Trusted Publisher configuration](https://docs.npmjs.com/trusted-publishers/).
+npm requires a package to exist before its Trusted Publisher can be configured.
+For a new package name, resolve that one-time registry setup with its maintainer
+before attempting an OIDC release. This prerequisite does not authorize local
+publication or a hidden token fallback. See [npm trust prerequisites](https://docs.npmjs.com/cli/v11/commands/npm-trust/)
+and [Trusted Publisher settings](https://docs.npmjs.com/trusted-publishers/).
+
+The publish job has `contents: read`, `actions: read` and `id-token: write`;
+dry runs have only read permissions. OIDC permission covers the reviewed job's
+installation and build steps, so approved dependency scripts and fixed inputs
+are part of its trust boundary. Diagnostics show tool versions and whether OIDC
+environment variables exist, never their URL or token values. Presence alone
+does not prove a successful token exchange. Do not upload authentication logs.
+Package repository metadata must match the public repository.
+
+Publish only verified original tarballs. The release channel is `latest`, and
+retrying an old source must never move it backwards. Channel selection considers
+stable versions only; beta releases are not promoted by this workflow. Dist-tag
+management requires npm `11.21.0` or later in the npm 11 series and its separate
+Trusted Publisher permission. Dry runs never mutate registry tags. Actual
+publication, registry readback, source synchronization and native Host acceptance
+are distinct results. Public provenance is not independent native-binary
+reproduction or proof of complete product acceptance.
 
 ## Recover an interrupted source export
 

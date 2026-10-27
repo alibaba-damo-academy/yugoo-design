@@ -20,7 +20,7 @@
 
 按所安装版本的[宿主指南](../../packages/companion/HOSTS.md)，确认 Node 环境、安装目录、宿主版本和登记方式。长期保留已登记的 npm 目录，宿主可能引用其中的绝对路径；移动目录后仅重启 UI 不会修复登记。
 
-CLI 安装版可按[Companion 指南](../../packages/companion/README.md#npm-candidate-and-native-installation-boundary)运行 `design-system --help`，再查看当前版本的 `check-runtime` 用法。它检查安装目录的运行时依赖；宿主登记、模型加载和 KAG/GRA 仍需分别检查。桌面预览按随包材料处理，不照搬 CLI 命令。
+CLI 安装版可按[Companion 指南](../../packages/companion/README.md#npm-candidate-and-native-installation-boundary)运行 `yugoo-design --help`，再查看当前版本的 `check-runtime` 用法。它检查安装目录的运行时依赖；宿主登记、模型加载和 KAG/GRA 仍需分别检查。桌面预览按随包材料处理，不照搬 CLI 命令。
 
 出现缺少依赖、未知平台、原生库加载失败或版本冲突时，保存准确诊断与架构信息，使用该宿主支持的修复或更新路径。不要覆盖已存在的插件登记，或临时关闭校验来通过安装。
 

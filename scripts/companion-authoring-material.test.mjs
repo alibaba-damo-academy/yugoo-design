@@ -84,7 +84,7 @@ test('npm archive includes fixed resource readable by plain Node after relocatio
   const candidate = join(root, 'candidate')
   await mkdir(join(candidate, 'payload'), { recursive: true })
   await import('node:fs/promises').then(({rename}) => rename(packageRoot, join(candidate, 'payload/shared')))
-  const template = JSON.parse(await readFile(new URL('../docs/companion-npm-fixture-2026-09-30.json', import.meta.url)))
+  const template = JSON.parse(await readFile(new URL('../release/product-package-template.json', import.meta.url)))
   await writeFile(join(candidate, 'package.json'), JSON.stringify({ name: 'authoring-resource-fixture', version: '1.0.0', files: template.files }))
   const env = { ...process.env, NODE_OPTIONS: '', NODE_PATH: '' }
   const packed = JSON.parse(execFileSync('npm', ['pack', '--ignore-scripts', '--json', '--offline'], { cwd: candidate, env, encoding: 'utf8' }))[0]

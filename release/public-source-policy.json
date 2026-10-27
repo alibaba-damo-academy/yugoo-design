@@ -168,14 +168,18 @@
     }
   ],
   "rules": [
-    {"kind": "file", "path": "scripts/npm-release-tags.mjs", "action": "include", "reason": "Read-only official npm latest planning and public-archive verification after complete publication; selects the current highest public semantic version including beta, preserves beta and refuses rollback. All dist-tag mutations remain only in official OIDC Actions jobs."},
-    {"kind": "file", "path": "scripts/npm-release-tags.test.mjs", "action": "include", "reason": "Synthetic focused negative cases for prerelease latest selection, old-tag retries, missing publication and beta, actual public Companion bytes, ten-archive completion and publish-only workflow tag mutations. No registry writes or account changes."},
+    {"kind": "file", "path": "scripts/product-release.mjs", "action": "include", "reason": "Dependency-free product identity, stable version, tag selection and generated exact DSH host mapping guards."},
+    {"kind": "file", "path": "scripts/product-release.test.mjs", "action": "include", "reason": "Focused stable product identity, exact tag and generated host version regression cases; no registry writes or release acceptance."},
+    {"kind": "file", "path": "release/product-package-template.json", "action": "include", "reason": "Maintained product npm package metadata and runtime dependencies; exact identity and version are supplied from the product manifest, not the historical review fixture."},
+    {"kind": "file", "path": "release/product.json", "action": "include", "reason": "Sole stable product package, CLI and version identity shared by all release artifacts."},
+    {"kind": "file", "path": "scripts/npm-release-tags.mjs", "action": "include", "reason": "Read-only latest planning from the highest published stable product version and actual archive verification. Dist-tag mutations remain only in the official Actions publish job."},
+    {"kind": "file", "path": "scripts/npm-release-tags.test.mjs", "action": "include", "reason": "Synthetic regressions for stable latest selection, retry rollback prevention and complete eleven-archive publication verification; no registry or account writes."},
 
     {"kind": "file", "path": "scripts/dsh-release-observations.test.mjs", "action": "include", "reason": "Synthetic current-build receipt and source/material association regressions, including changed component metadata, forged receipt/source and stale output refusal; no full build, installed Host or license acceptance claim."},
     {"kind": "file", "path": "scripts/dsh-release-observations.mjs", "action": "include", "reason": "Bounded observations from current normal build receipts, actual module metadata and decoded font bytes; maintained source materials remain authoritative and unassociated prior components remain historical; no complete license inventory claim."},
-    {"kind": "file", "path": "scripts/dsh-release-ci.test.mjs", "action": "include", "reason": "Synthetic focused regressions for DSH exact version/tag, ten-package DAG, fixed-source workflow routing, partial publication retries and fail-closed actual registry bytes; no real registry write or Host acceptance."},
-    {"kind": "file", "path": "scripts/prepare-dsh-release.mjs", "action": "include", "reason": "DSH CI version selection, fixed source normal preparation and read-only actual registry archive integrity guards. Publication commands live only in GitHub Actions; no local publish channel or Host acceptance claim."},
-    {"kind": "file", "path": ".github/workflows/publish-dsh.yml", "action": "include", "reason": "DSH-only GitHub Actions OIDC tag publication from reviewed main history; normal builds and existing assembler, full actual tarball integrity preflight, dependency order and separate Companion result; no stored token or host/account mutation."},
+    {"kind": "file", "path": "scripts/product-release-ci.test.mjs", "action": "include", "reason": "Focused synthetic regressions for the single stable version/tag, eleven-package dependency order, fixed-source workflow routing, original-artifact recovery and registry integrity; no registry writes or Host acceptance."},
+    {"kind": "file", "path": "scripts/prepare-product-release.mjs", "action": "include", "reason": "Unified product preparation and original-artifact recovery with exact source, archive and registry integrity guards. npm mutation remains only in GitHub Actions."},
+    {"kind": "file", "path": ".github/workflows/publish-product.yml", "action": "include", "reason": "Single stable-tag GitHub Actions publication chain for the product and native DSH dependencies, with OIDC, same-archive runtime checks and retained original-artifact recovery; no stored token fallback."},
 
     {"kind": "file", "path": "packages/knowledge-ladybug/src/embedding-model-assets.ts", "action": "include", "reason": "Private fixed-revision local embedding resource preparation, integrity checks, atomic resumable downloads and existing macOS manual proxy adaptation; no model client, Design text transfer, new authority or changed inference budget."},
     {"kind": "file", "path": "packages/knowledge-ladybug/test/embedding-model-assets.test.mjs", "action": "include", "reason": "Bounded local resource integrity, interrupted transfer, atomic promotion, offline, proxy projection and lock regression checks; no public model download or installed-host acceptance claim."},
@@ -503,41 +507,13 @@
       "action": "include",
       "reason": "Formal documentation navigator linking the existing user guides, authoring methods and technical contracts at their maintained source paths; no copied authority or internal development records."
     },
-    {
-      "kind": "file",
-      "path": "scripts/companion-release-ci.test.mjs",
-      "action": "include",
-      "reason": "Focused synthetic tests for matching Git beta tag and manual publication routing, Node engine minimum, archive identity and exact native dependency approvals; not installed Host or OIDC acceptance."
-    },
-    {
-      "kind": "file",
-      "path": "scripts/check-companion-node-runtime.mjs",
-      "action": "include",
-      "reason": "Isolated consumer install orchestration for the same prepared archive on CI Node versions, reusing product check-runtime and the existing synthetic Ladybug WAL regression; no real Host registration, model access or publication."
-    },
-    {
-      "kind": "file",
-      "path": "scripts/prepare-companion-release.mjs",
-      "action": "include",
-      "reason": "Companion CI orchestration consuming the existing same-source builder and npm pack; exact manifest/archive guards and bounded receipts, no publication or account mutation."
-    },
+    {"kind": "file", "path": "scripts/product-runtime-ci.test.mjs", "action": "include", "reason": "Focused runtime-consumer and native-material acquisition regressions for the stable unified product; no installed Host or OIDC acceptance."},
+    {"kind": "file", "path": "scripts/check-product-node-runtime.mjs", "action": "include", "reason": "Isolated installation of the prepared product archive on selected Node versions, reusing existing runtime and Ladybug WAL checks; no real Host registration, model access or publication."},
     {
       "kind": "file",
       "path": "scripts/companion-release-native-donor.mjs",
       "action": "include",
       "reason": "Build-only acquisition of the fixed public beta16 archive with full pinned SRI and existing current-source native gate; extracts only two reviewed native materials through stdout."
-    },
-    {
-      "kind": "file",
-      "path": ".github/workflows/publish-companion.yml",
-      "action": "include",
-      "reason": "Companion-only OIDC build/pack/publication workflow: matching Git beta version tags from reviewed main history publish after same-archive Node22/24 consumer checks; manual build-only and tagged publication retry remain explicit. Guarded OIDC latest synchronization follows verified publication and preserves beta; no stored token, Host configuration or DSH chain publication."
-    },
-    {
-      "kind": "file",
-      "path": "release/companion-version.json",
-      "action": "include",
-      "reason": "Maintained exact Companion beta release version; changing this public main file requests the existing OIDC build, verification and publication workflow. Not a Kit, Bundle or native host suite version."
     },
     {
       "kind": "prefix",

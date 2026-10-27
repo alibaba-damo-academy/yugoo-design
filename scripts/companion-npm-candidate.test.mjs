@@ -100,7 +100,7 @@ test('external release maps require canonical regular pinned input and the exist
 test('assembly refuses a release map changed after output staging starts', async t => {
   const { root, options } = await setup(t)
   const releaseHostsFile = join(root, 'selected-hosts.json')
-  const original = await readFile(join(workspace, 'release/release-hosts.json'))
+  const { bytes: original } = await candidateAssembly.readCompanionReleaseHosts({ licenseRoot: workspace })
   await writeFile(releaseHostsFile, original)
   let observer
   const mutated = new Promise((resolveMutation, rejectMutation) => {
@@ -194,12 +194,12 @@ test('candidate uses fixed versions and deterministic inventory; source and lice
   }
   assert.equal(first.inventory.bundledLicenseMaterials.releaseLicenseAcceptance, false)
   assert.equal(first.inventory.bundledLicenseMaterials.elkPreferredSourceCorrespondenceVerified, false)
-  const releaseHosts=await readFile(join(workspace,'release/release-hosts.json'))
+  const { bytes: releaseHosts } = await candidateAssembly.readCompanionReleaseHosts({ licenseRoot: workspace })
   assert.deepEqual(await readFile(join(first.target,'release-hosts.json')),releaseHosts)
   assert.ok(manifest.files.includes('release-hosts.json'))
   assert.equal(first.inventory.assets['release-hosts.json'],createHash('sha256').update(releaseHosts).digest('hex'))
-  assert.ok(first.inventory.assets['bin/design-system.mjs'])
-  const selection=execute(join(first.target,'bin/design-system.mjs'),['install'],root,2)
+  assert.ok(first.inventory.assets['bin/yugoo-design.mjs'])
+  const selection=execute(join(first.target,'bin/yugoo-design.mjs'),['install'],root,2)
   assert.equal(selection.status,'host-selection-required'); assert.equal(selection.hostRegistered,false)
   assert.deepEqual(selection.hosts,['dsh','codex','codex-desktop','claude-code','qoder','qwenwork','workbuddy'])
   for (const file of ['bin/npm-codex-desktop-source.mjs','bin/npm-installer-codex-desktop.mjs'])
@@ -207,11 +207,11 @@ test('candidate uses fixed versions and deterministic inventory; source and lice
   assert.deepEqual(review.desktopPreparation['codex-desktop'], {
     source: 'npm-backed', scope: 'owned-local-source-and-personal-catalog', nativeActivationRequired: true,
   })
-  const nodeSelection=execute(join(first.target,'bin/design-system.mjs'),['resolve-node','--node-executable',process.execPath],root,0)
+  const nodeSelection=execute(join(first.target,'bin/yugoo-design.mjs'),['resolve-node','--node-executable',process.execPath],root,0)
   assert.equal(nodeSelection.kind,'node-runtime-selection'); assert.equal(nodeSelection.verified,true)
   assert.equal(nodeSelection.version,process.versions.node); assert.match(nodeSelection.sha256,/^[a-f0-9]{64}$/)
   assert.equal(nodeSelection.ownership,'external'); assert.equal(nodeSelection.installed,false)
-  const desktopPending=execute(join(first.target,'bin/design-system.mjs'),['install','--host','workbuddy'],root,2)
+  const desktopPending=execute(join(first.target,'bin/yugoo-design.mjs'),['install','--host','workbuddy'],root,2)
   assert.equal(desktopPending.status,'inputs-required'); assert.equal(desktopPending.usable,false)
   assert.ok(first.inventory.assets['bin/npm-installer-dsh.mjs'])
   for (const name of ['npm-installer-dsh-desktop.mjs', 'npm-installer-paths.mjs', 'npm-agent-installation.mjs', 'npm-node-runtime.mjs', 'npm-node-registration.mjs', 'windows-private-storage.mjs', 'windows-native-platform.mjs']) {
@@ -232,22 +232,22 @@ test('candidate uses fixed versions and deterministic inventory; source and lice
   // execution. Keep both candidates and their inventories unchanged.
   const wrapperFixture = join(root, 'isolated wrapper fixture')
   await mkdir(wrapperFixture)
-  await cp(join(first.target, 'bin/design-system.mjs'), join(wrapperFixture, 'design-system.mjs'))
+  await cp(join(first.target, 'bin/yugoo-design.mjs'), join(wrapperFixture, 'yugoo-design.mjs'))
   await writeFile(join(wrapperFixture, 'installer.mjs'),
     'export async function installerMain(args) { return {host:"dsh",status:args[0],runtimeMounted:false} }\n')
   for (const [status, expectedExit] of [['registered-config-parsed', 0], ['failed-partial-state-retained', 1]]) {
-    const result = spawnSync(process.execPath, [join(wrapperFixture, 'design-system.mjs'), status],
+    const result = spawnSync(process.execPath, [join(wrapperFixture, 'yugoo-design.mjs'), status],
       { cwd: root, encoding: 'utf8', env: { ...process.env, NODE_OPTIONS: '', NODE_PATH: '' } })
     assert.equal(result.status, expectedExit, result.stderr)
     assert.deepEqual(JSON.parse(result.stdout), { host: 'dsh', status, runtimeMounted: false })
   }
   for (const [status, expectedExit] of [['host-selection-required', 2], ['inputs-required', 2], ['runtime-not-ready', 1], ['unsupported-host', 1]]) {
-    const result = spawnSync(process.execPath, [join(wrapperFixture, 'design-system.mjs'), status], { cwd: root, encoding: 'utf8' })
+    const result = spawnSync(process.execPath, [join(wrapperFixture, 'yugoo-design.mjs'), status], { cwd: root, encoding: 'utf8' })
     assert.equal(result.status, expectedExit, result.stderr)
   }
   await writeFile(join(wrapperFixture, 'installer.mjs'),
     'export async function installerMain() { throw Object.assign(Error("native failed"), {installation:{host:"claude-code",registration:"failed-or-unconfirmed",receiptFile:"retained-receipt.json"}}) }\n')
-  const failed = spawnSync(process.execPath, [join(wrapperFixture, 'design-system.mjs'), 'install'], { cwd: root, encoding: 'utf8' })
+  const failed = spawnSync(process.execPath, [join(wrapperFixture, 'yugoo-design.mjs'), 'install'], { cwd: root, encoding: 'utf8' })
   assert.equal(failed.status, 1)
   assert.equal(JSON.parse(failed.stderr).installation.receiptFile, 'retained-receipt.json')
   await writeFile(join(wrapperFixture, 'installer.mjs'), `export async function installerMain(args,{signal}) {
@@ -260,7 +260,7 @@ test('candidate uses fixed versions and deterministic inventory; source and lice
     return {status:'failed-partial-state-retained',execution:{state:'cancelled',processTreeState:'unverified'}};
   }`)
   const cancelled = promisify(execFile)(process.execPath,
-    [join(wrapperFixture, 'design-system.mjs'), 'install', '--host=dsh'], { timeout: 3000 })
+    [join(wrapperFixture, 'yugoo-design.mjs'), 'install', '--host=dsh'], { timeout: 3000 })
   cancelled.child.stdout.once('data', () => cancelled.child.kill('SIGINT'))
   await assert.rejects(cancelled, error => {
     assert.equal(error.code, 1)
@@ -326,23 +326,26 @@ test('official engine selection keeps package, payload manifest and inventory co
   assert.match(candidateCopy, /npm install --ignore-scripts=false --save-exact/u)
   assert.match(candidateCopy, /before.*(?:acquisition|install)/iu)
   assert.match(candidateCopy, /bare npm\/npx.*not.*automatically/iu)
-  const beta = await buildCompanionCandidate({ ...normal, distribution: 'beta', version: '0.1.0-beta.1', destination: join(root, 'explicit beta delivery') })
-  const betaManifest = JSON.parse(await readFile(join(beta.target, 'package.json')))
-  assert.equal(betaManifest['x-design-release-review'].distribution, 'beta')
-  assert.equal(betaManifest['x-design-release-review'].fixture, false)
-  assert.equal(betaManifest['x-design-release-review'].releaseValidated, false)
-  assert.deepEqual(betaManifest.publishConfig, { access: 'public', tag: 'beta' })
-  assert.equal(beta.inventory.publishReady, false)
-  const betaCopy = await readFile(join(beta.target, 'README.md'), 'utf8')
-  assert.match(betaCopy, /ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm install --ignore-scripts=false --save-exact @example-release\/yugoo-design-companion@0\.1\.0-beta\.1/)
-  assert.match(betaCopy, /\$env:ONNXRUNTIME_NODE_INSTALL_CUDA/u)
-  assert.doesNotMatch(betaCopy, /npm install --ignore-scripts\s/u)
-  assert.doesNotMatch(betaCopy, /unpublished|tarball|<package-selector>/iu)
+  const stable = await buildCompanionCandidate({ ...normal, packageName: 'yugoo-design', distribution: 'stable', version: '0.1.0', destination: join(root, 'stable product delivery') })
+  const stableManifest = JSON.parse(await readFile(join(stable.target, 'package.json')))
+  assert.equal(stableManifest.name, 'yugoo-design')
+  assert.deepEqual(stableManifest.bin, { 'yugoo-design': 'bin/yugoo-design.mjs' })
+  await assert.rejects(lstat(join(stable.target, 'bin/design-system.mjs')), { code: 'ENOENT' })
+  assert.equal(stableManifest['x-design-release-review'].distribution, 'stable')
+  assert.equal(stableManifest['x-design-release-review'].fixture, false)
+  assert.equal(stableManifest['x-design-release-review'].releaseValidated, false)
+  assert.deepEqual(stableManifest.publishConfig, { access: 'public', tag: 'latest' })
+  assert.equal(stable.inventory.publishReady, false)
+  const stableCopy = await readFile(join(stable.target, 'README.md'), 'utf8')
+  assert.match(stableCopy, /ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm install --ignore-scripts=false --save-exact yugoo-design@0\.1\.0/)
+  assert.match(stableCopy, /\$env:ONNXRUNTIME_NODE_INSTALL_CUDA/u)
+  assert.doesNotMatch(stableCopy, /npm install --ignore-scripts\s/u)
+  assert.doesNotMatch(stableCopy, /unpublished|tarball|<package-selector>/iu)
   const maintained = await readFile(join(workspace, 'packages/companion/README.md'), 'utf8')
   const section = maintained.split('<!-- npm-package-guide:start -->')[1].split('<!-- npm-package-guide:end -->')[0].trim()
-  assert.equal(betaCopy, `# Yugoo Design Companion — beta\n\nPackage: \`${normal.packageName}@0.1.0-beta.1\`.\n\n` + section.replaceAll('<package-selector>', `${normal.packageName}@0.1.0-beta.1`) + '\n')
-  assert.equal(beta.inventory.readmeSource.sourceSha256, sha(maintained))
-  assert.equal(beta.inventory.readmeSource.sectionSha256, sha(section))
+  assert.equal(stableCopy, '# Yugoo Design\n\nPackage: `yugoo-design@0.1.0`.\n\n' + section.replaceAll('<package-selector>', 'yugoo-design@0.1.0') + '\n')
+  assert.equal(stable.inventory.readmeSource.sourceSha256, sha(maintained))
+  assert.equal(stable.inventory.readmeSource.sectionSha256, sha(section))
   const hostGuide = await readFile(join(workspace, 'packages/companion/HOSTS.md'), 'utf8')
   const prompts = [...hostGuide.matchAll(/```text\n([\s\S]*?)\n```/gu)].map(match => match[1])
   assert.equal(prompts.length, 2)
@@ -350,9 +353,9 @@ test('official engine selection keeps package, payload manifest and inventory co
     assert.ok(prompt.indexOf('ONNXRUNTIME_NODE_INSTALL_CUDA=skip') >= 0)
     assert.ok(prompt.indexOf('ONNXRUNTIME_NODE_INSTALL_CUDA=skip') < prompt.indexOf('https://registry.npmjs.org'))
   }
-  for (const changes of [{ fixture: true }, { version: '0.1.0' }, { version: '0.1.0-rc.1' }, { distribution: 'published' }]) {
+  for (const changes of [{ fixture: true }, { version: '0.1.0-beta.1' }, { version: '0.1.0-rc.1' }, { version: '0.1.0+local' }, { version: '0.2.0' }, { distribution: 'beta' }, { distribution: 'published' }]) {
     const destination = join(root, 'refused delivery mode')
-    await assert.rejects(buildCompanionCandidate({ ...normal, distribution: 'beta', version: '0.1.0-beta.1', ...changes, destination }), /fixture|Distribution|beta prerelease/)
+    await assert.rejects(buildCompanionCandidate({ ...normal, packageName: 'yugoo-design', distribution: 'stable', version: '0.1.0', ...changes, destination }), /fixture|Distribution|canonical versions|stable product version|must match the product manifest/)
     await assert.rejects(lstat(destination), { code: 'ENOENT' })
   }
   for (const [changes, pattern] of [
@@ -428,7 +431,7 @@ test('public bin routes pending Companion plans and requires explicit DSH and Cl
   const { target } = await buildCompanionCandidate(options)
   const relocated = join(root, 'installer relocated with spaces')
   await rename(target, relocated)
-  const bin = join(relocated, 'bin/design-system.mjs')
+  const bin = join(relocated, 'bin/yugoo-design.mjs')
   const userRoot = join(root, 'isolated home'); await mkdir(userRoot)
   const receipts = join(root, 'external receipts')
   const before = await readFile(join(relocated, 'release-manifest.json'))

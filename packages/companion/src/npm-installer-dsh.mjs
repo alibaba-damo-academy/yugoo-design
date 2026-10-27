@@ -137,7 +137,7 @@ async function productIdentity(root) {
   try { releaseMap = await boundedFile(join(root, 'release-hosts.json')) }
   catch (error) { if (error.code !== 'ENOENT') throw error }
   const entries = {}
-  for (const file of ['design-system.mjs', 'installer.mjs', 'npm-installer-dsh.mjs', 'npm-agent-installation.mjs'])
+  for (const file of ['yugoo-design.mjs', 'installer.mjs', 'npm-installer-dsh.mjs', 'npm-agent-installation.mjs'])
     entries[file] = sha(await boundedFile(join(root, 'bin', file)))
   return { npmRoot: root, name: manifest.name, version: manifest.version, manifestSha256: sha(manifestBytes),
     releaseMapSha256: releaseMap === null ? null : sha(releaseMap),

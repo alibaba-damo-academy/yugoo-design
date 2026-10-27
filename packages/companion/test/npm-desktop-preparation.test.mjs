@@ -15,7 +15,7 @@ async function fixture(t, version = '1.2.3', { legacyMarket = false } = {}) {
   const root = await mkdtemp(join(tmpdir(), 'desktop-preparation-fixture-')); t.after(() => rm(root, { recursive: true, force: true }))
   const npmRoot = join(root, 'npm package'), destination = join(root, 'prepared'), runtime = join(npmRoot, 'payload/shared')
   for (const dir of ['scripts', 'knowledge', 'kits/web_app']) await mkdir(join(runtime, dir), { recursive: true })
-  await writeFile(join(npmRoot, 'package.json'), JSON.stringify({ name: '@test-yugoo/companion', version, type: 'module', 'x-design-release-review': { fixture: false } }))
+  await writeFile(join(npmRoot, 'package.json'), JSON.stringify({ name: 'yugoo-design', version, type: 'module', 'x-design-release-review': { fixture: false } }))
   await writeFile(join(runtime, 'scripts/design.mjs'), '// isolated runtime fixture: no host/model\n')
   await writeFile(join(runtime, 'scripts/workbuddy-panel-service.mjs'), '// isolated service fixture\n')
   await writeFile(join(runtime, 'knowledge/runtime-manifest.json'), '{}'); await writeFile(join(runtime, 'kits/web_app/kit.yaml'), 'name: web_app\n')
@@ -29,7 +29,7 @@ async function fixture(t, version = '1.2.3', { legacyMarket = false } = {}) {
     const manifest = await json(join(materials, 'materials.json')); manifest.files['workbuddy-package.mjs'] = hash(legacy)
     await writeFile(join(materials, 'materials.json'), JSON.stringify(manifest, null, 2) + '\n')
   }
-  const options = { npmRoot, destination, packageName: '@test-yugoo/companion', packageVersion: version, suiteVersion: '0.3.22', target: 'workbuddy',
+  const options = { npmRoot, destination, packageName: 'yugoo-design', packageVersion: version, suiteVersion: '0.3.22', target: 'workbuddy',
     nodeExecutable: "C:\\Tools\\Jeff's node\\node.exe", npmRootWindows: 'D:\\Yugoo\\npm-v123', destinationWindows: 'D:\\Yugoo\\prepared' }
   return { root, npmRoot, destination, runtime, options }
 }
@@ -139,7 +139,7 @@ test('preparation rejects wrong identity/version/resources, profiles, existing o
   const f = await fixture(t)
   await assert.rejects(prepareDesktopPackage({ ...f.options, destination: f.root }), /outside npm package/)
   await assert.rejects(prepareDesktopPackage({ ...f.options, destination: join(f.npmRoot, 'inside') }), /outside npm package/)
-  for (const override of [{ packageVersion: 'latest' }, { packageVersion: '1.2.4' }, { packageName: '@foreign/pkg' }, { suiteVersion: '../overwrite' }, { target: 'codex' }, { destination: join(f.root, '.workbuddy/plugins') }]) await assert.rejects(prepareDesktopPackage({ ...f.options, ...override }))
+  for (const override of [{ packageVersion: 'latest' }, { packageVersion: '1.2.4' }, { packageName: '@foreign/pkg' }, { packageName: 'foreign-package' }, { packageName: '../yugoo-design' }, { packageName: 'yugoo-design@0.1.0' }, { suiteVersion: '../overwrite' }, { target: 'codex' }, { destination: join(f.root, '.workbuddy/plugins') }]) await assert.rejects(prepareDesktopPackage({ ...f.options, ...override }))
   await mkdir(f.destination); await writeFile(join(f.destination, 'foreign.txt'), 'preserved'); await assert.rejects(prepareDesktopPackage(f.options), { code: 'EEXIST' }); assert.equal(await readFile(join(f.destination, 'foreign.txt'), 'utf8'), 'preserved')
   const alias = join(f.root, 'symlink'); await symlink(f.npmRoot, alias); await assert.rejects(prepareDesktopPackage({ ...f.options, npmRoot: alias }), /symlink/)
   await writeFile(join(f.npmRoot, 'payload/desktop-preparation/workbuddy-package.mjs'), 'changed')

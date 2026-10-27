@@ -21,10 +21,10 @@
 
 | 官方套件 | 用途与方法 | 获取与适用范围 |
 | --- | --- | --- |
-| Web App（`web_app`） | 软件应用的需求、流程、规则、数据、页面、AI 能力及交接；见[方法与内容](../../packages/skills-web-app/README.md) | 默认随主插件交付。独立内容包的[精确 npm 元数据](https://registry.npmjs.org/@yugoo-design/dsh-design-skills-web-app/0.1.0-beta.2)提供 `dist.tarball` 下载地址；不需要为了首次使用再安装一次。 |
+| Web App（`web_app`） | 软件应用的需求、流程、规则、数据、页面、AI 能力及交接；见[方法与内容](../../packages/skills-web-app/README.md) | 默认随主插件交付；统一产品 `yugoo-design@0.1.0` 尚在发布准备中。历史独立内容包的[精确 npm 元数据](https://registry.npmjs.org/@yugoo-design/dsh-design-skills-web-app/0.1.0-beta.2)保留旧版 `dist.tarball`，不作为新产品的首次安装入口。 |
 | 决策与运筹建模（Decision Modeling，`decision_modeling`） | 决策问题、对象、数据、约束、目标、模型、结果与比较；见[内部方法示例](official-kits.md#决策与运筹建模把业务经验带进模型内部验证) | 目前仅供内部验证，未随默认产品和公开源码提供；既有 npm 包暂不作为对外安装入口。内部仍保留源码与独立内容包的组织方式，尚未作为对外套件提供。 |
 
-2026-10-17（UTC）的公开下载检查已核对 Web App 内容包 `0.1.0-beta.2` 的精确元数据和完整归档摘要。首次使用仍按主插件的[安装步骤](getting-started.md)操作；发行与宿主支持情况见[预览状态](preview-status.md)和[宿主范围](hosts.md)。npm 包版本与 Kit/Bundle 内容版本分别管理。
+2026-10-17（UTC）的历史公开下载检查已核对 Web App 内容包 `0.1.0-beta.2` 的精确元数据和完整归档摘要，不代表统一产品已发布。首次使用仍按主插件的[安装步骤](getting-started.md)操作；发行与宿主支持情况见[预览状态](preview-status.md)和[宿主范围](hosts.md)。npm 包版本与 Kit/Bundle 内容版本分别管理。
 
 游戏设计等领域仍在探索。下方社区示例由独立作者提供，可供学习和定制。
 
@@ -124,8 +124,9 @@ npm 用于分发插件和可独立更新的内容包，GitHub 提供公开源码
 现有 Kit loader 没有通用 npm 安装、依赖解析或自动注册入口；`npm install`
 成功并不意味着 Kit 已被选择。发行接入仍须约定包内 Kit 根目录、身份/版本
 与许可证保留，并由宿主明确把已安装目录接入 loader。带运行时代码的包
-仍需独立满足宿主注册、依赖及安全要求。npm 命名空间为 `@yugoo-design`，
-预发布渠道为 `beta`；当前包的发布状态见[预览状态](preview-status.md)。
+仍需独立满足宿主注册、依赖及安全要求。统一产品包名为 `yugoo-design`；
+`@yugoo-design` 下的内部模块与历史 `beta` 记录不构成另一个产品安装入口。
+首个正式目标 `0.1.0` 尚未发布，当前状态见[预览状态](preview-status.md)。
 npm 发行版本不改变 Kit/Bundle 的内容版本。要发布自己的包，需确认账号权限，并按独立发布流程操作。获取官方内容时查上方清单；获取其他 Kit 时，由作者提供准确的包名、版本和宿主接入说明。
 
 ## 先保存可恢复的原件
@@ -220,12 +221,12 @@ Codex、Claude Code、Qoder CLI 的 Companion 使用已安装插件的实际入�
 
 以下 Bash 示例使用目标 npm 安装内的项目运行入口。先确认该安装包含
 `payload/shared/scripts/design.mjs`，并按[内容包入口](extending.md#当前内容组织)
-交付完整 Kit 与 Bundle。`design-system` 是安装器命令，不代替这里的项目命令。
+交付完整 Kit 与 Bundle。`yugoo-design` 是产品安装器命令，不代替这里的项目命令。
 由当前 Codex Agent 填入真实安装目录、完整内容包根目录及当前会话 ID；
 状态和项目目录使用单独的新目录，不借用已有项目的配置：
 
 ```bash
-YUGOO_RUNTIME="/absolute/npm-install/node_modules/@yugoo-design/companion"
+YUGOO_RUNTIME="/absolute/npm-install/node_modules/yugoo-design"
 YUGOO_KIT="/absolute/my-content-package"
 YUGOO_STATE="/absolute/new-companion-state"
 YUGOO_PROJECTS="/absolute/new-design-projects"
