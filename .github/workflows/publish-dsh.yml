@@ -14,9 +14,18 @@ on:
         required: true
         default: false
         type: boolean
+      resume_run_id:
+        description: 'Original prepared Actions run ID; must be paired with resume_artifact_id'
+        required: false
+        type: string
+      resume_artifact_id:
+        description: 'Exact immutable artifact ID from that same source and version'
+        required: false
+        type: string
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: dsh-npm-release
@@ -57,6 +66,26 @@ jobs:
           git merge-base --is-ancestor HEAD origin/main
       - name: Install the explicit OIDC-capable npm CLI
         run: npm install --global npm@11.21.0 --registry=https://registry.npmjs.org
+      - name: Keep current registry results outside the immutable payload
+        run: printf 'DSH_REGISTRY_STATE_DIR=%s/dsh-registry\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Select original archives or a first preparation
+        id: route
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RESUME_RUN_ID: ${{ inputs.resume_run_id }}
+          RESUME_ARTIFACT_ID: ${{ inputs.resume_artifact_id }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: node scripts/prepare-dsh-release.mjs route "$RELEASE_VERSION"
+      - name: Restore and verify the exact original DSH artifact
+        if: steps.route.outputs.mode == 'restore'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SELECTED_RUN_ID: ${{ steps.route.outputs.runId }}
+          SELECTED_ARTIFACT_ID: ${{ steps.route.outputs.artifactId }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          node scripts/prepare-dsh-release.mjs restore "$RELEASE_VERSION" "$RUNNER_TEMP/dsh-release"
+          cp "$RUNNER_TEMP/dsh-release/pnpm-lock.yaml" pnpm-lock.yaml
       - name: Resolve the public source lock and install with reviewed build permissions
         run: |
           node --version
@@ -69,16 +98,42 @@ jobs:
       - name: Check DSH publication, material and normal-build guards
         run: node --test scripts/npm-release-tags.test.mjs scripts/dsh-release-ci.test.mjs scripts/dsh-release-observations.test.mjs scripts/dsh-distribution-materials.test.mjs scripts/normal-build-module-evidence.test.mjs
       - name: Build the fixed source once, bind current observations and pack ten archives
+        if: steps.route.outputs.mode == 'prepare'
         env:
           RELEASE_VERSION: ${{ steps.release.outputs.version }}
         run: |
           export NPM_CLI="$(readlink -f "$(command -v npm)")"
-          node --import tsx scripts/prepare-dsh-release.mjs prepare "$RELEASE_VERSION" "$RUNNER_TEMP/dsh-release"
+          node --import tsx scripts/prepare-dsh-release.mjs prepare "$RELEASE_VERSION" "$RUNNER_TEMP/dsh-build"
+      - name: Seal thirteen files for immutable DSH recovery
+        if: steps.route.outputs.mode == 'prepare'
+        id: seal
+        run: node scripts/prepare-dsh-release.mjs seal "$RUNNER_TEMP/dsh-build/release-receipt.json" "$RUNNER_TEMP/dsh-release"
+      - name: Retain the prepared DSH archives before any publication
+        if: steps.route.outputs.mode == 'prepare'
+        id: archive
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: ${{ steps.seal.outputs.name }}
+          path: ${{ runner.temp }}/dsh-release/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+      - name: Record and verify the immutable artifact identity
+        if: steps.route.outputs.mode == 'prepare'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          UPLOADED_ARTIFACT_ID: ${{ steps.archive.outputs.artifact-id }}
+          UPLOADED_ARTIFACT_DIGEST: ${{ steps.archive.outputs.artifact-digest }}
+        run: node scripts/prepare-dsh-release.mjs uploaded "$RUNNER_TEMP/dsh-release"
+      - name: Verify original archive bytes before fresh registry preflight
+        run: node scripts/prepare-dsh-release.mjs verify-artifact "$RUNNER_TEMP/dsh-release"
       - name: Preflight every registry version and actual archive integrity before any publication
         run: node scripts/prepare-dsh-release.mjs preflight "$RUNNER_TEMP/dsh-release/release-receipt.json"
       - name: Publish missing archives in dependency order through npm OIDC
         if: github.job == 'publish'
         run: |
+          node scripts/prepare-dsh-release.mjs diagnostics
+          npm --version
           for index in {0..9}; do
             next_file="$RUNNER_TEMP/dsh-next-$index.json"
             node scripts/prepare-dsh-release.mjs next "$RUNNER_TEMP/dsh-release/release-receipt.json" "$index" > "$next_file"
@@ -123,6 +178,7 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: read
+      actions: read
       id-token: write
     env: *dsh-env
     steps: *dsh-steps

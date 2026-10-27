@@ -1,4 +1,9 @@
 {
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alibaba-damo-academy/yugoo-design.git",
+    "directory": "packages/git-native"
+  },
   "name": "yugoo-design-git-native",
   "version": "0.1.0-beta.2",
   "description": "Node-only local Git binding for Yugoo Design, with bounded object-header access.",

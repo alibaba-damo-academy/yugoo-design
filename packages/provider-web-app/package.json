@@ -1,4 +1,9 @@
 {
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alibaba-damo-academy/yugoo-design.git",
+    "directory": "packages/provider-web-app"
+  },
   "name": "dsh-design-provider-web-app",
   "version": "0.0.0",
   "license": "Apache-2.0",

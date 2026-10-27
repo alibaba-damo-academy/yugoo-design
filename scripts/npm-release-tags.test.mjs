@@ -54,8 +54,9 @@ test('DSH tag stage requires completed verification for all ten archives', () =>
 test('only official publish jobs may mutate latest, after publication guards, retaining workflow identities', async () => {
   for (const chain of ['companion', 'dsh']) {
     const text = await readFile(new URL(`../.github/workflows/publish-${chain}.yml`, import.meta.url), 'utf8'), flow = YAML.parse(text)
-    assert.deepEqual(flow.permissions, { contents: 'read' }); assert.equal(flow.jobs.dryrun.permissions, undefined)
-    assert.deepEqual(flow.jobs.publish.permissions, { contents: 'read', 'id-token': 'write' })
+    const readPermissions = chain === 'dsh' ? { contents: 'read', actions: 'read' } : { contents: 'read' }
+    assert.deepEqual(flow.permissions, readPermissions); assert.equal(flow.jobs.dryrun.permissions, undefined)
+    assert.deepEqual(flow.jobs.publish.permissions, { ...readPermissions, 'id-token': 'write' })
     const steps = flow.jobs.publish.steps, tagIndex = steps.findIndex(x => x.run?.includes('npm dist-tag add'))
     assert.ok(tagIndex >= 0); assert.equal(steps[tagIndex].if, "github.job == 'publish'")
     assert.equal(steps[tagIndex].env.RELEASE_CHAIN, chain)

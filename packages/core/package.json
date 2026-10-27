@@ -1,4 +1,9 @@
 {
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alibaba-damo-academy/yugoo-design.git",
+    "directory": "packages/core"
+  },
   "name": "dsh-design-core",
   "version": "0.0.0",
   "license": "Apache-2.0",

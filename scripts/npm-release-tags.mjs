@@ -4,9 +4,9 @@ import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { execFileSync } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
-import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { DSH_SOURCE_PACKAGES, REGISTRY, selectDshRelease, verifyDshReceipt } from './prepare-dsh-release.mjs'
+import { DSH_SOURCE_PACKAGES, REGISTRY, selectDshRelease, verifyDshReceipt, readDshRegistryState } from './prepare-dsh-release.mjs'
 import { selectCompanionRelease, verifyReleaseArchive } from './prepare-companion-release.mjs'
 const workspace = fileURLToPath(new URL('../', import.meta.url))
 const json = async path => JSON.parse(await readFile(path, 'utf8'))
@@ -98,7 +98,7 @@ async function releaseSelection(index) {
   assert.ok(isAbsolute(receiptFile ?? ''), 'DSH receipt required')
   const receipt = await verifyDshReceipt(receiptFile, { sourceCommit: head })
   assert.equal(receipt.version, releaseVersion)
-  const complete = await json(join(dirname(receiptFile), 'complete-registry.json'))
+  const complete = await readDshRegistryState(receiptFile, 'complete-registry.json')
   assertCompleteDshPublication(receipt, complete, head, releaseVersion)
   assert.ok(Number.isInteger(index) && index >= 0 && index < 10)
   return { name: receipt.entries[index].name, releaseVersion }

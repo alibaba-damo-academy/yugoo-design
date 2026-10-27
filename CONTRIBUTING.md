@@ -221,6 +221,11 @@ ordinary `main` pushes publish neither chain. For preparation only, choose
 unchecked. The optional version input can only confirm the tracked value.
 A publication retry must select the same matching DSH tag with **publish** enabled.
 Branches, mismatched versions and tags outside reviewed `main` history fail.
+To resume in a new run, enter both **resume_run_id** and **resume_artifact_id**
+from the original run's artifact summary. Re-running the same run automatically
+selects its one earlier prepared artifact. Missing, expired or ambiguous artifacts
+fail; neither recovery path rebuilds or repacks the packages. A new preparation
+without an original artifact requires all ten exact versions to be absent.
 
 The same Node, pnpm, npm, public lock-resolution and native-input policies described
 above apply. CI runs each existing normal package build once, with optional
@@ -237,18 +242,31 @@ metadata hash remains historical. Missing or forged current identities fail.
 Unassociated historical components remain identified as historical only. Current
 observations and package receipts retain the incomplete-inventory and
 unaccepted-license flags; packing does not establish installed Host acceptance.
-The runner retains the ten archives and bounded JSON receipts until its job ends;
-this workflow does not upload archives or install a real Host.
+Before the first publication, the workflow uploads exactly thirteen files:
+the ten original archives, the release receipt, current material observations,
+and the public lock used by that build. The immutable artifact is retained for
+seven days; its run, attempt, artifact ID, digest and receipt hash appear in the
+job summary before npm is invoked. Upload or identity-recording failure prevents
+publication. Native input trees, staged packages and dependency directories are
+excluded. This workflow does not install a real Host.
+
+Recovery requires the same repository, DSH workflow, trusted main or matching-tag
+origin, and exact source SHA. It verifies the original attempt's successful build,
+seal and upload even if publication later failed. It checks the downloaded ZIP's
+actual digest, safely admits only the thirteen expected files, and verifies each
+original archive's raw hashes, size, package metadata and exact dependency pins.
+It restores the original frozen public lock. Fresh registry results are written
+outside the immutable payload; saved registry state never authorizes a retry.
 
 Before any publication, CI checks all ten exact registry versions. Only a version
 404 means absent. An existing version is skipped only when registry metadata SRI
-and the downloaded tarball's actual size and SHA-512 match the newly prepared
+and the downloaded tarball's actual size and SHA-512 match the retained original
 archive. Any mismatch or network/registry error stops the job. Missing packages
 are published in dependency order, with the aggregate last, through OIDC using
 only the verified tarballs and `--tag beta`. Dependencies must be visible with
 matching bytes before a dependent package is published; every publication and
-the final complete set are checked again. A retry that builds different bytes
-fails safely and requires a reviewed input/version decision; it never overwrites,
+the final complete set are checked again. A retry with missing original bytes or
+different registry bytes fails and requires a reviewed input/version decision; it never overwrites,
 unpublishes or blindly skips an existing version. Only after the complete ten
 archive verification succeeds does the publish job synchronize each package's
 `latest` to its highest currently published semantic version, including beta,
@@ -265,7 +283,13 @@ Allowed actions including direct **npm publish** and **Allow npm dist-tag**.
 OIDC dist-tag management requires npm `11.21.0` or later in the npm 11 series;
 the workflow pins `11.21.0`. Publish permission alone does not grant tag access.
 The publish job has
-`contents: read` and `id-token: write`; the dry-run job has no OIDC permission.
+`contents: read`, `actions: read` and `id-token: write`; the dry-run job has only
+the two read permissions. No Actions or repository write permission is needed.
+Before publication, diagnostics report Node/npm versions, the public registry
+and whether the two OIDC request environment variables exist. They never print
+their URL/token values or upload authentication debug logs. An authentication
+failure still requires investigation; environment presence does not verify the
+Trusted Publisher configuration or exchange permissions.
 No stored npm token is used. Preserve Companion's existing
 `publish-companion.yml` identity. An inaccessible trust listing does not prove
 that a publisher is absent; configuration and a successful OIDC publication
