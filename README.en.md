@@ -13,7 +13,9 @@
 
 **See your ideas. Shape the details.**
 
-Yugoo Design (语构设计系统) is an open-source plugin for leading AI agent applications, built on a general-purpose ideation and design framework. It adds interactive Design Panels to professional skills. AI helps develop a proposal; you examine the details and express your judgment through diagrams, tables, cards, and prototypes. Saved designs give you and AI a shared basis for the next discussion and revision.
+Yugoo Design (语构设计系统) is an open-source plugin that turns your AI agent app into an interactive ideation and design workbench.
+
+Built on a general-purpose ideation and design framework, it adds interactive Design Panels to professional skills. AI helps develop a proposal; you examine details, make changes, and express your judgment through diagrams, tables, cards, and prototypes. Saved designs give you and AI a shared basis for the next discussion and revision.
 
 ![Yugoo Design concept: turn scattered ideas into coherent designs through interactive Panels, gap-driven collaboration, and KAG/GRA integration, with ongoing feedback and revision](docs/images/yugoo-design-concept.webp)
 
