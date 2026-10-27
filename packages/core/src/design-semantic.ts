@@ -5,6 +5,8 @@ import { resolveDesignRelation } from './design-relation-vocabulary.ts'
 export interface SemanticUnit { id: string; nodeId?: string; file: string; pointer: string; fieldPointers?: string[]; text: string; digest: string }
 export interface SemanticStatus { state: 'indexing' | 'ready' | 'error' | 'disabled'; completed: number; total: number; model: string; message?: string; cache?: 'persistent' | 'memory' }
 export interface SemanticGraphRuntime {
+  /** Configured computation policy, independent of an open project cache. */
+  readonly enabled?: boolean
   readonly identity?: string
   publicationCache?(projectId: string): import('./design-knowledge-refresh.ts').KnowledgeIndexCache | undefined
   read(projectId: string, graph: DesignGraph): Promise<{ edges: DesignGraphEdge[]; status: SemanticStatus }>

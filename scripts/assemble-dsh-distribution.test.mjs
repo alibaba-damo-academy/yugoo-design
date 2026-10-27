@@ -9,28 +9,52 @@ import * as assembly from './assemble-dsh-distribution.mjs'
 import { readNpmCandidates } from './release-npm-candidates.mjs'
 import { fileURLToPath } from 'node:url'
 import { parse } from 'yaml'
+import { satisfies } from 'semver'
+import { assertRequiredPeers } from './release-consumer-config.mjs'
 
 const mapping = { 'dsh-design-core': { name: '@yugoo-design/dsh-design-core' } }
+
+test('controlled rc3 trial admits only the exact Host version while retaining rc2 development SDK pins', async () => {
+  const source = fileURLToPath(new URL('../', import.meta.url))
+  const report = await readNpmCandidates(source, { scope: '@yugoo-design', version: '0.1.0-r2mac.3', ladybugVersion: '0.21.1', ladybugSource: 'registry' })
+  for (const directory of ['core', 'panel', 'provider-web-app', 'studio-dsh']) {
+    const original = JSON.parse(await readFile(join(source, 'packages', directory, 'package.json'), 'utf8'))
+    const packed = assembly.createDshDistributionManifest(report, original.name)
+    const peers = Object.fromEntries(Object.entries(packed.peerDependencies).filter(([name]) => name.startsWith('@deepseek-ai/dsh-')))
+    assert.ok(Object.keys(peers).length > 0)
+    for (const [name, range] of Object.entries(peers)) {
+      assert.equal(range, '0.2.1-rc.3')
+      assert.equal(original.devDependencies[name], '0.2.0-rc.2', 'trial metadata does not replace the development SDK')
+    }
+    const hostContract = { name: packed.name, peerDependencies: peers }
+    await assertRequiredPeers(hostContract, () => '0.2.1-rc.3', satisfies)
+    for (const wrongVersion of ['0.2.0-rc.2', '0.2.1-rc.2', '0.2.1-rc.4', '0.2.1']) {
+      await assert.rejects(assertRequiredPeers(hostContract, () => wrongVersion, satisfies), /incompatible peer/)
+    }
+    if (original.peerDependencies.react) assert.equal(packed.peerDependencies.react, '^18.2.0')
+    assert.equal(packed.peerDependencies['@deepseek-ai/cordis'], original.peerDependencies['@deepseek-ai/cordis'])
+  }
+})
 
 async function selectiveFixture() {
   const source = fileURLToPath(new URL('../', import.meta.url))
   const options = { scope: '@yugoo-design', version: '0.1.0-beta.2', ladybugVersion: '0.21.1', ladybugSource: 'registry' }
   const previous = await readNpmCandidates(source, options)
   const versions = Object.fromEntries(Object.keys(previous.mapping).map(name => [name, '0.1.0-beta.2']))
-  const packageNames = ['dsh-design-panel', 'dsh-design-provider-web-app', 'dsh-design-system-dsh']
+  const packageNames = ['dsh-design-panel', 'dsh-design-provider-web-app', 'dsh-design-studio-dsh', 'dsh-design-system-dsh']
   for (const name of packageNames) versions[name] = '0.1.0-r1-local.20261017.1'
   const report = await readNpmCandidates(source, { ...options, version: undefined, versions })
   const retainedManifests = Object.fromEntries(Object.keys(previous.mapping).filter(name => !packageNames.includes(name))
     .map(name => [name, assembly.createDshDistributionManifest(previous, name)]))
-  return { source, previous, versions, report, packageNames, retainedManifests }
+  return { source, options, previous, versions, report, packageNames, retainedManifests }
 }
 
-test('selected distribution packs three packages while preserving seven explicit manifest contracts', async () => {
+test('selected distribution selects the four affected packages while preserving six explicit manifest contracts', async () => {
   const f = await selectiveFixture()
   const before = structuredClone(f.report)
   const selection = assembly.selectDshDistributionPackages(f.report, f)
   assert.deepEqual(selection.packageNames, f.packageNames)
-  assert.equal(selection.retained.length, 7)
+  assert.equal(selection.retained.length, 6)
   for (const item of selection.retained) {
     assert.equal(item.version, '0.1.0-beta.2')
     assert.equal(item.manifestContractVerified, true)
@@ -85,6 +109,16 @@ test('default composition excludes internal Kits without promoting unrelated rel
 
 test('selected distribution requires a complete disjoint partition and refuses stale retained pins', async () => {
   const f = await selectiveFixture()
+  // The former three-package selection leaves StudioDSH's exact Panel peer
+  // stale. Keep that original scenario as a refusal rather than manufacturing
+  // a new retained manifest from the changed report.
+  const legacyReport = await readNpmCandidates(f.source, { ...f.options, version: undefined,
+    versions: { ...f.versions, 'dsh-design-studio-dsh': '0.1.0-beta.2' } })
+  assert.throws(() => assembly.selectDshDistributionPackages(legacyReport, {
+    packageNames: f.packageNames.filter(name => name !== 'dsh-design-studio-dsh'),
+    retainedManifests: { ...f.retainedManifests,
+      'dsh-design-studio-dsh': assembly.createDshDistributionManifest(f.previous, 'dsh-design-studio-dsh') },
+  }), /Retained manifest contract changed: dsh-design-studio-dsh/)
   for (const mutate of [
     value => { value.packageNames.push(value.packageNames[0]) },
     value => { value.packageNames.push('unknown-package') },
@@ -139,7 +173,7 @@ test('retained contracts cover Kit discovery, runtime resolution and installatio
     author: 'New maintainer metadata', publishConfig: { access: 'public', tag: 'future' }, files: ['new-packaging-list'],
   })
   metadataOnly['dsh-design-core'].scripts.test = 'node another-source-test.mjs'
-  assert.equal(assembly.selectDshDistributionPackages(f.report, { ...f, retainedManifests: metadataOnly }).retained.length, 7)
+  assert.equal(assembly.selectDshDistributionPackages(f.report, { ...f, retainedManifests: metadataOnly }).retained.length, 6)
 })
 
 test('scoped Typert ownership changes without changing the Host/browser wire contract', () => {

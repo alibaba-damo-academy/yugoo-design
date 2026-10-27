@@ -18,7 +18,13 @@ export async function copyDshDistributionMaterials({ source, target, sourceName,
   // Changed output requires a refreshed observation, never a silent old coverage claim.
   for (const [path, expected] of Object.entries(selection.observedOutputSha256)) {
     assert.ok(safe(path), 'Unsafe observed output path')
-    assert.equal(sha(await readFile(join(target, path))), expected, `DSH material output observation is stale: ${sourceName}/${path}`)
+    let bytes
+    try { bytes = await readFile(join(target, path)) }
+    catch (error) {
+      if (error.code !== 'ENOENT') throw error
+      assert.fail(`DSH material output observation is stale: ${sourceName}/${path} (missing current output)`)
+    }
+    assert.equal(sha(bytes), expected, `DSH material output observation is stale: ${sourceName}/${path}`)
   }
   // A valid output hash table alone cannot validate references to renamed chunks.
   // Every current correspondence must point into that already verified table.

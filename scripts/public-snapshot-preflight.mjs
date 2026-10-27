@@ -55,9 +55,11 @@ function distributionAssetLines(path, text) {
     if (manifest.schemaVersion !== 1 || !manifest.packages) return safe
     const assets = new Set()
     for (const pkg of Object.values(manifest.packages)) {
-      for (const [asset, hash] of Object.entries(pkg.observedOutputSha256 ?? {})) {
-        if (/^lib\/sk-SK-[A-Z0-9]{8}-[A-Za-z0-9_-]{8}\.js$/u.test(asset)
-          && /^[a-f0-9]{64}$/u.test(hash)) assets.add(asset)
+      for (const observation of [pkg, pkg.historicalObservation]) {
+        for (const [asset, hash] of Object.entries(observation?.observedOutputSha256 ?? {})) {
+          if (/^lib\/sk-SK-[A-Z0-9]{8}-[A-Za-z0-9_-]{8}\.js$/u.test(asset)
+            && /^[a-f0-9]{64}$/u.test(hash)) assets.add(asset)
+        }
       }
     }
     text.split('\n').forEach((line, i) => {

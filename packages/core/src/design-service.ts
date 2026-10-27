@@ -141,7 +141,7 @@ import { readCompleteDesignKnowledge } from './design-knowledge-snapshot.ts'
 import { storedKnowledgeGraph } from './design-knowledge-semantic.ts'
 import { designOntologyCoverage } from './design-ontology.ts'
 import type { DesignKnowledgeService } from './design-knowledge.ts'
-import { readAdvisoryDesignKnowledge, type AdvisoryDesignKnowledge, type AdvisoryKnowledgeSelection } from './advisory-knowledge.ts'
+import { ADVISORY_KNOWLEDGE_SOURCE_EQUIVALENCE, readAdvisoryDesignKnowledge, type AdvisoryDesignKnowledge, type AdvisoryKnowledgeSelection } from './advisory-knowledge.ts'
 import {
   ConversationDesignBindingStore,
   conversationDesignBindingKey,
@@ -309,8 +309,12 @@ export default class DesignService extends Service {
   private readonly journals = new DesignJournalRegistry(projectRoot => join(designProjectRecordsRoot(projectRoot), 'journal'),
     async (projectRoot, file) => { await commitDesignProjectRecords({ projectRoot,
       paths: [relative(projectRoot, file).split(sep).join('/')], message: 'Record Design project decisions', spawn: this.spawnAdapter() }) })
-  private knowledgeRuntime?: { readonly owner: symbol; readonly runtime: DesignProjectKnowledgeRuntime; disposing: boolean }
+  private knowledgeRuntime?: { readonly owner: symbol; readonly runtime: DesignProjectKnowledgeRuntime; readonly restoring: Set<Promise<void>>; disposing: boolean }
   private readonly knowledgeLifecycles = new Map<Agent, DesignProjectKnowledgeLifecycle>()
+  private readonly knowledgeRestorations = new Map<Agent, Promise<void>>()
+  private readonly knowledgeRestorationOwners = new WeakMap<Agent, symbol | undefined>()
+  private readonly knowledgeRestoreFailures = new WeakMap<Agent, { projectId: DesignProjectId; message: string }>()
+  private readonly disposedAgents = new WeakSet<Agent>()
   private readonly knowledgeIndexStates = new Map<DesignProjectId, KnowledgeIndexState>()
   private readonly knowledgeIndexPhases = new Map<DesignProjectId, KnowledgeIndexPhase>()
   private readonly knowledgeIndexAttempts = new Map<DesignProjectId, symbol>()
@@ -415,11 +419,8 @@ export default class DesignService extends Service {
       this.journals.dispose()
     })
     ctx.on('agent/created', async ({ agent }) => {
-      const workspace = await this.restoreWorkspace(agent)
-      if (workspace === undefined) return
-      const { project } = workspace
-      const snapshot = await this.projects.snapshot(project.projectId)
-      await this.knowledgeLifecycleFor(agent).restore(project, snapshot)
+      await this.restoreAgentKnowledge(agent)
+      if (this.selectionForAgent(agent) === undefined) return
       // Agentic trigger model: activation only samples cheap durable state and
       // injects the compact KAG/GRA snapshot. The main Agent decides on its
       // next natural turn whether bounded maintenance or due reviews are worth
@@ -428,6 +429,9 @@ export default class DesignService extends Service {
       await this.injectKnowledgeOrchestrationSnapshot(agent)
     })
     ctx.on('agent/disposed', async ({ agent }) => {
+      this.disposedAgents.add(agent)
+      await this.knowledgeRestorations.get(agent)?.catch(() => {})
+      this.knowledgeRestoreFailures.delete(agent)
       const reference = this.selectedAgentRefs.get(agent)
       if (reference) this.selectedAgents.delete(reference)
       const lifecycle = this.knowledgeLifecycles.get(agent)
@@ -898,12 +902,24 @@ export default class DesignService extends Service {
     this.knowledgeMaintenance.clear()
     this.knowledgeMaintenanceTargets.clear()
     this.knowledgeMutations.clear()
-    this.knowledgeRuntime = { owner, runtime, disposing: false }
+    this.knowledgeRuntime = { owner, runtime, restoring: new Set(), disposing: false }
+    // Plugin replacement does not recreate the Host's existing Agents. Restore
+    // their durable selections and leases at registration, not in status reads
+    // or by starting a new model turn. Future Agents use the same lifecycle.
+    for (const agent of this.context.get('agents')?.list() ?? []) {
+      this.knowledgeRestoreFailures.delete(agent)
+      void this.restoreAgentKnowledge(agent).catch(error => {
+        this.context.logger?.warn(`design: could not restore Design Knowledge: ${String(error).slice(0, 1000)}`)
+      })
+    }
     return async () => {
       const registration = this.knowledgeRuntime
       if (registration?.owner !== owner) return
       if (registration.disposing) throw new Error('design: Design Knowledge runtime disposal is already in progress')
       registration.disposing = true
+      // A restore may still be reading a binding before it acquires a lease.
+      // Fence new work, then drain it before taking the disposal snapshot.
+      await Promise.allSettled([...registration.restoring])
       await this.knowledgeIndexer.close()
       const lifecycles = [...this.knowledgeLifecycles.values()]
       const released = await Promise.allSettled(lifecycles.map(lifecycle => lifecycle.dispose()))
@@ -923,6 +939,44 @@ export default class DesignService extends Service {
       this.knowledgeMutations.clear()
       if (this.knowledgeRuntime?.owner === owner) this.knowledgeRuntime = undefined
     }
+  }
+
+  /** Restore an existing Host Agent once; never refresh/index or wake it. */
+  private restoreAgentKnowledge(agent: Agent): Promise<void> {
+    const registration = this.knowledgeRuntime
+    const pending = this.knowledgeRestorations.get(agent)
+    if (pending && this.knowledgeRestorationOwners.get(agent) === registration?.owner) return pending
+    const current = () => !this.disposedAgents.has(agent)
+      && this.knowledgeRuntime === registration && !registration?.disposing
+    const task = this.serializeConversationMutation(agent, async () => {
+      if (!current()) return
+      const workspace = await this.restoreWorkspace(agent)
+      if (!workspace || !registration || !current()) return
+      const snapshot = await this.projects.snapshot(workspace.project.projectId)
+      if (!current()) return
+      await this.knowledgeLifecycleFor(agent).restore(workspace.project, snapshot)
+      if (!current()) return
+      this.knowledgeRestoreFailures.delete(agent)
+      // The first restoration event exposes the binding. This settlement lets
+      // existing derived views sample the now-open provider without polling.
+      this.notifyWorkspaceChange({ kind: 'workspace-restored', agent })
+    }).catch(error => {
+      const selection = this.selectionForAgent(agent)
+      if (selection && current()) {
+        this.knowledgeRestoreFailures.set(agent, { projectId: selection.projectId, message: String(error).slice(0, 1000) })
+        this.notifyWorkspaceChange({ kind: 'workspace-restored', agent })
+      }
+      throw error
+    })
+    this.knowledgeRestorations.set(agent, task)
+    this.knowledgeRestorationOwners.set(agent, registration?.owner)
+    registration?.restoring.add(task)
+    const settle = () => {
+      if (this.knowledgeRestorations.get(agent) === task) this.knowledgeRestorations.delete(agent)
+      registration?.restoring.delete(task)
+    }
+    void task.then(settle, settle)
+    return task
   }
 
   /**
@@ -1218,22 +1272,32 @@ export default class DesignService extends Service {
       signal?.throwIfAborted()
       if (args.project !== undefined && args.project !== project.projectId) throw new Error('Knowledge query project no longer matches native binding')
       const requestedCheckpoint = args.checkpoint ?? checkpoint
+      let sourceCheckpoint = requestedCheckpoint
       if (requestedCheckpoint !== checkpoint) {
         const publication = await readDesignKnowledgePublication(this.requireKnowledgeRuntime().semantic?.publicationCache?.(project.projectId))
-        if (publication?.checkpoint !== requestedCheckpoint || args.revision !== publication.revision) {
+        if (!publication || args.revision !== publication.revision) {
           throw new Error('Knowledge query checkpoint pins no longer match the stable publication')
         }
+        if (publication.checkpoint !== requestedCheckpoint) {
+          const store = await this.designFilesForProject(selectedOwner, project.projectId, nodeFs, signal)
+          if (!await this.knowledgeSourceMatches(store, publication.checkpoint, requestedCheckpoint, signal)) {
+            throw new Error('Knowledge query checkpoint pins no longer match the stable publication Design evidence')
+          }
+        }
+        sourceCheckpoint = publication.checkpoint
       }
       const read = await readAdvisoryDesignKnowledge({ project: project.projectId, checkpoint: requestedCheckpoint }, service, args.limit ?? this.advisoryKnowledgeLimit,
         knowledgeQueryFilters(args),
-        args.revision === undefined ? undefined : DesignKnowledgeRevision(args.revision))
+        args.revision === undefined ? undefined : DesignKnowledgeRevision(args.revision), sourceCheckpoint)
       signal?.throwIfAborted()
       this.assertProjectSelection(selectedOwner, project.projectId)
       const current = await this.projects.status(project.projectId)
       signal?.throwIfAborted()
       this.assertProjectSelection(selectedOwner, project.projectId)
       if (current.lastCheckpoint !== checkpoint) throw new Error('Design checkpoint changed during Knowledge query')
-      return knowledgeReadResult(project.projectId, requestedCheckpoint, read.graph)
+      return knowledgeReadResult(project.projectId, requestedCheckpoint, read.graph, sourceCheckpoint === requestedCheckpoint ? {} : {
+        sourceCheckpoint, sourceEquivalence: ADVISORY_KNOWLEDGE_SOURCE_EQUIVALENCE,
+      })
     })
   }
 
@@ -1320,8 +1384,15 @@ export default class DesignService extends Service {
       ? (entry.running ? 'running' as const : 'queued' as const)
       : indexerState === 'indexing' ? 'running' as const : 'none' as const
     const phase = this.knowledgeIndexPhase(projectId)
-    const recovery = registration.runtime.recoveryStatus?.(projectId)
-    return deriveDesignKnowledgeStatus({
+    const restoreFailure = this.knowledgeRestoreFailures.get(agent)
+    const providerRecovery = registration.runtime.recoveryStatus?.(projectId)
+    // Opening the store may report ready before restoring the project archive
+    // fails. Keep that current failure visible unless recovery is still active.
+    const recovery = cache === undefined && restoreFailure?.projectId === projectId
+      && providerRecovery?.state !== 'rebuilding'
+      ? { state: 'error' as const, message: restoreFailure.message }
+      : providerRecovery
+    const derived = deriveDesignKnowledgeStatus({
       project: projectId,
       ...(status.lastCheckpoint === undefined ? {} : { head: status.lastCheckpoint }),
       ...(publication === undefined ? {} : { publication }),
@@ -1330,8 +1401,14 @@ export default class DesignService extends Service {
       ...(liveJob === 'running' && (phase === 'projection' || phase === 'semantic' || phase === 'publication') ? { phase } : {}),
       ...(failure === undefined ? {} : { indexFailure: failure }),
       ...(recovery === undefined ? {} : { recovery }),
-      semanticEnabled: semantic !== undefined && cache !== undefined,
+      semanticEnabled: semantic?.enabled ?? semantic !== undefined,
     })
+    // An unopened provider is a lifecycle availability state, not evidence
+    // that the user disabled semantic computation. Keep sampling pure.
+    return semantic?.publicationCache && cache === undefined && recovery === undefined
+      && failure === undefined && liveJob === 'none'
+      ? Object.freeze({ ...derived, state: 'unavailable' as const })
+      : derived
   }
 
   /**

@@ -109,12 +109,25 @@ test('hashed Slovak distribution assets do not suppress credentials in other fie
   const policy = { version: 1, rules: [{ kind: 'prefix', path: 'release/', action: 'include', reason: 'synthetic regression' }] }
   const inspect = files => inspectPublicSnapshot({ ...fixture(t, files), policy })
   assert.equal(inspect({ [path]: JSON.stringify(manifest, null, 2) }).blockedFiles, 0)
+  const previousAsset = ['lib/sk', 'SK', 'C5VTKIMK', 'CxJozuTp.js'].join('-')
+  const historical = { schemaVersion: 1, packages: { panel: {
+    ...manifest.packages.panel,
+    historicalObservation: { observedOutputSha256: { [previousAsset]: 'b'.repeat(64) } },
+  } } }
+  assert.equal(inspect({ [path]: JSON.stringify(historical, null, 2) }).blockedFiles, 0)
   for (const files of [
     { [path]: JSON.stringify({ ...manifest, token: 'sk-' + 'Z'.repeat(24) }, null, 2) },
     { [path]: JSON.stringify({ ...manifest, note: asset }, null, 2) },
     { 'release/other.json': JSON.stringify(manifest, null, 2) },
     { [path]: JSON.stringify({ ...manifest, schemaVersion: 2 }, null, 2) },
     { [path]: JSON.stringify(manifest, null, 2) + '\ninvalid' },
+    { [path]: JSON.stringify({ ...historical, note: previousAsset }, null, 2) },
+    { [path]: JSON.stringify({ schemaVersion: 1, packages: { panel: {
+      historicalObservation: { observedOutputSha256: { [previousAsset]: 'invalid' } },
+    } } }, null, 2) },
+    { [path]: JSON.stringify({ schemaVersion: 1, packages: { panel: {
+      unreviewedObservation: { observedOutputSha256: { [previousAsset]: 'b'.repeat(64) } },
+    } } }, null, 2) },
   ]) assert.ok(inspect(files).blockedFiles > 0)
 })
 

@@ -45,6 +45,7 @@ const ctx = {
 try {
   apply(ctx, { writerAttempts: 2, projectLockRetries: 0 })
   assert.equal(runtime.defaultProvider, LADYBUG_WASM_PROVIDER_ID)
+  assert.equal(runtime.semantic.enabled, true, 'configuration stays enabled before a project cache is opened')
   assert.equal(typeof runtime.service.query, 'function', 'consumers receive the complete neutral service')
   // Graph derivation remains available before/without a successful DB lease;
   // it must not fabricate a Knowledge provider or historical state.
@@ -103,6 +104,10 @@ try {
   const reopened = await LadybugDesignKnowledgeProvider.open(projectId, { databaseRoot, projectLockRetries: 0 })
   assert.equal(await reopened.revision(projectId), 'rev:1', 'host disposal releases the database lock and preserves state')
   await reopened.close()
+  apply(ctx, { embedding: { provider: 'disabled' }, projectLockRetries: 0 })
+  assert.equal(runtime.semantic.enabled, false, 'an explicit disabled setting is independent of provider readiness')
+  assert.equal(runtime.semantic.compute, undefined)
+  await effect()
   await shutdownLadybugKnowledgeRuntime()
 } finally {
   await rm(root, { recursive: true, force: true })

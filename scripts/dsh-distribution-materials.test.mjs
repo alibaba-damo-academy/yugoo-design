@@ -56,7 +56,8 @@ test('Studio source observations stay bound to registered outputs and repository
     assert.equal(map.packedOutputSha256, selection.observedOutputSha256[map.output])
     assert.equal(map.sourceCount, map.projectOwnedSources.length)
     assert.equal(new Set(map.projectOwnedSources).size, map.sourceCount)
-    assert.equal(map.actualArchiveOutputBindingVerified, true)
+    assert.equal(map.actualArchiveOutputBindingVerified, false, 'new archive association is recorded only after packing')
+    assert.ok(selection.historicalObservation.normalBuildMaps.some(previous => previous.actualArchiveOutputBindingVerified === true), 'retain the prior archive observation as history')
     assert.equal(map.sourceContentsVerified, true)
     for (const path of map.projectOwnedSources) {
       assert.ok(path.startsWith('packages/') && !path.includes('..') && !path.includes('\\'))
@@ -104,4 +105,10 @@ test('material packaging retains diagnostic observations but rejects changed out
   await writeFile(join(source, 'release/dsh-distribution-materials.json'), JSON.stringify({ schemaVersion: 1, packages: { example: selection } }))
   await writeFile(join(target, 'lib/index.js'), 'export const example = 2;\n')
   await assert.rejects(copyDshDistributionMaterials({ source, target, sourceName: 'example', packageName: '@yugoo-design/example' }), /observation is stale/)
+  // A renamed chunk is a stale observation too; do not silently select a glob
+  // match or copy another output just because the recorded member is absent.
+  await rm(join(target, 'lib/index.js'))
+  await assert.rejects(copyDshDistributionMaterials({ source, target, sourceName: 'example', packageName: '@yugoo-design/example' }), /observation is stale: example\/lib\/index\.js \(missing current output\)/)
+  await writeFile(join(target, 'lib/renamed-current.js'), 'export const example = 1;\n')
+  await assert.rejects(copyDshDistributionMaterials({ source, target, sourceName: 'example', packageName: '@yugoo-design/example' }), /observation is stale: example\/lib\/index\.js \(missing current output\)/)
 })

@@ -16,6 +16,8 @@ export interface KnowledgeReadArguments {
 export interface KnowledgeReadResult extends DesignKnowledgeQueryResult {
   relations: readonly (DesignKnowledgeRelation & { reading: KnowledgeRelationReading })[]
   project: string; checkpoint: string
+  sourceCheckpoint?: string
+  sourceEquivalence?: string
   evidence: { format: 'projected-fields'; truncated: false; sourceReadRequired: true }
 }
 
@@ -58,8 +60,9 @@ export function queryKnowledgeSnapshot(snapshot: DesignKnowledgeQueryResult, req
       totalEntities:entities.length,totalRelations:relations.length})}) })
 }
 
-export function knowledgeReadResult(project: string, checkpoint: string, graph: DesignKnowledgeQueryResult): KnowledgeReadResult {
-  const result: KnowledgeReadResult = { project, checkpoint, ...graph, relations: graph.relations.map(edge => ({ ...edge, reading: knowledgeRelationReading(edge) })),
+export function knowledgeReadResult(project: string, checkpoint: string, graph: DesignKnowledgeQueryResult,
+  source: Pick<KnowledgeReadResult, 'sourceCheckpoint' | 'sourceEquivalence'> = {}): KnowledgeReadResult {
+  const result: KnowledgeReadResult = { project, checkpoint, ...graph, ...source, relations: graph.relations.map(edge => ({ ...edge, reading: knowledgeRelationReading(edge) })),
     evidence: { format: 'projected-fields', truncated: false, sourceReadRequired: true } }
   if (Buffer.byteLength(JSON.stringify(result)) > 2 * 1024 * 1024) throw new Error('Knowledge query exceeds response budget; narrow IDs/limit or read the pinned source file. No partial result was returned.')
   return result

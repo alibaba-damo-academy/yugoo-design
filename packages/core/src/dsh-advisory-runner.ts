@@ -1,6 +1,7 @@
 /** DSH adapter for one host-neutral official Design advisory analysis. */
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import type SubagentRuntime from '@deepseek-ai/dsh-subagent'
+import type { ContentBlock } from '@deepseek-ai/dsh-llm'
+import type { ObjectJsonSchema, ToolRestriction } from '@deepseek-ai/dsh-tools'
 import type { DesignAdvisory } from './design-advisory.ts'
 import { knowledgeReviewSchema, knowledgeReviewGuidance, splitKnowledgeReviewResult, type KnowledgeReviewObservation, type KnowledgeReviewRetraction } from './design-knowledge-review.ts'
 import type { CompiledDesignRelationVocabulary } from './design-relation-vocabulary.ts'
@@ -14,7 +15,19 @@ import {
 
 /** Public DSH one-shot subagent operation used by advisory analysis. */
 export interface AdvisorySubagentPort {
-  start(provider: string, request: Parameters<SubagentRuntime['start']>[1] & {
+  start(provider: string, request: {
+    readonly parent: Agent
+    readonly signal: AbortSignal
+    readonly prompt: ContentBlock[]
+    readonly label?: string
+    readonly maxDepth?: number
+    readonly outputSchema: ObjectJsonSchema
+    /** Trusted local validation before structured capture; throws on invalid advice. */
+    readonly validateOutput?: (value: unknown) => void
+    /** Reviews inherit the parent route and expose only their bound read tools. */
+    readonly agentOptions?: never
+    readonly persona?: never
+    readonly toolFilter?: ToolRestriction
     readonly reviewCommit: string
     readonly knowledgeContext?: string
     /** Opt in to complete small original facts from the same immutable reader. */
@@ -34,7 +47,7 @@ export interface ForegroundDesignWork {
 }
 
 /** JSON Schema accepted by the installed DSH subagent service. */
-type DshOutputSchema = NonNullable<Parameters<SubagentRuntime['start']>[1]['outputSchema']>
+type DshOutputSchema = ObjectJsonSchema
 
 /** One pinned official advisory invocation. */
 export interface DshAdvisoryRunRequest {
@@ -59,7 +72,8 @@ export interface DshAdvisoryRunRequest {
   readonly signal: AbortSignal
   /**
    * Invoked exactly once after the reviewer subagent really started (the host
-   * `subagents.start` promise resolved). A rejected start never fires it, so a
+   * read-only port established the actual native child). Admission or a reserved
+   * activation id alone is insufficient. A rejected start never fires it, so a
    * caller may only present the profile as running from this point.
    */
   readonly onStarted?: () => void
@@ -100,6 +114,14 @@ export async function analyzeDshDesignAdvisory(
 ): Promise<DshAdvisoryAnalysisOutcome> {
   const profile = officialAdvisoryProfile(request.profile)
   const input = profile.parseInput(request.input)
+  const parseOutput = (value: unknown) => {
+    if (request.knowledgeContext && value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      const { knowledgeRelations: _extension, knowledgeRetractions: _retractions, ...advisory } = value as Record<string, unknown>
+      value = advisory
+    }
+    // Optional graph observations have their own validation/error ownership.
+    return profile.parseOutput(value)
+  }
   const run = await subagents.start(request.provider, {
     reviewCommit: request.reviewCommit,
     ...(request.knowledgeContext === undefined ? {} : { knowledgeContext: request.knowledgeContext }),
@@ -107,6 +129,9 @@ export async function analyzeDshDesignAdvisory(
     parent: request.parent,
     signal: request.signal,
     outputSchema: (request.knowledgeContext ? knowledgeReviewSchema(profile.outputSchema, request.relationVocabulary) : profile.outputSchema) as unknown as DshOutputSchema,
+    // Host schemas cannot express length limits. Reuse the owning parser while
+    // the same child can still correct an invalid structured submission.
+    validateOutput: value => { parseOutput(value) },
     toolFilter: { allow: [] },
     prompt: [{
       type: 'text',
@@ -146,14 +171,9 @@ export async function analyzeDshDesignAdvisory(
     if (result.stopReason !== 'completed' || result.structured === undefined) {
       throw new Error(`design advisory: subagent ended with ${JSON.stringify(result.stopReason)} without a structured result`)
     }
-    let original = result.structured
-    if (request.knowledgeContext && original !== null && typeof original === 'object' && !Array.isArray(original)) {
-      const { knowledgeRelations: _extension, knowledgeRetractions: _retractions, ...advisory } = original as Record<string, unknown>
-      original = advisory
-    }
     // The original profile remains authoritative for advice validity. An invalid
     // optional graph extension cannot discard an otherwise valid recommendation.
-    const output = profile.parseOutput(original)
+    const output = parseOutput(result.structured)
     let split: ReturnType<typeof splitKnowledgeReviewResult> | undefined, knowledgeError: string | undefined
     if (request.knowledgeContext) {
       try { split = splitKnowledgeReviewResult(result.structured) }

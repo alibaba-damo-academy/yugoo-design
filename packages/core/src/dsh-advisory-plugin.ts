@@ -27,7 +27,7 @@ import {
   type OfficialAdvisoryProfileId,
 } from './official-advisory-profiles.ts'
 import type { DesignAdvisoryRuntimeStatus, DesignAdvisoryRuntimeStatusProvider } from './advisory-runtime-status.ts'
-import type { AdvisoryDesignKnowledge, AdvisoryKnowledgeSelection } from './advisory-knowledge.ts'
+import { advisoryKnowledgeModelContext, type AdvisoryDesignKnowledge, type AdvisoryKnowledgeSelection } from './advisory-knowledge.ts'
 import { DEFAULT_DESIGN_REVIEW_POLICY, DesignReviewPublicationQueue, DesignContinuousReviewClock, parseDesignReviewPolicy, type DesignReviewPolicy } from './design-review-policy.ts'
 import type { DesignJournalRead } from './design-journal-storage.ts'
 
@@ -649,7 +649,14 @@ export class DshAdvisoryScheduler {
         }
       }
     }
-    const knowledgeContext = reviewedKnowledge?.context
+    let knowledgeContext: string | undefined
+    if (reviewedKnowledge) {
+      try { knowledgeContext = advisoryKnowledgeModelContext(reviewedKnowledge) }
+      catch {
+        reviewedKnowledge = undefined
+        knowledgeFallbackReason = 'read-error'
+      }
+    }
     const userContextSummary = recentHumanContext(agent)
     const compatible = async (): Promise<boolean> => {
       const currentKit = this.ports.design.kitForAgent(agent)

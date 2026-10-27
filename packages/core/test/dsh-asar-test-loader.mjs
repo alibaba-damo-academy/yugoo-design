@@ -10,8 +10,15 @@ export function loadDshTestRuntime({ asar, webAnchor }) {
   if (asar) return loadDshAsar(asar)
   const require = createRequire(realpathSync(webAnchor))
   const observations = new Map()
+  // Node 24 runs synchronous require.resolve through these hooks too. Allow
+  // only that nested resolution to use its exact createRequire anchor.
+  let resolvingAnchor = false
   const hooks = registerHooks({ resolve(specifier, context, next) {
-    if (specifier.startsWith('@deepseek-ai/')) return { url: pathToFileURL(require.resolve(specifier)).href, shortCircuit: true }
+    if (specifier.startsWith('@deepseek-ai/') && !resolvingAnchor) {
+      resolvingAnchor = true
+      try { return { url: pathToFileURL(require.resolve(specifier)).href, shortCircuit: true } }
+      finally { resolvingAnchor = false }
+    }
     return next(specifier, context)
   } })
   return { observations, readPackageFile(name, relative) {

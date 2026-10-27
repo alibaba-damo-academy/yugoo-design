@@ -85,7 +85,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     defaultProvider: LADYBUG_WASM_PROVIDER_ID,
     administration: manager,
     service: manager.service,
-    semantic: { identity: semantic.publicationIdentity, publicationCache: projectId => providers.get(projectId), read: async (projectId, graph) => {
+    semantic: { enabled: semantic.config.provider !== 'disabled', identity: semantic.publicationIdentity, publicationCache: projectId => providers.get(projectId), read: async (projectId, graph) => {
       const provider = providers.get(projectId)
       // File-derived similarity must not require a healthy historical Knowledge DB.
       // The index reports bounded volatile caching; it never replaces Knowledge facts.

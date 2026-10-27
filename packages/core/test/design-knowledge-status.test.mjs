@@ -151,7 +151,7 @@ test('the reminder renderer stays bounded and carries the decision-grade facts',
   assert.ok(text.length < 2_000, `reminder must stay bounded, got ${text.length}`)
 })
 
-function statusFixture({ head = 'c2', publicationRecord, failureRecord, entry, indexerState = 'unknown', recovery, semantic = true, phase = 'unknown', target = 't1', equivalent = false } = {}) {
+function statusFixture({ head = 'c2', publicationRecord, failureRecord, entry, indexerState = 'unknown', recovery, semantic = true, enabled, cacheAvailable = true, phase = 'unknown', target = 't1', equivalent = false } = {}) {
   const resolvedHead = head === null ? undefined : head
   const cache = {
     async readSemanticCache(key) {
@@ -166,7 +166,7 @@ function statusFixture({ head = 'c2', publicationRecord, failureRecord, entry, i
     knowledgeRuntime: {
       disposing: false,
       runtime: {
-        semantic: semantic ? { publicationCache: () => cache } : undefined,
+        semantic: semantic ? { enabled, publicationCache: () => cacheAvailable ? cache : undefined } : undefined,
         ...(recovery === undefined ? {} : { recoveryStatus: () => recovery }),
       },
     },
@@ -176,6 +176,7 @@ function statusFixture({ head = 'c2', publicationRecord, failureRecord, entry, i
     assertProjectSelection() {},
     knowledgeMaintenanceTarget: () => target,
     knowledgeIndexFailures: new Map(),
+    knowledgeRestoreFailures: new WeakMap(),
     knowledgeMaintenance: new Map(entry === undefined ? [] : [[projectId, entry]]),
     knowledgeIndexer: { state: () => indexerState },
     knowledgeIndexPhase: () => phase,
@@ -184,8 +185,54 @@ function statusFixture({ head = 'c2', publicationRecord, failureRecord, entry, i
     rebuildDerivedKnowledge: async () => { throw new Error('status sampling must never rebuild') },
   }
 }
-const sample = (fixture) => DesignService.prototype.knowledgeStatusSnapshot.call(fixture, {})
+const sample = (fixture, agent = {}) => DesignService.prototype.knowledgeStatusSnapshot.call(fixture, agent)
 const pub = (checkpoint) => JSON.stringify({ schemaVersion: 1, key: 'k', edges: 'e', checkpoint, revision: 'rev:9', warnings: [] })
+
+test('an unopened cache is unavailable without claiming configured semantic computation is disabled', async () => {
+  const missing = statusFixture({ cacheAvailable: false })
+  assert.equal((await sample(missing)).state, 'unavailable')
+  assert.equal((await sample(missing)).semanticLayer, 'enabled')
+  const disabled = statusFixture({ enabled: false })
+  assert.equal((await sample(disabled)).state, 'disabled')
+  assert.equal((await sample(disabled)).semanticLayer, 'disabled')
+})
+
+test('a current restore failure outranks stale provider ready without retrying or hiding active recovery', async () => {
+  const agent = {}
+  const restoreFailure = { projectId, message: 'project archive restore failed' }
+  const ready = { state: 'ready', message: 'derived store opened', generation: 'g4' }
+  for (const enabled of [true, false]) {
+    const fixture = statusFixture({ cacheAvailable: false, enabled, recovery: ready })
+    fixture.knowledgeRestoreFailures.set(agent, restoreFailure)
+    const status = await sample(fixture, agent)
+    assert.equal(status.state, 'failed')
+    assert.equal(status.lastFailure.message, restoreFailure.message)
+    assert.equal(status.semanticLayer, enabled ? 'enabled' : 'disabled')
+    assert.deepEqual(await sample(fixture, agent), status, 'repeat sampling stays pure')
+  }
+
+  const rebuilding = { state: 'rebuilding', message: 'rebuilding g5', generation: 'g5' }
+  const active = statusFixture({ cacheAvailable: false, recovery: rebuilding })
+  active.knowledgeRestoreFailures.set(agent, restoreFailure)
+  assert.equal((await sample(active, agent)).state, 'unavailable')
+  assert.deepEqual((await sample(active, agent)).recovery, rebuilding)
+
+  for (const running of [false, true]) {
+    const maintenance = statusFixture({ cacheAvailable: false, recovery: ready, entry: { running } })
+    maintenance.knowledgeRestoreFailures.set(agent, restoreFailure)
+    assert.equal((await sample(maintenance, agent)).state, running ? 'running' : 'queued')
+  }
+
+  const reopened = statusFixture({ recovery: ready, publicationRecord: pub('c2') })
+  reopened.knowledgeRestoreFailures.set(agent, restoreFailure)
+  assert.equal((await sample(reopened, agent)).state, 'current')
+
+  const otherProject = statusFixture({ cacheAvailable: false, recovery: ready })
+  otherProject.knowledgeRestoreFailures.set(agent, { ...restoreFailure, projectId: 'another-project' })
+  assert.equal((await sample(otherProject, agent)).state, 'due')
+  otherProject.knowledgeRestoreFailures.set({}, restoreFailure)
+  assert.equal((await sample(otherProject, agent)).state, 'due', 'another Agent failure is not current')
+})
 
 test('service snapshot sampling is a pure read and derives honest states from durable pointers', async () => {
   // Stale publication, no live job → due with both heads (pure read: any

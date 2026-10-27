@@ -1,9 +1,9 @@
-/** Native read-only review child. Uses public RC2 factory/tool capabilities only. */
+/** Native read-only review child. Uses public Host factory/tool capabilities only. */
 import { randomUUID } from 'node:crypto'
 import { foldConsumedWork, type Agent, type AgentHandle } from '@deepseek-ai/dsh-agent'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { applyChildComposition, appendDelegatedPolicyOverrides, captureDelegatedPolicyOverrides,
-  resolveChildAgentOptions, resolveChildDepth, finalAssistantOutput,
+  resolveChildAgentOptions, resolveChildDepth, assertSubagentMaxDepth, finalAssistantOutput,
   type SubagentRun, type SubagentDescriptorData, type SubagentStopReason } from '@deepseek-ai/dsh-subagent'
 import { defineTool, ToolArgsError, validateJsonSchemaValue, type ToolDefinition, type ToolExecution } from '@deepseek-ai/dsh-tools'
 import type { AdvisoryEvidence } from './advisory-evidence.ts'
@@ -11,6 +11,33 @@ import type { AdvisorySubagentPort } from './dsh-advisory-runner.ts'
 import { designUnseededChildSessionMeta } from './dsh-child-session-meta.ts'
 import { designSessionEvents } from './dsh-session-events.ts'
 import { createYugooDesignMessage } from './dsh-message-source.ts'
+
+/** Select only the two public Host capability shapes covered by SDK tests. */
+export function dshAdvisoryBackend(runtime: unknown): 'one-shot-runtime' | 'agent-factory' {
+  if (runtime === null || typeof runtime !== 'object') throw new Error('design advisory: native Subagent Runtime is unavailable')
+  const shape = runtime as Record<string, unknown>
+  if (typeof shape.start === 'function' && typeof shape.registerProvider === 'function') return 'one-shot-runtime'
+  if (shape.start === undefined && ['startActivation', 'prepareContinuable', 'waitForChildren', 'registerProvider']
+    .every(key => typeof shape[key] === 'function')) return 'agent-factory'
+  throw new Error('design advisory: unsupported native Subagent Runtime API')
+}
+
+/** Completion requires a successful structured tool record and a normal native end. */
+function reviewHandle(run: SubagentRun, release: () => void = () => {}): Awaited<ReturnType<AdvisorySubagentPort['start']>> {
+  const result = run.result.then(value => {
+    if (value.stopReason !== 'completed' || value.structured === undefined) {
+      throw new Error('design advisory: review did not complete normally with a successful structured result')
+    }
+    return { stopReason: value.stopReason, structured: value.structured }
+  })
+  void result.catch(() => {})
+  let disposal: Promise<void> | undefined
+  return { id: run.id, result, dispose() {
+    return disposal ??= (async () => {
+      try { await run.dispose() } finally { release() }
+    })()
+  } }
+}
 
 /** Discovery is a model-facing index, not a replacement for the bound evidence. */
 function modelEvidenceDiscovery(manifest: AdvisoryEvidence['manifest']): Readonly<Record<string, unknown>> {
@@ -32,11 +59,19 @@ export function createDshAdvisoryAgent(evidenceFor: (parent: Agent, commit: stri
     if (!request.outputSchema) throw new Error('design advisory: structured output schema required')
     const runtime = request.parent.ctx.get('subagents')
     if (!runtime) throw new Error('design advisory: native Subagent Runtime is unavailable')
-    // A one-run provider keeps the immutable read grant closure-bound. Only
-    // the public runtime establishes its parent catalog and lifecycle; a child
-    // descriptor or a persisted Session alone does not make it discoverable.
-    const name = `dsh-design-readonly-review-${randomUUID()}`
+    const backend = dshAdvisoryBackend(runtime)
     const prompt = [...request.prompt]
+    if (backend === 'agent-factory') {
+      // RC3 external activations reject already-created native Agents. Its
+      // local activation API does not expose our pre-publication setup. Use
+      // the public Agent factory directly, with the same immutable closure.
+      // No SubagentRuntime catalog, manager events or capacity pool is claimed.
+      // Never choose this path as a retry after a failed one-shot start.
+      return reviewHandle(await startReadOnlyReview({ ...request, prompt }, evidenceFor))
+    }
+    // The legacy runtime owns its catalog/lifecycle. One provider invocation
+    // can claim the closure-bound parent, prompt and cancellation grant once.
+    const name = `dsh-design-readonly-review-${randomUUID()}`
     let claimed = false
     const unregister = runtime.registerProvider({
       name, inheritsParentContext: false,
@@ -55,44 +90,48 @@ export function createDshAdvisoryAgent(evidenceFor: (parent: Agent, commit: stri
         ...(request.label === undefined ? {} : { label: request.label }),
         ...(request.maxDepth === undefined ? {} : { maxDepth: request.maxDepth }),
       })
-      const result = run.result.then(value => {
-        if (value.stopReason !== 'completed' || value.structured === undefined) {
-          throw new Error('design advisory: review did not complete normally with a successful structured result')
-        }
-        return { stopReason: value.stopReason, structured: value.structured }
-      })
-      void result.catch(() => {})
-      let disposal: Promise<void> | undefined
-      return { id: run.id, result, dispose() {
-        return disposal ??= (async () => {
-          try { await run.dispose() } finally { unregister() }
-        })()
-      } }
+      return reviewHandle(run, unregister)
     } catch (error) { unregister(); throw error }
   } }
 }
 
-/** The trusted provider owns only child setup; the Host owns discoverability. */
+/** Create one scoped native child; runtime discovery is a separate Host capability. */
 async function startReadOnlyReview(
   request: Parameters<AdvisorySubagentPort['start']>[1],
   evidenceFor: (parent: Agent, commit: string, signal: AbortSignal) => Promise<AdvisoryEvidence>,
-  descriptor: SubagentDescriptorData,
+  descriptor?: SubagentDescriptorData,
 ): Promise<SubagentRun> {
+    if (request.parent.ctx.agents.get(request.parent.id) !== request.parent) {
+      throw new Error('design advisory: exact live parent required')
+    }
+    // Pin route/depth/policy before evidence loading can yield to a parent edit.
+    assertSubagentMaxDepth(request.maxDepth)
+    const depth = resolveChildDepth(request.parent, request.maxDepth)
+    const policy = captureDelegatedPolicyOverrides(request.parent)
+    const agentOptions = resolveChildAgentOptions(request.parent, undefined, depth)
+    const meta = designUnseededChildSessionMeta(request.parent, depth)
+    const sessionId = SessionId(randomUUID())
+    const validateOutput = request.validateOutput
     const evidence = await evidenceFor(request.parent, request.reviewCommit, request.signal)
     const snapshot = request.includeSmallSnapshot ? await evidence.readSmallSnapshot?.(request.signal) : undefined
     request.signal.throwIfAborted()
-    const depth = resolveChildDepth(request.parent, request.maxDepth)
-    const policy = captureDelegatedPolicyOverrides(request.parent)
+    if (request.parent.ctx.agents.get(request.parent.id) !== request.parent) {
+      throw new Error('design advisory: exact live parent required')
+    }
     const definitions = new Map<string, ToolDefinition>()
     let captured: unknown, recorded = false, child: Agent | undefined, handle: AgentHandle | undefined
     const staged = new Map<ToolExecution['token'], unknown>()
     const onAbort = () => child?.cancel({ kind: 'parent' })
+    let setupClaimed = false
     try {
       handle = await request.parent.ctx.agents.create({
-        sessionId: SessionId(randomUUID()), parentAgent: request.parent,
-        meta: designUnseededChildSessionMeta(request.parent, depth),
-        agentOptions: resolveChildAgentOptions(request.parent, undefined, depth), signal: request.signal,
+        sessionId, parentAgent: request.parent, meta, agentOptions, signal: request.signal,
         setup(ctx, agent) {
+          if (setupClaimed || agent.id !== sessionId || agent.session.header.parentSession !== request.parent.id) {
+            throw new Error('design advisory: no active immutable review setup grant')
+          }
+          request.signal.throwIfAborted()
+          setupClaimed = true
           child = agent
           appendDelegatedPolicyOverrides(agent.session, policy)
           appendDelegatedPolicyOverrides(agent.session, { sandboxMode: 'read-only', approvalPolicy: 'never', permissionPreset: undefined })
@@ -148,6 +187,10 @@ async function startReadOnlyReview(
             async execute(args, exec) {
               const issues = validateJsonSchemaValue(request.outputSchema!, args)
               if (issues.length) throw new ToolArgsError(issues)
+              try { validateOutput?.(args) }
+              catch (error) {
+                throw new ToolArgsError([error instanceof Error ? error.message : 'Review output violates its profile contract'])
+              }
               staged.set(exec.token, args); exec.concludeTurn()
               return { recorded: true }
             } })
@@ -161,7 +204,7 @@ async function startReadOnlyReview(
             const value = staged.get(exec.token); staged.delete(exec.token)
             if (!result.isError && !request.signal.aborted) { captured = value; recorded = true }
           })
-          agent.session.append('subagent/descriptor', descriptor)
+          if (descriptor !== undefined) agent.session.append('subagent/descriptor', descriptor)
           ctx.systemPrompt.section({ name: 'design:review-readonly', order: 550,
             // Keep the complete manifest and resource hashes in the evidence
             // reader. Listing each hash here adds no discovery capability;
@@ -169,6 +212,7 @@ async function startReadOnlyReview(
             text: `Use only the bound read tools. No shell, write, process, policy change or nested delegation is available. Call structured_output to finish.\nImmutable evidence discovery (resource hashes are returned by read_skill_resource):\n${JSON.stringify(modelEvidenceDiscovery(evidence.manifest))}` })
         },
       })
+      request.signal.throwIfAborted()
     } catch (error) { await handle?.dispose(); throw error }
     const owned = handle, agent = owned.agent
     request.signal.addEventListener('abort', onAbort, { once: true })

@@ -179,14 +179,26 @@ Bundle content is not rolled back because execution reporting is unavailable.
 These checks do not reconstruct lost in-memory observations after a restart or
 claim that a live native-model reporting regression has passed.
 
-Background G/R/A reviews use the public Subagent Runtime through a one-run,
-grant-bound provider, which creates the same public Agent with a child-local
-read-only capability. The Host owns parent-catalog registration and native
-start/end events, so running reviews and their history addresses remain visible
-through the ordinary DSH subagent surface. Provider registration is released on
-disposal or a rejected start; initialization failure does not invent a running
-child or catalog entry. The current adapter admits native `spawn` only; another
-configured provider fails explicitly. It inherits the parent's model route,
+Background G/R/A reviews create a native Host Agent with child-local read-only
+capabilities installed before publication or model work. On the tested RC2
+one-shot API, a one-run, grant-bound provider uses the public Subagent Runtime;
+the Host owns parent-catalog registration and native start/end events. Provider
+registration is released on disposal or a rejected start. On the tested
+`0.2.1-rc.3` activation API, the adapter uses the public `agents.create` factory
+directly: external activations reject existing local Agents, and local
+activations do not expose the review's creation-time setup. This branch retains
+real Agent/Session identity, parent lineage, native turn logs, cancellation,
+disposal and structured-result validation. It does not provide Subagent Runtime
+catalog/history, manager start/end events or the manager's concurrency pool, and
+does not fabricate those records. Background completion does not wake the main
+conversation. API capability selection happens before starting; unknown shapes
+fail explicitly, and a failed start never triggers a different backend.
+
+The adapter admits native `spawn` only; another configured provider fails
+explicitly. It snapshots the parent's model route, depth and delegated policy
+before asynchronous evidence loading, enforces the depth bound, and validates
+the exact live parent. Initialization failure never counts as a running review.
+It inherits the parent's model route,
 but does not inherit shell, write, script, publication or delegation authority.
 A monotonic tool guard also rejects unexpected child-local tools and same-name
 replacements before execution. Nested dispatch and unverified PTC transports
@@ -201,9 +213,11 @@ projections from raw resources and from committed project facts. Missing exact
 content is an explicit error, never a latest-version or source-checkout fallback.
 Structured results still pass the official profile parser and staleness check
 before the existing publisher. Run Core's `test:advisory-readonly` with an
-explicit `DSH_TEST_WEB_ANCHOR` for the actual RC2 factory/tools/loop regression;
-the scripted-model test is separate from native model and installed-host
-acceptance.
+explicit `DSH_TEST_WEB_ANCHOR` for the RC2 factory/tools/loop regression or
+`DSH_TEST_ASAR` for the installed RC3 archive. The RC2 catalog assertions remain
+version-specific; RC3 instead verifies the actual child lifecycle and explicitly
+absent manager records. Scripted-model tests are separate from native model and
+installed-host acceptance.
 
 On the current host, advisory settings use the owning plugin's live `Config`
 fields and the public `SettingsForms` projection. The host owns profile entry

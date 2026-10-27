@@ -10,6 +10,24 @@ import type {
 import { DesignProjectId } from './design-project.ts'
 import { knowledgeRelationReading } from './design-knowledge-reading.ts'
 
+export const ADVISORY_KNOWLEDGE_SOURCE_EQUIVALENCE = 'The pinned Knowledge source and this requested commit have the same verified Design evidence tree. Use this snapshot for read-only context; do not write Knowledge observations against the older source checkpoint.'
+export const ADVISORY_KNOWLEDGE_MODEL_CONTEXT_MAX_BYTES = 32 * 1024
+
+function knowledgeContextPins(selection: AdvisoryKnowledgeSelection, knowledgeRevision: DesignKnowledgeRevision, sourceCheckpoint: string) {
+  return {
+    schemaVersion: 2,
+    project: selection.project,
+    checkpoint: selection.checkpoint,
+    sourceCheckpoint,
+    ...(sourceCheckpoint === selection.checkpoint ? {} : { sourceEquivalence: ADVISORY_KNOWLEDGE_SOURCE_EQUIVALENCE }),
+    knowledgeRevision,
+  }
+}
+
+function unknownCoverage() {
+  return { status: 'unknown', note: 'Bounded retrieval; absence does not prove a record or relationship is missing.' }
+}
+
 /** Selected Design Project state against which one advisory will run. */
 export interface AdvisoryKnowledgeSelection {
   readonly project: string
@@ -62,17 +80,10 @@ export async function readAdvisoryDesignKnowledge(
     Object.freeze({ source: `design-knowledge:${selection.project}`, revision: knowledgeRevision }),
   ]) as AdvisoryDesignKnowledge['pins']
   const context = JSON.stringify({
-    schemaVersion: 2,
-    project: selection.project,
-    checkpoint: selection.checkpoint,
-    sourceCheckpoint,
-    ...(sourceCheckpoint === selection.checkpoint ? {} : {
-      sourceEquivalence: 'The pinned Knowledge source and this requested commit have the same verified Design evidence tree. Use this snapshot for read-only context; do not write Knowledge observations against the older source checkpoint.',
-    }),
-    knowledgeRevision,
+    ...knowledgeContextPins(selection, knowledgeRevision, sourceCheckpoint),
     entities: graph.entities,
     relations: graph.relations.map(edge => ({ ...edge, reading: knowledgeRelationReading(edge) })),
-    coverage: graph.page ?? { status: 'unknown', note: 'Bounded retrieval; absence does not prove a record or relationship is missing.' },
+    coverage: graph.page ?? unknownCoverage(),
   })
   return Object.freeze({
     project: selection.project,
@@ -84,6 +95,46 @@ export async function readAdvisoryDesignKnowledge(
     pins,
     context,
   })
+}
+
+/**
+ * Budget only the initial model projection. The captured graph, ordinary
+ * context API and full on-demand records retain their existing owners.
+ * An oversized metadata envelope is an optional-KAG read failure, never a
+ * partially truncated pin or a claim that this graph was consumed.
+ */
+export function advisoryKnowledgeModelContext(knowledge: AdvisoryDesignKnowledge): string {
+  if (Buffer.byteLength(knowledge.context) <= ADVISORY_KNOWLEDGE_MODEL_CONTEXT_MAX_BYTES) return knowledge.context
+  const context = JSON.stringify({
+    ...knowledgeContextPins(knowledge, knowledge.knowledgeRevision, knowledge.sourceCheckpoint),
+    documentRef: knowledge.documentRef,
+    pins: knowledge.pins,
+    entities: [],
+    relations: [],
+    coverage: {
+      status: 'not-inlined',
+      reason: 'initial-model-context-byte-budget',
+      includedEntities: 0,
+      includedRelations: 0,
+      omittedEntities: knowledge.graph.entities.length,
+      omittedRelations: knowledge.graph.relations.length,
+      note: 'These records were omitted from the initial model context, not absent from the graph. Source coverage below describes the captured query page, not records seen by the model.',
+    },
+    sourceCoverage: knowledge.graph.page ?? unknownCoverage(),
+    retrieval: {
+      tool: 'design_query_knowledge',
+      project: knowledge.project,
+      checkpoint: knowledge.checkpoint,
+      revision: knowledge.knowledgeRevision,
+      offset: 0,
+      limit: 10,
+      guidance: 'Query relevant sourceFiles, text or known IDs first. Keep exact pins and filters while paging with nextOffset. Narrow IDs/limit if a page exceeds the existing response budget; if a single record remains oversized, read its source at the pinned review commit and disclose incomplete graph evidence. This documentRef is an identifier, not a readable file path.',
+    },
+  })
+  if (Buffer.byteLength(context) > ADVISORY_KNOWLEDGE_MODEL_CONTEXT_MAX_BYTES) {
+    throw new Error('advisory knowledge: required model context metadata exceeds the initial byte budget')
+  }
+  return context
 }
 
 /** Trace one record using the revision already captured by an advisory snapshot. */

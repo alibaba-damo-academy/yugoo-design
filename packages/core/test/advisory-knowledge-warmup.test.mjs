@@ -6,6 +6,43 @@ register()
 const { DshAdvisoryScheduler } = await import('../src/dsh-advisory-plugin.ts')
 const { default: DesignService } = await import('../src/design-service.ts')
 const { OFFICIAL_GROUNDING_PROFILE } = await import('../src/official-advisory-profiles.ts')
+const { readAdvisoryDesignKnowledge } = await import('../src/advisory-knowledge.ts')
+
+test('oversized KAG pin metadata falls back explicitly without counting the captured graph as used', async () => {
+  const projectId = '11111111-1111-4111-8111-111111111111'
+  const change = { journalRevision: 5, commit: 'a'.repeat(40), kit: 'fixture', version: '1.0' }
+  const revision = 'rev:' + 'x'.repeat(32768)
+  const knowledge = await readAdvisoryDesignKnowledge({ project: projectId, checkpoint: change.commit }, {
+    revision: async () => revision, query: async () => ({ revision, entities: [], relations: [] }),
+  }, 20)
+  const completions = []
+  let prompt
+  const scheduler = new DshAdvisoryScheduler({
+    design: {
+      advisoryDesignKnowledge: async () => knowledge,
+      kitForAgent: () => ({ name: 'fixture', version: '1.0' }),
+      readDesignJournal: async () => ({ snapshot: { latestDesignChange: change, design: {}, advisories: [] } }),
+      projectForAgent: async () => ({ projectId, root: '/tmp/project', designFilesRoot: '/tmp/project/design_files' }),
+      refreshAdvisoryProjection: async () => {},
+      recordAdvisoryReviewCompletion: async (_agent, completion) => { completions.push(completion) },
+    },
+    subagents: { start: async (_provider, request) => {
+      prompt = request.prompt[0].text
+      assert.equal(request.knowledgeContext, undefined)
+      return { result: Promise.resolve({ stopReason: 'completed', structured: { schemaVersion: 1, inconsistencies: [] } }), dispose: async () => {} }
+    } },
+    warn: message => assert.fail(message),
+  }, { profiles: [OFFICIAL_GROUNDING_PROFILE] })
+  try {
+    await scheduler.runProfile({ id: 'oversized-pins', status: 'idle', session: { events: [] } }, OFFICIAL_GROUNDING_PROFILE, 5, new AbortController().signal, () => {})
+    assert.doesNotMatch(prompt, /Stored Design KAG|knowledgeDocumentRef/)
+    assert.match(prompt, /knowledge-fallback.*read-error/)
+    assert.equal(completions.length, 1)
+    assert.equal(completions[0].knowledgeUsed, false)
+    assert.equal(completions[0].fallbackReason, 'read-error')
+    assert.equal(completions[0].knowledgeSourceCheckpoint, undefined)
+  } finally { scheduler.dispose() }
+})
 
 test('review dispatch reuses one revision warmup instead of queueing a second KAG read', async () => {
   const history = [{ type: 'tool/call', data: { callId: 'foreground', name: 'run_design_skill', arguments: JSON.stringify({ name: 'research', brief: 'Current research intent' }) } }]

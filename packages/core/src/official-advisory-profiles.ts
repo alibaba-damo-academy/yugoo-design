@@ -95,6 +95,7 @@ const ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$/
 const MAX_OUTPUT_BYTES = 262_144
 const MAX_ITEMS = 128
 const MAX_TEXT = 8_192
+const MAX_AUTHORITATIVE_REFERENCE = 512
 const MAX_ACCEPTANCE_INSTRUCTION = 8_192
 
 const SHORT_TEXT_SCHEMA = Object.freeze({ type: 'string' })
@@ -114,7 +115,7 @@ const GROUNDING_OUTPUT_SCHEMA = strictObject({
       id: SHORT_TEXT_SCHEMA,
       facets: { type: 'array', items: SHORT_TEXT_SCHEMA },
       summary: TEXT_SCHEMA,
-      authoritativeReference: TEXT_SCHEMA,
+      authoritativeReference: { ...TEXT_SCHEMA, description: `Authoritative project-relative file or fact locator, at most ${MAX_AUTHORITATIVE_REFERENCE} characters. Put explanatory prose in summary or correction.` },
       correction: TEXT_SCHEMA,
       affectedFacets: { type: 'array', items: SHORT_TEXT_SCHEMA },
     }, ['id', 'facets', 'summary', 'authoritativeReference', 'correction', 'affectedFacets']),
@@ -248,7 +249,7 @@ function groundingOutput(value: unknown): GroundingProfileOutput {
       id: id(item.id, `$.inconsistencies[${index}].id`),
       facets,
       summary: text(item.summary, `$.inconsistencies[${index}].summary`),
-      authoritativeReference: text(item.authoritativeReference, `$.inconsistencies[${index}].authoritativeReference`, 512),
+      authoritativeReference: text(item.authoritativeReference, `$.inconsistencies[${index}].authoritativeReference`, MAX_AUTHORITATIVE_REFERENCE),
       correction: text(item.correction, `$.inconsistencies[${index}].correction`),
       affectedFacets: stringList(item.affectedFacets, `$.inconsistencies[${index}].affectedFacets`, false),
     })

@@ -1,4 +1,4 @@
-/** Actual RC2 factory/tools/loop, scripted LLM; not live-model or installed-host acceptance. */
+/** Actual installed factory/tools/loop, scripted LLM; not live-model or GUI acceptance. */
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
@@ -7,18 +7,22 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { loadDshTestRuntime } from './dsh-asar-test-loader.mjs'
 
-assert.ok(Boolean(process.env.DSH_TEST_WEB_ANCHOR) !== Boolean(process.env.DSH_TEST_ASAR), 'exactly one explicit installed RC2 graph is required')
+assert.ok(Boolean(process.env.DSH_TEST_WEB_ANCHOR) !== Boolean(process.env.DSH_TEST_ASAR), 'exactly one explicit installed Host graph is required')
 const runtime = loadDshTestRuntime({ webAnchor: process.env.DSH_TEST_WEB_ANCHOR, asar: process.env.DSH_TEST_ASAR })
 const { Context } = await import('@deepseek-ai/cordis')
-const { createDshAdvisoryAgent } = await import('../src/dsh-advisory-agent.ts')
+const { createDshAdvisoryAgent, dshAdvisoryBackend } = await import('../src/dsh-advisory-agent.ts')
+const { analyzeDshDesignAdvisory } = await import('../src/dsh-advisory-runner.ts')
+const { OFFICIAL_GROUNDING_PROFILE } = await import('../src/official-advisory-profiles.ts')
 const { evaluatePublishedDesignClarity } = await import('../src/dsh-clarity-evaluator.ts')
 const { createAdvisoryEvidence } = await import('../src/advisory-evidence.ts')
 const { loadDesignKit, createDirectoryBundleResolver } = await import('../src/kit-loader.ts')
 const { projectKitContentHash } = await import('../src/project-content.ts')
+const { advisoryKnowledgeModelContext, readAdvisoryDesignKnowledge } = await import('../src/advisory-knowledge.ts')
 const [llm, sessions, prompt, tools, agents, loop, projections, subagents, query] = await Promise.all(
   ['dsh-llm', 'dsh-session', 'dsh-system-prompt', 'dsh-tools', 'dsh-agent', 'dsh-agent-loop', 'dsh-session-projection', 'dsh-subagent', 'dsh-session-query']
     .map(name => import('@deepseek-ai/' + name)))
 test.after(() => runtime.close())
+const factoryBackend = dshAdvisoryBackend(subagents.default.prototype) === 'agent-factory'
 const schema = { type: 'object', additionalProperties: false, required: ['value'], properties: { value: { type: 'string' } } }
 const call = (name, args) => [
   { type: 'block-start', index: 0, blockType: 'tool-call' },
@@ -31,7 +35,15 @@ async function fixture(t, options = {}) {
   const root = await mkdtemp(join(tmpdir(), 'advisory-sdk-')); t.after(() => rm(root, { recursive: true, force: true }))
   const ctx = new Context(); t.after(() => ctx.fiber.dispose())
   for (const [plugin, config] of [[llm.default], [sessions.default], [prompt.default, { persona: 'review isolation test' }],
-    [tools.default], [projections.default], [query.default], [agents.default], [loop.default, { agents: [] }], [subagents.default]]) await ctx.plugin(plugin, config)
+    [tools.default], [projections.default], [query.default], [agents.default], [loop.default, { agents: [] }]]) await ctx.plugin(plugin, config)
+  // RC3 requires the public working-directory service. Its real filesystem
+  // implementation is rooted in this test's owned directory, not a Host profile.
+  if (subagents.default.inject?.includes('workingDirectory')) {
+    const [fs, directory] = await Promise.all(['dsh-fs-local', 'dsh-working-directory'].map(name => import('@deepseek-ai/' + name)))
+    await ctx.plugin(fs.default, { cwd: root })
+    await ctx.plugin(directory.default, { defaultDirectory: root })
+  }
+  await ctx.plugin(subagents.default)
   let requests = 0
   const seen = [], results = [], children = [], modelErrors = [], nativeStarts = [], nativeEnds = []
   ctx.on('subagent/start', info => nativeStarts.push(info))
@@ -58,13 +70,104 @@ async function fixture(t, options = {}) {
   })
   const evidence = options.evidence ?? { manifest: { checkpoint: 'a'.repeat(40), paths: ['project.json'] }, list: () => ['project.json'],
     read: async () => ({ content: 'committed fact' }), search: async () => ({ matches: [] }), resource: () => ({ content: 'exact pinned method' }) }
-  const port = createDshAdvisoryAgent(async () => evidence)
+  const port = createDshAdvisoryAgent(options.evidenceFor ?? (async () => evidence))
   const request = { parent: parent.agent, reviewCommit: 'a'.repeat(40), label: 'Read-only test',
     signal: AbortSignal.timeout(15000), outputSchema: schema, prompt: [{ type: 'text', text: 'Read and report.' }] }
   return { ctx, root, parent, port, request, seen, results, children, modelErrors, nativeStarts, nativeEnds }
 }
 
-test('actual SDK discovers a running readonly review and retains its native history entry after disposal', async t => {
+test('unknown runtime shapes reject rather than choosing an exception fallback', () => {
+  for (const shape of [undefined, {}, { start: 'not callable' }, { startActivation() {} }]) {
+    assert.throws(() => dshAdvisoryBackend(shape), /unavailable|unsupported/)
+  }
+})
+
+test('RC3 factory has real readonly child lifecycle without manager catalog, events or parent wake', { skip: !factoryBackend }, async t => {
+  let entered, release
+  const inModel = new Promise(resolve => { entered = resolve })
+  const finish = new Promise(resolve => { release = resolve })
+  t.after(() => release())
+  const f = await fixture(t, { async step() { entered(); await finish; return call('structured_output', { value: 'factory' }) } })
+  const providers = f.ctx.subagents.list()
+  const run = await f.port.start('spawn', f.request)
+  try {
+    await inModel
+    assert.equal(f.children.length, 1)
+    const child = f.children[0]
+    assert.equal(run.id, child.id)
+    assert.equal(child.session.header.parentSession, f.parent.agent.id)
+    assert.equal(child.options.provider, f.parent.agent.options.provider)
+    assert.equal(child.options.model, f.parent.agent.options.model)
+    assert.equal(child.session.header.delegationDepth, 1)
+    assert.equal(f.ctx.agents.get(run.id), child)
+    assert.equal(child.session.snapshotEvents().filter(e => e.type === 'turn/start').length, 1)
+    assert.equal(child.session.snapshotEvents().filter(e => e.type === 'turn/end').length, 0)
+    assert.equal(child.session.snapshotEvents().filter(e => e.type === 'subagent/descriptor').length, 0)
+    assert.deepEqual(await f.ctx.subagents.listChildren(f.parent.agent.id), [])
+    assert.deepEqual(f.ctx.subagents.list(), providers)
+    assert.equal(f.nativeStarts.length, 0)
+    release()
+    assert.deepEqual(await run.result, { stopReason: 'completed', structured: { value: 'factory' } })
+    assert.equal(agents.foldConsumedWork(child.session.snapshotEvents()).end.data.reason.kind, 'completed')
+  } finally { await Promise.all([run.dispose(), run.dispose()]) }
+  assert.equal(f.ctx.agents.get(run.id), undefined)
+  assert.equal(f.nativeEnds.length, 0)
+  assert.deepEqual(await f.ctx.subagents.listChildren(f.parent.agent.id), [])
+  assert.equal(f.parent.agent.session.snapshotEvents().filter(e => e.type === 'turn/start').length, 0)
+  assert.equal(f.parent.agent.inbox.nextTurn.length, 0)
+  assert.equal(f.parent.agent.inbox.nextStep.length, 0)
+})
+
+test('readonly startup rejects non-live parent, depth overflow and pre-abort before evidence or child creation', async t => {
+  let reads = 0
+  const f = await fixture(t, { evidenceFor: async () => { reads++; throw Error('must not load evidence') }, step: () => stop() })
+  await assert.rejects(f.port.start('spawn', { ...f.request, parent: { ...f.parent.agent } }), /parent|UNAUTHORIZED/)
+  await assert.rejects(f.port.start('spawn', { ...f.request, maxDepth: 0 }), /depth/)
+  for (const maxDepth of [-1, NaN, Infinity, 1.5]) {
+    await assert.rejects(f.port.start('spawn', { ...f.request, maxDepth }), /[Dd]epth/)
+  }
+  await assert.rejects(f.port.start('spawn', { ...f.request, signal: AbortSignal.abort(Error('pre-abort')) }), /pre-abort/)
+  assert.equal(reads, 0)
+  assert.equal(f.children.length, 0)
+  assert.equal(f.seen.length, 0)
+})
+
+test('cancelled evidence load cannot publish a late native child', async t => {
+  const abort = new AbortController()
+  let enter, release
+  const entered = new Promise(resolve => { enter = resolve })
+  const pending = new Promise(resolve => { release = resolve })
+  const f = await fixture(t, { async evidenceFor() { enter(); await pending; return { manifest: {}, list: () => [] } }, step: () => stop() })
+  const run = f.port.start('spawn', { ...f.request, signal: abort.signal })
+  await entered
+  abort.abort(Error('cancelled while loading evidence'))
+  release()
+  await assert.rejects(run, /cancelled while loading evidence/)
+  assert.equal(f.children.length, 0)
+  assert.equal(f.ctx.subagents.list().length, 0)
+})
+
+test('native route snapshot precedes a parent model switch during evidence loading', { skip: !factoryBackend }, async t => {
+  let enter, release
+  const entered = new Promise(resolve => { enter = resolve })
+  const pending = new Promise(resolve => { release = resolve })
+  const f = await fixture(t, { async evidenceFor() { enter(); await pending; return { manifest: {}, list: () => [] } },
+    step(_n, request) { return request.tools.some(tool => tool.name === 'structured_output') ? call('structured_output', { value: 'pinned route' }) : stop() } })
+  const runPromise = f.port.start('spawn', f.request)
+  await entered
+  agents.installModelSelection(f.parent.agent.ctx, { current: { provider: 'review-fixture', model: 'changed-after-start' } })
+  f.parent.agent.followup(llm.createUserMessage({ content: [{ type: 'text', text: 'Scripted model switch.' }], source: { kind: 'user' } }))
+  await f.parent.agent.whenIdle()
+  assert.equal(f.parent.agent.session.requestHeader().config.model, 'changed-after-start')
+  release()
+  const run = await runPromise
+  try {
+    assert.equal(f.children[0].options.model, 'same-native-route')
+    assert.equal((await run.result).structured.value, 'pinned route')
+  } finally { await run.dispose() }
+})
+
+test('actual SDK discovers a running readonly review and retains its native history entry after disposal', { skip: factoryBackend }, async t => {
   let entered, release
   const enteredModel = new Promise(resolve => { entered = resolve })
   const releaseModel = new Promise(resolve => { release = resolve })
@@ -275,11 +378,57 @@ test('Knowledge reads preserve exact pins and the authorized parent binding', as
   assert.deepEqual(f.results.filter(r => r.name === 'design_query_knowledge').map(r => r.isError), [true, false])
 })
 
+test('oversized initial KAG uses the original readonly pinned query before official Grounding completion', async t => {
+  const project = '11111111-1111-4111-8111-111111111111', checkpoint = 'a'.repeat(40), sourceCheckpoint = 'b'.repeat(40)
+  const fullText = 'FULL_GRAPH_EVIDENCE_' + '中'.repeat(12000)
+  const knowledge = await readAdvisoryDesignKnowledge({ project, checkpoint }, {
+    query: async () => ({ revision: 'rev:4', entities: [{ id: 'fact', properties: { text: fullText }, provenance: { checkpoint: sourceCheckpoint } }], relations: [],
+      page: { offset: 0, nextOffset: null, totalEntities: 1, totalRelations: 0 } }),
+  }, 20, {}, 'rev:4', sourceCheckpoint)
+  const knowledgeContext = advisoryKnowledgeModelContext(knowledge)
+  assert.ok(Buffer.byteLength(knowledgeContext) <= 32768)
+  let queries = 0, expectedParent
+  const f = await fixture(t, { step(n, request) {
+    const text = JSON.stringify(request)
+    if (n === 0) {
+      assert.match(text, /not-inlined/)
+      assert.doesNotMatch(text, /FULL_GRAPH_EVIDENCE_/)
+    }
+    if (n < 2) return call('design_query_knowledge', { project, checkpoint, revision: n === 0 ? 'rev:wrong' : 'rev:4' })
+    assert.equal(n, 2)
+    assert.match(text, /FULL_GRAPH_EVIDENCE_/)
+    assert.ok(text.includes(fullText), 'demanded record is delivered with its complete text')
+    return call('structured_output', { schemaVersion: 1, inconsistencies: [] })
+  } })
+  expectedParent = f.parent.agent
+  f.parent.agent.ctx.tools.register(tools.defineContentToolFixture({ name: 'design_query_knowledge', description: 'Original pinned Knowledge reader',
+    parameters: { project: { type: 'string', required: true }, checkpoint: { type: 'string', required: true }, revision: { type: 'string', required: true } },
+    async execute(args, exec) {
+      assert.equal(exec.agent, expectedParent)
+      assert.deepEqual(args, { project, checkpoint, revision: 'rev:4' })
+      queries++
+      return [{ type: 'text', text: JSON.stringify({ project, checkpoint, sourceCheckpoint, ...knowledge.graph }) }]
+    },
+  }))
+  const outcome = await analyzeDshDesignAdvisory({
+    parent: f.parent.agent, provider: 'spawn', profile: OFFICIAL_GROUNDING_PROFILE,
+    input: { schemaVersion: 1, runId: 'bounded-grounding-run', resultId: 'bounded-grounding-result', pins: knowledge.pins, facetRefs: ['flow_design'] },
+    projectRoot: f.root, designFilesRoot: join(f.root, 'design_files'), reviewCommit: checkpoint,
+    knowledgeContext, signal: f.request.signal, stillCurrent: () => true,
+  }, f.port).catch(error => { throw f.modelErrors[0] ?? error })
+  assert.equal(outcome.status, 'produced')
+  assert.equal(queries, 1)
+  assert.deepEqual(f.results.filter(r => r.name === 'design_query_knowledge').map(r => r.isError), [true, false])
+  assert.equal(f.children.length, 1)
+  assert.equal(f.ctx.agents.get(f.children[0].id), undefined)
+})
+
 test('ordinary text without structured output cannot be captured', async t => {
   const f = await fixture(t, { step: () => stop() })
   const run = await f.port.start('spawn', f.request)
   try { await assert.rejects(run.result, /successful structured result/) } finally { await run.dispose() }
-  assert.equal(f.nativeEnds.at(-1).stopReason, 'completed', 'child completion is not review validity')
+  if (!factoryBackend) assert.equal(f.nativeEnds.at(-1).stopReason, 'completed', 'child completion is not review validity')
+  else assert.equal(agents.foldConsumedWork(f.children[0].session.snapshotEvents()).end.data.reason.kind, 'completed')
 })
 
 test('native lifecycle retains partial assistant output and the actual max-token outcome', async t => {
@@ -291,9 +440,16 @@ test('native lifecycle retains partial assistant output and the actual max-token
   ] })
   const run = await f.port.start('spawn', f.request)
   try { await assert.rejects(run.result, /successful structured result/) } finally { await run.dispose() }
-  assert.equal(f.nativeEnds.length, 1)
-  assert.equal(f.nativeEnds[0].stopReason, 'max-tokens')
-  assert.deepEqual(f.nativeEnds[0].lastAssistantMessage, [{ type: 'text', text: 'Partial review evidence.' }])
+  if (!factoryBackend) {
+    assert.equal(f.nativeEnds.length, 1)
+    assert.equal(f.nativeEnds[0].stopReason, 'max-tokens')
+    assert.deepEqual(f.nativeEnds[0].lastAssistantMessage, [{ type: 'text', text: 'Partial review evidence.' }])
+  } else {
+    assert.equal(f.nativeEnds.length, 0)
+    const events = f.children[0].session.snapshotEvents()
+    assert.equal(agents.foldConsumedWork(events).end.data.reason.kind, 'max-tokens')
+    assert.deepEqual(subagents.finalAssistantOutput(events), [{ type: 'text', text: 'Partial review evidence.' }])
+  }
 })
 
 test('normal text and failed structured result cannot become successful review capture', async t => {
@@ -307,6 +463,38 @@ test('normal text and failed structured result cannot become successful review c
   const run = await f.port.start('spawn', f.request)
   try { await assert.rejects(run.result, /did not complete normally/) } finally { await run.dispose() }
   assert.ok(f.results.some(r => r.name === 'structured_output' && r.isError))
+})
+
+test('Grounding rejects oversized references before capture and permits the same child to correct them', async t => {
+  for (const [length, repair] of [[513, true], [959, true], [959, false]]) await t.test(`${length} characters, repair=${repair}`, async t => {
+    const reference = 'prd/product.md#' + 'x'.repeat(512 - 'prd/product.md#'.length)
+    const output = authoritativeReference => ({ schemaVersion: 1, inconsistencies: [{
+      id: 'audience-drift', facets: ['prd', 'page_design'], summary: 'The saved audiences disagree.',
+      authoritativeReference, correction: 'Align the page audience to creators.', affectedFacets: ['page_design'],
+    }] })
+    const f = await fixture(t, { step(n) {
+      assert.ok(n < 2, 'one rejected submission and one correction must suffice')
+      return n > 0 && !repair ? stop() : call('structured_output', output(n === 0 ? 'x'.repeat(length) : reference))
+    } })
+    const analysis = analyzeDshDesignAdvisory({
+      design: { async publishAdvisory() { assert.fail('analysis must not publish') } },
+      parent: f.parent.agent, provider: 'spawn', profile: OFFICIAL_GROUNDING_PROFILE,
+      input: { schemaVersion: 1, runId: 'grounding-run', resultId: 'grounding-result',
+        pins: [{ source: 'design-state', revision: 'revision-1' }], facetRefs: ['prd', 'page_design'] },
+      projectRoot: f.root, designFilesRoot: join(f.root, 'design_files'), reviewCommit: 'a'.repeat(40),
+      signal: f.request.signal, stillCurrent: () => true,
+    }, f.port)
+    if (repair) {
+      const outcome = await analysis
+      assert.equal(outcome.status, 'produced')
+      assert.equal(outcome.advisory.items.length, 1)
+      assert.equal(outcome.advisory.items[0].references[0], reference, 'accepted reference must not be truncated or rewritten')
+    } else await assert.rejects(analysis, /successful structured result/)
+    assert.equal(f.children.length, 1)
+    assert.deepEqual(f.results, [{ name: 'structured_output', isError: true }, ...(repair ? [{ name: 'structured_output', isError: false }] : [])])
+    assert.equal(f.seen.length, 2)
+    assert.match(JSON.stringify(f.children[0].session.snapshotEvents()), /authoritativeReference.*exceeds 512 characters/)
+  })
 })
 
 test('concurrent child captures remain scope-local and nonspawn is explicitly unsupported', async t => {
@@ -337,9 +525,15 @@ test('initialization failure and cancellation clean the owned child without capt
   const run = await other.port.start('spawn', { ...other.request, signal: abort.signal })
   try { await assert.rejects(run.result) } finally { await run.dispose() }
   assert.ok(other.children.every(agent => other.ctx.agents.get(agent.id) === undefined))
-  assert.equal(other.nativeStarts.length, 1)
-  assert.equal(other.nativeEnds.length, 1)
-  assert.equal(other.nativeEnds[0].stopReason, 'aborted')
+  if (!factoryBackend) {
+    assert.equal(other.nativeStarts.length, 1)
+    assert.equal(other.nativeEnds.length, 1)
+    assert.equal(other.nativeEnds[0].stopReason, 'aborted')
+  } else {
+    assert.equal(other.nativeStarts.length, 0)
+    assert.equal(other.nativeEnds.length, 0)
+    assert.equal(agents.foldConsumedWork(other.children[0].session.snapshotEvents()).end.data.reason.kind, 'aborted')
+  }
   assert.ok(other.ctx.subagents.list().every(name => !name.startsWith('dsh-design-readonly-review-')))
 })
 
