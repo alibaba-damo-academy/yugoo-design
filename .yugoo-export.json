@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "cfba483050b696e52dd55e27512b89a29278521a",
+  "revision": "2cf041e28c6e763d6a86a6c24c004857d7355421",
   "policySha256": "076d5e9b5a483b0cad3b7a7bf3885faef9d6050dab7a919268aa573bdf1fae91",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -100,11 +100,11 @@
       "mode": "100644"
     },
     "README.en.md": {
-      "sha256": "dc1d359ae8b58eb740bbe2df22e8879f03a0ee82b57293d96dc09b222ccac1b3",
+      "sha256": "18b4423dddbc57a0cfb38e8b45a1f901a88fa04ab97bbad25356240c56fb3433",
       "mode": "100644"
     },
     "README.md": {
-      "sha256": "e9e7236dc211590fc63d840869f153b1a1dff76b1830cf4d556445adf3d8ea2e",
+      "sha256": "a43fb943c1d9f2ac68be491ecfe68af005c959ab28fc4595502a861f15b9b7aa",
       "mode": "100644"
     },
     "SECURITY.md": {
@@ -280,15 +280,15 @@
       "mode": "100644"
     },
     "docs/wiki/getting-started.md": {
-      "sha256": "c9565c32f511a4fc8518e825446938a00c6711823e3ba03a63b9bb79e57bf915",
+      "sha256": "b228529683b69f06a4a6930bf95c28dc7044edc4de83a1318d343db191608cdb",
       "mode": "100644"
     },
     "docs/wiki/hosts.md": {
-      "sha256": "115ff89ffeae679553de258325bee184baf27babaf6c46f75a54d0279065d0bc",
+      "sha256": "51185ecba075d50276d65e48981796909d48addd13d41abca8bb88db4b56289f",
       "mode": "100644"
     },
     "docs/wiki/kit-sharing.md": {
-      "sha256": "95dc473ba67f0ff3bd2f9cfe49666e8751cbdce9a67d9de0a153cd62e144ce68",
+      "sha256": "a28d2d0cfbb9777a218d41dd97c86ba8a8d494335d9ff11bbbe2c135f88cef83",
       "mode": "100644"
     },
     "docs/wiki/non-web-kit-demo.md": {
@@ -300,7 +300,7 @@
       "mode": "100644"
     },
     "docs/wiki/preview-status.md": {
-      "sha256": "d4b6fdd3b1591fb6fea60a839e8455e25990e50aff9a57bf570f566de393bc20",
+      "sha256": "ec4ce0df7da7f163bd745c0a9c1b73a2e4a0b3a687e54f4ef6e27fdedd30fe0e",
       "mode": "100644"
     },
     "docs/wiki/project-files.md": {
@@ -640,11 +640,11 @@
       "mode": "100644"
     },
     "packages/companion/HOSTS.md": {
-      "sha256": "85956393dda11ebba3da773bd4ab45df9766cc11b4a31fd6342bb9a117bf2d57",
+      "sha256": "2b27fd62dfd8fb8de8bdb0351f3cd0856b24551a5612db1d310896234386538b",
       "mode": "100644"
     },
     "packages/companion/README.md": {
-      "sha256": "e9caa13476599a62cf08b7bf04bf11fee8ba32f003fd1d8de1ebaf09c479fd41",
+      "sha256": "d4b080698ebc76052abd7e8bdc319f4f28e14bec06dda2a9635c89cc57e25749",
       "mode": "100644"
     },
     "packages/companion/build-plugin.mjs": {
@@ -8836,7 +8836,7 @@
       "mode": "100644"
     },
     "scripts/prepare-product-release.mjs": {
-      "sha256": "6d80baa8acc33dd67bca3c05e05b6c6e1aa8f4e062604e016b9af1fc8e7f7eb9",
+      "sha256": "7214aa411f1ff7e3b6ab2d9197d189b06d8a0232a415c70f74cb28dbc53ad6c0",
       "mode": "100644"
     },
     "scripts/probe-companion-pica-worker.mjs": {
@@ -8848,7 +8848,7 @@
       "mode": "100644"
     },
     "scripts/product-release-ci.test.mjs": {
-      "sha256": "3a8101fd71150977e8f95d6acd53e65befb84aeb33560537c1eab02b071f64c7",
+      "sha256": "0e35a93aad2000e9c0459224f7e0c2d2a116a4fe5fcaf86629a24f601a1a3b35",
       "mode": "100644"
     },
     "scripts/product-release.mjs": {

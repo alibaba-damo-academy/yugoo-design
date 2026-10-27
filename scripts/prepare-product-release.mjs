@@ -481,12 +481,16 @@ export async function verifyProductReceipt(receiptFile, { sourceCommit = git(['r
 }
 
 /** Compare metadata AND downloaded bytes. No error except a version 404 means absent. */
-export async function registryState(entry, { fetchImpl = fetch, maxBytes = 128 * 1024 * 1024 } = {}) {
+export async function registryState(entry, options) {
+  return compareRegistryArchive(entry, { ...options, allowPendingTarball: false })
+}
+async function compareRegistryArchive(entry, { fetchImpl = fetch, maxBytes = 128 * 1024 * 1024, allowPendingTarball = false, signal } = {}) {
   assert.ok(RELEASE_SOURCE_PACKAGES.includes(entry.sourceName))
   assert.equal(entry.name, packageNameFor(entry.sourceName))
   validateReleaseVersion(entry.version)
   assert.match(entry.integrity, /^sha512-[A-Za-z0-9+/]{86}==$/u)
-  const options = { redirect: 'error', credentials: 'omit', signal: AbortSignal.timeout(30000) }
+  const requestSignal = () => signal ? AbortSignal.any([signal, AbortSignal.timeout(30000)]) : AbortSignal.timeout(30000)
+  const options = { redirect: 'error', credentials: 'omit', signal: requestSignal() }
   const response = await fetchImpl(`${REGISTRY}/${encodeURIComponent(entry.name)}/${entry.version}`, { ...options, headers: { accept: 'application/json' } })
   if (response.status === 404) return 'absent'
   assert.equal(response.status, 200, `Registry lookup failed for ${entry.name}: HTTP ${response.status}`)
@@ -497,9 +501,15 @@ export async function registryState(entry, { fetchImpl = fetch, maxBytes = 128 *
   assert.equal(url.origin, REGISTRY, 'Official registry tarball required')
   assert.equal(url.username + url.password + url.search + url.hash, '', 'Unexpected tarball URL credentials/query/fragment')
   assert.equal(url.pathname, `/${entry.name}/-/${entry.sourceName}-${entry.version}.tgz`, 'Unexpected registry tarball path')
-  const tar = await fetchImpl(url.href, { ...options, signal: AbortSignal.timeout(30000) })
-  assert.equal(tar.status, 200, `Registry tarball failed: HTTP ${tar.status}`)
   assert.ok(entry.bytes > 0 && entry.bytes <= maxBytes, 'Archive exceeds registry comparison bound')
+  const tar = await fetchImpl(url.href, { ...options, signal: requestSignal() })
+  // Only post-publication confirmation may wait after exact metadata/SRI matched.
+  // Preflight, publication planning and completion still reject a tarball 404.
+  if (tar.status === 404 && allowPendingTarball) {
+    await tar.body?.cancel?.().catch(() => {})
+    return 'pending'
+  }
+  assert.equal(tar.status, 200, `Registry tarball failed: HTTP ${tar.status}`)
   const hash = createHash('sha512'); let size = 0
   try {
     for await (const chunk of tar.body) {
@@ -564,12 +574,24 @@ export async function nextPublication(receipt, index, options) {
   await assertLatestPublicationAllowed(entry, options)
   return { action: 'publish', entry }
 }
-export async function confirmPublication(entry, { attempts = 5, wait = () => delay(2000), ...options } = {}) {
-  for (let i = 0; i < attempts; i++) {
-    if (await registryState(entry, options) === 'identical') return
-    if (i + 1 < attempts) await wait()
+/** Read-only post-publish visibility: at most 15 minutes per package, not a new publish attempt.
+ * npm scanning can outlast this budget. The existing Actions job budget also applies.
+ * Only version 404 or an exact-metadata tarball 404 waits; every other failure propagates.
+ */
+export async function confirmPublication(entry, { timeoutMs = 15 * 60_000, pollIntervalMs = 15_000,
+  now = () => performance.now(), wait = ms => delay(ms), ...options } = {}) {
+  assert.ok(Number.isInteger(timeoutMs) && timeoutMs > 0 && timeoutMs <= 15 * 60_000, 'Confirmation budget must be within 15 minutes')
+  assert.ok(Number.isInteger(pollIntervalMs) && pollIntervalMs > 0, 'Positive confirmation poll interval required')
+  const deadline = now() + timeoutMs, budgetSignal = AbortSignal.timeout(timeoutMs)
+  const signal = options.signal ? AbortSignal.any([options.signal, budgetSignal]) : budgetSignal
+  while (now() < deadline) {
+    const state = await compareRegistryArchive(entry, { ...options, allowPendingTarball: true, signal })
+    const remaining = deadline - now()
+    if (state === 'identical' && remaining >= 0) return
+    if (remaining <= 0) break
+    await wait(Math.min(pollIntervalMs, remaining))
   }
-  assert.fail(`Published version is not visible; stop without republishing: ${entry.name}`)
+  assert.fail(`Published archive is not visible within ${timeoutMs}ms; stop without republishing: ${entry.name}@${entry.version}`)
 }
 
 export async function prepareProductArchive({ version, output, nativeArtifactRoot, npmCli }) {

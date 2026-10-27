@@ -19,11 +19,11 @@ locations. Previously registered projects remain at their exact roots; they are
 not moved, and opening them does not require the new Documents destination.
 
 The unified product package and CLI are `yugoo-design`, with first stable version
-`0.1.0` in preparation and not yet published to npm. Companion names the internal
+`0.1.0` published to npm. Companion names the internal
 host integration and shared browser runtime, not a second product to install.
 The former `@yugoo-design/companion` package and its beta versions remain historical
 records; no compatibility package or beta default is provided for this release.
-Retain the required exact version and integrity when it becomes available.
+Retain the required exact version and integrity for acquisition and updates.
 Source changes, publication and installed-host acceptance remain separate. See the
 [shared installation prompt and registry status](HOSTS.md#agent-led-installation-and-updates).
 The browser mounts the shared `DesignWorkspace` and project sidebar. Panel

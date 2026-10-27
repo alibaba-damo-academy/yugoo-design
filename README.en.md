@@ -9,7 +9,7 @@
 [![Qoder CLI](https://img.shields.io/badge/Qoder_CLI-6AD86C)](docs/wiki/hosts.md#qoder-cli)
 [![千问办公 QwenWork](https://img.shields.io/badge/%E5%8D%83%E9%97%AE%E5%8A%9E%E5%85%AC_QwenWork-39D377)](docs/wiki/hosts.md#千问办公-qwenwork)
 [![WorkBuddy](https://img.shields.io/badge/WorkBuddy-00C29A)](docs/wiki/hosts.md#workbuddy)
-[![npm publish](https://img.shields.io/badge/npm_publish-2088FF?logo=githubactions&logoColor=white)](https://github.com/alibaba-damo-academy/yugoo-design/actions/workflows/publish-companion.yml)
+[![npm publish](https://img.shields.io/badge/npm_publish-2088FF?logo=githubactions&logoColor=white)](https://github.com/alibaba-damo-academy/yugoo-design/actions/workflows/publish-product.yml)
 
 **See your ideas. Shape the details.**
 
@@ -27,7 +27,7 @@ Start with the **Web App Kit**, included with the plugin by default, to design a
 
 You need **Node.js `>=22.19.0`** and an Agent Host with a configured model. The plugin uses your host's existing model, conversation, and tools; see [getting started (中文)](docs/wiki/getting-started.md) for environment setup.
 
-The unified product package and CLI are both `yugoo-design`. Its first stable version is planned as `0.1.0` and has not been published to npm. Check the [release status](docs/wiki/preview-status.md#current-release-and-use) before installation; stop if the required version is unavailable. The steps below describe installation and first use after that release becomes available.
+The unified product package and CLI are both `yugoo-design`. Its first stable version, `0.1.0`, has been published to npm. Check the [release status](docs/wiki/preview-status.md#current-release-and-use) before installation; stop if the required version is unavailable. The steps below describe installation and first use.
 
 1. **Install the plugin.** Give the agent in your current host the [shared installation prompt](packages/companion/HOSTS.md#default-prompt-any-supported-host). Follow its instructions for authorization, import, activation, and any restart or new session.
 

@@ -21,7 +21,7 @@
 
 | 官方套件 | 用途与方法 | 获取与适用范围 |
 | --- | --- | --- |
-| Web App（`web_app`） | 软件应用的需求、流程、规则、数据、页面、AI 能力及交接；见[方法与内容](../../packages/skills-web-app/README.md) | 默认随主插件交付；统一产品 `yugoo-design@0.1.0` 尚在发布准备中。历史独立内容包的[精确 npm 元数据](https://registry.npmjs.org/@yugoo-design/dsh-design-skills-web-app/0.1.0-beta.2)保留旧版 `dist.tarball`，不作为新产品的首次安装入口。 |
+| Web App（`web_app`） | 软件应用的需求、流程、规则、数据、页面、AI 能力及交接；见[方法与内容](../../packages/skills-web-app/README.md) | 默认随主插件交付；统一产品 `yugoo-design@0.1.0` 已发布到 npm。历史独立内容包的[精确 npm 元数据](https://registry.npmjs.org/@yugoo-design/dsh-design-skills-web-app/0.1.0-beta.2)保留旧版 `dist.tarball`，不作为新产品的首次安装入口。 |
 | 决策与运筹建模（Decision Modeling，`decision_modeling`） | 决策问题、对象、数据、约束、目标、模型、结果与比较；见[内部方法示例](official-kits.md#决策与运筹建模把业务经验带进模型内部验证) | 目前仅供内部验证，未随默认产品和公开源码提供；既有 npm 包暂不作为对外安装入口。内部仍保留源码与独立内容包的组织方式，尚未作为对外套件提供。 |
 
 2026-10-17（UTC）的历史公开下载检查已核对 Web App 内容包 `0.1.0-beta.2` 的精确元数据和完整归档摘要，不代表统一产品已发布。首次使用仍按主插件的[安装步骤](getting-started.md)操作；发行与宿主支持情况见[预览状态](preview-status.md)和[宿主范围](hosts.md)。npm 包版本与 Kit/Bundle 内容版本分别管理。
@@ -126,7 +126,7 @@ npm 用于分发插件和可独立更新的内容包，GitHub 提供公开源码
 与许可证保留，并由宿主明确把已安装目录接入 loader。带运行时代码的包
 仍需独立满足宿主注册、依赖及安全要求。统一产品包名为 `yugoo-design`；
 `@yugoo-design` 下的内部模块与历史 `beta` 记录不构成另一个产品安装入口。
-首个正式目标 `0.1.0` 尚未发布，当前状态见[预览状态](preview-status.md)。
+首个正式版本 `0.1.0` 已发布到 npm，当前状态见[预览状态](preview-status.md)。
 npm 发行版本不改变 Kit/Bundle 的内容版本。要发布自己的包，需确认账号权限，并按独立发布流程操作。获取官方内容时查上方清单；获取其他 Kit 时，由作者提供准确的包名、版本和宿主接入说明。
 
 ## 先保存可恢复的原件

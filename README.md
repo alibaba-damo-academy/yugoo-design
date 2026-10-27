@@ -9,7 +9,7 @@
 [![Qoder CLI](https://img.shields.io/badge/Qoder_CLI-6AD86C)](docs/wiki/hosts.md#qoder-cli)
 [![千问办公 QwenWork](https://img.shields.io/badge/%E5%8D%83%E9%97%AE%E5%8A%9E%E5%85%AC_QwenWork-39D377)](docs/wiki/hosts.md#千问办公-qwenwork)
 [![WorkBuddy](https://img.shields.io/badge/WorkBuddy-00C29A)](docs/wiki/hosts.md#workbuddy)
-[![npm 发布](https://img.shields.io/badge/npm_%E5%8F%91%E5%B8%83-2088FF?logo=githubactions&logoColor=white)](https://github.com/alibaba-damo-academy/yugoo-design/actions/workflows/publish-companion.yml)
+[![npm 发布](https://img.shields.io/badge/npm_%E5%8F%91%E5%B8%83-2088FF?logo=githubactions&logoColor=white)](https://github.com/alibaba-damo-academy/yugoo-design/actions/workflows/publish-product.yml)
 
 **让构思看得见，让细节有把握。**
 
@@ -27,7 +27,7 @@
 
 准备好 **Node.js `>=22.19.0`**，以及一个已配置模型的智能体宿主（Agent Host）。插件沿用宿主已有的模型、会话与工具；安装环境见[开始使用](docs/wiki/getting-started.md)。
 
-统一产品包为 `yugoo-design`，命令行入口为 `yugoo-design`，首个正式版本计划为 `0.1.0`，目前尚未发布到 npm。发布前请先核对[发行状态](docs/wiki/preview-status.md#current-release-and-use)；所需版本不存在时停止安装。下列步骤用于该版本发布后的安装与首次协作。
+统一产品包为 `yugoo-design`，命令行入口为 `yugoo-design`，首个正式版本 `0.1.0` 已发布到 npm。安装前请核对[发行状态](docs/wiki/preview-status.md#current-release-and-use)；所需精确版本不存在时停止安装。下列步骤说明安装与首次协作。
 
 1. **安装插件。** 把[通用安装提示词](packages/companion/HOSTS.md#default-prompt-any-supported-host)复制给当前宿主的智能体（Agent），按它的提示完成授权、导入或启用，以及必要的重启或新建会话。
 

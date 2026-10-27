@@ -47,7 +47,7 @@ GPU support and configurable or user-local model selection remain future work;
 the default product does not provision a GPU environment.
 
 **Current product release:** the npm package and CLI are both `yugoo-design`.
-The first stable target is `0.1.0`, not yet published to npm. Check that exact
+The first stable version, `0.1.0`, is published to npm. Check that exact
 version and integrity before acquiring it; a missing release stops installation.
 The former `@yugoo-design/companion` package and beta channel remain historical
 records, not a compatibility package or the default installation entry.
@@ -93,7 +93,7 @@ ONNXRUNTIME_NODE_INSTALL_CUDA=skip，并保持依赖生命周期脚本开启；
 后续需要取依赖的宿主安装子进程也使用该设置。不要用全局 ignore-scripts
 代替此策略，不修改其他环境值，临时 shell 设置在操作后恢复。
 从 https://registry.npmjs.org 检查所需的 yugoo-design 精确版本和完整性；
-首个正式目标是 0.1.0，目前尚未发布。版本不存在时报告缺包并停止，
+首个正式版本 0.1.0 已发布。版本不存在时报告缺包并停止，
 不回退到旧 @yugoo-design/companion 或 beta 渠道。先检查已有长期保留的安装及回执；
 版本、宿主适配器和运行时满足请求时复用，只需刷新原生材料或重载会话时不重复取包。
 需要新版本时，将它安装到新的独立、长期保留的版本目录。
@@ -126,7 +126,7 @@ host-installation children that acquire dependencies too. Do not substitute
 blanket ignore-scripts, change other environment values or leave a temporary
 shell setting behind.
 Check the required exact yugoo-design version and integrity at
-https://registry.npmjs.org. The first stable target is 0.1.0, not yet published.
+https://registry.npmjs.org. The first stable version, 0.1.0, is published.
 If it is missing, report that result and stop; do not fall back to the former
 @yugoo-design/companion package or beta channel. Inspect retained installations and
 receipts. Reuse a matching version with the required host adapter and runtime;

@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
+import { createServer } from 'node:http'
 import YAML from 'yaml'
 import { DSH_SOURCE_PACKAGES, RELEASE_SOURCE_PACKAGES, packageNameFor, archiveNameFor, REGISTRY, REPOSITORY, integrity, sha256, selectProductRelease, assertDshPublicationMetadata, publicationOrder, registryState, assertLatestPublicationAllowed, preflight, nextPublication, confirmPublication, verifyProductReceipt } from './prepare-product-release.mjs'
 import { readNpmCandidates } from './release-npm-candidates.mjs'
@@ -113,8 +114,102 @@ test('a dependent cannot publish until exact dependencies are visible; retries s
   let waits = 0
   await confirmPublication(rows[1], { ...registry(states), wait: async () => { waits++; states.set(rows[1].name, 'identical') } })
   assert.equal(waits, 1)
-  await assert.rejects(confirmPublication(rows[2], { ...registry(states), attempts: 2, wait: async () => {} }), /stop without republishing/)
+  let elapsed = 0
+  await assert.rejects(confirmPublication(rows[2], { ...registry(states), timeoutMs: 20, pollIntervalMs: 10, now: () => elapsed,
+    wait: async ms => { elapsed += ms } }), /stop without republishing/)
 })
+test('confirmation has one 900 second budget with 15 second polling and stops immediately on identical bytes', async () => {
+  const entry = entries()[0], missing = registry(), waits = []
+  let elapsed = 0
+  await assert.rejects(confirmPublication(entry, { ...missing, now: () => elapsed, wait: async ms => { waits.push(ms); elapsed += ms } }),
+    /within 900000ms; stop without republishing/)
+  assert.equal(elapsed, 900000); assert.equal(missing.calls.length, 60)
+  assert.deepEqual(waits, Array(60).fill(15000))
+  let unexpectedWaits = 0
+  const ready = registry(new Map([[entry.name, 'identical']]))
+  await confirmPublication(entry, { ...ready, wait: async () => { unexpectedWaits++ } })
+  assert.equal(unexpectedWaits, 0); assert.equal(ready.calls.length, 2)
+})
+test('confirmation waits for metadata 404 and then exact-metadata tarball 404 without authorizing a republish', async () => {
+  const entry = entries()[0], states = new Map([[entry.name, 'identical']])
+  const phases = [registry(), registry(states, { tarStatus: 404 }), registry(states)]
+  let phase = 0, elapsed = 0
+  await confirmPublication(entry, { fetchImpl: (url, options) => phases[phase].fetchImpl(url, options), now: () => elapsed,
+    wait: async ms => { elapsed += ms; phase++ } })
+  assert.equal(phase, 2); assert.equal(elapsed, 30000)
+  assert.deepEqual(phases.map(x => x.calls.length), [1, 2, 2])
+  const pending = registry(states, { tarStatus: 404 })
+  await assert.rejects(registryState(entry, pending), /Registry tarball failed: HTTP 404/)
+  await assert.rejects(registryState(entry, { ...pending, allowPendingTarball: true }), /Registry tarball failed: HTTP 404/)
+  await assert.rejects(preflight(entries(), pending), /Registry tarball failed: HTTP 404/)
+  await assert.rejects(nextPublication({ entries: entries() }, 0, { ...pending, allowPendingTarball: true }), /Registry tarball failed: HTTP 404/)
+})
+test('confirmation propagates metadata, permission, transport and raw archive failures without another poll', async () => {
+  const entry = entries()[0], states = new Map([[entry.name, 'identical']])
+  const mutations = [{ status: 403 }, { status: 500 }, { tarStatus: 403 }, { tarStatus: 500 },
+    { name: '@other/package' }, { version: '0.2.0' }, { integrity: integrity(Buffer.from('different')) },
+    { bytes: Buffer.alloc(bytes.length) }, { bytes: bytes.subarray(1) }, { bytes: Buffer.concat([bytes, Buffer.from('extra')]) },
+    { tarball: 'https://example.invalid/archive.tgz' }]
+  for (const mutate of mutations) {
+    let waits = 0
+    await assert.rejects(confirmPublication(entry, { ...registry(states, mutate), wait: async () => { waits++ } }))
+    assert.equal(waits, 0, JSON.stringify(mutate))
+  }
+  for (const kind of ['metadata transport', 'metadata JSON', 'tarball transport', 'tarball stream']) {
+    let waits = 0
+    const normal = registry(states)
+    await assert.rejects(confirmPublication(entry, { wait: async () => { waits++ }, fetchImpl: async (url, options) => {
+      const tarball = String(url).endsWith('.tgz')
+      if (!tarball && kind === 'metadata transport' || tarball && kind === 'tarball transport') throw Error(kind)
+      if (!tarball && kind === 'metadata JSON') return { status: 200, json: async () => { throw Error(kind) } }
+      if (tarball && kind === 'tarball stream') return { status: 200, body: (async function* () { throw Error(kind) })() }
+      return normal.fetchImpl(url, options)
+    } }), new RegExp(kind))
+    assert.equal(waits, 0)
+  }
+  let elapsed = 0, waits = 0
+  await assert.rejects(confirmPublication(entry, { now: () => elapsed, wait: async ms => { elapsed += ms; waits++ },
+    fetchImpl: (url, options) => waits ? registry(states, { integrity: integrity(Buffer.from('changed after pending')) }).fetchImpl(url, options)
+      : registry(states, { tarStatus: 404 }).fetchImpl(url, options) }), /Published integrity differs/)
+  assert.equal(waits, 1, 'An earlier visibility delay cannot turn an integrity failure into another retry')
+})
+test('confirmation charges request time to the budget and clamps the final delay', async () => {
+  let elapsed = 0, reads = 0
+  const waits = []
+  await assert.rejects(confirmPublication(entries()[0], { timeoutMs: 25, pollIntervalMs: 20, now: () => elapsed,
+    fetchImpl: async () => { reads++; elapsed += 10; return { status: 404 } },
+    wait: async ms => { waits.push(ms); elapsed += ms } }), /within 25ms; stop without republishing/)
+  assert.equal(reads, 1); assert.deepEqual(waits, [15]); assert.equal(elapsed, 25)
+  elapsed = 0
+  const ready = registry(new Map([[entries()[0].name, 'identical']]))
+  await assert.rejects(confirmPublication(entries()[0], { timeoutMs: 15, now: () => elapsed,
+    fetchImpl: (url, options) => { elapsed += 10; return ready.fetchImpl(url, options) },
+    wait: async () => { throw Error('No sleep after budget expiration') } }), /within 15ms; stop without republishing/)
+  for (const changes of [{ timeoutMs: 0 }, { timeoutMs: -1 }, { timeoutMs: 900001 }, { timeoutMs: Infinity },
+    { pollIntervalMs: 0 }, { pollIntervalMs: -1 }, { pollIntervalMs: Infinity }]) {
+    await assert.rejects(confirmPublication(entries()[0], { ...changes, fetchImpl: async () => { throw Error('must not fetch') } }), /Confirmation budget|Positive confirmation poll/)
+  }
+})
+for (const phase of ['metadata', 'tarball']) test(`confirmation deadline aborts a real stalled HTTP ${phase} request`, { timeout: 3000 }, async t => {
+  const entry = entries()[0]
+  let requests = 0, waits = 0
+  const server = createServer((request, response) => {
+    requests++
+    if (phase === 'metadata') return // Hold the metadata connection until the deadline aborts it.
+    if (request.url.endsWith('.tgz')) { response.writeHead(200); response.write(bytes.subarray(0, 1)); return }
+    response.setHeader('content-type', 'application/json')
+    response.end(JSON.stringify({ name: entry.name, version: entry.version,
+      dist: { integrity: entry.integrity, tarball: `${REGISTRY}/${entry.name}/-/${entry.sourceName}-${entry.version}.tgz` } }))
+  })
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+  t.after(() => { server.closeAllConnections(); return new Promise(resolve => server.close(resolve)) })
+  const origin = `http://127.0.0.1:${server.address().port}`
+  await assert.rejects(confirmPublication(entry, { timeoutMs: 250, wait: async () => { waits++ },
+    fetchImpl: (url, options) => fetch(origin + new URL(url).pathname, options) }),
+    error => ['AbortError', 'TimeoutError'].includes(error.name))
+  assert.equal(waits, 0); assert.equal(requests, phase === 'metadata' ? 1 : 2)
+})
+
 function packageHistory(entry, versions, latest = versions.at(-1)) {
   return { name: entry.name, versions: Object.fromEntries(versions.map(version => [version, { name: entry.name, version }])),
     'dist-tags': latest === undefined ? {} : { latest } }

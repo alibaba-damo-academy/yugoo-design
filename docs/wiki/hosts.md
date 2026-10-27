@@ -10,7 +10,7 @@
 
 默认主路径是复制[同一段通用安装提示词](../../packages/companion/HOSTS.md#default-prompt-any-supported-host)，让当前宿主的 Agent 选择安装路径；需要时可显式指定宿主。已有符合所需精确版本、适配器和运行条件的安装可以复用，无需为刷新宿主重复取同一包。需要新版本时，再从 npm 获取到独立长期目录。
 
-统一产品包与 CLI 均为 `yugoo-design`，首个正式版本计划为 `0.1.0`，目前尚未发布到 npm。所需版本缺失时停止安装，不回退到旧 `@yugoo-design/companion` 或 `beta` 渠道。历史发行、候选与宿主实测见[发行状态](preview-status.md#current-release-and-use)。取得新包后，仍需在宿主中完成登记或导入、启用和重载，再核对实际版本与面板保存是否可用。
+统一产品包与 CLI 均为 `yugoo-design`，首个正式版本 `0.1.0` 已发布到 npm。所需版本缺失时停止安装，不回退到旧 `@yugoo-design/companion` 或 `beta` 渠道。历史发行、候选与宿主实测见[发行状态](preview-status.md#current-release-and-use)。取得新包后，仍需在宿主中完成登记或导入、启用和重载，再核对实际版本与面板保存是否可用。
 
 日常入口随宿主不同：DSH 使用 `/yugoo` 子命令，Codex 使用 `$yugoo` 或技能选择器，Claude Code/Qoder 使用已安装插件的 `/yugoo-design:yugoo`。千问办公和 WorkBuddy 在原生技能入口选择 `yugoo`，再向 Agent 用自然语言提出项目操作；不要把 DSH 的整套斜杠参数当作所有宿主都能直接解析的命令。
 

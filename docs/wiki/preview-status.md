@@ -6,9 +6,11 @@ Check the release and known host limits before installing. Setup steps are in
 
 ## Current release and use
 
-**Release preparation, 2026-10-27:** the unified public npm package is
-`yugoo-design`, its CLI is `yugoo-design`, and the first stable target is `0.1.0`.
-This package has not been published; its registry entry is unavailable. The
+**Registry verification, 2026-10-27 (UTC):** `yugoo-design@0.1.0` and all ten
+native DSH packages are published. `latest` selects `0.1.0` for all eleven
+packages, and their archive integrity matches the original release artifacts.
+The [product release workflow](https://github.com/alibaba-damo-academy/yugoo-design/actions/runs/40548945899)
+confirmed the published archives and `latest`. The product CLI is `yugoo-design`. The
 [shared installation prompt](../../packages/companion/HOSTS.md#default-prompt-any-supported-host)
 checks the required exact version and integrity before acquisition. Stop when
 that version is missing. The old `@yugoo-design/companion` package and its `beta`
@@ -30,7 +32,8 @@ described separately below.
 `/yugoo migrate <source-project-path>`. Use the acquired package's own help and
 release manifest; later source changes do not update an installed plugin.
 
-Product npm versions, native suite versions and Kit/Bundle pins are separate.
+The product package and all ten native DSH components share one release
+version. Kit/Bundle pins remain independent.
 Preserve the old runtime and receipts when preparing an owned update; the
 unified name does not silently migrate an old registration or Design Project.
 
