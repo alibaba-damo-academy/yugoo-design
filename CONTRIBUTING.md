@@ -221,11 +221,12 @@ ordinary `main` pushes publish neither chain. For preparation only, choose
 unchecked. The optional version input can only confirm the tracked value.
 A publication retry must select the same matching DSH tag with **publish** enabled.
 Branches, mismatched versions and tags outside reviewed `main` history fail.
-To resume in a new run, enter both **resume_run_id** and **resume_artifact_id**
-from the original run's artifact summary. Re-running the same run automatically
-selects its one earlier prepared artifact. Missing, expired or ambiguous artifacts
-fail; neither recovery path rebuilds or repacks the packages. A new preparation
-without an original artifact requires all ten exact versions to be absent.
+For a retry, preserve the original producing run and start a new run. Enter both
+**resume_run_id** and **resume_artifact_id** from the original run's artifact
+summary. Do not select **Re-run all jobs** on the producing run: its original
+artifact may become unavailable. Missing, expired or ambiguous artifacts fail;
+recovery never rebuilds or repacks the packages. A new preparation without an
+original artifact requires all ten exact versions to be absent.
 
 The same Node, pnpm, npm, public lock-resolution and native-input policies described
 above apply. CI runs each existing normal package build once, with optional
