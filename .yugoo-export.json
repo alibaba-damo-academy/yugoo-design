@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "c56d6816f42026efd0670f3b96ce8c75a59a3fbe",
+  "revision": "cfba483050b696e52dd55e27512b89a29278521a",
   "policySha256": "076d5e9b5a483b0cad3b7a7bf3885faef9d6050dab7a919268aa573bdf1fae91",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -8800,7 +8800,7 @@
       "mode": "100644"
     },
     "scripts/npm-release-tags.test.mjs": {
-      "sha256": "59cb8346f6db10b9f1cfb5e729b62fd55ab0b7754a5892f0a4b4ab3865aabeb4",
+      "sha256": "6d5f55bb4c72e052e5d9959c88b95e825259536eec311da5fe86684f36d9b28f",
       "mode": "100644"
     },
     "scripts/official-dsh-json-input.mjs": {

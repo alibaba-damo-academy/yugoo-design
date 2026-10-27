@@ -38,6 +38,14 @@ test('only the unified official publish job may publish or update stable latest'
  const steps=flow.jobs.publish.steps,index=steps.findIndex(x=>x.run?.includes('npm dist-tag add'))
  assert.ok(index>steps.findIndex(x=>x.run?.includes('prepare-product-release.mjs complete')));assert.equal(steps[index].if,"github.job == 'publish'")
  assert.equal(steps[index].env.RELEASE_CHAIN,'product');assert.match(steps[index].run,/npm-release-tags.mjs confirm/)
- assert.doesNotMatch(text,/--tag beta|dist-tag rm|NPM_TOKEN|NODE_AUTH_TOKEN|workflow_call/)
+ assert.doesNotMatch(text,/--tag beta|dist-tag rm|secrets\.NPM_TOKEN\b|workflow_call/)
+ const authenticatedSteps=steps.filter(step=>step.env?.NODE_AUTH_TOKEN)
+ assert.equal(authenticatedSteps.length,2)
+ assert.equal(flow.jobs.publish.env.NODE_AUTH_TOKEN,undefined)
+ for(const step of authenticatedSteps){
+  assert.equal(step.if,"github.job == 'publish'")
+  assert.equal(step.env.NODE_AUTH_TOKEN,"${{ env.BOOTSTRAP_NPM == 'true' && secrets.NPM_BOOTSTRAP_TOKEN || '' }}")
+  assert.match(step.run,/npm (?:publish|dist-tag add)/)
+ }
  const helper=await readFile(new URL('./npm-release-tags.mjs',import.meta.url),'utf8');assert.doesNotMatch(helper,/spawnSync|dist-tag add|execFileSync\([^\n]*npm/)
 })
