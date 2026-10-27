@@ -168,6 +168,9 @@
     }
   ],
   "rules": [
+    {"kind": "file", "path": "scripts/npm-release-tags.mjs", "action": "include", "reason": "Read-only official npm latest planning and public-archive verification after complete publication; selects the current highest public semantic version including beta, preserves beta and refuses rollback. All dist-tag mutations remain only in official OIDC Actions jobs."},
+    {"kind": "file", "path": "scripts/npm-release-tags.test.mjs", "action": "include", "reason": "Synthetic focused negative cases for prerelease latest selection, old-tag retries, missing publication and beta, actual public Companion bytes, ten-archive completion and publish-only workflow tag mutations. No registry writes or account changes."},
+
     {"kind": "file", "path": "scripts/dsh-release-observations.test.mjs", "action": "include", "reason": "Synthetic current-build receipt and source/material association regressions, including changed component metadata, forged receipt/source and stale output refusal; no full build, installed Host or license acceptance claim."},
     {"kind": "file", "path": "scripts/dsh-release-observations.mjs", "action": "include", "reason": "Bounded observations from current normal build receipts, actual module metadata and decoded font bytes; maintained source materials remain authoritative and unassociated prior components remain historical; no complete license inventory claim."},
     {"kind": "file", "path": "scripts/dsh-release-ci.test.mjs", "action": "include", "reason": "Synthetic focused regressions for DSH exact version/tag, ten-package DAG, fixed-source workflow routing, partial publication retries and fail-closed actual registry bytes; no real registry write or Host acceptance."},
@@ -528,7 +531,7 @@
       "kind": "file",
       "path": ".github/workflows/publish-companion.yml",
       "action": "include",
-      "reason": "Companion-only OIDC build/pack/publication workflow: matching Git beta version tags from reviewed main history publish after same-archive Node22/24 consumer checks; manual build-only and tagged publication retry remain explicit. No stored token, Host configuration or DSH chain publication."
+      "reason": "Companion-only OIDC build/pack/publication workflow: matching Git beta version tags from reviewed main history publish after same-archive Node22/24 consumer checks; manual build-only and tagged publication retry remain explicit. Guarded OIDC latest synchronization follows verified publication and preserves beta; no stored token, Host configuration or DSH chain publication."
     },
     {
       "kind": "file",

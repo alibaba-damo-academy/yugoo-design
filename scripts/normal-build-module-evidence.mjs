@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { captureOutputModuleMap, verifyOutputModuleFiles } from './companion-output-module-map.mjs'
 
 const workspace = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+export const isDeclarationOutput = path => /\.d\.[cm]?ts$/u.test(path)
 
 /** Observe the existing normal configs without changing their entries or bundling. */
 export function withNormalBuildEvidence(label, configs) {
@@ -40,7 +41,15 @@ export function normalBuildModuleEvidence(label, {
       const snapshot = captureOutputModuleMap(label, chunks, { workspaceRoot: root, outputRoot: resolve(options.outDir) })
       const verified = await verifyOutputModuleFiles(snapshot)
       if (hashModuleInputs) {
-        const ids = new Set(snapshot.outputs.flatMap(output => (output.modules ?? [])
+        // The dts plugin registers synthetic declaration module IDs in its
+        // own in-memory map. Their absolute-looking IDs are not disk inputs.
+        // Keep declaration output bytes/membership, without inventing source
+        // hashes or ignoring a missing ID used by a runtime chunk.
+        verified.declarationOnlyInputs = snapshot.outputs.filter(output => isDeclarationOutput(output.fileName))
+          .map(output => ({ output: output.fileName, scope: 'declaration-only-bundler-module-ids',
+            physicalInputIdentityVerified: false, runtimeInputHashing: 'not-applicable',
+            modules: (output.modules ?? []).map(module => ({ id: module.id, rawId: module.rawId })) }))
+        const ids = new Set(snapshot.outputs.filter(output => !isDeclarationOutput(output.fileName)).flatMap(output => (output.modules ?? [])
           .filter(module => module.renderedLength > 0).map(module => module.rawId))
           .filter(id => isAbsolute(id) && !id.includes('\0') && !id.includes('?')))
         verified.inputFileSha256 = {}

@@ -6,6 +6,7 @@ import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { verifyOutputModuleFiles } from './companion-output-module-map.mjs'
 import { projectDistributionCode } from './assemble-dsh-distribution.mjs'
 import { FIRST_PARTY_MATERIAL, readCurrentFirstPartyIdentity } from './dsh-distribution-materials.mjs'
+import { isDeclarationOutput } from './normal-build-module-evidence.mjs'
 
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 const safe = path => typeof path === 'string' && path && !isAbsolute(path) && !path.includes('\\') && !path.split('/').some(x => !x || x === '.' || x === '..')
@@ -111,7 +112,7 @@ export async function observeDshBuild({ workspace, report, evidenceDirectory, so
       : sourceName === 'dsh-design-system-dsh' ? [] : (await filesUnder(join(packageRoot, 'lib'))).map(path => 'lib/' + path)
     for (const path of outputFiles) {
       assert.ok(safe(path))
-      if (path.endsWith('.map') || path.endsWith('.d.ts') || /pica-static-workers-(?:client|interpreter)\.json$/u.test(path)) continue
+      if (path.endsWith('.map') || isDeclarationOutput(path) || /pica-static-workers-(?:client|interpreter)\.json$/u.test(path)) continue
       const bytes = await readFile(join(packageRoot, path))
       const projected = /\.(?:[cm]?js|d\.ts)$/u.test(path) ? Buffer.from(projectDistributionCode(bytes.toString('utf8'), report.mapping, path).code) : bytes
       hashes[path] = sha(projected); normalHashes[path] = sha(bytes)

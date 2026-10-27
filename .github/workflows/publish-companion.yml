@@ -55,7 +55,6 @@ jobs:
           CHECK_RELEASE_PUBLISHED: ${{ github.job == 'publish' }}
         run: node scripts/prepare-companion-release.mjs select
       - name: Install the explicit OIDC-capable npm CLI
-        if: steps.release.outputs.skip != 'true'
         run: npm install --global npm@11.21.0 --registry=https://registry.npmjs.org
       - name: Require a version tag for an explicitly requested publication
         if: inputs.publish == true && !startsWith(github.ref, 'refs/tags/v')
@@ -63,7 +62,7 @@ jobs:
           echo 'Companion publication requires a matching vX.Y.Z-beta.N tag.' >&2
           exit 1
       - name: Require the tagged source to belong to reviewed main history
-        if: github.job == 'publish' && steps.release.outputs.skip != 'true'
+        if: github.job == 'publish'
         run: git merge-base --is-ancestor HEAD origin/main
       - name: Resolve the public source lock and install with reviewed build permissions
         if: steps.release.outputs.skip != 'true'
@@ -77,7 +76,7 @@ jobs:
           pnpm install --frozen-lockfile --strict-peer-dependencies --registry=https://registry.npmjs.org
       - name: Check release guards
         if: steps.release.outputs.skip != 'true'
-        run: node --test scripts/companion-release-ci.test.mjs scripts/known-browser-loader-proof.test.mjs scripts/companion-authoring-material.test.mjs
+        run: node --test scripts/npm-release-tags.test.mjs scripts/companion-release-ci.test.mjs scripts/known-browser-loader-proof.test.mjs scripts/companion-authoring-material.test.mjs
       - name: Build the current source and pack the exact Companion candidate
         if: steps.release.outputs.skip != 'true'
         id: prepare
@@ -120,6 +119,27 @@ jobs:
         env:
           RELEASE_TARBALL: ${{ steps.verify.outputs.tarball }}
         run: npm publish "$RELEASE_TARBALL" --access public --tag beta --registry=https://registry.npmjs.org
+
+      - name: Verify publication and advance latest while retaining beta
+        if: github.job == 'publish'
+        env:
+          RELEASE_CHAIN: companion
+          RELEASE_REF: ${{ github.ref }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+          RELEASE_RECEIPT: ${{ runner.temp }}/companion-release/release-receipt.json
+          SKIP_RELEASE_BUILD: ${{ steps.release.outputs.skip }}
+        run: |
+          export NPM_CLI="$(readlink -f "$(command -v npm)")"
+          plan_file="$RUNNER_TEMP/companion-latest.json"
+          node scripts/npm-release-tags.mjs plan 0 > "$plan_file"
+          action="$(jq -er .action "$plan_file")"
+          if [ "$action" = update ]; then
+            version="$(jq -er .latestVersion "$plan_file")"
+            npm dist-tag add "@yugoo-design/companion@$version" latest --registry=https://registry.npmjs.org
+          else
+            test "$action" = skip
+          fi
+          node scripts/npm-release-tags.mjs confirm 0 "$plan_file"
 
   publish:
     if: github.repository == 'alibaba-damo-academy/yugoo-design' && startsWith(github.ref, 'refs/tags/v') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' && inputs.publish == true)

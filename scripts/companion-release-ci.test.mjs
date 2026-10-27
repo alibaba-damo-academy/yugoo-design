@@ -203,7 +203,7 @@ test('only matching beta tag pushes publish automatically; manual dry-run and ex
   assert.equal(rejection.if, "inputs.publish == true && !startsWith(github.ref, 'refs/tags/v')")
   assert.match(rejection.run, /exit 1/u)
   const ancestry = job.steps.find(step => step.run === 'git merge-base --is-ancestor HEAD origin/main')
-  assert.equal(ancestry.if, "github.job == 'publish' && steps.release.outputs.skip != 'true'")
+  assert.equal(ancestry.if, "github.job == 'publish'")
   assert.equal(job.steps.find(step => step.uses?.startsWith('actions/checkout@')).with['fetch-depth'], 0)
   const install = job.steps.find(step => step.run?.includes('pnpm install --frozen-lockfile'))
   assert.match(install.run, /pnpm install --lockfile-only --strict-peer-dependencies --registry=https:\/\/registry.npmjs.org/u)
@@ -223,7 +223,11 @@ test('only matching beta tag pushes publish automatically; manual dry-run and ex
   assert.equal(selector.env.EXPECTED_RELEASE_VERSION, '${{ inputs.version }}')
   assert.equal(selector.env.CHECK_RELEASE_PUBLISHED, "${{ github.job == 'publish' }}")
   assert.ok(job.steps.indexOf(selector) < job.steps.indexOf(install))
-  for (const step of job.steps.filter(step => step.run && ![selector, rejection, ancestry, publish[0]].includes(step))) {
+  const npmInstall = job.steps.find(step => step.run?.includes('npm install --global npm@11.21.0'))
+  assert.equal(npmInstall.if, undefined, 'existing-release retries still need OIDC-capable npm for latest')
+  const latest = job.steps.find(step => step.run?.includes('npm-release-tags.mjs plan'))
+  assert.equal(latest.if, "github.job == 'publish'")
+  for (const step of job.steps.filter(step => step.run && ![selector, rejection, ancestry, publish[0], npmInstall, latest].includes(step))) {
     assert.equal(step.if, "steps.release.outputs.skip != 'true'", 'published versions skip all preparation/install steps')
   }
   assert.ok(job.steps.indexOf(rejection) < job.steps.indexOf(install))

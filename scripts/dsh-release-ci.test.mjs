@@ -118,7 +118,7 @@ test('DSH workflow has independent triggers, fixed-source fences and GHA-only OI
   assert.match(steps[publish].run, /npm publish "\$tarball" --ignore-scripts --access public --tag beta --registry=https:\/\/registry.npmjs.org/)
   assert.match(steps[publish].run, /prepare-dsh-release.mjs next/)
   assert.match(steps[publish].run, /prepare-dsh-release.mjs confirm/)
-  assert.doesNotMatch(text, /NODE_AUTH_TOKEN|NPM_TOKEN|dist-tag|unpublish|continue-on-error/)
+  assert.doesNotMatch(text, /NODE_AUTH_TOKEN|NPM_TOKEN|dist-tag rm|unpublish|continue-on-error/)
   const companion = YAML.parse(await readFile(new URL('../.github/workflows/publish-companion.yml', import.meta.url), 'utf8'))
   assert.deepEqual(companion.on.push.tags, ['v*-beta.*'])
   assert.match(companion.jobs.publish.steps.find(x => x.run?.includes('npm publish')).run, /RELEASE_TARBALL/)

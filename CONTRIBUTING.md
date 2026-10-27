@@ -165,7 +165,8 @@ the existing source/material gate.
 Before the first authorized publication, an npm package maintainer configures
 its **Trusted Publisher** for GitHub organization `alibaba-damo-academy`,
 repository `yugoo-design`, workflow filename `publish-companion.yml` (filename
-only), and no environment name. Enable direct **npm publish** in Allowed actions;
+only), and no environment name. Enable both direct **npm publish** and
+**Allow npm dist-tag** in Allowed actions. These are independent permissions;
 new connections otherwise default to staged publishing. The manual dry-run job
 has no OIDC permission. A matching release-tag push or explicit publication retry
 against that tag in the public repository selects the publication job. The job
@@ -184,9 +185,15 @@ in the package template, never patched into a prepared archive.
 Both automatic and manually requested publication build, check and publish only
 the exact prepared tarball with the `beta` tag through OIDC. An already published
 version is reported and skipped; a registry/network failure is not treated as an
-unused version. The workflow does not move `latest`,
-run a separate dist-tag command, publish workspace packages, or configure real
-Host accounts. npm can supply provenance automatically for eligible public
+unused version. After publication, CI verifies the public archive's actual SRI
+against the prepared receipt, then advances `latest` to the highest currently
+published semantic version, including beta releases, while retaining `beta`.
+An existing-publication retry verifies public bytes without rebuilding or
+republishing and can finish the tag synchronization. It still passes the source,
+main-history and matching-tag fences and uses npm `11.21.0`. An old tag cannot
+select a version below a higher public release. Only the official publish job
+runs the guarded `npm dist-tag add`; dry-runs never write registry tags.
+The workflow does not publish workspace packages or configure real Host accounts. npm can supply provenance automatically for eligible public
 repositories; OIDC on a private repository does not establish public attestation.
 Provenance does not prove independent native binary reproduction or complete
 product acceptance.
@@ -212,7 +219,9 @@ Branches, mismatched versions and tags outside reviewed `main` history fail.
 The same Node, pnpm, npm, public lock-resolution and native-input policies described
 above apply. CI runs each existing normal package build once, with optional
 module observation hooks, then passes an explicit current observation receipt
-to the existing ten-package assembler. The maintained material manifest still
+to the existing ten-package assembler. Declaration output bytes remain verified;
+dts plugin module IDs are recorded as declaration-only identities and do not
+receive physical runtime-source hashes. Missing runtime inputs still fail. The maintained material manifest still
 owns component identities, original material hashes, fonts and prior observations.
 Current raw output hashes and component/font associations come from that build;
 third-party component metadata changes fail rather than inheriting an old
@@ -234,12 +243,22 @@ only the verified tarballs and `--tag beta`. Dependencies must be visible with
 matching bytes before a dependent package is published; every publication and
 the final complete set are checked again. A retry that builds different bytes
 fails safely and requires a reviewed input/version decision; it never overwrites,
-unpublishes, moves a separate dist-tag or blindly skips an existing version.
+unpublishes or blindly skips an existing version. Only after the complete ten
+archive verification succeeds does the publish job synchronize each package's
+`latest` to its highest currently published semantic version, including beta,
+using the guarded planner and `npm dist-tag add`. It preserves `beta` and checks
+the resulting tags. Old-tag retries select the current public maximum, so they
+do not roll `latest` back to the older source version. The workflow concurrency
+group serializes official releases and retries for this package chain; dry-runs
+perform no tag mutation.
 
 For **each of the ten scoped packages**, its npm maintainer must verify the
 Trusted Publisher identity: GitHub organization `alibaba-damo-academy`, repository
 `yugoo-design`, workflow filename **`publish-dsh.yml`**, no environment name, and
-Allowed actions including direct **npm publish**. The publish job has
+Allowed actions including direct **npm publish** and **Allow npm dist-tag**.
+OIDC dist-tag management requires npm `11.21.0` or later in the npm 11 series;
+the workflow pins `11.21.0`. Publish permission alone does not grant tag access.
+The publish job has
 `contents: read` and `id-token: write`; the dry-run job has no OIDC permission.
 No stored npm token is used. Preserve Companion's existing
 `publish-companion.yml` identity. An inaccessible trust listing does not prove
