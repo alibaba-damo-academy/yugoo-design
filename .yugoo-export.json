@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": "dd6d1a65ccdfbbb5fa61cb87b3a17c40e0976182",
-  "policySha256": "2295ca00457ef5ee2444fd9425d6497d51818065e83f978d86ac0a52e4a90173",
+  "revision": "7db7b3df4c3265d4b9d6b981473350e5390d8e7e",
+  "policySha256": "b6d646a05b6ea9507c667721c242e85c0296562a3c23dde8b29f2e936df27107",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
       "sha256": "9689903cd86839d8805125d1c199b38ea0eb828e5171da23ca178a5c3ec20866",
@@ -151,6 +151,10 @@
       "sha256": "baf0ef196bf86666fda7698ff65bc3d4f2efe848e9e44e6bdbd8fdc946635878",
       "mode": "100644"
     },
+    "docs/images/README.md": {
+      "sha256": "d7c4276c8daeb74b738b395d26d6ac70a1af2e234c52bf48e94151283090e214",
+      "mode": "100644"
+    },
     "docs/images/design-panel-page-design.png": {
       "sha256": "c3450580ee7ae4950f272ccab01575212b1c43c94389c0fe999116a4be79fd60",
       "mode": "100644"
@@ -219,6 +223,14 @@
       "sha256": "e28025594d0f31e86cbd02655e46567d87d1d2ed41c953b5d24e5646e49c6791",
       "mode": "100644"
     },
+    "docs/images/yugoo-design-icon.png": {
+      "sha256": "679b5dd73437ad8ec6f381b6a12cd468acd18899f5c943c9925cf8489f5418a1",
+      "mode": "100644"
+    },
+    "docs/images/yugoo-design-icon.svg": {
+      "sha256": "634cc6f41969779cc1e373f8c0ff593a88db2725f8853d5c73a9028bc0aff43a",
+      "mode": "100644"
+    },
     "docs/panel-uiux-standard.md": {
       "sha256": "7aec1b5fc9b7b2870bc046a5f74c00abc311f4eb9fee575e26d063cb6d3254c3",
       "mode": "100644"
@@ -236,7 +248,7 @@
       "mode": "100644"
     },
     "docs/public-document-sync.md": {
-      "sha256": "69830106abbc92eccd845c192ec5b0802986f4fddcf01ffe14920a1fd70d2709",
+      "sha256": "f52d75c74d1fa5fa1333039fcd32a7770d6b8575dc405bf9b29e150398d4cb99",
       "mode": "100644"
     },
     "docs/standalone-roadmap.md": {
@@ -8540,7 +8552,7 @@
       "mode": "100644"
     },
     "release/product-package-template.json": {
-      "sha256": "a69fb224e3bc9e948bb54d21423130d87e49c769a138fcb98b2a21d48ff4dee3",
+      "sha256": "a943a805833d039aca02a1710c703e59859c098cee07e52c9f75cf4edb847dbf",
       "mode": "100644"
     },
     "release/product.json": {
@@ -8552,7 +8564,7 @@
       "mode": "100644"
     },
     "release/public-source-policy.json": {
-      "sha256": "dc228c49907e80ca66af94052a51e4c0f7b0e1f425a47c0f41b2494b8d8e28ea",
+      "sha256": "ea668156f11a93739113be11e5d56a9513580b3e89cb78a922aada0ef9b3e552",
       "mode": "100644"
     },
     "release/public-source-test-selection.json": {
@@ -8561,6 +8573,10 @@
     },
     "release/release-hosts.json": {
       "sha256": "51141ede5543030d52e8b031de8b40585eb8e42dd3e0179e534edaebb3d4e38a",
+      "mode": "100644"
+    },
+    "screenshots.json": {
+      "sha256": "87032e711d24553b2e95c1b1620689ce60b0fca674427b407dbc4dc373ced061",
       "mode": "100644"
     },
     "scripts/assemble-dsh-distribution.mjs": {

@@ -5,6 +5,23 @@
     "type": "git",
     "url": "git+https://github.com/alibaba-damo-academy/yugoo-design.git"
   },
+  "homepage": "https://yugoo.org",
+  "bugs": {
+    "url": "https://github.com/alibaba-damo-academy/yugoo-design/issues"
+  },
+  "keywords": [
+    "yugoo-design",
+    "ai-agents",
+    "ideation",
+    "design-framework",
+    "interactive-panels",
+    "human-ai-collaboration",
+    "deepseek-harness",
+    "dsh-plugin",
+    "codex",
+    "qwenwork",
+    "workbuddy"
+  ],
   "type": "module",
   "engines": {
     "node": ">=22.19.0"

@@ -2,6 +2,15 @@
   "version": 1,
   "reviewedFiles": [
     {
+      "path": "docs/images/yugoo-design-icon.png",
+      "oid": "0ba8ffea66371794b3fa71b4e5033b54b29c5ec2",
+      "bytes": 4733,
+      "findings": [
+        "binary_manual_review"
+      ],
+      "reason": "Manually reviewed the exact 256px PNG rendered unchanged from the existing yugoo.org SVG Y mark: purple #7C5AF6 on warm ivory #FAF7F1, with original geometry and no added effects. Reuses the website brand asset from source revision 442b0f912c45eb3e4b1e135cad0879e7d2f91516; no screenshot, private data or runtime acceptance claim."
+    },
+    {
       "path": "docs/images/readme-smart-questions.gif",
       "oid": "be8858cbddf4d3b9a881a0cc2be62b95560e38e4",
       "bytes": 4371620,
@@ -170,6 +179,10 @@
   "rules": [
     {"kind": "file", "path": "packages/companion/src/npm-embedding-preparation.mjs", "action": "include", "reason": "Product CLI preparation of the existing fixed local embedding model: offline resource inspection, explicit download using the shared owner and optional synthetic CPU inference; no host registration, project writes or model credential changes."},
     {"kind": "file", "path": "packages/companion/test/npm-embedding-preparation.test.mjs", "action": "include", "reason": "Isolated installation-readiness regressions distinguishing missing or invalid model resources, explicit preparation, CPU inference and project semantic readiness; no actual host acceptance claim."},
+    {"kind": "file", "path": "screenshots.json", "action": "include", "reason": "Maintained root catalog screenshot declaration selects three unchanged, already reviewed real DSH workspace PNGs; does not add another package entry or claim native installation acceptance."},
+    {"kind": "file", "path": "docs/images/README.md", "action": "include", "reason": "Public bilingual image and brand-mark provenance, screenshot purposes and Chinese-UI candidate scope; retains existing public document paths and source authority."},
+    {"kind": "file", "path": "docs/images/yugoo-design-icon.svg", "action": "include", "reason": "Existing yugoo.org purple Y brand mark, retained unchanged as the editable vector source for the catalog bitmap; no third-party image or new product identity."},
+    {"kind": "file", "path": "docs/images/yugoo-design-icon.png", "action": "include", "reason": "Exact manually reviewed 256px raster rendering of the maintained SVG brand mark for catalog icon compatibility; provenance and colors are documented beside the asset."},
     {"kind": "file", "path": "scripts/product-release.mjs", "action": "include", "reason": "Dependency-free product identity, stable version, tag selection and generated exact DSH host mapping guards."},
     {"kind": "file", "path": "scripts/product-release.test.mjs", "action": "include", "reason": "Focused stable product identity, exact tag and generated host version regression cases; no registry writes or release acceptance."},
     {"kind": "file", "path": "release/product-package-template.json", "action": "include", "reason": "Maintained product npm package metadata and runtime dependencies; exact identity and version are supplied from the product manifest, not the historical review fixture."},
