@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "967d8fbf2effd1f1caef0fe75d5148049f434fda",
+  "revision": "dd6d1a65ccdfbbb5fa61cb87b3a17c40e0976182",
   "policySha256": "2295ca00457ef5ee2444fd9425d6497d51818065e83f978d86ac0a52e4a90173",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -300,7 +300,7 @@
       "mode": "100644"
     },
     "docs/wiki/preview-status.md": {
-      "sha256": "ec4ce0df7da7f163bd745c0a9c1b73a2e4a0b3a687e54f4ef6e27fdedd30fe0e",
+      "sha256": "c3f13f529bdb750cd3c7378c38fc0e6a6c0da606ca1c16fa48b7c93950464c3c",
       "mode": "100644"
     },
     "docs/wiki/project-files.md": {

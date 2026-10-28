@@ -6,16 +6,15 @@ Check the release and known host limits before installing. Setup steps are in
 
 ## Current release and use
 
-**Registry verification, 2026-10-27 (UTC):** `yugoo-design@0.1.0` and all ten
-native DSH packages are published. `latest` selects `0.1.0` for all eleven
-packages, and their archive integrity matches the original release artifacts.
-The [product release workflow](https://github.com/alibaba-damo-academy/yugoo-design/actions/runs/40548945899)
-confirmed the published archives and `latest`. The product CLI is `yugoo-design`. The
-[shared installation prompt](../../packages/companion/HOSTS.md#default-prompt-any-supported-host)
-checks the required exact version and integrity before acquisition. Stop when
-that version is missing. The old `@yugoo-design/companion` package and its `beta`
-channel are historical distribution records, not the default entry or a
-compatibility package for this release.
+Install the unified `yugoo-design` package using the
+[shared installation prompt](../../packages/companion/HOSTS.md#default-prompt-any-supported-host).
+For the latest stable release, the Agent resolves npm's `latest` once to an exact
+stable version and integrity, then uses that version throughout installation.
+An explicitly requested version takes precedence; stop when it is unavailable.
+See the [published releases](https://github.com/alibaba-damo-academy/yugoo-design/releases)
+for release notes. The product CLI is `yugoo-design`.
+The old `@yugoo-design/companion` package and its `beta` channel are historical
+distribution records, not the default entry or a compatibility package.
 
 Existing Mac acceptance covers Codex Desktop on macOS arm64: local candidate
 installation/update, Web App generation, meaningful Panel editing and saving,
@@ -41,6 +40,15 @@ unified name does not silently migrate an old registration or Design Project.
 
 The following records retain their dates, candidates and failures. They describe
 what was checked then; current acquisition starts from the section above.
+
+### Unified product registry checkpoint, 2026-10-27
+
+At this checkpoint, `yugoo-design@0.1.0` and all ten native DSH packages were
+published. `latest` selected `0.1.0` for all eleven packages, and their archive
+integrity matched the original release artifacts. The
+[product release workflow](https://github.com/alibaba-damo-academy/yugoo-design/actions/runs/40548945899)
+confirmed the published archives and `latest`. This dated record does not select
+the version for a new installation; use the current installation prompt above.
 
 ### Companion registry and use checkpoint, 2026-10-21
 
