@@ -4,9 +4,9 @@
 
 The [SVG mark](yugoo-design-icon.svg) reuses the Y mark from the [Yugoo Design website](https://yugoo.org/), with purple `#7C5AF6` on warm ivory `#FAF7F1`. The [256 × 256 PNG](yugoo-design-icon.png) renders the SVG unchanged for plugin catalogs that require a bitmap.
 
-根目录的 [`screenshots.json`](../../screenshots.json)选取以下真实 DeepSeek Harness（DSH）工作区截图，保留对话与设计面板（Design Panel）的协作上下文：
+原生插件目录的 [`screenshots.json`](../../packages/dsh/screenshots.json)选取以下真实 DeepSeek Harness（DSH）工作区截图，保留对话与设计面板（Design Panel）的协作上下文。索引引用固定公开提交中的原图：
 
-The root [`screenshots.json`](../../screenshots.json) selects these actual DeepSeek Harness (DSH) workspace captures, preserving the collaboration context between the conversation and Design Panels:
+The native plugin's [`screenshots.json`](../../packages/dsh/screenshots.json) selects these actual DeepSeek Harness (DSH) workspace captures, preserving the collaboration context between the conversation and Design Panels. The index references the original images at a fixed public commit:
 
 | 图片 / Image | 内容 / Content |
 | --- | --- |

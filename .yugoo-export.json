@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": "7db7b3df4c3265d4b9d6b981473350e5390d8e7e",
-  "policySha256": "b6d646a05b6ea9507c667721c242e85c0296562a3c23dde8b29f2e936df27107",
+  "revision": "082b82f4c7f31a340d8e595efe0e7b1b43d3f9e4",
+  "policySha256": "4255690ab25e5707e6e37322b5104af9d79ddb645b400f5257c4cb75ba4b9091",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
       "sha256": "9689903cd86839d8805125d1c199b38ea0eb828e5171da23ca178a5c3ec20866",
@@ -152,7 +152,7 @@
       "mode": "100644"
     },
     "docs/images/README.md": {
-      "sha256": "d7c4276c8daeb74b738b395d26d6ac70a1af2e234c52bf48e94151283090e214",
+      "sha256": "3ad4508c2b072a7f0b2be7df9f9f5c0591767f2c0eb9a5135b1ae909b2d4a3f4",
       "mode": "100644"
     },
     "docs/images/design-panel-page-design.png": {
@@ -248,7 +248,7 @@
       "mode": "100644"
     },
     "docs/public-document-sync.md": {
-      "sha256": "f52d75c74d1fa5fa1333039fcd32a7770d6b8575dc405bf9b29e150398d4cb99",
+      "sha256": "b0fff936df78c5d5fe0a6fcb76b236b45ec607196993250267a75dae90c83d5b",
       "mode": "100644"
     },
     "docs/standalone-roadmap.md": {
@@ -3549,6 +3549,10 @@
     },
     "packages/dsh/index.js": {
       "sha256": "6ec94e30318c4c9bf77fbdfe4d8b768007cd189a3fde40fa0a5b8dbad55fa283",
+      "mode": "100644"
+    },
+    "packages/dsh/screenshots.json": {
+      "sha256": "0a0c5ab242914682a37c32f5681945cf334b5f247179b3cb64e0908936fd872d",
       "mode": "100644"
     },
     "packages/dsh/tsconfig.json": {
@@ -8564,7 +8568,7 @@
       "mode": "100644"
     },
     "release/public-source-policy.json": {
-      "sha256": "ea668156f11a93739113be11e5d56a9513580b3e89cb78a922aada0ef9b3e552",
+      "sha256": "410a9ac38b04e6d04705ae6ffac5ec1d466ba6725c250a1c5be2e0ed4049c85f",
       "mode": "100644"
     },
     "release/public-source-test-selection.json": {
@@ -8573,10 +8577,6 @@
     },
     "release/release-hosts.json": {
       "sha256": "51141ede5543030d52e8b031de8b40585eb8e42dd3e0179e534edaebb3d4e38a",
-      "mode": "100644"
-    },
-    "screenshots.json": {
-      "sha256": "87032e711d24553b2e95c1b1620689ce60b0fca674427b407dbc4dc373ced061",
       "mode": "100644"
     },
     "scripts/assemble-dsh-distribution.mjs": {
