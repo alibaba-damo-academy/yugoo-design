@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "082b82f4c7f31a340d8e595efe0e7b1b43d3f9e4",
+  "revision": "9491269ced79015fd6ca21b1c923b7427776fe1b",
   "policySha256": "4255690ab25e5707e6e37322b5104af9d79ddb645b400f5257c4cb75ba4b9091",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -88,7 +88,7 @@
       "mode": "100644"
     },
     "CONTRIBUTING.md": {
-      "sha256": "d91e61a5c7ea07ddfdf066e2dcfa10d0294017951069f7513341e3d81c8d424f",
+      "sha256": "c04a787aa5bc51b4788fd86a0aed4bd40b83bf32696a7aa1b72d3b7fe3c3522f",
       "mode": "100644"
     },
     "LICENSE": {
