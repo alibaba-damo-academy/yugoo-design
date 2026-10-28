@@ -231,7 +231,7 @@ export async function buildCompanionCandidate({ payloadSource, destination, lice
   // The installer imports these helpers independently of the payload Hooks.
   for(const name of ['windows-private-storage.mjs','windows-native-platform.mjs'])
     await cp(new URL('../packages/companion/src/'+name,import.meta.url),join(target,'bin',name),{errorOnExist:true,force:false})
-  for(const [source,name] of [['npm-installer.mjs','installer.mjs'],['npm-agent-installation.mjs','npm-agent-installation.mjs'],['npm-desktop-preparation.mjs','npm-desktop-preparation.mjs'],['npm-installer-codex.mjs','npm-installer-codex.mjs'],['npm-installer-dsh.mjs','npm-installer-dsh.mjs'],['npm-installer-dsh-desktop.mjs','npm-installer-dsh-desktop.mjs'],['npm-installer-claude.mjs','npm-installer-claude.mjs'],['npm-installer-qoder.mjs','npm-installer-qoder.mjs'],['npm-runtime-check.mjs','npm-runtime-check.mjs'],['npm-installer-paths.mjs','npm-installer-paths.mjs'],['npm-node-runtime.mjs','npm-node-runtime.mjs'],['npm-node-registration.mjs','npm-node-registration.mjs']]) {
+  for(const [source,name] of [['npm-installer.mjs','installer.mjs'],['npm-agent-installation.mjs','npm-agent-installation.mjs'],['npm-desktop-preparation.mjs','npm-desktop-preparation.mjs'],['npm-installer-codex.mjs','npm-installer-codex.mjs'],['npm-installer-dsh.mjs','npm-installer-dsh.mjs'],['npm-installer-dsh-desktop.mjs','npm-installer-dsh-desktop.mjs'],['npm-installer-claude.mjs','npm-installer-claude.mjs'],['npm-installer-qoder.mjs','npm-installer-qoder.mjs'],['npm-runtime-check.mjs','npm-runtime-check.mjs'],['npm-embedding-preparation.mjs','npm-embedding-preparation.mjs'],['npm-installer-paths.mjs','npm-installer-paths.mjs'],['npm-node-runtime.mjs','npm-node-runtime.mjs'],['npm-node-registration.mjs','npm-node-registration.mjs']]) {
     await cp(new URL('../packages/companion/src/'+source,import.meta.url),join(target,'bin',name),{errorOnExist:true,force:false})
   }
   for (const name of ['npm-codex-desktop-source.mjs', 'npm-installer-codex-desktop.mjs'])
@@ -243,10 +243,12 @@ const args=process.argv.slice(2)
 const dshInstall=args[0]==='install'&&args.some((arg,index)=>arg==='--host=dsh'||arg==='--host'&&args[index+1]==='dsh')
 const cancellation=new AbortController()
 const cancel=()=>cancellation.abort()
-if(dshInstall) { process.on('SIGINT',cancel);process.on('SIGTERM',cancel) }
+const cancellable=dshInstall||args[0]==='prepare-embedding'
+if(cancellable) { process.on('SIGINT',cancel);process.on('SIGTERM',cancel) }
 try {
-  const result=await installerMain(args,{npmRoot:fileURLToPath(new URL('../',import.meta.url)),signal:dshInstall?cancellation.signal:undefined})
+  const result=await installerMain(args,{npmRoot:fileURLToPath(new URL('../',import.meta.url)),signal:cancellable?cancellation.signal:undefined})
   console.log(JSON.stringify(result))
+  if(args[0]==='prepare-embedding'&&!['assets-ready','ready','not-applicable'].includes(result.status))process.exitCode=1
   if(process.argv[2]==='check-runtime'&&!['load-verified','disabled','not-applicable'].includes(result.status))process.exitCode=1
   if(result.status==='failed-partial-state-retained')process.exitCode=1
   if(['runtime-not-ready','unsupported-host'].includes(result.status))process.exitCode=1
@@ -255,7 +257,7 @@ try {
   console.error(error.installation ? JSON.stringify({error:error.message,installation:error.installation}) : error.message)
   process.exitCode=1
 } finally {
-  if(dshInstall) { process.off('SIGINT',cancel);process.off('SIGTERM',cancel) }
+  if(cancellable) { process.off('SIGINT',cancel);process.off('SIGTERM',cancel) }
 }
 `
   await writeFile(join(target, 'bin/yugoo-design.mjs'), bin, { flag: 'wx', mode: 0o755 })

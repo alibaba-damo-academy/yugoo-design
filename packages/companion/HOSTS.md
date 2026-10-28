@@ -47,8 +47,9 @@ GPU support and configurable or user-local model selection remain future work;
 the default product does not provision a GPU environment.
 
 **Current product release:** the npm package and CLI are both `yugoo-design`.
-The first stable version, `0.1.0`, is published to npm. Check that exact
-version and integrity before acquiring it; a missing release stops installation.
+The first stable version, `0.1.0`, is published to npm. Resolve the requested
+release to its exact version and integrity before acquisition; a missing release
+stops installation. For “latest stable”, follow the checklist below.
 The former `@yugoo-design/companion` package and beta channel remain historical
 records, not a compatibility package or the default installation entry.
 Publication does not update an already registered host. Current release and
@@ -82,71 +83,19 @@ current host, or you want to target a different one. This is the shared prompt;
 the host-specific sections below are optional overrides and adapter details.
 
 ```text
-请在我当前使用的 Agent 宿主中安装或更新语构设计系统（Yugoo Design）。
-先复用用户指定或系统/版本管理器提供的 Node.js >=22.19.0；不要借用
-Preview、其他应用资源或插件包里的 Node。缺少合规 Node 时明确说明依赖，
-统一准备一次，不为每个宿主适配器重复下载，也不擅改全局 PATH。
-随包帮助包含 resolve-node 时先检查选择结果；新安装应让验证和后续启动使用同一 Node。
-DSH Desktop 保持官方 Electron/Loader 入口，不将宿主内部执行程序替换为通用 Node。
-首发使用 CPU 本地嵌入。首次取包前，在 npm/npx 安装子进程环境中设置
-ONNXRUNTIME_NODE_INSTALL_CUDA=skip，并保持依赖生命周期脚本开启；
-后续需要取依赖的宿主安装子进程也使用该设置。不要用全局 ignore-scripts
-代替此策略，不修改其他环境值，临时 shell 设置在操作后恢复。
-从 https://registry.npmjs.org 检查所需的 yugoo-design 精确版本和完整性；
-首个正式版本 0.1.0 已发布。版本不存在时报告缺包并停止，
-不回退到旧 @yugoo-design/companion 或 beta 渠道。先检查已有长期保留的安装及回执；
-版本、宿主适配器和运行时满足请求时复用，只需刷新原生材料或重载会话时不重复取包。
-需要新版本时，将它安装到新的独立、长期保留的版本目录。
-先阅读随包 README 和 yugoo-design --help，再按当前宿主的
-安装路径完成所需组件的安装或更新；不要让我分别安装 DSH 和 Companion。
-默认随主插件提供 Web App Kit，无需另装；保留已有项目的固定套件引用。
-根据本会话的实际宿主选择适配器，不能因为机器上装了某个 CLI 就推断宿主；
-确实无法确认时，只问我必要的宿主选择。
-保留已有设计项目、模型鉴权、其他插件、旧安装目录和回执。
-你能执行的步骤请直接执行；必须由我完成的授权、导入、启用、重启或新会话，
-请给出最少且准确的操作，完成后继续检查。
-分别报告包已取得、原生登记或导入、激活和实际可用的结果；
-缺包、宿主不支持或所有权冲突时停在该步骤，不能把材料准备当作安装完成。
-最后确认实际加载的版本、yugoo 入口和工具，并说明哪些检查仍需新会话完成。
+请按官方安装指南，在我当前的 Agent 宿主中安装或更新语构设计系统（Yugoo Design）的最新正式版：
+https://github.com/alibaba-damo-academy/yugoo-design/blob/main/packages/companion/HOSTS.md#agent-led-installation-and-updates
+请完成环境检查、安装和验证，保留已有项目与配置。
+需要我授权、下载模型或启用插件时，给出最少且明确的操作。
+完成后告诉我已启用的版本、如何开始，以及尚未就绪的功能。
 ```
 
 ```text
-Install or update Yugoo Design in the Agent host I am using now.
-Reuse Node.js >=22.19.0 from an explicit user selection, the system or a Node
-version manager. Do not borrow Node from Preview deployments, another app's
-resources or a plugin package. If it is missing, explain the prerequisite and
-prepare it once; do not download a separate Node for each adapter or change
-global PATH. When the acquired help exposes resolve-node, inspect its selection
-and bind verification and subsequent startup to the same Node. DSH Desktop keeps
-its official Electron/Loader entry rather than replacing it with standalone Node.
-Use CPU local embedding for this first release. Before the first acquisition,
-set ONNXRUNTIME_NODE_INSTALL_CUDA=skip in the npm/npx installation child's
-environment, with dependency lifecycle scripts enabled; apply it to subsequent
-host-installation children that acquire dependencies too. Do not substitute
-blanket ignore-scripts, change other environment values or leave a temporary
-shell setting behind.
-Check the required exact yugoo-design version and integrity at
-https://registry.npmjs.org. The first stable version, 0.1.0, is published.
-If it is missing, report that result and stop; do not fall back to the former
-@yugoo-design/companion package or beta channel. Inspect retained installations and
-receipts. Reuse a matching version with the required host adapter and runtime;
-refreshing native materials or reloading a stale session does not require another
-download. Acquire a required new version in a new durable version directory.
-Read the bundled README and yugoo-design --help,
-then install or update all components needed by this host. Do not ask me to
-install DSH and Companion as separate products.
-The main plugin includes Web App Kit by default, with no separate Kit installation;
-preserve existing projects' exact Kit pins.
-Choose the adapter from this session's actual host, not merely an installed CLI;
-ask only for the host choice if that context cannot be established.
-Preserve Design Projects, model credentials, unrelated plugins, the previous
-installation and its receipts. Execute the steps you can. If I must authorize,
-import, enable, restart or open a new session, give me the minimum exact action
-and continue verification afterwards.
-Report acquisition, native registration/import, activation and actual usability
-separately. Stop at a missing release, unsupported host or ownership conflict;
-prepared materials do not mean installation is complete. Confirm the loaded
-version, yugoo entry and tools, and identify checks requiring a new session.
+Follow the official guide to install or update the latest stable Yugoo Design in my current Agent host:
+https://github.com/alibaba-damo-academy/yugoo-design/blob/main/packages/companion/HOSTS.md#agent-led-installation-and-updates
+Check the environment, install and verify it, and preserve my existing projects and configuration.
+Give me the minimum clear steps when authorization, a model download or plugin activation needs my input.
+Tell me the activated version, how to start, and which capabilities are not ready yet.
 ```
 
 For an explicit override, append “Target host: Codex CLI”, “Target host:
@@ -155,6 +104,39 @@ The same prompt supports updates, but each adapter retains its own update and
 recovery limits. It does not authorize blanket uninstalls, a replacement host,
 automatic host restart or changing model credentials. An interrupted operation
 must be inspected through its existing receipt before retrying.
+
+
+### Installation checklist for the Agent
+
+1. Identify the current host from the session. Reuse a compatible public Node.js
+   `>=22.19.0` selected by the user, system or version manager. Do not borrow a
+   Preview, application-private or plugin-bundled Node, or change global PATH.
+   Prepare a missing prerequisite once; adapters do not each install Node.
+   When available, use `resolve-node` and keep verification and startup on the
+   selected executable. DSH Desktop retains its official Electron/Loader entry.
+2. For “latest stable”, resolve npm's `latest` once to a non-prerelease version
+   and integrity, then use that exact version throughout acquisition and setup.
+   An explicit version request takes precedence. Apply the CPU acquisition policy
+   above before npm starts. Reuse an existing matching retained installation;
+   acquire a new version in a separate durable directory when needed.
+3. Read the acquired README and `--help`, then execute its owning host adapter.
+   The unified product supplies shared runtime, Panels and the default Web App
+   Kit, plus the integration required by the selected host. Preserve project Kit
+   pins, model credentials, unrelated plugins, old installation and receipts.
+   Inspect any partial receipt before retrying; stop the affected step on missing
+   packages, unsupported host or ownership conflict.
+4. Prepare local embedding resources using the acquired package's
+   [model preparation instructions](README.md#local-embedding-model-preparation).
+   Reuse a complete cache. Download only when allowed, and test CPU inference
+   under the actual runtime user and OS. A WSL cache does not prepare Windows.
+   Respect an explicit choice to disable embedding and preserve a DSH custom
+   provider. An unavailable embedding model does not prevent basic design work.
+5. Complete the native registration/import and give the user only the required
+   authorization, activation or new-session action. Continue checks after that
+   action. Report acquisition, native registration, loaded version and actual
+   design usability separately, including the `yugoo` entry and tools. Also
+   distinguish complete model files, tested CPU inference and the real project's
+   semantic readiness; prepared materials alone are not an activated plugin.
 
 Historical beta.1 used saved-plan routes for Codex/DSH and a separate
 `prepare-desktop` command for desktop materials; beta.2 added
@@ -166,8 +148,8 @@ actual help rather than inventing flags.
 
 ### Install or update: Codex CLI
 
-> Install or update Yugoo Design in this Codex CLI environment. First verify
-> the required exact `yugoo-design@0.1.0` release on `https://registry.npmjs.org`
+> Install or update Yugoo Design in this Codex CLI environment. First resolve
+> the requested `yugoo-design` release to its exact stable version on `https://registry.npmjs.org`
 > and reuse a matching retained runtime or acquire its resolved exact version into
 > a new durable version directory. Inspect the
 > installed `yugoo-design --help`, current Codex version and existing registration.
@@ -185,7 +167,7 @@ See [Codex registration and recovery](README.md#persistent-registration-transact
 ### Install or update: Codex Desktop on macOS arm64
 
 > Install or update Yugoo Design in this Mac Codex Desktop conversation. Resolve
-> the required exact `yugoo-design@0.1.0` release, retain its integrity, and acquire
+> the requested `yugoo-design` release to its exact stable version, retain its integrity, and acquire
 > it in a durable version directory. Read that package's actual help and the
 > Desktop guide below. Reuse an existing compatible public Node. Use its
 > `install --host codex-desktop` route to prepare a new immutable source under
@@ -204,8 +186,8 @@ directory and its small prepared source at their recorded paths.
 
 ### Install or update: Claude Code CLI
 
-> Install or update Yugoo Design in this Claude Code CLI environment. Verify
-> the required exact `yugoo-design@0.1.0` release on `https://registry.npmjs.org`,
+> Install or update Yugoo Design in this Claude Code CLI environment. Resolve
+> the requested `yugoo-design` release to its exact stable version on `https://registry.npmjs.org`,
 > then reuse a matching retained runtime or acquire its resolved exact version into
 > a new durable version directory. Inspect the
 > installed installer help, actual Claude executable and current user-scope
@@ -220,9 +202,9 @@ See [Claude Code persistent registration](README.md#claude-code-and-qoder-cli-pe
 
 ### Install or update: Qoder CLI
 
-> Install or update Yugoo Design in this Qoder CLI environment. Verify and acquire
-> the required exact `yugoo-design@0.1.0` release from `https://registry.npmjs.org`
-> at its resolved exact version: reuse a matching retained runtime or acquire it
+> Install or update Yugoo Design in this Qoder CLI environment. Resolve
+> the requested `yugoo-design` release to its exact stable version on `https://registry.npmjs.org`.
+> Reuse a matching retained runtime or acquire that version
 > into a new durable version directory. Inspect
 > the installed installer help, actual Qoder executable/profile and existing
 > registration. Use `yugoo-design install --host qoder`; an owned same-version
@@ -238,7 +220,7 @@ See [Qoder persistent registration](README.md#claude-code-and-qoder-cli-persiste
 ### Install or update: DeepSeek Harness
 
 > Install or update Yugoo Design in this existing official DeepSeek Harness.
-> Resolve the required exact `yugoo-design@0.1.0` release from
+> Resolve the requested `yugoo-design` release to its exact stable version from
 > `https://registry.npmjs.org` as the product installer. Reuse a matching retained
 > runtime or acquire the exact version in a new durable directory. Check its
 > `release-hosts.json` for the exact DSH aggregate and verify its complete exact
@@ -258,7 +240,7 @@ See [DSH installer and recovery limits](../dsh/README.md#candidate-npm-installer
 ### Install or update: QwenWork
 
 > Install or update Yugoo Design in this QwenWork desktop environment. Verify
-> and resolve the required exact `yugoo-design@0.1.0` release from
+> and resolve the requested `yugoo-design` release to its exact stable version from
 > `https://registry.npmjs.org`. Reuse a matching retained runtime or acquire the exact
 > version in a new durable directory. Use
 > the installed `install --host qwenwork` route, or its explicit
@@ -286,7 +268,7 @@ are separate from installation, desktop input and KAG acceptance.
 ### Install or update: WorkBuddy
 
 > Install or update Yugoo Design in this WorkBuddy desktop environment. Verify
-> and resolve the required exact `yugoo-design@0.1.0` release from
+> and resolve the requested `yugoo-design` release to its exact stable version from
 > `https://registry.npmjs.org`. Reuse a matching retained runtime or acquire the exact
 > version in a new durable directory. Use
 > the installed `install --host workbuddy` route, or its explicit

@@ -570,6 +570,34 @@ layout. A tokenizer or one weight file alone does not establish a usable cache.
 Use the acquired version's model identity; changing the model/revision or copying
 an arbitrary cache is not a supported repair.
 
+When the acquired `yugoo-design --help` lists `prepare-embedding`, run it from
+that installation directory under the actual runtime user and OS:
+
+```sh
+npx --no-install yugoo-design prepare-embedding
+# Only when downloading the fixed model has been allowed:
+npx --no-install yugoo-design prepare-embedding --allow-download --probe
+```
+
+The default command is an offline size/hash inspection: it creates no cache,
+lock or network request. `--allow-download` prepares the four pinned files
+(about 135 MB total), reusing verified files and resumable downloads. `--probe`
+performs real local CPU inference with fixed synthetic text; use it without
+`--allow-download` to test an existing cache. An explicitly selected cache can
+be passed as `--embedding-cache /absolute/cache`; use that same cache for the
+runtime. No Design Project or host registration is needed for preparation.
+
+`assets-ready` means the files passed integrity checks and CPU inference has not
+been tested; `ready` means the CPU probe also passed. `unavailable` reports the
+resource or inference failure and exits unsuccessfully. None of these results
+proves semantic KAG is current for a real project. Respect an explicitly disabled
+embedding configuration. Preparation does not change DSH's provider or model
+settings; it is relevant only when DSH uses this same default local model/cache.
+
+Published `0.1.0` does not include this command. Follow that package's existing
+runtime route below, or update to a published version whose help includes it;
+do not pass the new command to an older installation.
+
 For the shared runtime's `scripts/design.mjs serve` entry used by Codex, Claude
 Code, Qoder and QwenWork, the default is **local-only** model loading. Its runtime
 help documents `--allow-embedding-download`: when explicitly allowed, this permits
@@ -581,11 +609,12 @@ semantic embeddings. Neither option changes host model credentials. Model-file
 download and CPU inference do not upload Design text.
 
 WorkBuddy's `yugoo_workbuddy_open_panel` service currently fixes `localOnly: true`
-and exposes no model-download parameter. It requires the existing complete cache
-for its Windows runtime user; the CLI flag above does not add a WorkBuddy download
-route. If the cache is missing, report that limitation and the semantic-index
-diagnostic. Do not invent an installer flag, change host identity or start another
-host's service to bypass it. Authorized design work can continue from Design Files
+and exposes no model-download parameter. It requires a complete cache
+for its Windows runtime user. A package with `prepare-embedding` can prepare that
+cache before the service starts; the older runtime `serve` flag does not add a
+WorkBuddy download route. If preparation is unavailable or fails, report the
+semantic-index diagnostic. Do not change host identity or start another host's
+service to bypass it. Authorized design work can continue from Design Files
 and structural evidence; do not report semantic KAG as ready. DSH follows its own
 provider configuration rather than these Companion `serve` flags.
 
@@ -746,9 +775,10 @@ retains its original command and verification limits.
 Use the [shared prompt in the current host](HOSTS.md#default-prompt-any-supported-host).
 The Agent first checks the required exact `yugoo-design` version,
 records the exact release and integrity, then acquires it in a durable,
-version-specific directory. The first stable target is `0.1.0` and is not yet
-published. Run this example only when that exact release is available, inside a
-new dedicated version directory; a missing version must stop acquisition.
+version-specific directory. The first stable release, `0.1.0`, is published.
+This example pins that version; for an update, resolve the requested release
+once and substitute its exact version. Run inside a dedicated version directory;
+a missing version must stop acquisition.
 Metadata availability does not establish complete archive acquisition or native
 installation. A missing required version is a failed
 availability check, not permission to use another package:

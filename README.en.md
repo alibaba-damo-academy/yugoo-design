@@ -29,7 +29,15 @@ You need **Node.js `>=22.19.0`** and an Agent Host with a configured model. The 
 
 The unified product package and CLI are both `yugoo-design`. Its first stable version, `0.1.0`, has been published to npm. Check the [release status](docs/wiki/preview-status.md#current-release-and-use) before installation; stop if the required version is unavailable. The steps below describe installation and first use.
 
-1. **Install the plugin.** Give the agent in your current host the [shared installation prompt](packages/companion/HOSTS.md#default-prompt-any-supported-host). Follow its instructions for authorization, import, activation, and any restart or new session.
+1. **Install the plugin.** Copy this prompt into your current Agent host. It follows the [installation guide](packages/companion/HOSTS.md#default-prompt-any-supported-host) to check the environment, install the plugin and guide any required activation.
+
+   ```text
+   Follow the official guide to install or update the latest stable Yugoo Design in my current Agent host:
+   https://github.com/alibaba-damo-academy/yugoo-design/blob/main/packages/companion/HOSTS.md#agent-led-installation-and-updates
+   Check the environment, install and verify it, and preserve my existing projects and configuration.
+   Give me the minimum clear steps when authorization, a model download or plugin activation needs my input.
+   Tell me the activated version, how to start, and which capabilities are not ready yet.
+   ```
 
    Existing acceptance records cover Codex Desktop on macOS arm64 and specific DeepSeek Harness (DSH) candidates. DSH places conversation and Design Panels in one workspace; Codex Desktop connects the original conversation to shared Panels. See the [host guide (中文)](docs/wiki/hosts.md) for existing Codex CLI, Claude Code CLI, Qoder CLI, QwenWork, and WorkBuddy integrations and their version limits. These records do not replace installation acceptance of the new unified package.
 

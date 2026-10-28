@@ -137,6 +137,40 @@ test('Claude and Qoder keep their owning direct registration and session activat
   }
 })
 
+test('every prepared host guides model readiness without claiming activation, inference or project usability', () => {
+  for (const host of AGENT_INSTALL_HOSTS) {
+    const result = installationResult(host, { status: 'registered', hostRegistered: true, package: identity })
+    const step = result.installation.nextActions.find(item => item.action === 'prepare-local-embedding')
+    assert.deepEqual(step.command, ['prepare-embedding'])
+    assert.match(step.message, /actual runtime user and operating system/)
+    assert.match(step.message, /--allow-download only when permitted/)
+    assert.match(step.message, /--probe/)
+    assert.deepEqual(result.installation.embedding, { status: 'unverified', blocksBasicDesign: false })
+    assert.equal(result.installation.activation, 'required')
+    assert.equal(result.installation.usability, 'unverified')
+    assert.equal(result.usable, false)
+  }
+  const failed = installationResult('dsh', { status: 'failed-partial-state-retained' })
+  assert.equal(failed.installation.nextActions.some(step => step.action === 'prepare-local-embedding'), false)
+})
+
+test('explicitly disabled embeddings are preserved through native installation without requesting model downloads', async () => {
+  for (const host of ['codex', 'claude-code']) {
+    const replies = host === 'codex' ? [
+      { planFile: '/receipts/plan', applySupported: true, package: identity },
+      { status: 'disabled', receiptFile: '/receipts/runtime' },
+      { hostRegistered: true, package: identity },
+    ] : [{ hostRegistered: true, package: identity }]
+    const h = nativeHarness(replies)
+    const result = await agentInstallation({ host, 'receipt-dir': '/receipts',
+      [`${host === 'codex' ? 'codex' : 'claude'}-executable`]: '/native/host', 'disable-embedding': true }, h)
+    assert.deepEqual(result.installation.embedding, { status: 'disabled', blocksBasicDesign: false })
+    assert.equal(result.installation.nextActions.some(step => step.action === 'prepare-local-embedding'), false)
+    assert.equal(result.installation.activation, 'required')
+    assert.equal(result.usable, false)
+  }
+})
+
 test('thrown native errors retain owned recovery references without replaying an uncertain action', async () => {
   const failure = Object.assign(Error('native uncertain failure'), { receiptFile: '/receipts/owned.claude.json' })
   let calls = 0

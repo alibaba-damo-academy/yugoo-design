@@ -3,7 +3,7 @@
 This package owns the internal DeepSeek Harness installation bundle for Yugoo
 Design. Users acquire the unified `yugoo-design` product, whose DSH adapter
 installs the exact aggregate and internal modules. The first stable product
-target is `0.1.0`, not yet published to npm; a missing release stops acquisition.
+release, `0.1.0`, is published to npm; acquire the requested exact release.
 
 Official DSH is a read-only Host compatibility target. This package uses public
 Cordis, command, tool, Agent, interaction, subagent, Remote, and client-module
@@ -413,7 +413,7 @@ and release.
 
 The product CLI route is `install --host dsh`; the historical Companion
 `0.1.0-beta.3` was an earlier distribution of this adapter. The unified
-`yugoo-design@0.1.0` product is not yet published. This is an installer adapter
+`yugoo-design@0.1.0` product is published. This is an installer adapter
 for the separately installed official DSH
 host, not a bundled DSH application or a desktop Companion runtime inside DSH.
 Yugoo Design has one product installation entry. For DSH, that entry installs

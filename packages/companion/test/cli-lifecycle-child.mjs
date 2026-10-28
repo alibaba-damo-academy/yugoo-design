@@ -5,7 +5,7 @@ import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import { appendFile, rm, writeFile } from 'node:fs/promises'
 import { setTimeout as delay } from 'node:timers/promises'
-import { startStandaloneCompanion } from '../src/cli-lifecycle.mjs'
+import { startStandaloneCompanion, runStandaloneKnowledgeOperation } from '../src/cli-lifecycle.mjs'
 
 const [mode, runtimeHref, root] = process.argv.slice(2)
 const runtimeUrl = new URL(runtimeHref)
@@ -70,7 +70,21 @@ try {
     const require = createRequire(createRequire(runtimeUrl).resolve('@ladybugdb/wasm-core/nodejs'))
     require('threads')
   }
-  if (mode === 'legacy') {
+  if (mode === 'operation' || mode === 'operation-error') {
+    await runStandaloneKnowledgeOperation({ runtimeUrl, loadRuntime: async () => {
+      const runtime = await import(runtimeHref)
+      return { ...runtime, async shutdownLadybugKnowledgeRuntime() {
+        await runtime.shutdownLadybugKnowledgeRuntime()
+        await record('terminal-shutdown')
+      } }
+    }, run: async runtime => {
+      const result = await runtime.prepareLocalEmbedding({ cacheDir: join(root, 'absent') })
+      await record('operation-' + result.status)
+      if (mode === 'operation-error') throw Error('deliberate finite operation failure')
+      return result
+    } })
+    process.disconnect()
+  } else if (mode === 'legacy') {
     const server = await start({ loadRuntime: () => import(runtimeHref) })
     for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => { void server.close().then(() => process.exit(0)) })
   } else {

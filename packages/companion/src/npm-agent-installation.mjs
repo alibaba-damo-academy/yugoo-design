@@ -30,32 +30,35 @@ function pending(host, status, missing, message) {
     installation: { host: host ?? null, acquisition: 'unverified', registration: 'not-performed',
       activation: 'not-performed', usability: 'unverified', nextActions: [{ action: 'supply-inputs', automatic: false, message }] } }
 }
-function activationActions(host, result) {
+function activationActions(host, result, disableEmbedding) {
+  const embedding = disableEmbedding ? [] : [{ action: 'prepare-local-embedding', automatic: true,
+    command: ['prepare-embedding'],
+    message: 'Use this acquired product\'s prepare-embedding to check the fixed model cache under the actual runtime user and operating system. Match the runtime\'s --embedding-cache and selected Node; a WSL cache is not a Windows runtime cache. Reuse complete files. If resources are missing or invalid, explain the model download and use --allow-download only when permitted; use --probe to verify CPU inference. DSH custom provider/model settings remain owned by DSH and must not be replaced with defaults. Report resource integrity, CPU inference and the real project\'s semantic status separately. Missing embeddings do not block basic design or available source-projection context.' }]
   const verify = { action: 'verify-native-session', automatic: true,
     message: 'In the intended native conversation, verify the actually loaded Yugoo Design version and tools; then open a project and verify Panel save/reopen and original-conversation receipt. Registration alone is not usability.' }
   if (host === 'codex-desktop') return [
     { action: 'activate-native-plugin', automatic: false, path: result.marketplacePath,
-      message: 'Install or update this exact prepared local Yugoo Design source through Codex Desktop. If a normal restart is required, keep and return to the current conversation. Retain the exact npm version and previous owned source until the loaded version is verified.' }, verify]
+      message: 'Install or update this exact prepared local Yugoo Design source through Codex Desktop. If a normal restart is required, keep and return to the current conversation. Retain the exact npm version and previous owned source until the loaded version is verified.' }, ...embedding, verify]
   if (host === 'qwenwork') return [
     { action: 'import-expert-suite', automatic: false, path: result.nativeImport?.archive,
       message: 'Import this exact expert-suite ZIP through QwenWork. If bundled MCP is disabled by organization policy, use the emitted connector configuration and retain exactly one Yugoo Design connector.' },
     { action: 'activate-native-suite', automatic: false,
-      message: 'Enable the imported suite; start a new native conversation if QwenWork requires it. Retain the acquired npm runtime and confirm the actually loaded suite version.' }, verify]
+      message: 'Enable the imported suite; start a new native conversation if QwenWork requires it. Retain the acquired npm runtime and confirm the actually loaded suite version.' }, ...embedding, verify]
   if (host === 'workbuddy') return [
     { action: 'import-or-update-market', automatic: false, path: result.nativeImport?.market,
       message: 'Import this stable marketplace through WorkBuddy, or refresh the same market and update its existing Yugoo Design plugin. Preparation has not registered or activated it.' },
     { action: 'activate-native-plugin', automatic: false,
-      message: 'Enable the plugin and start a new native conversation if WorkBuddy requires it; confirm the actually loaded suite version.' }, verify]
+      message: 'Enable the plugin and start a new native conversation if WorkBuddy requires it; confirm the actually loaded suite version.' }, ...embedding, verify]
   return [{ action: 'activate-native-session', automatic: false,
     message: host === 'dsh'
       ? 'Use the selected existing DSH profile and the host-supported plugin activation/restart flow; verify runtime loading in a new native session.'
       : host === 'codex'
         ? 'Start a new Codex conversation normally in the intended workspace and invoke the installed yugoo Skill through the native Skill entry. Retain the registered npm runtime.'
-        : 'Start a new native host conversation normally in the intended workspace and invoke /yugoo-design:yugoo. Retain the registered npm runtime; no --plugin-dir is needed.' }, verify]
+        : 'Start a new native host conversation normally in the intended workspace and invoke /yugoo-design:yugoo. Retain the registered npm runtime; no --plugin-dir is needed.' }, ...embedding, verify]
 }
 
 /** Project only verified facts from the owning native/preparation receipt. */
-export function installationResult(host, result, packageIdentity) {
+export function installationResult(host, result, packageIdentity, { disableEmbedding = false } = {}) {
   const failed = result.status === 'failed-partial-state-retained'
   const desktop = host === 'qwenwork' || host === 'workbuddy' || host === 'codex-desktop'
   const registered = !desktop && !failed && (result.hostRegistered === true
@@ -68,9 +71,10 @@ export function installationResult(host, result, packageIdentity) {
       registryAcquisitionVerified: false,
       registration: failed ? 'failed-partial-state-retained' : registered ? 'verified' : 'not-performed',
       activation: failed ? 'not-performed' : 'required', usability: 'unverified',
+      embedding: { status: disableEmbedding ? 'disabled' : 'unverified', blocksBasicDesign: false },
       nextActions: failed ? [{ action: 'inspect-retained-state', automatic: false, path: result.receiptFile,
         message: 'Inspect the owning receipt and retained DSH state before another operation. No automatic rollback or retry was attempted.' }]
-        : activationActions(host, result) } }
+        : activationActions(host, result, disableEmbedding) } }
 }
 
 export async function agentInstallation(values, { npmRoot, invoke, desktopPrepare, desktopReuse, codexDesktopPrepare,
@@ -116,7 +120,7 @@ export async function agentInstallation(values, { npmRoot, invoke, desktopPrepar
       return installationResult(host, reused || await desktopPrepare(args))
     }
     if (host === 'claude-code' || host === 'qoder')
-      return installationResult(host, await invoke(argv('install', values, allowed)))
+      return installationResult(host, await invoke(argv('install', values, allowed)), undefined, { disableEmbedding: values['disable-embedding'] === true })
     // DSH's exclusive plan files are never overwritten. Each direct operation gets
     // its own receipt subdirectory; Codex keeps the stable directory needed by upgrades.
     const nativeValues = host === 'dsh' ? { ...values, 'receipt-dir': join(values['receipt-dir'], randomUUID()) } : values
@@ -135,7 +139,7 @@ export async function agentInstallation(values, { npmRoot, invoke, desktopPrepar
       assert.ok(runtime.receiptFile, 'The owning runtime checker did not retain its receipt')
       const applyArgs = argv('install', values, allowed.filter(key => !['receipt-dir', 'disable-embedding', 'node-executable'].includes(key)))
       applyArgs.push('--apply', '--plan', plan.planFile, '--runtime-receipt', runtime.receiptFile)
-      return installationResult(host, await invoke(applyArgs), plan.package)
+      return installationResult(host, await invoke(applyArgs), plan.package, { disableEmbedding: values['disable-embedding'] === true })
     }
     const applyArgs = argv('install', nativeValues, allowed)
     applyArgs.push('--apply', '--plan', plan.planFile)

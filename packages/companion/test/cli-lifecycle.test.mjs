@@ -69,6 +69,13 @@ async function fixture(t, mode) {
 // Keep the negative control: the same real dependency preempts the old async
 // listener before handles/HTTP/marker cleanup. This test must not turn green
 // merely because the fixture stopped loading Ladybug/threads.
+for (const mode of ['operation', 'operation-error']) test(`finite Knowledge ${mode} returns after terminal shutdown without forced exit`, async t => {
+  const f = await fixture(t, mode)
+  assert.deepEqual(await f.exited, { code: mode === 'operation' ? 0 : 1, signal: null }, f.output())
+  assert.deepEqual(await f.events(), ['operation-unavailable', 'terminal-shutdown'])
+  await assert.rejects(access(join(f.root, 'absent')), { code: 'ENOENT' })
+})
+
 test('real threads dependency reproduces the former premature CLI exit', async t => {
   const f = await fixture(t, 'legacy')
   const ready = await f.phase('ready')

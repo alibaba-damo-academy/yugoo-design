@@ -76,12 +76,41 @@ async function size(path: string) {
   try { const value = await lstat(path); if (!value.isFile() || value.isSymbolicLink()) throw new EmbeddingAssetError('integrity'); return value.size }
   catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined; throw error }
 }
-async function valid(path: string, asset: Asset) {
+async function valid(path: string, asset: Asset, signal?: AbortSignal) {
   if (await size(path) !== asset.bytes) return false
   const hash = createHash(asset.kind === 'git-blob-sha1' ? 'sha1' : 'sha256')
   if (asset.kind === 'git-blob-sha1') hash.update(`blob ${asset.bytes}\0`)
-  for await (const bytes of createReadStream(path)) hash.update(bytes)
+  for await (const bytes of createReadStream(path)) { signal?.throwIfAborted(); hash.update(bytes) }
   return hash.digest('hex') === asset.hash
+}
+
+function validateAssets(files: Asset[]) {
+  if (files.some(file => !/^[a-zA-Z0-9_.-]+(?:\/[a-zA-Z0-9_.-]+)*$/.test(file.path) || file.path.split('/').some(p => p === '..') || !Number.isSafeInteger(file.bytes) || file.bytes < 1 || !['sha256', 'git-blob-sha1'].includes(file.kind))) throw new EmbeddingAssetError('integrity')
+}
+
+/** Read-only inspection: never creates a cache, lock, staging file or network dispatcher. */
+export async function inspectEmbeddingAssetSet(root: string, files: Asset[], signal: AbortSignal) {
+  validateAssets(files)
+  const results: { path: string; bytes: number; state: 'ready' | 'missing' | 'incomplete' | 'integrity' }[] = []
+  for (const asset of files) {
+    signal.throwIfAborted()
+    const path = join(root, asset.path)
+    try {
+      const length = await size(path)
+      results.push({ path: asset.path, bytes: asset.bytes,
+        state: length === undefined ? 'missing' : length !== asset.bytes ? 'incomplete' : await valid(path, asset, signal) ? 'ready' : 'integrity' })
+    } catch (error) {
+      if (!(error instanceof EmbeddingAssetError)) throw error
+      results.push({ path: asset.path, bytes: asset.bytes, state: 'integrity' })
+    }
+  }
+  signal.throwIfAborted()
+  return { state: results.every(file => file.state === 'ready') ? 'ready' as const : 'unavailable' as const,
+    bytes: files.reduce((total, file) => total + file.bytes, 0), files: results }
+}
+
+export function inspectDefaultEmbeddingAssets(cacheDir: string, signal: AbortSignal) {
+  return inspectEmbeddingAssetSet(join(cacheDir, DEFAULT_EMBEDDING_ASSETS.model, DEFAULT_EMBEDDING_ASSETS.revision), DEFAULT_EMBEDDING_ASSETS.files, signal)
 }
 
 /** Private resource preparation. No model/native session or Design text enters this path.
@@ -91,7 +120,7 @@ async function valid(path: string, asset: Asset) {
 export async function prepareEmbeddingAssetSet(root: string, files: Asset[], localOnly: boolean, options: {
   signal: AbortSignal; baseUrl: string; fetch?: AssetFetch; progress?: (done: number, total: number) => void
 }) {
-  if (files.some(file => !/^[a-zA-Z0-9_.-]+(?:\/[a-zA-Z0-9_.-]+)*$/.test(file.path) || file.path.split('/').some(p => p === '..') || !Number.isSafeInteger(file.bytes) || file.bytes < 1 || !['sha256', 'git-blob-sha1'].includes(file.kind))) throw new EmbeddingAssetError('integrity')
+  validateAssets(files)
   options.signal.throwIfAborted()
   await mkdir(root, { recursive: true })
   const compromised = new AbortController()
@@ -104,7 +133,7 @@ export async function prepareEmbeddingAssetSet(root: string, files: Asset[], loc
     for (const asset of files) {
       signal.throwIfAborted()
       const target = join(root, asset.path)
-      if (await valid(target, asset)) continue
+      if (await valid(target, asset, signal)) continue
       if (localOnly) throw new EmbeddingAssetError('missing')
       await mkdir(dirname(target), { recursive: true })
       const staged = target + '.yugoo-download.part'
@@ -133,7 +162,7 @@ export async function prepareEmbeddingAssetSet(root: string, files: Asset[], loc
         }
         await output.sync()
       } finally { await output.close() }
-      if (!await valid(staged, asset)) throw new EmbeddingAssetError('integrity')
+      if (!await valid(staged, asset, signal)) throw new EmbeddingAssetError('integrity')
       signal.throwIfAborted()
       if (await size(target) !== undefined) await copyFile(target, target + '.rejected-' + randomUUID(), constants.COPYFILE_EXCL)
       await rename(staged, target)

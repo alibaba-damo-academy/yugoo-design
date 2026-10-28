@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto'
 import { mkdtemp, readFile, readdir, rm, writeFile, symlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { prepareEmbeddingAssetSet, modelProxyOptions, embeddingChildEnvironment, EmbeddingAssetError } from '../src/embedding-model-assets.ts'
+import { prepareEmbeddingAssetSet, inspectEmbeddingAssetSet, modelProxyOptions, embeddingChildEnvironment, EmbeddingAssetError } from '../src/embedding-model-assets.ts'
 
 const bytes = Buffer.from('0123456789')
 const asset = { path: 'model.bin', bytes: bytes.length, hash: createHash('sha256').update(bytes).digest('hex'), kind: 'sha256' }
@@ -17,6 +17,38 @@ async function fixture(t) {
   return { root, target, run }
 }
 const code = expected => error => error instanceof EmbeddingAssetError && error.code === expected
+
+test('inspection distinguishes absent, incomplete, corrupt and verified resources without changing cache bytes', async t => {
+  const f = await fixture(t)
+  for (const [value, expected] of [[undefined, 'missing'], [bytes.subarray(0, 3), 'incomplete'], [Buffer.from('XXXXXXXXXX'), 'integrity'], [bytes, 'ready']]) {
+    if (value) await writeFile(f.target, value)
+    const before = await readdir(f.root)
+    const result = await inspectEmbeddingAssetSet(f.root, [asset], new AbortController().signal)
+    assert.equal(result.state, expected === 'ready' ? 'ready' : 'unavailable')
+    assert.equal(result.files[0].state, expected)
+    assert.equal(result.bytes, bytes.length)
+    assert.deepEqual(await readdir(f.root), before)
+    if (value) assert.deepEqual(await readFile(f.target), value)
+  }
+})
+
+test('inspection of a nonexistent cache remains read-only and cancellation is honored', async t => {
+  const f = await fixture(t), absent = join(f.root, 'not-created')
+  assert.equal((await inspectEmbeddingAssetSet(absent, [asset], new AbortController().signal)).files[0].state, 'missing')
+  await assert.rejects(readdir(absent), { code: 'ENOENT' })
+  const aborted = new AbortController(); aborted.abort()
+  await assert.rejects(inspectEmbeddingAssetSet(f.root, [asset], aborted.signal), { name: 'AbortError' })
+})
+
+test('inspection and preparation reject the same unsafe asset declarations before filesystem access', async t => {
+  const f = await fixture(t)
+  for (const bad of [{ path: '../outside' }, { path: '/absolute' }, { path: 'x/../outside' }, { bytes: 0 }, { bytes: 1.2 }, { kind: 'unknown' }]) {
+    const files = [{ ...asset, ...bad }]
+    await assert.rejects(inspectEmbeddingAssetSet(join(f.root, 'absent'), files, new AbortController().signal), code('integrity'))
+    await assert.rejects(prepareEmbeddingAssetSet(join(f.root, 'absent'), files, true, { signal: new AbortController().signal, baseUrl: 'https://model.invalid' }), code('integrity'))
+  }
+  assert.deepEqual(await readdir(f.root), [])
+})
 
 test('verified offline assets do not create a network dispatcher or request', async t => {
   const f = await fixture(t); await writeFile(f.target, bytes)

@@ -50,6 +50,16 @@ function ownKnowledgeSignals(runtimeUrl) {
   for (const [name, listener] of owned) process.removeListener(name, listener)
 }
 
+/** Finite CLI diagnostics use the same verified signal ownership and public terminal shutdown. */
+export async function runStandaloneKnowledgeOperation({ runtimeUrl, loadRuntime, run }) {
+  ownKnowledgeSignals(runtimeUrl)
+  let runtime
+  try {
+    runtime = await loadRuntime()
+    return await run(runtime)
+  } finally { await runtime?.shutdownLadybugKnowledgeRuntime() }
+}
+
 export async function startStandaloneCompanion({ runtimeUrl, loadRuntime, start }) {
   ownKnowledgeSignals(runtimeUrl)
   let server, loading, closing

@@ -80,7 +80,7 @@ test('public installer help returns JSON usage without configuration or registra
     assert.equal(result.kind,'installer-help')
     assert.equal(result.status,'not-applicable') // The existing public bin treats this as exit 0.
     assert.equal(JSON.parse(JSON.stringify(result)).usage,'yugoo-design <command> [options]')
-    assert.deepEqual(Object.keys(result.commands),['resolve-node','prepare-desktop','install','plugin-directory','check-runtime','recover','uninstall'])
+    assert.deepEqual(Object.keys(result.commands),['resolve-node','prepare-desktop','prepare-embedding','install','plugin-directory','check-runtime','recover','uninstall'])
     assert.ok(result.options['--help, -h'])
   }
   assert.deepEqual(await readdir(root),[])

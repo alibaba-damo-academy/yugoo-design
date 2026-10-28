@@ -29,7 +29,15 @@
 
 统一产品包为 `yugoo-design`，命令行入口为 `yugoo-design`，首个正式版本 `0.1.0` 已发布到 npm。安装前请核对[发行状态](docs/wiki/preview-status.md#current-release-and-use)；所需精确版本不存在时停止安装。下列步骤说明安装与首次协作。
 
-1. **安装插件。** 把[通用安装提示词](packages/companion/HOSTS.md#default-prompt-any-supported-host)复制给当前宿主的智能体（Agent），按它的提示完成授权、导入或启用，以及必要的重启或新建会话。
+1. **安装插件。** 将下面的提示词复制给当前宿主的智能体（Agent）。它会按[安装指南](packages/companion/HOSTS.md#default-prompt-any-supported-host)检查环境、安装并引导你完成必要的启用操作。
+
+   ```text
+   请按官方安装指南，在我当前的 Agent 宿主中安装或更新语构设计系统（Yugoo Design）的最新正式版：
+   https://github.com/alibaba-damo-academy/yugoo-design/blob/main/packages/companion/HOSTS.md#agent-led-installation-and-updates
+   请完成环境检查、安装和验证，保留已有项目与配置。
+   需要我授权、下载模型或启用插件时，给出最少且明确的操作。
+   完成后告诉我已启用的版本、如何开始，以及尚未就绪的功能。
+   ```
 
    已有验收记录包括 macOS arm64 上的 Codex Desktop，以及 DeepSeek Harness（DSH）的具体安装候选。DSH 将对话与设计面板放在同一工作区；Codex Desktop 连接原生会话并显示共享面板。Codex CLI、Claude Code CLI、Qoder CLI、千问办公（QwenWork）和 WorkBuddy 的既有接入与版本边界，详见[宿主指南](docs/wiki/hosts.md)。各项记录不代替统一新包的安装验收。
 

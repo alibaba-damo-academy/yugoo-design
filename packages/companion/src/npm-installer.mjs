@@ -14,6 +14,7 @@ import { codexAdapter, assertCodexAdmission, createCodexNativeAdapter } from './
 import { createClaudeNativeAdapter, planClaudeInstallation, applyClaudeInstallation, recoverClaudeInstallation } from './npm-installer-claude.mjs'
 import { installQoderPlugin } from './npm-installer-qoder.mjs'
 import { checkRuntime, inspectRuntime, assertInstalledRuntimeReceipt } from './npm-runtime-check.mjs'
+import { embeddingPreparationMain } from './npm-embedding-preparation.mjs'
 import { runDesktopDshInstaller } from './npm-installer-dsh-desktop.mjs'
 import { desktopPreparationMain, desktopPreparationReuseMain } from './npm-desktop-preparation.mjs'
 import { agentInstallation, AGENT_INSTALL_HOSTS, DESKTOP_INSTALL_OPTIONS } from './npm-agent-installation.mjs'
@@ -774,6 +775,7 @@ export async function nativePluginDirectory({npmRoot,host}) {
 
 export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=codexAdapter,dshAdapterFactory=createDshInstallerAdapter,claudeAdapterFactory=createClaudeNativeAdapter,qoderInstaller=installQoderPlugin,agentDispatch=true,signal,dshInstallTimeoutMs}={}) {
   if(args[0]==='prepare-desktop')return desktopPreparationMain(args.slice(1),{npmRoot})
+  if(args[0]==='prepare-embedding')return embeddingPreparationMain(args.slice(1),{npmRoot,signal})
   const {values,positionals}=parseArgs({args,allowPositionals:true,options:{host:{type:'string'},'dry-run':{type:'boolean'},
     help:{type:'boolean',short:'h'},apply:{type:'boolean'},plan:{type:'string'},'receipt-dir':{type:'string'},receipt:{type:'string'},'runtime-receipt':{type:'string'},'codex-executable':{type:'string'},'claude-executable':{type:'string'},'user-root':{type:'string'},'disable-embedding':{type:'boolean'},
     'qoder-executable':{type:'string'},'qoder-config-dir':{type:'string'},
@@ -785,6 +787,7 @@ export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=cod
     commands:{
       'resolve-node':'Discover and verify an existing compatible Node without a host, npm package or configuration writes.',
       'prepare-desktop':'Prepare a small QwenWork suite or stable WorkBuddy market from this exact acquired npm package. Uses --target, --package-name/--package-version, --suite-version, --node-executable and an external --destination; does not register a host. Updates use the previous preparation receipt.',
+      'prepare-embedding':'Check the fixed local model cache; --allow-download explicitly prepares resources and --probe verifies actual offline CPU inference. No host or project required.',
       install:'The current Agent selects --host from trusted context or one user choice. Direct install orchestrates existing native routes or Codex Desktop/QwenWork/WorkBuddy preparation. Missing inputs and pending activation are explicit. Existing --dry-run / --apply remain available.',
       'plugin-directory':'Inspect the optional Claude/Qoder session-only --plugin-dir entry; this is not persistent installation.',
       'check-runtime':'Check runtime prerequisites and write an external runtime receipt; does not install.',

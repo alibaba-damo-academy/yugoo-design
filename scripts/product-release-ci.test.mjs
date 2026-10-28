@@ -224,7 +224,8 @@ function historyRegistry(base, historyFor) {
 }
 test('old partial recovery refuses a missing archive before any publication when a higher stable exists', async () => {
   const rows = entries(), states = new Map(rows.slice(0, -1).map(entry => [entry.name, 'identical']))
-  for (const newer of ['0.1.1', '0.2.0', '0.10.0', '1.0.0']) {
+  const [major, minor, patch] = version.split('.').map(Number)
+  for (const newer of [`${major}.${minor}.${patch + 1}`, `${major}.${minor + 1}.0`, `${major}.${minor + 10}.0`, `${major + 1}.0.0`]) {
     const productEntry = rows.at(-1)
     const options = historyRegistry(registry(states), entry => ({ status: 200, json: async () => packageHistory(entry, [newer]) }))
     await assert.rejects(preflight(rows, options), /Refusing latest downgrade/)

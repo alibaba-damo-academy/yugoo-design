@@ -23,3 +23,4 @@ export {
   type Config as DshLadybugKnowledgeConfig,
 } from './dsh-plugin.ts'
 export { DesignSemanticIndex } from './semantic-index.ts'
+export { prepareLocalEmbedding } from './embedding-preparation.ts'

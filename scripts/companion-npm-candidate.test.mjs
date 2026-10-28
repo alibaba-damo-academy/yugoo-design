@@ -16,6 +16,7 @@ import { copyNativeExecutionReference } from '../packages/companion/build-plugin
 import { stageNativeInventoryFixture } from './test-fixtures/companion-native-inventory.mjs'
 
 const workspace = fileURLToPath(new URL('../', import.meta.url))
+const productVersion = JSON.parse(await readFile(new URL('../release/product.json', import.meta.url), 'utf8')).version
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 const hosts = { codex: '.codex-plugin', 'claude-code': '.claude-plugin', qoder: '.qoder-plugin' }
 let authoring
@@ -326,7 +327,7 @@ test('official engine selection keeps package, payload manifest and inventory co
   assert.match(candidateCopy, /npm install --ignore-scripts=false --save-exact/u)
   assert.match(candidateCopy, /before.*(?:acquisition|install)/iu)
   assert.match(candidateCopy, /bare npm\/npx.*not.*automatically/iu)
-  const stable = await buildCompanionCandidate({ ...normal, packageName: 'yugoo-design', distribution: 'stable', version: '0.1.0', destination: join(root, 'stable product delivery') })
+  const stable = await buildCompanionCandidate({ ...normal, packageName: 'yugoo-design', distribution: 'stable', version: productVersion, destination: join(root, 'stable product delivery') })
   const stableManifest = JSON.parse(await readFile(join(stable.target, 'package.json')))
   assert.equal(stableManifest.name, 'yugoo-design')
   assert.deepEqual(stableManifest.bin, { 'yugoo-design': 'bin/yugoo-design.mjs' })
@@ -337,25 +338,18 @@ test('official engine selection keeps package, payload manifest and inventory co
   assert.deepEqual(stableManifest.publishConfig, { access: 'public', tag: 'latest' })
   assert.equal(stable.inventory.publishReady, false)
   const stableCopy = await readFile(join(stable.target, 'README.md'), 'utf8')
-  assert.match(stableCopy, /ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm install --ignore-scripts=false --save-exact yugoo-design@0\.1\.0/)
+  assert.ok(stableCopy.includes(`ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm install --ignore-scripts=false --save-exact yugoo-design@${productVersion}`))
   assert.match(stableCopy, /\$env:ONNXRUNTIME_NODE_INSTALL_CUDA/u)
   assert.doesNotMatch(stableCopy, /npm install --ignore-scripts\s/u)
   assert.doesNotMatch(stableCopy, /unpublished|tarball|<package-selector>/iu)
   const maintained = await readFile(join(workspace, 'packages/companion/README.md'), 'utf8')
   const section = maintained.split('<!-- npm-package-guide:start -->')[1].split('<!-- npm-package-guide:end -->')[0].trim()
-  assert.equal(stableCopy, '# Yugoo Design\n\nPackage: `yugoo-design@0.1.0`.\n\n' + section.replaceAll('<package-selector>', 'yugoo-design@0.1.0') + '\n')
+  assert.equal(stableCopy, '# Yugoo Design\n\nPackage: `yugoo-design@' + productVersion + '`.\n\n' + section.replaceAll('<package-selector>', `yugoo-design@${productVersion}`) + '\n')
   assert.equal(stable.inventory.readmeSource.sourceSha256, sha(maintained))
   assert.equal(stable.inventory.readmeSource.sectionSha256, sha(section))
-  const hostGuide = await readFile(join(workspace, 'packages/companion/HOSTS.md'), 'utf8')
-  const prompts = [...hostGuide.matchAll(/```text\n([\s\S]*?)\n```/gu)].map(match => match[1])
-  assert.equal(prompts.length, 2)
-  for (const prompt of prompts) {
-    assert.ok(prompt.indexOf('ONNXRUNTIME_NODE_INSTALL_CUDA=skip') >= 0)
-    assert.ok(prompt.indexOf('ONNXRUNTIME_NODE_INSTALL_CUDA=skip') < prompt.indexOf('https://registry.npmjs.org'))
-  }
   for (const changes of [{ fixture: true }, { version: '0.1.0-beta.1' }, { version: '0.1.0-rc.1' }, { version: '0.1.0+local' }, { version: '0.2.0' }, { distribution: 'beta' }, { distribution: 'published' }]) {
     const destination = join(root, 'refused delivery mode')
-    await assert.rejects(buildCompanionCandidate({ ...normal, packageName: 'yugoo-design', distribution: 'stable', version: '0.1.0', ...changes, destination }), /fixture|Distribution|canonical versions|stable product version|must match the product manifest/)
+    await assert.rejects(buildCompanionCandidate({ ...normal, packageName: 'yugoo-design', distribution: 'stable', version: productVersion, ...changes, destination }), /fixture|Distribution|canonical versions|stable product version|must match the product manifest/)
     await assert.rejects(lstat(destination), { code: 'ENOENT' })
   }
   for (const [changes, pattern] of [
@@ -494,6 +488,35 @@ test('public bin routes pending Companion plans and requires explicit DSH and Cl
   assert.notEqual(spawnSync(process.execPath, [bin, 'install', '--apply', '--host', 'codex'], { encoding: 'utf8' }).status, 0)
 })
 
+test('packaged embedding command relocates with the acquired runtime and distinguishes exit codes', async t => {
+  const { root, options } = await setup(t)
+  const { target } = await buildCompanionCandidate(options)
+  const relocated = join(root, 'relocated embedding package')
+  await rename(target, relocated)
+  const bin = join(relocated, 'bin/yugoo-design.mjs')
+  const execute = (args, code = 0) => {
+    const child = spawnSync(process.execPath, [bin, 'prepare-embedding', ...args], { cwd: root, encoding: 'utf8', timeout: 10000 })
+    assert.equal(child.status, code, child.stderr)
+    return JSON.parse(child.stdout)
+  }
+  assert.equal(execute(['--help']).kind, 'embedding-preparation-help')
+  assert.equal(execute([], 1).reasonCode, 'runtime-unavailable')
+  const knowledge = join(relocated, 'payload/shared/knowledge')
+  // Contract fixture, not an inference/installed-model acceptance claim.
+  await writeFile(join(knowledge, 'cli-lifecycle.mjs'), 'export async function runStandaloneKnowledgeOperation({loadRuntime,run}) { return run(await loadRuntime()) }')
+  await writeFile(join(knowledge, 'runtime.mjs'), `export async function prepareLocalEmbedding(options) { return {
+    status: options.probe ? 'unavailable' : 'assets-ready', resources: { state: 'ready' },
+    inference: { state: options.probe ? 'unavailable' : 'not-checked' }, cacheDir: options.cacheDir, downloadAllowed: options.allowDownload
+  } }`)
+  const cacheDir = join(root, 'uncreated model cache')
+  const result = execute(['--embedding-cache', cacheDir])
+  assert.equal(result.status, 'assets-ready')
+  assert.equal(result.downloadAllowed, false)
+  assert.equal(result.cacheDir, cacheDir)
+  assert.equal(execute(['--probe', '--allow-download'], 1).inference.state, 'unavailable')
+  await assert.rejects(readdir(cacheDir), { code: 'ENOENT' })
+})
+
 test('missing shared root is explicit for relative and copied launchers', async t => {
   const { root, options } = await setup(t)
   const { target } = await buildCompanionCandidate(options)
@@ -521,4 +544,21 @@ test('existing output, source descendants, native copied closures, symlinks and 
   await writeFile(join(options.officialInputRoot, 'LICENSE'), 'wrong')
   await assert.rejects(buildCompanionCandidate(options), /Official input hash mismatch/u)
   await assert.rejects(buildCompanionCandidate({ ...options, fixture: false }), /Non-fixture candidate requires an explicit npm package name/u)
+})
+
+
+test('installation prompts stay short and delegate acquisition policy to the official guide', async () => {
+  const hostGuide = await readFile(join(workspace, 'packages/companion/HOSTS.md'), 'utf8')
+  const prompts = [...hostGuide.matchAll(/```text\n([\s\S]*?)\n```/gu)].map(match => match[1])
+  const owningGuide = hostGuide.replaceAll(/```text\n[\s\S]*?\n```/gu, '')
+  assert.equal(prompts.length, 2)
+  for (const prompt of prompts) {
+    assert.ok(prompt.length < 1000, 'Default installation prompt must remain short enough to copy')
+    assert.match(prompt, /https:\/\/(?:github\.com\/alibaba-damo-academy\/yugoo-design\/blob|raw\.githubusercontent\.com\/alibaba-damo-academy\/yugoo-design)\/main\/packages\/companion\/HOSTS\.md#agent-led-installation-and-updates/u)
+    assert.doesNotMatch(prompt, /ONNXRUNTIME_NODE_INSTALL_CUDA|--ignore-scripts/u)
+  }
+  // The installation child needs this policy before acquiring the product.
+  // Moving the rule out of a user prompt must not erase its owning instructions.
+  assert.match(owningGuide, /Before the first npm\/npx[\s\S]{0,160}ONNXRUNTIME_NODE_INSTALL_CUDA=skip/u)
+  assert.match(owningGuide, /keep dependency lifecycle scripts enabled/u)
 })
