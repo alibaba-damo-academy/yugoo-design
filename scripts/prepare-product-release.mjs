@@ -599,9 +599,14 @@ export async function prepareProductArchive({ version, output, nativeArtifactRoo
   const { buildSameSourceCandidate, verifyStagedUiCandidateAssociations } = await import('./build-companion-npm-candidate.mjs')
   const build = await buildSameSourceCandidate({ ladybugDependency: '0.21.1', nativeGitArtifactRoot: nativeArtifactRoot,
     candidate: { fixture: false, scope: '@yugoo-design', packageName: PRODUCT_NAME, version, distribution: 'stable' } })
-  assert.equal(build.sameSourceBuildCompleted, true, 'Product same-source build failed')
+  const buildReportFile = join(build.root, 'build-report.json')
+  assert.equal(build.sameSourceBuildCompleted, true, `Product same-source build failed: ${JSON.stringify({
+    buildReportFile, buildCompleted: build.buildCompleted, error: build.error, snapshotError: build.snapshotError,
+    failedSteps: build.steps?.filter(step => step.status === 'failed'),
+    sourceStable: build.sourceStable, sourceDrift: build.sourceDrift,
+  })}`)
   assert.equal(build.head, git(['rev-parse', 'HEAD']), 'Product builder source differs')
-  const buildReportFile = join(build.root, 'build-report.json'), buildReportSha256 = sha256(await readFile(buildReportFile))
+  const buildReportSha256 = sha256(await readFile(buildReportFile))
   const associations = await verifyStagedUiCandidateAssociations({ buildReportFile, buildReportSha256 })
   const manifest = await json(join(build.candidate, 'package.json'))
   validateProductManifest(manifest, version)

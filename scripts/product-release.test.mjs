@@ -59,3 +59,40 @@ test('product preparation forwards acquired native artifacts and stable identity
     await assert.rejects(prepareProductArchive({version:${JSON.stringify(product.version)}, nativeArtifactRoot:'/owned/native-artifacts', output:'/owned/output', npmCli:'/owned/npm-cli.js'}), /^Error: verified-native-builder-handoff$/);`
   execFileSync(process.execPath, ['--input-type=module', '-e', script], { stdio: ['ignore', 'pipe', 'pipe'] })
 })
+
+test('failed product builds retain error, step and source-stability diagnostics before association or packing', () => {
+  const entry = new URL('./prepare-product-release.mjs', import.meta.url).href
+  const failures = [
+    { root: '/owned/failed-build', sameSourceBuildCompleted: false, sourceStable: true,
+      error: { name: 'Error', message: 'knowledge runtime dependency mismatch' },
+      steps: [{ name: 'web', status: 'completed' }, { name: 'knowledge', status: 'failed', message: 'knowledge runtime dependency mismatch' }] },
+    { root: '/owned/changed-source', sameSourceBuildCompleted: false, sourceStable: false,
+      sourceDrift: ['packages/panel/src/client/generated/design.tw.css'], steps: [] },
+    { root: '/owned/failed-snapshot', sameSourceBuildCompleted: false, sourceStable: false,
+      snapshotError: 'Source snapshot failed', steps: [] },
+  ]
+  const mock = `let index = 0;
+    export async function buildSameSourceCandidate() { return ${JSON.stringify(failures)}[index++]; }
+    export function verifyStagedUiCandidateAssociations() { throw new Error('unexpected association check'); }`
+  const script = `import assert from 'node:assert/strict';
+    import { registerHooks } from 'node:module';
+    registerHooks({resolve(specifier, context, nextResolve) {
+      if (specifier === './build-companion-npm-candidate.mjs' && context.parentURL === ${JSON.stringify(entry)})
+        return {url: ${JSON.stringify('data:text/javascript,' + encodeURIComponent(mock))}, shortCircuit: true};
+      return nextResolve(specifier, context);
+    }});
+    const {prepareProductArchive} = await import(${JSON.stringify(entry)});
+    for (const failed of ${JSON.stringify(failures)}) {
+      await assert.rejects(prepareProductArchive({version:${JSON.stringify(product.version)}, output:'/owned/output', npmCli:'/owned/npm-cli.js'}), error => {
+        assert.equal(error.code, 'ERR_ASSERTION'); assert.equal(error.actual, false); assert.equal(error.expected, true);
+        assert.match(error.message, /Product same-source build failed/);
+        assert.ok(error.message.includes(failed.root + '/build-report.json'));
+        for (const field of ['error', 'snapshotError', 'sourceStable', 'sourceDrift']) {
+          if (failed[field] !== undefined) assert.ok(error.message.includes(JSON.stringify(failed[field])), field);
+        }
+        for (const step of failed.steps.filter(step => step.status === 'failed')) assert.ok(error.message.includes(JSON.stringify(step)));
+        return true;
+      });
+    }`
+  execFileSync(process.execPath, ['--input-type=module', '-e', script], { stdio: ['ignore', 'pipe', 'pipe'] })
+})

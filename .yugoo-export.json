@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "82c50e245b694a275ed93b4bc4baf88bd54ae154",
+  "revision": "3d56897a21960d5291eb79e23822b8c5903d8ff4",
   "policySha256": "a993efb1ff118f0a3cbe4de3412b059ca985644539f50f7e756c9409d0a94b83",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -760,7 +760,7 @@
       "mode": "100644"
     },
     "packages/companion/package-knowledge.mjs": {
-      "sha256": "b7a6f8d4164513e68f95cbdf75bcb6c81fb64b041ee8462ff59ce0e19bfb6def",
+      "sha256": "921c18f43f16e66d644681f91ffea0509f61e50511c97f6d790a240b7128562d",
       "mode": "100644"
     },
     "packages/companion/plugin-claude/design-system/.claude-plugin/plugin.json": {
@@ -1760,7 +1760,7 @@
       "mode": "100644"
     },
     "packages/companion/test/portable-knowledge-output.test.mjs": {
-      "sha256": "877e790d20429b39807e002f79da5d4d951ab05ea7feb8e6036045075105c855",
+      "sha256": "13ab2d4ea16d00dc796c53770774b274f1d71818e2a8aa30be77f04dfd22f70c",
       "mode": "100644"
     },
     "packages/companion/test/project-access.test.mjs": {
@@ -9056,11 +9056,11 @@
       "mode": "100644"
     },
     "scripts/build-companion-npm-candidate.mjs": {
-      "sha256": "b1fa8165942480c8a34876ab9d2f66880141e759b86a62b68f08e5e805893c56",
+      "sha256": "2eaadb128491987d6a4a8db99869beeb4c78269ada4a96fe04e9bb4a7697dfa0",
       "mode": "100644"
     },
     "scripts/build-companion-npm-candidate.test.mjs": {
-      "sha256": "4d073e2fa18503c323a68c69d134a54518e711ff82f2799b8e7aa1b3dfa29499",
+      "sha256": "1a6a471b41973b5d07caf0498108a6aa0d713d4d45281985791cc19e586d416b",
       "mode": "100644"
     },
     "scripts/canvas-browser-assets.ts": {
@@ -9336,7 +9336,7 @@
       "mode": "100644"
     },
     "scripts/prepare-product-release.mjs": {
-      "sha256": "aea18867ee8077ed99e0b02949b0d4ac14bfd2eb39eba63c06129353100a4232",
+      "sha256": "0a7919d9953f74ff1ab96bc0697cb442bb411b8575bbbd7487cc099f689f5209",
       "mode": "100644"
     },
     "scripts/probe-companion-pica-worker.mjs": {
@@ -9356,7 +9356,7 @@
       "mode": "100644"
     },
     "scripts/product-release.test.mjs": {
-      "sha256": "d61dc6341540ab03ddf78acedc52f4454d5b104937d72cbf62766d8627192285",
+      "sha256": "64527a642b3603f5eecca01c65363b035c1cd12f18cbb37fd276e9de3f8735c3",
       "mode": "100644"
     },
     "scripts/product-runtime-ci.test.mjs": {

@@ -26,12 +26,19 @@ export async function packageKnowledge(target, { mode = 'directory', outputDirec
   if (mode === 'portable') {
     assert.equal(target, undefined, 'Portable output uses only its explicit outputDirectory')
     assert.ok(typeof outputDirectory === 'string' && isAbsolute(outputDirectory), 'Portable output requires an absolute outputDirectory')
-    assert.deepEqual(Object.keys(runtimeDependencies ?? {}).sort(), ['@ladybugdb/wasm-core', '@huggingface/transformers', 'onnxruntime-common', 'undici'].sort(), 'Explicit portable runtime dependency set required')
-    for (const [name, version] of Object.entries({ '@huggingface/transformers': '3.8.1', 'onnxruntime-common': '1.21.0', undici: '8.10.2' })) {
-      assert.equal(runtimeDependencies[name], version, `Unsupported portable dependency version: ${name}`)
-    }
-    validateLadybugDependency(runtimeDependencies['@ladybugdb/wasm-core'])
+    // The manifest records the complete product installation closure, including
+    // declared server-only system trash. Snapshot it before any asynchronous read.
     portableDependencies = Object.freeze({ ...runtimeDependencies })
+    const hasTrash = Object.hasOwn(portableDependencies, 'trash')
+    assert.deepEqual(Object.keys(portableDependencies).sort(), ['@ladybugdb/wasm-core', '@huggingface/transformers', 'onnxruntime-common', 'undici', ...(hasTrash ? ['trash'] : [])].sort(), 'Explicit portable runtime dependency set required')
+    for (const [name, version] of Object.entries({ '@huggingface/transformers': '3.8.1', 'onnxruntime-common': '1.21.0', undici: '8.10.2' })) {
+      assert.equal(portableDependencies[name], version, `Unsupported portable dependency version: ${name}`)
+    }
+    validateLadybugDependency(portableDependencies['@ladybugdb/wasm-core'])
+    if (hasTrash) {
+      const template = JSON.parse(await readFile(join(here, '../../release/product-package-template.json'), 'utf8'))
+      assert.equal(portableDependencies.trash, template.dependencies.trash, 'Unsupported portable dependency version: trash')
+    }
     destination = resolve(outputDirectory)
     assert.equal(await realpath(dirname(destination)), dirname(destination), 'Portable output parent must be canonical')
     const delta = relative(await realpath(join(here, '../..')), destination)

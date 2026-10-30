@@ -313,10 +313,15 @@ export async function buildSameSourceCandidate({ ladybugDependency, nativeGitArt
 /** Ordinary checks remain active; the two fixed task boundaries stay pending. */
 export async function inspectStagedPayload(shared, runtimeDependencies, { embeddedImageEvidenceRequired = true, webModuleMap } = {}) {
   await verifyCompanionNativeGit(shared)
+  // System trash retains its platform executables in the declared npm package.
+  // Other Knowledge dependencies remain outside the server's runtime boundary.
+  const serverDependencies = new Set(Object.hasOwn(runtimeDependencies, 'trash')
+    && typeof runtimeDependencies.trash === 'string' && valid(runtimeDependencies.trash) === runtimeDependencies.trash ? ['trash'] : [])
+  const knowledgeDependencies = new Set(Object.keys(runtimeDependencies).filter(name => name !== 'trash'))
   const emitted = {
-    server: await checkEmitted(join(shared, 'scripts'), new Set(), { packageRoot: shared, knownNodeRuntime: true, relativeArtifacts: { '../knowledge/runtime.mjs': 'knowledge/runtime.mjs', [PACKAGED_CLI_LIFECYCLE_IMPORT]: 'knowledge/cli-lifecycle.mjs', [COMPANION_NATIVE_GIT_IMPORT]: 'git-native/index.cjs' } }),
+    server: await checkEmitted(join(shared, 'scripts'), serverDependencies, { packageRoot: shared, knownNodeRuntime: true, relativeArtifacts: { '../knowledge/runtime.mjs': 'knowledge/runtime.mjs', [PACKAGED_CLI_LIFECYCLE_IMPORT]: 'knowledge/cli-lifecycle.mjs', [COMPANION_NATIVE_GIT_IMPORT]: 'git-native/index.cjs' } }),
     web: await checkEmitted(join(shared, 'web'), new Set(), { knownBrowserShims: true, picaWorkerEvidenceRequired: true, embeddedImageEvidenceRequired, staticPicaModuleMap: webModuleMap }),
-    knowledge: await checkEmitted(join(shared, 'knowledge'), new Set(Object.keys(runtimeDependencies))),
+    knowledge: await checkEmitted(join(shared, 'knowledge'), knowledgeDependencies),
     flow: await checkEmitted(join(shared, 'bundles/flow_design/scripts'), new Set()),
   }
   pendingRuntimeTasks(emitted, embeddedImageEvidenceRequired)

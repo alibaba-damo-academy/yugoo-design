@@ -229,9 +229,10 @@ test('staging rejects changed pica, unrelated loaders, missing assets and extra 
   for (const [mutate, expected] of mutations) { const f = await setup(t); await mutate(f); await assert.rejects(inspectStagedPayload(f.shared, {}), expected) }
 })
 
-test('real server and Knowledge compilation preserve the empty server dependency set', {timeout:30000}, async t => {
+test('real server permits declared system trash while retaining the Knowledge dependency boundary', {timeout:30000}, async t => {
   const f = await setup(t)
   await rm(join(f.shared, 'knowledge'), {recursive:true})
+  const runtimeDependencies = JSON.parse(await readFile(new URL('../release/product-package-template.json', import.meta.url))).dependencies
   const program = `
     const {build} = await import(process.argv[1])
     const {packageKnowledge} = await import(process.argv[2])
@@ -240,7 +241,7 @@ test('real server and Knowledge compilation preserve the empty server dependency
     const shared=process.argv[4],companion=process.argv[5]
     const compile=async config=>{const bundles=await build(config);for(const bundle of bundles)await bundle[Symbol.asyncDispose]()}
     await compile({...server,config:false,entry:Object.fromEntries(Object.entries(server.entry).map(([name,path])=>[name,resolve(companion,path)])),outDir:join(shared,'scripts'),clean:false})
-    await packageKnowledge(undefined,{mode:'portable',outputDirectory:join(shared,'knowledge'),runtimeDependencies:{'@ladybugdb/wasm-core':'0.21.1','@huggingface/transformers':'3.8.1','onnxruntime-common':'1.21.0',undici:'8.10.2'},buildImpl:compile})
+    await packageKnowledge(undefined,{mode:'portable',outputDirectory:join(shared,'knowledge'),runtimeDependencies:${JSON.stringify(runtimeDependencies)},buildImpl:compile})
   `
   const env={...process.env};delete env.NODE_TEST_CONTEXT
   const compiled=spawnSync(process.execPath,['--import','tsx','--input-type=module','-e',program,import.meta.resolve('tsdown'),
@@ -253,6 +254,7 @@ test('real server and Knowledge compilation preserve the empty server dependency
   const asset=join(f.shared,'knowledge/cli-lifecycle.mjs'),bytes=await readFile(asset)
   assert.equal(manifest.assets['cli-lifecycle.mjs'],sha256(bytes))
   const emitted=await inspectStagedPayload(f.shared,manifest.runtimeDependencies)
+  assert.ok(emitted.server.flatMap(record=>record.loads).some(load=>load.source==='trash'))
   assert.ok(emitted.server.flatMap(record=>record.loads).some(load=>load.source==='../knowledge/cli-lifecycle.mjs'))
   assert.ok(!emitted.server.flatMap(record=>record.loads).some(load=>load.source.startsWith('@ladybugdb/')))
   assert.ok(emitted.knowledge.flatMap(record=>record.loads).some(load=>load.source==='@ladybugdb/wasm-core/nodejs'))
@@ -265,6 +267,20 @@ test('real server and Knowledge compilation preserve the empty server dependency
   await writeFile(badServer,"export const load=()=>import('../knowledge/unreviewed.mjs')")
   await writeFile(join(f.shared,'knowledge/unreviewed.mjs'),'export default 1')
   await assert.rejects(inspectStagedPayload(f.shared,manifest.runtimeDependencies),/Import escapes output/)
+})
+
+test('system trash requires an exact declaration and remains outside Knowledge output', async t => {
+  const f = await setup(t)
+  const runtimeDependencies = JSON.parse(await readFile(new URL('../release/product-package-template.json', import.meta.url))).dependencies
+  const server = join(f.shared, 'scripts/system-trash.mjs')
+  await writeFile(server, "export const remove = () => import('trash')")
+  await inspectStagedPayload(f.shared, runtimeDependencies)
+  const withoutTrash = { ...runtimeDependencies }; delete withoutTrash.trash
+  await assert.rejects(inspectStagedPayload(f.shared, withoutTrash), /Undeclared emitted runtime dependency: trash/)
+  await assert.rejects(inspectStagedPayload(f.shared, { ...runtimeDependencies, trash: '^' + runtimeDependencies.trash }), /Undeclared emitted runtime dependency: trash/)
+  await rm(server)
+  await writeFile(join(f.shared, 'knowledge/unreviewed-trash.mjs'), "import 'trash'")
+  await assert.rejects(inspectStagedPayload(f.shared, runtimeDependencies), /Undeclared emitted runtime dependency: trash/)
 })
 
 async function association(t) {
