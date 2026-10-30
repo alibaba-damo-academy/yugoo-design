@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "4884988e86b7f7e83efedbbdb5352fafdd0accdc",
+  "revision": "99e329227f50daad1d46947db75ea30729a14591",
   "policySha256": "a993efb1ff118f0a3cbe4de3412b059ca985644539f50f7e756c9409d0a94b83",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -9036,11 +9036,11 @@
       "mode": "100644"
     },
     "release/product.json": {
-      "sha256": "f23c27a9910bd73c69d9aaf62171ac9edb4818b2c57fa7505ec002cbda88f81d",
+      "sha256": "fa938ea0cc1a0101aab2121d501f0b10ec75bc61226beb7a9626280203349d5a",
       "mode": "100644"
     },
     "release/public-source-baseline.json": {
-      "sha256": "d0c5b44dce22646c1b813a1e27680d21be746e8094ecdf0401ecc322ed787dd6",
+      "sha256": "330d0cc711f29060b5b464822979852e5f26f7f1185d1dfd4a42e916eebf4bc8",
       "mode": "100644"
     },
     "release/public-source-policy.json": {
@@ -11520,7 +11520,7 @@
       "mode": "100644"
     },
     "pnpm-workspace.yaml": {
-      "sha256": "623f25c46c69e1308cb5459821b1a0de71a0501d93bdbee82660b7a9587cce7c",
+      "sha256": "a304c2d27268bcdb1a501b9d1cbd07be213c74bfd3d0c917cf95b6ad92dfa52d",
       "mode": "100644"
     },
     "packages/companion-dev/package.json": {
@@ -11583,8 +11583,8 @@
     "inputs": [
       {
         "path": "release/public-source-baseline.json",
-        "sourceOid": "64b25c3bb00ce85d10b41764c63b7f4091f939c5",
-        "sourceSHA256": "d0c5b44dce22646c1b813a1e27680d21be746e8094ecdf0401ecc322ed787dd6"
+        "sourceOid": "95e5a3de41e21c0ca0e1a87907703784b6a5a991",
+        "sourceSHA256": "330d0cc711f29060b5b464822979852e5f26f7f1185d1dfd4a42e916eebf4bc8"
       },
       {
         "path": "release/public-source-test-selection.json",
@@ -11601,9 +11601,9 @@
       },
       {
         "path": "pnpm-workspace.yaml",
-        "sourceOid": "b19d25a048effc649a34d75b98c407b63d9e72b9",
-        "sourceSHA256": "efc7fa2c79da44989b823204030aa26d646e5bce63b08cde630bac8bdade001d",
-        "outputSHA256": "623f25c46c69e1308cb5459821b1a0de71a0501d93bdbee82660b7a9587cce7c"
+        "sourceOid": "6b4970b9e09cc0d8db3db6311fb141ff645678d5",
+        "sourceSHA256": "d9c8b70e28147734ab835081a639c2bb5630c6390c28856a440c29d6e1ab74e4",
+        "outputSHA256": "a304c2d27268bcdb1a501b9d1cbd07be213c74bfd3d0c917cf95b6ad92dfa52d"
       },
       {
         "path": "packages/companion-dev/package.json",
