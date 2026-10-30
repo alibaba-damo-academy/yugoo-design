@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "0f331cd9cb4a670a6a1ba72d6d37df12a34bb162",
+  "revision": "82c50e245b694a275ed93b4bc4baf88bd54ae154",
   "policySha256": "a993efb1ff118f0a3cbe4de3412b059ca985644539f50f7e756c9409d0a94b83",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -9032,7 +9032,7 @@
       "mode": "100644"
     },
     "release/public-source-baseline.json": {
-      "sha256": "c13617cc59c2c9ab174a8cb2cc5704556d871d0044d2892e9799c8af6ac9549c",
+      "sha256": "d0c5b44dce22646c1b813a1e27680d21be746e8094ecdf0401ecc322ed787dd6",
       "mode": "100644"
     },
     "release/public-source-policy.json": {
@@ -11512,7 +11512,7 @@
       "mode": "100644"
     },
     "pnpm-workspace.yaml": {
-      "sha256": "e640532e95fb61327f183ac3c490a5a66d2db1764892d12752f639301f65956c",
+      "sha256": "623f25c46c69e1308cb5459821b1a0de71a0501d93bdbee82660b7a9587cce7c",
       "mode": "100644"
     },
     "packages/companion-dev/package.json": {
@@ -11575,8 +11575,8 @@
     "inputs": [
       {
         "path": "release/public-source-baseline.json",
-        "sourceOid": "3876c9922a0ec0f89c16f1239211bc89d6f0559e",
-        "sourceSHA256": "c13617cc59c2c9ab174a8cb2cc5704556d871d0044d2892e9799c8af6ac9549c"
+        "sourceOid": "64b25c3bb00ce85d10b41764c63b7f4091f939c5",
+        "sourceSHA256": "d0c5b44dce22646c1b813a1e27680d21be746e8094ecdf0401ecc322ed787dd6"
       },
       {
         "path": "release/public-source-test-selection.json",
@@ -11593,9 +11593,9 @@
       },
       {
         "path": "pnpm-workspace.yaml",
-        "sourceOid": "9da612689860ae7cc487e32dfb97af6ddf01dea8",
-        "sourceSHA256": "33234b373121132554cafd6656821f09e260aef83603828e2c440381d3ccb3a8",
-        "outputSHA256": "e640532e95fb61327f183ac3c490a5a66d2db1764892d12752f639301f65956c"
+        "sourceOid": "b19d25a048effc649a34d75b98c407b63d9e72b9",
+        "sourceSHA256": "efc7fa2c79da44989b823204030aa26d646e5bce63b08cde630bac8bdade001d",
+        "outputSHA256": "623f25c46c69e1308cb5459821b1a0de71a0501d93bdbee82660b7a9587cce7c"
       },
       {
         "path": "packages/companion-dev/package.json",
