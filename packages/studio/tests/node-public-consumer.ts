@@ -13,6 +13,10 @@ export async function consume(stateRoot: string, trusted: StudioInstanceTrustedC
   const authoring = createStudioAuthoring({ scope, instances, readComponents: () => ({ components: [{ name: 'record_form' }] }) })
   const view = await authoring.read({ paths: ['panel.yaml'] })
   for (const file of view.files) if (file.exists) file.content satisfies string
+  const dependency = await authoring.read({ mount: { bindingKey: 'observations', paths: ['SKILL.md'] } })
+  dependency.mountedBundle?.readOnly satisfies true | undefined
+  const member = await instances.readMountedBundle({ id: scope.id, expectedRevision: scope.expectedRevision, bindingKey: 'observations' })
+  member.availableFiles[0]?.readable satisfies boolean | undefined
   const prepared = await authoring.prepare({ changes: [{ path: 'panel.yaml', content: 'full replacement' }] })
   prepared.request satisfies StudioInstanceChangeRequest
   await instances.saveChanges({ ...prepared.request, mode: 'validated', digest: prepared.candidate.digest })
@@ -23,6 +27,8 @@ export async function consume(stateRoot: string, trusted: StudioInstanceTrustedC
   await authoring.prepare({ changes: [{ path: 'panel.yaml', content: null }] })
   // @ts-expect-error Identity cannot be overridden by a model read request.
   await authoring.read({ id: 'foreign', paths: ['panel.yaml'] })
+  // @ts-expect-error Mount reads cannot select another instance identity.
+  await authoring.read({ mount: { bindingKey: 'observations', id: 'foreign' } })
   // @ts-expect-error File reads require an actual string instance identity.
   await instances.readFile({ id: 42, path: 'panel.yaml' })
   // @ts-expect-error Validated save requires the prepared candidate digest.

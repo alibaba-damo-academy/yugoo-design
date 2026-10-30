@@ -87,6 +87,26 @@ test('mount read recovery and uncertain write verification never repeat the muta
   assert.equal(writes, 1); assert.equal(reads, 4)
 })
 
+test('MountEditor identifies a Kit-retained source separately from unavailable global candidates', async t => {
+  const record = { ...kit(), availableBundles: [], mounts: [{ bundle: { name: 'retained_rules', version: '1.0',
+    source: { snapshot: 'saved-source-hash', sourceId: 'import:bundle:retained_rules@1.0' } } }] }
+  let actions
+  await fixture(t, MountEditor, { client: {}, record, locale: 'en', onSaved: () => assert.fail('reading must not save'), onActions: value => { actions = value } })
+  assert.doesNotMatch(host.textContent, /Source unavailable|Some mounted sources are unavailable/)
+  assert.match(host.textContent, /retained with this Kit/)
+  assert.equal(host.querySelector('[aria-label="Mounted Bundles"] .ygd-studio-bundle-card') !== null, true)
+  assert.equal(host.querySelector('[aria-label="Available Bundles"] .ygd-studio-bundle-card'), null, 'retained source is not a new global candidate')
+  assert.equal(actions.canSave, false)
+})
+
+test('a missing live Bundle instance is not treated as a usable retained fallback', async t => {
+  const record = { ...kit(), availableBundles: [], mounts: [{ bundle: { name: 'missing_live_rules', version: '1.0', instanceId: 'missing-instance',
+    source: { snapshot: 'historical-source-hash', sourceId: 'local:bundle:missing_live_rules' } } }] }
+  await fixture(t, MountEditor, { client: {}, record, locale: 'en', onSaved: () => assert.fail('reading must not save'), onActions: () => {} })
+  assert.match(host.textContent, /Source unavailable/)
+  assert.doesNotMatch(host.textContent, /retained with this Kit/)
+})
+
 test('MountEditor failure retains selected Bundles and the shared reason entry', async t => {
   const record = { ...kit(), mounts: [{ bundle: a }] }; let actions, writes = 0
   await fixture(t, MountEditor, { client: { updateMounts: async () => { writes++; throw Error('Save failed') } }, record, locale: 'en', onSaved: () => assert.fail('failed write must not report a save'), onActions: value => { actions = value } })

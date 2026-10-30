@@ -279,6 +279,7 @@ export async function createStudioInstances(options) {
     const current = (await repository.list()).find(record => !record.deletedAt && record.current === true && record.kind === 'bundle' && record.bundle.name === selected.bundle.name)
     if (current) return { files: await filesOf(current), sourceId: current.sourceId }
     if (currentLibrary && selected.bundle.version !== requested.version) return catalog.captureBundle(pin(requested))
+    if (!selected.bundle.source?.snapshot) throw new Error(`Mounted Bundle source is unavailable for ${selected.bindingKey}.`)
     return { files: await entriesOf(selected.bundle.source.snapshot), sourceId: selected.bundle.source.sourceId }
   }
   const kitInput = async record => ({ kit: record.kit, kitFiles: await filesOf(record), mounts: record.mounts, resolveBundle: resolveMounts(record.mounts, record.current === true) })
@@ -390,6 +391,35 @@ export async function createStudioInstances(options) {
   }
   return {
     read,
+    async readMountedBundle({ id, expectedRevision, bindingKey, paths = [] }) {
+      // Reuse ordinary source guards and the same mount resolver used by Kit
+      // loading. A read never materializes a copy or grants Bundle write access.
+      if (!Array.isArray(paths)) throw new Error('Select an exact list of mounted Bundle source paths.')
+      const request = paths.length ? normalizeStudioInstanceChanges({ id, expectedRevision, changes: paths.map(path => ({ path, content: '' })) })
+        : { id, expectedRevision, changes: [] } // Discovery has no file changes; repository identity/CAS guards still apply.
+      const selectedKey = runtimeNameOf(bindingKey)
+      return repository.transaction(async tx => {
+        const record = modern(await tx.read(request.id))
+        checkRevision(record, request.expectedRevision)
+        if (record.kind !== 'kit') throw new Error('Select a Kit to read its mounted Bundles.')
+        const mount = record.mounts.find(item => item.bindingKey === selectedKey)
+        if (!mount) throw new Error('Select a Bundle mounted by this Kit; read the mounts first.')
+        const captured = await resolveMounts(record.mounts, record.current === true)(mount.bundle)
+        const entries = new Map(captured.files.map(file => [file.path, file]))
+        const availableFiles = captured.files.map(file => {
+          const bytes = Buffer.byteLength(file.base64, 'base64')
+          let readable = bytes <= MAX_TEXT
+          try { decode(file.base64) } catch { readable = false }
+          return { path: file.path, bytes, readable }
+        }).sort((a, b) => a.path.localeCompare(b.path))
+        const selected = request.changes.map(({ path }) => ({ path, file: entries.get(path) }))
+        if (selected.some(({ path, file }) => file && !availableFiles.find(info => info.path === path).readable)) throw new Error('Mounted Bundle source must be UTF-8 text of at most 1 MiB per file.')
+        if (selected.reduce((bytes, { file }) => bytes + (file ? Buffer.byteLength(file.base64, 'base64') : 0), 0) > STUDIO_INSTANCE_CHANGE_LIMITS.totalBytes) throw new Error('Mounted Bundle read exceeds the 4 MiB text budget; select fewer paths.')
+        return { id: record.id, revision: record.revision, bindingKey: mount.bindingKey, bundle: pin(mount.bundle),
+          sourceId: captured.sourceId, readOnly: true, availableFiles,
+          files: selected.map(({ path, file }) => file ? { path, exists: true, content: decode(file.base64) } : { path, exists: false }) }
+      })
+    },
     async captureKit({ id, expectedRevision } = {}) {
       return repository.transaction(async tx => {
         const record = modern(await tx.read(id))
@@ -481,10 +511,10 @@ export async function createStudioInstances(options) {
       })
       return { ...await describe(record), changeReceipt: receipt }
     },
-    async list({ kind } = {}) {
+    async list({ kind, includeReadiness = true } = {}) {
       if (kind !== undefined && !['kit', 'bundle'].includes(kind)) throw new Error('Unknown instance kind.')
       const records = await repository.list()
-      return Promise.all(records.filter(record => !record.deletedAt && (!kind || record.kind === kind)).map(async record => ({ ...projection(record, records), ...await displayCopy(record), ...await readiness(record) })))
+      return Promise.all(records.filter(record => !record.deletedAt && (!kind || record.kind === kind)).map(async record => ({ ...projection(record, records), ...await displayCopy(record), ...(includeReadiness ? await readiness(record) : {}) })))
     },
     async listBundles() { return candidates(await repository.list()) },
     async importSources(request) {

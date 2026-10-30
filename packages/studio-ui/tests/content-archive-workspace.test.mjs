@@ -31,6 +31,17 @@ function ConversationFrame({ children, onDirtyChange }) {
   const [value, setValue] = React.useState('')
   return React.createElement('div', {}, React.createElement('textarea', { 'aria-label': 'Unsent host input', value, onChange: event => { setValue(event.target.value); onDirtyChange(true) } }), children)
 }
+// A native host may protect its unsent conversation through the editor dirty port.
+function SourceConversationFrame({ onDirtyChange, ...props }) {
+  const [value, setValue] = React.useState(''), sourceDirty = React.useRef(false)
+  const notify = React.useRef(onDirtyChange); notify.current = onDirtyChange
+  const intent = React.useRef(value); intent.current = value
+  const report = React.useCallback(() => notify.current?.(sourceDirty.current || !!intent.current, { sourceDirty: sourceDirty.current }), [])
+  const changed = React.useCallback(value => { sourceDirty.current = value; report() }, [report])
+  React.useEffect(report, [value, report])
+  return React.createElement('section', {}, React.createElement('textarea', { 'aria-label': 'Unsent source-side input', value, onChange: event => setValue(event.target.value) }),
+    React.createElement(InstanceWorkbench, { ...props, onDirtyChange: changed }))
+}
 async function fixture(t, options = {}) {
   const calls = [], exports = [], removed = [], local = [...(options.copies ?? [])]
   const client = { workspace: async () => ({ query: '', kits: [], bundles: options.installedBundle ? [{ ...pin, description: 'Independent methods', usedBy: [] }] : [] }), readBundleWorkspace: async () => ({ workspace: { ...pin, description: 'Independent Bundle', files: [], panel: { kind: 'native', renderer: 'fixture' } }, diagnostics: [] }) }
@@ -54,6 +65,7 @@ async function fixture(t, options = {}) {
   t.after(() => { [URL.createObjectURL, URL.revokeObjectURL, window.HTMLAnchorElement.prototype.click] = previous })
   await React.act(async () => root.render(React.createElement(StudioWorkspace, { client, controller, contentClient, instances, locale: 'en',
     ...(options.initial ? { initialInstance: { id: options.initial.id, expectedRevision: options.initial.revision } } : {}),
+    ...(options.sourceConversation ? { renderInstanceWorkbench: props => React.createElement(SourceConversationFrame, props) } : {}),
     renderContent: (content, current) => { context = current; return React.createElement(ConversationFrame, { onDirtyChange: current.onDirtyChange }, content) },
   })))
   return { client, controller, contentClient, instances, calls, exports, removed, downloads, close, context: () => context }
@@ -112,6 +124,23 @@ test('direct local export retains revision and unsent conversation', async t => 
   await edit(composer, 'Keep this request'); await click('Export')
   assert.deepEqual(f.exports, [{ id: row.id, expectedRevision: row.revision }]); assert.equal(document.querySelector('dialog'), null)
   assert.equal(composer.value, 'Keep this request'); assert.deepEqual(f.downloads, ['bundle copy.zip'])
+})
+test('source-side unsent intent protects navigation while saved export retains the input', async t => {
+  const row = copy(), f = await fixture(t, { copies: [row], initial: row, sourceConversation: true })
+  await until(() => document.querySelector('[aria-label="Unsent source-side input"]'))
+  const composer = document.querySelector('[aria-label="Unsent source-side input"]')
+  await edit(composer, 'P3-UNSENT-020')
+  assert.equal(button('Export').disabled, false)
+  await click('Export')
+  assert.deepEqual(f.exports, [{ id: row.id, expectedRevision: row.revision }])
+  assert.equal(composer.value, 'P3-UNSENT-020'); assert.equal(f.downloads.length, 1)
+  let confirms = 0; const previous = window.confirm
+  window.confirm = () => { confirms++; return false }; t.after(() => { window.confirm = previous })
+  await click('Back'); assert.equal(confirms, 1); assert.equal(composer.value, 'P3-UNSENT-020')
+  const unload = new Event('beforeunload', { cancelable: true }); window.dispatchEvent(unload)
+  assert.equal(unload.defaultPrevented, true)
+  await edit(document.querySelector('textarea[aria-label="SKILL.md"]'), '# Unsaved source')
+  assert.equal(button('Export').disabled, true); assert.equal(f.exports.length, 1)
 })
 test('installed direct export preserves kind/pin and suppresses duplicate requests', async t => {
   const f = await fixture(t, { installedBundle: true }), gate = deferred(); let calls = 0

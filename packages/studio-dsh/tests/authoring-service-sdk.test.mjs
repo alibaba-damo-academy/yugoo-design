@@ -18,6 +18,7 @@ const { default: TYPERT } = await import(new URL(built ? '../lib/typert.host.js'
 const { createSameOriginStudioAuthoringClient } = await import(new URL(built ? '../lib/authoring.page-rpc.js' : '../src/authoring.page-rpc.ts', import.meta.url).href)
 const { originalFiles, additions, pin } = await import('../../companion/test/fixtures/studio-changes-fixture.mjs')
 const { loadDesignBundle } = await import('dsh-design-core')
+const { queryPanelAuthoringReference } = await import('dsh-design-core/dsl')
 const sequence = n => [call('studio_authoring_read', {}), call('studio_authoring_prepare', { changes: additions() }), stop()][n % 3]
 const addressOf = r => ({ sessionId: r.sessionId, epoch: r.epoch })
 
@@ -36,7 +37,9 @@ async function sources() {
   const content = await loadDesignBundle({ readText: async p => files.get(p)?.toString('utf8'), readBytes: async p => files.get(p),
     listDir: async p => (await port.listDir(target(p))).map(e => e.name), isDirectory: async p => dirs.has(p), realPath: async p => p },
   { rootDir: root, sourceId: 'trusted:service-source-fixture' }, pin)
-  return { design: { registerCurrentKitSource: () => () => {}, listKits: () => [], listBundles: () => [content.skill], resolveBundle: p => p.name === pin.name && p.version === pin.version ? content : undefined, resolveKit: () => undefined }, fs: port }
+  return { design: { registerCurrentKitSource: () => () => {}, listKits: () => [],
+    listCurrentKits: async () => [{ name: 'local_imported_kit', version: '1.0', description: 'Imported customer feedback' }],
+    listBundles: () => [content.skill], resolveBundle: p => p.name === pin.name && p.version === pin.version ? content : undefined, resolveKit: () => undefined }, fs: port }
 }
 
 async function fixture(t, options = {}) {
@@ -159,10 +162,28 @@ test('Host conversation reads packaged creator methods without widening source o
   assert.equal(method.isError, false); assert.match(JSON.stringify(method), /Bundle/)
   const components = await execute({ components: {} })
   assert.equal(components.isError, false); assert.match(JSON.stringify(components), /record_board/)
+  const material = JSON.parse(await fs.readFile(new URL('../lib/authoring/panel-components.json', import.meta.url), 'utf8'))
+  const readComponents = async selectors => {
+    let offset = 0, content = '', totalBytes
+    for (;;) {
+      const reply = await execute({ components: { ...selectors, ...(offset ? { offset } : {}) } })
+      assert.equal(reply.isError, false)
+      const data = JSON.parse(reply.content.find(block => block.type === 'text').text).result
+      if (data.format !== 'json') { assert.equal(offset, 0); return data }
+      assert.equal(data.component, selectors.name); assert.equal(data.reference, selectors.reference)
+      assert.equal(data.offset, offset); assert.equal(Buffer.byteLength(data.content), data.bytes)
+      assert.ok(data.bytes > 0 && data.bytes <= 16 * 1024)
+      totalBytes ??= data.totalBytes; assert.equal(data.totalBytes, totalBytes)
+      content += data.content
+      if (data.nextOffset === undefined) { assert.equal(Buffer.byteLength(content), totalBytes); return JSON.parse(content) }
+      assert.equal(data.nextOffset, offset + data.bytes); assert.ok(data.nextOffset < totalBytes)
+      offset = data.nextOffset
+    }
+  }
   for (const reference of ['contract', 'docs', 'examples']) {
-    const reply = await execute({ components: { name: 'record_board', reference } })
-    assert.equal(reply.isError, false)
-    const data = JSON.parse(reply.content.find(block => block.type === 'text').text).result
+    const data = await readComponents({ name: 'record_board', reference })
+    const expected = JSON.parse(JSON.stringify(queryPanelAuthoringReference(material, 'record_board', reference)))
+    assert.deepEqual(data, expected, 'the Host tool returns the complete packaged JSON reference')
     assert.equal(data.component, 'record_board')
     if (reference === 'contract') {
       assert.ok(data.contracts.length > 0)
@@ -199,6 +220,9 @@ test('Host conversation tool and Studio RPC edit and reopen the same working-cop
   const catalog = await execute('catalog', {})
   assert.equal(catalog.isError, false)
   assert.match(JSON.stringify(catalog), /observations/)
+  assert.match(JSON.stringify(catalog), /currentKits.*local_imported_kit/)
+  assert.match(JSON.stringify(await execute('catalog', { query: 'customer feedback' })), /local_imported_kit/)
+  assert.doesNotMatch(JSON.stringify(await execute('catalog', { query: 'not-in-this-catalog' })), /local_imported_kit/)
 
   // Copy through the Host tool, inspect through the page's actual Gateway client.
   const copied = await execute('copy', { kind: 'bundle', bundle: pin })
@@ -273,8 +297,11 @@ test('actual Gateway resolves the original Agent and connects native prepare to 
   const release = deferred(); t.after(() => release.resolve())
   const f = await fixture(t, { async step(n) { if (n === 2) await release.promise; return sequence(n) } })
   assert.equal(TYPERT.invocations.filter(d => d.namespace === 'studioManagement').length, 6)
-  assert.equal(TYPERT.invocations.filter(d => d.namespace === 'studioAuthoring').length, 23)
-  assert.equal(remoteMethods(f.ctx.get('studioAuthoring')).length, 23)
+  const authoringMethods = ['list', 'read', 'create', 'importSources', 'copy', 'editCurrent', 'rename', 'remove',
+    'readFile', 'saveFile', 'prepareChanges', 'saveChanges', 'updateMounts', 'preview', 'start', 'resume', 'observe',
+    'cancel', 'readPrepared', 'listReferences', 'exportContentArchive', 'readArchive'].sort()
+  assert.deepEqual(TYPERT.invocations.filter(d => d.namespace === 'studioAuthoring').map(d => d.method).sort(), authoringMethods)
+  assert.deepEqual(remoteMethods(f.ctx.get('studioAuthoring')).map(d => d.method).sort(), authoringMethods)
   const record = await f.client.instances.copy({ kind: 'bundle', bundle: pin })
   const reference = await f.client.start({ invocationId: randomUUID(), id: record.id, expectedRevision: 0,
     paths: additions().map(c => c.path), prompt: 'Refine this exact retained source.' })

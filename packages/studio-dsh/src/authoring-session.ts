@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import { isAbsolute } from 'node:path'
 import { normalizeStudioInstanceChanges, type StudioInstanceCandidate } from 'dsh-design-studio'
-import { createStudioAuthoring } from 'dsh-design-studio/node'
+import { createStudioAuthoring, type StudioAuthoringRead } from 'dsh-design-studio/node'
 import { createStudioAuthoringAgent } from './authoring-agent.ts'
 import type { StudioAuthoringReference, StudioAuthoringScope } from './authoring-agent.types.ts'
 import type { StudioAuthoringSession, StudioAuthoringSessionOptions, StudioSessionPrepared, StudioSessionRun,
@@ -31,7 +31,8 @@ export function createStudioAuthoringSession(options: StudioAuthoringSessionOpti
   assert.ok(isAbsolute(workspaceRoot), 'A trusted isolated workspace is required')
   assert.equal(typeof retainReference, 'function', 'The caller must retain native references before dispatch')
   assert.ok(ctx.agents.get(parent.id) === parent, 'The exact native authoring parent is disconnected')
-  const source = { read: instances.read.bind(instances), readFile: instances.readFile.bind(instances), prepareChanges: instances.prepareChanges.bind(instances) }
+  const source = { read: instances.read.bind(instances), readFile: instances.readFile.bind(instances),
+    ...(instances.readMountedBundle ? { readMountedBundle: instances.readMountedBundle.bind(instances) } : {}), prepareChanges: instances.prepareChanges.bind(instances) }
   const native = createStudioAuthoringAgent(ctx), lifetime = new AbortController()
   // Ephemeral native handles only. Parent identity always comes from ctx.agents;
   // retained/cold references and all source/candidate authority remain external.
@@ -104,7 +105,7 @@ export function createStudioAuthoringSession(options: StudioAuthoringSessionOpti
       ...(bundle ? { bundle: Object.freeze({ ...bundle }) } : {}) })
     const capability = createStudioAuthoring({ scope, instances: source, readComponents })
     const nativeRequest = { parent, invocationId: request.invocationId, workspaceRoot, scope, prompt: request.prompt, signal,
-      ports: { read: (input?: { paths?: string[] }) => capability.read(input), prepare: (input: { changes: { path: string; content: string }[] }) => capability.prepare(input) },
+      ports: { read: (input?: StudioAuthoringRead) => capability.read(input), prepare: (input: { changes: { path: string; content: string }[] }) => capability.prepare(input) },
       onReference: async (value: StudioAuthoringReference) => {
         active(); assert.deepEqual(value.scope, scope); referenceForParent(value)
         await retainReference(clone(value))

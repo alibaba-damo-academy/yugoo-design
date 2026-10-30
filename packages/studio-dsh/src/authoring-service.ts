@@ -107,7 +107,7 @@ export class DshStudioAuthoringService extends TypertRemoteService {
     return structuredClone(run.reference)
   }
 
-  /** Conversation discovery reuses the page's existing read-only catalog. */
+  /** Installed-source inspection plus the same current Kit choices as project selection. */
   catalog(agent: Agent, request: Record<string, unknown>) {
     if (!request || typeof request !== 'object' || Array.isArray(request)
       || Object.keys(request).some(key => key !== 'query')
@@ -115,10 +115,13 @@ export class DshStudioAuthoringService extends TypertRemoteService {
       return Promise.reject(new Error('Studio catalog accepts only an optional search query'))
     }
     const query = request.query as string | undefined
-    return this.invoke(agent, () => {
+    return this.invoke(agent, async () => {
       const catalog = this.owner.get('studioManagement') as DshStudioManagementService | undefined
       if (!catalog) throw new Error('Studio catalog service is unavailable')
-      return catalog.workspace(query ?? '')
+      const [installed, current] = await Promise.all([catalog.workspace(query ?? ''), this.owner.design.listCurrentKits()])
+      const search = query?.trim().toLocaleLowerCase() ?? ''
+      return { ...installed, currentKits: current.filter(kit => !search
+        || `${kit.name} ${kit.description ?? ''}`.toLocaleLowerCase().includes(search)) }
     })
   }
   list(agent: Agent, request?: Parameters<StudioInstances['list']>[0]) {

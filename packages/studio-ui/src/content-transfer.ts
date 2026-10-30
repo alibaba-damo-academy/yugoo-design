@@ -16,6 +16,7 @@ const HTTP_BYTES = 12 * 1024 * 1024
 export function formatStudioImportError(error: string, locale: 'zh' | 'en'): string {
   const detail = error.replaceAll('/studio-content-archive-virtual/', '')
   const lines = detail.split('\n').map(line => {
+    if (/^Invalid ZIP archive:/i.test(line)) return locale === 'zh' ? '所选文件不是有效的 ZIP 压缩包，请检查文件格式。' : line
     const missing = line.match(/^Missing required file: (.+)$/i) ?? line.match(/^[^\n]*?: missing (?:[^\n]*? )?file (.+)$/i)
     if (missing) return locale === 'zh' ? `缺少必需文件：${missing[1]}` : `Missing required file: ${missing[1]}`
     return line

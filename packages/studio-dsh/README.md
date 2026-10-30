@@ -90,8 +90,14 @@ workspaceRoot, retainReference })`. It composes the same native adapter with
 `dsh-design-studio/node` read/prepare capabilities over the caller's existing
 instances. Start selects an exact working-copy revision and an initial source
 reading focus. Legal reads, full-file replacements and new files remain bound to
-that same Kit or Bundle; the initial paths are not an editing whitelist. Bundle
-source uses its exact pin; Kit-owned source can omit a preview Bundle, while a supplied preview pin must match an explicit mount. The
+that same Kit or Bundle; the initial paths are not an editing whitelist. Source
+reads also discover the bound source's file list and Kit mount bindings.
+`studio_authoring_read({mount:{bindingKey}})` lists an existing mount's files;
+`{mount:{bindingKey,paths:["SKILL.md"]}}` reads its current saved method. It uses
+the existing local/retained-source resolver, independently of packaged authoring
+examples and component references. Mounted sources remain read-only and
+`studio_authoring_prepare` continues to write only the bound Kit or Bundle.
+Bundle source uses its exact pin; Kit-owned source can omit a preview Bundle, while a supplied preview pin must match an explicit mount. The
 factory retains the native address before dispatch and returns a typed
 `{ request, candidate }` for the shared review UI. Saving remains an explicit
 call to the existing instance service, using its candidate digest and revision.
@@ -416,6 +422,11 @@ normal `test` script for built module registration and routes. These checks do
 not prove a real desktop return trip or installed authoring service.
 
 The inspection Remote exposes exactly six read methods: `workspace`, `readKitWorkspace` (exact `name@version` pin required; a diverging response identity diagnoses), `readKitFiles` and `readKitFile` (the same exact Kit pin), `readBundleWorkspace`, and `readBundleFile`. Kit file inspection includes `kit.yaml`, `mindset.md` and other authored files beneath the selected Kit root, excluding `.git` and `node_modules`; the text viewer accepts regular UTF-8 files up to 1 MiB, with bounded tree traversal. Missing sources, forbidden paths, binary content and oversized files diagnose rather than falling back to another version. The catalog snapshot projects `ctx.design.listKits()`. Bundle source reads run through `ctx.fs`: the `kitSources` config lists installed content packages (`packageName`, resolved like the Design Core kit-loader) or absolute directories (`root`); every path resolves through the filesystem capability and must stay canonically contained in a configured root, so traversal and symlink escapes never read outside the authored trees and non-UTF-8 content diagnoses as binary. Invalid or ambiguous configuration — a missing root, a root without `mindset.md`, a relative path, a duplicate root, or one Kit/Bundle name declared by two roots — fails loud at startup. Without `kitSources` the catalog stays readable and Bundle reads diagnose `studio.source_not_configured`. Disposal rejects new work and drains admitted calls.
+
+The native `studio_customize` tool's `catalog` result also includes `currentKits`,
+using Core's current Kit choices from installed and saved local sources. Its
+`kits`/`bundles` fields remain installed-source inspection; a local import need
+not appear there. Discovery does not replace a selected project's own sources.
 
 Strict codecs follow the current Typert `create(): TypertSchema` factory contract.
 The existing Zod validators supply that parser capability; both Host registration

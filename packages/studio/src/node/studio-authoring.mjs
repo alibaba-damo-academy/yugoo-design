@@ -3,10 +3,12 @@
  *
  * The host authenticates and binds the native invocation before constructing this
  * adapter. Scope is never a model argument. Pass only the existing instance
- * read/readFile/prepareChanges ports and a same-build component catalog reader
+ * read/readFile/readMountedBundle/prepareChanges ports and a same-build component catalog reader
  * returning the JSON projection used by design_list_panel_components.
  *
- * read({paths?}) returns coherent, bounded source text plus the actual catalog.
+ * read({paths?}) returns coherent, bounded source text, file/mount discovery and
+ * the actual catalog. read({mount:{bindingKey,paths?}}) reads only the selected
+ * Kit member's current saved source; omitting paths discovers its files.
  * allowedPaths seeds the initial read; the current instance and revision bind
  * subsequent legal reads, replacements and new files.
  * prepare({changes}) returns {request,candidate}: request.changes contains full
@@ -35,6 +37,7 @@ export function createStudioAuthoring({ scope, instances, readComponents } = {})
     allowedPaths: Object.freeze(normalized.changes.map(change => change.path)), ...(normalized.bundle ? { bundle: normalized.bundle } : {}) })
   // Do not expose the full mutable service, its repository, or any write method.
   const readInstance = instances.read.bind(instances), readFile = instances.readFile.bind(instances)
+  const readMountedBundle = instances.readMountedBundle?.bind(instances)
   const prepareChanges = instances.prepareChanges.bind(instances)
   const requestFor = changes => normalizeStudioInstanceChanges({ id: binding.id, expectedRevision: binding.expectedRevision,
     changes, ...(binding.bundle ? { bundle: binding.bundle } : {}) })
@@ -60,7 +63,28 @@ export function createStudioAuthoring({ scope, instances, readComponents } = {})
   }
   return Object.freeze({
     async read(input = {}) {
-      object(input, ['paths'], 'authoring read request')
+      object(input, ['paths', 'mount'], 'authoring read request')
+      if (input.mount !== undefined) {
+        if (input.paths !== undefined) throw new Error('Read a mounted Bundle separately from Kit source paths.')
+        object(input.mount, ['bindingKey', 'paths'], 'mounted Bundle read request')
+        const { bindingKey, paths = [] } = input.mount
+        if (typeof bindingKey !== 'string' || !bindingKey || !Array.isArray(paths)) throw new Error('Select a mounted bindingKey and an exact source path list.')
+        const selected = paths.length ? checkPaths(paths) : []
+        const record = await current()
+        const mount = record.kind === 'kit' && record.mounts?.find(mount => mount.bindingKey === bindingKey)
+        if (!mount) throw new Error('Select a Bundle mounted by this Kit; read the mounts first.')
+        if (!readMountedBundle) throw new Error('The Host has not supplied mounted Bundle source reads.')
+        const value = await readMountedBundle({ id: binding.id, expectedRevision: binding.expectedRevision, bindingKey, paths: selected })
+        if (value?.id !== binding.id || value.revision !== binding.expectedRevision || value.bindingKey !== bindingKey) throw changed()
+        if (!samePin(value.bundle, mount.bundle) || value.readOnly !== true || !Array.isArray(value.files)
+          || value.files.length !== selected.length || value.files.some((file, index) => file.path !== selected[index] || typeof file.exists !== 'boolean')) throw new Error('Mounted source receipt differs from the selected Kit member and files.')
+        const { files, ...mountedBundle } = value
+        const existing = files.filter(file => file.exists)
+        if (existing.length) requestFor(existing.map(({ path, content }) => ({ path, content })))
+        const catalog = await components()
+        await current()
+        return { scope: binding, files, mountedBundle, components: catalog }
+      }
       if (input.paths !== undefined && !Array.isArray(input.paths)) throw new Error('Select an exact list of scoped source paths.')
       const paths = checkPaths(input.paths ?? binding.allowedPaths)
       const record = await current()
@@ -80,7 +104,9 @@ export function createStudioAuthoring({ scope, instances, readComponents } = {})
       // Monotonic CAS revisions plus every file's receipt and this final check
       // prevent returning a mixed revision. This does not acquire a write lock.
       await current()
-      return { scope: binding, files, components: catalog }
+      return { scope: binding, files, components: catalog,
+        availableFiles: record.files.map(({ path, bytes, editable }) => ({ path, bytes, readable: editable })),
+        mounts: (record.mounts ?? []).map(({ bindingKey, bundle }) => ({ bindingKey, bundle: { name: bundle.name, version: bundle.version } })) }
     },
     async prepare(input) {
       object(input, ['changes'], 'authoring prepare request')

@@ -51,6 +51,51 @@ async function fixture(t, options = {}) {
   return { ...sdk, storage, instances, record, retained, candidates, bridgeOptions, bridge, request }
 }
 
+test('native Kit author discovers mounted current source and prepares only its bound Kit', { timeout: 15000 }, async t => {
+  let changes
+  const receipts = [], prompts = []
+  const f = await fixture(t, { step(n, request) {
+    const { tools, ...conversation } = request
+    prompts.push(JSON.stringify(conversation))
+    if (n === 0) return call('studio_authoring_read', {})
+    if (n === 1) {
+      assert.equal(receipts[0].mounts[0].bindingKey, 'observations')
+      assert.equal(receipts[0].scope.bundle, undefined)
+      assert.ok(tools.find(tool => tool.name === 'studio_authoring_read').parameters.properties.mount)
+      return call('studio_authoring_read', { mount: { bindingKey: 'observations' } })
+    }
+    if (n === 2) {
+      assert.ok(receipts[1].mountedBundle.availableFiles.some(file => file.path === 'SKILL.md'))
+      return call('studio_authoring_read', { mount: { bindingKey: 'observations', paths: ['SKILL.md'] } })
+    }
+    if (n === 3) {
+      assert.match(receipts[2].files[0].content, /CURRENT_MOUNT_METHOD/)
+      assert.equal(receipts[2].mountedBundle.readOnly, true)
+      return call('studio_authoring_prepare', { changes })
+    }
+    return stop()
+  } })
+  f.ctx.on('tools/result', (exec, result) => {
+    if (exec.name === 'studio_authoring_read' && !result.isError) receipts.push(JSON.parse(result.content.find(block => block.type === 'text').text))
+  })
+  const blank = await f.instances.create({ kind: 'kit', title: { zh: '规则工作台', en: 'Rules workspace' } })
+  const kit = await f.instances.updateMounts({ id: blank.id, expectedRevision: blank.revision,
+    bundles: [{ ...f.record.bundle, bindingKey: 'observations', instanceId: f.record.id }] })
+  const method = await f.instances.readFile({ id: f.record.id, path: 'SKILL.md' })
+  await f.instances.saveFile({ id: f.record.id, expectedRevision: method.revision, path: method.path, content: method.content + '\nCURRENT_MOUNT_METHOD\n' })
+  const mindset = await f.instances.readFile({ id: kit.id, path: 'mindset.md' })
+  changes = [{ path: 'mindset.md', content: mindset.content + '\nPreserve the mounted method.\n' }]
+  const run = await f.bridge.start({ ...f.request, id: kit.id, expectedRevision: kit.revision, paths: ['mindset.md'] })
+  assert.equal((await run.result).status, 'completed')
+  assert.equal(f.toolResults.filter(result => result.isError).length, 0)
+  assert.ok(prompts.some(text => text.includes('read-only dependencies do not expand the Kit write scope')))
+  const prepared = run.readPrepared()
+  assert.equal(prepared.request.id, kit.id); assert.equal(prepared.request.bundle, undefined)
+  assert.deepEqual(prepared.request.changes, changes)
+  assert.equal((await f.instances.read(kit.id)).revision, kit.revision)
+  assert.equal((await f.instances.read(f.record.id)).revision, method.revision + 1)
+})
+
 test('actual S1 candidate and native completion stay distinct across two explicit revisions, user save and fresh reopen', { timeout: 15000 }, async t => {
   const prepared = deferred(), finish = deferred(); t.after(() => finish.resolve())
   const f = await fixture(t, { async step(n) { if (n === 2) await finish.promise; return sequence(additions(), n) } })

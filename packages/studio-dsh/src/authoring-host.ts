@@ -12,7 +12,7 @@ import type { StudioAuthoringSession, StudioSessionRun, StudioSessionStart } fro
 import type { DshStudioAuthoringHost, DshStudioAuthoringHostOptions, DshStudioAuthoringParent, StudioAuthoringAddress, StudioPreparedLocator, StudioPreparedProjection } from './authoring-host.types.ts'
 export type * from './authoring-host.types.ts'
 
-const INSTANCE_METHODS = ['read', 'list', 'listBundles', 'copy', 'editCurrent', 'captureKit', 'loadKit', 'create', 'importSources', 'rename', 'remove', 'readFile', 'saveFile', 'prepareChanges',
+const INSTANCE_METHODS = ['read', 'list', 'listBundles', 'copy', 'editCurrent', 'captureKit', 'loadKit', 'create', 'importSources', 'rename', 'remove', 'readFile', 'readMountedBundle', 'saveFile', 'prepareChanges',
   'saveChanges', 'updateMounts', 'preview', 'migrate', 'exportArchive'] as const satisfies readonly (keyof StudioInstances)[]
 // Explicitly forwarding every public port must stay exhaustive as S2 evolves.
 const _allInstanceMethods: Exclude<keyof StudioInstances, typeof INSTANCE_METHODS[number]> extends never ? true : never = true

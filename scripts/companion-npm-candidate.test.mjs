@@ -339,8 +339,12 @@ test('official engine selection keeps package, payload manifest and inventory co
   const { options, put, root } = await setup(t)
   const { ladybugVersion: _legacy, ...official } = options
   official.ladybugDependency = '0.21.1'
-  const dependencies = { '@ladybugdb/wasm-core': '0.21.1', '@huggingface/transformers': '3.8.1', 'onnxruntime-common': '1.21.0', undici: '8.10.2' }
+  const template = JSON.parse(await readFile(new URL('../release/product-package-template.json', import.meta.url)))
+  const dependencies = { ...template.dependencies, '@ladybugdb/wasm-core': '0.21.1' }
   await assert.rejects(buildCompanionCandidate(official), /requires a knowledge runtime manifest/u)
+  await assert.rejects(lstat(official.destination), { code: 'ENOENT' })
+  await put('shared/knowledge/runtime-manifest.json', JSON.stringify({ runtimeDependencies: { ...dependencies, yaml: 'latest' } }))
+  await assert.rejects(buildCompanionCandidate(official), /Knowledge runtime dependencies must match/u)
   await assert.rejects(lstat(official.destination), { code: 'ENOENT' })
   await put('shared/knowledge/runtime-manifest.json', JSON.stringify({ runtimeDependencies: dependencies }))
   const { target, inventory } = await buildCompanionCandidate(official)
@@ -387,7 +391,8 @@ test('official engine selection keeps package, payload manifest and inventory co
   assert.equal(stableCopy, '# Yugoo Design\n\nPackage: `yugoo-design@' + productVersion + '`.\n\n' + section.replaceAll('<package-selector>', `yugoo-design@${productVersion}`) + '\n')
   assert.equal(stable.inventory.readmeSource.sourceSha256, sha(maintained))
   assert.equal(stable.inventory.readmeSource.sectionSha256, sha(section))
-  for (const changes of [{ fixture: true }, { version: '0.1.0-beta.1' }, { version: '0.1.0-rc.1' }, { version: '0.1.0+local' }, { version: '0.2.0' }, { distribution: 'beta' }, { distribution: 'published' }]) {
+  const mismatchedVersion = `${Number(productVersion.split('.')[0]) + 1}.0.0`
+  for (const changes of [{ fixture: true }, { version: '0.1.0-beta.1' }, { version: '0.1.0-rc.1' }, { version: '0.1.0+local' }, { version: mismatchedVersion }, { distribution: 'beta' }, { distribution: 'published' }]) {
     const destination = join(root, 'refused delivery mode')
     await assert.rejects(buildCompanionCandidate({ ...normal, packageName: 'yugoo-design', distribution: 'stable', version: productVersion, ...changes, destination }), /fixture|Distribution|canonical versions|stable product version|must match the product manifest/)
     await assert.rejects(lstat(destination), { code: 'ENOENT' })

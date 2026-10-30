@@ -73,7 +73,7 @@ export function installationResult(host, result, packageIdentity, { disableEmbed
       activation: failed ? 'not-performed' : 'required', usability: 'unverified',
       embedding: { status: disableEmbedding ? 'disabled' : 'unverified', blocksBasicDesign: false },
       nextActions: failed ? [{ action: 'inspect-retained-state', automatic: false, path: result.receiptFile,
-        message: 'Inspect the owning receipt and retained DSH state before another operation. No automatic rollback or retry was attempted.' }]
+        message: result.failure?.recovery ?? 'Inspect the owning receipt and retained DSH state before another operation. No automatic rollback or retry was attempted.' }]
         : activationActions(host, result, disableEmbedding) } }
 }
 

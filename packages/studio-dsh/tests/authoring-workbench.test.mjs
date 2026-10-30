@@ -79,7 +79,7 @@ async function fixture(t, options = {}) {
   const request = { id: record.id, expectedRevision: record.revision, changes,
     ...(options.kit && !options.noKitPreview ? { bundle: { name: record.mounts[0].bundle.name, version: record.mounts[0].bundle.version } } : {}) }
   const prepared = { request, candidate: await service.prepareChanges(request) }
-  const calls = { start: [], resume: [], cancel: [], save: [], saveSettled: [], changed: [], dirty: [], observe: [], prepared: [], preview: [] }
+  const calls = { start: [], resume: [], cancel: [], save: [], saveSettled: [], changed: [], dirty: [], dirtyDetails: [], observe: [], prepared: [], preview: [] }
   let locator = options.content || options.hostCandidate ? { requestId: 'host-request-1', id: record.id, expectedRevision: record.revision,
     bundle: options.kit ? request.bundle : record.bundle, digest: prepared.candidate.digest } : undefined
   let references = [], candidate = options.noCandidate ? undefined : prepared, terminal = options.running ? false : true, turn = 7
@@ -119,7 +119,7 @@ async function fixture(t, options = {}) {
       presentation: options.content ? 'content-only' : undefined, preparedLocator: locator,
       initialSelection: !calls.changed.length ? locator ? { expectedRevision: locator.expectedRevision, bundle: locator.bundle }
         : options.kit && !options.noKitPreview ? { expectedRevision: record.revision, bundle: { name: pin.name, version: pin.version } } : undefined : undefined,
-      onChanged: value => calls.changed.push(value), onDirtyChange: value => calls.dirty.push(value) })))
+      onChanged: value => calls.changed.push(value), onDirtyChange: (value, state) => { calls.dirty.push(value); calls.dirtyDetails.push(state) } })))
   }
   const unmount = async () => { if (mounted) { mounted = false; await React.act(async () => root.unmount()) } }
   t.after(async () => { await unmount(); await rm(stateRoot, { recursive: true, force: true }) })
@@ -440,6 +440,18 @@ test('nonempty source → one intent → explicit actual shared Panel review →
   assert.ok(f.calls.dirty.includes(true))
 })
 
+test('unsent native intent protects navigation independently of canonical source changes', async t => {
+  const f = await fixture(t)
+  await until(() => intent() && f.calls.dirtyDetails.at(-1)?.sourceDirty === false)
+  await change(intent(), 'P3-UNSENT-020')
+  await until(() => f.calls.dirty.at(-1) === true)
+  assert.equal(f.calls.dirtyDetails.at(-1).sourceDirty, false)
+  await click('Source Files'); await until(() => source())
+  await change(source(), source().value + '\nUnsaved source edit.\n')
+  await until(() => f.calls.dirtyDetails.at(-1)?.sourceDirty === true)
+  assert.equal(intent().value, 'P3-UNSENT-020')
+})
+
 test('native consumption clears the submitted composer before saving and verified saving clears outer dirty state', async t => {
   const f = await fixture(t); await f.ask()
   assert.equal(intent().value, '')
@@ -460,7 +472,9 @@ for (const restoreOriginal of [false, true]) {
     await React.act(async () => gate.resolve())
     await until(() => f.calls.changed.length === 1)
     assert.equal(intent().value, restoreOriginal ? f.calls.start[0].prompt : 'A later unsent request.')
-    assert.equal(f.calls.dirty.at(-1), true, 'the later draft still protects navigation and export')
+    await until(() => f.calls.dirtyDetails.at(-1)?.sourceDirty === false)
+    assert.equal(f.calls.dirty.at(-1), true, 'the later draft still protects navigation')
+    assert.equal(f.calls.dirtyDetails.at(-1).sourceDirty, false, 'saved source can be exported without consuming later input')
   })
 }
 

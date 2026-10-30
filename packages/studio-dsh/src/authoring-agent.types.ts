@@ -1,4 +1,5 @@
 import type { Agent } from '@deepseek-ai/dsh-agent'
+import type { StudioAuthoringRead } from 'dsh-design-studio/node'
 
 export interface StudioAuthoringScope {
   readonly id: string
@@ -10,7 +11,7 @@ export interface StudioAuthoringScope {
 
 /** The existing S3 capability. Its receipt remains the sole candidate source. */
 export interface StudioAuthoringPorts {
-  read(input?: { paths?: string[] }): Promise<unknown>
+  read(input?: StudioAuthoringRead): Promise<unknown>
   prepare(input: { changes: { path: string; content: string }[] }): Promise<unknown>
 }
 

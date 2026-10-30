@@ -56,18 +56,22 @@ test('portable official dependency remains exact in the recorded closure', async
   assert.deepEqual(JSON.parse(await readFile(join(result.destination, 'runtime-manifest.json'))).runtimeDependencies, runtimeDependencies)
 })
 
-test('portable product closure preserves the template system-trash pin without copying its package', async t => {
+test('portable product closure preserves template trash and installer YAML pins without copying their packages', async t => {
   const { options, calls } = await setup(t)
   const original = JSON.parse(await readFile(new URL('../../../release/product-package-template.json', import.meta.url))).dependencies
   const expected = { ...original }
   const pending = packageKnowledge(undefined, { ...options, runtimeDependencies: original })
   original.trash = 'latest'
+  original.yaml = 'latest'
   const result = await pending
   assert.deepEqual(result.manifest.runtimeDependencies, expected)
   assert.equal(result.manifest.copiedNodeModules, false)
   assert.equal(calls.length, 3)
   for (const trash of [undefined, null, 'latest', '^' + expected.trash, '0.0.0']) {
     await assert.rejects(packageKnowledge(undefined, { ...options, runtimeDependencies: { ...expected, trash } }), /Unsupported portable dependency version: trash/)
+  }
+  for (const yaml of [undefined, null, 'latest', '^' + expected.yaml, '0.0.0']) {
+    await assert.rejects(packageKnowledge(undefined, { ...options, runtimeDependencies: { ...expected, yaml } }), /Unsupported portable dependency version: yaml/)
   }
   assert.equal(calls.length, 3, 'invalid declarations stop before compilation')
 })

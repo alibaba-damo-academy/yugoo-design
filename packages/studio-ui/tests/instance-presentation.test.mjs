@@ -10,13 +10,15 @@ const { JSDOM } = requirePanel('jsdom')
 const dom = new JSDOM('<html><body><div id="root"></div></body></html>', { url: 'http://localhost/' })
 for (const key of ['window', 'document', 'navigator', 'HTMLElement', 'Event', 'MouseEvent']) Object.defineProperty(globalThis, key, { configurable: true, value: dom.window[key] })
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
+window.HTMLDialogElement.prototype.showModal = function () { this.open = true; this.querySelector('button')?.focus() }
+window.HTMLDialogElement.prototype.close = function () { this.open = false }
 const { createRoot } = await import('react-dom/client')
-const { StudioWorkspace } = await import('../src/StudioWorkspace.tsx')
+const { StudioWorkspace } = await import(process.env.STUDIO_CONTENT_ARCHIVE_BUILT === '1' ? '../lib/index.js' : '../src/StudioWorkspace.tsx')
 const { act } = React
 const button = text => [...document.querySelectorAll('button')].find(item => item.textContent === text)
 const record = id => ({ id, kind: 'bundle', title: { zh: '观察记录', en: id }, source: { bundle: { name: 'observations', version: '1.0' } }, revision: 0, mounts: [], refs: [], files: [{ path: 'SKILL.md', bytes: 9, editable: true }] })
-async function mount(renderInstanceWorkbench, kind = 'bundle') {
-  const fixture = id => kind === 'bundle' ? record(id) : { ...record(id), kind, source: { kit: { name: 'evidence', version: '1.0' } }, files: [{ path: 'mindset.md', bytes: 9, editable: true }] }
+async function mount(renderInstanceWorkbench, kind = 'bundle', describe = value => value) {
+  const fixture = id => describe(kind === 'bundle' ? record(id) : { ...record(id), kind, source: { kit: { name: 'evidence', version: '1.0' } }, files: [{ path: 'mindset.md', bytes: 9, editable: true }] })
   const calls = [], dirty = [], instances = { list: async () => [fixture('first')], read: async ({ id }) => { calls.push(id); return fixture(id) }, readFile: async ({ id, path }) => ({ id, path, revision: 0, content: '# Fixture' }) }
   const client = { workspace: async query => ({ query, kits: [], bundles: [] }) }
   const controller = new StudioWorkspaceController(client)
@@ -25,6 +27,33 @@ async function mount(renderInstanceWorkbench, kind = 'bundle') {
   await act(async () => root.render(React.createElement(StudioWorkspace, { client, controller, instances, locale: 'en', renderInstanceWorkbench, onDraftDirtyChange: value => dirty.push(value) })))
   return { instances, controller, calls, dirty, click: async text => { assert.ok(button(text), text); await act(async () => button(text).click()) }, close: async () => { await act(async () => root.unmount()) } }
 }
+test('local Bundle cards show existing Kit references and open the shared mount view without an installed catalog lookup', async () => {
+  const pin = { name: 'local_observations', version: '1.0' }
+  const kit = { id: 'referencing-kit', kind: 'kit', kit: { name: 'local_kit', version: '1.0' }, revision: 4,
+    title: { zh: '反馈套件', en: 'Feedback Kit' }, source: {}, refs: [],
+    mounts: [{ bundle: { ...pin, instanceId: 'first' } }],
+    availableBundles: [{ ...pin, instanceId: 'first', title: { zh: '观察记录', en: 'Notes' } }] }
+  const f = await mount(undefined, 'bundle', value => ({ ...value, bundle: pin, refs: [{ id: kit.id, title: kit.title }] }))
+  const local = { ...record('first'), bundle: pin, refs: [{ id: kit.id, title: kit.title }] }, reads = []
+  f.instances.list = async input => input?.kind === 'kit' ? [kit] : [local]
+  f.instances.read = async ({ id }) => { reads.push(id); return kit }
+  try {
+    const badge = document.querySelector('button[aria-label="1 Kit · View mounts"]')
+    assert.ok(badge, 'the saved local reference must be visible on its Bundle card')
+    assert.ok(badge.closest('.ygd-studio-bundle-card'), 'local content reuses the shared Bundle card')
+    assert.doesNotMatch(badge.closest('article').textContent, /local_observations/, 'the human context replaces a generated internal identity')
+    await React.act(async () => badge.click())
+    const dialog = document.querySelector('dialog,[role=dialog]')
+    assert.ok(dialog); assert.match(dialog.textContent, /Feedback Kit/)
+    assert.equal(dialog.querySelector('input[type=checkbox]')?.checked, true)
+    assert.equal(f.controller.getSnapshot().bundleWorkspace, undefined, 'a local reference never masquerades as an installed Bundle')
+    assert.equal(document.querySelector('textarea'), null, 'reading references does not enter source editing')
+    assert.deepEqual(reads, [kit.id])
+    await React.act(async () => dialog.querySelector('button[aria-label=Close]').click())
+    assert.equal(document.querySelector('dialog,[role=dialog]'), null)
+    assert.ok(document.querySelector('button[aria-label="1 Kit · View mounts"]'), 'closing restores the catalog and refreshes existing reference data')
+  } finally { await f.close() }
+})
 test('host presentation receives full instance props, dirty guard, ID lifetime and callbacks', async () => {
   let received
   const lifetimes = []

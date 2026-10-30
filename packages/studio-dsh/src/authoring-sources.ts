@@ -16,7 +16,9 @@ export function registerDshStudioCurrentKitSource(
   design: Pick<DesignService, 'registerCurrentKitSource' | 'listKits'>,
   instances: Pick<StudioInstances, 'list' | 'editCurrent' | 'loadKit'>,
 ): () => void {
-  const records = async () => (await instances.list({ kind: 'kit' })).filter(record => record.kit)
+  // Ordinary model requests need saved identity/description, not every mounted
+  // definition's validation. The selected Kit is checked by loadKit itself.
+  const records = async () => (await instances.list({ kind: 'kit', includeReadiness: false })).filter(record => record.kit)
   return design.registerCurrentKitSource({
     async load(name) {
       const matches = (await records()).filter(record => record.kit!.name === name)
@@ -28,8 +30,12 @@ export function registerDshStudioCurrentKitSource(
       return instances.loadKit({ id: current.id, expectedRevision: current.revision })
     },
     async list() {
-      return (await records()).map(record => ({ name: record.kit!.name, version: record.kit!.version,
-        ...(record.description ? { description: record.description } : {}) }))
+      return (await records()).map(record => {
+        // Users name local Kits by their display title, not the generated identity.
+        // This is discovery copy only; the saved Mindset remains unchanged.
+        const description = [...new Set([record.title?.zh, record.title?.en, record.description].filter(Boolean))].join(' · ')
+        return { name: record.kit!.name, version: record.kit!.version, ...(description ? { description } : {}) }
+      })
     },
   })
 }

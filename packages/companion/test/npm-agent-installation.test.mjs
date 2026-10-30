@@ -102,12 +102,17 @@ test('DSH direct install reuses exact mapping and saved plan with exclusive per-
 })
 
 test('DSH partial failure preserves the original receipt and does not roll back or retry', async () => {
+  const recovery = 'Inspect official host plugin state; do not reapply a failed receipt or claim that restart repairs ownership.'
   const h = nativeHarness([{ planFile: '/receipts/plan', package: identity },
-    { status: 'failed-partial-state-retained', partialStateRetained: true, rollbackAttempted: false, receiptFile: '/receipts/failure' }])
+    { status: 'failed-partial-state-retained', partialStateRetained: true, rollbackAttempted: false,
+      receiptFile: '/receipts/failure', failure: { reasons: ['bundle-not-registered'], automaticRetry: false, recovery } }])
   const result = await agentInstallation({ host: 'dsh', profile: 'existing', 'dsh-config': '/pins', 'receipt-dir': '/receipts' }, h)
   assert.equal(h.calls.length, 2); assert.equal(result.receiptFile, '/receipts/failure')
   assert.equal(result.installation.registration, 'failed-partial-state-retained'); assert.equal(result.usable, false)
   assert.equal(result.installation.nextActions[0].path, '/receipts/failure'); assert.equal(result.rollbackAttempted, false)
+  assert.equal(result.installation.nextActions[0].message, recovery)
+  assert.equal(result.installation.nextActions[0].automatic, false)
+  assert.deepEqual(result.failure.reasons, ['bundle-not-registered'])
 })
 
 test('DSH owned update forwards one previous receipt to the exact owning dry-run and apply', async () => {

@@ -90,6 +90,20 @@ test('guarded parent forwards canonical blank creation without starting native w
   await assert.rejects(f.bound.instances.create({ kind: 'kit', title: { zh: '拒绝', en: 'Rejected' } }), /disposed/iu)
 })
 
+test('parent-scoped source facade forwards mounted reads and revokes them on disposal', { timeout: 15000 }, async t => {
+  const f = await fixture(t), instances = f.bound.instances
+  const blank = await instances.create({ kind: 'kit', title: { zh: '挂载方法', en: 'Mounted methods' } })
+  const kit = await instances.updateMounts({ id: blank.id, expectedRevision: blank.revision,
+    bundles: [{ ...f.record.bundle, bindingKey: 'observations', instanceId: f.record.id }] })
+  const request = { id: kit.id, expectedRevision: kit.revision, bindingKey: 'observations', paths: ['SKILL.md'] }
+  const source = await instances.readMountedBundle(request)
+  assert.equal(source.readOnly, true); assert.equal(source.id, kit.id)
+  assert.equal(source.files[0].content, textOf(originalFiles, 'SKILL.md'))
+  assert.equal(f.childIds.length, 0, 'the source read does not start a native model')
+  await f.bound.dispose()
+  await assert.rejects(instances.readMountedBundle(request), /disposed/iu)
+})
+
 test('parent-owned conversation receipts deduplicate, expire at a bounded count and retain call-time intent without saving', { timeout: 15000 }, async t => {
   const f = await fixture(t)
   const original = await f.bound.instances.readFile({ id: f.record.id, path: 'SKILL.md' })

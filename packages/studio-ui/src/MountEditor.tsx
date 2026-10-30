@@ -32,7 +32,11 @@ function MountEditorSession({ client, record, locale, onSaved, onActions, onDirt
   }, [owner])
   const keyOf = mountKey
   const choices = new Map(candidates.map(bundle => [keyOf(bundle), bundle]))
-  const missing = [...selected].filter(key => !choices.has(key))
+  const retained = (key: string) => {
+    const mount = record.mounts.find(mount => keyOf(mount.bundle) === key)
+    return !!mount && !mount.bundle.instanceId && !mount.instanceId && !!mount.bundle.source?.snapshot && !!mount.bundle.source.sourceId
+  }
+  const missing = [...selected].filter(key => !choices.has(key) && !retained(key))
   const available = candidates.filter(bundle => !selected.has(keyOf(bundle)))
   const filtered = available.filter(bundle => [bundle.name, bundle.title[locale], bundle.displayDescription?.[locale], bundle.description].filter(Boolean).join(' ').toLowerCase().includes(query.trim().toLowerCase()))
   const change = (key: string, add: boolean) => {
@@ -95,7 +99,8 @@ function MountEditorSession({ client, record, locale, onSaved, onActions, onDirt
           {[...selected].map(key => {
             const bundle = choices.get(key) ?? record.mounts.find(mount => keyOf(mount.bundle) === key)?.bundle ?? { name: key.split('@')[0], version: key.split('@')[1] }
             return <BundleCard key={key} bundle={bundle} locale={locale}>
-              {!choices.has(key) && <StudioFeedback feedbackId={`source:${key}`} layout="inline" tone="info" locale={locale} title={zh ? '来源暂不可用' : 'Source unavailable'} />}
+              {!choices.has(key) && <StudioFeedback feedbackId={`source:${key}`} layout="inline" tone="info" locale={locale}
+                title={retained(key) ? (zh ? '引用随套件保留的来源' : 'References source retained with this Kit') : (zh ? '来源暂不可用' : 'Source unavailable')} />}
               <button type="button" className="ygd-studio-btn-secondary" disabled={busy || saveUnverified} onClick={() => change(key, false)}>{zh ? '移除' : 'Remove'}</button>
             </BundleCard>
           })}

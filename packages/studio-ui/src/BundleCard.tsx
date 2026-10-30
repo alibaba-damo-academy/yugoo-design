@@ -18,14 +18,14 @@ export function StudioGlyph({ bundle = false }: { bundle?: boolean }): ReactElem
 
 
 /** One card presentation for the Bundle catalog and Kit mount selection. */
-export function BundleCard({ bundle, locale, badge, onBadgeClick, badgeLabel, children }: {
-  bundle: StudioBundleCardContent; locale: 'zh' | 'en'; badge?: ReactNode; onBadgeClick?: () => void; badgeLabel?: string; children: ReactNode
+export function BundleCard({ bundle, locale, badge, onBadgeClick, badgeLabel, sourceLabel, children }: {
+  bundle: StudioBundleCardContent; locale: 'zh' | 'en'; badge?: ReactNode; onBadgeClick?: () => void; badgeLabel?: string; sourceLabel?: string; children: ReactNode
 }): ReactElement {
   const description = bundle.displayDescription?.[locale] ?? bundle.description
   return <article className="ygd-studio-kit-card ygd-studio-bundle-card">
     <div className="ygd-studio-card-top"><StudioGlyph bundle /><>{onBadgeClick ? <button type="button" className="ygd-studio-card-pill ygd-studio-card-pill-action" aria-label={badgeLabel} onClick={onBadgeClick}>{badge ?? bundle.version}</button> : <span className="ygd-studio-card-pill">{badge ?? bundle.version}</span>}</></div>
     <h3 className="ygd-studio-kit-card-name">{bundle.title?.[locale] ?? bundle.name.replace(/[_-]+/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase())}</h3>
-    <div className="ygd-studio-source-id" title={bundle.name}>{bundle.name}</div>
+    <div className="ygd-studio-source-id" title={sourceLabel ?? bundle.name}>{sourceLabel ?? bundle.name}</div>
     {description && <div className="ygd-studio-card-description">{renderStudioMarkdown(description)}</div>}
     <div className="ygd-studio-kit-card-actions">{children}</div>
   </article>

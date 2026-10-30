@@ -304,6 +304,7 @@ export function StudioWorkspace({ client, controller: supplied, authoring, rende
   const [trialTarget, setTrialTarget] = useState<HTMLDivElement | null>(null)
   const [fileLocationOpen, setFileLocationOpen] = useState(false)
   const [mountsOpen, setMountsOpen] = useState(false)
+  const [localMountRecord, setLocalMountRecord] = useState<StudioInstance>()
   const mountRequest = useRef<string>()
   const [mountQuery, setMountQuery] = useState('')
   const [archiveBusy, setArchiveBusy] = useState(false)
@@ -327,10 +328,12 @@ export function StudioWorkspace({ client, controller: supplied, authoring, rende
   useEffect(() => { ++exportGeneration.current; return () => { importGeneration.current++; ++exportGeneration.current } }, [contentClient])
   const createGeneration = useRef(0)
   const draftDirty = useRef(false)
+  const sourceDirty = useRef(false)
   const panelDirty = useRef(false), trialDirty = useRef(false)
   const reportPreviewDirty = (kind: 'panel' | 'trial', value: boolean) => {
     if (kind === 'panel') panelDirty.current = value; else trialDirty.current = value
     draftDirty.current = panelDirty.current || trialDirty.current
+    sourceDirty.current = draftDirty.current
     onDraftDirtyChange?.(draftDirty.current)
   }
   useEffect(() => {
@@ -381,7 +384,7 @@ export function StudioWorkspace({ client, controller: supplied, authoring, rende
   const leaveDrafts = (next: () => void) => {
     if ((draftDirty.current || authoringDirty.current) && !window.confirm(locale === 'zh' ? '离开会丢失尚未保存的修改，继续吗？' : 'Discard unsaved changes and leave?')) return
     setEntryRevisionConsumed(true)
-    createGeneration.current++; setCreating(false); panelDirty.current = false; trialDirty.current = false; draftDirty.current = false; authoringDirty.current = false; onDraftDirtyChange?.(false); setInitialPrompt(undefined); setInstanceId(undefined); setAuthoringIntent('edit'); setSidebarOpen(false); next()
+    createGeneration.current++; setCreating(false); panelDirty.current = false; trialDirty.current = false; draftDirty.current = false; sourceDirty.current = false; authoringDirty.current = false; onDraftDirtyChange?.(false); setInitialPrompt(undefined); setInstanceId(undefined); setAuthoringIntent('edit'); setSidebarOpen(false); next()
   }
   const exportContent = async (target: { id: string; expectedRevision: number } | { kind: 'kit' | 'bundle'; pin: DesignKitVersionPin }, filename: string) => {
     if (!contentClient || archiveLock.current) return
@@ -395,7 +398,7 @@ export function StudioWorkspace({ client, controller: supplied, authoring, rende
     finally { archiveLock.current = false; setArchiveBusy(false) }
   }
   const exportInstance = (record: StudioInstance) => {
-    if (!contentClient || record.deletedAt || (record.id === instanceId && draftDirty.current)) return
+    if (!contentClient || record.deletedAt || (record.id === instanceId && sourceDirty.current)) return
     void exportContent({ id: record.id, expectedRevision: record.revision }, record.title[locale])
   }
   // A completed adoption stays completed if a subsequent read fails. Retry reads,
@@ -467,7 +470,7 @@ export function StudioWorkspace({ client, controller: supplied, authoring, rende
       })
       await refreshInstances()
       if (request !== createGeneration.current) return
-      draftDirty.current = false; onDraftDirtyChange?.(false); setAuthoringIntent('edit'); setInstanceMode('read'); setInstanceId(record.id)
+      draftDirty.current = false; sourceDirty.current = false; onDraftDirtyChange?.(false); setAuthoringIntent('edit'); setInstanceMode('read'); setInstanceId(record.id)
     } catch (error) { if (request === createGeneration.current) setAuthoringError(String(error)) }
     finally { if (request === createGeneration.current) setCreating(false) }
   }
@@ -481,7 +484,7 @@ export function StudioWorkspace({ client, controller: supplied, authoring, rende
       const record = await instances.editCurrent({ kind, [kind]: { name: pin.name, version: pin.version } })
       await refreshInstances()
       if (request !== createGeneration.current) return
-      draftDirty.current = false; authoringDirty.current = false; onDraftDirtyChange?.(false)
+      draftDirty.current = false; sourceDirty.current = false; authoringDirty.current = false; onDraftDirtyChange?.(false)
       setAuthoringIntent('edit'); setInstanceMode('edit'); setInstanceId(record.id)
     } catch (error) { if (request === createGeneration.current) setAuthoringError(String(error)) }
     finally { if (request === createGeneration.current) setCreating(false) }
@@ -526,19 +529,35 @@ export function StudioWorkspace({ client, controller: supplied, authoring, rende
     } catch (failure) { if (request === createGeneration.current) setAuthoringError(String(failure)) }
     finally { if (request === createGeneration.current) setCreating(false) }
   }
-  const localCards = (kind: 'kit' | 'bundle') => visibleLocalInstances(kind).map(record => <article key={record.id} className="ygd-studio-kit-card">
-    <div className="ygd-studio-card-top"><StudioGlyph bundle={kind === 'bundle'} /><span className="ygd-studio-card-pill">{locale === 'zh' ? '本地内容' : 'Local content'}</span></div>
-    <h3 className="ygd-studio-kit-card-name">{record.title[locale]}</h3>
-    <div className="ygd-studio-card-description">{renderStudioMarkdown(record.displayDescription?.[locale] ?? record.description ?? '')}</div>
-    {record.readiness && !record.readiness.ready && <button type="button" className="ygd-studio-btn-link ygd-studio-import-warning" onClick={() => setIncompleteImport(record)}>{locale === 'zh' ? '⚠ 待完善' : '⚠ Incomplete'}</button>}
-    <p className="ygd-studio-card-meta">{locale === 'zh' ? '已保存 · 可编辑' : 'Saved · editable'}</p>
-    <div className="ygd-studio-kit-card-actions">
+  const localCards = (kind: 'kit' | 'bundle') => visibleLocalInstances(kind).map(record => {
+    const warning = record.readiness && !record.readiness.ready && <button type="button" className="ygd-studio-btn-link ygd-studio-import-warning" onClick={() => setIncompleteImport(record)}>{locale === 'zh' ? '⚠ 待完善' : '⚠ Incomplete'}</button>
+    const actions = <>
       <button type="button" className="ygd-studio-btn-secondary" disabled={creating} onClick={() => openLocal(record, 'read')}>{locale === 'zh' ? '打开' : 'Open'}</button>
       <button type="button" className="ygd-studio-btn-secondary" disabled={creating} onClick={() => void copyInstalled(record.kind, record.source.kit, record.source.bundle, record.id)}>{locale === 'zh' ? '复制' : 'Copy'}</button>
       <button type="button" className="ygd-studio-btn-secondary" disabled={creating} onClick={() => openLocal(record, 'edit')}>{locale === 'zh' ? '编辑' : 'Edit'}</button>
       <InstanceActionsMenu locale={locale}>{contentClient && <button className="ygd-studio-btn-link" type="button" disabled={creating || archiveBusy} onClick={() => exportInstance(record)}>{locale === 'zh' ? '导出' : 'Export'}</button>}<InstanceTrashAction locale={locale} disabled={creating} onClick={() => void removeLocal(record)} /></InstanceActionsMenu>
-    </div>
-  </article>)
+    </>
+    const bundle = record.bundle ?? record.source.bundle
+    if (kind === 'bundle' && bundle) {
+      const uses = new Set(record.refs.map(ref => ref.id)).size
+      return <BundleCard key={record.id} bundle={{ ...bundle, title: record.title, description: record.description, displayDescription: record.displayDescription }} locale={locale}
+        sourceLabel={locale === 'zh' ? '本地内容 · 已保存 · 可编辑' : 'Local content · Saved · editable'}
+        badge={`${uses} Kit`} badgeLabel={locale === 'zh' ? `${uses} Kit · 查看挂载` : `${uses} Kit · View mounts`}
+        onBadgeClick={() => setLocalMountRecord(record)}>{warning}{actions}</BundleCard>
+    }
+    return <article key={record.id} className="ygd-studio-kit-card">
+      <div className="ygd-studio-card-top"><StudioGlyph bundle={kind === 'bundle'} /><span className="ygd-studio-card-pill">{locale === 'zh' ? '本地内容' : 'Local content'}</span></div>
+      <h3 className="ygd-studio-kit-card-name">{record.title[locale]}</h3>
+      <div className="ygd-studio-card-description">{renderStudioMarkdown(record.displayDescription?.[locale] ?? record.description ?? '')}</div>
+      {warning}<p className="ygd-studio-card-meta">{locale === 'zh' ? '已保存 · 可编辑' : 'Saved · editable'}</p>
+      <div className="ygd-studio-kit-card-actions">{actions}</div>
+    </article>
+  })
+  const mountBundle = localMountRecord?.bundle ?? localMountRecord?.source.bundle ?? (mountsOpen ? bundleWorkspace : undefined)
+  const closeMounts = () => {
+    setLocalMountRecord(undefined); setMountsOpen(false)
+    void refreshInstances().catch(error => setAuthoringError(String(error)))
+  }
   // A Kit can provide execution context without owning the Bundle source.
   const bundleContextKit = () => {
     if (!bundleWorkspace) return undefined
@@ -667,9 +686,6 @@ export function StudioWorkspace({ client, controller: supplied, authoring, rende
         </div>
       </div>
     </header>
-    {mountsOpen && <StudioDialog title={`${locale === 'zh' ? '挂载管理' : 'Mount Management'} · ${bundleWorkspace.name}`} close={() => setMountsOpen(false)}>
-      <BundleMounts onEditKit={instances?.editCurrent ? kit => { setMountsOpen(false); void editInstalled('kit', kit) } : undefined} client={instances} bundle={bundleWorkspace} installed={snapshot.view?.bundles.find(bundle => bundle.name === bundleWorkspace.name && bundle.version === bundleWorkspace.version)?.usedBy ?? []} locale={locale} />
-    </StudioDialog>}
     <div className="ygd-studio-workplane-bar" aria-label="Bundle content">
       <button className="ygd-studio-workplane-tab" type="button" aria-pressed={bundleTab === 'files'} onClick={() => setBundleTab('files')}>{locale === 'zh' ? '原始文件' : 'Source Files'}</button>
       <button className="ygd-studio-workplane-tab" type="button" aria-pressed={bundleTab === 'preview' && previewMode === 'sample'} onClick={() => { setBundleTab('preview'); setPreviewMode('sample'); setPreviewOpened(true) }}>{locale === 'zh' ? '面板预览' : 'Panel Preview'}</button>
@@ -797,7 +813,7 @@ export function StudioWorkspace({ client, controller: supplied, authoring, rende
   const objectAuthoring = instanceMode === 'edit' && !!instanceId && !!instances && !componentsOpen
   const visibleSection = instanceKind === 'bundle' ? 'bundles' : instanceKind === 'kit' ? 'kits' : snapshot.section
   const contentView = componentsOpen && componentLibrary ? <ComponentLibrary library={componentLibrary} locale={locale} /> : <>
-        {snapshot.phase === 'loading' && !instanceId ? <main className="ygd-studio-main"><LoadingIndicator label={t.loading} /></main> : instanceId && instances ? presentInstanceWorkbench({ client: instances, id: instanceId, readOnly: instanceMode === 'read', onEdit: () => setInstanceMode('edit'), initialSelection: !entryRevisionConsumed && entryInstance?.id === instanceId ? entryInstance : undefined, locale, authoringIntent, renderPreview: renderPreview ?? authoring?.renderPreview, onBack: () => leaveDrafts(() => visibleSection === 'bundles' ? controller.setSection('bundles') : controller.backToList()), onExport: contentClient ? exportInstance : undefined, onChanged: record => { if (!record) { setTrashNotice(value => value + 1); controller.setSection(visibleSection) } setEntryRevisionConsumed(true); if (record && record.id !== instanceId) setInstanceMode('read'); setInstanceId(record?.id); void refreshInstances().catch(error => setAuthoringError(String(error))) }, onDirtyChange: value => { draftDirty.current = value; onDraftDirtyChange?.(value || authoringDirty.current) } }, instanceMode === 'edit' ? renderInstanceWorkbench : undefined) : bundleMain !== undefined ? bundleMain : snapshot.section === 'bundles' ? bundlesListMain : kitMain}
+        {snapshot.phase === 'loading' && !instanceId ? <main className="ygd-studio-main"><LoadingIndicator label={t.loading} /></main> : instanceId && instances ? presentInstanceWorkbench({ client: instances, id: instanceId, readOnly: instanceMode === 'read', onEdit: () => setInstanceMode('edit'), initialSelection: !entryRevisionConsumed && entryInstance?.id === instanceId ? entryInstance : undefined, locale, authoringIntent, renderPreview: renderPreview ?? authoring?.renderPreview, onBack: () => leaveDrafts(() => visibleSection === 'bundles' ? controller.setSection('bundles') : controller.backToList()), onExport: contentClient ? exportInstance : undefined, onChanged: record => { if (!record) { setTrashNotice(value => value + 1); controller.setSection(visibleSection) } setEntryRevisionConsumed(true); if (record && record.id !== instanceId) setInstanceMode('read'); setInstanceId(record?.id); void refreshInstances().catch(error => setAuthoringError(String(error))) }, onDirtyChange: (value, state) => { draftDirty.current = value; sourceDirty.current = state?.sourceDirty ?? value; onDraftDirtyChange?.(value || authoringDirty.current) } }, instanceMode === 'edit' ? renderInstanceWorkbench : undefined) : bundleMain !== undefined ? bundleMain : snapshot.section === 'bundles' ? bundlesListMain : kitMain}
         </>
 
   return <StudioSelectContext.Provider value={renderSelect}><section className="ygd-studio-workspace" aria-label="Design Studio">
@@ -841,6 +857,10 @@ export function StudioWorkspace({ client, controller: supplied, authoring, rende
       <input ref={importFileInput} type="file" hidden accept=".zip,.md,.json" aria-label={locale === 'zh' ? '选择导入文件' : 'Choose import file'} disabled={importBusy} onChange={event => { const files = [...(event.currentTarget.files ?? [])]; event.currentTarget.value = ''; if (files.length) void importFiles(files, importKind.current) }} />
       <input ref={node => { importFolderInput.current = node; node?.setAttribute('webkitdirectory', '') }} type="file" hidden multiple aria-label={locale === 'zh' ? '选择导入文件夹' : 'Choose import folder'} disabled={importBusy} onChange={event => { const files = [...(event.currentTarget.files ?? [])]; event.currentTarget.value = ''; if (files.length) void importFiles(files, importKind.current) }} />
     </>}
+    {mountBundle && <StudioDialog title={`${locale === 'zh' ? '挂载管理' : 'Mount Management'} · ${localMountRecord?.title[locale] ?? mountBundle.name}`} close={closeMounts}>
+      <BundleMounts onEditKit={instances?.editCurrent ? kit => { closeMounts(); void editInstalled('kit', kit) } : undefined} client={instances} bundle={mountBundle}
+        installed={localMountRecord ? [] : snapshot.view?.bundles.find(bundle => bundle.name === mountBundle.name && bundle.version === mountBundle.version)?.usedBy ?? []} locale={locale} />
+    </StudioDialog>}
     {incompleteImport && <StudioDialog title={locale === 'zh' ? '已导入，内容待完善' : 'Imported — needs completion'} close={() => setIncompleteImport(undefined)}>
       <p>{incompleteImport.title[locale]}</p>
       <ul className="ygd-studio-import-issues">{incompleteImport.readiness?.diagnostics.map((issue, index) => <li key={index}>{locale === 'zh' && issue.code === 'instance.missing_source' && issue.path ? `缺少 ${issue.path}` : issue.message}</li>)}</ul>

@@ -63,3 +63,21 @@ test('a missing imported dependency stays visible while other mounts save', asyn
   assert.equal(saved.readiness.ready, false)
   assert.match((await service.readFile({ id: saved.id, path: 'kit.yaml' })).content, /missing_dependency/)
 })
+
+test('metadata discovery includes incomplete saved Kits without loading or validating mounted definitions', async t => {
+  const { service, options } = await fixture(t)
+  const record = await service.importSources({ kind: 'kit', files: kitFiles.map(file => entry(file.path, textOf(kitFiles, file.path).replaceAll('observations', 'missing_dependency'))) })
+  await service.importSources({ kind: 'kit', files: [...kitFiles, ...originalFiles.map(file => ({ ...file, path: `bundles/${pin.name}/${pin.version}/${file.path}` }))] })
+  let validations = 0
+  const original = options.composition.validateKit
+  options.composition.validateKit = async (...args) => { validations++; return original(...args) }
+  const reopened = await createStudioInstances(options)
+  const metadata = await reopened.list({ kind: 'kit', includeReadiness: false })
+  const incomplete = metadata.find(item => item.id === record.id)
+  assert.equal(incomplete.kit.name, record.kit.name)
+  assert.ok(metadata.every(item => item.readiness === undefined))
+  assert.equal(validations, 0)
+  assert.equal((await reopened.list({ kind: 'kit' })).find(item => item.id === record.id).readiness.ready, false)
+  assert.ok(validations > 0, 'the normal UI list still diagnoses incomplete content')
+  await assert.rejects(reopened.loadKit({ id: record.id }), /missing|source|skill|schema|Bundle|manifest/i)
+})

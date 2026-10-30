@@ -96,7 +96,8 @@
     "test:project-reconstruction": "node smoke-design-project-reconstruction.mjs",
     "test:skill-script-port": "node smoke-skill-script-port.mjs",
     "typecheck": "tsc --noEmit",
-    "test:component-packages": "node --import tsx --test test/component-package.test.mjs"
+    "test:component-packages": "node --import tsx --test test/component-package.test.mjs",
+    "test:current-kit-discovery": "TSX_TSCONFIG_PATH=./tsconfig.json node --import tsx --test test/current-kit-discovery.test.mjs"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.2",

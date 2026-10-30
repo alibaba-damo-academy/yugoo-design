@@ -1000,6 +1000,96 @@ test('unavailable readback means unverified preservation, and foreign partial ow
   assert.equal(f.calls.length, 1)
 })
 
+test('official release-age additions are limited to the exact installed dependency closure on install and update', async t => {
+  for (const updating of [false, true]) await t.test(updating ? 'owned update' : 'first install', async child => {
+    const f = updating ? await updateFixture(child) : await fixture(child)
+    const version = updating ? '1.2.4' : '1.2.3'
+    const workspace = join(f.profileDir, 'pnpm-workspace.yaml')
+    const baseline = 'packages:\n  - .\nnodeLinker: hoisted\nautoInstallPeers: false\nallowBuilds:\n  sharp: true\nminimumReleaseAgeExclude:\n  - old-user-exception\n'
+    await f.put(workspace, baseline)
+    const additions = [`@release/design-system-dsh@${version}`, `@release/core@${version}`, `@release/native@${version}`]
+    f.setAction(async () => {
+      await f.install(version)
+      const aggregate = join(f.profileDir, 'node_modules/@release/design-system-dsh/package.json')
+      const value = JSON.parse(await readFile(aggregate))
+      value.dependencies = { '@release/core': version }
+      await f.put(aggregate, json(value))
+      // Ordinary exports need not expose package.json; inspect metadata without loading code.
+      await f.put(join(f.profileDir, 'node_modules/@release/core/package.json'), json({
+        name: '@release/core', version, exports: './never-execute.js', optionalDependencies: { '@release/native': version } }))
+      await f.put(join(f.profileDir, 'node_modules/@release/native/package.json'), json({ name: '@release/native', version }))
+      await f.put(workspace, baseline + additions.map(value => `  - '${value}'\n`).join(''))
+    })
+    const result = updating ? await installerMain(f.nextArgs, f.nextContext)
+      : await applyDshInstallation(await planDshInstallation(f.options), f.options)
+    assert.equal(result.status, 'registered-config-parsed')
+    assert.equal(result.userConfigurationPreserved, true)
+    assert.deepEqual(result.configurationChanges.releaseAgeExclusionsAdded, additions)
+    assert.equal(result.failure, null)
+    assert.equal(result.execution.state, 'completed')
+    if (updating) assert.equal(result.ownershipEstablished, true)
+    assert.equal(await readFile(workspace, 'utf8'), baseline + additions.map(value => `  - '${value}'\n`).join(''))
+  })
+})
+
+test('release-age tolerance refuses broader policies, unrelated packages and changes to retained configuration', async t => {
+  for (const mode of ['range', 'wildcard', 'foreign', 'wrong-version', 'missing', 'ranged-dependency',
+    'mismatched-manifest', 'remove-existing', 'change-setting', 'change-builds', 'npmrc', 'duplicate-key', 'duplicate-added']) {
+    await t.test(mode, async child => {
+      const f = await fixture(child), workspace = join(f.profileDir, 'pnpm-workspace.yaml')
+      const baseline = 'allowBuilds:\n  sharp: true\nminimumReleaseAgeExclude:\n  - retained-user-rule\n'
+      await f.put(workspace, baseline)
+      f.setAction(async () => {
+        await f.install()
+        const aggregate = join(f.profileDir, 'node_modules/@release/design-system-dsh/package.json')
+        const value = JSON.parse(await readFile(aggregate))
+        value.dependencies = { '@release/core': mode === 'ranged-dependency' ? '^1.2.3' : '1.2.3' }
+        await f.put(aggregate, json(value))
+        if (mode !== 'missing') await f.put(join(f.profileDir, 'node_modules/@release/core/package.json'), json({
+          name: '@release/core', version: mode === 'mismatched-manifest' ? '1.2.4' : '1.2.3' }))
+        const addition = mode === 'range' ? '@release/core@^1.2.3' : mode === 'wildcard' ? '@release/*'
+          : mode === 'foreign' ? '@foreign/tool@2.0.0' : mode === 'wrong-version' ? '@release/core@1.2.4'
+            : '@release/core@1.2.3'
+        let after = baseline + `  - '${addition}'\n`
+        if (mode === 'remove-existing') after = after.replace('  - retained-user-rule\n', '')
+        if (mode === 'change-setting') after += 'minimumReleaseAge: 0\n'
+        if (mode === 'change-builds') after = after.replace('sharp: true', 'sharp: false')
+        if (mode === 'npmrc') await f.put(join(f.profileDir, '.npmrc'), 'registry=https://changed.example/\n')
+        if (mode === 'duplicate-key') after += 'allowBuilds: {}\n'
+        if (mode === 'duplicate-added') after += `  - '${addition}'\n`
+        await f.put(workspace, after)
+      })
+      const result = await applyDshInstallation(await planDshInstallation(f.options), f.options)
+      assert.equal(result.status, 'failed-partial-state-retained')
+      assert.equal(result.userConfigurationPreserved, false)
+      assert.ok(result.failure.reasons.includes('user-configuration-changed'))
+      assert.equal(result.failure.automaticRetry, false)
+      assert.match(result.failure.recovery, /failed receipt|failed.*ownership/i)
+    })
+  }
+})
+
+test('permitted pnpm policy additions do not turn native failure or missing registration into success', async t => {
+  for (const mode of ['native-failure', 'disabled-bundle']) await t.test(mode, async child => {
+    const f = await fixture(child), workspace = join(f.profileDir, 'pnpm-workspace.yaml')
+    f.setAction(async () => {
+      await f.install()
+      await f.put(workspace, "allowBuilds: {}\nminimumReleaseAgeExclude:\n  - '@release/design-system-dsh@1.2.3'\n")
+      if (mode === 'native-failure') throw Object.assign(Error('native failure'), { code: 7 })
+      const manifest = JSON.parse(await readFile(f.manifestPath))
+      manifest.dsh.profile.bundles = manifest.dsh.profile.bundles.filter(name => name !== '@release/design-system-dsh')
+      await f.put(f.manifestPath, json(manifest))
+    })
+    const result = await applyDshInstallation(await planDshInstallation(f.options), f.options)
+    assert.equal(result.status, 'failed-partial-state-retained')
+    assert.equal(result.userConfigurationPreserved, true)
+    assert.equal(result.ownershipEstablished, false)
+    assert.deepEqual(result.configurationChanges.releaseAgeExclusionsAdded, ['@release/design-system-dsh@1.2.3'])
+    assert.ok(result.failure.reasons.includes(mode === 'native-failure' ? 'native-command-failed' : 'bundle-not-registered'))
+    assert.equal(result.failure.automaticRetry, false)
+  })
+})
+
 test('successful native exit does not approve workspace configuration drift', async t => {
   const f = await fixture(t)
   f.setAction(async () => {
@@ -1030,7 +1120,7 @@ async function windowsSecurityFixture(t) {
   // selection and native inspection are synthetic; no actual Windows proof.
   const source = new URL('../src/', import.meta.url), facts = join(root, 'facts.json')
   await writeFile(facts, json({ mode: 'private' }))
-  await writeFile(join(root, 'windows-private-storage.mjs'), await readFile(new URL('windows-private-storage.mjs', source)))
+  await writeFile(join(root, 'windows-private-storage.mjs'), await readFile(new URL('../../studio/src/node/windows-private-storage.mjs', source)))
   await writeFile(join(root, 'windows-native-platform.mjs'), `
     import {readFile} from 'node:fs/promises';
     const sid='S-1-5-21-101-202-303-1001';

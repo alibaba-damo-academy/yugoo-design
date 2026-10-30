@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { zipSync } from 'fflate'
 import { readStudioImportFiles } from '../src/content-source-import.ts'
 import { encodeStudioContentZip } from '../src/content-zip.ts'
+import { formatStudioImportError } from '../src/content-transfer.ts'
 import { readStudioContentArchive } from '../../studio/src/content-archive.ts'
 import { createStudioInstances } from '../../studio/src/node/studio-instances.mjs'
 import { adapters, originalFiles, entry, pin } from '../../companion/test/fixtures/studio-changes-fixture.mjs'
@@ -67,6 +68,23 @@ test('Kit checks its own two core files, independent of Bundle requirements', as
   assert.deepEqual(result.files.map(file => file.path), ['mindset.md', 'kit.yaml'])
   await assert.rejects(readStudioImportFiles('kit', [text('SKILL.md', '# Skill')]), /mindset.md/)
   await assert.rejects(readStudioImportFiles('bundle', [text('panel.yaml', 'root: {}')]), /SKILL.md/)
+})
+test('a single declared ZIP with plain-text bytes reports its format before source requirements', async () => {
+  for (const name of ['invalid-archive.zip', 'invalid-archive.ZIP']) {
+    let archiveReads = 0
+    await assert.rejects(readStudioImportFiles('bundle', [text(name, 'not a ZIP archive')], async () => {
+      archiveReads++; assert.fail('invalid ZIP must not reach the host archive reader')
+    }), error => {
+      assert.match(error.message, /Invalid ZIP archive/i)
+      assert.match(formatStudioImportError(error.message, 'zh'), /不是有效的 ZIP 压缩包/)
+      assert.doesNotMatch(formatStudioImportError(error.message, 'zh'), /SKILL\.md/)
+      return true
+    })
+    assert.equal(archiveReads, 0)
+  }
+  const folder = await readStudioImportFiles('bundle', [text('SKILL.md', '# Method', 'folder/SKILL.md'),
+    text('example.zip', 'opaque example bytes', 'folder/reference/example.zip')])
+  assert.ok(folder.files.some(file => file.path === 'reference/example.zip'), 'folder resources are not reclassified as uploaded archives')
 })
 test('ambiguous and unsafe folder paths are not flattened into a different Skill', async () => {
   await assert.rejects(readStudioImportFiles('bundle', [zip({ 'one/SKILL.md': 'one', 'two/SKILL.md': 'two' })]), /SKILL.md/)

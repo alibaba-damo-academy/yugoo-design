@@ -129,7 +129,7 @@ function Workbench({ client, id, locale, onBack, onChanged, onDirtyChange, rende
   const dirty = useRef(false), notify = useRef(onDirtyChange); notify.current = onDirtyChange
   const extraDirty = useRef(false)
   extraDirty.current = !!intent || (!!attempt && !reviewSaved) || (!!review && !reviewSaved)
-  const reportDirty = useCallback(() => { if (live.current) notify.current?.(dirty.current || extraDirty.current) }, [])
+  const reportDirty = useCallback(() => { if (live.current) notify.current?.(dirty.current || extraDirty.current, { sourceDirty: dirty.current }) }, [])
   const editorDirty = useCallback((value: boolean) => { dirty.current = value; reportDirty() }, [reportDirty])
   useEffect(reportDirty, [intent, attempt, review, reviewSaved, reportDirty])
   useLayoutEffect(() => { if (client !== initial.current) { invalidated.current = true; sequence.current++ } }, [client])

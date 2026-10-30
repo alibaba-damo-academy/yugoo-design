@@ -57,6 +57,7 @@ export async function readStudioImportFiles(kind: StudioSourceImport['kind'], se
       if (!readArchive) throw Error('This host cannot read Studio archives.')
       return readArchive(source)
     }
+    if (/\.zip$/i.test(path) && !isStudioZip(bytes)) throw Error('Invalid ZIP archive: choose a valid ZIP file.')
     if (isStudioZip(bytes)) {
       const entries = readStudioZipEntries(bytes)
       if (entries.has('studio-manifest.json')) archive = await checkedArchive(decodeStudioContentZip(bytes))

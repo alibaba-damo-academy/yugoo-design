@@ -19,7 +19,7 @@ test('new-project source port uses current library objects and releases its Host
     listKits: () => [original],
     registerCurrentKitSource(value) { port = value; return () => { stopped++ } },
   }, {
-    list: async () => records,
+    list: async input => { assert.deepEqual(input, { kind: 'kit', includeReadiness: false }); return records },
     editCurrent: async request => {
       assert.deepEqual(request, { kind: 'kit', kit: original }); edits++
       const record = { id: 'current-library-object', revision: 2, kit: original, current: true }
@@ -33,6 +33,10 @@ test('new-project source port uses current library objects and releases its Host
   assert.equal(edits, 1, 'subsequent project copies read the same current library identity')
   assert.deepEqual(loads, [{ id: 'current-library-object', expectedRevision: 2 }, { id: 'current-library-object', expectedRevision: 2 }])
   assert.deepEqual(await port.list(), [original])
+  records[0].title = { zh: 'P3 客户反馈工作台', en: 'P3 Feedback Kit' }
+  records[0].description = 'Preserve confirmed feedback.'
+  assert.deepEqual(await port.list(), [{ ...original, description: 'P3 客户反馈工作台 · P3 Feedback Kit · Preserve confirmed feedback.' }])
+  assert.equal(current.mindset, 'Current saved method', 'display title projection does not rewrite saved source')
   stop(); assert.equal(stopped, 1)
 })
 const pin = { name: 'fork_alpha', version: '1.0' }, kitPin = { name: 'demo_kit', version: '1.0' }

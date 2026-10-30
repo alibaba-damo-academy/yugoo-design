@@ -47,7 +47,8 @@
     "@huggingface/transformers": "3.8.1",
     "onnxruntime-common": "1.21.0",
     "undici": "8.10.2",
-    "trash": "10.1.1"
+    "trash": "10.1.1",
+    "yaml": "2.9.1"
   },
   "x-design-release-review": {
     "fixture": true,

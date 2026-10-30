@@ -155,6 +155,23 @@ export interface StudioInstanceCopyRequest {
 }
 export interface StudioInstanceRevision { readonly id: string; readonly expectedRevision: number }
 export interface StudioInstanceReadFile { readonly id: string; readonly revision: number; readonly path: string; readonly content: string }
+export type StudioSourceReadFile = { readonly path: string; readonly exists: false } | { readonly path: string; readonly exists: true; readonly content: string }
+export interface StudioSourceFileInfo { readonly path: string; readonly bytes: number; readonly readable: boolean }
+export interface StudioMountedBundleReadRequest extends StudioInstanceRevision {
+  readonly bindingKey: string
+  /** Omit to discover files without reading their content. */
+  readonly paths?: readonly string[]
+}
+export interface StudioMountedBundleRead {
+  readonly id: string
+  readonly revision: number
+  readonly bindingKey: string
+  readonly bundle: DesignBundleVersionPin
+  readonly sourceId: string
+  readonly readOnly: true
+  readonly availableFiles: readonly StudioSourceFileInfo[]
+  readonly files: readonly StudioSourceReadFile[]
+}
 export interface StudioInstanceImportRequest {
   readonly kind: 'kit' | 'bundle'
   readonly files: readonly StudioSourceEntry[]
@@ -167,12 +184,14 @@ export interface StudioInstances {
   importSources(input: StudioInstanceImportRequest): Promise<StudioInstanceDescription>
   create(input: { readonly kind: 'kit' | 'bundle'; readonly title: StudioDisplayTitle }): Promise<StudioInstanceDescription>
   read(input: string | { readonly id: string }): Promise<StudioInstanceDescription>
-  list(input?: { readonly kind?: 'kit' | 'bundle' }): Promise<readonly StudioInstanceDescription[]>
+  /** Metadata-only discovery may omit readiness validation; loading still checks definitions. */
+  list(input?: { readonly kind?: 'kit' | 'bundle'; readonly includeReadiness?: boolean }): Promise<readonly StudioInstanceDescription[]>
   listBundles(): Promise<readonly StudioInstanceBundleChoice[]>
   copy(input: StudioInstanceCopyRequest): Promise<StudioInstanceDescription>
   rename(input: StudioInstanceRevision & { readonly title: StudioDisplayTitle }): Promise<StudioInstanceDescription>
   remove(input: StudioInstanceRevision): Promise<{ readonly id: string; readonly revision: number; readonly trashed: true }>
   readFile(input: { readonly id: string; readonly path: string }): Promise<StudioInstanceReadFile>
+  readMountedBundle(input: StudioMountedBundleReadRequest): Promise<StudioMountedBundleRead>
   saveFile(input: StudioInstanceRevision & { readonly path: string; readonly content: string }): Promise<StudioInstanceDescription>
   exportArchive(input: StudioInstanceArchiveRequest): Promise<string>
   prepareChanges(input: StudioInstanceChangeRequest): Promise<StudioInstanceCandidate>
@@ -197,23 +216,31 @@ export interface StudioAuthoringRecord {
   readonly deletedAt?: string
   readonly bundle?: DesignBundleVersionPin
   readonly files?: readonly { readonly path: string; readonly bytes: number; readonly editable: boolean }[]
-  readonly mounts?: readonly { readonly bundle: DesignBundleVersionPin }[]
+  readonly mounts?: readonly { readonly bindingKey?: string; readonly bundle: DesignBundleVersionPin }[]
 }
 export interface StudioAuthoringOptions {
   readonly scope: StudioAuthoringScope
   readonly instances: {
     read(input: { readonly id: string }): Promise<StudioAuthoringRecord>
     readFile(input: { readonly id: string; readonly path: string }): Promise<StudioInstanceReadFile>
+    readMountedBundle?(input: StudioMountedBundleReadRequest): Promise<StudioMountedBundleRead>
     prepareChanges(input: StudioInstanceChangeRequest): Promise<StudioInstanceCandidate>
   }
   readonly readComponents: () => StudioAwaitable<StudioAuthoringComponentCatalog>
 }
 export type StudioAuthoringReplacement = StudioInstanceFileChange & { readonly content: string }
+export interface StudioAuthoringRead {
+  readonly paths?: readonly string[]
+  readonly mount?: { readonly bindingKey: string; readonly paths?: readonly string[] }
+}
 export interface StudioAuthoring {
-  read(input?: { readonly paths?: readonly string[] }): Promise<{
+  read(input?: StudioAuthoringRead): Promise<{
     readonly scope: StudioAuthoringScope
-    readonly files: readonly ({ readonly path: string; readonly exists: false } | { readonly path: string; readonly exists: true; readonly content: string })[]
+    readonly files: readonly StudioSourceReadFile[]
     readonly components: StudioAuthoringComponentCatalog
+    readonly availableFiles?: readonly StudioSourceFileInfo[]
+    readonly mounts?: readonly { readonly bindingKey?: string; readonly bundle: DesignBundleVersionPin }[]
+    readonly mountedBundle?: Omit<StudioMountedBundleRead, 'files'>
   }>
   prepare(input: { readonly changes: readonly StudioAuthoringReplacement[] }): Promise<{
     readonly scope: StudioAuthoringScope

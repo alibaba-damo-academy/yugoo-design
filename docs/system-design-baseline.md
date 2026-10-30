@@ -730,6 +730,11 @@ The Design Studio is the authoring and management GUI for Kits, Mindsets, and th
 
 The catalog maintains current saved Kit and Bundle content. Editing, copying and importing use the same source-instance service. Projects copy the selected current definitions once and subsequently use their own files. There is no local publication state, confirmation lock or version-switching workflow.
 
+UI and Agent discovery share the current Kit choices, including saved local
+imports. Installed-source inspection remains distinct: its absence cannot make
+a local Kit unavailable. Discovery reads do not update an existing project's
+Kit copy or add another persistent catalog.
+
 Local Studio working-copy persistence has editor-level guarantees. The filesystem
 adapter writes, syncs and closes a temporary file before atomic replacement. A
 successful save is readable by another process or a reopened application;

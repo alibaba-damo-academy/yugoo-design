@@ -41,6 +41,14 @@ Kit and Bundle catalogs share the established header: a 300px search control on
 the left, matched/total counts, and New on the right. The product breadcrumb already
 names the section; the catalog does not repeat its heading. There is no local version picker or publication status. The existing leave guard protects unsaved edits.
 
+Saved local Bundle cards show their Kit reference count. Select the count to
+open the same mount management view used by installed Bundles, without opening
+source editing. A Kit import can retain its mounted Bundle sources inside the
+archive; mount management identifies these retained sources separately from
+missing independent catalog entries. Single-file ZIP imports report an invalid
+archive format before checking for required source files; ZIP resources inside
+an imported source folder retain their original bytes.
+
 Only new/edit object entries invoke `renderContent(content, context)`, inside the
 Studio stage. The context supplies the object's `id`, create/edit `intent` and
 `onDirtyChange` for unsent input. Editing retains product navigation, top bar,
@@ -291,6 +299,12 @@ keeps the standard workbench. This presentation port grants no additional catalo
 save, execution or publication capability. Hosts that omit it retain the existing
 source editor. Catalog counts and empty states include visible local copies using
 the same search filter as their cards.
+When a host combines unsent conversation input with the editor's dirty signal,
+it may report `onDirtyChange(navigationDirty, { sourceDirty })`, retaining the
+shared editor's canonical dirty signal as `sourceDirty`. Export uses that source
+signal; navigation protects both. Unsent input stays in place after exporting the
+saved revision. Boolean-only callbacks retain their existing behavior, and the
+editor still blocks export during unsaved source changes or uncertain saves.
 Copy opens an independent editable file set; title-pencil renaming changes the
 selected language's display name without changing source identities. The header places
 an arrow-only Back action on the left and copy/edit actions on the right, with

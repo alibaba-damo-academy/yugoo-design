@@ -99,12 +99,12 @@ https://github.com/alibaba-damo-academy/yugoo-design/blob/main/packages/companio
 ```
 
 ```text
-Install or update Yugoo Design in my current Agent host from the official npm package yugoo-design.
-First read the official guide and follow the steps for this host:
+Install or update Yugoo Design in my current Agent host using the official npm package yugoo-design.
+Follow the public guide for this host (no login, clone or source build):
 https://github.com/alibaba-damo-academy/yugoo-design/blob/main/packages/companion/HOSTS.md#agent-led-installation-and-updates
-Use any version I explicitly request. Otherwise, resolve npm latest once to its exact published stable version; if latest points to a prerelease, report it and stop instead of choosing another version. Verify its integrity; reuse a matching installation or acquire the new version as instructed. The GitHub link is public documentation and requires no login, repository clone or source build.
-Check the environment, install, complete native import or activation, and verify it while preserving my projects, settings and installation receipts. Give me the necessary steps for authorization, model downloads, plugin activation or a host restart, then continue verification after I complete them.
-Finally report the acquired package version, the version actually loaded by the host and capabilities not ready. Give me this host's yugoo entry and one copyable request to create my first Design Project with the Web App Kit.
+Use the version I request; otherwise resolve npm latest once to an exact published stable version. If latest is a prerelease, report and stop; do not choose another version. Verify integrity; reuse a matching install or acquire that version.
+Check the environment, install, complete native import/activation and verify. Preserve projects, settings and receipts. Give steps and wait if I must authorize, download a model, activate a plugin or restart the host; resume verification after I finish.
+Report acquired and actually loaded versions separately, plus capabilities not ready. Give the host's yugoo entry point and a copyable request to create my first Design Project with Web App Kit.
 ```
 
 For an explicit override, append “Target host: Codex CLI”, “Target host:

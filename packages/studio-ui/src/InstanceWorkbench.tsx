@@ -30,7 +30,8 @@ export interface StudioInstance {
   readonly createdBlank?: boolean
   readonly readiness?: { readonly ready: boolean; readonly diagnostics: readonly { code: string; message: string; path?: string; severity?: 'error' | 'warning' }[] }
   readonly files?: readonly { readonly path: string; readonly bytes: number; readonly editable: boolean }[]
-  readonly mounts: readonly { readonly bundle: DesignBundleVersionPin & { readonly instanceId?: string; readonly revision?: number }; readonly instanceId?: string }[]
+  readonly mounts: readonly { readonly bundle: DesignBundleVersionPin & { readonly instanceId?: string; readonly revision?: number;
+    readonly source?: { readonly snapshot: string; readonly sourceId: string } }; readonly instanceId?: string }[]
   readonly refs: readonly { readonly id: string; readonly title: { readonly zh: string; readonly en: string } }[]
   readonly deletedAt?: string
   readonly availableBundles?: readonly (DesignBundleVersionPin & { readonly title: { readonly zh: string; readonly en: string }; readonly instanceId?: string; readonly revision?: number; readonly runtimeName?: string; readonly description?: string; readonly displayDescription?: { readonly zh: string; readonly en: string } })[]
@@ -64,7 +65,8 @@ export interface InstanceWorkbenchProps {
   onChanged: (record?: StudioInstance) => void
   onExport?: (record: StudioInstance) => void
   renderPreview?: StudioAuthoring['renderPreview']
-  onDirtyChange?: (dirty: boolean) => void
+  /** Navigation may also protect host conversation input; export uses the canonical source state. */
+  onDirtyChange?: (dirty: boolean, state?: { readonly sourceDirty: boolean }) => void
   /** Optional host contribution alongside the current source editor. Never owns its source state. */
   renderSupplement?: (state: { record?: StudioInstance; dirty: boolean; busy: boolean; previewBundle?: DesignBundleVersionPin; currentFile?: string; intent?: 'create' | 'edit'; proposalReplacement?: {
     /** Derived from this editor's drafts and save fence; grants no source/save authority. */

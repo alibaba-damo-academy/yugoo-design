@@ -12,7 +12,7 @@ export interface StudioSessionPrepared {
 export interface StudioAuthoringSessionOptions {
   readonly ctx: Context
   readonly parent: Agent
-  readonly instances: Pick<StudioInstances, 'read' | 'readFile' | 'prepareChanges'>
+  readonly instances: Pick<StudioInstances, 'read' | 'readFile' | 'prepareChanges'> & Partial<Pick<StudioInstances, 'readMountedBundle'>>
   readonly readComponents: () => StudioAwaitable<StudioAuthoringComponentCatalog>
   /** Host-selected isolated workspace, never a browser-supplied path. */
   readonly workspaceRoot: string

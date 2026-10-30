@@ -21,6 +21,14 @@ Unfinished methods, missing dependencies and empty Kit membership can be saved;
 loading or previewing reports the actual missing/invalid definition. A missing
 installed catalog does not prevent reopening and editing retained local files.
 
+Kit authoring can discover its saved mount bindings and read their current source
+through `readMountedBundle({id, expectedRevision, bindingKey, paths?})`. Omit
+`paths` to list files; selected text reads share the existing source size/path
+guards. The existing mount resolver uses current local Bundle content or retained
+imported sources. These reads neither copy Bundles into Kit files nor grant write
+access to them. The scoped authoring capability exposes the same read as
+`read({mount:{bindingKey, paths?}})`; ordinary reads discover file and mount names.
+
 `prepareChanges` returns a bounded multi-file source diff, candidate digest and
 validation/preview diagnostics without saving. `saveChanges` defaults to `draft`:
 it saves incomplete authoring source using the repository lock and atomic record

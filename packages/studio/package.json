@@ -30,7 +30,7 @@
     "test:source-import": "tsx --tsconfig tests/source-tsconfig.json --test tests/source-import.test.mjs",
     "test": "node tests/studio.test.mjs && node tests/composition.test.mjs && node tests/management.test.mjs && node tests/kit-workspace.test.mjs && node tests/bundle-workspace.test.mjs && node tests/panel-preview.test.mjs && node --test tests/legacy-exact-version.test.mjs && node --test tests/sample-artifacts.test.mjs && pnpm run test:instance-changes && pnpm run test:source-import && pnpm run test:current-sources && pnpm run test:source-storage",
     "test:node": "tsx --tsconfig tests/source-tsconfig.json --test tests/node-entry.test.mjs && tsc --project tests/node-public-tsconfig.json",
-    "test:current-sources": "tsx --tsconfig tests/source-tsconfig.json --test tests/current-sources.test.mjs tests/current-mount-consistency.test.mjs",
+    "test:current-sources": "tsx --tsconfig tests/source-tsconfig.json --test tests/current-sources.test.mjs tests/current-mount-consistency.test.mjs tests/mounted-authoring.test.mjs",
     "test:source-storage": "tsx --tsconfig tests/source-tsconfig.json --test tests/source-storage.test.mjs"
   },
   "peerDependencies": {

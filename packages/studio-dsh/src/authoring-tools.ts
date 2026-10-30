@@ -13,7 +13,7 @@ export function registerStudioCustomizationTool(ctx: Context, service: DshStudio
   ctx.tools.register(defineTool({
     name: 'studio_customize',
     description: 'Customize reusable Kit/Bundle methods and Panels in the SAME working copies shown in Studio. '
-      + 'This edits authoring content, not a Design Project. Before editing, use read request {authoring:{}} for creator methods; for Panel changes discover {components:{}} then exact {components:{name,reference:"contract"}} and docs/examples before choosing parameters. Use catalog to discover exact installed pins; list/read to reopen a working copy; '
+      + 'This edits authoring content, not a Design Project. Before editing, use read request {authoring:{}} for creator methods; for Panel changes discover {components:{}} then exact {components:{name,reference:"contract"}} and docs/examples before choosing parameters. catalog.currentKits lists available installed and local Kits for project selection; catalog.kits/bundles inspect installed source pins only, so absence there does not mean a local Kit is unavailable. Use list/read to reopen current local source; '
       + 'copy with kind and an exact kit or bundle {name,version}; readFile for source; rename requires id, expectedRevision and title {zh,en}. Read the current copy before selecting its revision. prepareChanges with id, expectedRevision and complete-file changes '
       + 'to inspect the diff, diagnostics and Panel preview before saving. Preparation never saves. '
       + 'Call saveChanges only when the user explicitly requests saving; pass the same changes, revision and candidate digest, '

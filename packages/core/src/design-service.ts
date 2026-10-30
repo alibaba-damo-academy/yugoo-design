@@ -461,6 +461,25 @@ export default class DesignService extends Service {
       order: 550,
       text: (assembly) => this.renderMindset(assembly.agent),
     })
+    // Section providers are synchronous in the native SDK. Resolve saved local
+    // sources in its existing async assembly phase, without a second catalog/cache.
+    ctx.on('system-prompt/assemble', async (assembly, context, next) => {
+      const agent = context.agent
+      const section = assembly.sections.find(section => section.name === 'design:mindset')
+      if (!section || !agent || !this.currentKitSource?.list || agent.session.header.origin === 'subagent'
+        || this.activeWorkspaces.get(agent)?.project.kit !== undefined) return next()
+      context.signal?.throwIfAborted()
+      try {
+        const current = await this.listCurrentKits()
+        context.signal?.throwIfAborted()
+        section.text = this.renderMindset(agent, current)
+      } catch (error) {
+        context.signal?.throwIfAborted()
+        this.context.logger?.warn(`design: could not list current Kits: ${String(error).slice(0, 1000)}`)
+        section.text += '\nLocal Kit discovery is temporarily unavailable. This list may be incomplete; do not infer that a user-named local Kit is missing.'
+      }
+      return next()
+    })
     host.systemPrompt.section({
       name: 'design:main-bundle-recovery',
       order: 575,
@@ -2658,6 +2677,19 @@ export default class DesignService extends Service {
     return () => { if (this.currentKitSource === source) this.currentKitSource = undefined }
   }
 
+  /** Available library choices, shared by UI and Agent discovery. Not project sources. */
+  async listCurrentKits(): Promise<readonly { readonly name: string; readonly version: string; readonly description?: string }[]> {
+    const current = new Map(this.listKits().map(kit => [kit.name, { name: kit.name, version: String(kit.version), description: kit.description }]))
+    for (const kit of await this.currentKitSource?.list?.() ?? []) current.set(kit.name, { ...kit, description: kit.description })
+    return Object.freeze([...current.values()]
+      .map(kit => Object.freeze({
+        name: kit.name,
+        version: String(kit.version),
+        ...(kit.description === undefined ? {} : { description: kit.description }),
+      }))
+      .sort((left, right) => left.name.localeCompare(right.name)))
+  }
+
   /** Browser-safe Design Project and Mindset catalog for the current conversation. */
   async listProjectCatalog(agent: Agent, signal?: AbortSignal): Promise<{
     readonly currentProjectId: string | null
@@ -2678,15 +2710,7 @@ export default class DesignService extends Service {
       updatedAt: project.updatedAt,
       ...(project.kit === undefined ? {} : { kit: { ...project.kit, version: String(project.kit.version) } }),
     }))
-    const current = new Map(this.listKits().map(kit => [kit.name, { name: kit.name, version: String(kit.version), description: kit.description }]))
-    for (const kit of await this.currentKitSource?.list?.() ?? []) current.set(kit.name, { ...kit, description: kit.description })
-    const mindsets = [...current.values()]
-      .map(kit => Object.freeze({
-        name: kit.name,
-        version: String(kit.version),
-        ...(kit.description === undefined ? {} : { description: kit.description }),
-      }))
-      .sort((left, right) => left.name.localeCompare(right.name))
+    const mindsets = await this.listCurrentKits()
     return Object.freeze({
       currentProjectId: selection === undefined ? null : String(selection.projectId),
       projects: Object.freeze(projects),
@@ -3274,7 +3298,7 @@ export default class DesignService extends Service {
   }
 
   /** Render the requesting session's selected Mindset and Bundle catalog for the system prompt. */
-  private renderMindset(agent: Agent | undefined): string {
+  private renderMindset(agent: Agent | undefined, available: readonly { name: string; description?: string }[] = this.listKits()): string {
     const workspace = agent === undefined ? undefined : this.activeWorkspaces.get(agent)
     const pin = workspace?.project.kit
     const active = agent === undefined ? undefined : this.kitForAgent(agent)
@@ -3284,8 +3308,8 @@ This project's complete Kit source is unavailable. Preserve its existing Design 
 </design_kit_unavailable>`
     }
     if (active === undefined) {
-      if (this.kits.size === 0) return ''
-      const lines = this.listKits()
+      if (available.length === 0) return ''
+      const lines = available
         .map((kit) => `- ${kit.name}${typeof kit.description === 'string' && kit.description !== '' ? `: ${kit.description}` : ''}`)
       return `<available_design_mindsets>
 Continue normal conversation without activating a Design Kit until the user's intent calls for design work. When the user asks to design a product, app, website, feature set, or other experience, choose the best matching Mindset and call select_design_mindset before using Design skills. Ask the user only when multiple plausible Mindsets remain ambiguous. The user may also select one explicitly with /yugoo kit <kit>.

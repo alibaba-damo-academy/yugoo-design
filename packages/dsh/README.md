@@ -483,10 +483,26 @@ object in place of the saved plan. Output plans and result receipts are written
 outside the package, host home and pinned input directories, without replacing
 existing files. Codex-specific runtime and receipt flags do not apply here.
 
+During a native package operation, pnpm may append `minimumReleaseAgeExclude`
+entries for newly published dependencies. The adapter accepts only exact
+`name@version` additions reachable through the selected installed aggregate's
+exact runtime dependency declarations. Existing exclusions and all other
+workspace settings must remain unchanged; ranges, wildcards, unrelated packages,
+removed exclusions and other configuration changes still fail preservation.
+The receipt's `configurationChanges` records accepted additions and changed
+configuration paths without replacing the original before/after hashes.
+
 An official package operation can fail after changing host state. The adapter
 reports `failed-partial-state-retained`, keeps its result receipt and exits
 unsuccessfully; it does not promise automatic DSH rollback, recovery or
-uninstallation. Inspect the retained state before taking another action.
+uninstallation. The receipt's `failure.reasons`, configuration comparison and
+retained command logs distinguish native command failure, configuration changes
+and incomplete registration. Inspect them and the existing official DSH Plugins
+interface before using the host plugin manager to repair the specific state.
+Do not reapply the failed plan or pass a failed receipt as `--previous-receipt`.
+DSH has no installer recovery/adoption route: restarting or observing an already
+registered package cannot establish the failed transaction's ownership. Keep
+the existing profile, configuration and projects while investigating.
 Loader/configuration readback does not establish runtime or model execution.
 This registry adapter has source-level contract coverage; it does not accept
 local tarball selectors. Before registry publication, only the supplied local

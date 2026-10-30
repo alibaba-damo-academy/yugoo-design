@@ -6,7 +6,8 @@ import { createHash, randomUUID } from 'node:crypto'
 import { lstat, readFile, realpath, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { promisify } from 'node:util'
+import { isDeepStrictEqual, promisify } from 'node:util'
+import { createRequire } from 'node:module'
 
 const exec = promisify(execFile)
 const admitted = new WeakMap()
@@ -15,6 +16,7 @@ const canonical = value => Array.isArray(value) ? value.map(canonical) : value &
   ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])])) : value
 const digest = value => sha(JSON.stringify(canonical(value)))
 const beneath = isPathWithin
+const exactVersion = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u
 export const DSH_INSTALL_MAX_OUTPUT_BYTES = 1024 * 1024
 
 /** Install duration belongs to the native package manager, not a probe timer. */
@@ -181,7 +183,7 @@ async function readOwnedReceipt(path, state, profile, currentProduct) {
   assert.match(receipt.id ?? '', /^[0-9a-f-]{36}$/u)
   assert.equal(receipt.receiptPath, path)
   assert.equal(join(dirname(path), receipt.id + '.dsh-result.json'), path)
-  assert.equal(receipt.status, 'registered-config-parsed', 'Successful owned installation required')
+  assert.equal(receipt.status, 'registered-config-parsed', 'Successful owned installation required; inspect failed DSH state in the official host plugin manager instead of reapplying its plan or receipt')
   assert.equal(receipt.ownershipEstablished, true, 'Previous installation ownership was not established')
   assert.equal(receipt.exitCode, 0); assert.equal(receipt.partialStateRetained, false)
   assert.equal(receipt.userConfigurationPreserved, true)
@@ -448,6 +450,72 @@ export async function inspectDshInstallation(options) {
     runtimeMounted: false, bundleCycleVerified: false, releaseValidated: false }
 }
 
+async function workspaceSettings(bytes) {
+  if (bytes === null) return null
+  const { parseDocument } = await import('yaml')
+  const document = parseDocument(bytes.toString('utf8'), { uniqueKeys: true })
+  if (document.errors.length || document.warnings.length) return null
+  const value = document.toJS({ maxAliasCount: 100 })
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const { minimumReleaseAgeExclude = [], ...settings } = value
+  if (!Array.isArray(minimumReleaseAgeExclude) || !minimumReleaseAgeExclude.every(item => typeof item === 'string')) return null
+  return { settings, exclusions: minimumReleaseAgeExclude }
+}
+
+// Follow only exact runtime declarations in the selected installed aggregate.
+// Reading package metadata must not execute code or depend on package.json exports.
+async function installedExactSelectors(installed) {
+  const selectors = new Set(), visited = new Set()
+  async function visit(path, name, version) {
+    path = await realpath(path)
+    if (visited.has(path)) return
+    visited.add(path)
+    const bytes = await boundedFile(path), manifest = JSON.parse(bytes)
+    if (manifest.name !== name || manifest.version !== version) return
+    selectors.add(`${name}@${version}`)
+    const require = createRequire(path)
+    for (const [dependency, pin] of Object.entries({ ...manifest.dependencies, ...manifest.optionalDependencies })) {
+      if (!/^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/u.test(dependency) || !exactVersion.test(pin)) continue
+      for (const search of require.resolve.paths(dependency) ?? []) {
+        const candidate = join(search, dependency, 'package.json')
+        if (await regular(candidate, true) === null) continue
+        await visit(candidate, dependency, pin)
+        break
+      }
+    }
+  }
+  const path = join(installed.realPackageDir, 'package.json')
+  assert.equal(sha(await regular(path)), installed.manifestSha256, 'Installed aggregate metadata changed')
+  await visit(path, installed.name, installed.version)
+  return selectors
+}
+
+async function preservedConfigPins(before, after, workspaceBefore) {
+  const changedFiles = [...new Set([...Object.keys(before.configPins), ...Object.keys(after.configPins)])]
+    .filter(path => before.configPins[path] !== after.configPins[path])
+  const result = { preserved: changedFiles.length === 0, changedFiles, releaseAgeExclusionsAdded: [],
+    reason: changedFiles.length === 0 ? 'unchanged' : 'configuration-file-changed' }
+  const workspace = join(before.dir, 'pnpm-workspace.yaml')
+  if (changedFiles.length !== 1 || changedFiles[0] !== workspace || !after.installed) return result
+  try {
+    const bytes = await regular(workspace, true)
+    if (bytes === null || sha(bytes) !== after.configPins[workspace]) return result
+    const old = await workspaceSettings(workspaceBefore), current = await workspaceSettings(bytes)
+    if (!old || !current) return { ...result, reason: 'workspace-policy-unverified' }
+    if (!isDeepStrictEqual(old.settings, current.settings)) return { ...result, reason: 'workspace-settings-changed' }
+    if (!isDeepStrictEqual(old.exclusions, current.exclusions.slice(0, old.exclusions.length)))
+      return { ...result, reason: 'existing-release-age-exclusions-changed' }
+    const added = current.exclusions.slice(old.exclusions.length)
+    if (!added.length || new Set(added).size !== added.length || added.some(value => old.exclusions.includes(value))) return result
+    const exact = await installedExactSelectors(after.installed)
+    if (added.some(value => !exact.has(value))) return { ...result, reason: 'release-age-exclusion-outside-exact-dependencies' }
+    return { ...result, preserved: true, releaseAgeExclusionsAdded: added, reason: 'exact-dependency-release-age-exclusions-added' }
+  } catch {
+    // Unreadable or unsupported policy/metadata cannot justify a changed pin.
+    return { ...result, reason: 'workspace-policy-unverified' }
+  }
+}
+
 /** Runs only the pinned public CLI; retains partial state on failure, never rolls back. */
 export async function applyDshInstallation(plan, { adapter, signal, timeoutMs = 0, logDirectory } = {}) {
   plan = structuredClone(plan)
@@ -456,6 +524,9 @@ export async function applyDshInstallation(plan, { adapter, signal, timeoutMs = 
   const state = await protocol(adapter)
   const fresh = await planDshInstallation({ ...plan, adapter })
   assert.equal(fresh.planSha256, plan.planSha256, 'Plan or profile changed; replan before execution')
+  const workspace = join(fresh.before.dir, 'pnpm-workspace.yaml')
+  const workspaceBefore = await regular(workspace, true)
+  assert.equal(workspaceBefore === null ? null : sha(workspaceBefore), fresh.before.configPins[workspace], 'Workspace changed; replan before execution')
   if (logDirectory !== undefined) {
     await safeDirectory(logDirectory)
     for (const root of [state.dshHome, plan.product?.npmRoot, plan.previous?.product.npmRoot,
@@ -475,20 +546,37 @@ export async function applyDshInstallation(plan, { adapter, signal, timeoutMs = 
     catch (error) { diagnosticError = String(error.code ?? error.name) }
   }
   let readback = null, readbackError = null, userConfigurationPreserved = false
+  let configurationChanges = { preserved: false, changedFiles: [], releaseAgeExclusionsAdded: [], reason: 'readback-unverified' }
   try {
     readback = await inspectDshInstallation({ ...plan, adapter })
+    configurationChanges = await preservedConfigPins(plan.before, readback, workspaceBefore)
     userConfigurationPreserved = readback.foreignSha256 === plan.before.foreignSha256
-      && digest(readback.patches) === digest(plan.before.patches) && digest(readback.configPins) === digest(plan.before.configPins)
+      && digest(readback.patches) === digest(plan.before.patches) && configurationChanges.preserved
       && (plan.action !== 'update' || digest(readback.bundles) === digest(plan.before.bundles))
   } catch (error) { readbackError = error.message }
   const succeeded = exitCode === 0 && diagnosticError === null && userConfigurationPreserved && readback?.configurationParsed === true
+  const reasons = []
+  if (exitCode !== 0) reasons.push('native-command-' + execution.state)
+  if (diagnosticError !== null) reasons.push('command-log-unavailable')
+  if (readback === null) reasons.push('configuration-readback-failed')
+  else {
+    if (!userConfigurationPreserved) reasons.push('user-configuration-changed')
+    if (!readback.packageInstalled) reasons.push('package-not-installed')
+    if (!readback.bundleRegistered) reasons.push('bundle-not-registered')
+    if (!readback.configurationParsed) reasons.push('configuration-not-parsed')
+  }
+  const failure = succeeded ? null : { reasons, automaticRetry: false,
+    recovery: 'Inspect this receipt, its command logs and the retained profile in the official DSH Plugins interface. '
+      + 'Use the existing host plugin manager to inspect or repair package/bundle state after reviewing the cause. '
+      + 'Do not reapply this saved plan or use a failed receipt as previous ownership. DSH has no installer recover/adopt route; '
+      + 'a restart or an already-registered observation cannot repair failed transaction ownership. Keep existing projects and configuration.' }
   const ownershipEstablished = Boolean(succeeded && plan.product?.releaseSelection && (plan.previous
     || plan.action === 'install' && !plan.before.installed && !plan.before.registered && execution.state === 'completed'))
   return { schemaVersion: 2, kind: 'dsh-installation', host: 'dsh', route: 'official-dsh-bundle',
     product: plan.product, planSnapshot: plan, planSha256: plan.planSha256, operation: plan.action,
     ownershipEstablished, source: { expected: expectedSource(plan), observed: readback === null ? null : ownedState(readback) },
     registryAcquisitionVerified: false, scope: adapter.scope, status: succeeded ? 'registered-config-parsed' : 'failed-partial-state-retained',
-    exitCode, executionError, execution, diagnosticError, readbackError, readback, userConfigurationPreserved,
+    exitCode, executionError, execution, diagnosticError, readbackError, readback, userConfigurationPreserved, configurationChanges, failure,
     userConfigurationStatus: readback === null ? 'unverified' : userConfigurationPreserved ? 'observed-matching' : 'changed',
     rollbackAttempted: false, rollbackScope: 'adapter-only; official CLI may perform limited compatibility restoration', partialStateRetained: !succeeded,
     runtimeMounted: false, bundleCycleVerified: false, releaseValidated: false }
