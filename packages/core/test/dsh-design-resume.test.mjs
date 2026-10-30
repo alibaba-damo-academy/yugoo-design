@@ -2,9 +2,12 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 const { register } = await import('tsx/esm/api')
 register()
+const { Context } = await import('@deepseek-ai/cordis')
+const { default: SystemPrompt } = await import('@deepseek-ai/dsh-system-prompt')
 const { installDesignResumeRouting } = await import('../src/dsh-design-resume.ts')
 const { createMainBundleBridge, activeMainBundleWork } = await import('../src/dsh-main-bundle.ts')
 const { matchesDesignResumeAction } = await import('../src/design-execution-runtime.ts')
+const { DESIGN_CORE_PROGRESSION_PROMPT } = await import('../src/design-core-prompt.ts')
 
 const gate = {
   kind: 'user_continue', invocationId: 'plan-1',
@@ -13,12 +16,15 @@ const gate = {
 }
 function harness() {
   const hooks = new Map(), sections = new Map(), calls = []
+  const assembly = context => ({ sections: [...sections.values()].map(section => ({
+    name: section.name, text: typeof section.text === 'function' ? section.text(context) : section.text,
+  })) })
   let assembled = 0
   const agent = { session: { header: {}, events: [] }, ctx: { systemPrompt: {
     async assemble(context) {
       assembled++
       assert.equal(context.agent, agent)
-      return hooks.get('system-prompt/assemble')({}, context, async () => ({ tools: ['scoped-design-tools'] }))
+      return hooks.get('system-prompt/assemble')(assembly(context), context, async () => ({ tools: ['scoped-design-tools'] }))
     },
   } } }
   const ctx = {
@@ -32,8 +38,10 @@ function harness() {
       hooks.get('agent/inbox/claimed')({ agent, turn,
         message: { source: { kind: source }, content: [{ type: 'text', text }] } })
     },
-    assemble() { return hooks.get('system-prompt/assemble')({}, { agent, signal: new AbortController().signal },
-      async () => ({ tools: ['ordinary-tools'] })) },
+    assemble() {
+      const context = { agent, signal: new AbortController().signal }
+      return hooks.get('system-prompt/assemble')(assembly(context), context, async () => ({ tools: ['ordinary-tools'] }))
+    },
   }
 }
 test('accepted continuation only directs the ordinary visible tool, never starts hidden work', async () => {
@@ -47,6 +55,55 @@ test('accepted continuation only directs the ordinary visible tool, never starts
   assert.match(h.hint(), /Do not add a brief/)
   await h.assemble()
   assert.equal(h.calls.length, 0, 'assembly never executes a Bundle')
+})
+
+test('global continuation guidance agrees with the pending visible-tool hint', async () => {
+  const h = harness()
+  h.claim('开始调研')
+  await h.assemble()
+  const guidance = DESIGN_CORE_PROGRESSION_PROMPT.split('\n')
+    .find(line => line.startsWith('When run_design_skill returns a user-continue action'))
+  assert.ok(guidance)
+  assert.match(guidance, /design:accepted-resume.*NOT started yet/)
+  assert.match(guidance, /call run_design_skill with.*exact.*arguments/)
+  assert.doesNotMatch(guidance, /already been entered|must not be invoked/)
+  assert.match(h.hint(), /NOT started yet/)
+  assert.match(h.hint(), /call run_design_skill with exactly/)
+  assert.match(h.hint(), /In Producer mode stay attached.*in main mode follow the returned scoped method/)
+})
+
+test('the real SDK includes an accepted continuation in the first assembled request', async t => {
+  const ctx = new Context()
+  const promptPlugin = ctx.plugin(SystemPrompt, {})
+  await promptPlugin
+  t.after(() => promptPlugin.dispose())
+  const events = []
+  const agent = { session: { header: {}, snapshotEvents: () => [...events] } }
+  let gateLookups = 0
+  installDesignResumeRouting(ctx, async (_agent, text) => {
+    gateLookups++
+    return text === '开始调研' ? gate : undefined
+  })
+  ctx.systemPrompt.section({ name: 'test:before-resume', order: 570, text: 'before' })
+  ctx.systemPrompt.section({ name: 'test:after-resume', order: 590, text: 'after' })
+  ctx.emit('agent/inbox/claimed', { agent, turn: 4,
+    message: { source: { kind: 'user' }, content: [{ type: 'text', text: '开始调研' }] } })
+  const assemble = () => ctx.systemPrompt.assemble({ agent, signal: new AbortController().signal })
+  const first = await assemble()
+  const index = first.sections.findIndex(section => section.name === 'design:accepted-resume')
+  assert.ok(index >= 0)
+  assert.match(first.sections[index].text, /NOT started yet/)
+  assert.match(first.sections[index].text, /"name":"research","action":\{"routeId":"execute_plan"\}/)
+  assert.deepEqual(first.sections.slice(index - 1, index + 2).map(section => section.name),
+    ['test:before-resume', 'design:accepted-resume', 'test:after-resume'])
+  assert.deepEqual(first.tools, [], 'the hint grants no tool capabilities')
+  assert.equal(gateLookups, 1)
+  assert.deepEqual(events, [], 'assembly does not start an execution')
+  events.push({ type: 'tool/call', data: { turn: 4, name: 'run_design_skill' } })
+  const afterAttempt = await assemble()
+  assert.equal(afterAttempt.sections.find(section => section.name === 'design:accepted-resume').text, '')
+  assert.equal(gateLookups, 1, 'tool retirement does not retry gate resolution')
+  assert.match(first.sections[index].text, /NOT started yet/, 'later assembly cannot rewrite the earlier request')
 })
 
 test('official snapshot-only Session preserves continuation claim and retirement', async () => {

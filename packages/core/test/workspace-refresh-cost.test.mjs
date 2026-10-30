@@ -12,6 +12,7 @@ const { default: DesignService } = await import('../src/design-service.ts')
 const { DesignPanelRemote } = await import('../src/panel-remote.ts')
 const { TYPERT_REMOTE } = await import('../src/typert.remote-client.ts')
 const { DesignJournalRegistry } = await import('../src/design-journal-registry.ts')
+const { DesignBundleContributionRegistry } = await import('../src/runtime-drivers.ts')
 
 async function fixture(run) {
   const root = await mkdtemp(join(tmpdir(), 'workspace-refresh-cost-'))
@@ -46,6 +47,7 @@ test('unchanged panel reads share one bounded HEAD probe; edits and external com
   const design = Object.create(DesignService.prototype)
   Object.assign(design, {
     projects: registry, workspaceReadScope: new AsyncLocalStorage(), workspaceGitReaders: new Map(),
+    projectKits: new Map(), contributions: new DesignBundleContributionRegistry(),
     activeWorkspaces: new WeakMap([[agent, { project, binding: { revision: 1 }, values: {} }]]),
     workspaceContentEpochs: new WeakMap([[agent, 0]]), projectContentEpochs: new Map(), contentPanelGuards: new Map(),
     selectedAgents: new Set(), selectedAgentRefs: new WeakMap(),
@@ -148,7 +150,7 @@ test('unchanged panel reads share one bounded HEAD probe; edits and external com
 
 test('unbound workspace omits the prior conversation scheduler observation', async () => {
   const remote = Object.create(DesignPanelRemote.prototype)
-  remote.design = { selectedProjectForAgent: async () => undefined, withWorkspaceRead: (_agent, _signal, read) => read(),
+  remote.design = { refreshProjectKit: async () => undefined, selectedProjectForAgent: async () => undefined, withWorkspaceRead: (_agent, _signal, read) => read(),
     advisoryRuntimeStatus: () => { throw new Error('unbound reads must not reuse a scheduler snapshot') } }
   const workspace = await remote.readWorkspace({ id: 'unbound' }, new AbortController().signal)
   assert.equal(workspace.projectId, null)
@@ -198,6 +200,7 @@ test('workspace projects only real edit gates with the exact owner and invalidat
   const design = Object.create(DesignService.prototype)
   Object.assign(design, {
     projects: registry, workspaceReadScope: new AsyncLocalStorage(), workspaceGitReaders: new Map(),
+    projectKits: new Map(), contributions: new DesignBundleContributionRegistry(),
     activeWorkspaces: new WeakMap([[agent, { project, binding: { revision: 1 }, values: {} }]]),
     workspaceContentEpochs: new WeakMap([[agent, 0]]), projectContentEpochs: new Map(), contentPanelGuards: new Map(),
     selectedAgents: new Set(), selectedAgentRefs: new WeakMap(),

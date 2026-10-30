@@ -16,8 +16,10 @@ export interface StudioContentArchive {
   readonly format: 'studio-content-archive/v1'
   readonly kind: 'kit' | 'bundle'
   readonly pin: StudioArchivePin
+  /** Optional bilingual working-copy display name, independent of catalog/runtime identity. */
+  readonly title?: { readonly zh: string; readonly en: string }
   /** Declared provenance, not verified authorship or redistribution permission. */
-  readonly provenance: { readonly source: string; readonly license: string }
+  readonly provenance?: { readonly source?: string; readonly license?: string }
   /** Kit membership pins in catalog order; Bundle explicitly declared requirements. */
   readonly dependencies: readonly DesignBundleVersionPin[]
   readonly files: readonly StudioArchiveFile[]
@@ -30,6 +32,8 @@ export interface StudioArchiveBundleSource extends StudioArchivePin {
 }
 export interface StudioArchiveSource {
   readonly sourceId?: string
+  /** Explicit standalone source, not an invented Kit or a fallback after Kit validation. */
+  readonly bundle?: StudioArchivePin
   /** Trusted immutable Bundle snapshots, never paths supplied by an archive. */
   readonly bundles?: readonly StudioArchiveBundleSource[]
   readonly root: string
@@ -78,6 +82,10 @@ function text(value: unknown, limit: number): string {
   if (typeof value !== 'string' || !value.trim() || Buffer.byteLength(value) > limit || /[\u0000-\u001f\u007f]/u.test(value)) throw Error('Invalid archive metadata text.')
   return value
 }
+function metadataText(value: unknown): string {
+  if (typeof value !== 'string' || Buffer.byteLength(value) > 2048) throw Error('Invalid archive metadata text.')
+  return value
+}
 function pin(value: unknown, kind: 'kit' | 'bundle'): StudioArchivePin {
   const data = object(value); keys(data, ['name', 'version'])
   const name = text(data.name, 128), version = text(data.version, 32)
@@ -103,11 +111,24 @@ function canonical(data: Omit<StudioContentArchive, 'sha256'>): string { return 
 export function readStudioContentArchive(source: string): StudioContentArchive {
   if (typeof source !== 'string' || Buffer.byteLength(source) > MAX_JSON) throw Error('Archive JSON exceeds 32 MiB.')
   const raw = object(JSON.parse(source))
-  keys(raw, ['format', 'kind', 'pin', 'provenance', 'dependencies', 'files', 'sha256'])
+  keys(raw, ['format', 'kind', 'pin', ...(Object.hasOwn(raw, 'title') ? ['title'] : []), ...(Object.hasOwn(raw, 'provenance') ? ['provenance'] : []), 'dependencies', 'files', 'sha256'])
   if (raw.format !== 'studio-content-archive/v1' || (raw.kind !== 'kit' && raw.kind !== 'bundle')) throw Error('Unsupported archive format.')
-  const identity = pin(raw.pin, raw.kind), provenance = object(raw.provenance)
-  keys(provenance, ['source', 'license'])
-  const origin = Object.freeze({ source: text(provenance.source, 2048), license: text(provenance.license, 2048) })
+  const identity = pin(raw.pin, raw.kind)
+  let title: StudioContentArchive['title']
+  if (raw.title !== undefined) {
+    const names = object(raw.title); keys(names, ['zh', 'en'])
+    title = Object.freeze({ zh: text(names.zh, 800), en: text(names.en, 800) })
+    if (title.zh.length > 200 || title.en.length > 200) throw Error('Archive display title exceeds 200 characters.')
+  }
+  let origin: StudioContentArchive['provenance']
+  if (raw.provenance !== undefined) {
+    const provenance = object(raw.provenance)
+    keys(provenance, ['source', 'license'].filter(key => Object.hasOwn(provenance, key)))
+    origin = Object.freeze({
+      ...(provenance.source === undefined ? {} : { source: metadataText(provenance.source) }),
+      ...(provenance.license === undefined ? {} : { license: metadataText(provenance.license) }),
+    })
+  }
   if (!Array.isArray(raw.dependencies) || raw.dependencies.length > MAX_FILES) throw Error('Invalid archive dependencies.')
   const dependencies = raw.dependencies.map(value => pin(value, 'bundle'))
   const names = new Set<string>()
@@ -145,7 +166,8 @@ export function readStudioContentArchive(source: string): StudioContentArchive {
   }).sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0)
   if ([...directories].some(path => paths.has(path))) throw Error('Archive file/directory collision.')
   const data: Omit<StudioContentArchive, 'sha256'> = { format: raw.format, kind: raw.kind, pin: identity,
-    provenance: origin, dependencies: Object.freeze(dependencies), files: Object.freeze(files) }
+    ...(title === undefined ? {} : { title }),
+    ...(origin === undefined ? {} : { provenance: origin }), dependencies: Object.freeze(dependencies), files: Object.freeze(files) }
   if (typeof raw.sha256 !== 'string' || !HASH.test(raw.sha256) || sha(canonical(data)) !== raw.sha256) throw Error('Archive envelope integrity mismatch.')
   return Object.freeze({ ...data, sha256: raw.sha256 })
 }
@@ -300,15 +322,40 @@ export async function prepareStudioContentImport(
 }
 
 /** Capture only immutable host snapshots, preserving full exact referenced trees. */
-export async function exportStudioContentArchive(
+export function exportStudioContentArchive(
   snapshot: StudioArchiveSource,
-  input: { kind: 'kit' | 'bundle'; pin: StudioArchivePin; provenance: StudioContentArchive['provenance']; dependencies?: readonly DesignBundleVersionPin[] },
+  input: StudioArchiveExportInput,
+): Promise<string> {
+  return exportArchive(snapshot, input, true)
+}
+
+/** Capture saved source bytes, including incomplete working copies, without definition validation. */
+export function exportStudioSourceArchive(snapshot: StudioArchiveSource, input: StudioArchiveExportInput): Promise<string> {
+  return exportArchive(snapshot, input, false)
+}
+
+interface StudioArchiveExportInput {
+  kind: 'kit' | 'bundle'
+  pin: StudioArchivePin
+  title?: StudioContentArchive['title']
+  provenance?: StudioContentArchive['provenance']
+  dependencies?: readonly DesignBundleVersionPin[]
+}
+
+async function exportArchive(
+  snapshot: StudioArchiveSource,
+  input: StudioArchiveExportInput,
+  validateDefinition: boolean,
 ): Promise<string> {
   const request = JSON.parse(JSON.stringify(input)) as typeof input
   if (!isAbsolute(snapshot.root)) throw Error('Archive source root must be host-resolved absolute.')
-  const view = sourceView(snapshot), kit = await loadStudioKit(view.fs, snapshot.root, view.options)
-  const selected = request.kind === 'kit' ? kit : kit.skills.find(skill => samePin(bundlePin(skill), request.pin))
-  if (!selected || !samePin(request.kind === 'kit' ? { name: selected.name, version: String(selected.version) } : bundlePin(selected), request.pin)) throw Error('Export pin disagrees with snapshot.')
+  const standalone = snapshot.bundle !== undefined
+  if (standalone && (request.kind !== 'bundle' || !samePin(snapshot.bundle!, request.pin))) throw Error('Standalone Bundle snapshot pin disagrees with export.')
+  const view = validateDefinition ? sourceView(snapshot) : undefined
+  const kit = !validateDefinition || standalone ? undefined : await loadStudioKit(view!.fs, snapshot.root, view!.options)
+  const selected = !validateDefinition ? undefined : standalone ? (await loadDesignBundle(view!.fs, { rootDir: snapshot.root, sourceId: snapshot.sourceId ?? 'studio:exact-instance' }, request.pin)).skill
+    : request.kind === 'kit' ? kit : kit!.skills.find(skill => samePin(bundlePin(skill), request.pin))
+  if (validateDefinition && (!selected || !samePin(request.kind === 'kit' ? { name: selected.name, version: String(selected.version) } : bundlePin(selected), request.pin))) throw Error('Export pin disagrees with snapshot.')
   const files: StudioArchiveFile[] = []
   let total = 0
   const append = async (source: StudioArchiveSource, prefix: string, selectPrefix = '') => {
@@ -325,8 +372,12 @@ export async function exportStudioContentArchive(
       files.push({ path: target, base64: Buffer.from(bytes).toString('base64'), bytes: bytes.byteLength, sha256: sha(bytes) })
     }
   }
-  if (snapshot.bundles) {
-    const referenced = kit.skills.map(skill => {
+  if (!validateDefinition) {
+    await append(snapshot, '')
+    if (request.kind === 'kit') for (const bundle of snapshot.bundles ?? []) await append(bundle.snapshot, bundlePrefix(bundle))
+  } else if (standalone) await append(snapshot, '')
+  else if (snapshot.bundles) {
+    const referenced = kit!.skills.map(skill => {
       const identity = bundlePin(skill), matches = snapshot.bundles!.filter(bundle => samePin(bundle, identity))
       if (matches.length !== 1) throw Error('Missing or ambiguous exact Bundle snapshot.')
       return matches[0]!
@@ -336,13 +387,19 @@ export async function exportStudioContentArchive(
       await append(snapshot, '')
       for (const bundle of referenced) await append(bundle.snapshot, bundlePrefix(bundle))
     } else await append(referenced.find(bundle => samePin(bundle, request.pin))!.snapshot, '')
-  } else await append(snapshot, '', request.kind === 'bundle' ? `skills/${selected.name}/` : '')
+  } else await append(snapshot, '', request.kind === 'bundle' ? `skills/${selected!.name}/` : '')
   files.sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0)
   const data: Omit<StudioContentArchive, 'sha256'> = { format: 'studio-content-archive/v1', kind: request.kind, pin: request.pin,
-    provenance: request.provenance, dependencies: request.kind === 'kit' ? kit.skills.map(bundlePin) : request.dependencies ?? [], files }
-  if (request.kind === 'kit' && request.dependencies !== undefined && JSON.stringify(request.dependencies) !== JSON.stringify(data.dependencies)) throw Error('Explicit Kit pins disagree with source membership.')
+    ...(request.title === undefined ? {} : { title: { zh: request.title.zh, en: request.title.en } }),
+    ...(request.provenance === undefined ? {} : { provenance: request.provenance }),
+    dependencies: request.kind === 'kit' && validateDefinition ? kit!.skills.map(bundlePin) : request.dependencies ?? (request.kind === 'kit' ? snapshot.bundles?.map(bundle => ({ name: bundle.name, version: bundle.version })) ?? [] : []), files }
+  if (validateDefinition && request.kind === 'kit' && request.dependencies !== undefined && JSON.stringify(request.dependencies) !== JSON.stringify(data.dependencies)) throw Error('Explicit Kit pins disagree with source membership.')
   const serialized = JSON.stringify({ ...data, sha256: sha(canonical(data)) })
-  const prepared = await prepareStudioContentImport(serialized, { validationContext: snapshot })
+  if (!validateDefinition) {
+    readStudioContentArchive(serialized)
+    return serialized
+  }
+  const prepared = await prepareStudioContentImport(serialized, { validationContext: standalone ? undefined : snapshot })
   if (!prepared.validation.valid) throw Error(prepared.validation.diagnostics[0]!.message)
   return serialized
 }

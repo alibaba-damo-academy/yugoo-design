@@ -1,0 +1,54 @@
+name: 缺陷报告 / Bug report
+description: 报告使用中遇到的问题 / Report a problem using Yugoo Design.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请使用去除私密信息的示例。不要上传凭据、完整认证 URL、真实私密项目或会话日志。
+        Use a sanitized example. Do not attach credentials, authentication URLs, private projects, or conversation logs.
+        涉及敏感信息或安全问题，请先阅读 [SECURITY.md](https://github.com/alibaba-damo-academy/yugoo-design/blob/main/SECURITY.md)。
+        For sensitive information or security issues, follow that policy instead of including details here.
+  - type: input
+    id: version
+    attributes:
+      label: 插件版本 / Plugin version
+      description: 桌面套件、npm 包或测试构建的版本；不确定时请注明。 / Include the desktop suite, npm package, or test build version; say if unknown.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 宿主与平台 / Host and platform
+      description: 宿主名称和版本、操作系统；知道时附 CPU 架构。 / Host name and version, operating system, and CPU architecture if known.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 复现步骤 / Steps to reproduce
+      description: 从哪一步开始、执行了什么、在哪里失败；能提供时附最小合成输入。 / What did you do, and where did it fail? Include a minimal synthetic input if available.
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期结果 / Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际结果 / Actual result
+      description: 描述实际发生的情况，可附去除隐私信息的错误片段或截图。 / Describe what happened; sanitized error excerpts or screenshots are welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: 补充信息（选填） / Additional context (optional)
+      description: 是否反复发生、已尝试的处理；性能问题可附任务规模与耗时阶段。 / Frequency, workarounds tried, or task size and timing for performance problems.

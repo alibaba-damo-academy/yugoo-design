@@ -114,7 +114,7 @@ export interface DesignRuntime {
 const NEW_PANEL_TAB = '__new_panel__'
 
 export { ReviewPolicyControl } from './review-policy-control.tsx'
-const PANEL_SAVE_VISIBLE_MESSAGE = { zh: '保存并继续设计', en: 'Save and continue designing' } as const
+const PANEL_SAVE_VISIBLE_MESSAGE = { zh: '保存并评估下一步', en: 'Save and assess next step' } as const
 
 function regenerateInstruction(skill: string): string {
   return `Regenerate the saved ${JSON.stringify(skill)} Design state from the injected authoritative panel diff. Invoke run_design_skill exactly once with name ${JSON.stringify(skill)}; do not repeat the same invocation.`
@@ -657,8 +657,8 @@ export function DesignWorkspace(props: {
             : `Publication state is unavailable. Current files are read-only: ${props.publicationError}`)
           : access.mode === 'recovery'
           ? (isZh
-              ? `当前项目固定的 Kit ${access.kit.name}@${access.kit.version} 不可用；Design Panel 已按只读恢复模式打开。请在对话中输入 ${access.upgradeCommand ?? '/yugoo kit <kit>'} 显式升级。`
-              : `The pinned Kit ${access.kit.name}@${access.kit.version} is unavailable. The Design Panel is read-only until you explicitly run ${access.upgradeCommand ?? '/yugoo kit <kit>'} in the conversation.`)
+              ? `项目所需的设计套件 ${access.kit.name}@${access.kit.version} 不可用，当前仅供只读查看。请恢复该版本的完整套件内容，再重新打开项目；已保存的设计文件会保留。`
+              : `This project requires Design Kit ${access.kit.name}@${access.kit.version}, which is unavailable. The panel is read-only. Restore that Kit version with all its contents, then reopen the project. Your saved design files are preserved.`)
           : (isZh
               ? '当前项目尚未选择 Kit；Design Panel 保持只读。请在对话中输入 /yugoo kit <kit>。'
               : 'This project has no selected Kit. The Design Panel is read-only until you run /yugoo kit <kit> in the conversation.')}
@@ -694,7 +694,7 @@ export function DesignWorkspace(props: {
       {runtime.readGraph && <button type='button' aria-pressed={graphOpen} onClick={() => flushBeforeNavigation(() => { setGraphOpen(true); setExperienceOpen(false) })}>{t.design_graph_view}</button>}
     </nav>
   ) : null
-  if (!panelOnly && graphOpen && runtime.readGraph) return <div className='flex h-full min-h-0 flex-col'>{projectHeader}{accessNotice}<div className='min-h-0 flex-1'><GraphPanel key={`${sessionId}:${projectId}`} read={readGraph} readStatus={runtime.readKnowledgeStatus ? readKnowledgeStatus : undefined} retry={runtime.retryKnowledge ? retryKnowledge : undefined} footer={viewSwitcher} /></div></div>
+  if (!panelOnly && graphOpen && runtime.readGraph) return <div className='flex h-full min-h-0 flex-col'>{projectHeader}{accessNotice}<div className='min-h-0 flex-1'><GraphPanel ownerLabels={Object.fromEntries(store.skills.map(skill => [skill, tabLabel(store.manifests[skill], skill)]))} key={`${sessionId}:${projectId}`} read={readGraph} readStatus={runtime.readKnowledgeStatus ? readKnowledgeStatus : undefined} retry={runtime.retryKnowledge ? retryKnowledge : undefined} footer={viewSwitcher} /></div></div>
 
   if (!panelOnly && props.experienceAvailable && experienceOpen) return <div className='flex h-full min-h-0 flex-col'>
     {projectHeader}
@@ -709,7 +709,7 @@ export function DesignWorkspace(props: {
         {projectHeader}
         {props.hideProjectHeader && !panelOnly ? closeButton : null}
         {accessNotice}
-        <div className='dsh-design-dock-empty flex-1'>{t.design_empty_panels}</div>
+        <div className='dsh-design-dock-empty flex-1'>{access.mode === 'recovery' ? null : t.design_empty_panels}</div>
         {viewSwitcher && <div className='dsh-design-view-footer'>{viewSwitcher}</div>}
       </div>
     )

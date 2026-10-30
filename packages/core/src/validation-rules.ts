@@ -6,6 +6,7 @@
  * gates applied before Producer integration). Declarative primitives cover the common
  * shapes; Bundle-provided drivers carry procedural validation.
  */
+import { dataTableIssues } from './data-table.ts'
 import { parse } from 'yaml'
 import type { ValidationIssue } from './validate-design.ts'
 import { DesignDriverId, type DesignValidationDriver } from './runtime-drivers.ts'
@@ -58,7 +59,7 @@ function stringPair(value: unknown, left: string, right: string): boolean {
     && nonEmptyText((value as Record<string, unknown>)[right])
 }
 
-const LEAF_OPERATORS = ['non_empty_map', 'non_empty_list', 'non_empty_string', 'member_of_map', 'members_of_map', 'source_reference_map', 'fields_absent_when', 'exclusive_fields'] as const
+const LEAF_OPERATORS = ['data_table', 'non_empty_map', 'non_empty_list', 'non_empty_string', 'member_of_map', 'members_of_map', 'source_reference_map', 'fields_absent_when', 'exclusive_fields'] as const
 const STRUCTURAL_OPERATORS = [
   'referenced_files',
   'required_files',
@@ -91,7 +92,7 @@ function assertStatePath(value: unknown, ruleId: string, operand: string): asser
 }
 
 function assertRootLeafPaths(check: Record<string, unknown>, ruleId: string): void {
-  for (const operator of ['non_empty_map', 'non_empty_list', 'non_empty_string', 'source_reference_map'] as const) {
+  for (const operator of ['data_table', 'non_empty_map', 'non_empty_list', 'non_empty_string', 'source_reference_map'] as const) {
     if (operator in check) assertStatePath(check[operator], ruleId, operator)
   }
   for (const operator of ['member_of_map', 'members_of_map'] as const) if (operator in check) {
@@ -486,6 +487,7 @@ function leafFails(
   readField: (subject: Record<string, unknown>, name: string) => unknown,
   state: Record<string, unknown> = subject,
 ): boolean {
+  if ('data_table' in check) return dataTableIssues(readField(subject, String(check.data_table))).length > 0
   if ('exclusive_fields' in check) {
     const spec = check.exclusive_fields as { fields: string[]; allow_empty?: boolean }
     const values = spec.fields.map(field => readField(subject, field))

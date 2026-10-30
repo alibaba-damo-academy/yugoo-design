@@ -4,7 +4,7 @@
 
 This page is for Yugoo Design Kit and Bundle developers. The [Bundle contract](../bundle-contract.md) and [architecture baseline](../system-design-baseline.md) govern runtime responsibilities, versions, and publication rules.
 
-The in-place editing and project-owned content described below require the unreleased development runtime. The current stable runtime does not provide this workflow. The library retains current content for each identity; new projects copy the complete Kit and mounted Bundles into their own `design_kit`, while existing projects keep using their own files. Source versions provide provenance, and ordinary local saves require no release. See [project content maintenance](kit-sharing.en.md#update-and-restore-project-content) for the file lifecycle.
+The in-place editing and project-owned content described below apply to the current development source. Installed releases support them only when they include the corresponding runtime. The library retains current content for each identity; new projects copy the complete Kit and mounted Bundles into their own `design_kit`, while existing projects keep using their own files. Source versions provide provenance, and ordinary local saves require no release. See [project content maintenance](../project-content-upgrade.md) for the file lifecycle.
 
 For a first customization, try the [minimal client-delivery rules tutorial](custom-kit-tutorial.en.md): copy a complete declarative Bundle, write domain guidance, change Panel copy and a nonempty example, then validate and inspect it. The references below cover responsibilities, structure, and validation questions for changes beyond that exercise.
 

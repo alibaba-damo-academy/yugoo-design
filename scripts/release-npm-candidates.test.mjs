@@ -40,6 +40,34 @@ async function registrySources() {
   return manifests
 }
 
+test('only the canonical scoped aggregate receives the selected target scope once', async () => {
+  const original = await registrySources(), before = structuredClone(original)
+  const aggregate = '@yugoo-design/dsh-design-system-dsh'
+  assert.equal(original[aggregate].name, aggregate)
+  for (const scope of ['@yugoo-design', '@fixture-design-release']) {
+    const report = createNpmCandidates(original, { ...registryOptions, scope })
+    const manifest = report.candidates[aggregate]
+    assert.equal(report.mapping[aggregate].name, scope + '/dsh-design-system-dsh')
+    assert.equal(manifest.name, scope + '/dsh-design-system-dsh')
+    assert.deepEqual(manifest.repository, { type: 'git', url: 'git+https://github.com/alibaba-damo-academy/yugoo-design.git', directory: 'packages/dsh' })
+    assert.deepEqual(manifest.dsh, original[aggregate].dsh)
+    assert.equal(Object.keys(manifest.dependencies).length, 6)
+    assert.ok(Object.keys(manifest.dependencies).every(name => name.startsWith(scope + '/') && !name.includes('/@')))
+  }
+  assert.deepEqual(original, before)
+  for (const mutate of [
+    value => { value['@foreign/design-core'] = value['dsh-design-core']; delete value['dsh-design-core'] },
+    value => { value[aggregate].name = '@foreign/dsh-design-system-dsh' },
+    value => { value['dsh-design-core'].name = '@foreign/design-core' },
+  ]) {
+    const bad = structuredClone(original); mutate(bad)
+    assert.throws(() => createNpmCandidates(bad, registryOptions), /physical release packages|Source manifest identity mismatch/)
+  }
+  const collision = structuredClone(original)
+  collision['dsh-design-core'].dependencies[registryOptions.scope + '/yugoo-design-git-native'] = '1.0.0'
+  assert.throws(() => createNpmCandidates(collision, registryOptions), /Dependency name collision/)
+})
+
 test('registry Ladybug stays an exact external dependency without a vendor publication candidate', async () => {
   const original = await registrySources(), before = structuredClone(original)
   const report = createNpmCandidates(original, registryOptions)
@@ -166,7 +194,7 @@ test('complete per-package versions preserve unchanged pins and project only the
   const versions = Object.fromEntries(Object.keys(original).map(name => [name, '0.1.0-beta.2']))
   versions['dsh-design-panel'] = '0.1.0-r1-local.20261017.1'
   versions['dsh-design-provider-web-app'] = versions['dsh-design-panel']
-  versions['dsh-design-system-dsh'] = '0.1.0-r1-local.20261017.2'
+  versions['@yugoo-design/dsh-design-system-dsh'] = '0.1.0-r1-local.20261017.2'
   const selected = { ...registryOptions, versions }
   delete selected.version
   const report = createNpmCandidates(original, selected)
@@ -234,7 +262,7 @@ test('publication topology includes runtime and internal peer edges, excludes de
   const name = source => report.mapping[source].name
   assert.ok(ranks.get(name('dsh-design-studio-ui')) < ranks.get(name('dsh-design-studio-dsh')))
   assert.ok(ranks.get(name('@ladybugdb/wasm-core')) < ranks.get(name('dsh-design-knowledge-ladybug')))
-  assert.equal(report.publishLayers.at(-1).includes(name('dsh-design-system-dsh')), true)
+  assert.equal(report.publishLayers.at(-1).includes(name('@yugoo-design/dsh-design-system-dsh')), true)
 })
 
 test('unknown external dependencies survive, unresolved local references fail instead of disappearing', async () => {

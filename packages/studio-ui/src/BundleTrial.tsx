@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactElement } from 'react'
 import { createPortal } from 'react-dom'
 import { LoadingIndicator } from './LoadingIndicator.tsx'
+import { StudioFeedback } from './StudioFeedback.tsx'
 import { StudioTrialController, checkStudioTrialConnection, localTrialUrl, trialActive, trialBlocksNewRun, type StudioTrialClient, type StudioTrialSource } from './trial-controller.ts'
 
 const controllers = new WeakMap<StudioTrialClient, Map<string, StudioTrialController>>()
@@ -30,9 +31,15 @@ export function BundleTrial({ client, source, locale, disabled = false, target, 
   const [controls, setControls] = useState<{ dirty: boolean; saving: boolean; saveDisabled: boolean; retractDisabled: boolean; error?: string }>()
   const notifyDirty = useRef(onDirtyChange)
   notifyDirty.current = onDirtyChange
-  useEffect(() => { notifyDirty.current?.(controls?.dirty ?? false) }, [controls?.dirty])
-  useEffect(() => () => notifyDirty.current?.(false), [])
   const edited = useRef(false), selected = useRef<string>(), recovery = useRef<Promise<void>>()
+  const taskDirty = edited.current && task !== (state.record?.task ?? '')
+  useEffect(() => { notifyDirty.current?.(!!controls?.dirty || taskDirty) }, [controls?.dirty, taskDirty])
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => { if (controls?.dirty || taskDirty) { event.preventDefault(); event.returnValue = '' } }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [controls?.dirty, taskDirty])
+  useEffect(() => () => notifyDirty.current?.(false), [])
   const zh = locale === 'zh', record = state.record, active = trialActive(record)
   const outputLocale = zh ? 'zh-CN' : 'en-US'
   const blocked = state.history?.some(trialBlocksNewRun) ?? false
@@ -100,22 +107,27 @@ export function BundleTrial({ client, source, locale, disabled = false, target, 
             {record && <span className="ygd-studio-trial-status" data-state={record.status} role="status">{labels[record.status]}</span>}
           </header>
           {record?.task ? <>
-              <textarea aria-label={zh ? '测试输入' : 'Test input'} rows={12} maxLength={16000} value={task} disabled={blocked || state.busy} onChange={event => { edited.current = true; setTask(event.currentTarget.value) }} />
+              <textarea aria-label={zh ? '测试输入' : 'Test input'} rows={12} maxLength={16000} value={task} disabled={disabled || blocked || state.busy || hostState === 'checking'} onChange={event => { if (checkingHost.current || disabled || blocked || state.busy) return; edited.current = true; setTask(event.currentTarget.value) }} />
             {changed && <details><summary>{zh ? '查看本次结果实际使用的输入' : 'Input used for this result'}</summary><pre>{record.task}</pre></details>}
             <button type="button" className="ygd-studio-btn-primary" title={zh ? '使用当前输入开始新的独立试运行' : 'Start a new isolated trial with this input'} disabled={disabled || blocked || state.busy || hostState === 'checking' || !task.trim() || controls?.saving} onClick={() => void run(true)}>{zh ? '再次运行' : 'Run again'}</button>
           </> : <>
             {hostState === 'checking' || active || state.busy ? <LoadingIndicator label={hostState === 'checking' ? zh ? '正在检查宿主连接' : 'Checking host connection' : zh ? '正在准备测试输入' : 'Preparing test input'} /> : <p className="ygd-studio-trial-hint">{zh ? '测试输入将由宿主 Agent 准备，运行后可在这里修改。' : 'The host Agent prepares the first input. You can edit it after the run.'}</p>}
             {!record && !state.busy && ['unavailable', 'unknown'].includes(hostState) && <button type="button" className="ygd-studio-btn-primary" disabled={disabled} onClick={() => void run()}>{zh ? '重新检查并运行' : 'Reconnect and run'}</button>}
           </>}
-          {panelUrl && ['unavailable', 'unknown'].includes(hostState) && <p role="alert">{zh ? '无法确认宿主 Agent 连接，暂不能再次运行。' : 'The host Agent connection could not be verified. A new run is unavailable.'}</p>}
-          {panelUrl && !controls && connectionSlow && <p role="status">{zh ? '尚未连接到面板。' : 'Panel not connected.'} <button type="button" className="ygd-studio-btn-link" onClick={() => { if (frame.current) frame.current.src = panelUrl }}>{zh ? '重新连接' : 'Reconnect'}</button></p>}
+          {panelUrl && ['unavailable', 'unknown'].includes(hostState) && <StudioFeedback feedbackId={`trial-host:${hostState}`} tone="error" locale={locale} title={zh ? '尚未连接宿主，暂不能再次运行' : 'The Host connection could not be verified'} />}
+          {panelUrl && !controls && connectionSlow && <StudioFeedback feedbackId={`trial-panel:${record?.id}`} tone="info" locale={locale} title={zh ? '尚未连接到面板' : 'Panel not connected'} actions={[{ label: zh ? '重新连接' : 'Reconnect', onClick: () => { if (frame.current) frame.current.src = panelUrl } }]} />}
           {active && <button type="button" className="ygd-studio-btn-link" disabled={state.busy} onClick={() => void controller.stop()}>{zh ? '停止试运行' : 'Stop trial'}</button>}
-          {state.error && <p role="alert">{state.error}</p>}
+          {state.error && <StudioFeedback feedbackId={`trial-request:${record?.id}:${state.error}`} tone="error" locale={locale} title={zh ? '未能完成试运行操作' : 'The trial operation could not be completed'} message={state.error} />}
         </aside>
         <section className="ygd-studio-trial-result">
-          {panelUrl ? <iframe ref={frame} onLoad={() => sendAction('read-state')} key={record!.id} title={zh ? '试运行真实面板' : 'Live Trial Panel'} src={panelUrl} referrerPolicy="no-referrer" /> : hostState === 'checking' || active || state.busy ? <LoadingIndicator label={hostState === 'checking' ? zh ? '正在检查宿主连接' : 'Checking host connection' : zh ? '正在准备试运行面板' : 'Preparing trial panel'} /> : <p className="ygd-studio-trial-availability" role={['unavailable', 'unknown'].includes(hostState) ? 'alert' : 'status'}>{hostState === 'unavailable' ? zh ? '未连接宿主 Agent，试运行暂不可用。请先在宿主中打开设计项目。' : 'The host Agent is not connected. Open this Design Project in the host to use trial runs.' : hostState === 'unknown' ? zh ? '尚无法确认宿主 Agent 的连接，试运行未启动。请检查宿主后重试。' : 'The host Agent connection could not be verified. No trial was started. Check the host and try again.' : zh ? '运行后将在这里显示真实面板。' : 'The live panel will appear here after a run.'}</p>}
+          {panelUrl ? <iframe ref={frame} onLoad={() => sendAction('read-state')} key={record!.id} title={zh ? '试运行真实面板' : 'Live Trial Panel'} src={panelUrl} referrerPolicy="no-referrer" />
+            : hostState === 'checking' || active || state.busy ? <LoadingIndicator label={hostState === 'checking' ? zh ? '正在检查宿主连接' : 'Checking host connection' : zh ? '正在准备试运行面板' : 'Preparing trial panel'} />
+              : ['unavailable', 'unknown'].includes(hostState) ? <StudioFeedback feedbackId={`trial-unavailable:${hostState}`} tone="error" locale={locale}
+                title={zh ? '宿主连接未确认，试运行未启动' : 'The Host connection could not be verified; no trial was started'}
+                message={hostState === 'unavailable' ? (zh ? '请先在宿主中打开设计项目，再重新检查并运行。' : 'Open this Design Project in the Host, then reconnect and run.') : (zh ? '请检查宿主连接后重试，当前输入已保留。' : 'Check the Host connection and try again. Your current input is retained.')} />
+                : <p className="ygd-studio-trial-availability" role="status">{zh ? '运行后将在这里显示真实面板。' : 'The live panel will appear here after a run.'}</p>}
       {panelUrl && <footer className="ygd-studio-trial-save">
-        {controls?.error && <p role="alert">{controls.error}</p>}
+        {controls?.error && <StudioFeedback feedbackId={`trial-save:${record?.id}:${controls.error}`} tone="error" locale={locale} title={zh ? '未能保存面板' : 'The Panel could not be saved'} message={controls.error} />}
         <button type="button" className="ygd-studio-btn-secondary" disabled={!controls || controls.retractDisabled || controls.saving} onClick={() => sendAction('retract')}>{zh ? '撤销编辑' : 'Undo edits'}</button>
         <button type="button" className="ygd-studio-btn-primary" title={zh ? '仅演示保存后的界面变化，不回传 Agent；刷新恢复原始结果。' : 'Demonstrates the saved UI without notifying the Agent; refresh to restore the original result.'} disabled={!controls || controls.saveDisabled || controls.saving} onClick={() => sendAction('save')}>{controls?.saving ? (zh ? '演示中…' : 'Applying…') : (zh ? '演示保存效果' : 'Demonstrate save')}</button>
       </footer>}

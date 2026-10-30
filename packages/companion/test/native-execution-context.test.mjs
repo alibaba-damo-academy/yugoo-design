@@ -31,9 +31,9 @@ async function libraryFixture(kitRoot, stateRoot) {
   return { library, kit, studio: await createCompanionStudio(kit, kitRoot, stateRoot, library) }
 }
 
-async function prepareProject(root, { kitRoot, stateRoot, pin, marker }) {
+async function prepareProject(root, { kitRoot, stateRoot, pin, marker, existing = false }) {
   const projectRoot = join(root, 'design project')
-  await new DesignProjectManager().create({ root: projectRoot, name: 'Exact validation context',
+  if (!existing) await new DesignProjectManager().create({ root: projectRoot, name: 'Exact validation context',
     knowledge: { provider: 'ladybug-wasm' }, kit: pin })
   const api = await openCompanionProject({ projectRoot, kitRoot, stateRoot, statusEntryPath: cliEntry,
     connection: { host: 'workbuddy', threadId: 'validation-context-session' } })
@@ -42,7 +42,7 @@ async function prepareProject(root, { kitRoot, stateRoot, pin, marker }) {
   const validation = prepared.executionContract.validation
   assert.ok(validation, 'a fully specified project context exposes the existing CLI preflight')
   assert.equal(validation.executable, process.execPath)
-  for (const [flag, value] of [['--kit', kitRoot], ['--state-root', stateRoot], ['--project', projectRoot]]) {
+  for (const [flag, value] of [['--kit', api.kit.sourceRoot], ['--state-root', stateRoot], ['--project', projectRoot]]) {
     assert.equal(validation.argv[validation.argv.indexOf(flag) + 1], value, `${flag} retains the current project context`)
   }
   await mkdir(prepared.executionContract.directory, { recursive: true })
@@ -59,7 +59,7 @@ async function validate(validation, stateRoot) {
   return JSON.parse(result.stdout)
 }
 
-test('native validation CLI reopens a Studio-imported exact Kit from the current non-default state root', async t => {
+test('native validation CLI reopens a project-local Kit independently of the original content store', async t => {
   const root = await mkdtemp(join(tmpdir(), 'native-imported-validation-'))
   t.after(() => rm(root, { recursive: true, force: true }))
   const base = await writeContentCatalog(join(root, 'installed package'), { name: 'validation_base', version: '1.0',
@@ -72,27 +72,24 @@ test('native validation CLI reopens a Studio-imported exact Kit from the current
   const author = await libraryFixture(donor.root, authorState)
   const source = await author.studio.exportContentArchive({ kind: 'kit', pin: { name: author.kit.name, version: author.kit.version },
     provenance: { source: 'fixture:independent-author', license: 'Synthetic fixture only' } })
-  const imported = await receiver.studio.prepareContentImport({ source })
-  assert.equal(imported.validation.valid, true)
-  assert.equal((await receiver.studio.adoptContentImport({ id: imported.id })).executionGranted, false)
+  const archive = receiver.studio.readArchive({ source })
+  const imported = await receiver.studio.importInstanceSources({ kind: archive.kind, files: archive.files.map(({ path, base64 }) => ({ path, base64 })), title: archive.title })
   await rm(donor.root, { recursive: true })
   await rm(authorState, { recursive: true })
 
-  const pin = { name: 'imported_validation', version: '2.4' }
-  const { api, prepared, validation } = await prepareProject(root, { kitRoot: base.root, stateRoot, pin, marker: 'imported_marker' })
+  const pin = imported.kit
+  await new DesignProjectManager().create({ root: join(root, 'design project'), name: 'Imported current Kit', knowledge: { provider: 'ladybug-wasm' }, kit: pin })
+  const selected = await receiver.library.loadCurrentKit(pin)
+  const { ensureProjectKit } = await import('../../core/lib/index.js')
+  await ensureProjectKit(join(root, 'design project'), { loadSource: async () => selected })
+  const { api, prepared, validation } = await prepareProject(root, { kitRoot: base.root, stateRoot, pin, marker: 'imported_marker', existing: true })
   assert.equal(api.kit.skills[0].version, '2.0')
-  assert.ok(prepared.resources.startsWith(stateRoot), 'the method and validator use the receiver-owned retained closure')
+  assert.ok(prepared.resources.startsWith(api.project.root), 'the method and validator use the independent project source')
   assert.deepEqual(await validate(validation), { valid: true, skill: 'alpha', issues: [] })
-  await assert.rejects(validate(validation, join(root, 'isolated wrong state')), error => {
-    assert.equal(error.code, 1)
-    assert.equal(error.stdout, '')
-    assert.match(error.stderr, /The pinned Kit imported_validation@2\.4 is unavailable/)
-    assert.match(error.stderr, /No implicit upgrade is allowed/)
-    return true
-  })
+  assert.deepEqual(await validate(validation, join(root, 'isolated fresh state')), { valid: true, skill: 'alpha', issues: [] })
 })
 
-test('native validation CLI retains an exact Bundle override instead of validating the Kit default', async t => {
+test('native validation CLI materializes the effective Bundle override instead of validating the Kit default', async t => {
   const root = await mkdtemp(join(tmpdir(), 'native-override-validation-'))
   t.after(() => rm(root, { recursive: true, force: true }))
   const base = await writeContentCatalog(join(root, 'installed package'), { name: 'override_validation', version: '1.0',
@@ -110,11 +107,7 @@ test('native validation CLI retains an exact Bundle override instead of validati
   const { api, prepared, validation } = await prepareProject(root, { kitRoot: base.root, stateRoot, pin, marker: 'override_marker' })
   assert.equal(api.kit.skills[0].version, '1.1')
   assert.equal(prepared.version, '1.1')
-  assert.ok(prepared.resources.startsWith(stateRoot))
+  assert.ok(prepared.resources.startsWith(api.project.root))
   assert.deepEqual(await validate(validation), { valid: true, skill: 'alpha', issues: [] })
-  await assert.rejects(validate(validation, join(root, 'isolated wrong state')), error => {
-    assert.equal(error.code, 1)
-    assert.match(error.stderr, /unavailable exact Bundle alpha@1\.1/)
-    return true
-  })
+  assert.deepEqual(await validate(validation, join(root, 'isolated fresh state')), { valid: true, skill: 'alpha', issues: [] })
 })

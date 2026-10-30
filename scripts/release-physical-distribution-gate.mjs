@@ -16,7 +16,7 @@ import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { withReleaseEvidence } from './release-evidence.mjs'
-import { RELEASE_PACKAGES, releasePackagesFor, parsePhysicalGateOptions, candidateArchiveName, createReleaseConsumerConfig, assertCandidatePeerReport } from './release-consumer-config.mjs'
+import { DSH_AGGREGATE_SOURCE, RELEASE_PACKAGES, releasePackagesFor, parsePhysicalGateOptions, candidateArchiveName, createReleaseConsumerConfig, assertCandidatePeerReport } from './release-consumer-config.mjs'
 
 const workspace = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
@@ -99,7 +99,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 const consumer = dirname(fileURLToPath(import.meta.url))
 const modules = await realpath(resolve(consumer, 'node_modules'))
 const workspace = ${JSON.stringify(workspace)}
-const distributionPackage = fileURLToPath(import.meta.resolve('dsh-design-system-dsh/package.json'))
+const distributionPackage = fileURLToPath(import.meta.resolve(${JSON.stringify(DSH_AGGREGATE_SOURCE + '/package.json')}))
 const distributionRequire = createRequire(distributionPackage)
 const candidates = ${JSON.stringify(candidates)}
 const config = ${JSON.stringify(config)}
@@ -227,7 +227,7 @@ for (const name of ${JSON.stringify(Object.keys(RELEASE_PACKAGES).filter(name =>
   }
 }
 for (const entry of ${JSON.stringify([
-  { specifier: 'dsh-design-system-dsh', load: true },
+  { specifier: DSH_AGGREGATE_SOURCE, load: true },
   { specifier: 'dsh-design-core', load: false },
   { specifier: 'dsh-design-core/kit-loader', load: false },
   { specifier: 'dsh-design-core/advisory-scheduler', load: false },
@@ -238,10 +238,11 @@ for (const entry of ${JSON.stringify([
   { specifier: 'dsh-design-provider-web-app', load: false },
   { specifier: 'dsh-design-provider-web-app/client', load: false },
   { specifier: 'dsh-design-studio-dsh', load: false },
+  { specifier: 'dsh-design-studio-dsh/authoring-entry', load: false },
   { specifier: 'dsh-design-studio-dsh/studio-page', load: false },
 ])}) {
   const { specifier, load } = entry
-  const resolved = await realpath(specifier === 'dsh-design-system-dsh'
+  const resolved = await realpath(specifier === ${JSON.stringify(DSH_AGGREGATE_SOURCE)}
     ? fileURLToPath(import.meta.resolve(specifier))
     : distributionRequire.resolve(specifier))
   const fromModules = relative(modules, resolved)

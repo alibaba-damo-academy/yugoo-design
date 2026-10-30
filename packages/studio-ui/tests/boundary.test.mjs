@@ -33,12 +33,15 @@ for (const banned of ['createDraft', 'saveDraft', 'publishDraft', 'preparePrevie
   assert.equal(viewerSource.includes(banned), false, `installed viewer must not gain an implicit authoring action: ${banned}`)
 }
 assert.deepEqual(Object.keys(surface).sort(), [
-  'ContentArchiveWorkbench',
-  'MindsetInlineEditor',
+  'CONVERSATION_ACTIVITY_CSS',
+  'ConversationActivity',
+  'ConversationMessage',
+  'ConversationMessages',
+  'InstanceWorkbench',
   'STUDIO_WORKSPACE_CSS',
-  'StudioContentArchiveController',
-  'StudioKitDraftController',
-  'StudioPanelDraftController',
+  'StudioEmptyState',
+  'StudioErrorDialog',
+  'StudioFeedback',
   'StudioTrialController',
   'StudioWorkspace',
   'StudioWorkspaceController',

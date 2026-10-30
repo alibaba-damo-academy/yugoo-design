@@ -192,8 +192,8 @@ const expectManifestError = (patch, needle) => {
 expectManifestError({ ui: undefined }, 'missing component node')
 expectManifestError({ ui: null }, 'component node must be an object')
 expectManifestError({ ui: { component: 'stack', id: 's', children: 'nope' } }, 'children must be a list')
-expectManifestError({ ui: { component: 'split', id: 's', slots: null } }, 'slots must be an object')
-expectManifestError({ ui: { component: 'split', id: 's', sources: 'nope' } }, 'sources must be a list')
+expectManifestError({ ui: { component: 'panel_workspace', id: 's', slots: null } }, 'slots must be an object')
+expectManifestError({ ui: { component: 'panel_workspace', id: 's', sources: 'nope' } }, 'sources must be a list')
 
 // A column option `when` may reference a later-declared column (precomputed key set).
 const forwardRef = validatePanelManifest({

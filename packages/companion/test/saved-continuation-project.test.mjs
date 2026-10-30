@@ -4,6 +4,48 @@ import { readFile, readdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fixture } from './fixture.mjs'
 import { openCompanionProject } from '../src/project.mjs'
+import { createCodexConnection } from '../src/codex-connection.mjs'
+
+test('Codex pre-add setup failure preserves notification-only recovery while queue failure remains unknown after reopen', async () => {
+  const f = await fixture()
+  try {
+    for (const failure of ['proxy-connect', 'initialize', 'queue-add']) {
+      const calls = []
+      const connection = createCodexConnection(f.options.threadId, async () => {
+        if (failure === 'proxy-connect') throw Error('SECRET setup failure')
+        return { close() {}, notify() {}, async request(method) {
+          calls.push(method)
+          if (method === 'initialize' && failure !== 'initialize') return {}
+          throw Object.assign(Error('SECRET native failure'), { transportCategory: 'disconnected', notSubmitted: true })
+        } }
+      })
+      const options = { ...f.options, connection }
+      let api = await openCompanionProject(options)
+      const eventId = `codex-${failure}`
+      const saved = await api.savePanel({ skill: 'smart_questions', eventId,
+        state: { questions: { goal: { prompt: 'Goal?', kind: 'text', answer: failure, detail: '' } } } })
+      const canonical = join(f.options.projectRoot, 'design_files/smart_questions/smart_questions.json')
+      const bytes = await readFile(canonical, 'utf8')
+      const request = { text: 'Continue', requestId: eventId, saved: [{ eventId, commit: saved.commit }] }
+      await assert.rejects(api.sendPrompt(request), error => {
+        assert.equal(error.notSubmitted, failure === 'queue-add' ? undefined : true)
+        assert.doesNotMatch(error.message, /SECRET/)
+        return true
+      })
+      api = await openCompanionProject(options)
+      const entry = (await api.readWorkspace()).savedContinuations.find(entry => entry.eventId === eventId)
+      assert.equal(entry.status, failure === 'queue-add' ? 'unknown' : 'not_submitted')
+      assert.equal(entry.retryable, failure !== 'queue-add')
+      assert.equal(await api.store.head(), saved.commit)
+      assert.equal(await readFile(canonical, 'utf8'), bytes)
+      if (failure === 'queue-add') {
+        assert.equal((await api.sendPrompt(request)).status, 'unknown')
+        assert.equal(calls.filter(method => method === 'thread/queue/add').length, 1, 'unknown queue insertion cannot replay')
+      } else assert.equal(calls.includes('thread/queue/add'), false)
+      assert.deepEqual(f.messages, [])
+    }
+  } finally { await f.close() }
+})
 
 test('Qwen saved-edit continuation uses live GRA policy and readiness while preserving foreground progress', async () => {
   const f = await fixture()

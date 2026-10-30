@@ -1,12 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { DesignKnowledgeStatusSnapshot } from '../../../core/src/design-knowledge-status.ts'
-import { GraphCanvas } from './graph-canvas.js'
-import { projectRecords, recordOwner, recordReach, scopeGraph, contentDetail, edgeReading, filterRelations, graphNodeMatches, relationMeaningLabel, relationOriginLabels, relationDirectionLabel, relationLifecycleLabel, type DesignGraph } from './graph-model.js'
+import { GraphCanvas, graphSourceColors } from './graph-canvas.js'
+import { GraphExploration } from './graph-exploration.js'
+import { projectExplorationRecords } from './graph-bundle-model.js'
+import { projectRecords, recordOwner, recordReach, scopeGraph, contentDetail, edgeReading, filterRelations, graphNodeMatches, relationMeaningLabel, relationOriginLabels, relationDirectionLabel, relationLifecycleLabel, type DesignGraph, type GraphEdge } from './graph-model.js'
 import { graphStyles } from './graph-styles.js'
 import { subscribeLivePoll } from './live-poll.js'
 
 /** Read-only system exploration. Search, selection and scope are independent. */
-export function GraphPanel({ read, readStatus, retry, footer }: { read: () => Promise<{ content: string }>; readStatus?: () => Promise<DesignKnowledgeStatusSnapshot | undefined>; retry?: () => Promise<unknown>; footer: ReactNode }) {
+export function GraphPanel({ read, readStatus, retry, footer, ownerLabels, exploration = false }: { ownerLabels?: Record<string, string>; exploration?: boolean; read: () => Promise<{ content: string }>; readStatus?: () => Promise<DesignKnowledgeStatusSnapshot | undefined>; retry?: () => Promise<unknown>; footer: ReactNode }) {
+  const [relationSelection, setRelationSelection] = useState<GraphEdge>()
   const [retrying, setRetrying] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -21,17 +24,19 @@ export function GraphPanel({ read, readStatus, retry, footer }: { read: () => Pr
   const [loadSeconds, setLoadSeconds] = useState(0)
   const [query, setQuery] = useState(''), [selected, setSelected] = useState(''), [edgeId, setEdgeId] = useState('')
   const [seed, setSeed] = useState(''), [meaning, setMeaning] = useState('all'), [origin, setOrigin] = useState('all')
-  const [limit, setLimit] = useState(160)
+  const [limit, setLimit] = useState(exploration ? Number.MAX_SAFE_INTEGER : 160)
   const [layout, setLayout] = useState('stress2')
+  const [canvasView, setCanvasView] = useState<'graph' | 'ring'>('graph')
   const [perspective, setPerspective] = useState('original')
   const [sizeMode, setSizeMode] = useState<'uniform' | 'reach'>('uniform')
+  const sourceLabels = useMemo(() => Object.fromEntries([...new Set(graph?.nodes.map(n => n.owner) ?? [])].sort().map(owner => [owner, ownerLabels?.[owner] ?? owner])), [graph, ownerLabels])
   const [viewSettingsOpen, setViewSettingsOpen] = useState(false)
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set())
   const detailsElement = useRef<HTMLElement>(null)
   const unavailablePolls = useRef(0)
   useEffect(() => { if (detailsElement.current) detailsElement.current.scrollTop = 0 }, [selected, edgeId])
   useEffect(() => {
-    let alive = true; unavailablePolls.current = 0; graphRef.current = undefined; setError(''); setPollFailed(false); setGraph(undefined); setSelected(''); setEdgeId(''); setSeed(''); setExpanded(new Set())
+    let alive = true; unavailablePolls.current = 0; graphRef.current = undefined; setError(''); setPollFailed(false); setGraph(undefined); setSelected(''); setEdgeId(''); setRelationSelection(undefined); setSeed(''); setExpanded(new Set())
     initialReadPending.current = true
     setReadingGraph(true)
     setLoadSeconds(0)
@@ -121,7 +126,7 @@ export function GraphPanel({ read, readStatus, retry, footer }: { read: () => Pr
     }).catch(() => { if (alive) { setPollFailed(true); setError('图谱状态读取失败，请点击刷新；这不代表后台恢复或索引已经失败。') } }) }, 2500)
     return () => { alive = false; clearTimeout(timer) }
   }, [graph, read, readStatus, pollFailed])
-  const projected = useMemo(() => graph ? projectRecords(graph, expanded) : { nodes: [], edges: [], total: 0 }, [graph?.nodes, graph?.edges, expanded])
+  const projected = useMemo(() => graph ? (exploration ? projectExplorationRecords(graph, expanded) : projectRecords(graph, expanded)) : { nodes: [], edges: [], total: 0 }, [graph?.nodes, graph?.edges, expanded, exploration])
   const reach = useMemo(() => graph ? recordReach(graph) : new Map<string, number>(), [graph?.nodes, graph?.edges])
   const filtered = useMemo(() => filterRelations(projected, meaning, origin), [projected, meaning, origin])
   const scope = useMemo(() => scopeGraph(filtered, 'all', seed, 1, limit), [filtered, seed, limit])
@@ -133,24 +138,28 @@ export function GraphPanel({ read, readStatus, retry, footer }: { read: () => Pr
   }, [projected, scope.nodes, scope.edges, perspective])
   const results = useMemo(() => query.trim() ? fullScope.nodes.filter(n => graphNodeMatches(n, query)) : [], [fullScope, query])
   const matches = useMemo(() => query.trim() ? new Set(results.map(n => n.id)) : null, [results, query])
-  const chosen = graph?.nodes.find(n => n.id === selected), edge = scope.edges.find(e => e.id === edgeId)
+  const chosen = graph?.nodes.find(n => n.id === selected), edge = (exploration ? relationSelection : undefined) ?? scope.edges.find(e => e.id === edgeId)
   const detail = graph && chosen ? contentDetail(graph, chosen) : undefined
-  const expandable = useMemo(() => {
-    if (!graph) return []
-    const owners = new Set(graph.nodes.filter(n => !n.record).map(n => recordOwner(graph, n.id)))
-    return graph.nodes.filter(n => n.record && owners.has(n.id))
+  const contentCounts = useMemo(() => {
+    const counts = new Map<string, number>()
+    if (graph) for (const node of graph.nodes) if (!node.record) {
+      const owner = recordOwner(graph, node.id)
+      if (owner) counts.set(owner, (counts.get(owner) ?? 0) + 1)
+    }
+    return counts
   }, [graph?.nodes, graph?.edges])
+  const expandable = useMemo(() => graph?.nodes.filter(n => n.record && contentCounts.has(n.id)) ?? [], [graph?.nodes, contentCounts])
   const allExpanded = expandable.length > 0 && expandable.every(n => expanded.has(n.id))
   const chosenOwner = graph && chosen ? recordOwner(graph, chosen.id) : undefined
   const knowledgeState = statusDisconnected ? 'unknown' : liveStatus?.state ?? graph?.knowledgeStatus
   const recovery = statusDisconnected ? undefined : liveStatus?.recovery ?? graph?.recovery
   const knowledgeUnavailable = knowledgeState === 'unavailable' || (!knowledgeState && graph?.warnings.some(w => /Knowledge.*不可用/.test(w)))
   const memoryCache = graph?.semantic?.cache === 'memory'
-  const toggleRecord = (id: string) => { setExpanded(old => { const next = new Set(old); if (next.has(id)) next.delete(id); else next.add(id); return next }); setSelected(id); setEdgeId(''); setSeed('') }
-  const clear = () => { setSelected(''); setEdgeId('') }
+  const toggleRecord = (id: string) => { setExpanded(old => { const next = new Set(old); if (next.has(id)) next.delete(id); else next.add(id); return next }); setSelected(id); setEdgeId(''); setRelationSelection(undefined); setSeed('') }
+  const clear = () => { setSelected(''); setEdgeId(''); setRelationSelection(undefined) }
   const spatial = layout === 'stress3'
   const meanings = useMemo(() => [...new Set([...(graph?.edges ?? []).map(e => edgeReading(e).meaning), ...(meaning === 'all' ? [] : [meaning])])].sort(), [graph?.edges, meaning])
-  const viewSettingsCount = [perspective !== 'original', layout !== 'stress2', sizeMode !== 'uniform', meaning !== 'all', origin !== 'all', limit !== 160].filter(Boolean).length
+  const viewSettingsCount = [!exploration && perspective !== 'original', !exploration && layout !== 'stress2', !exploration && sizeMode !== 'uniform', meaning !== 'all', origin !== 'all', limit !== (exploration ? Number.MAX_SAFE_INTEGER : 160)].filter(Boolean).length
   const stalePublication = statusDisconnected ? false : liveStatus
     ? liveStatus.state === 'running' && liveStatus.freshness === 'different' && !!liveStatus.latestComplete
     : graph?.coverage?.embedding === 'indexing' && graph.freshness?.indexedCheckpoint
@@ -198,6 +207,7 @@ export function GraphPanel({ read, readStatus, retry, footer }: { read: () => Pr
         <button aria-pressed={expanded.size === 0} onClick={() => { setExpanded(new Set()); clear(); setSeed('') }}>概览</button>
         <button aria-pressed={allExpanded} disabled={!expandable.length} onClick={() => { setExpanded(new Set(expandable.map(n => n.id))); clear(); setSeed('') }}>展开</button>
       </div>
+      {!exploration && <div className='graph-levels' aria-label='关联视图'><button aria-pressed={canvasView === 'graph'} onClick={() => setCanvasView('graph')}>Graph</button><button aria-pressed={canvasView === 'ring'} onClick={() => setCanvasView('ring')}>圆形关联</button></div>}
       <div className='graph-search'><input aria-label='搜索设计字段' placeholder='搜索设计内容…' value={query} onChange={e => setQuery(e.target.value)} /></div>
       <button className='graph-refresh' disabled={refreshing} title='核对图谱状态；仅在版本变化时读取新图，不触发 KAG 更新' onClick={() => {
         setRefreshing(true)
@@ -206,18 +216,18 @@ export function GraphPanel({ read, readStatus, retry, footer }: { read: () => Pr
       }}>{refreshing ? '读取中…' : '刷新显示'}</button>
       <button className='graph-settings-trigger' aria-expanded={viewSettingsOpen} aria-controls='graph-view-settings' onClick={() => setViewSettingsOpen(value => !value)}>视图与筛选{viewSettingsCount > 0 && <span className='graph-settings-count'>{viewSettingsCount}</span>}</button>
       {matches && <details open className='graph-search-results'><summary>搜索结果 · {matches.size} 项 · 点击进入关联邻域</summary><div>
-        {results.map(n => <button key={n.id} onClick={() => { setSeed(n.id); setSelected(n.id); setEdgeId(''); setQuery('') }}>{n.label}</button>)}
+        {results.map(n => <button key={n.id} onClick={() => { setSeed(n.id); setSelected(n.id); setEdgeId(''); setRelationSelection(undefined); setQuery('') }}>{n.label}</button>)}
         {!results.length && <span>当前范围没有匹配内容；可清空搜索或返回全图。</span>}
       </div></details>}
     </header>
     {viewSettingsOpen && <aside id='graph-view-settings' className='graph-settings-drawer' aria-label='视图与筛选设置' onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); setViewSettingsOpen(false) } }}>
       <div className='graph-settings-head'><div><strong>视图与筛选</strong><p>只改变当前阅读方式，不写回 KAG</p></div><button aria-label='关闭视图设置' onClick={() => setViewSettingsOpen(false)}>×</button></div>
       <div className='graph-settings-scroll'>
-        <fieldset className='graph-settings-section'><legend>布局与空间</legend>
+        {!exploration && <fieldset className='graph-settings-section'><legend>布局与空间</legend>
           <label><span>布局视角</span><select aria-label='布局视角' value={perspective} onChange={e => setPerspective(e.target.value)}><option value='original'>完整关联布局</option><option value='natural'>自然聚集 · 弱化枢纽权重</option><option value='source'>来源分区 · 按设计文件</option><option value='focus'>关系聚焦 · 跟随筛选</option></select></label>
           <label><span>空间维度</span><select aria-label='图谱布局' value={layout} onChange={e => setLayout(e.target.value)}><option value='stress2'>2D · Stress</option><option value='stress3'>3D · Stress</option></select></label>
           <label><span>节点大小</span><select aria-label='节点大小' value={sizeMode} onChange={e => setSizeMode(e.target.value as 'uniform' | 'reach')}><option value='uniform'>统一大小</option><option value='reach'>按关联范围</option></select></label>
-        </fieldset>
+        </fieldset>}
         <fieldset className='graph-settings-section'><legend>关系筛选</legend>
           <label><span>关系含义</span><select aria-label='关系含义' value={meaning} onChange={e => { setMeaning(e.target.value); clear() }}><option value='all'>全部含义</option>{meanings.map(value => <option key={value} value={value}>{relationMeaningLabel(value)}</option>)}</select></label>
           <label><span>关系来源</span><select aria-label='关系来源' value={origin} onChange={e => { setOrigin(e.target.value); clear() }}><option value='all'>全部来源</option>{Object.entries(relationOriginLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
@@ -226,7 +236,7 @@ export function GraphPanel({ read, readStatus, retry, footer }: { read: () => Pr
         <fieldset className='graph-settings-section'><legend>内容与更新</legend>
           <label><span>显示数量</span><select aria-label='显示节点上限' value={limit} onChange={e => setLimit(Number(e.target.value))}><option value={160}>最多 160 节点</option><option value={500}>最多 500 节点</option><option value={Number.MAX_SAFE_INTEGER}>全部节点（较耗资源）</option></select></label>
         </fieldset>
-        <div className='graph-settings-actions'><button onClick={() => { setPerspective('original'); setLayout('stress2'); setSizeMode('uniform'); setMeaning('all'); setOrigin('all'); setLimit(160); clear() }}>恢复默认</button></div>
+        <div className='graph-settings-actions'><button onClick={() => { setPerspective('original'); setLayout('stress2'); setCanvasView('graph'); setSizeMode('uniform'); setMeaning('all'); setOrigin('all'); setLimit(exploration ? Number.MAX_SAFE_INTEGER : 160); clear() }}>恢复默认</button></div>
       </div>
     </aside>}
     {!graph ? <div className='graph-initial-stage'><div className='graph-initial-status' role='status'>
@@ -237,22 +247,23 @@ export function GraphPanel({ read, readStatus, retry, footer }: { read: () => Pr
       {liveStatus && <small>{health}</small>}
     </div></div> : <>
       {error && <p role='alert' className='graph-notice'>{error}</p>}
-      {(seed || meaning !== 'all' || origin !== 'all' || scope.total > scope.nodes.length) && <div className='graph-scopebar'>
+      {(seed || meaning !== 'all' || origin !== 'all') && <div className='graph-scopebar'>
         {seed && <><span>关联邻域 · {graph.nodes.find(n => n.id === seed)?.label}</span><button onClick={() => setSeed('')}>返回全图</button></>}
         {(meaning !== 'all' || origin !== 'all') && <><span>含义：{meaning === 'all' ? '全部' : relationMeaningLabel(meaning)} · 来源：{origin === 'all' ? '全部' : relationOriginLabels[origin as keyof typeof relationOriginLabels]}</span><button onClick={() => { setMeaning('all'); setOrigin('all'); clear() }}>显示全部关系</button></>}
-        {scope.total > scope.nodes.length && <span>显示 {scope.nodes.length}/{scope.total} 个节点；可搜索全部内容或在显示设置中调整上限。</span>}
       </div>}
       {scope.edges.length === 0 && <p className='graph-notice'>当前没有可显示的关联线{graph.semantic?.state === 'indexing' ? '，正在计算语义候选。' : '；这不表示设计内容之间不存在关联。'}</p>}
-      <div className='graph-view-note' role='note'>Stress 对照 · {perspective === 'natural' ? '降低高连接节点在 Stress 目标中的权重，不生成业务分类' : perspective === 'source' ? '同来源柔性靠近，跨文件关系继续参与 Stress；不强制分栏' : perspective === 'focus' ? '根据筛选后的关系排版' : '根据完整关联排版'} · 仅改显示坐标，不写回 KAG</div>
-      <div className='graph-view-body'>
-        <GraphCanvas sizeMode={sizeMode} graph={scope} layoutEdges={layoutEdges} layout={`${layout}-${perspective}`} reach={reach} selected={selected} selectedEdge={edgeId} matches={matches} onNode={id => { setSelected(id); setEdgeId('') }} onEdge={id => { setEdgeId(id); setSelected('') }} onClear={clear} />
+      {exploration && <div className='graph-view-note' role='note'>同一份设计知识 · Bundle → 记录 / 产物 → 内容 · 选择对象或连线查看原始依据</div>}
+      <div className='graph-view-body' data-exploring={exploration} data-inspecting={Boolean(chosen || edge)}>
+        {exploration ? <GraphExploration graph={scope} selected={selected} relation={edge} onNode={id => { setSelected(id); setEdgeId(''); setRelationSelection(undefined) }} onEdge={relation => { setRelationSelection(relation); setEdgeId(relation.id); setSelected('') }} onClear={clear} /> : (
+        <GraphCanvas sourceLabels={sourceLabels} contentCounts={contentCounts} viewMode={canvasView} sizeMode={sizeMode} graph={scope} layoutEdges={layoutEdges} layout={`${layout}-${perspective}`} reach={reach} selected={selected} selectedEdge={edgeId} matches={matches} onNode={id => { setSelected(id); setEdgeId(''); setRelationSelection(undefined) }} onEdge={id => { setEdgeId(id); setSelected('') }} onClear={clear} />
+        )}
         {(chosen || edge) && <aside className='graph-inspector' aria-label='图谱详情' ref={detailsElement} onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); clear() } }}>
           <div className='graph-inspector-head'><span>{chosen ? detail?.kind : '关系证据'}</span><button aria-label='关闭节点详情' onClick={clear}>×</button></div>
           {chosen ? <><h4>{chosen.label}</h4>
             {chosen.sourceLabel && chosen.sourceLabel !== chosen.label && <p className='graph-source-caption'>原文摘要：{chosen.sourceLabel}</p>}
             {detail?.source && detail.source.id !== chosen.id && <p className='graph-source-caption'>来源：{detail.source.label}</p>}
             <div className='graph-inspector-actions'>
-            {chosenOwner && expandable.some(n => n.id === chosenOwner) && <button onClick={() => toggleRecord(chosenOwner)}>{expanded.has(chosenOwner) ? '收起此记录' : '展开此记录'}</button>}
+            {chosenOwner && expandable.some(n => n.id === chosenOwner) && <button aria-label={expanded.has(chosenOwner) ? '收起此记录' : '展开此记录'} onClick={() => toggleRecord(chosenOwner)}>{expanded.has(chosenOwner) ? '收起此记录' : '展开此记录'} · {contentCounts.get(chosenOwner)}项</button>}
             <button onClick={() => { setSeed(chosen.id); setQuery('') }}>查看关联邻域</button></div>
             <section className='graph-node-source' aria-label='节点来源'><div className='graph-source-heading'>来源</div><div className='graph-source-panel'><small>面板</small><strong>{chosen.sourcePanel ?? chosen.previewSourcePanel ?? chosen.owner}</strong></div><dl><dt>设计文件</dt><dd>{chosen.file}</dd><dt>文件内位置</dt><dd>{chosen.pointer || '/'}</dd>{chosen.ontologyType && <><dt>结构类型</dt><dd>{chosen.ontologyType}</dd></>}{chosen.identityQuality && <><dt>身份质量</dt><dd>{chosen.identityQuality === 'stable' ? '稳定身份' : chosen.identityQuality === 'structural' ? '结构身份' : '匿名内容身份'}</dd></>}</dl><small>结构类型由 Kit schema 自动编译；用于检索与约束，不是人为职责分类</small></section>
             <section aria-label='当前可见关联'>
@@ -260,14 +271,14 @@ export function GraphPanel({ read, readStatus, retry, footer }: { read: () => Pr
               <small>遵循当前范围与筛选；未显示的关系可通过搜索、关联邻域或显示设置查找。</small>
               <div className='graph-unit-list'>{scope.edges.filter(e => e.from === chosen.id || e.to === chosen.id).map(relation => {
                 const other = graph.nodes.find(n => n.id === (relation.from === chosen.id ? relation.to : relation.from))
-                return <button key={relation.id} onClick={() => { setEdgeId(relation.id); setSelected('') }}>
+                return <button key={relation.id} onClick={() => { setEdgeId(relation.id); setRelationSelection(relation); setSelected('') }}>
                   {relation.label} · {other?.label ?? (relation.from === chosen.id ? relation.to : relation.from)} · {relationOriginLabels[edgeReading(relation).origin]}
                 </button>
               })}</div>
             </section>
             {!!detail?.children.length && <section aria-label='内容单元'><h5>包含的内容单元 · {detail.children.length}</h5><div className='graph-unit-list'>{detail.children.map(child => <button key={child.id} onClick={() => {
               if (chosenOwner) setExpanded(old => new Set([...old, chosenOwner]))
-              setSelected(child.id); setEdgeId(''); setSeed('')
+              setSelected(child.id); setEdgeId(''); setRelationSelection(undefined); setSeed('')
             }}>{child.label}</button>)}</div></section>}
             <details className='graph-evidence' open={chosen.contentKind !== 'container'} key={chosen.id}><summary>来源字段摘录</summary><small>来源内容可能截断；选择题仅包含已保存回答及补充。属性保留在所属单元中。</small><pre>{chosen.context}</pre></details></> : edge ? <><h4>{edge.label}</h4>
             {(edge.members ?? [edge]).map(member => {
@@ -305,11 +316,12 @@ export function GraphPanel({ read, readStatus, retry, footer }: { read: () => Pr
           {graph.recovery?.state === 'error' && retry && <button disabled={retrying} onClick={() => { setRetrying(true); void retry().then(() => setReload(n => n + 1)).catch(e => setError(String(e))).finally(() => setRetrying(false)) }}>{retrying ? '正在重试…' : '重试恢复图谱'}</button>}
         </div></details>
         <details className='graph-popover'><summary>来源与图例</summary><div className='graph-popover-body'>
-          <div className='graph-legend'><span><i/>关联</span><span><i data-kind='contains'/>包含</span></div>
-          <p>颜色区分 Bundle；点大小表示关联的不同记录数（含候选，排除包含和重复证据），不代表可信度或重要程度。</p>
+          <div className='graph-legend'><span><i/>关联</span><span><i data-kind='contains'/>包含</span><span><i data-kind='candidate'/>候选关系</span></div>
+          <div className='graph-legend'>{Object.entries(sourceLabels).map(([owner, label], index) => <span key={owner}><i style={{ border: 0, width: 7, height: 7, borderRadius: '50%', background: graphSourceColors[index % graphSourceColors.length] }} />{label}</span>)}</div>
+          <p>{exploration ? '颜色区分 Bundle 来源；外圈可聚合或展开，点的层次区分 Bundle、记录和内容，不代表可信度或重要程度。' : '颜色区分 Bundle 来源；底色显示附近节点的来源分布。默认使用细小节点，选择“按关联范围”后，点大小表示关联的不同记录数（含候选，排除包含和重复证据），不代表可信度或重要程度。'}</p>
           <p>语义候选、标识符匹配不是已确认业务关系。点击连线查看原始依据。布局与筛选不会修改 KAG。</p>
           <p>关系含义与生成来源分别筛选；未知含义不作推断。详情中的方向表示关系含义，不是布局位置。</p>
-          <p>{spatial ? '拖空白旋转 · 右键平移 · 滚轮缩放 · 拖动节点后固定。' : '拖空白平移 · 滚轮缩放 · 重新整理恢复 Stress 排布。空间邻近不代表业务确认。'}</p><p>支持键盘选点，Escape 关闭详情。已发布版本 {graph.checkpoint.slice(0, 8)}。</p>
+          <p>{exploration ? '拖空白平移 · 滚轮缩放 · 两种视觉方向均为二维呈现，切换保留当前选择。' : spatial ? '拖空白旋转 · 右键平移 · 滚轮缩放 · 拖动节点后固定。' : '拖空白平移 · 滚轮缩放 · 重新整理恢复 Stress 排布。空间邻近不代表业务确认。'}</p><p>支持键盘选点，Escape 关闭详情。已发布版本 {graph.checkpoint.slice(0, 8)}。</p>
         </div></details>
       </div>
     </>}

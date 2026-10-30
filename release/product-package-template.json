@@ -46,7 +46,8 @@
     "@ladybugdb/wasm-core": "0.21.1",
     "@huggingface/transformers": "3.8.1",
     "onnxruntime-common": "1.21.0",
-    "undici": "8.10.2"
+    "undici": "8.10.2",
+    "trash": "10.1.1"
   },
   "x-design-release-review": {
     "fixture": true,

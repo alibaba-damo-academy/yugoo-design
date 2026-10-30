@@ -195,6 +195,11 @@ export async function prepareDesktopPackage({ npmRoot, packageName, packageVersi
       await helper.packageWorkBuddyProbeMarketplace(staged, { nodeExecutable: node, runtimeRoot: runtimeWindows, version: suiteVersion, browserAccess: 'local', ...(prior ? { marketName } : {}) })
       const market = join(output, 'market'), mf = '.codebuddy-plugin/marketplace.json'
       const next = JSON.parse(await readFile(join(staged, mf), 'utf8')), pluginSource = next.plugins[0].source
+      // These bounded, hash-inventoried templates belong to the acquired package.
+      // The importer needs physical Skills/resources, not a path into the shared runtime.
+      const authoringTemplate = join(materials, 'studio-authoring-template')
+      for (const name of await readdir(join(authoringTemplate, 'skills'))) await cp(join(authoringTemplate, 'skills', name), join(staged, pluginSource, 'skills', name), { recursive: true, errorOnExist: true, force: false })
+      await cp(join(authoringTemplate, 'authoring'), join(staged, pluginSource, 'authoring'), { recursive: true, errorOnExist: true, force: false })
       for (const name of licenses) await cp(join(materials, name), join(staged, pluginSource, name), { errorOnExist: true, force: false })
       if (!prior) await cp(staged, market, { recursive: true, errorOnExist: true, force: false })
       else {

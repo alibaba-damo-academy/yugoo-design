@@ -9,6 +9,7 @@ or a substitute for license texts, source provision, or other obligations.
 
 | Component | License / location | Release requirement to verify |
 | --- | --- | --- |
+| `trash@10.1.1` | MIT; upstream `sindresorhus/trash`, npm package `license` | Keep the external package, platform executables and its license together. Install the declared dependency; do not bundle its executable-relative paths into standalone JavaScript. |
 | Official Ladybug WASM dependency `@ladybugdb/wasm-core@0.21.1` | Package declares MIT; original text and public source locator in `third-party/native/ladybug-wasm-core-0.21.1/` | Current `packages/knowledge-ladybug` dependency route. Preserve Kùzu Inc./Ladybug Memory Inc. notices and verify actual release inclusion. The installed package has no separate third-party inventory or precise build-provenance file; embedded components and source/build correspondence remain unresolved. Package MIT is not a blanket license for the complete WASM. |
 | Historical vendored Ladybug WASM runtime | MIT; `vendor/ladybug/runtime/LICENSE` | Separate legacy route: preserve its own copyright/license, provenance and patch if distributed. Do not use its patch/source evidence as the build provenance of the official npm dependency. Compiled-in component checks remain separate. |
 | DSH code and reused utilities | MIT; `deepseek-harness/LICENSE` | Retain original notices; distinguish external host from copied/bundled utilities. |

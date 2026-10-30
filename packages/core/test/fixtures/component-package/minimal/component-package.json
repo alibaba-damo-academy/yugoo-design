@@ -1,0 +1,46 @@
+{
+  "format": "yugoo-component-package/v1",
+  "name": "@example/yugoo-native-notice",
+  "version": "1.0.0",
+  "namespace": "org.example.notice",
+  "summary": "A minimal trusted native notice panel.",
+  "compatibility": {
+    "nativePanelApi": 1,
+    "reactMajor": 18,
+    "reactSource": "host"
+  },
+  "license": {
+    "spdx": "Apache-2.0",
+    "file": "LICENSE"
+  },
+  "entry": {
+    "server": "server.mjs",
+    "client": "client.mjs"
+  },
+  "files": [
+    {
+      "path": "LICENSE",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "client.mjs",
+      "sha256": "271f563a6e41e3358999be1b34952d74567dd96396666f0c92fb6bfe093ed41b"
+    },
+    {
+      "path": "package.json",
+      "sha256": "0c19dcfef6ffe8d318dfac784f4178364ad258d6dca5574f4e2ac9a6f7f6efcf"
+    },
+    {
+      "path": "server.mjs",
+      "sha256": "2e229fd4186403fe98c5231b7fd16281a0dfb8b111a5c1b28085d0b9ea15bdec"
+    }
+  ],
+  "dependencies": [],
+  "components": [
+    {
+      "id": "org.example.notice.panel/v1",
+      "kind": "native-panel",
+      "summary": "Read-only notice rendered with host React."
+    }
+  ]
+}

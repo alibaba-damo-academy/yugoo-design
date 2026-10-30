@@ -44,9 +44,11 @@ export const graphStyles = `
 .graph-view-body{position:relative;flex:1;min-height:0;display:flex;overflow:hidden}
 .graph-view-note{padding:7px 16px;font-size:11px;color:#727b8b;background:#f8f9fc;flex-shrink:0}
 .graph-canvas{height:100%;width:100%}
-.graph-camera-tools{padding:4px;background:#ffffffee;border:1px solid var(--graph-border);border-radius:9px;box-shadow:0 2px 10px #21354a0c;max-width:calc(100% - 32px)}
+.graph-camera-tools{position:absolute;right:16px;bottom:16px;display:flex;gap:5px;flex-wrap:wrap;padding:4px;background:#ffffffee;border:1px solid var(--graph-border);border-radius:9px;box-shadow:0 2px 10px #21354a0c;max-width:calc(100% - 32px)}
 .graph-camera-tools button{border:0;background:transparent;font-size:12px;padding:4px 8px;min-height:28px}
 .graph-camera-tools button[aria-pressed=true]{background:#eee8fa}
+.graph-camera-tools .graph-popover>summary{border:0;background:transparent;padding:4px 8px;min-height:28px}
+.graph-camera-tools .graph-popover-body{top:auto;bottom:calc(100% + 8px)}
 .graph-inspector{position:absolute;z-index:3;top:12px;right:12px;bottom:64px;width:320px;max-width:calc(100% - 24px);padding:18px;background:#fffffff5;border:1px solid var(--graph-border);border-radius:12px;box-shadow:0 4px 22px #27374e13;overflow:auto;overflow-wrap:anywhere;backdrop-filter:blur(10px)}
 .graph-inspector h4{font-size:16px;line-height:1.45;margin:10px 0;color:#243246}
 .graph-inspector h5{font-size:12px;margin:18px 0 8px;color:#6e7a8d;font-weight:500}
@@ -94,7 +96,7 @@ export const graphStyles = `
 .graph-scopebar button{border:0;background:transparent;min-height:24px;padding:2px 6px;font-size:11px}
 .graph-notice{padding:8px 16px;margin:0;background:#fff7e8;color:#8c692d;font-size:12px}
 .graph-footer{padding:10px 14px;border-top:1px solid var(--graph-border);background:#fff;flex-shrink:0}
-.graph-legend{display:flex;flex-wrap:wrap;gap:12px;margin:8px 0}.graph-legend i{display:inline-block;width:18px;border-top:2px solid #617291;vertical-align:middle;margin-right:5px}.graph-legend i[data-kind=contains]{border-top:2px dashed #697386}
+.graph-legend{display:flex;flex-wrap:wrap;gap:12px;margin:8px 0}.graph-legend i{display:inline-block;width:18px;border-top:2px solid #617291;vertical-align:middle;margin-right:5px}.graph-legend i[data-kind=contains]{border-top:1px solid #76859b;opacity:.35}.graph-legend i[data-kind=candidate]{border-top:1px dashed #76859b}
 @container(max-width:700px){.graph-toolbar{gap:8px;padding:10px 12px}.graph-title{font-size:14px}.graph-search{order:2;flex-basis:100%}.graph-settings-trigger{margin-left:0}.graph-settings-drawer{top:96px;right:8px;bottom:54px;width:310px}.graph-toolbar>.graph-popover{margin-left:auto}.graph-toolbar select{max-width:118px}.graph-statusbar{padding:7px 12px;gap:5px 10px}.graph-toolbar>.graph-popover,.graph-statusbar>.graph-popover{position:static}.graph-popover-body{right:12px}.graph-inspector{width:300px;top:8px;right:8px;bottom:68px}.graph-camera-tools{right:8px!important;bottom:8px!important}.graph-hint{display:none}}
 @container(max-width:460px){.graph-inspector{top:auto;left:8px;right:8px;bottom:56px;width:auto;max-width:none;max-height:65%;padding:14px}.graph-toolbar>select{margin-left:auto}.graph-toolbar>.graph-popover{margin-left:0}.graph-statusbar .graph-popover{margin-left:0}}
 `

@@ -8,6 +8,7 @@ import {createWorkBuddyTranscript, readWorkBuddyHeader} from './workbuddy-transc
 import { createQwenWorkPanelConnection, resolveQwenWorkInputMode } from './qwenwork-desktop-input.mjs'
 import { createQwenWorkTranscript, verifyQwenWorkChild } from './qwenwork-transcript.mjs'
 import { createServer } from 'node:http'
+import { createStudioConversationRequests } from './studio-conversation-requests.mjs'
 import { staticAssetRequest } from './static-asset-request.mjs'
 import { resolveBrowserAccess, resolveBrowserDefaultView, browserMethods, browserRequestAllowed } from './browser-access.mjs'
 import { loadPackagedCssAssets } from '../../../scripts/css-asset-manifest.mjs'
@@ -29,7 +30,6 @@ import { createClaudeTranscript, verifyClaudeChild } from './claude-transcript.m
 import { createNativeRuns, verifyNativeChild } from './native-runs.mjs'
 import { createCompanionReviews } from './reviews.mjs'
 import { createCompanionSettings } from './settings.mjs'
-import { createCompanionStudio } from './studio.mjs'
 import { createStudioTrials, createStudioTrialInputGate } from './studio-trials.mjs'
 import { studioTrialEvidence } from './studio-trial-evidence.mjs'
 import { resolveNativeRun } from './native-run-resolution.mjs'
@@ -39,7 +39,6 @@ import { createNativeReviewScheduler } from './native-review-scheduler.mjs'
 import { createReviewExecutor } from './review-executor.mjs'
 import { createCompanionKnowledge } from './knowledge.mjs'
 import { workspacePollResult } from '../../core/lib/index.js'
-import { ProjectContentPanelGuard } from '../../core/lib/index.js'
 import { KNOWLEDGE_AGENTIC_GUIDANCE, DESIGN_EXECUTOR_EVIDENCE_GUIDANCE, DESIGN_WORKER_EVIDENCE_GUIDANCE, KnowledgeReadProgress, readDesignReviewPolicy, writeDesignReviewPolicy, designProjectRecordsRoot, commitDesignProjectRecords } from '../../core/lib/index.js'
 
 const reviewBindingReceipt = ({ reviewId, status, nativeRun }) => ({ reviewId, status, nativeRun })
@@ -173,14 +172,23 @@ export async function startCompanion(options) {
       parentBinding:input.parentRunId && input.parentRunId!==connection.threadId ? nativeRuns.getBinding(input.parentRunId) : undefined})
   const resolveRun = input => backgroundAdapter?.resolveRun ? backgroundAdapter.resolveRun(input) : resolveExecutionRun(input)
   const settings = await createCompanionSettings(options.stateRoot)
-  // Studio inspects installed resources even before the project selects a Kit.
-  const studio = await createCompanionStudio(() => project.installedKit, options.kitRoot, options.stateRoot, project.contentLibrary)
+  // Library inspection is independent of the project's private current sources.
+  // Missing library files must not prevent an existing self-contained project
+  // from running. Diagnose them only when the library is actually opened.
+  const studio = () => project.contentLibrary.studio()
+  // A public generation marker detects stale browser bindings; it is not a credential.
+  const studioConversationBinding = { bindingId: randomBytes(16).toString('hex'), threadId: connection.threadId }
+  const studioConversationRequests = options.studioTrial ? undefined : createStudioConversationRequests({
+    binding: studioConversationBinding,
+    readInstance: async input => (await studio()).readInstance(input),
+    prepareChanges: async input => (await studio()).prepareInstanceChanges(input),
+  })
   let trials
   const getTrials = () => {
     if (codexDesktop) throw new Error('Codex desktop Studio trial execution is not verified yet.')
     if (options.studioTrial) throw new Error('Nested Studio trials are disabled. Return to the originating Studio.')
     return trials ??= createStudioTrials({ stateRoot: options.stateRoot, kitRoot: options.kitRoot,
-      readInstalledKit: () => project.installedKit,
+      readInstalledKit: () => project.contentLibrary.loadInstalled(),
       readInstalledBundle: pin => project.contentLibrary.store.resolveBundle(pin), connection, startCompanion,
       parentOrigin: origin,
       companionOptions: { host, nativeCwd, transcriptPath: options.transcriptPath, staticRoot, indexPath: options.indexPath, codexRemote: options.codexRemote, codexDesktop: options.codexDesktop, devFrontend: options.devFrontend },
@@ -232,40 +240,6 @@ export async function startCompanion(options) {
       .map(run => ({ skill: run.skill, artifactFile: run.artifactFile ?? null })),
     ...(native.activeMainBundles ?? []).map(run => ({ skill: run.skill, artifactFile: null })),
   ]
-  const panelDrafts = new ProjectContentPanelGuard(project.project.metadata.id)
-  const upgradeAdapter = options.contentUpgradeAdapter
-  const requireUpgradeAdapter = () => {
-    if (typeof upgradeAdapter?.assertProjectQuiescent !== 'function' || typeof upgradeAdapter?.verifyNativeConfinement !== 'function') {
-      throw new Error('This native host has no verified project-wide draft/run guard and confined migration Producer adapter. Content upgrade is unavailable; current project pins and files are unchanged.')
-    }
-    return upgradeAdapter
-  }
-  const contentMigration = project.createContentMigration({
-    async assertQuiescent() {
-      const adapter = requireUpgradeAdapter()
-      panelDrafts.assertQuiescent()
-      const native = await nativeRuns.read()
-      if (native.activeMainBundles.length || native.executionAttempts.some(run => ['queued', 'working'].includes(run.phase))) {
-        throw new Error('Settle the running native Producer/Worker/main Bundle before upgrading.')
-      }
-      const states = await reviews.readReviewStatus({ workspace: await project.readWorkspace(), activeWork: observedWork(native) })
-      if (states.some(review => ['running', 'unknown'].includes(review.status) || review.nativeStatus === 'unknown')) {
-        throw new Error('Settle the native background review before upgrading.')
-      }
-      // Hosts with additional project-wide execution/draft authorities must supply their actual guard.
-      await adapter.assertProjectQuiescent(project.project.metadata.id)
-    },
-    async verifyNativeProducer(proof, candidateRoot) {
-      const adapter = requireUpgradeAdapter()
-      const binding = await resolveRun(proof)
-      if (binding.parentRunId !== connection.threadId) throw new Error('Content migration must belong to this exact main conversation.')
-      const log = await verifyChild({ ...binding, projectRoot: nativeCwd })
-      if (log.recordedStatus !== 'completed') throw new Error('Wait for the real native migration Producer to finish before adopting.')
-      const instructions = log.rows.filter(row => row.role === 'user').map(row => row.text).join('\n')
-      if (!instructions.includes(candidateRoot)) throw new Error('Native migration receipt does not identify the exact isolated candidate.')
-      await adapter.verifyNativeConfinement(binding, candidateRoot)
-    },
-  })
   const reviewStatus = async (workspace, native) => {
     workspace ??= await project.readWorkspace()
     if (!workspace.access?.writable) return []
@@ -387,11 +361,6 @@ export async function startCompanion(options) {
           return send(response, 200, Object.hasOwn(params, 'knownRevision')
             ? workspacePollResult(presentation, params.knownRevision) : presentation)
         }
-        if (method === 'recoverContentUpgrade') {
-          const receipt = await contentMigration.recover()
-          await project.refreshAccess()
-          return send(response, 200, { recovered: receipt ?? null })
-        }
         // Presentation refresh already rechecks metadata and publication. Full
         // Git-open validation belongs to operations, not every visible tick.
         // Save/send/readGit own fresh full validation inside their operation (save also
@@ -417,43 +386,10 @@ export async function startCompanion(options) {
           'bindReviewRun', 'submitReview', 'decideAdvisory', 'claimReviewAction', 'settleReviewAction', 'readReview', 'readReviewAction', 'selectReviewAction']
         if (kitOperations.includes(method) && !ownsAccessCheck) await project.requireWritable()
         if (method === 'info') return send(response, 200, { host, threadId: connection.threadId, projectName: project.project.metadata.name,
+          ...(studioConversationRequests ? { studioConversation: studioConversationBinding } : {}),
           ...(trialEmbedOrigin === undefined ? {} : { trialPanel: { trialId: options.trialInput.id, parentOrigin: trialEmbedOrigin,
             ...(options.trialInput.locale === undefined ? {} : { locale: options.trialInput.locale }) } }) })
         if (method === 'reloadKit') return send(response, 200, await project.reloadKit())
-        if (method === 'observePanelDraft') {
-          panelDrafts.observe(params)
-          return send(response, 200, { observed: true })
-        }
-        if (method === 'prepareContentUpgrade') {
-          await project.requireWritable()
-          return send(response, 200, await contentMigration.prepare(params.target))
-        }
-        if (['readContentUpgradeDefinition', 'listContentUpgradeFiles', 'readContentUpgradeFile', 'writeContentUpgradeFile', 'validateContentUpgrade'].includes(method)) {
-          requireUpgradeAdapter()
-          const candidate = await contentMigration.candidate(params.id)
-          if (method === 'readContentUpgradeDefinition') return send(response, 200, await candidate.readDefinition(params.side, params.offset, params.resource))
-          if (method === 'listContentUpgradeFiles') return send(response, 200, { files: await candidate.list() })
-          if (method === 'readContentUpgradeFile') return send(response, 200, await candidate.read(params.path, params.offset))
-          if (method === 'writeContentUpgradeFile') {
-            if (typeof params.content !== 'string') throw new Error('Candidate content must be UTF-8 text.')
-            await candidate.write(params.path, params.content)
-            return send(response, 200, { candidateUpdated: true })
-          }
-          candidate.assertDefinitionsRead()
-          try {
-            await contentMigration.validateCandidate(params.id, params.evidence)
-            return send(response, 200, { accepted: true, published: false })
-          } catch (error) {
-            return send(response, 200, { accepted: false, diagnostics: [String(error.message ?? error)],
-              next: 'Repair this candidate in the same attached native Agent. Do not change saved facts to satisfy a validator.' })
-          }
-        }
-        if (method === 'finishContentUpgrade') {
-          (await contentMigration.candidate(params.id)).assertDefinitionsRead()
-          const receipt = await contentMigration.finish(params.id, params.native, params.evidence)
-          await project.refreshAccess()
-          return send(response, 200, await withReviewStatus({ ...receipt, commit: receipt.checkpoint }))
-        }
         if (method === 'readGraph') {
           try {
             const result = await knowledgeReads.read(project.project.metadata.id, () => knowledge.readGraph(), () => knowledge.recoveryStatus())
@@ -548,7 +484,10 @@ export async function startCompanion(options) {
           try {
             const result = await connection.probe()
             return send(response, 200, { status: ['available', 'unavailable', 'unknown'].includes(result?.status) ? result.status : 'unknown' })
-          } catch { return send(response, 200, { status: 'unavailable' }) }
+          } catch (error) {
+            const receipt = notificationErrorResponse(error)
+            return send(response, 200, { status: 'unavailable', ...(receipt?.delivery === 'not-submitted' ? receipt : {}) })
+          }
         }
         const trialMethods = { studioTrialStart: 'start', studioTrialRead: 'read', studioTrialList: 'list', studioTrialStop: 'stop', studioTrialRemove: 'remove' }
         if (method === 'submitTrialInput') return send(response, 200, await trialInputGate.submit(params))
@@ -557,21 +496,44 @@ export async function startCompanion(options) {
           return send(response, 200, await service[trialMethods[method]](method === 'studioTrialStart' ? params : params.id))
         }
         const studioMethods = { studioWorkspace: 'workspace', studioKit: 'readKitWorkspace', studioBundle: 'readBundleWorkspace', studioFile: 'readBundleFile',
-          studioInstanceList: 'listInstances', studioInstanceRead: 'readInstance', studioInstanceCopy: 'copyInstance',
+          studioInstanceList: 'listInstances', studioInstanceRead: 'readInstance', studioInstanceCopy: 'copyInstance', studioInstanceCreate: 'createInstance',
+          studioInstanceImportSources: 'importInstanceSources',
+          studioInstanceEditCurrent: 'editCurrentInstance',
           studioInstanceRename: 'renameInstance', studioInstanceRemove: 'removeInstance', studioInstanceFile: 'readInstanceFile',
           studioInstanceSave: 'saveInstanceFile', studioInstancePreview: 'previewInstance',
+          studioInstancePrepareChanges: 'prepareInstanceChanges', studioInstanceSaveChanges: 'saveInstanceChanges',
           studioInstanceMounts: 'updateInstanceMounts',
           studioKitFiles: 'readKitFiles', studioKitFile: 'readKitFile',
           studioInstalledPreview: 'previewInstalledPanel',
-          studioDraftCreate: 'createPanelDraft', studioDraftList: 'listPanelDrafts', studioDraftRead: 'readPanelDraft',
-          studioDraftSave: 'savePanelDraft', studioDraftPreview: 'previewPanelDraft', studioDraftConfirm: 'confirmPanelDraft', studioDraftFork: 'forkPanelDraft',
-          studioKitDraftCreate: 'createKitDraft', studioKitDraftList: 'listKitDrafts', studioKitDraftRead: 'readKitDraft',
-          studioKitDraftSave: 'saveKitDraft', studioKitDraftValidate: 'validateKitDraft', studioKitDraftPreview: 'previewKitDraft',
-          studioKitDraftConfirm: 'confirmKitDraft', studioKitDraftFork: 'forkKitDraft',
-          studioContentExport: 'exportContentArchive', studioContentImport: 'prepareContentImport',
-          studioContentImportRead: 'readContentImport', studioContentImportList: 'listContentImports',
-          studioContentImportAdopt: 'adoptContentImport' }
-        if (Object.hasOwn(studioMethods, method)) return send(response, 200, await studio[studioMethods[method]](params))
+          studioContentExport: 'exportContentArchive', studioContentReadArchive: 'readArchive' }
+        if (method === 'studioAuthoringPrepareChanges') {
+          if (!studioConversationRequests) throw Error('Studio authoring is unavailable in a trial service.')
+          const candidate = await studioConversationRequests.prepareForConversation(params)
+          const url = new URL(browserAccess === 'local' ? `${origin}${browserBase}` : `${origin}/`)
+          url.searchParams.set('view', 'studio')
+          url.searchParams.set('presentation', 'conversation')
+          url.searchParams.set('studioTarget', JSON.stringify(candidate.authoring.studio))
+          url.searchParams.set('studioRequest', candidate.authoring.requestId)
+          return send(response, 200, { ...candidate, authoring: { ...candidate.authoring, url: url.href } })
+        }
+        if (method === 'studioAuthoringCandidateList' || method === 'studioAuthoringCandidateRead') {
+          if (!studioConversationRequests) throw Error('Studio authoring is unavailable in a trial service.')
+          return send(response, 200, await studioConversationRequests[method === 'studioAuthoringCandidateList' ? 'list' : 'read'](params))
+        }
+        if (Object.hasOwn(studioMethods, method)) {
+          if (Object.hasOwn(params, 'authoringRequestId')) {
+            if (method !== 'studioInstancePrepareChanges' || !studioConversationRequests) throw Error('Only prepareChanges can associate a Studio authoring request.')
+            return send(response, 200, await studioConversationRequests.prepare(params))
+          }
+          return send(response, 200, await (await studio())[studioMethods[method]](params))
+        }
+        if (method === 'sendPrompt' && Object.hasOwn(params, 'studio')) {
+          if (!studioConversationRequests || Object.keys(params).some(key => !['text', 'requestId', 'studio', 'context'].includes(key))
+            || typeof params.text !== 'string' || !params.text.trim() || Buffer.byteLength(params.text) > 32768) throw Error('Invalid Studio conversation request.')
+          const target = await studioConversationRequests.register(params)
+          return send(response, 200, await project.sendPrompt({ text: params.text, requestId: params.requestId, saved: [], studio: target,
+            verifyStudio: () => studioConversationRequests.read({ requestId: params.requestId, studio: params.studio }) }))
+        }
         if (method === 'updateSettings') return send(response, 200, await settings.write(params))
         if (method === 'readReview') return send(response, 200, reviewRequest)
         if (method === 'prepareReview' || method === 'prepareReviews') {
@@ -711,6 +673,7 @@ export async function startCompanion(options) {
       return studioTrialEvidence({ id, projectId, owners: nativeRuns.getTrialBindings(source.bundle.name),
         attempts: native.executionAttempts, mainLog: await transcript?.read() })
     }, get lastAuthenticatedActivityAt() { return lastAuthenticatedActivityAt }, async close() {
+    studioConversationRequests?.close()
     let trialCloseError
     try { if (trials) await (await trials).close() } catch (error) { trialCloseError = error }
     connection.close?.()

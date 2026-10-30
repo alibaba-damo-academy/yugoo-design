@@ -204,7 +204,7 @@ export function RecordBoard(props: { node: ComponentNode; manifest: PanelManifes
         counts={t(binding.group ? 'boardMapCounts' : 'boardItemCounts', { records: [...groups.values()].reduce((sum, entries) => sum + entries.length, 0), groups: groups.size })}>
         {binding.rejected ? <PanelSelect aria-label={t('recordFilter')} value={filter} onValueChange={value => setFilter(value as typeof filter)}
           options={[{ value: 'active', label: t('activeRecords') }, { value: 'rejected', label: t('rejectedRecords') }, { value: 'all', label: t('allRecords') }]} /> : null}</PanelCanvasToolbar><BoardMap groups={groups} binding={binding} onSelect={open} label={node.title ?? definition.title} manifest={manifest} section={section} /></div>}>
-    <PanelWorkspace guidance={node.guidance ?? node.description} autoSaveId={`board:${manifest.panel_kind}:${node.id}`} sidebar={<>
+    <PanelWorkspace guidance={node.guidance} autoSaveId={`board:${manifest.panel_kind}:${node.id}`} sidebar={<>
       <PanelWorkspaceTree icon={sidebarIcon(node.sidebar_icon)} title={node.title ?? definition.title}>
         {[...groups].map(([name, entries]) => !binding.group ? entries.map(([id, record]) => <PanelWorkspaceTreeItem key={id} selected={selected === id} onSelect={() => open(id)}>{String(record[binding.label] || t('untitled'))}</PanelWorkspaceTreeItem>) : <PanelWorkspaceTreeGroup key={name} label={name} expanded={expanded[name] === true}
           onToggle={() => {

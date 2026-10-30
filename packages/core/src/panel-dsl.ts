@@ -30,7 +30,7 @@ export type SidebarIcon = (typeof SIDEBAR_ICONS)[number]
 export const CONTROL_KINDS = [
   'text', 'textarea', 'number', 'select', 'radio', 'list', 'multi_select',
   'record_select', 'record_multi_select', 'key_value', 'toggle', 'artifact_ref',
-  'rows', 'source_list', 'token_list', 'radio_custom', 'record_map', 'source_reference_map', 'color',
+  'data_table', 'rows', 'source_list', 'token_list', 'radio_custom', 'record_map', 'source_reference_map', 'color',
 ] as const
 export type ControlKind = (typeof CONTROL_KINDS)[number]
 
@@ -90,6 +90,28 @@ export interface RowColumn {
   /** `ref` column: options come from another skill panel's section. */
   options_from_panel?: PanelSectionRef
   format?: 'upper_identifier'
+}
+
+/** Authored mathematical reading surface; every value stays in declared fields. */
+export interface MathEntriesBinding {
+  field: string
+  formula: string
+  meaning: string
+  title?: string
+  source?: string
+  details?: readonly string[]
+}
+export interface MathDocumentBinding {
+  heading: string
+  introduction?: string
+  notes?: string
+  complete?: string
+  symbols?: MathEntriesBinding
+  statements: MathEntriesBinding
+  /** Read-only landed output and recorded checks, never execution controls. */
+  output?: { file: string; format?: string }
+  checks?: { status: string; summary: string; evidence?: string }
+  provenance?: readonly string[]
 }
 
 /** Finite record-form composition; references retain the section's canonical bindings. */
@@ -356,7 +378,8 @@ export interface ComponentNode {
   /** Authored related-record table: cells reuse the declared field editors and
    * canonical collection. No row conversion or generated-panel write grant. */
   record_table?: { columns: readonly { fields: readonly string[]; label?: string }[] }
-  /** Generic graph bindings; all sections belong to this Panel. */
+  /** Declared references for reference_graph, or contextual records on a
+   * participant relation_graph. All sections belong to the same workspace. */
   references?: {
     nodes: Array<{ source: string; label_field: string; label_scope?: 'fields' | 'record'; description_field?: string; kind_field?: string; icon?: SidebarIcon;
       /** Static enum-value decorations. No name guessing or external images. */
@@ -423,8 +446,18 @@ export interface ComponentNode {
   }
   /** Pivot a declared rows field without interpreting its business values. */
   matrix?: { field: string; row: string; column: string; value: string }
+  /** Authored dynamic-field table in the selected record. */
+  table?: { field: string }
+  /** Read explanations beside LaTeX, with optional same-record editing. */
+  math?: MathDocumentBinding
   /** Preview an existing artifact reference, never an arbitrary URL. */
-  artifact?: { field: string }
+  artifact?: {
+    field: string
+    /** Inline all artifacts explicitly referring to the selected parent record. */
+    reference_field?: string
+    /** Saved plain-text reading guidance, not executable artifact content. */
+    explanation_field?: string
+  }
   /** Bundle-owned artifact paths. The auto Panel validator pins these to the current inventory. */
   paths?: readonly string[]
   /** A schema-declared scalar field used only to group records in the view. */
@@ -593,6 +626,7 @@ export function validatePanelManifest(manifest: PanelManifest): string[] {
     if (!(CONTROL_KINDS as readonly string[]).includes(field.control)) {
       errors.push(`field "${field.key}" has unknown control "${String(field.control)}"`)
     }
+    if (field.control === 'data_table' && ['columns', 'options', 'item_fields', 'max_rows', 'options_from_panel', 'options_from_section'].some(key => field[key] !== undefined)) errors.push(`field ${field.key}: data_table uses saved column definitions, not static editor options`)
     const choiceControl = ['select', 'radio', 'multi_select', 'record_select', 'record_multi_select', 'token_list', 'radio_custom'].includes(field.control)
     if (field.choice_layout !== undefined && (!['radio', 'radio_custom', 'multi_select'].includes(field.control)
       || !['column', 'row_wrap', 'row_scroll'].includes(field.choice_layout))) errors.push(`field ${field.key}: invalid choice_layout`)
@@ -1279,6 +1313,61 @@ export function validatePanelManifest(manifest: PanelManifest): string[] {
           return field?.control !== 'record_select' || field.readonly || targets.length !== family.length || family.some(value => !targets.includes(value))
         })) errors.push(`${path}: navigation_hierarchy needs editable parent references over the workspace sources`)
     }
+    if (component.math !== undefined && component.component !== 'math_document') errors.push(`${path}: math belongs to math_document`)
+    if (component.component === 'math_document') {
+      const config = component.math
+      if (!workspace?.includes(component.source ?? '') || !config || typeof config !== 'object' || Array.isArray(config)) {
+        errors.push(`${path}: math_document requires a workspace source and math bindings`)
+      } else {
+        if (Object.keys(config).some(key => !['heading', 'introduction', 'notes', 'complete', 'symbols', 'statements', 'output', 'checks', 'provenance'].includes(key))) errors.push(`${path}: unknown math binding`)
+        const used = new Set<string>()
+        const bind = (key: unknown, controls: readonly string[]) => {
+          const field = typeof key === 'string' && isSafeDottedPath(key) && !key.includes('.') ? fieldOf(component.source, key) : undefined
+          if (!field || field.hidden || !controls.includes(field.control) || used.has(String(key))) errors.push(`${path}: math needs distinct declared visible ${controls.join('/')} fields (${String(key)})`)
+          used.add(String(key))
+          return field
+        }
+        bind(config.heading, ['text'])
+        for (const key of ['introduction', 'notes', 'complete'] as const) if (config[key] !== undefined) bind(config[key], ['text', 'textarea'])
+        for (const key of ['symbols', 'statements'] as const) {
+          const rows = config[key]
+          if (rows === undefined && key === 'symbols') continue
+          if (!rows || typeof rows !== 'object' || Array.isArray(rows)) { errors.push(`${path}: math ${key} needs row bindings`); continue }
+          if (Object.keys(rows).some(key => !['field', 'formula', 'meaning', 'title', 'source', 'details'].includes(key))) errors.push(`${path}: unknown math row binding`)
+          const field = bind(rows.field, ['rows'])
+          if (!field?.columns?.length || field.columns.some(column => !['text', 'textarea'].includes(column.control))) errors.push(`${path}: math entries require text/textarea columns`)
+          if (rows.details !== undefined && (!isStringList(rows.details) || rows.details.length > 6)) errors.push(`${path}: math details must be a list of up to six columns`)
+          const columns = [rows.formula, rows.meaning, rows.title, rows.source, ...(Array.isArray(rows.details) ? rows.details : [])].filter(value => value !== undefined)
+          if (typeof rows.formula !== 'string' || typeof rows.meaning !== 'string' || new Set(columns).size !== columns.length
+            || columns.some(key => !field?.columns?.some(column => column.key === key && ['text', 'textarea'].includes(column.control)))) errors.push(`${path}: math row bindings need distinct declared text columns`)
+        }
+        const readonlyBind = (key: unknown, controls: readonly string[]) => {
+          const field = bind(key, controls)
+          if (field && field.readonly !== true) errors.push(`${path}: math output, checks and provenance fields must be readonly`)
+        }
+        for (const [key, allowed] of [['output', ['file', 'format']], ['checks', ['status', 'summary', 'evidence']]] as const) {
+          const group = config[key]
+          if (group === undefined) continue
+          if (!group || typeof group !== 'object' || Array.isArray(group) || Object.keys(group).some(name => !(allowed as readonly string[]).includes(name))) {
+            errors.push(`${path}: invalid math ${key} bindings`); continue
+          }
+          if (key === 'output') {
+            const output = config.output!
+            readonlyBind(output.file, ['artifact_ref'])
+            if (output.format !== undefined) readonlyBind(output.format, ['text'])
+          } else {
+            const checks = config.checks!
+            readonlyBind(checks.status, ['select'])
+            readonlyBind(checks.summary, ['text', 'textarea'])
+            if (checks.evidence !== undefined) readonlyBind(checks.evidence, ['text', 'textarea'])
+          }
+        }
+        if (config.provenance !== undefined) {
+          if (!isStringList(config.provenance)) errors.push(`${path}: math provenance must list declared readonly fields`)
+          else for (const key of config.provenance) readonlyBind(key, ['text', 'textarea', 'artifact_ref'])
+        }
+      }
+    }
     if (component.component === 'record_related_editor') {
       const reference = fieldOf(component.source, component.bindings?.reference)
       const referenceTargets = reference?.options_from_sections ?? (reference?.options_from_section ? [reference.options_from_section] : [])
@@ -1515,7 +1604,7 @@ export function validatePanelManifest(manifest: PanelManifest): string[] {
             && (!/^[a-zA-Z][\w-]*$/u.test(part) || ['__proto__', 'constructor', 'prototype'].includes(part)))))) {
       errors.push(`${path}: related_artifacts needs safe dotted path patterns`)
     }
-    if (['record_inspector', 'relation_graph', 'reference_graph', 'record_matrix', 'record_artifact'].includes(component.component) && !scope) {
+    if (['record_inspector', 'relation_graph', 'reference_graph', 'record_matrix', 'data_table', 'record_artifact'].includes(component.component) && !scope) {
       errors.push(`${path}: ${component.component} requires record_workspace`)
     }
     if (component.component === 'record_artifact') {
@@ -1524,9 +1613,24 @@ export function validatePanelManifest(manifest: PanelManifest): string[] {
         && field.key === component.artifact?.field && field.control === 'artifact_ref')) {
         errors.push(`${path}: artifact must bind a declared artifact_ref field`)
       }
+      const reference = component.artifact?.reference_field
+      if (reference !== undefined) {
+        const field = fields.find((field): field is EditorField => isEditorField(field)
+          && field.key === reference && field.applies_to?.includes(component.source ?? '') === true)
+        if (!field || field.hidden || field.visible_when || field.control !== 'record_select'
+          || !scope?.includes(field.options_from_section ?? '') || field.options_from_section === component.source) {
+          errors.push(`${path}: artifact reference_field must bind a record_select to another workspace section`)
+        }
+      }
+      const explanation = component.artifact?.explanation_field
+      if (explanation !== undefined && !fields.some(field => isEditorField(field) && field.key === explanation
+        && field.applies_to?.includes(component.source ?? '') && !field.hidden && !field.visible_when
+        && ['text', 'textarea'].includes(field.control))) {
+        errors.push(`${path}: artifact explanation_field must bind declared visible text`)
+      }
     }
-    if (component.references !== undefined && component.component !== 'reference_graph') errors.push(`${path}: references belongs to reference_graph`)
-    if (component.component === 'reference_graph') {
+    if (component.references !== undefined && !['reference_graph', 'relation_graph'].includes(component.component)) errors.push(`${path}: references belongs to a reference or participant relation graph`)
+    if (component.component === 'reference_graph' || (component.component === 'relation_graph' && component.references !== undefined)) {
       const bindings = component.references
       if (!bindings || !Array.isArray(bindings.nodes) || !bindings.nodes.length || !Array.isArray(bindings.links)) {
         errors.push(`${path}: reference_graph needs nodes and links`)
@@ -1605,7 +1709,15 @@ export function validatePanelManifest(manifest: PanelManifest): string[] {
           }
         }
       }
-      if (component.graph !== undefined || component.children?.length) errors.push(`${path}: reference_graph cannot own editable graph bindings or children`)
+      if (component.component === 'reference_graph' && (component.graph !== undefined || component.children?.length)) errors.push(`${path}: reference_graph cannot own editable graph bindings or children`)
+      if (component.component === 'relation_graph') {
+        const primary = Array.isArray(bindings?.nodes) ? bindings.nodes.find(node => node?.source === component.graph?.nodes) : undefined
+        if (!component.graph?.participants || !primary || primary.label_field !== component.graph.label_field
+          || (Array.isArray(bindings?.nodes) && bindings.nodes.some(node => node?.source === component.graph?.edges))
+          || bindings?.layout !== undefined || component.children?.length) {
+          errors.push(`${path}: relation references need participants, the same primary node label, no relation-section nodes, layout or children`)
+        }
+      }
     }
     if (component.component === 'relation_graph') {
       const graph = component.graph
@@ -1742,6 +1854,15 @@ export function validatePanelManifest(manifest: PanelManifest): string[] {
         }
       }
     }
+    if (component.table !== undefined && component.component !== 'data_table') errors.push(`${path}: table binding requires data_table`)
+    if (component.component === 'data_table') {
+      const binding = component.table
+      if (!scope?.includes(component.source ?? '') || !binding || typeof binding !== 'object'
+        || Object.keys(binding).some(key => key !== 'field')
+        || !ownsField(component.source, binding.field)
+        || !fields.some(field => isEditorField(field) && field.key === binding.field && field.control === 'data_table' && field.applies_to?.includes(component.source ?? '')))
+        errors.push(`${path}: data_table requires a declared data_table field in its workspace source`)
+    }
     if (component.component === 'record_matrix') {
       const matrix = component.matrix
       if (!scope?.includes(component.source ?? '')) errors.push(`${path}: matrix source must belong to workspace`)
@@ -1828,3 +1949,6 @@ export function parsePanelManifest(text: string): PanelManifest {
   }
   return manifest
 }
+
+export { DATA_TABLE_TYPES, DATA_TABLE_LIMITS, dataTableIssues, dataTableCellIssue, dataTableId, type DataTableValue, type DataTableColumn, type DataTableType } from './data-table.ts'
+export { queryPanelAuthoringReference } from './panel-authoring-reference.ts'

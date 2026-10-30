@@ -3,11 +3,29 @@ import { test } from 'node:test'
 import { readFileSync } from 'node:fs'
 import { parse } from 'yaml'
 import { apply } from '../src/dsh-design-execution-plugin.ts'
+import { registerDesignFileWorkerDispatcher } from '../src/dsh-file-worker-agent.ts'
 
 const limits = {
   maxArtifactInputFiles: 10, maxArtifactInputPathBytes: 1024,
   maxArtifactInputFileBytes: 1024, maxArtifactInputTotalBytes: 10240,
 }
+
+test('unknown runtime shapes fail closed and a legacy start failure never retries through the factory', async () => {
+  for (const subagents of [undefined, {}, { startActivation() {} }, { start: 'not callable', registerProvider() {} }]) {
+    assert.throws(() => registerDesignFileWorkerDispatcher({ subagents }), /unavailable|unsupported/)
+  }
+  let starts = 0, creates = 0
+  const dispatcher = registerDesignFileWorkerDispatcher({ subagents: {
+    registerProvider: () => () => {},
+    start: async () => { starts++; throw Error('native start rejected') },
+  } })
+  await assert.rejects(dispatcher.start({ parent: { ctx: { agents: { create: () => { creates++ } } } },
+    signal: new AbortController().signal, label: 'bounded worker', prompt: [], maxDepth: 3,
+    inheritedToolNames: [], installWorkerTools() {} }), /native start rejected/)
+  assert.equal(starts, 1)
+  assert.equal(creates, 0)
+  dispatcher.dispose()
+})
 
 function rootFixture() {
   const tools = new Map()
@@ -15,7 +33,8 @@ function rootFixture() {
   const injections = []
   let unregisters = 0
   const ctx = {
-    design: {}, tools: { register: tool => tools.set(tool.name, tool) },
+    design: { registerClarityRuntime: () => () => {}, registerWorkspaceChangeListener: () => () => {} },
+    tools: { register: tool => tools.set(tool.name, tool) }, effect: () => {},
     on: () => () => {}, systemPrompt: { section: () => () => {} },
     inject: (names, callback) => { injections.push({ names, callback }) },
   }

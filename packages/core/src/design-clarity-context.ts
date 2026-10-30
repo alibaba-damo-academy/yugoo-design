@@ -5,7 +5,8 @@ import { createHash } from 'node:crypto'
 
 // These ordinary, logged controls resume the same saved scope; they do not
 // replace it. Keep their exact labels in sync with the shared Panel save entry.
-const PANEL_SAVE_CONTROLS = new Set(['保存并继续设计', 'Save and continue designing'])
+const PANEL_SAVE_CONTROLS = new Set(['保存并评估下一步', 'Save and assess next step',
+  '保存并继续设计', 'Save and continue designing'])
 
 /** Bounded conversational scope evidence, not execution or publication authority. */
 export function renderDesignClarityUserContext(events: readonly unknown[]): string | undefined {

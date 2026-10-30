@@ -10,6 +10,7 @@ export function apply(ctx: Context): void {
   attachPackagedCssAssetRoutes(ctx, fileURLToPath(new URL('.', import.meta.url)), [
     '/design-system-assets/dsh-design-panel-renderer/',
     '/design-system-assets/dsh-design-panel-client/',
+    '/design-system-assets/dsh-design-panel-sample-preview/',
   ])
 }
 

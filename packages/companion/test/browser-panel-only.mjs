@@ -96,11 +96,9 @@ try{
  // workspace without starting a trial or invoking the native conversation.
  const studio=await context.newPage();studio.on('pageerror',error=>failures.push(error.message))
  await studio.goto(f.server.url+'?view=studio')
- const importList=studio.waitForResponse(response=>response.request().postData()?.includes('studioContentImportList')===true)
- await studio.getByRole('button',{name:'内容归档',exact:true}).click()
- assert.equal((await importList).status(),200)
- await studio.locator('summary').filter({hasText:'归档 JSON'}).click()
- await studio.getByRole('textbox',{name:'归档 JSON',exact:true}).waitFor()
+ await studio.getByRole('button',{name:'导入',exact:true}).waitFor()
+ await studio.getByRole('button',{name:'导入',exact:true}).click()
+ await studio.locator('input[type=file]').waitFor({state:'attached'})
  assert.equal(f.messages.length,0,'opening Studio archives never runs or notifies a native agent')
 
  assert.equal(failures.length,0,failures.join('\n'))

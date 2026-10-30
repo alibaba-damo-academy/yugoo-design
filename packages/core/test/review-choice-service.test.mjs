@@ -9,7 +9,7 @@ const { default: DesignService } = await import('../src/design-service.ts')
 const { DesignJournalRegistry } = await import('../src/design-journal-registry.ts')
 const { parseSessionDesignAdvisories } = await import('../src/design-advisory-events.ts')
 const { registerKnowledgeOrchestrationTools } = await import('../src/dsh-knowledge-orchestration-tools.ts')
-const { officialAdvisoryProfile, OFFICIAL_ALIGNMENT_PROFILE, OFFICIAL_REFLECTION_PROFILE } = await import('../src/official-advisory-profiles.ts')
+const { officialAdvisoryProfile, OFFICIAL_ALIGNMENT_PROFILE, OFFICIAL_REFLECTION_PROFILE, OFFICIAL_GROUNDING_PROFILE } = await import('../src/official-advisory-profiles.ts')
 
 const input = { schemaVersion:1, runId:'review', resultId:'result', pins:[{source:'design-revision',revision:'1'}],facetRefs:['facts'] }
 const output = {schemaVersion:1,questions:[{id:'audience',facets:['facts'],decision:'Audience',question:'Who uses this?',rationale:'Different workflows',impact:'Navigation'}]}
@@ -105,4 +105,42 @@ test('project switching while an options read is pending cannot mix Kit and jour
     await assert.rejects(f.read(),/project changed/)
     await assert.rejects(f.select({...f.request,kind:'host-question'}),/project changed/)
   } finally {await f.close()}
+})
+
+test('Grounding details read by exact report id preserves receipts and cannot select another Bundle', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'grounding-read-service-'))
+  try {
+    const journals = new DesignJournalRegistry(() => root)
+    const kit = { name: 'fixture', version: '1.0', skills: ['design_style', 'page_design'].map(name => ({ name, version: '1.0' })) }
+    const profile = officialAdvisoryProfile(OFFICIAL_GROUNDING_PROFILE)
+    const advice = (runId, detail) => profile.project({ ...input, runId }, { schemaVersion: 1, inconsistencies: [{
+      id: 'GND-004', facets: ['page_design', 'design_style'], summary: detail,
+      authoritativeReference: 'design_files/page_design/pages/detail.html', correction: detail, affectedFacets: ['page_design', 'design_style'],
+    }] })
+    const previous = advice('previous', 'Change the sidebar layout.')
+    const current = advice('current', 'Fix ../tokens.css to ../../design_style/tokens.css.')
+    for (const advisory of [previous, current]) await journals.publish('scope', 'main', advisory)
+    const actions = current.actionSpec.targets.map(target => ({ actionId: `bundle:${target.skillName}`,
+      target: { kitName: kit.name, kitVersion: kit.version, skillName: target.skillName, bundleVersion: '1.0', entityRefs: target.entityRefs } }))
+    await journals.decide('scope', 'main', { advisoryId: current.id, decision: 'accepted' }, actions)
+    const service = { journals, kitForAgent: () => kit, selectionForAgent: () => ({ projectId: 'project', revision: 1 }),
+      withJournal: (_agent, fn) => fn('scope', 'main', { projectId: 'project' }) }
+    const before = await journals.read('scope', 'main')
+    const read = advisoryId => DesignService.prototype.reviewActionOptions.call(service, {}, advisoryId)
+    const options = await read(current.id)
+    assert.equal(options.entry.advisory.id, current.id)
+    assert.equal(options.entry.status, 'accepted')
+    assert.match(options.entry.advisory.items[0].detail, /tokens\.css/)
+    assert.doesNotMatch(options.entry.advisory.items[0].detail, /sidebar/)
+    assert.equal(options.entry.actionReceipts.length, 2)
+    assert.deepEqual(options.candidates, [], 'fixed targets expose no new choice authority')
+    assert.match((await read(previous.id)).entry.advisory.items[0].detail, /sidebar/)
+    await assert.rejects(read(current.items[0].id), /unknown advisory.*full advisoryId/)
+    await assert.rejects(DesignService.prototype.selectReviewAction.call(service, {}, {
+      advisoryId: current.id, acceptanceReceiptId: options.entry.acceptanceReceiptId, kind: 'bundle', skillName: 'page_design',
+      reason: 'Try to replace an existing target', projectId: 'project', selectionRevision: 1,
+      revision: options.revision, kitName: kit.name, kitVersion: kit.version,
+    }), /no agentic choice/)
+    assert.deepEqual(await journals.read('scope', 'main'), before, 'reads and rejected selection never mutate receipts or the journal')
+  } finally { await rm(root, { recursive: true, force: true }) }
 })

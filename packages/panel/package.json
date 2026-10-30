@@ -12,6 +12,10 @@
   "main": "lib/host.js",
   "types": "lib/host.d.ts",
   "exports": {
+    "./sample-preview": {
+      "types": "./lib/sample-preview.d.ts",
+      "default": "./lib/sample-preview.js"
+    },
     "./interpreter": {
       "types": "./lib/interpreter.d.ts",
       "default": "./lib/interpreter.js"
@@ -51,6 +55,9 @@
     }
   },
   "scripts": {
+    "test:sample-preview": "TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx --test test/sample-preview.test.mjs",
+    "test:browser-esm-peer:built": "node --test test/browser-esm-peer.test.mjs",
+    "test:sample-preview:built": "node --test test/sample-preview-package.test.mjs && PANEL_SAMPLE_PREVIEW_BUILT=1 TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx --test test/sample-preview.test.mjs",
     "test:host-entry": "node --test test/host-entry.test.mjs",
     "test:host-dock-geometry": "node --test test/host-dock-geometry.test.mjs && node smoke-host-dock-geometry.mjs",
     "test:dock-open-layout": "node --test test/dock-open-layout.test.mjs",
@@ -68,7 +75,10 @@
     "typecheck": "tsc --noEmit",
     "test:graph": "node --test test/graph-dependencies.test.mjs test/graph-layout.test.mjs test/graph-model.test.mjs test/graph-presentation.test.mjs",
     "test:graph:browser": "node smoke-graph-browser.mjs",
-    "test": "node --test test/host-entry.test.mjs && node smoke-dock-layout.mjs && node smoke-advisory-card.mjs && node smoke-advisory-sidebar-entry.mjs && node smoke-design-project-sidebar.mjs && node smoke-host-overlay-layering.mjs && pnpm run test:host-dock-geometry && node smoke-dock-session.mjs && pnpm run test:dock-open-layout && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-live-poll.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-execution-log-lifecycle.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-session-controller-adapter.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-next-step-question.mjs"
+    "test": "node --test test/host-entry.test.mjs && node smoke-dock-layout.mjs && node smoke-advisory-card.mjs && node smoke-advisory-sidebar-entry.mjs && node smoke-design-project-sidebar.mjs && node smoke-host-overlay-layering.mjs && pnpm run test:host-dock-geometry && node smoke-dock-session.mjs && pnpm run test:dock-open-layout && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-live-poll.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-execution-log-lifecycle.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-session-controller-adapter.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-next-step-question.mjs",
+    "test:component-packages": "node --import tsx --test test/component-package.test.mjs",
+    "test:related-artifacts": "TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --test test/related-artifact.test.mjs",
+    "test:workspace-layout:browser": "node test/workspace-layout-browser.mjs"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "*",
@@ -120,6 +130,7 @@
     "lib/**/*.d.ts",
     "lib/client.js",
     "lib/css-assets",
+    "lib/pica-static-workers-*.json",
     "LICENSE",
     "NOTICE",
     "THIRD_PARTY_NOTICES.md",
@@ -152,7 +163,9 @@
     "third-party/native/pako-2.0.3/zlib-README",
     "third-party/native/whiteboard-fonts/licenses/JetBrainsMono-OFL.txt",
     "third-party/native/whiteboard-fonts/licenses/source-han-sans-LICENSE.txt",
-    "third-party/native/whiteboard-fonts/manifest.json"
+    "third-party/native/whiteboard-fonts/manifest.json",
+    "third-party/native/katex-0.16.47/LICENSE",
+    "third-party/native/katex-0.16.47/SOURCE.md"
   ],
   "dependencies": {
     "@radix-ui/react-select": "2.3.7",
@@ -173,6 +186,7 @@
     "three": "0.186.0",
     "yaml": "^2.9.0",
     "@excalidraw/excalidraw": "0.18.1",
-    "bpmn-js": "18.24.0"
+    "bpmn-js": "18.24.0",
+    "katex": "0.16.47"
   }
 }

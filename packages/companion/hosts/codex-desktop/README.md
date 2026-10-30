@@ -12,7 +12,7 @@ registration, installed-package acceptance or support for other hosts.
 
 ## Install or update from npm
 
-Acquire an exact Companion release in a durable version directory using the
+Acquire an exact `yugoo-design` npm release in a durable version directory using the
 [shared installation entry](../../HOSTS.md#agent-led-installation-and-updates).
 Read the acquired package's actual `yugoo-design --help`; older releases may
 not expose the npm-backed Desktop route. From that installation's consumer
@@ -74,6 +74,10 @@ For an installed plugin, follow its
 [desktop entry](../../plugin/design-system/skills/design-panel/codex-desktop.md).
 The existing `$yugoo` and `design-panel` skills select that entry for Mac desktop;
 the CLI instructions remain specific to CLI conversations.
+
+### Development-only manual startup
+
+Installed users follow the desktop Skill above. The following commands are for isolated adapter development, not an extra step after plugin activation.
 
 Use an isolated project/state for development. Obtain the exact current
 `CODEX_THREAD_ID`, native cwd and `CODEX_APP_TOOLS_PIPE_PATH` from the executing

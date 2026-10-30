@@ -20,8 +20,6 @@ import { DOCK_CSS } from './styles.ts'
 import { observeHostDockGeometry, readHostDockGeometry, type HostDockGeometry } from './host-dock-geometry.ts'
 import './owned-styles.ts'
 import { DesignWorkspace, ReviewPolicyControl, type DesignRuntime, type DesignWorkspaceControls } from './workspace.tsx'
-import { usePanelDraftObservation } from './panel-draft-observation.tsx'
-import type { PanelDraftMessage } from '../panel-draft-lease.ts'
 import { equalWorkspaceEmission } from './types.ts'
 import { createWorkspacePollReader } from './workspace-poll-reader.ts'
 import type { WorkspacePollResult } from '../../../core/src/workspace-poll.ts'
@@ -162,7 +160,6 @@ async function unwrap<T>(endpoint: string, result: RemoteResult<T>): Promise<T> 
 
 /** Captured client services (single plugin instance; set during apply). */
 let runtime: (DesignRuntime & {
-  observePanelDraft: (sessionId: string, observation: PanelDraftMessage) => Promise<void>
   sessions: { currentProvideInfo: { subscribe(fn: () => void): () => void; getSnapshot(): ProvideInfo } }
 }) | undefined
 
@@ -517,7 +514,6 @@ function mountPanelShell(ctx: Context): void {
       designPanel: {
         admitSavedAssessment(id: string, request: import('../../../core/src/design-clarity-runtime.ts').SavedDesignAssessmentRequest):
           Promise<RemoteResult<import('../../../core/src/design-clarity-runtime.ts').SavedDesignAssessmentAdmission>>
-        observePanelDraft(id: string, observation: PanelDraftMessage): Promise<RemoteResult<{ observed: true }>>
         readWorkspace(id: string): Promise<RemoteResult<DesignPanelWorkspaceRead>>
         pollWorkspace(id: string, knownRevision: string | null): Promise<RemoteResult<WorkspacePollResult<DesignPanelWorkspaceRead>>>
         retainAutoPanel(id: string, request: { projectId: string; skill: string; sourceRevision: string; definitionRevision: string }): Promise<RemoteResult<{ retained: true }>>
@@ -559,7 +555,6 @@ function mountPanelShell(ctx: Context): void {
   const pendingInteractions = createPendingDesignInteractionSource(face.uiSession)
   const mountedRuntime: NonNullable<typeof runtime> = {
     ...createPanelProjectFolderActions(face.remote.session),
-    observePanelDraft: async (id, observation) => { await unwrap('designPanel/observePanelDraft', await face.remote.designPanel.observePanelDraft(id, observation)) },
     nativePanels,
     readReviewPolicy: async id => unwrap('designPanel/readReviewPolicy', await face.remote.designPanel.readReviewPolicy(id)),
     updateReviewPolicy: async (id, policy) => unwrap('designPanel/updateReviewPolicy', await face.remote.designPanel.updateReviewPolicy(id, policy)),
@@ -1129,10 +1124,6 @@ function DockContent(): ReactElement | null {
   const geometry = useHostDockGeometry(info.sessionId)
   const workspace = usePanelWorkspace(info.sessionId)
   const workspaceFailure = usePanelWorkspaceFailure(info.sessionId)
-  const drafts = usePanelDraftObservation(workspace?.projectId && info.sessionId
-    ? { key: `${info.sessionId}:${workspace.projectId}`, projectId: workspace.projectId } : undefined,
-    async message => { if (runtime && info.sessionId) await runtime.observePanelDraft(info.sessionId, message) })
-  const observeControls = drafts.observe
   if (runtime === undefined) return null
   const dockStyle = {
     '--dsh-design-dock-top': `${geometry.top}px`,
@@ -1168,10 +1159,8 @@ function DockContent(): ReactElement | null {
       <style>{DOCK_CSS}</style>
       <style>{ICON_GLYPH_CSS}</style>
       <div className='flex min-h-0 flex-1 flex-col'>
-        {drafts.notice}
         <div className='min-h-0 flex-1'>
           <DesignWorkspace
-            onControlsChange={observeControls}
             experienceAvailable
             design={workspace?.design}
             projectId={workspace?.projectId ?? null}

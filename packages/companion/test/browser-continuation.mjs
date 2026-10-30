@@ -11,7 +11,7 @@ const f = await fixture({ withTranscript: true, researchMode: 'main', serverOpti
   browserAccess: 'local', staticRoot: fileURLToPath(new URL('../dist', import.meta.url)),
   indexPath: fileURLToPath(new URL('../index.html', import.meta.url)),
 } })
-const browser = await chromium.launch({ headless: true })
+let browser
 const call = (method, params = {}) => callCompanion(f.server.connectionPath, { method, params })
 const state = { rounds: { 'R-001': { round_id: 'R-001', stage: 'identified', topic: 'Continuation evidence',
   directions: { 'D-001': { direction_id: 'D-001', title: 'Literature', research_points: ['Find primary evidence'] } },
@@ -19,6 +19,7 @@ const state = { rounds: { 'R-001': { round_id: 'R-001', stage: 'identified', top
 const errors = [], methods = [], sends = []
 const evidence = process.env.COMPANION_EVIDENCE
 try {
+  browser = await chromium.launch({ headless: true })
   await mkdir(join(f.options.projectRoot, 'design_files/research'), { recursive: true })
   const researchPath = join(f.options.projectRoot, 'design_files/research/research.json')
   await writeFile(researchPath, JSON.stringify(state))
@@ -153,4 +154,7 @@ try {
     checks: ['panel-only', 'full placement', 'Adjust focus + draft', 'dirty editor barrier', 'Later polling + collapse',
       'new invocation', 'unknown no replay', 'refresh no replay', 'bilingual action', 'read-only', 'trial exclusion', 'canonical unchanged'],
     boundary: 'built client + real Core/Companion; native transport mocked; no installed Host validation' }, null, 2))
-} finally { await browser.close(); await f.close() }
+} finally {
+  try { await browser?.close() }
+  finally { await f.close() }
+}

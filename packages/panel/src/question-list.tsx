@@ -455,17 +455,19 @@ export function StandardQuestionWorkspace(props: StandardQuestionWorkspaceProps)
       autoSaveId='question-workspace'
       sidebar={<PanelWorkspaceNavigation icon={sidebarIcon(props.sidebarIcon)} title={props.title ?? t('questions')} items={navItems} selectedId={group?.id ?? ''} onSelect={setSelected} />}
     >
-      <div className='dsh-question-workspace-sticky'>
-        <header className='dsh-question-workspace-header'>
-          <div>
-            <h2>{roundCopy.title ?? group?.label ?? props.title ?? t('questions')}</h2>
-            {roundCopy.description ? <p>{roundCopy.description}</p> : null}
-          </div>
-          <span>{visible.filter(standardQuestionAnswered).length}/{visible.length} {t('answered')}</span>
-        </header>
+      <div className='dsh-question-workspace-content'>
+        <div className='dsh-question-workspace-sticky'>
+          <header className='dsh-question-workspace-header'>
+            <div>
+              <h2>{roundCopy.title ?? group?.label ?? props.title ?? t('questions')}</h2>
+              {roundCopy.description ? <p>{roundCopy.description}</p> : null}
+            </div>
+            <span>{visible.filter(standardQuestionAnswered).length}/{visible.length} {t('answered')}</span>
+          </header>
+        </div>
+        {invalidRoundGroups.size > 0 ? <p role='alert'>{t('invalidQuestionCardGroup')}</p> : null}
+        <StandardQuestionList {...props} cardGroups={cardGroups} questions={visible} choiceActionExcludedIds={[...(props.choiceActionExcludedIds ?? []), ...(props.firstRoundIds ?? [])]} editable={props.editable && (!props.historyReadonly || group?.id === latest)} />
       </div>
-      {invalidRoundGroups.size > 0 ? <p role='alert'>{t('invalidQuestionCardGroup')}</p> : null}
-      <StandardQuestionList {...props} cardGroups={cardGroups} questions={visible} choiceActionExcludedIds={[...(props.choiceActionExcludedIds ?? []), ...(props.firstRoundIds ?? [])]} editable={props.editable && (!props.historyReadonly || group?.id === latest)} />
     </PanelWorkspace>
   )
 }

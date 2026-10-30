@@ -1,8 +1,11 @@
 /** Server-render acceptance for the read-only Kit-first Studio React surface. */
 import assert from 'node:assert/strict'
+import test from 'node:test'
+import { createRequire } from 'node:module'
+import { controlStyleGaps, feedbackStyleGaps } from './control-style-coverage.mjs'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { StudioWorkspace, StudioWorkspaceController } from '../lib/index.js'
+import { StudioWorkspace, StudioWorkspaceController, STUDIO_WORKSPACE_CSS } from '../lib/index.js'
 
 const source = [
   '---', 'name: "web_app"', 'version: "1.0"', '---', '', '# Web App', '',
@@ -90,7 +93,41 @@ const controller = new StudioWorkspaceController(client)
 await controller.load()
 const render = () => renderToStaticMarkup(createElement(StudioWorkspace, { client, controller, locale: 'en' }))
 
-// Catalog history stays inside one installed identity; forks retain their own card.
+test('Studio control style coverage respects authored selectors and foreign-content owners', t => {
+  const { JSDOM } = createRequire(new URL('../../panel/package.json', import.meta.url))('jsdom')
+  const styleWindow = new JSDOM('').window
+  t.after(() => styleWindow.close())
+  // Inert documents retain the injected real CSS without JSDOM's older CSSOM
+  // discarding modern @container syntax. The helper parses it independently.
+  const gaps = (markup, css = STUDIO_WORKSPACE_CSS) => controlStyleGaps(new styleWindow.DOMParser().parseFromString(markup, 'text/html'), css)
+  const foreignContent = '.ygd-studio-live-pane-body, .ygd-studio-component-stage, .ygd-studio-markdown'
+  const html = render()
+  assert.deepEqual(gaps(html), [], 'the rendered Studio catalog controls have authored typography and appearance')
+  const controlFixture = body => `<section class="ygd-studio-workspace"><style>${STUDIO_WORKSPACE_CSS}</style>${body}</section>`
+  assert.deepEqual(gaps(controlFixture('<div class="ygd-studio-instance-menu"><div><button>Rename</button></div></div>')), [], 'context selectors style menu children without per-control classes')
+  assert.deepEqual(gaps(controlFixture('<button id="forgotten" disabled>Download</button><input id="native-file" type="file">')), ['button#forgotten: Download', 'input#native-file: '], 'box sizing, UA controls and state-only rules do not supply a shared control appearance')
+  assert.deepEqual(gaps(controlFixture('<button id="state-only" disabled>Action</button>'), `${STUDIO_WORKSPACE_CSS}\nbutton:disabled,button:focus-visible{font:inherit;padding:8px;background:red}`), ['button#state-only: Action'], 'disabled/focus-only declarations cannot mask a missing base style')
+  assert.deepEqual(gaps(controlFixture('<input id="file" type="file">'), `${STUDIO_WORKSPACE_CSS}\ninput[type=file]::file-selector-button{font:inherit;padding:6px;border:1px solid gray}`), [], 'a real file-selector-button author rule covers the native picker')
+  assert.deepEqual(gaps(controlFixture('<input type="file" hidden><button class="ygd-studio-btn-secondary">Choose archive</button>')), [], 'a hidden native picker leaves the visible trigger subject to coverage')
+  assert.deepEqual(gaps(controlFixture(`<button class="ygd-studio-btn-secondary">Studio action</button>${foreignContent.split(', ').map(selector => `<div class="${selector.slice(1)}"><button>Foreign button</button><input type="file"></div>`).join('')}<iframe srcdoc="&lt;button&gt;User page&lt;/button&gt;"></iframe>`)), [], 'embedded Panels, previews and reading HTML retain their own control owners')
+  assert.deepEqual(gaps(controlFixture('<section class="ygd-studio-trial-result"><button>Studio footer</button></section>')), ['button: Studio footer'], 'Studio-owned trial footer actions are not excluded with the foreign iframe')
+})
+
+// Keep legacy presentation assertions intact and independently selectable.
+test('Studio feedback style coverage detects bare diagnostics and ineffective style declarations', t => {
+  const { JSDOM } = createRequire(new URL('../../panel/package.json', import.meta.url))('jsdom')
+  const dom = new JSDOM(''); t.after(() => dom.window.close())
+  const gaps = (body, css = STUDIO_WORKSPACE_CSS) => feedbackStyleGaps(new dom.window.DOMParser().parseFromString(`<section class="ygd-studio-workspace">${body}</section>`, 'text/html'), css)
+  assert.deepEqual(gaps('<p role="alert">Invalid source</p><p role="status">Cannot save</p>'), ['p[role=alert]: Invalid source', 'p[role=status]: Cannot save'], 'the reported AI candidate failure must not evade coverage')
+  assert.deepEqual(gaps('<p role="alert" class="forgotten" style="color:red;padding:8px">Invalid source</p>'), ['p[role=alert]: Invalid source'], 'inline cosmetics and a class without a matching owned rule do not establish shared feedback')
+  assert.deepEqual(gaps('<p role="alert" class="ygd-studio-error">Import failed</p><p role="status" class="ygd-studio-feedback">Imported</p>'), [], 'existing shared feedback rules supply explicit typography and spacing')
+  assert.deepEqual(gaps('<p role="alert" class="notice">Failure</p>', '.wrong-host .notice{font:inherit;padding:8px}.notice:hover{font:inherit;padding:8px}'), ['p[role=alert]: Failure'], 'wrong host ancestors and hover-only rules cannot hide the gap')
+  assert.deepEqual(gaps('<div class="ygd-studio-live-pane-body"><p role="alert">Preview failed</p></div>'), ['p[role=alert]: Preview failed'], 'the Studio preview wrapper does not hide its own error from feedback checks')
+  assert.deepEqual(gaps('<div hidden><p role="alert">Hidden</p></div><div class="ygd-studio-markdown"><p role="status">Authored document</p></div>'), [])
+})
+
+test('Studio catalog and source presentation baseline', async () => {
+// Installed sources share one identity card; explicit copies retain their own card.
 {
   const reads = [], versions = ['1.9', '1.10']
   const historyClient = { ...client,
@@ -109,14 +146,12 @@ const render = () => renderToStaticMarkup(createElement(StudioWorkspace, { clien
   const markup = () => renderToStaticMarkup(createElement(StudioWorkspace, { client: historyClient, controller: history }))
   assert.equal((markup().match(/class="ygd-studio-kit-card ygd-studio-library-card"/g) ?? []).length, 1)
   await history.selectKit('web_app', '1.9')
-  assert.match(markup(), /aria-label="Kit version"/)
-  assert.match(markup(), /value="1.10">1.10<\/option>[\s\S]*value="1.9" selected="">1.9/)
+  assert.doesNotMatch(markup(), /aria-label="Kit version"/)
   history.setSection('bundles')
   assert.equal((markup().match(/class="ygd-studio-kit-card ygd-studio-bundle-card"/g) ?? []).length, 2)
   assert.match(markup(), /2 Bundles/, 'the counter counts identities, not version cards')
   await history.openBundleWorkspace('questions', '1.9')
-  assert.match(markup(), /aria-label="Bundle version"/)
-  assert.match(markup(), /value="1.10">1.10<\/option>[\s\S]*value="1.9" selected="">1.9/)
+  assert.doesNotMatch(markup(), /aria-label="Bundle version"/)
   await history.openBundleWorkspace('questions', '1.10')
   assert.deepEqual(reads.at(-1), ['bundle', 'questions', '1.10'], 'history selection asks for the exact version')
   assert.equal(history.getSnapshot().bundleWorkspace.version, '1.10')
@@ -124,6 +159,8 @@ const render = () => renderToStaticMarkup(createElement(StudioWorkspace, { clien
 
 let html = render()
 const sharedCss = html.match(/<style>([\s\S]*?)<\/style>/)?.[1].replaceAll('&gt;', '>') ?? ''
+
+
 assert.match(sharedCss, /\.ygd-studio-content-header\{[^}]*min-height:48px;padding:8px 20px/, 'every Studio page shares the compact title-row baseline')
 assert.match(sharedCss, /\.ygd-studio-header-title-group\{[^}]*min-height:32px;min-width:0/, 'the title group retains a readable 32px row without fixed-height clipping')
 assert.match(sharedCss, /\.ygd-studio-header-title-group>\.ygd-studio-kitmark\{[^}]*width:32px;height:32px/, 'Kit, Bundle and local-copy title icons share one size')
@@ -152,13 +189,14 @@ assert.match(html, /ygd-studio-card-description"><div class="ygd-studio-markdown
 assert.match(html, /\.ygd-studio-kit-card\{[^}]*padding:15px;[^}]*gap:0;/, 'Kit, Bundle and local-copy cards share compact spacing')
 assert.match(html, /\.ygd-studio-kit-card-name\{[^}]*font-size:15px;/, 'catalog titles share the same type scale')
 assert.doesNotMatch(html, /\.ygd-studio-library-card[^}]*\{[^}]*font-size:18px|\.ygd-studio-library-card\{padding:/, 'Kits do not override shared density')
-assert.match(html, /Open →/, 'the demo card uses its compact Open action')
+assert.match(html, /class="ygd-studio-btn-secondary" type="button">Open<\/button>/, 'Open uses the shared neutral action without an arrow')
+assert.doesNotMatch(html, />Open →</)
 assert.match(html, /--ds-primary:#7c5af6/, 'the stylesheet uses the Yugoo purple brand accent, not its text color')
 assert.match(html, /--ds-primary-dark:#6849d8;--ds-primary-active:#5032bc/, 'brand interaction states follow Yugoo')
 assert.match(html, /height:34px;min-height:34px/, 'search has a bounded compact height')
 assert.match(html, /height:100%/, 'the standalone workspace fills its owning page while each pane scrolls independently')
 assert.match(html, /@media\(max-width:1023px\)/, 'the responsive sidebar drawer ships with the surface')
-assert.doesNotMatch(html, /type="search"/, 'the Kits page has no search control')
+assert.match(html, /class="ygd-studio-catalog-tools"[^>]*>[\s\S]*?type="search"/, 'Kit search stays in the shared left-hand catalog tools')
 assert.doesNotMatch(html, /ygd-studio-nav-link/, 'section links exist only in the sidebar')
 assert.doesNotMatch(html, /Test Lab/, 'the deferred Test Lab has no entry, not even a placeholder')
 console.log('the entry surface follows the demo navigation and card structure')
@@ -182,7 +220,7 @@ assert.match(html, /\.ygd-studio-kit-files-body\{padding:0;overflow:hidden\}/, '
 assert.match(html, />Source</, 'the complete source view is one toggle away')
 assert.match(html, /ygd-studio-file-tree-pane/, 'Kit files use the shared split-pane explorer')
 assert.match(html, /ygd-studio-file-info[\s\S]*About This Kit[\s\S]*Bilingual Kit introduction/, 'the file sidebar shows the complete Kit introduction')
-assert.match(html, /ygd-studio-file-heading[\s\S]*mindset\.md[\s\S]*ygd-studio-file-purpose/, 'standard file purpose follows its filename')
+assert.match(html, /ygd-studio-file-heading[\s\S]*title="Design mindset:[^"]+"[^>]*>mindset\.md/, 'standard file purpose is available on filename hover')
 assert.match(html, new RegExp(`${new TextEncoder().encode(source).length} bytes`), 'size moves to the document footer')
 const mindsetMetadata = html.match(/<details class="ygd-studio-file-metadata"([^>]*)>([\s\S]*?)<\/details>/)
 assert.ok(mindsetMetadata, 'Mindset metadata remains available in a separate disclosure')
@@ -220,13 +258,13 @@ controller.setKitTab('mounts')
 html = render()
 assert.match(html, /role="tabpanel" id="ygd-studio-kit-tabpanel" aria-labelledby="ygd-studio-tab-mounts"/)
 assert.match(html, /aria-label="Mounted Bundles"/)
-assert.match(html, /ygd-studio-source-id">questions</, 'the stable identifier stays separate from the display label')
+assert.match(html, /ygd-studio-source-id" title="questions">questions</, 'the stable identifier stays separate from the display label')
 assert.match(html, /ygd-studio-card-description"><div class="ygd-studio-markdown"><ul><li><strong>Capability<\/strong>: capture product intent\./, 'the mounts row renders the frontmatter description as Markdown')
 assert.doesNotMatch(html, /\*\*Capability\*\*/, 'raw Markdown markers never reach the row')
 assert.doesNotMatch(html, /Method body\./, 'the mounts row shows no Bundle body excerpt')
 assert.match(html, /Mounted reference/, 'Kit cards show mount mode; exact pins remain in mount management')
 assert.doesNotMatch(html, />Customize for Kit<|>Unmount<|>Mount Bundle</, 'unimplemented mount mutations are not presented as actions')
-assert.match(html, /Open →/, 'mounted Bundle opens using the same demo card action')
+assert.match(html, />Open<\/button>/, 'mounted Bundle keeps the shared arrow-free Open action')
 assert.doesNotMatch(html, /Resources: shared|shared\/reference\/a\.md \(4 bytes\)/, 'resource inventories never spill onto the mounts page')
 console.log('the mounts workplane is a read-only bundle list that opens Bundle workspaces')
 
@@ -340,8 +378,8 @@ try {
   html = renderToStaticMarkup(createElement(StudioWorkspace, { client, controller }))
   assert.match(html, /已安装套件/, 'card metadata follows the document language')
   assert.match(html, /中文套件简介/, 'the card introduction follows the document language')
-  assert.match(html, /管理领域方法与技能包挂载。/, 'the subtitle is localized')
-  assert.match(html, />打开 →</)
+  assert.match(html, /aria-label="搜索设计套件…"/, 'catalog search follows the current locale without restoring the removed subtitle')
+  assert.match(html, />打开<\/button>/)
   await controller.selectKit('web_app', '1.0')
   html = renderToStaticMarkup(createElement(StudioWorkspace, { client, controller }))
   assert.match(html, /套件文件|Kit Files/, 'the Kit source tab uses the current locale')
@@ -390,13 +428,6 @@ console.log('DESIGN STUDIO UI RENDER OK')
   assert.equal(translated.getSnapshot().bundleWorkspace.name, 'questions', 'display language never renames the Bundle identity')
 }
 
-{
-  const kitAuthoring = { client: { create: () => { throw new Error('render must not create') } }, renderPreview: () => createElement('div') }
-  await controller.selectKit('web_app', '1.0')
-  const markup = renderToStaticMarkup(createElement(StudioWorkspace, { client, controller, kitAuthoring }))
-  assert.match(markup, />Edit source<|>编辑原文</)
-  assert.doesNotMatch(markup, /ygd-studio-sidebar-item[^>]*>Kit working copies<|ygd-studio-sidebar-item[^>]*>Kit 工作副本</, 'only Kits and Bundles belong in the sidebar')
-  assert.doesNotMatch(render(), />Edit source<|>编辑原文</)
-}
 
-await import('./kit-draft-controller.test.mjs')
+
+})

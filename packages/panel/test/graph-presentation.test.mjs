@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 const { register } = await import('tsx/esm/api'); register()
-const { placeLabels, intersects } = await import('../src/client/graph-labels.ts')
+const { placeLabels, intersects, graphLabelRanks, shortGraphLabel } = await import('../src/client/graph-labels.ts')
 const { recordReach, nodeRadius } = await import('../src/client/graph-model.ts')
 test('production labels avoid each other, node obstacles and viewport boundaries', () => {
   const items = [{ id: 'a', x: 100, y: 100, w: 90, h: 24 }, { id: 'b', x: 110, y: 100, w: 90, h: 24 }]
@@ -24,4 +24,21 @@ test('reach counts other records, never contains or duplicate evidence or self e
   assert.equal(nodeRadius(graph.nodes[1], reach), 2)
   assert.equal(nodeRadius(graph.nodes[0], reach), Math.sqrt(15.25))
   assert.deepEqual(graph, before)
+})
+test('graph reading hints prefer records and linked fields without changing source content', () => {
+  const graph = { nodes: [
+    { id: 'plain', label: '备注', record: false },
+    { id: 'long', label: '确认到场人数并且核对签到记录后再开始', record: false },
+    { id: 'short', label: '现场协调', record: false },
+    { id: 'record', label: '活动安排', record: true },
+  ], edges: [
+    { from: 'record', to: 'plain', kind: 'contains' },
+    { from: 'long', to: 'short', kind: 'semantic' },
+  ] }
+  const before = structuredClone(graph)
+  assert.deepEqual([...graphLabelRanks(graph).keys()], ['record', 'short', 'long', 'plain'])
+  assert.equal(shortGraphLabel(graph.nodes[3], false, 3), '活动安排 · 3项')
+  assert.equal(shortGraphLabel(graph.nodes[1], false), '确认到场人数并且核…')
+  assert.equal(shortGraphLabel(graph.nodes[1], true), graph.nodes[1].label)
+  assert.deepEqual(graph, before, 'presentation must never rewrite canonical names, nodes or links')
 })

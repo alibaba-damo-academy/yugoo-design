@@ -44,7 +44,7 @@ test('example values are owned per request; editing them cannot mutate another e
 })
 
 test('showcase sizing follows the example root without extending the DSL or changing runtime workspace behavior', () => {
-  for (const [kind, layout] of [['schema_field', 'inline'], ['text_block', 'inline'], ['tabs', 'inline'], ['record_nav', 'navigation'], ['record_tree', 'navigation'], ['record_workspace', 'workspace'], ['question_workspace', 'workspace'], ['document_workspace', 'workspace'], ['mind_map', 'workspace'], ['canvas_workspace', 'workspace'], ['diagram_workspace', 'workspace'], ['preview_workspace', 'workspace'], ['artifact_workspace', 'workspace'], ['navigation_workspace', 'workspace']]) {
+  for (const [kind, layout] of [['schema_field', 'inline'], ['text_block', 'inline'], ['tabs', 'inline'], ['record_workspace', 'workspace'], ['question_workspace', 'workspace'], ['document_workspace', 'workspace'], ['mind_map', 'workspace'], ['canvas_workspace', 'workspace'], ['diagram_workspace', 'workspace'], ['preview_workspace', 'workspace'], ['artifact_workspace', 'workspace'], ['navigation_workspace', 'workspace']]) {
     const example = createPanelComponentExample(kind, 'en')
     assert.equal(example.previewLayout, layout, kind)
     assert.doesNotMatch(example.panelYaml, /previewLayout|preview_layout/, 'showcase dimensions never become a DSL property')
@@ -61,6 +61,7 @@ test('all supplied examples render shared components with normal, empty and read
         locale: 'en-US', editable: mode !== 'readonly', onEdit: () => {}, onPanelUpdate: () => {},
       }))
       assert.match(html, /dsh-design-panel/, `${kind}:${mode}`)
+      if (kind === 'math_document') assert.match(html, /is-record-form/, 'mathematical reading uses the shared detail shell rather than stacking workspace gutters')
     }
   }
 })

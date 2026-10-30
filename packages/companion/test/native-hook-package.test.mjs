@@ -1,10 +1,15 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { pathToFileURL } from 'node:url'
+import { spawnSync } from 'node:child_process'
 import { copyNativeHookModules, copyNativeExecutionReference } from '../build-plugin.mjs'
+
+const isolatedImport = (path, cwd) => spawnSync(process.execPath,
+  ['--input-type=module', '--eval', 'await import(process.argv[1])', pathToFileURL(path).href],
+  { cwd, encoding: 'utf8', env: { ...process.env, NODE_OPTIONS: '', NODE_PATH: '' } })
 
 test('shared packaging retains native execution methods and refuses conflicting existing bytes', async t => {
   const root = await mkdtemp(join(tmpdir(), 'native-method-package-'))
@@ -30,10 +35,32 @@ test('normal builder native module output relocates with both Windows dependenci
     const target = join(root, host)
     await copyNativeHookModules(target, { host })
     for (const name of ['windows-private-storage.mjs', 'windows-native-platform.mjs']) {
-      assert.deepEqual(await readFile(join(target, 'scripts', name)), await readFile(new URL('../src/' + name, import.meta.url)))
-      await import(pathToFileURL(join(target, 'scripts', name)))
+      assert.deepEqual(await readFile(join(target, 'scripts', name)), await readFile(new URL('../../studio/src/node/' + name, import.meta.url)))
+      const result = isolatedImport(join(target, 'scripts', name), root)
+      assert.equal(result.status, 0, result.stderr)
     }
     const prefix = host === 'qwenwork' ? 'qwenwork' : host === 'qoder' ? 'qoder' : 'claude'
-    await import(pathToFileURL(join(target, 'scripts', `${prefix}-hook-transport.mjs`)))
+    const result = isolatedImport(join(target, 'scripts', `${prefix}-hook-transport.mjs`), root)
+    assert.equal(result.status, 0, result.stderr)
   }
+})
+
+test('independent native scripts fail without the sibling helper or with repository-only forwarding bytes', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'native-hook-missing-helper-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const target = join(root, 'qoder')
+  await copyNativeHookModules(target, { host: 'qoder' })
+  await rm(join(target, 'scripts/windows-native-platform.mjs'))
+  const missing = isolatedImport(join(target, 'scripts/windows-private-storage.mjs'), root)
+  assert.notEqual(missing.status, 0)
+  assert.match(missing.stderr, /ERR_MODULE_NOT_FOUND/)
+  assert.match(missing.stderr, /windows-native-platform\.mjs/)
+
+  const legacy = join(root, 'forwarding/scripts')
+  await mkdir(legacy, { recursive: true })
+  await cp(new URL('../src/windows-private-storage.mjs', import.meta.url), join(legacy, 'windows-private-storage.mjs'))
+  const forwarded = isolatedImport(join(legacy, 'windows-private-storage.mjs'), root)
+  assert.notEqual(forwarded.status, 0)
+  assert.match(forwarded.stderr, /ERR_MODULE_NOT_FOUND/)
+  assert.match(forwarded.stderr, /studio/)
 })

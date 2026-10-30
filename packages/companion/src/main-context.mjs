@@ -25,9 +25,7 @@ export function createCompanionMainContext({ project, reviews, knowledge }) {
       && typeof input.assessedCheckpoint === 'string' && /^[a-f0-9]{40}(?:[a-f0-9]{24})?$/.test(input.assessedCheckpoint)
       && await project.store.sameDesignEvidenceAt(input.assessedCheckpoint, captured.input.assessedCheckpoint)
   }
-  async function currentAssessment(captured) {
-    await guardRecords()
-    const authority = await core.readDesignClarityAuthority(root, projectId)
+  async function assessmentState(captured, authority) {
     const current = !!authority && core.designClarityInputMatches(authority.report, { kit: captured.kit.name,
       version: captured.kit.version, ...captured.input })
       && await project.store.sameDesignEvidenceAt(authority.assessedCheckpoint, captured.input.assessedCheckpoint)
@@ -36,7 +34,8 @@ export function createCompanionMainContext({ project, reviews, knowledge }) {
   }
   async function context({ includeKnowledge = true } = {}) {
     const captured = await capture()
-    const clarity = await currentAssessment(captured)
+    await guardRecords()
+    const clarity = await assessmentState(captured, await core.readCommittedDesignClarityAuthority(projectRoot, projectId))
     const status = includeKnowledge && knowledge ? await knowledge.status().catch(() => ({ state: 'unavailable' })) : undefined
     return { project: projectId, checkpoint: captured.input.assessedCheckpoint, input: captured.input, clarity,
       ...(status ? { knowledge: status } : {}),
@@ -53,8 +52,12 @@ export function createCompanionMainContext({ project, reviews, knowledge }) {
     input: async () => (await capture()).input,
     context,
     async notification(saved) {
-      if (saved?.commit && !await project.store.sameDesignEvidenceAt(saved.commit, await project.store.head())) return 'Newer Design evidence exists. Read design_main_context for the current saved context.'
-      return 'The saved files are durable. Read design_main_context and update U/S/T when useful for the agreed scope. Assessment, KAG and GRA do not block continuing the authorized task.'
+      const newer = saved?.commit && !await project.store.sameDesignEvidenceAt(saved.commit, await project.store.head())
+      return [newer ? 'Newer Design evidence exists.' : 'The saved files are durable.',
+        'Read design_main_context for the current saved evidence, assessment and report input.',
+        core.DESIGN_PANEL_SAVE_ASSESSMENT_GUIDANCE,
+        'Assessment, KAG and GRA do not block independently authorized Design work.',
+      ].join(' ')
     },
     async report({ input, ...value }) {
       const assessment = core.parseDesignClarityInput(value)
@@ -64,7 +67,10 @@ export function createCompanionMainContext({ project, reviews, knowledge }) {
         const captured = await capture()
         if (!await matches(input, captured)) throw new Error('Clarity input is no longer current. Read design_main_context and assess the current project, Kit and Design evidence.')
         const digest = core.designClarityDigest(assessment, captured.kit.name, captured.kit.version)
-        const prior = await currentAssessment(captured)
+        // Only an explicit report may settle a prior local publication failure.
+        // Context/display must keep reading the last committed assessment.
+        await guardRecords()
+        const prior = await assessmentState(captured, await core.readDesignClarityAuthority(root, projectId))
         const replayed = !prior.needsReassessment && prior.assessment.digest === digest
         const report = replayed ? prior.assessment : core.parseDesignClarityReported({ ...assessment,
           kit: captured.kit.name, version: captured.kit.version, origin: 'main-agent', kitContentHash: input.kitContentHash, digest })

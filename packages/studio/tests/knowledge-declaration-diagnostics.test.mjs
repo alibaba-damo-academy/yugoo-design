@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { stringify } from 'yaml'
-const { validateKit, validateBundle, loadStudioKit, StudioKitDraftService } = await import(
+const { validateKit, validateBundle, loadStudioKit } = await import(
   process.env.STUDIO_DECLARATION_TEST_PLANE === 'built' ? '../lib/index.js' : '../src/index.ts')
 
 function fixture() {
@@ -46,28 +46,4 @@ test('real authoring validation returns non-blocking, located warnings while the
   assert.equal(broken.valid, false)
   assert.equal(broken.diagnostics[0].code, 'kit.load')
   assert.equal(broken.diagnostics[0].severity, undefined, 'legacy error severity remains the default')
-})
-
-test('Kit working-copy validation/confirmation retains warnings without blocking adoption or mutating installed sources', async () => {
-  const { root, files, fs } = fixture(), before = [...files]
-  const records = new Map()
-  const repository = {
-    async create(value) { const row = { ...structuredClone(value), id: 'draft', revision: 0 }; records.set(row.id, row); return structuredClone(row) },
-    async read(id) { return structuredClone(records.get(id)) },
-    async list() { return structuredClone([...records.values()]) },
-    async replace(id, expected, value) { const previous = records.get(id); assert.equal(previous.revision, expected); assert.equal(previous.confirmed, false); const row = { ...structuredClone(value), id, revision: expected + 1 }; records.set(id, row); return structuredClone(row) },
-  }
-  const snapshot = { id: 'retained', root, fs }
-  const service = new StudioKitDraftService(repository, { capture: async () => snapshot, open: async () => snapshot })
-  const draft = await service.create({ kit: { name: 'advice_fixture', version: '1.0' } })
-  const pin = { id: draft.id, expectedRevision: draft.revision }
-  const validated = await service.validate(pin)
-  assert.equal(validated.valid, true)
-  assert.equal(validated.diagnostics[0].severity, 'warning')
-  const confirmed = await service.confirm(pin)
-  assert.equal(confirmed.valid, true)
-  assert.equal(confirmed.diagnostics[0].severity, 'warning')
-  assert.equal(confirmed.draft.confirmed, true)
-  assert.equal((await service.read(draft.id)).confirmed, true)
-  assert.deepEqual([...files], before)
 })

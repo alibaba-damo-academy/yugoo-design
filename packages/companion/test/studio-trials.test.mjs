@@ -1,12 +1,14 @@
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { mkdtemp, mkdir, readFile, readdir, writeFile, rm, symlink, cp } from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createStudioTrials, createStudioTrialInputGate } from '../src/studio-trials.mjs'
-import { createStudioPanelDrafts, createStudioDraftPorts } from '../src/studio-panel-drafts.mjs'
+import { createStudioDraftPorts } from '../src/studio-panel-drafts.mjs'
 import { loadStudioKit } from '../../studio/src/load.ts'
+import { loadDesignBundle } from '../../core/lib/index.js'
 import { companionFs } from '../src/project.mjs'
 
 const packageRoot = fileURLToPath(new URL('../../skills-web-app/', import.meta.url))
@@ -21,20 +23,37 @@ before(async () => {
   await cp(join(packageRoot, 'bundles'), join(kitRoot, 'skills'), { recursive: true })
 })
 after(async () => { if (kitRoot) await rm(kitRoot, { recursive: true, force: true }) })
-const kit = { name: 'web_app', version: '1.1' }, bundle = { name: 'business_rules', version: '1.0' }
+const kit = { name: 'web_app', version: '1.2' }, bundle = { name: 'business_rules', version: '1.0' }
 const source = { kind: 'installed', kit, bundle }
+
+// Historical trial input remains readable; no public draft editor/factory survives.
+async function retainedPanel(options) {
+  const ports = await createStudioDraftPorts(options, 'panel')
+  const snapshot = await ports.sources.capture(kit)
+  const loaded = await loadStudioKit(snapshot.fs, snapshot.root, snapshot.loadOptions)
+  const definition = loaded.skills.find(skill => skill.name === bundle.name)
+  // Seed an actual historical record; the product exposes this namespace read-only.
+  const draft = { id: randomUUID(), revision: 0, kit, bundle, baseSnapshot: snapshot.id,
+    panelSource: definition.metadata.panelYaml, sampleSource: '{}', createdAt: new Date().toISOString() }
+  const seedHistory = async record => {
+    await writeFile(join(options.stateRoot, 'studio-panel-drafts', record.id + '.json'), JSON.stringify({ format: 'studio-panel-draft/v1', ...record }))
+    return record
+  }
+  await seedHistory(draft)
+  return { draft, seedHistory }
+}
 
 test('independent trial materializes the retained closure and overlays the real Bundle root', async t => {
   const sourceRoot = join(packageRoot, 'kits/web_app')
-  const locations = (await readdir(join(packageRoot, 'bundles'))).map(name => ({ name, version: name === 'flow_design' ? '1.1' : '1.0', rootDir: join(packageRoot, 'bundles', name), sourceId: 'fixture:trial-origin' }))
+  const locations = await Promise.all((await readdir(join(packageRoot, 'bundles'))).map(async name => { const rootDir = join(packageRoot, 'bundles', name), sourceId = 'fixture:trial-origin'; const loaded = await loadDesignBundle(companionFs, { rootDir, sourceId }); return { name, version: String(loaded.skill.version), rootDir, sourceId } }))
   const installed = await loadStudioKit(companionFs, sourceRoot, { bundles: locations })
   const { service, options, starts } = await fixture(t, { kitRoot: sourceRoot, readInstalledKit: () => installed,
     readInstalledBundle: pin => { const entry = locations.find(location => location.name === pin.name); return { resourceRoot: entry.rootDir, sourceId: entry.sourceId } } })
-  const drafts = await createStudioPanelDrafts(options), draft = await drafts.create({ kit, bundle })
+  const { draft, seedHistory } = await retainedPanel(options)
   const panelSource = draft.panelSource + '\n# independent trial overlay\n'
-  const saved = await drafts.save({ ...draft, expectedRevision: 0, panelSource })
+  const saved = await seedHistory({ ...draft, panelSource, revision: 1 })
   const result = await service.start({ source: { kind: 'panel-draft', kit, bundle, id: saved.id, expectedRevision: saved.revision }, task: 'Use isolated sample data.' })
-  assert.equal(result.status, 'queued')
+  assert.equal(result.status, 'queued', JSON.stringify(result))
   assert.match(starts[0].kitRoot, /kits\/web_app$/)
   const compiled = await loadStudioKit(companionFs, starts[0].kitRoot, starts[0].trustedContentSources)
   const target = compiled.skills.find(skill => skill.name === bundle.name)
@@ -63,7 +82,7 @@ test('real source snapshot and Git project; queued is not completed; reopen reta
   const { service, options, starts, sends, stateRoot } = await fixture(t)
   const original = await readFile(join(kitRoot, 'skills/business_rules/panel.yaml'))
   const result = await service.start({ source, task: 'Generate a synthetic rule only.' })
-  assert.equal(result.status, 'queued')
+  assert.equal(result.status, 'queued', JSON.stringify(result))
   assert.equal(result.inputMode, 'manual')
   assert.equal(result.task, 'Generate a synthetic rule only.')
   assert.equal(Object.hasOwn(result, 'locale'), false, 'older callers are not assigned an invented language')
@@ -91,13 +110,12 @@ test('real source snapshot and Git project; queued is not completed; reopen reta
 
 test('saved panel revision is overlaid, stale draft is rejected before launch', async t => {
   const { service, options, starts } = await fixture(t)
-  const drafts = await createStudioPanelDrafts(options)
-  const draft = await drafts.create({ kit, bundle })
+  const { draft, seedHistory } = await retainedPanel(options)
   const panelSource = draft.panelSource + '\n# retained trial edit\n'
-  const saved = await drafts.save({ id: draft.id, expectedRevision: 0, panelSource, sampleSource: draft.sampleSource })
+  const saved = await seedHistory({ ...draft, panelSource, revision: 1 })
   const draftSource = { kind: 'panel-draft', id: draft.id, expectedRevision: saved.revision, kit, bundle }
   const result = await service.start({ source: draftSource, task: 'Inspect the saved draft.' })
-  assert.equal(result.status, 'queued')
+  assert.equal(result.status, 'queued', JSON.stringify(result))
   assert.equal(await readFile(join(starts[0].kitRoot, 'skills/business_rules/panel.yaml'), 'utf8'), panelSource)
   await assert.rejects(service.start({ source: { ...draftSource, expectedRevision: 0 }, task: 'No stale execution.' }), /changed/)
   assert.equal(starts.length, 1)

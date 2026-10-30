@@ -25,13 +25,13 @@ const data = { schema_version: 3, notifications: {
 
 test('detail-preview family responds to its content width and owns one narrow scroll region', async () => {
   const css = await readFile(new URL('../src/visual-components.css', import.meta.url), 'utf8')
-  assert.match(css, /\.is-record-preview \.dsh-panel-workspace-main \{ container: record-preview-main \/ inline-size;/)
+  assert.match(css, /\.is-record-preview > \.dsh-panel-workspace-main \{ container: record-preview-main \/ inline-size;/)
   const narrow = css.match(/@container record-preview-main \(max-width: 720px\) \{([\s\S]*?)\n\}/)?.[1]
   assert.ok(narrow)
-  assert.match(narrow, /\.is-record-preview \.dsh-record-workspace-body \{[^}]*flex: 1;[^}]*min-height: 0;[^}]*grid-template-columns: minmax\(0, 1fr\);[^}]*overflow: auto;/)
+  assert.match(narrow, /\.is-record-preview > \.dsh-panel-workspace-main > \.dsh-record-workspace-body \{[^}]*flex: 1;[^}]*min-height: 0;[^}]*grid-template-columns: minmax\(0, 1fr\);[^}]*overflow: auto;/)
   assert.match(narrow, /grid-auto-rows: max-content;/, 'long inspector content must not shrink into the following preview row')
-  assert.match(narrow, /\.dsh-record-inspector \{[^}]*height: auto;[^}]*overflow: visible;/)
-  assert.match(narrow, /\.dsh-record-preview \{[^}]*overflow: visible;[^}]*border-left: 0;/)
+  assert.match(narrow, /\.dsh-record-inspector\.is-preview-pane \{[^}]*height: auto;[^}]*overflow: visible;/)
+  assert.match(narrow, /\.dsh-record-preview\.is-preview-pane \{[^}]*overflow: visible;[^}]*border-left: 0;/)
   assert.ok(css.indexOf('@container record-preview-main') > css.indexOf('@container (max-width: 720px)'), 'family override follows the general narrow workspace defaults')
 })
 
@@ -82,7 +82,7 @@ test('notification composition has one editable title, visible accessible labels
       assert.equal(container.querySelector('[data-field="action_target"] input').value, data.notifications.a.action_target)
       assert.equal(container.querySelector('.dsh-record-preview article p').textContent, data.notifications.a.message)
       assert.equal(container.querySelectorAll('.dsh-record-preview').length, 1)
-      assert.equal(container.querySelector('.dsh-record-preview').parentElement.className, 'dsh-record-workspace-body')
+      assert.equal(container.querySelector('.dsh-record-preview').parentElement.className, 'dsh-record-workspace-body is-split-view', 'the inspector and preview keep an explicit two-pane owner')
       assert.ok(container.querySelector('.dsh-record-workspace-frame.is-record-form.is-record-preview'))
       assert.equal(changes.length, 0, 'mount/language switching do not write facts')
     }
@@ -107,10 +107,11 @@ test('notification composition has one editable title, visible accessible labels
 
 test('workspace preview follows canonical edits, selection and locale without a second data model', async () => {
   const container = document.getElementById('root'), root = createRoot(container)
-  let current = structuredClone(data), locale = 'en-US'
+  let current = structuredClone(data), locale = 'en-US', wrapped = false
   const original = structuredClone(current), changes = []
   const paint = () => {
     const panel = localizePanelManifest(manifest, locale)
+    if (wrapped) panel.ui = { ...panel.ui, children: panel.ui.children.map(child => ({ component: 'stack', id: `wrap-${child.id}`, children: [child] })) }
     root.render(React.createElement(PanelLocaleContext.Provider, { value: locale },
     renderNode(panel.ui, panel, current, { locale, editable: true, onPanelUpdate: next => {
       changes.push(next)
@@ -153,5 +154,16 @@ test('workspace preview follows canonical edits, selection and locale without a 
     assert.equal(container.querySelector('.dsh-record-preview > small').textContent, '通知内容预览')
     assert.equal(preview().querySelector('h3').textContent, 'Renamed notification', 'locale cannot rewrite user content')
     assert.equal(changes.length, 3, 'selection and localization cannot persist facts')
+    wrapped = true
+    await React.act(async () => paint())
+    assert.ok(container.querySelector('.is-record-preview .is-split-view'), 'transparent stacks retain the detail-preview family')
+    assert.ok(container.querySelector('.dsh-record-inspector.is-preview-pane'))
+    assert.ok(container.querySelector('.dsh-record-preview.is-preview-pane'))
+    assert.equal(changes.length, 3, 'changing composition cannot write canonical data')
+    await edit(container.querySelector('[data-field="message"] textarea'), 'Edited through a transparent stack')
+    assert.equal(preview().querySelector('p').textContent, current.notifications.a.message)
+    assert.equal(changes.length, 4)
+    assert.deepEqual(current.notifications.b, original.notifications.b)
+
   } finally { await React.act(async () => root.unmount()) }
 })

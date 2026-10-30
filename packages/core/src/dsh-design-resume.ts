@@ -27,7 +27,7 @@ export function installDesignResumeRouting(
     controls.delete(agent)
     pending.delete(agent)
   })
-  ctx.on('system-prompt/assemble', async (_assembly, context, next) => {
+  ctx.on('system-prompt/assemble', async (assembly, context, next) => {
     const agent = context.agent
     if (agent === undefined || context.signal === undefined) return next()
     const entry = controls.get(agent)
@@ -40,23 +40,29 @@ export function installDesignResumeRouting(
     // Do not await Producer work here: assembly precedes the native tool row.
     // The ordinary tool revalidates the current gate and human authorization.
     pending.set(agent, { turn: entry.turn, gate, eventOffset: entry.eventOffset })
+    // The SDK resolves section providers before this waterfall. Update this
+    // request's existing section so the hint reaches the first model step.
+    const section = assembly.sections.find(section => section.name === 'design:accepted-resume')
+    if (section !== undefined) section.text = continuationText(agent)
     return next()
   })
   ctx.systemPrompt.section({
     name: 'design:accepted-resume', order: 580,
-    text: ({ agent }) => {
-      if (agent === undefined) return ''
-      const intent = pending.get(agent)
-      if (intent === undefined) return ''
-      // The real tool result owns subsequent steps, including failure. Never
-      // keep injecting this request and accidentally force automatic retries.
-      if (designSessionEvents(agent.session).slice(intent.eventOffset).some(event => event.type === 'tool/call'
-        && event.data.turn === intent.turn && event.data.name === 'run_design_skill')) {
-        pending.delete(agent)
-        return ''
-      }
-      const args = { name: intent.gate.pin.skillName, action: { routeId: intent.gate.action.routeId } }
-      return `The current human message matches a pending Design continuation. It has NOT started yet. Briefly acknowledge it visibly, then call run_design_skill with exactly ${JSON.stringify(args)}. Do not add a brief (that would revise the plan), ask for confirmation again, or execute the Bundle by another route. The tool revalidates the current gate and authorization. In Producer mode stay attached to its visible execution/logs; in main mode follow the returned scoped method. After the tool returns, follow its actual outcome; do not automatically retry failures.`
-    },
+    text: ({ agent }) => continuationText(agent),
   })
+
+  function continuationText(agent: Agent | undefined): string {
+    if (agent === undefined) return ''
+    const intent = pending.get(agent)
+    if (intent === undefined) return ''
+    // The real tool result owns subsequent steps, including failure. Never
+    // keep injecting this request and accidentally force automatic retries.
+    if (designSessionEvents(agent.session).slice(intent.eventOffset).some(event => event.type === 'tool/call'
+      && event.data.turn === intent.turn && event.data.name === 'run_design_skill')) {
+      pending.delete(agent)
+      return ''
+    }
+    const args = { name: intent.gate.pin.skillName, action: { routeId: intent.gate.action.routeId } }
+    return `The current human message matches a pending Design continuation. It has NOT started yet. Briefly acknowledge it visibly, then call run_design_skill with exactly ${JSON.stringify(args)}. Do not add a brief (that would revise the plan), ask for confirmation again, or execute the Bundle by another route. The tool revalidates the current gate and authorization. In Producer mode stay attached to its visible execution/logs; in main mode follow the returned scoped method. After the tool returns, follow its actual outcome; do not automatically retry failures.`
+  }
 }

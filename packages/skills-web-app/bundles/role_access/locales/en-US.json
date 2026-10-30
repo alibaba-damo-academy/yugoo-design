@@ -35,7 +35,7 @@
   "parentRole": "Source role",
   "inheritanceReason": "Evidence for inheritance (optional)",
   "addChildRole": "Add child role",
-  "guidance": "Roles are flat by default. Set a source role only for evidenced permission reuse. Each role has at most one parent and keeps its own assignment rule.",
+  "guidance": "Check what each role can do and which data it can access, looking for excessive or missing permissions. Set one source role only when reuse is needed; grants remain independent.",
   "graphHint": "Connect the child to its source role. Return to details for local permissions and read-only inherited sources.",
   "inheritanceHelp": "Inherited permissions retain their original applicability, confirmation and identity verification. Role assignment and conflict precedence are not inherited."
 }

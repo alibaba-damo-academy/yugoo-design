@@ -209,8 +209,8 @@ const exactPrompt = renderAdvisoryAcceptancePrompt(reflectionAdvisory, exactAuth
 assert.match(exactPrompt, /action-flow/)
 assert.match(exactPrompt, /flow_design/)
 assert.doesNotMatch(exactPrompt, /acceptance-secret/, 'acceptance receipt must not enter model-visible tool authority')
-assert.doesNotMatch(exactPrompt, /Profile:|Constraints:|Advisory items:|acceptanceInstruction/, 'visible acceptance stays concise')
-assert.doesNotMatch(exactPrompt, /reason for the recommendation/i, 'the card rationale is not repeated in the conversation')
+assert.ok(exactPrompt.includes(`advisoryId: ${JSON.stringify(reflectionAdvisory.id)}`), 'the accepted report is identified independently of item titles')
+assert.ok(exactPrompt.includes(reflectionAdvisory.acceptanceInstruction), 'the model retains the server-bounded facts the human accepted')
 const zeroReceiptPrompt = renderAdvisoryAcceptancePrompt(alignmentAdvisory, {
   acceptanceReceiptId: 'acceptance-zero', actionReceipts: [], executionStatus: 'not-applicable',
 })

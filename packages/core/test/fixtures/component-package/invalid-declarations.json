@@ -1,0 +1,10 @@
+[
+  { "path": ["version"], "value": "^1.0.0", "code": "package.value", "diagnosticPath": "$.version" },
+  { "path": ["compatibility", "reactMajor"], "value": 19, "code": "package.compatibility", "diagnosticPath": "$.compatibility" },
+  { "path": ["compatibility", "reactSource"], "value": "bundled", "code": "package.compatibility", "diagnosticPath": "$.compatibility" },
+  { "path": ["components", 0, "kind"], "value": "dsl-component", "code": "package.contribution_type", "diagnosticPath": "$.components[0].kind" },
+  { "path": ["components", 0, "id"], "value": "org.other.panel/v1", "code": "package.namespace", "diagnosticPath": "$.components[0].id" },
+  { "path": ["entry", "client"], "value": "../outside.mjs", "code": "package.path", "diagnosticPath": "$.entry.client" },
+  { "path": ["license", "file"], "value": "MISSING-LICENSE", "code": "package.missing_file", "diagnosticPath": "$.license.file" },
+  { "path": ["components", 0, "summary"], "value": "", "code": "package.value", "diagnosticPath": "$.components[0].summary" }
+]

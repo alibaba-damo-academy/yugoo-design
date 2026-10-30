@@ -127,7 +127,109 @@ The surrounding workspace owns navigation, titles, editing and shared styles.
 Standalone use retains the full-table view. This is a presentation composition,
 not a new DSL field, required workflow or installed-runtime availability claim.
 
+### Mathematical explanations in a record workspace
+
+Authored `math_document` presents a selected record as readable explanations
+beside LaTeX formulas. It binds existing fields, not a second model or a solver.
+Place it inside a `record_workspace` whose `sources` includes its `source`:
+
+```yaml
+- component: math_document
+  id: mathematical_explanation
+  source: models
+  math:
+    heading: title
+    introduction: overview
+    statements: {field: equations, title: label, formula: expression, meaning: meaning, source: source_pointer}
+    symbols: {field: symbols, formula: symbol, meaning: meaning, details: [kind, domain], source: source_pointer}
+    notes: assumptions
+    complete: formulation
+    output: {file: model_file, format: format}
+    checks: {status: validation_status, summary: validation_summary, evidence: validation_evidence}
+    provenance: [input_fingerprint, snapshot_file, mapping_file]
+```
+
+`heading` binds a visible `text` field. Optional `introduction`, `notes` and
+`complete` bind `text`/`textarea` fields. Required `statements` and optional
+`symbols` bind `rows` fields with text/textarea columns: `formula` and `meaning`
+are required, `title`, `source` and up to six `details` are optional. Bindings
+must name distinct declared fields/columns; hidden fields, unsafe keys, unknown
+options and cross-source bindings are rejected. Field visibility and readonly
+policy still apply. Other declared fields remain available in a disclosure;
+other selected workspace sources use the ordinary record form.
+
+Optional `output` binds an `artifact_ref` file and optional `text` format;
+optional `checks` binds a `select` status, a `text`/`textarea` summary and optional
+`text`/`textarea` evidence. Optional `provenance` lists `text`, `textarea` or
+`artifact_ref` fields. All these fields must explicitly declare `readonly: true`
+and be distinct from other math bindings. Status copy comes from the declared
+options; the renderer does not execute a check or infer a result. The summary is
+the recorded human-readable conclusion, while raw evidence stays in technical
+details. No summary is fabricated when absent.
+
+The output card appears only for a nonempty saved file reference. File contents
+are read on demand through the existing host artifact port, only when the path
+is safe, is present in `artifactFiles`, and an exact `sourceRevision` is available.
+The source revision is passed to the reader. The preview is escaped plain text,
+bounded to 262,144 characters, with unavailable and retry states; no code, HTML or
+model is executed. Nonempty provenance/evidence uses a folded readonly view;
+empty technical fields are not presented as a form. Other unbound fields retain
+their original field controls, not an inferred metadata role.
+
+Each statement is a collapsible card, expanded initially, containing its business explanation, formula
+and relevant shared symbol definitions, with a source disclosure at the bottom.
+Per-formula symbol definitions are initially folded, showing their count; source,
+complete-model and technical-record disclosures also start folded.
+The complete formulation is a separate collapsible card containing the editable
+symbol glossary. Folds are local presentation, not saved facts or approval.
+Symbol usage is a read-only projection of matching rendered MathML notation; it
+does not infer algebraic equivalence or invent missing definitions. Operators and
+ordinary text do not match symbols merely because they contain the same letters.
+The glossary remains available for inspecting and editing all definitions.
+Source pointers are displayed as text, not executed or resolved as URLs.
+Editing uses the existing field-edit/save path, including
+the original column names and `max_rows`. Long collections show 20 entries at a
+time. Prose supports explicitly delimited inline LaTeX, `\( ... \)`; other text
+and currency remain literal and are never interpreted as HTML. Formula fields contain LaTeX
+without dollar delimiters; JSON encodes backslashes as usual. The renderer uses
+KaTeX MathML output with trusted commands disabled, isolated macros, bounded
+expansion and a 12,000-character display limit. Unrenderable input stays visible
+as text and remains editable; rendering is not mathematical validation.
+
+Editing a statement does not regenerate another field, certify an existing
+model artifact or run a solver. Bundle methods must reconcile explanations,
+symbols, complete formulation and artifacts before asserting consistency.
+This component is authored-only; it does not expand generated A2UI authority.
+
 ### Record workspace navigation groups
+
+`record_artifact.artifact.reference_field` optionally binds an unconditional visible
+`record_select` on its source collection, targeting another section in the same
+workspace. When that parent is selected, all explicitly related artifacts appear
+in canonical map order; selecting the artifact's own record previews it directly.
+No matching related records render no empty block. A matching record with an
+absent, unpublished, unreadable or invalid file retains its local availability or
+error/retry state. Optional `explanation_field` reads visible plain text from the
+artifact record. Neither binding writes state, generates a file or executes a
+solver. Existing scoped readers, file-version inventory and static HTML/SVG
+sandbox rules apply. This authored extension does not expand generated A2UI.
+For a dedicated visualization view, optional component `description` supplies the
+no-matching-artifacts or not-yet-generated status instead of an empty block; it does not hide a failed
+or missing file belonging to a matching record.
+
+When that artifact section declares `navigation: contextual`, related records
+appear inline rather than as duplicate sidebar entries or child-count prompts.
+Their interpretation/source form remains available through the inline details
+action, with a return link to the record that opened that preview. Sidebar
+selection clears this return context; references alone never create a back trail.
+Records with no valid parent remain reachable in the existing unlinked-record group; this presentation never repairs
+references or removes historical records.
+
+For a workspace with one outer tabs node containing one `record_inspector` and
+artifact sibling views, the selected record's original form header appears once
+above the tabs. The existing name binding and lifecycle actions stay shared across
+views; the inspector renders only its body there. Other compositions keep their
+existing header ownership. This is presentation, not another record or save path.
 
 `record_workspace.navigation_group_by` optionally names a safe direct **string
 or string-enum classification field** in every primary source's bound record
@@ -295,6 +397,16 @@ one undirected line per row. The center is not another business object or saved
 graph record. Dragging between objects creates two rows and their sibling order;
 the inspector adds or reorders further participants. Relation centers cannot be
 connection endpoints. Missing participants remain selectable and diagnosable.
+
+A participant graph may also declare `references.nodes` and `references.links`
+to show contextual collections on that same canvas. Reuse the reference-graph
+field contracts: include the primary node section with the same label field,
+exclude the relation section, and omit `references.layout`. Original business
+nodes and participant relations retain their projection and drag behavior;
+context nodes and reference links select their canonical owners but never become
+connection endpoints or independent editable relations. Missing references have
+an owner-detail entry. The graph save gate selects only matching declared state
+reference rules; it does not promote completion requirements into save rules.
 
 `graph.related` may reference either the node or relation section, enabling one
 canonical property collection to retain its actual owner. State
@@ -554,7 +666,7 @@ fields:
 `text | textarea | number | select | radio | list | multi_select |
 record_select | record_multi_select | key_value | toggle | artifact_ref |
 rows | source_list | token_list | radio_custom | record_map |
-source_reference_map | color`
+source_reference_map | data_table | color`
 
 The authoritative closed set is `CONTROL_KINDS` in
 [the shared DSL contract](../packages/core/src/panel-dsl.ts). A control being
@@ -717,22 +829,29 @@ A node binds a component to sections and may nest children or named slots.
 
 ```yaml
 ui:
-  component: record_tree
+  component: record_workspace
   id: functions-view
-  source: functions            # section this component renders
-  row_group:                   # optional grouping (record_tree)
-    source: functions
-    parent_field: function_epic
+  sources: [functions]
+  navigation_group_by: function_epic # optional declared grouping field
+  children:
+    - { component: record_inspector, id: details }
 ```
 
-Layout nodes use `children` (list) or `slots` (`sidebar`/`main`/`overlay`):
+Record navigation and details use `record_workspace` and `record_inspector`.
+The workspace owns selection, navigation controls and content scrolling. A flat
+collection can use `navigation_layout: list`; the default is structure navigation.
+Do not reconstruct this interaction from separate lists and forms.
+
+The lower-level `panel_workspace` is a layout shell with `sidebar`/`main` slots,
+for compositions that do not need record selection. Ordinary main content scrolls
+inside the shell; a complete child workspace retains its own scrolling:
 
 ```yaml
 ui:
   component: panel_workspace
   id: root
   slots:
-    sidebar: { component: record_nav, id: nav, source: roles }
+    sidebar: { component: text_block, id: help, text: "Review the roles and their responsibilities." }
     main:    { component: record_form, id: form, source: roles }
 ```
 
@@ -744,15 +863,16 @@ of a plain form composition), once per Panel. It tells users what to do after
 opening the Panel; it is not `SKILL.md` capability copy, `bundleDescription`,
 empty-state `description`, field help, execution status or an error.
 
-Shared workspaces render this guidance above their tools and content, with a
-localized dismiss button. Dismissal is presentation-only for the mounted
-workspace: it does not edit canonical data, invoke save, or persist a user
-profile preference. Editing and changing language do not reopen it; reopening
-the workspace may. Plain compositions use the same guidance primitive.
-Record/board/question workspaces retain their old action-description fallback;
-artifact, document and preview empty-state descriptions remain empty-state copy.
+The Panel shows an optional tip icon in its bottom-left corner, with or without
+sidebar navigation. Hover, keyboard focus or click reveals the guidance;
+Escape or leaving the tip closes it. It occupies no permanent content row and
+does not edit data, invoke save or persist a preference. Only explicit guidance
+creates the tip; descriptions are not a fallback. The Agent briefly guides the
+user in the conversation when handing over the Panel, using the authored guidance
+when available or its own task-specific understanding otherwise. The tip is a
+reminder, never a required review step or an additional handoff gate.
 Do not declare both properties with the same action message or duplicate a
-parent's guidance on its nested child. Omission adds no banner; an explicit
+parent's guidance on its nested child. Omission adds no help control; an explicit
 blank or non-string guidance value fails the existing Panel validation.
 
 Editable record headers use the shared pencil to focus the original title
@@ -782,6 +902,30 @@ objects, null and unknown names fail validation. Content cannot load code or
 register icons. Generated A2UI panels reject the field even on an otherwise
 allowed component; static authoring capability does not expand that subset.
 The icon does not alter canonical data, selection, edits, execution or save.
+
+### `navigation_workspace` — creating connections
+
+`navigation_map` binds independent node, edge and frame collections. Optional
+`connection_policy.allow_self` and `allow_parallel` affect only new connections;
+omitting either flag allows that case. Parallel connections have the same
+ordered source and target identities, regardless of visual ports. A reverse
+connection is distinct. Both endpoints must exist. Changing this declaration
+never removes or rewrites existing connections, including invalid old records.
+These flags do not express acyclicity, degree limits or arbitrary graph rules.
+
+Optional `navigation_map.edges.new_label` supplies a new connection's initial
+label. It accepts literal text or an existing `$t:key` reference, with only
+`{source}` and `{target}` placeholders. Endpoint labels come from `nodes.label`,
+falling back to record identities; substitution is single-pass plain text.
+Resolved labels are validated in each loaded locale with its declared fallback.
+Empty templates, unknown placeholders, malformed braces and wrong types fail.
+Omission keeps the existing section creation defaults. The declaration never
+renames saved edges or relabels them after an endpoint changes.
+
+The workspace checks the same creation policy during preview and again when
+creating a connection, using current edit permission and canonical endpoints.
+See `ComponentNode.navigation_map` in [the Core contract](../packages/core/src/panel-dsl.ts)
+and the source-derived component inspector for the complete field bindings.
 
 ### `component` (trusted, extensible library)
 
@@ -1204,3 +1348,64 @@ retain the existing declared direct-record creation behavior.
 `navigation_map.nodes.caption_fields` optionally lists visible text, select or list fields from the node section for the native-style map card subtitle. Select values use declared labels; lists show their count and field label. This projection grants no edit authority. Artifact navigation retains the flat page list, preview toolbar, map cover and transient visual-geometry diagnostics; it does not substitute a generic record form for the live preview.
 
 `board.detail_presentation: cover` promotes the selected record’s explicitly scoped `detail_sources` workspace into a full workspace cover. The board stays mounted to retain selection, scroll and local drafts; closing the cover restores it. The optional declaration changes presentation only: all child edits retain the same scoped merge and owning-record checks. Omitted/`inline` preserves ordinary card details.
+
+### 可编辑数据表（Data Table）
+
+`control: data_table` 用于字段由用户或 Agent 定义的样例数据。将它声明在记录字段中，
+通过现有 `record_inspector` / `record_form` 编辑；也可以在 `record_workspace` 中用
+`{component: data_table, source: datasets, table: {field: table}}` 呈现同一字段。
+组件从保存的数据读取列定义，不接受 `rows` 的静态 `columns`、选项或脚本。
+它属于预定义 DSL 目录，尚未纳入生成式 A2UI 白名单。
+
+```yaml
+fields:
+  - key: table
+    label: 字段与样例数据
+    control: data_table
+    applies_to: [datasets]
+```
+
+该字段对应 schema 中的闭合对象 `{columns, rows}`，两项均 required。
+`columns` 是对象数组，每列必需 `id: string`、`name: string`、
+`type: enum[text, number, boolean, date, select]`，并声明可选
+`role: enum[dimension, value, attribute]`、`unit: string`、`description: string`
+和 `options: array<string>`。列仅将 id/name/type 声明为必需。Bundle 可以声明自己的可选列元数据；编辑器原样保留，
+不推断业务引用。`rows` 是 `map<map<string>>`：稳定行 key → 稳定列 id → 值。
+列标题与排列不改变身份；删列同时删除该列单元格。
+
+数据例：
+
+```json
+{
+  "columns": [
+    {"id":"material","name":"物料","type":"text","role":"dimension"},
+    {"id":"quantity","name":"用量","type":"number","role":"value","unit":"kg"}
+  ],
+  "rows": {"sample_1":{"material":"钢材","quantity":"2.5"}}
+}
+```
+
+单元格保留文本编码，由列类型解释并校验，禁止执行表达式。number 必须是有限数值文本，
+boolean 仅 `"true"` / `"false"`，date 使用有效 `YYYY-MM-DD`，select 使用非空且不重复的
+`options`。空字符串或省略的值表示未知，不能当零或 false；不存在的列、重复列 id、
+非法行 id 或多余表级字段均拒绝。列/行 id 使用英文字母开头的字母、数字、下划线或短横线，
+最多 64 字符并排除原型键。样例上限为 64 列、500 行，每格 10000 字符。
+
+在现有 `validation.yaml` 中声明结构/类型约束，供 Agent 校验和 Panel 保存共用：
+
+```yaml
+- id: typed_tables
+  scope: [state, completion]
+  code: input.invalid_table
+  check:
+    for_each_in_map: datasets
+    data_table: table
+```
+
+未开始的可选字段可省略；这条规则不增加完成度门槛。声明是否必需仍由 schema 与已有
+完成度规则负责。检查失败不自动转换或丢弃数据。输入错误可在草稿中显示，保存前须修正。
+
+面板支持字段名称/类型/用途/单位/说明、单选项、列移位、列与行增删、Tab/Enter 导航和
+从现有单元格粘贴制表符分隔的数据。粘贴越界或类型错误整批拒绝，不截断；不会自动把
+表头当字段导入。两维加一个值列可切换矩阵，仍使用同一组行，重复坐标显示冲突而不聚合。
+组件没有上传入口；外部文件由宿主 Agent 接收，面板编辑其解析结果与样例。

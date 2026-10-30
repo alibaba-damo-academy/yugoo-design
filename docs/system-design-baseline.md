@@ -45,7 +45,7 @@ The generic runtime must not contain official Bundle names. Official behavior is
 The product has three primary user surfaces:
 
 - The **Design Workspace** runs an interactive design session and renders the active Kit's Bundle panels.
-- The **Design Studio** creates, searches, composes, validates, tests, versions, and publishes Mindsets, Bundles, and Kits.
+- The **Design Studio** creates, searches, composes, edits, validates, previews and exchanges current Mindset, Bundle and Kit content.
 - The **Alignment Workspace** presents grounding evidence, designed-product relationships, reflection findings, impact, proposals, and human decisions.
 
 ## Agent Host and user-interface integration
@@ -121,14 +121,25 @@ does not roll back saved work or prohibit an independently authorized user task.
 Keep the last successfully saved assessment with its assessed checkpoint and
 show that it needs updating when appropriate; no prior assessment means
 unassessed, never an invented zero. Do not use stale scores as fresh evidence.
+Display and Agent-context reads use the Git-published version of the same
+`design_records/clarity.json` file. A local replacement awaiting publication
+does not replace the last successful assessment; only an explicit report retry
+may settle it. Records-only HEAD contention may retry the same frozen files
+within a bounded publication attempt when Design evidence and target bytes
+remain unchanged. Real Design changes, competing target changes, cancellation
+and other failures still reject the report rather than claiming a saved score.
 
 A meaningful Panel save uses the same main-Agent reporting path in its ordinary
 continuation. The saved files and Git checkpoint establish what was saved;
 delivery and any required user-edit gate settlement are separate outcomes.
 The server supplies the saved diff and current project, checkpoint and Kit, and
 the shared client submits the normal native continuation prompt. The main Agent
-judges saved evidence together with the user's current intent. Several saves
-before continuation need at most one assessment of their latest relevant state;
+judges saved evidence together with the user's current intent. “Save and assess
+next step” requests an assessment in that same ordinary main continuation:
+report U/S/T before the next question, Bundle recommendation or closing reply,
+unless a later user stop/cancellation supersedes it. An unavailable or failed
+report is disclosed without undoing the save or blocking other authorized work.
+Several saves before continuation need at most one assessment of their latest relevant state;
 an unchanged save does not force another score. A changed user goal can justify
 reassessment even without a new design commit.
 
@@ -163,7 +174,8 @@ the server does not claim to prove every change of human intent from host logs.
 
 A **Design Project** is the durable unit that contains one designed product's state. It is independent of an Agent Host working directory. DSH sessions can open it today; future Codex and Claude Code adapters must open the same format without changing its identity or persistence semantics. A plugin-owned binding store records which project a Host conversation selected, keyed by the Host Provider identity and opaque Host conversation id. This store lives outside every Design Project because it is the bootstrap authority used to find that project; it contains no Design File or Kit content. Every Design File, panel operation, Bundle execution, advisory input pin, and DesignJournal association resolves the selected project through that binding rather than deriving a path from the Host's current working directory. Persisted advisory publications, human dispositions and review policy belong to the Design Project and travel with its Git history; active review queues, native execution bindings and notification ownership remain Host-conversation scoped. Switching projects cancels queued analysis for the prior selection and clears its review projection; opening an existing project in a new conversation restores Design Files but does not inherit another conversation's review queue.
 
-Each new managed Design Project is an independent Git repository with this initial layout:
+Each managed Design Project is an independent Git repository. Selecting a Kit
+adds its definition files; the configured project's owned paths are:
 
 ```text
 <project>/
@@ -171,6 +183,9 @@ Each new managed Design Project is an independent Git repository with this initi
 ├── .gitignore
 ├── README.md
 ├── project.json
+├── design_kit/
+│   ├── kit/
+│   └── bundles/
 ├── design_files/
 └── design_records/
     ├── clarity.json
@@ -180,7 +195,8 @@ Each new managed Design Project is an independent Git repository with this initi
 ```
 
 Durable design information is self-contained in these project files and their
-Git history. `design_files/` contains the native Bundle-owned product facts and
+Git history. `design_kit/` contains the project's own Kit and Bundle definitions.
+`design_files/` contains the native Bundle-owned product facts and
 artifacts. `design_records/` contains the shared system's persisted assessment,
 knowledge archive, suggestions and human decisions. Its files appear when first
 needed, not as fabricated empty results. Reuse the existing structured records;
@@ -307,9 +323,9 @@ The common project operations are `new`, `open`, `list`, `status`, Kit selection
 
 ## Kit and Bundle model
 
-A **Design Kit** is a coherent, declarative design method for a domain. Each Kit version binds one exact Mindset version and an ordered set of exact Bundle versions, and owns its Kit-level resources and relationship mappings. A Kit and its Bundles are runtime-loaded content, not Cordis plugins.
+A **Design Kit** is a coherent, declarative design method for a domain. A Kit contains its Mindset, an ordered set of Bundle bindings, Kit-level resources and relationship mappings. The local library maintains current saved content; each project uses a complete project-owned copy. A Kit and its Bundles are runtime-loaded content, not Cordis plugins.
 
-A **Design Bundle** owns one design facet. It owns its model instructions, persisted state definition, semantic validation, presentation selection, model-facing summary, and any execution or artifact requirements. Its namespace-qualified identity and immutable versions are independent of every Kit that uses it.
+A **Design Bundle** owns one design facet. It owns its model instructions, persisted state definition, semantic validation, presentation selection, model-facing summary, and any execution or artifact requirements. Its namespace-qualified identity is independent of every Kit that uses it. The library stores its current saved content; an upstream version, when present, records provenance rather than a local release history.
 
 The Mindset is the design reasoning and Bundle-selection layer. It does not hard-code a mandatory design sequence. The current user request, explicit authorization, available evidence, and active runtime state take precedence over gap-based suggestions. An output may nevertheless declare evidence required by its own completion definition: the Web App Page Design result is high-fidelity HTML, so a Page request without an active visual result also requires the main Agent to establish one unconfirmed Design Style baseline in the same attached request. The owning Producers remain separate, and Core does not encode this Kit-specific relationship.
 
@@ -317,19 +333,34 @@ Every active Kit participates in one host-neutral design progression loop. When 
 
 ### Flat Bundle catalog and Kit composition
 
-Bundles form one logically flat, searchable catalog. A Bundle is not owned by one Kit, and a Kit does not obtain a private copy when it includes a Bundle. Kit-to-Bundle membership is many-to-many and is created only by an explicit Kit declaration. Shared Bundles such as research or visual design can therefore participate in several Kits without duplicated source definitions.
+Bundles form one logically flat, searchable library. Membership is many-to-many:
+a library Kit binds stable Bundle identities without creating another Bundle.
+`kit.yaml` owns the ordered bindings; the Mindset's `<design_skills>` section is
+its model-facing projection. Each binding preserves its runtime name, optional
+configuration and relationship mappings. Duplicate runtime bindings and genuinely
+unresolvable execution dependencies are diagnosed by the compiler.
 
-The file-backed implementation stores Kit-owned sources separately from Bundle-owned sources. `kit.yaml` is the ordered exact-pin membership authority; the `<design_skills>` section of Mindset is its maintained model-facing projection, not another independently editable membership list. Mounting neither copies a Bundle nor installs dependencies. A local Kit copy preserves references; a Bundle customization creates a new catalog `identity` while retaining its runtime `name`, method body and data paths. Current identity syntax follows the existing authority namespace (`[a-z][a-z0-9_]*`); a copied identity does not inherit native-provider trust. Two mounts cannot claim the same runtime binding in one Kit.
+The library stores one current saved state per identity. Editing updates that
+state in place; an explicit Copy creates an independent identity and preserves the
+original. Saved edits apply to new consumers without a publish, version bump or
+remount operation. An upstream version can remain as provenance; local edits do
+not claim a new upstream release. Internal revisions/hashes support concurrent
+saves and cache invalidation, not a user-facing version registry.
 
-Deleting an editable Kit removes that local instance, not independent Bundles or exact content retained by existing projects. A Kit transport archive includes its referenced Bundle closure; import validation is inert, and explicit adoption retains Kit and Bundle files separately. Same-pin conflicting bytes fail; identical retained content may be reused without changing its trusted provenance. Dependency preparation and executable trust remain explicit installation concerns, never hidden side effects of mounting, previewing or reading an archive. These operations do not constitute publication to npm or the public source tree.
+A project materializes the complete selected Kit and its mounted Bundle trees in
+`design_kit/kit/` and `design_kit/bundles/<identity>/`. Methods, schemas, validation,
+Panels and resources all resolve from those project files. A library change or
+removal does not mutate existing projects. Kit copies in the library still share
+Bundle bindings; project initialization copies the complete closure, which is a
+different operation. Binary resources, nested files and existing provenance are
+preserved. Native executable contributions remain installed provider capabilities;
+copying content does not install or authorize code.
 
-Dynamic composition applies to editable working copies, not to published behavior. A standalone Kit publication accepts only exact published Mindset and Bundle versions and records those pins in the immutable Kit version. An explicit Studio release transaction may atomically publish a listed set of independently validated Bundle and Mindset working copies together with the Kit versions that bind them; it never discovers or publishes an unlisted working copy implicitly. Later publication may notify dependent Kit working copies, but it never changes an already published Kit or an active session.
-
-Bundle identifiers are namespace-qualified and stable independently of filesystem location. Each Bundle has an independent immutable declared version. Mindsets likewise have stable identities and immutable versions. A Kit version is derived from one exact Mindset version, ordered bindings, binding configuration, dependency resolution, and exact member Bundle versions; it never contains `latest` or a version range. Renaming, replacing, or deleting a definition is an explicit catalog operation; versions referenced by published Kits or sessions remain resolvable until the retention policy permits collection. Editable working copies and published objects occupy distinct catalog states.
-
-A Kit-owned binding has a stable `bindingKey` and may define membership order, optional configuration declared by the Bundle, and Kit-specific relationship mappings. A Kit version binds a given Bundle identity at most once. A binding cannot mutate Bundle identity, schema, presentation, validation, or executable behavior. Bundle dependencies declare versioned requirements, provided capabilities, or typed input ports; the Kit binding resolves them to another binding or a trusted platform capability. Cross-Bundle panel and data references use binding keys and exported sections and are validated against the Kit's resolved member set. The Kit compiler rejects missing, incompatible, cyclic, ambiguous, or non-member relationships and never adds an undeclared Bundle as a hidden dependency.
-
-The structured Kit binding declaration is the sole authority for membership. If the Mindset source contains or displays a Bundle catalog, that catalog is a generated view of the binding declaration or its co-located structured representation, never a second manually maintained list. A Kit version pins one exact Mindset version and the exact version of every Bundle binding.
+Studio saves can retain incomplete definitions. Preview or execution reports the
+specific missing or invalid input needed for that operation; unfinished authoring
+is not forced through a publication workflow. Complete Kit transport includes its
+Bundle closure. Import/export and local editing are separate from product npm
+publishing and public-source synchronization.
 
 ### Common Bundle requirements
 
@@ -471,9 +502,21 @@ The Agent Host log is the authority for conversation execution and model-visible
 
 The DSH provider records model-visible Design context through standard `agent.inject()` inbox and Session behavior. When Bundle policy or the Agent requires an in-turn blocking native ask-user interaction, the Host Provider exposes `ctx.userQuestions`, whose question and answer use standard tool call/result logging. Persistent asynchronous continuation instead appears in the plugin continuation UI; accepting it submits an ordinary logged user turn. Durable advisory dispositions belong to the project; acceptance may submit a separate ordinary instruction to the main Agent. `report_design_clarity` validates ordinary report content and project/version input, saves the project record, and returns it through the ordinary tool result. It does not authenticate its caller by reverse-searching the Host log. The Panel reads that same current record. Project records travel with Git; native conversation execution remains the Host's responsibility.
 
-Selecting a Kit validates and checkpoints the exact `{kit: {name, version}}` pin in `project.json`. The immutable Kit version resolves the exact version of every member Bundle. The pin may additionally record exact mounted-identity `bundles` overrides and a `contentHash` of the fully validated effective closure; every method, schema, Panel, summary, runtime and save consumer resolves that same closure. Unspecified members retain the base Kit's pins, and an override cannot add or replace a catalog identity. An active project keeps those transitive pins until an explicit upgrade succeeds. Upgrade ownership includes revalidating existing Design Files and transient working copies against every changed Bundle schema and lifecycle rule before the new project checkpoint is accepted. New valid content versions affect new selections; they do not retarget active projects or Host conversations. Invalid source changes leave the last valid version available.
+Selecting a Kit initializes the project's own complete definition tree and
+records the source identity in project metadata. Later reads use that tree,
+including after restart; they do not fall back to newer library content. When
+opening an older project without this tree, its actually retained exact closure
+and overrides may initialize it once. Missing or corrupt source is reported
+explicitly instead of inventing a replacement.
 
-An explicit semantic upgrade uses an isolated native Host Producer to read the complete source and target methods, preserve saved facts and account for existing canonical sources. New domain facts require user input; schema validity alone does not establish equivalence. Adoption preserves the original project identity and root, commits the target pin and canonical bytes in one existing Git compare-and-swap operation, and reconciles the existing DesignJournal before success. Pending reconciliation gates ordinary reads and writes; external edits, live tasks, unsaved drafts and unknown Panel observations are never treated as permission to proceed. The [project content upgrade contract](project-content-upgrade.md) records the implemented entries, recovery protocol and separately unverified Host capabilities.
+Updating a project's definitions is ordinary Agent work over its project files:
+compare the current library with project content, preserve user customizations and
+saved facts, edit the required files and check the affected Design Files. Existing
+file and Git operations provide persistence and history. This does not introduce
+an upgrade wizard, separate migration transaction or a universal migration gate.
+A saved project definition is used on the next read/invocation. An active invocation
+must not combine methods from one definition with schema or resources from another;
+real concurrent changes are reported at the existing consistency boundary.
 
 Design Files, artifacts, Git history, and DesignJournal catch-up use a recoverable ordered protocol rather than a cross-store transaction. A Bundle settlement validates and commits Git, then appends the matching DesignJournal change reference before reporting success. Journal settlement failure fails the execution while the Git checkpoint remains authoritative and recoverable by retry or later reconciliation. A process crash or asynchronous persistence failure must not make an uncommitted worktree state authoritative. Reads and writes remain confined beneath the Design Files root even when hostile symlinks or path components are present.
 
@@ -489,7 +532,7 @@ Graph syntax is generic; design semantics are Kit- and Bundle-owned. A Grounding
 
 `DesignKnowledgeService` is a Design System capability, not a second product-design authority. Native Design Files remain the facet authorities. The project's portable knowledge archive preserves AI-maintained relationships, findings and source references; its project journals preserve explicit human accept, reject, defer and supersede decisions. These records travel with Git. The local graph database and vector index can be discarded and rebuilt from those files and native design sources; they must not be the only place an accepted insight or decision exists. A cache must not silently overwrite a Git-restored project archive with newer machine-local data.
 
-G/R/A, impact analysis, and the Alignment Workspace use bounded provider-neutral reads such as query, trace, and impact. A separate projection/materialization lifecycle owns graph deltas, rebuild, and decision projection; it does not expose mutation authority to review profiles. Studio remains a separate catalog, working-copy, validation, preview, and publication capability; Studio-level advisory profiles may consume Design Knowledge without making the Studio repository part of the graph. Raw SurrealQL, Cypher, database record ids, and provider-specific indexes never cross the knowledge API. The experimental default local provider is LadybugDB's Node WASM build, with one persistent database per Design Project under its external runtime state root. It must pass the shared provider conformance suite and real Node 22 Linux, macOS, and Windows gates before the experimental qualifier is removed. Ladybug Native is an optional compatible-host optimization; SurrealDB remains an optional future provider rather than a fallback after failing the initial embedded transaction and current-host packaging gates. A configured Neo4j provider may serve remote team deployments. Provider changes are explicit pause, export, import, validate, switch, and resume operations. There is no silent fallback, dual writer, or dual authority.
+G/R/A, impact analysis, and the Alignment Workspace use bounded provider-neutral reads such as query, trace, and impact. A separate projection/materialization lifecycle owns graph deltas, rebuild, and decision projection; it does not expose mutation authority to review profiles. Studio remains a separate catalog, current-source editing, validation and preview capability; Studio-level advisory profiles may consume Design Knowledge without making the Studio repository part of the graph. Raw SurrealQL, Cypher, database record ids, and provider-specific indexes never cross the knowledge API. The experimental default local provider is LadybugDB's Node WASM build, with one persistent database per Design Project under its external runtime state root. It must pass the shared provider conformance suite and real Node 22 Linux, macOS, and Windows gates before the experimental qualifier is removed. Ladybug Native is an optional compatible-host optimization; SurrealDB remains an optional future provider rather than a fallback after failing the initial embedded transaction and current-host packaging gates. A configured Neo4j provider may serve remote team deployments. Provider changes are explicit pause, export, import, validate, switch, and resume operations. There is no silent fallback, dual writer, or dual authority.
 
 File projection and complete semantic publication have separate read guarantees.
 An embedding failure does not invalidate already projected source facts. Ordinary
@@ -669,7 +712,7 @@ with no suggestions. Conversely, a high score does not waive a material
 unknown. The receiving Host retains responsibility for coding permissions,
 model access and its own implementation workflow.
 
-The user installs one Design System integration for the chosen Agent Host. The DeepSeek Harness integration is the single `dsh-design-system-dsh` installation distribution, represented to Harness as a Profile Bundle and distinct from a Design Bundle. Its six direct physical dependencies provide Core, Design Knowledge, Panel, Studio, the official Web App Kit content, and the trusted Web App provider. Its patch assembles ten direct Cordis infrastructure rows: Core, Design Knowledge, Web App provider, Web App Kit loader, advisory scheduler, Bundle execution, panel Remote, panel, Studio service, and Studio page. DeepSeek Harness discovers each package-root browser contribution through that package's own `dsh.client` declaration; the distribution does not compile a combined browser client or hide providers behind subpath facades. Future Codex and Claude integrations must use the same product kernel, Kit and Bundle definitions, Design Project service, validation and execution semantics, and shared Design UI through native plugin, Skill, hook, or MCP adapters. Where those clients cannot embed the UI, they must open the session-bound UI in an external browser while the CLI remains the primary conversation and development surface.
+The user installs one Design System integration for the chosen Agent Host. The DeepSeek Harness integration is the single `@yugoo-design/dsh-design-system-dsh` installation distribution (the sole source-package naming exception; internal package, Loader and service identities remain unchanged), represented to Harness as a Profile Bundle and distinct from a Design Bundle. Its six direct physical dependencies provide Core, Design Knowledge, Panel, Studio, the official Web App Kit content, and the trusted Web App provider. Its patch assembles eleven direct Cordis infrastructure rows: Core, Design Knowledge, Web App provider, Web App Kit loader, advisory scheduler, Bundle execution, panel Remote, panel, Studio inspection service, Studio page, and Studio authoring service. DeepSeek Harness discovers each package-root browser contribution through that package's own `dsh.client` declaration; the distribution does not compile a combined browser client or hide providers behind subpath facades. Future Codex and Claude integrations must use the same product kernel, Kit and Bundle definitions, Design Project service, validation and execution semantics, and shared Design UI through native plugin, Skill, hook, or MCP adapters. Where those clients cannot embed the UI, they must open the session-bound UI in an external browser while the CLI remains the primary conversation and development surface.
 
 Kit packages declare their content through the host-neutral `designSystem.kit` manifest. They contain Mindset and Bundle resources, not Cordis patches, model providers, host adapters, or system plugin dependencies. Installing, importing, selecting, or removing a Web App, Game, or custom Kit cannot enable or disable grounding, reflection, alignment, Design Projects, execution, Studio, or panel services. Pure content Kits are discovered at runtime and never require a dependency or rebuild in Core, Panel, Studio, or the host integration.
 
@@ -677,15 +720,66 @@ Trusted providers are separate plugins. A server contribution may register one B
 
 Host deployment configuration is a later overlay over the installed integration. It may select model providers, credentials, budgets, storage locations, and other documented tunables; it does not reproduce the integration's plugin roster. The DSH adapter exposes the advisory runtime's registered profiles, current phase, last publication, and bounded last error through `/yugoo status`, so an incomplete installation cannot appear as an idle healthy scheduler.
 
-A user creates a custom design method by authoring a Mindset and declarative Bundles. Adding or revising that content must not require editing generic core code, registering React components, or restarting Harness after a valid content publication. Custom native or agentic behavior requires a future reviewed extension mechanism and is not granted to ordinary content packages.
+A user creates a custom design method by authoring a Mindset and declarative Bundles. Adding or revising that content must not require editing generic core code, registering React components, or restarting Harness after saving the content. Custom native or agentic behavior requires a future reviewed extension mechanism and is not granted to ordinary content packages.
 
-The authoring Studio uses the same compiler, validation, renderer, interpreter, version publication, and save APIs as the runtime. Preview and deployment do not define a second Bundle format.
+The authoring Studio uses the runtime's compiler, validation, renderer and interpreter. Its source editor saves current definitions; runtime Design File publication remains a separate operation. Preview and runtime consumption do not define a second Bundle format.
 
 ## Design Studio
 
-The Design Studio is the authoring and management GUI for Kits, Mindsets, and the flat Bundle catalog. It is a first-class product surface of the installed integration, not a second runtime or a separate Bundle format. The Studio defaults to Kit-first and Mindset-centered: the Kit is the primary workspace and the version unit, and each Kit's Mindset anchors its design method. The flat Bundle catalog remains the shared source of Bundle definitions; it serves Kit authoring rather than defining the Studio's primary surface.
+The Design Studio is the authoring and management GUI for Kits, Mindsets, and the flat Bundle catalog. It is a first-class product surface of the installed integration, not a second runtime or a separate Bundle format. The Studio defaults to Kit-first and Mindset-centered: the Kit is the primary workspace, and each Kit's Mindset anchors its design method. The flat Bundle catalog remains the shared source of Bundle definitions; it serves Kit authoring rather than defining the Studio's primary surface.
 
-The catalog stores separate definitions, immutable published versions, and editable working copies for Bundles, Mindsets, and Kits. A working copy records its base version, optimistic concurrency guard, and access policy. Runtime sessions resolve published versions only; they never load a mutable Studio working copy.
+The catalog maintains current saved Kit and Bundle content. Editing, copying and importing use the same source-instance service. Projects copy the selected current definitions once and subsequently use their own files. There is no local publication state, confirmation lock or version-switching workflow.
+
+Local Studio working-copy persistence has editor-level guarantees. The filesystem
+adapter writes, syncs and closes a temporary file before atomic replacement. A
+successful save is readable by another process or a reopened application;
+process interruption exposes a complete old or new snapshot, write failures
+are reported, and revision conflicts cannot silently overwrite newer edits.
+An interrupted response requires reopening to determine whether the save
+committed. This is not a power-loss durability claim: the latest save is not
+guaranteed to survive power failure or an operating-system crash, and a single
+record save is not a multi-record transaction. Platform adapters preserve these
+semantics and the existing access/path checks without requiring identical Unix
+permission bits or a database storage medium. Stronger platform-specific flush
+behavior is not a prerequisite for this contract.
+
+The optional `dsh-design-studio/node` entry supplies the shared filesystem-backed
+snapshot and atomic working-copy adapters. Companion's original paths forward
+to that implementation; another Host reuses those adapters rather than copying
+the repository. The domain root remains independent of filesystem storage.
+Native authoring receives only exact-revision read/prepare capabilities over
+that same working copy. Candidate preparation, source save and native
+turn completion remain separate results; the shared adapters do not establish
+that any Host has connected or accepted the complete authoring loop.
+
+The DSH native authoring adapter creates a restricted SDK child from the exact
+live parent and inherits that parent's model route. Only the bound Studio
+read/prepare capability enters its tools. Its native message consumption,
+matching turn outcome, candidate receipt and witnessed reference retention are
+separate observations. A session-bound Studio entry must use the Host's existing
+agent-context lookup, rather than treating browser parameters as native authority.
+
+Studio authoring opens as a complete workspace in an independent tab or browser.
+Browsing retains product navigation and does not show a conversation. Creating
+or editing a Kit or Bundle adds the bound Host conversation on the left of the
+workspace, with the selected working copy's source or preview on the right.
+Opening review, returning and explicitly saving preserve that conversation and
+unsent input. Requests originating in the Host's main conversation lead to this
+same standalone editor, either before or after preparing changes. Embedding
+Studio inside the Host is outside this authoring flow; explicit legacy
+content-only URLs remain a compatibility path. These entry choices do not change
+the native parent, source ownership or save protocol. An exact current request opens its proposed
+result directly in the content area without a separate review gate. File changes
+use inline additions/removals in the existing source-file view, alongside the
+ordinary preview choice; they do not add a separate changes panel. The current browser projection retains requests
+and execution feedback witnessed while that editor is open; it does not claim
+restored native conversation history.
+
+The intended host-conversation and Studio entry points share the same exact
+working copy, native binding, validation, preview and explicit-save boundaries.
+Conversation transport must not introduce a second model client, transcript or
+source authority. Full customization from both entry points remains an integration
+goal; scoped native dispatch alone does not establish that capability.
 
 The currently approved lightweight Studio layout has Kits and Bundles, with an
 optional Component Library supplied by the host. The earlier five-area proposal
@@ -699,32 +793,35 @@ installation or publication. The copyable authoring Skill follows the existing
 component extension contract. This layout decision is not evidence that every
 host has wired or accepted the optional view.
 
-The Kit Workspace is the Studio's primary surface: a three-column file workbench for the selected Kit. One Kit version pins its own Mindset version, its grounding declarations, its Kit-level configuration, and its many-to-many mounts of exact Bundle versions. Kit-owned files are directly editable. A mounted Bundle is read-only inside the Kit by default; changing one opens an independent Bundle working copy under that Bundle's own catalog entry, and the Kit adopts the result only through an explicit mount version change. The Kit's files are the authority for its authoring state; views, previews, and indexes are projections of those files.
+The Kit Workspace preserves the shared Studio shell and uses Source Files and
+Mount Management tabs. Source files are editable in the current-content editor.
+Mount management shows available Bundles on the left and mounted Bundles on the
+right; a binding follows the current library Bundle identity. Empty or incomplete
+Kit authoring may be saved and completed later.
 
-Kit authoring provides:
-
-- Mindset editing and an explicit Bundle mount graph that selects exact Bundle versions from the flat catalog without copying Bundle source;
-- validation of identifiers, dependencies, runtime capabilities, cross-Bundle references, presentation availability, and consistency between mounts and any generated Mindset catalog;
-- preview through the same Design Workspace used at runtime;
-- publication of one immutable Kit version whose Bundle references are fully resolved.
-
-The Bundles area provides:
-
-- search and filtering by identity, capability, presentation mode, execution mode, provenance, compatibility, dependency, and publication state;
-- source editing, schema and validation diagnostics, resource inspection, version history, reverse Kit dependencies, and deprecation state;
-- an impact view showing which Kit versions and active sessions pin each shared Bundle version before its working copy is changed or the published definition is deprecated;
-- native panel inspection for official Bundles and live declarative panel editing and preview for declarative Bundles;
-- isolated previews using temporary versions, cloned sample Design Files, and a restricted artifact directory, without reading or modifying a production session.
+The Bundle workspace shares that editor, with Source Files and Panel Preview.
+Save and Revert are global object actions. Panel Preview renders the current
+`panel.yaml` and associated draft files; it is not a second save target. The source
+view supports human editing and Git-style inline diff. Native Agent proposals
+enter the same files, preview and explicit Save path. Validation diagnostics
+explain why a preview or execution cannot proceed; they do not block preserving
+unfinished source. Copy creates an independent object only when the user chooses it.
 
 The Test Lab hosts the Custom Panel Lab: custom panel content is previewed through the same renderer and interpreter the runtime uses, against fixtures or live snapshots, on an isolated host port. A CLI fallback covers environments without an available browser surface.
 
 The Projects area presents design knowledge for a selected Design Project. It will visualize Design Files, accepted assertions, and the grounding, reflection, and alignment graph through DesignKnowledgeService with its Ladybug provider. Those presentations are derived projections of authoritative state, not editing surfaces.
 
-Editing a published Mindset, Bundle, or Kit always creates a working copy based on that exact version. Editing a shared Bundle requires an explicit choice between revising the shared definition, forking it under a new identity, or changing only schema-declared Kit binding configuration. Publication stages and validates the full dependency closure through the same compiler, semantic validation, capability checks, panel rendering, model rendering, and save-and-restore paths used by runtime. A standalone Kit publication accepts published dependencies only; an explicit coordinated release atomically creates versions for its listed, independently validated working copies and dependent Kits. The Studio distinguishes working, published, diverged, deprecated, tombstoned, and pinned states; retained pins remain resolvable. No catalog edit silently retargets a published Kit or active session.
+Import and export operate on complete content trees. Bundle import accepts ZIP,
+folder or bare `SKILL.md`; missing companion files produce an incomplete-content
+notice and can be completed through the ordinary editor and bound Host Agent.
+Kit import requires `kit.yaml` and `mindset.md`. Identity collisions create a
+renamed independent item. Export downloads ZIP directly; source/license fields
+are not admission requirements. Existing files and notices are preserved. Path
+integrity and actual read/parse failures remain concrete checks. Imported content
+does not grant native provider authority. These operations do not publish npm.
 
-Import and export operate on Design System content, not Harness plugin declarations. A versioned archive records content hashes, the exact dependency lock, provenance, licenses, and an optional signature. Import verifies namespace authority, confines paths and resources, rejects executable content, and stages results as isolated working copies before publication. Equal identities and hashes deduplicate; an identity conflict from an unauthorized source requires an explicit fork into another namespace. Imported content cannot acquire executable authority. Official native code remains in signed provider plugins, while ordinary imported or user-authored Bundles use declarative presentation and the allowed content capabilities.
 
-The Studio can run as a route inside the local plugin or expose the same service API through a separate process. Both deployments use the same catalog, compiler, versioning, preview, validation, and publication implementations. Search indexes and graph views are derived and rebuildable; they never become authorities for the Kit catalog.
+The Studio can run as a route inside the local plugin or expose the same service API through a separate process. Both deployments use the same catalog, current-source persistence, compiler, preview and validation implementations. Search indexes and graph views are derived and rebuildable; they never become authorities for the Kit catalog.
 
 ## Alignment Workspace and advisories
 
@@ -734,7 +831,7 @@ Advisories and human dispositions have explicit durable schemas and Design Syste
 
 Kit-owned grounding declarations tell the profiles which Bundle records produce domain entities, references, requirements, evidence, and verification relationships. The generic runtime executes those declarations without Bundle-name branches. Reflection and impact analysis are addressed through their exact input pins and discard stale results when their inputs change during analysis.
 
-The same advisory model applies at two levels. Runtime profiles examine the software product being designed. Studio profiles examine the evidence, compatibility, dependencies, validation coverage, and internal consistency of Mindsets, Bundles, and Kits themselves. Accepted Studio advice still modifies only a working copy through the normal publication pipeline; it cannot rewrite a published version.
+The same advisory model applies at two levels. Runtime profiles examine the software product being designed. Studio profiles examine the evidence, compatibility, dependencies, validation coverage, and internal consistency of Mindsets, Bundles, and Kits themselves. Accepted Studio advice uses ordinary source editing and saving. It does not update existing projects' own definition files implicitly.
 
 ## Acceptance invariants
 
@@ -744,7 +841,7 @@ The architecture is preserved only when all of the following remain true:
 - The Agent Host remains the primary conversation and development surface; a companion Design UI never becomes a second general-purpose Agent client.
 - Embedded, inline, and companion presentations use one shared Design UI and preserve the same design-session identity and state semantics.
 - Every design operation resolves an explicitly selected Design Project; an Agent Host working directory never selects or identifies a project implicitly.
-- Every managed Design Project is an independent Git repository whose root `project.json` identifies the project and optionally pins one exact Kit version.
+- Every managed Design Project is an independent Git repository whose root `project.json` identifies the project and selected Kit; initialized Kit and Bundle definitions belong to the project's `design_kit/` tree.
 - Bundle state and its artifacts remain together under that Bundle's `design_files/` directory; there is no project-level artifact directory.
 - Successful validated operations create project checkpoints, while session state, handoffs, locks, and transient working copies remain outside project Git history.
 - Host adapters change transport, lifecycle, tool registration, and presentation only; they do not fork Kit, Bundle, validation, Design File, Studio, or DesignGraph behavior.
@@ -762,13 +859,13 @@ The architecture is preserved only when all of the following remain true:
 - Adding a pure content Kit changes only the catalog; it does not change package dependencies or compiled output.
 - Every interactive Bundle explicitly selects native, declarative or auto presentation; omitted presentation and explicit none both mean no panel.
 - A Bundle using native presentation cannot fall back to declarative rendering.
-- A declarative Bundle can be added with content alone and survives save, replay, version reload, and cross-panel references.
-- A published Kit pins immutable Mindset and Bundle versions; later catalog publications never retarget it.
+- A declarative Bundle can be added with content alone and survives save, reopen, project reload and cross-panel references.
+- A project's Kit and mounted Bundle files remain independent of later catalog saves or removals.
 - A Kit binding cannot mutate the referenced Bundle's schema, validation, presentation, or executable behavior.
-- Studio and runtime use the same compiler, validation, preview, persistence, and publication implementations.
+- Studio and runtime share definition compilation, validation and rendering. Studio source saves and runtime Design File publication keep their distinct persistence responsibilities.
 - Execution metadata has real runtime consumers; agentic or handoff behavior is never simulated only by prose.
 - Semantic validation runs before authoritative persistence and inside the selected executor's lifecycle.
-- Active sessions resolve their exact Kit version, including model-visible resources and behavior identifiers.
+- Active sessions resolve their project's Kit files, including model-visible resources and behavior identifiers.
 - Model-visible state, decisions, clarity, and advisories are replayable from durable inputs.
 - The DesignGraph is evidence-addressed, provider-replaceable, and rebuildable from authoritative state.
 - The DesignGraph contains durable product and rationale knowledge, not a duplicate execution log or hidden Agent reasoning.
@@ -781,10 +878,9 @@ The following choices remain open and must not be implied by implementation conv
 
 - removal of the experimental qualifier from the selected local Ladybug WASM provider after shared conformance and real platform acceptance, and any future remote-provider deployment;
 - the graph projection declaration format for declarative Bundles;
-- the physical storage, retention, and garbage collection for Bundle, Mindset, and Kit definitions, working copies, and published versions;
+- garbage collection for unreferenced internal source snapshots; snapshots are storage details, not a local version catalog;
 - the retention and recoverable repair policy for interrupted dirty Design Project work trees;
 - the public extension model, if any, for third-party trusted native panels or Producer contributions;
-- the publication protocol used by the authoring Studio for transactional multi-file content versions.
 
 
 ### Product entry naming

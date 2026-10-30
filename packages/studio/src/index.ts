@@ -26,12 +26,9 @@ export { loadStudioKit } from './load.ts'
 export { validateBundle, validateKit } from './validate.ts'
 export { prepareStudioPanelPreview } from './panel-preview.ts'
 export type { StudioPanelPreviewRequest, StudioPanelPreview, StudioPanelPreviewResult } from './panel-preview.ts'
-export { StudioPanelDraftService } from './panel-drafts.ts'
-export { StudioKitDraftService } from './kit-drafts.ts'
-export type { StudioKitDraftContent, StudioKitDraftRecord, StudioKitDraftRepository, StudioKitDraftEdit, StudioKitDraftValidation } from './kit-drafts.ts'
-export { exportStudioContentArchive, readStudioContentArchive, prepareStudioContentImport } from './content-archive.ts'
-export type { StudioArchivePin, StudioArchiveFile, StudioContentArchive, StudioArchiveSource, StudioPreparedContentImport } from './content-archive.ts'
-export type { StudioPanelDraftContent, StudioPanelDraftRecord, StudioPanelDraftSummary, StudioPanelDraftRepository, StudioDraftSources, StudioSourceSnapshot, StudioPanelDraftEdit } from './panel-drafts.ts'
+export { exportStudioContentArchive, exportStudioSourceArchive, readStudioContentArchive } from './content-archive.ts'
+export type { StudioArchivePin, StudioArchiveFile, StudioContentArchive, StudioArchiveSource } from './content-archive.ts'
+export type { StudioPanelDraftContent, StudioPanelDraftRecord, StudioPanelDraftSummary, StudioPanelDraftRepository, StudioDraftSources, StudioSourceSnapshot } from './panel-drafts.ts'
 export type {
   StudioBundleView,
   StudioBundleMountView,
@@ -64,3 +61,5 @@ export type {
   StudioBundleWorkspaceView,
 } from './bundle-source.ts'
 export { StudioBundleSourceService } from './bundle-source.ts'
+export { normalizeStudioInstanceChanges, STUDIO_INSTANCE_CHANGE_LIMITS } from './instance-changes.ts'
+export type { StudioInstanceFileChange, StudioInstanceChangeRequest, StudioInstanceFileDiff, StudioInstanceCandidate, StudioInstanceSaveChanges, StudioInstanceChangeReceipt } from './instance-changes.ts'

@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { valid, validRange, satisfies } from 'semver'
-import { releasePackagesFor } from './release-consumer-config.mjs'
+import { DSH_AGGREGATE_SOURCE, releasePackagesFor } from './release-consumer-config.mjs'
 
 const LADYBUG = '@ladybugdb/wasm-core'
 const FIELDS = ['dependencies', 'optionalDependencies', 'peerDependencies', 'devDependencies']
@@ -30,7 +30,7 @@ export function createNpmCandidates(manifests, { scope, version, versions, ladyb
     assert.equal(manifests['dsh-design-knowledge-ladybug'].dependencies?.[LADYBUG], ladybugVersion, 'Knowledge must declare selected registry Ladybug exactly')
   }
   const mapping = Object.fromEntries(Object.keys(packages).map(name => [name, {
-    name: `${scope}/${name === LADYBUG ? 'ladybug-wasm-core' : name}`,
+    name: `${scope}/${name === LADYBUG ? 'ladybug-wasm-core' : name === DSH_AGGREGATE_SOURCE ? name.slice(name.indexOf('/') + 1) : name}`,
     version: name === LADYBUG ? ladybugVersion : versions?.[name] ?? version,
     directory: packages[name],
   }]))

@@ -21,6 +21,7 @@ import { checkEmitted } from './emitted-loader-check.mjs'
 import { PACKAGED_CLI_LIFECYCLE_IMPORT } from './companion-packaged-knowledge.mjs'
 import { artifactInventory, inventorySha256, regularFile, sha256, validatePicaWorkerEvidence, PICA_WORKER_PINS } from './pica-worker-evidence.mjs'
 import { panelAuthoringInputPaths, preparePanelAuthoringMaterial, writePanelAuthoringMaterial } from './companion-authoring-material.mjs'
+import { studioAuthoringInputPaths, prepareStudioAuthoringMaterial, writeStudioAuthoringMaterial } from './studio-authoring-material.mjs'
 import { prepareCompanionNativeGit, stageCompanionNativeGit, verifyCompanionNativeGit, COMPANION_NATIVE_GIT_IMPORT, isNativeGitBuildCache } from './companion-native-git.mjs'
 
 const workspace = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -61,7 +62,7 @@ export async function snapshotCompanionInputs(nativeGitArtifactRoot, { releaseHo
     if (info.isDirectory()) for (const name of (await readdir(join(workspace, path))).sort()) await walk(`${path}/${name}`)
     else { assert.ok(info.isFile()); files[path] = sha(await readFile(join(workspace, path))) }
   }
-  for (const path of new Set([...inputRoots, ...await panelAuthoringInputPaths(workspace)])) await walk(path)
+  for (const path of new Set([...inputRoots, ...await panelAuthoringInputPaths(workspace), ...await studioAuthoringInputPaths(workspace)])) await walk(path)
   if (releaseHostsFile !== undefined) {
     assert.ok(isAbsolute(releaseHostsFile), 'Absolute release hosts input required')
     assert.equal(await realpath(releaseHostsFile), releaseHostsFile, 'Canonical release hosts input required')
@@ -242,6 +243,8 @@ export async function buildSameSourceCandidate({ ladybugDependency, nativeGitArt
     report.nativeGitArtifactInputs = native.artifactInputs
     report.nativeGitMaterials = await stageCompanionNativeGit(shared, native)
     await writePanelAuthoringMaterial(shared, await preparePanelAuthoringMaterial(workspace))
+    const creatorMethods = await prepareStudioAuthoringMaterial(workspace)
+    await writeStudioAuthoringMaterial(shared, creatorMethods, { skills: false })
     const server = (await import(pathToFileURL(join(companion, 'tsdown.server.config.ts')))).default
     const web = (await import(pathToFileURL(join(companion, 'tsdown.config.ts')))).default
     assert.equal(server.failOnWarn, true); assert.equal(web.failOnWarn, true)
@@ -264,6 +267,8 @@ export async function buildSameSourceCandidate({ ladybugDependency, nativeGitArt
     for (const [host, overlay] of Object.entries({ codex: 'plugin', 'claude-code': 'plugin-claude', qoder: 'plugin-qoder' })) {
       const target = join(source, 'overlays', host)
       await copyTree(join(companion, overlay, 'design-system'), target)
+      // Native plugin materialization projects overlays, not the shared runtime tree.
+      await writeStudioAuthoringMaterial(target, creatorMethods)
       if (host !== 'codex') await copyComponentSkill(target, join(companion, 'plugin/design-system/skills/design-component/SKILL.md'))
       if (host !== 'codex') await copyNativeHookModules(target, { host, sourceDirectory: join(companion, 'src') })
     }

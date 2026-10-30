@@ -55,7 +55,7 @@
 | 看软件页面以外的表达 | [非 Web 示例](non-web-kit-demo.md)、[社区工坊配送](../../examples/community-workshop-delivery/README.md)、[现场作业](../../examples/field-operations-shared/README.md) |
 | 在 Studio 查看 Mindset、挂载与 Bundle，检查样例预览 | [Studio 操作](usage.md#6-studio查看定制和检验套件)：编辑当前内容，按需复制独立身份；区分源码保存、样例预览与真实试运行 |
 | 创作 Kit、Mindset、Bundle 和 Panel | [最小定制](custom-kit-tutorial.md)、[扩展开发](extending.md)、[Panel DSL](../dsl-spec.md)、[共享 UIUX](../panel-uiux-standard.md) |
-| 分享、加载、更新或恢复内容 | [Kit 分享与恢复](kit-sharing.md)、[项目内容维护](kit-sharing.md#更新与恢复项目内容)：内容库原地保存，已有项目保留自己的完整 Kit 文件 |
+| 分享、加载、更新或恢复内容 | [Kit 分享与恢复](kit-sharing.md)、[项目内容维护](../project-content-upgrade.md)：内容库原地保存，已有项目保留自己的完整 Kit 文件 |
 
 ## 开发与参与
 

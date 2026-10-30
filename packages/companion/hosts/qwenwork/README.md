@@ -34,9 +34,14 @@ connector; keep one enabled `design-system` connector. Both point to the same
 retained Companion runtime. The installer prepares these machine-specific paths
 from the acquired npm package, rather than downloading another runtime.
 
-If your organization requires a suite without a bundled connector, ask the
-adapter maintainer to prepare it using the [packaging APIs below](#suite-packaging-for-adapter-maintainers).
-Import only the separately permitted connector and keep one enabled connector.
+If your organization requires a suite without a bundled connector, check the
+acquired version's `install --help`. When supported, use its normal
+`install --host qwenwork --separate-mcp` route to prepare the connector-free suite
+and separate connector configuration. Import only the separately permitted
+connector and keep one enabled connector. An older version without this option
+must report the unsupported preparation step; do not invent flags or bypass
+organization policy. The [packaging APIs below](#suite-packaging-for-adapter-maintainers)
+are for adapter maintainers, not an extra step required of ordinary users.
 
 The suite ID is now `yugoo-design` and the entry Skill is `yugoo`. For the
 one-time rename, disable/remove the old `design-system` expert suite through

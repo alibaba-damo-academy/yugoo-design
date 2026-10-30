@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -13,6 +13,24 @@ import { satisfies } from 'semver'
 import { assertRequiredPeers } from './release-consumer-config.mjs'
 
 const mapping = { 'dsh-design-core': { name: '@yugoo-design/dsh-design-core' } }
+
+test('scoped package stages create safe parents and exclusively create their leaf', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-scoped-stage-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const packages = join(root, 'packages'); await mkdir(packages)
+  const name = '@yugoo-design/dsh-design-system-dsh'
+  assert.equal(await assembly.createDshPackageStage(packages, name), join(packages, name))
+  await assert.rejects(assembly.createDshPackageStage(packages, name), { code: 'EEXIST' })
+  for (const unknown of ['@foreign/aggregate', '../outside', '@yugoo-design/../../outside']) {
+    await assert.rejects(assembly.createDshPackageStage(packages, unknown), /Known package/)
+  }
+  const linked = join(root, 'linked-packages'), outside = join(root, 'outside')
+  await mkdir(linked); await mkdir(outside)
+  await symlink(outside, join(linked, '@yugoo-design'), process.platform === 'win32' ? 'junction' : 'dir')
+  await assert.rejects(assembly.createDshPackageStage(linked, name), /Nonregular package stage parent/)
+  assert.deepEqual(await readdir(outside), [])
+  await assert.rejects(assembly.createDshPackageStage(join(linked, '@yugoo-design'), name), /Nonregular package stage root/)
+})
 
 test('controlled rc3 trial admits only the exact Host version while retaining rc2 development SDK pins', async () => {
   const source = fileURLToPath(new URL('../', import.meta.url))
@@ -41,7 +59,7 @@ async function selectiveFixture() {
   const options = { scope: '@yugoo-design', version: '0.1.0-beta.2', ladybugVersion: '0.21.1', ladybugSource: 'registry' }
   const previous = await readNpmCandidates(source, options)
   const versions = Object.fromEntries(Object.keys(previous.mapping).map(name => [name, '0.1.0-beta.2']))
-  const packageNames = ['dsh-design-panel', 'dsh-design-provider-web-app', 'dsh-design-studio-dsh', 'dsh-design-system-dsh']
+  const packageNames = ['dsh-design-panel', 'dsh-design-provider-web-app', 'dsh-design-studio-dsh', '@yugoo-design/dsh-design-system-dsh']
   for (const name of packageNames) versions[name] = '0.1.0-r1-local.20261017.1'
   const report = await readNpmCandidates(source, { ...options, version: undefined, versions })
   const retainedManifests = Object.fromEntries(Object.keys(previous.mapping).filter(name => !packageNames.includes(name))
@@ -49,7 +67,7 @@ async function selectiveFixture() {
   return { source, options, previous, versions, report, packageNames, retainedManifests }
 }
 
-test('selected distribution selects the four affected packages while preserving six explicit manifest contracts', async () => {
+test('selected distribution packs four packages while preserving six explicit manifest contracts', async () => {
   const f = await selectiveFixture()
   const before = structuredClone(f.report)
   const selection = assembly.selectDshDistributionPackages(f.report, f)
@@ -60,10 +78,10 @@ test('selected distribution selects the four affected packages while preserving 
     assert.equal(item.manifestContractVerified, true)
     assert.equal(item.archiveVerified, false, 'Manifest data does not establish retained archive bytes')
   }
-  const aggregate = assembly.createDshDistributionManifest(f.report, 'dsh-design-system-dsh')
+  const aggregate = assembly.createDshDistributionManifest(f.report, '@yugoo-design/dsh-design-system-dsh')
   assert.equal(Object.keys(aggregate.dependencies).length, 8)
   assert.deepEqual(aggregate.dependencies, {
-    ...f.report.candidates['dsh-design-system-dsh'].dependencies,
+    ...f.report.candidates['@yugoo-design/dsh-design-system-dsh'].dependencies,
     [f.report.mapping['dsh-design-studio'].name]: f.versions['dsh-design-studio'],
     [f.report.mapping['dsh-design-studio-ui'].name]: f.versions['dsh-design-studio-ui'],
   })
@@ -75,15 +93,24 @@ test('selected distribution selects the four affected packages while preserving 
   assert.deepEqual(f.report, before)
 })
 
+test('a changed exact Panel peer prevents retaining the previous Studio DSH manifest', async () => {
+  const f = await selectiveFixture()
+  const name = 'dsh-design-studio-dsh'
+  assert.throws(() => assembly.selectDshDistributionPackages(f.report, {
+    packageNames: f.packageNames.filter(item => item !== name),
+    retainedManifests: { ...f.retainedManifests, [name]: assembly.createDshDistributionManifest(f.previous, name) },
+  }), /Retained manifest contract changed: dsh-design-studio-dsh/)
+})
+
 test('default composition excludes internal Kits without promoting unrelated release artifacts', async () => {
   const { report } = await selectiveFixture()
-  const aggregate = assembly.createDshDistributionManifest(report, 'dsh-design-system-dsh')
+  const aggregate = assembly.createDshDistributionManifest(report, '@yugoo-design/dsh-design-system-dsh')
   const internalKit = 'dsh-design-skills-decision-modeling'
   assert.equal(report.mapping[internalKit], undefined)
   assert.equal(aggregate.dependencies['@yugoo-design/' + internalKit], undefined)
   const patch = parse(await readFile(new URL('../packages/dsh/cordis.patch.yml', import.meta.url), 'utf8'))
   const rows = patch.flatMap(entry => entry.insert ?? [])
-  assert.equal(rows.length, 10)
+  assert.equal(rows.length, 11)
   assert.deepEqual(rows.filter(row => row.name === 'dsh-design-core/kit-loader').map(row => row.config.packageName), ['dsh-design-skills-web-app'])
   const byName = new Map(Object.entries(report.candidates).map(([name, manifest]) => [manifest.name, name]))
   const visited = new Set()
@@ -95,7 +122,7 @@ test('default composition excludes internal Kits without promoting unrelated rel
       for (const dep of Object.keys(manifest[field] ?? {})) if (byName.has(dep)) visit(byName.get(dep))
     }
   }
-  visit('dsh-design-system-dsh')
+  visit('@yugoo-design/dsh-design-system-dsh')
   assert.deepEqual([...visited].sort(), Object.keys(report.mapping).sort(), 'all public runtime packages remain reachable')
   report.mapping['unrelated-extension'] = { name: '@fixture/unrelated-extension', version: '1.0.0' }
   report.candidates['unrelated-extension'] = { name: '@fixture/unrelated-extension', version: '1.0.0' }
@@ -104,7 +131,7 @@ test('default composition excludes internal Kits without promoting unrelated rel
     ...report.candidates['dsh-design-core'].peerDependenciesMeta,
     '@fixture/unrelated-extension': { optional: true },
   }
-  assert.deepEqual(assembly.createDshDistributionManifest(report, 'dsh-design-system-dsh'), aggregate)
+  assert.deepEqual(assembly.createDshDistributionManifest(report, '@yugoo-design/dsh-design-system-dsh'), aggregate)
 })
 
 test('selected distribution requires a complete disjoint partition and refuses stale retained pins', async () => {

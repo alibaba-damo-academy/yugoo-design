@@ -193,6 +193,7 @@ export interface DesignKnowledgeMutationResult {
 export interface DesignKnowledgeQuery {
   readonly projectId: DesignProjectId
   readonly revision?: DesignKnowledgeRevision
+  /** Case-insensitive literal substring of serialized entities/relations; spaces are literal, without tokenization or query-vector search. */
   readonly text?: string
   /** Exact ID lookup in the same snapshot, including endpoints outside a loaded page. */
   readonly entityIds?: readonly DesignKnowledgeEntityId[]
@@ -200,7 +201,7 @@ export interface DesignKnowledgeQuery {
   /** One-hop neighborhood; does not recursively expand newly discovered endpoints. */
   readonly incidentTo?: readonly DesignKnowledgeEntityId[]
   readonly direction?: 'incoming' | 'outgoing' | 'both'
-  /** Exact Design File evidence sources, not arbitrary filesystem paths. */
+  /** Exact provenance.evidence[].source values. Use recorded Design-Files-relative paths without adding a host root or design_files/ prefix. */
   readonly sourceFiles?: readonly string[]
   readonly entityTypes?: readonly string[]
   /** Schema-derived ontology instance types stored independently from physical record kinds. */

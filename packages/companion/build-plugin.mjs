@@ -12,6 +12,7 @@ import { prepareBundledLicenseMaterials, copyBundledLicenseMaterials, prepareBro
 import { copyOwnLicenseMaterials, OWN_LICENSE_FILES } from '../../scripts/release-own-license.mjs'
 import { readOfficialDshJsonInput } from '../../scripts/official-dsh-json-input.mjs'
 import { preparePanelAuthoringMaterial, writePanelAuthoringMaterial } from '../../scripts/companion-authoring-material.mjs'
+import { prepareStudioAuthoringMaterial, writeStudioAuthoringMaterial } from '../../scripts/studio-authoring-material.mjs'
 import { copyComponentSkill } from './component-skill-package.mjs'
 import { configureCodexDesktopPackage } from './codex-desktop-package.mjs'
 import { prepareCompanionNativeGit, stageCompanionNativeGit, verifyCompanionNativeGit } from '../../scripts/companion-native-git.mjs'
@@ -40,7 +41,9 @@ export async function copyNativeHookModules(target, { host, sourceDirectory = jo
   const prefix = host === 'qwenwork' ? 'qwenwork' : host === 'qoder' ? 'qoder' : 'claude'
   await mkdir(join(target, 'scripts'), { recursive: true })
   for (const name of ['native-hook-transport.mjs', 'windows-private-storage.mjs', 'windows-native-platform.mjs', `${prefix}-hook-transport.mjs`, `${prefix}-connection.mjs`]) {
-    await copyTree(join(sourceDirectory, name), join(target, 'scripts', name))
+    // Repository compatibility entries cannot be relocated into a plugin.
+    const owner = name.startsWith('windows-') ? join(sourceDirectory, '../../studio/src/node') : sourceDirectory
+    await copyTree(join(owner, name), join(target, 'scripts', name))
   }
 }
 
@@ -95,6 +98,7 @@ export async function packagePlugin(destination, { host = 'codex', qwenworkRunti
   if (host === 'qwenwork') validateQwenWorkRuntime(qwenworkRuntime)
   const officialInputs = await readOfficialDshJsonInput()
   const authoring = await preparePanelAuthoringMaterial(join(here, '../..'))
+  const creatorMethods = await prepareStudioAuthoringMaterial(join(here, '../..'))
   const bundledLicenseEntries = await prepareBundledLicenseMaterials(join(here, '../..'))
   const browserLicenseEntries = await prepareBrowserLicenseMaterials(join(here, '../..'))
   const bundledJsLicenseEntries = await prepareBundledJsLicenseMaterials(join(here, '../..'))
@@ -108,6 +112,7 @@ export async function packagePlugin(destination, { host = 'codex', qwenworkRunti
   await copyTree(join(here, overlay, 'design-system'), target)
   if (overlayHost !== 'codex') await copyComponentSkill(target)
   await writePanelAuthoringMaterial(target, authoring)
+  await writeStudioAuthoringMaterial(target, creatorMethods)
   await copyOwnLicenseMaterials(join(here, '../..'), target)
   const manifestPath = join(target, manifestDirectory, 'plugin.json')
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'))

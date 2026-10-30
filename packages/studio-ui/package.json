@@ -8,7 +8,7 @@
   "version": "0.0.0",
   "license": "Apache-2.0",
   "type": "module",
-  "description": "Host-neutral shared React workspace for the read-only Kit-first Design Studio surface.",
+  "description": "Host-neutral shared React workspace for Kit and Bundle browsing and current-source editing.",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "exports": {
@@ -21,8 +21,10 @@
   "scripts": {
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
-    "test": "node tests/controller.test.mjs && node tests/render.test.mjs && node tests/boundary.test.mjs && node tests/panel-draft-controller.test.mjs && node tests/trial-controller.test.mjs && node --test tests/panel-workbench-selection.test.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx --test tests/component-library.test.mjs tests/document-reading.test.mjs",
-    "test:content-archive": "TSX_TSCONFIG_PATH=./tsconfig.json node --import tsx --test tests/content-archive-controller.test.mjs tests/content-archive-render.test.mjs tests/content-archive-workspace.test.mjs"
+    "test": "node tests/controller.test.mjs && node tests/render.test.mjs && node tests/boundary.test.mjs && node tests/trial-controller.test.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx --test tests/component-library.test.mjs tests/document-reading.test.mjs tests/instance-presentation.test.mjs && pnpm run test:source-candidates && pnpm run test:content-archive",
+    "test:content-archive": "TSX_TSCONFIG_PATH=./tsconfig.json node --import tsx --test tests/content-archive-workspace.test.mjs tests/content-zip.test.mjs tests/content-source-import.test.mjs",
+    "test:source-candidates": "TSX_TSCONFIG_PATH=tests/source-tsconfig.json node --import tsx --test tests/instance-source-changes.test.mjs tests/studio-feedback.test.mjs tests/read-mount-feedback.test.mjs tests/mount-save.test.mjs",
+    "test:source-candidates:built": "STUDIO_SOURCE_CANDIDATE_REVIEW_BUILT=1 TSX_TSCONFIG_PATH=tests/source-tsconfig.json node --import tsx --test tests/instance-source-changes.test.mjs tests/studio-feedback.test.mjs"
   },
   "peerDependencies": {
     "dsh-design-studio": "0.0.0",
@@ -44,5 +46,8 @@
     "LICENSE",
     "NOTICE",
     "THIRD_PARTY_NOTICES.md"
-  ]
+  ],
+  "dependencies": {
+    "fflate": "0.8.3"
+  }
 }

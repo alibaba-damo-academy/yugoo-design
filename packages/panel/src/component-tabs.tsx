@@ -1,5 +1,8 @@
-import { createElement, useEffect, useId, useState, type ReactElement, type KeyboardEvent } from 'react'
+import { createContext, createElement, useEffect, useId, useState, type ReactElement, type KeyboardEvent } from 'react'
 import type { ComponentNode } from './dsl.ts'
+
+/** A child may reveal its existing sibling view; this changes only UI selection. */
+export const ComponentTabsNavigation = createContext<((component: ComponentNode['component']) => void) | undefined>(undefined)
 
 /** Navigation only: children remain mounted and never acquire write authority. */
 export function ComponentTabs({ node, render }: {
@@ -16,7 +19,10 @@ export function ComponentTabs({ node, render }: {
   const active = selected !== undefined && ids.includes(selected) ? selected : ids[0]
   // Commit the fallback so a removed/re-added ID cannot regain selection.
   useEffect(() => { if (selected !== active) setSelected(active) }, [selected, active])
-  return createElement('div', { className: 'dsh-component-tabs' },
+  return createElement(ComponentTabsNavigation.Provider, { value: component => {
+    const target = children.find(child => child.component === component)
+    if (target) setSelected(target.id)
+  } }, createElement('div', { className: 'dsh-component-tabs' },
     createElement('div', { className: 'dsh-component-tabs-list', role: 'tablist',
       'aria-label': node.title ?? node.id, 'aria-orientation': 'horizontal' },
     children.map((child, index) => createElement('button', {
@@ -42,5 +48,5 @@ export function ComponentTabs({ node, render }: {
       key: child.id, className: 'dsh-component-tabs-panel', role: 'tabpanel',
       id: `${base}-panel-${index}`, 'aria-labelledby': `${base}-tab-${index}`,
       hidden: active !== child.id, tabIndex: 0,
-    }, render(child))))
+    }, render(child)))))
 }

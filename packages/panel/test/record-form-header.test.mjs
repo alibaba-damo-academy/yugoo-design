@@ -10,10 +10,14 @@ globalThis.ResizeObserver=class{observe(){} unobserve(){} disconnect(){}}
 globalThis.requestAnimationFrame=dom.window.requestAnimationFrame.bind(dom.window)
 globalThis.cancelAnimationFrame=dom.window.cancelAnimationFrame.bind(dom.window)
 document.querySelector('style').textContent = readFileSync(new URL('../src/visual-components.css', import.meta.url), 'utf8')
+  // JSDOM does not resolve padding shorthand variables; actual browser checks
+  // use the untouched stylesheet. Resolve the existing default for this fixture.
+  .replaceAll('var(--ygd-panel-content-gutter, 16px)', '16px')
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 const React = await import('react'); globalThis.React = React
 const { createRoot } = await import('react-dom/client')
 const { renderNode } = await import('../src/interpreter.ts')
+const { applyDesignEditToDraft } = await import('../src/record-state.ts')
 const { parsePanelManifest, localizePanelManifest } = await import('../../core/src/panel-dsl.ts')
 
 test('shared headers edit a single canonical title, retain readonly/delete semantics, and opt out of reordering without discarding order', async () => {
@@ -27,8 +31,8 @@ test('shared headers edit a single canonical title, retain readonly/delete seman
     policies: { p: { id: 'p', title: 'Derived title stays intact', role_ref: 'a', effect: 'allow', capability: 'Submit', applies_when: '', requirements: [], custom_requirement: '' },
       other: { id: 'other', title: 'Other role policy', role_ref: 'b', effect: 'deny', capability: 'Remove', requirements: [] } }, policy_order: ['p', 'other'] }
   let updates
-  const show = (editable = true, node = manifest.ui) => React.act(async () => root.render(React.createElement('div', { className: 'dsh-design-panel' },
-    renderNode(node, manifest, data, { locale: 'en-US', editable, onPanelUpdate: next => { updates = next } }))))
+  const show = (editable = true, node = manifest.ui, onEdit) => React.act(async () => root.render(React.createElement('div', { className: 'dsh-design-panel' },
+    renderNode(node, manifest, data, { locale: 'en-US', editable, onEdit, onPanelUpdate: next => { updates = next } }))))
   const style = selector => window.getComputedStyle(document.querySelector(selector))
   const input = async (element, text) => React.act(async () => {
     Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(element, text)
@@ -56,6 +60,8 @@ test('shared headers edit a single canonical title, retain readonly/delete seman
     assert.ok(document.querySelector('.dsh-design-record-header > .dsh-record-parent-inline'), 'the accepted inline parent control stays in the shared header')
     assert.equal(style('.dsh-record-inspector').paddingTop, '0px', 'an inline parent control does not create an extra row above the header')
     assert.equal(style('.dsh-record-inspector').paddingLeft, '16px', 'body reading gutter remains intact')
+    assert.equal(style('.dsh-design-record-header.is-detail').height, 'auto', 'an inline parent control can wrap without clipping')
+    let detailLayout
     assert.equal(style('.dsh-design-record-header-input').height, '32px')
     assert.ok(document.querySelector('.dsh-related-record-table .dsh-design-rows-table'))
     assert.equal(document.querySelectorAll('.dsh-related-record-table tbody tr').length, 1)
@@ -123,6 +129,8 @@ test('shared headers edit a single canonical title, retain readonly/delete seman
       assert.equal(style('.dsh-record-inspector').paddingTop, '0px', 'a leading detail header meets guidance without an outer spacer')
       assert.equal(style('.dsh-record-inspector').paddingLeft, '16px', 'body reading gutter remains intact')
       assert.equal(style('.dsh-design-record-header.is-detail').minHeight, '44px')
+      assert.equal(style('.dsh-design-record-header.is-detail').height, '44px')
+      detailLayout = Object.fromEntries(['display', 'alignItems', 'height'].map(key => [key, style('.dsh-design-record-header.is-detail')[key]]))
     }
     manifest.sections[0].confirm_delete = true
     manifest.sections[0].form.reorder = true
@@ -169,5 +177,27 @@ test('shared headers edit a single canonical title, retain readonly/delete seman
       assert.deepEqual(data, before, 'header edit cannot mutate source facts')
       assert.equal(updates[section === 'connections' ? 'canvas_sections' : 'connections'], undefined)
     }
+
+    // The math reader shares the ordinary detail header and grid stack. A
+    // block substitute lets the negative header margin collapse through it.
+    manifest = parsePanelManifest(readFileSync(new URL('../../skills-decision-modeling/bundles/decision_model/panel.yaml', import.meta.url), 'utf8'))
+    data = JSON.parse(readFileSync(new URL('../../skills-decision-modeling/bundles/decision_model/reference/preview.json', import.meta.url), 'utf8'))
+    updates = undefined
+    const modelBefore = structuredClone(data)
+    await show(true, manifest.ui, edit => { updates = applyDesignEditToDraft(data, manifest, edit) })
+    assert.deepEqual(Object.fromEntries(['display', 'alignItems', 'height'].map(key => [key, style('.dsh-math-document > header')[key]])), detailLayout)
+    assert.equal(style('.dsh-math-document').display, 'grid')
+    assert.equal(style('.dsh-math-document').paddingTop, '0px', 'the inspector remains the sole gutter owner')
+    assert.equal(style('.dsh-math-document').gap, 'var(--ygd-panel-detail-section-gap, 16px)')
+    assert.equal(style('.dsh-math-document .dsh-design-record-header-input').height, '32px')
+    await React.act(async () => document.querySelector('.dsh-math-document .dsh-panel-title-edit').click())
+    assert.equal(document.activeElement, document.querySelector('.dsh-math-document [data-panel-title="editable"]'))
+    assert.equal(updates, undefined, 'header focus does not write a model')
+    await input(document.activeElement, 'Renamed mathematical model')
+    assert.equal(updates.models.example.title, 'Renamed mathematical model')
+    assert.deepEqual(data, modelBefore)
+    await show(false)
+    assert.equal(document.querySelector('.dsh-math-document .dsh-panel-title-edit'), null)
+    assert.equal(document.querySelector('.dsh-math-document [data-panel-title="readonly"]').readOnly, true)
   } finally { await React.act(async () => root.unmount()); dom.window.close() }
 })

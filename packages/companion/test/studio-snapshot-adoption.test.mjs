@@ -1,11 +1,12 @@
-/** Source-plane adoption; no HTTP, catalog installation, extraction or execution. */
+/** Active trial capture and stateless archive validation; no extraction or execution. */
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { mkdtemp, mkdir, writeFile, readFile, readdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { createHash } from 'node:crypto'
-import { createStudioDraftPorts, createStudioKitDrafts, createStudioPanelDrafts } from '../src/studio-panel-drafts.mjs'
+import { readStudioContentArchive } from '../../studio/src/content-archive.ts'
+import { createStudioDraftPorts } from '../src/studio-panel-drafts.mjs'
 
 const sha = text => createHash('sha256').update(text).digest('hex')
 const bundle = { name: 'alpha', version: '1.0' }
@@ -40,73 +41,45 @@ async function fixture(t) {
   return { options, stateRoot, kitRoot, installed }
 }
 
-test('archive bytes → existing snapshot → independent Kit/Panel copies and durable reopen', async t => {
-  const f = await fixture(t), pin = { name: 'imported_demo', version: '1.0' }, source = envelope()
-  for (const kind of ['kit', 'panel']) {
-    const { sources } = await createStudioDraftPorts(f.options, kind)
-    const snapshot = await sources.retain(source)
-    const again = await sources.retain(source)
-    assert.equal(again.id, snapshot.id)
-    const entries = JSON.parse(await readFile(join(f.stateRoot, `studio-${kind}-drafts/snapshots/${snapshot.id}.json`), 'utf8'))
-    assert.equal(new Map(entries).get('reference/pixel.bin'), Buffer.from([0, 255, 1, 128]).toString('base64'))
-    const service = await (kind === 'kit' ? createStudioKitDrafts(f.options) : createStudioPanelDrafts(f.options))
-    const input = { snapshotId: snapshot.id, kit: pin, bundle }
-    const draft = await service.createFromSnapshot(input)
-    assert.equal(draft.confirmed, false); assert.equal(draft.revision, 0); assert.equal(draft.baseSnapshot, snapshot.id)
-    const other = await service.createFromSnapshot(input)
-    assert.notEqual(other.id, draft.id)
-    const edit = kind === 'kit' ? { mindsetSource: draft.mindsetSource + '\nOwn edit\n', relationsSource: null }
-      : { panelSource: draft.panelSource + '\n# Own edit\n', sampleSource: '{"summary":"Own sample"}' }
-    const saved = await service.save({ id: draft.id, expectedRevision: 0, ...edit })
-    await assert.rejects(service.save({ id: draft.id, expectedRevision: 0, ...edit }), /changed/)
-    const reopened = await (kind === 'kit' ? createStudioKitDrafts(f.options) : createStudioPanelDrafts(f.options))
-    assert.deepEqual(await reopened.read(draft.id), saved)
-    assert.equal((await reopened.read(other.id)).revision, 0)
-    const confirmed = await reopened.confirm({ id: draft.id, expectedRevision: 1 })
-    assert.equal(confirmed.draft.confirmed, true, JSON.stringify(confirmed))
-    assert.equal((await reopened.fork(draft.id)).confirmed, false)
-    await assert.rejects(service.createFromSnapshot({ ...input, kit: { ...pin, version: '2.0' } }), /selected Kit pin/)
-    if (kind === 'panel') await assert.rejects(service.createFromSnapshot({ ...input, bundle: { ...bundle, version: '2.0' } }), /declarative Bundle version/)
-    await assert.rejects(service.createFromSnapshot({ ...input, snapshotId: '../escape' }), /snapshot/)
-    assert.deepEqual(await readdir(join(f.stateRoot, `studio-${kind}-drafts/snapshots`)), [`${snapshot.id}.json`])
+test('captured source bytes reopen with confinement', async t => {
+  const f = await fixture(t), pin = { name: 'installed_demo', version: '1.0' }
+  for (const kind of ['panel']) {
+    const { sources, repository } = await createStudioDraftPorts(f.options, kind)
+    const snapshot = await sources.capture(pin)
+    const opened = await sources.open(snapshot.id)
+    assert.deepEqual(await opened.fs.readBytes(join(opened.root, 'reference/pixel.bin')), Buffer.from([0, 255, 1, 128]))
+    await assert.rejects(opened.fs.readText(join(opened.root, '..', 'outside')), /escapes/)
+    const reopened = await (await createStudioDraftPorts(f.options, kind)).sources.open(snapshot.id)
+    assert.deepEqual(await reopened.fs.readBytes(join(reopened.root, 'reference/pixel.bin')), Buffer.from([0, 255, 1, 128]))
+    await assert.rejects(sources.open('../escape'), /snapshot/)
   }
-  for (const [path, bytes] of f.installed) assert.deepEqual(await readFile(join(f.kitRoot, path)), Buffer.from(bytes))
-  assert.deepEqual(await readdir(f.stateRoot), ['studio-kit-drafts', 'studio-panel-drafts'])
 })
 
-test('retain rejects unsafe/unverified envelopes and standalone Bundle context without writes', async t => {
-  const f = await fixture(t), { sources } = await createStudioDraftPorts(f.options, 'kit')
-  await assert.rejects(sources.retain('not-json'))
+test('stateless decoding rejects unsafe or unverified envelopes without source writes', async t => {
+  const f = await fixture(t), { sources } = await createStudioDraftPorts(f.options, 'panel')
+  assert.throws(() => readStudioContentArchive('not-json'))
   const broken = JSON.parse(envelope()); broken.files[0].base64 = 'AA=='
-  await assert.rejects(sources.retain(JSON.stringify(broken)), /integrity/i)
+  assert.throws(() => readStudioContentArchive(JSON.stringify(broken)), /integrity/i)
   const unsafe = content('imported_demo'); unsafe.set('../escape', 'unsafe')
-  await assert.rejects(sources.retain(envelope(unsafe)), /path/i)
-  await assert.rejects(sources.retain(envelope(new Map([['SKILL.md', 'method']]), 'alpha', 'bundle')), /complete Kit archive/)
-  assert.deepEqual(await readdir(join(f.stateRoot, 'studio-kit-drafts/snapshots')), [])
+  assert.throws(() => readStudioContentArchive(envelope(unsafe)), /path/i)
+  assert.deepEqual(await readdir(join(f.stateRoot, 'studio-panel-drafts/snapshots')), [])
   await assert.rejects(createStudioDraftPorts(f.options, '../escape'), /namespace/)
 })
 
 test('installed capture remains byte-identical and uses the same deduplicating writer', async t => {
-  const f = await fixture(t), { sources } = await createStudioDraftPorts(f.options, 'kit')
+  const f = await fixture(t), { sources } = await createStudioDraftPorts(f.options, 'panel')
   const installed = { name: 'installed_demo', version: '1.0' }
   const captured = await sources.capture(installed)
-  assert.equal((await sources.retain(envelope(f.installed, installed.name))).id, captured.id)
-  const service = await createStudioKitDrafts(f.options)
-  assert.equal((await service.create({ kit: installed })).baseSnapshot, captured.id)
-  await assert.rejects(service.create({ kit: { name: 'imported_demo', version: '1.0' } }), /installed Kit/)
-  const snapshotPath = join(f.stateRoot, 'studio-kit-drafts/snapshots', `${captured.id}.json`)
+  assert.equal((await sources.capture(installed)).id, captured.id)
+  await assert.rejects(sources.capture({ name: 'imported_demo', version: '1.0' }), /installed Kit/)
+  const snapshotPath = join(f.stateRoot, 'studio-panel-drafts/snapshots', `${captured.id}.json`)
   await writeFile(snapshotPath, '[]')
-  await assert.rejects(service.createFromSnapshot({ snapshotId: captured.id, kit: installed }), /integrity/)
+  await assert.rejects(sources.open(captured.id), /integrity/)
 })
 
-test('retain preserves the existing finite snapshot quota and writer lock', async t => {
+test('capture preserves the writer lock', async t => {
   const f = await fixture(t), { sources } = await createStudioDraftPorts(f.options, 'panel')
-  let first
-  for (let i = 0; i < 16; i++) { const files = content('imported_demo'); files.set('NOTICE', `retained ${i}`); const snapshot = await sources.retain(envelope(files)); first ??= snapshot }
-  await assert.rejects(sources.retain(envelope()), /limit reached/)
-  assert.equal((await readdir(join(f.stateRoot, 'studio-panel-drafts/snapshots'))).length, 16)
-  assert.ok(await sources.open(first.id))
   const lock = join(f.stateRoot, 'studio-panel-drafts/write.lock'); await mkdir(lock)
-  await assert.rejects(sources.retain(envelope()), /saved elsewhere/)
+  await assert.rejects(sources.capture({ name: 'installed_demo', version: '1.0' }), /saved elsewhere/)
   assert.ok((await readdir(join(f.stateRoot, 'studio-panel-drafts'))).includes('write.lock'))
 })

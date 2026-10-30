@@ -332,6 +332,13 @@ test('only a full workspace root escapes the legacy padded document body', () =>
   assert.equal(declarativePanelOwnsWorkspace({ ...base, ui: { component: 'stack', id: 'root', children: [views] } }), true)
   assert.equal(declarativePanelOwnsWorkspace({ ...base, ui: { ...views, children: [] } }), false)
   assert.equal(declarativePanelOwnsWorkspace({ ...base, ui: { ...views, children: [views.children[0], { component: 'record_form', id: 'form' }] } }), false)
+  const workspaceTabs = { component: 'tabs', id: 'views', children: [
+    { component: 'record_workspace', id: 'objects' },
+    { component: 'stack', id: 'secondary', children: [{ component: 'record_workspace', id: 'sets' }] },
+  ] }
+  assert.equal(declarativePanelOwnsWorkspace({ ...base, ui: workspaceTabs }), true)
+  assert.equal(declarativePanelOwnsWorkspace({ ...base, ui: { ...workspaceTabs, children: [] } }), false)
+  assert.equal(declarativePanelOwnsWorkspace({ ...base, ui: { ...workspaceTabs, children: [workspaceTabs.children[0], { component: 'record_form', id: 'details' }] } }), false)
 })
 
 test('declared question policy preserves first-round cards and read-only history, then follows a new round', async () => {

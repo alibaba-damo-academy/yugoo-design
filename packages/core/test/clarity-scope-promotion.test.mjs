@@ -9,15 +9,30 @@ import fsPromises, { mkdtemp, mkdir, readFile, writeFile, readdir, rm, symlink, 
 import { syncBuiltinESMExports } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join, relative, sep } from 'node:path'
+import { Worker } from 'node:worker_threads'
 import DesignService, { DesignProjectRegistry, DesignProjectManager, nodeDesignProjectSpawn,
   DesignJournalRegistry, DesignJournalStorage, GitVersioning, commitDesignProjectRecords,
   designProjectRecordsRoot, designClarityDigest, parseDesignClarityReported,
-  readDesignClarityAuthority, writeDesignClarityAuthority, projectKitContentHash,
+  readDesignClarityAuthority, readCommittedDesignClarityAuthority, writeDesignClarityAuthority, projectKitContentHash,
   readDesignReviewPolicy, writeDesignReviewPolicy, createProducerProjectWorkspace } from '../lib/index.js'
 const { register } = await import('tsx/esm/api'); register()
 const { registerDesignClarityTool } = await import('../src/dsh-design-clarity-tool.ts')
 const { parseDesignClarityMeta } = await import('../src/design-clarity-report.ts')
 const { nodeFs } = await import('../src/service-tools.ts')
+const { NativeGitExecutor } = await import('../src/git-native-executor.ts')
+
+// Exercise actual commit preparation/native CAS, injecting only the competing
+// publication or explicit I/O failure at its last boundary. No Host or model.
+async function clarityPublisher(f, beforePublish, run) {
+  const executor = new NativeGitExecutor(() => new Worker(new URL('../lib/git-native-worker.js', import.meta.url), { execArgv: [] }))
+  let attempts = 0
+  const spawn = Object.assign(request => nodeDesignProjectSpawn(request), { native: async request => {
+    if (request.operation.kind === 'publish' && request.operation.message === 'Record Design clarity') await beforePublish(++attempts)
+    return executor.execute(request)
+  } })
+  f.design.spawnAdapter = () => spawn
+  try { await run(() => attempts) } finally { await executor.close() }
+}
 
 function report(kit, score = 60, extra = {}) {
   const input = { summary: 'One bounded design.', u: { score, evidence: 'Recorded intent.' },
@@ -86,8 +101,55 @@ test('new conversations share project records, and copying project files preserv
   const copy = join(f.root, 'project-copy')
   await cp(f.project.root, copy, { recursive: true })
   assert.deepEqual(await readDesignClarityAuthority(designProjectRecordsRoot(copy), f.project.projectId), await f.authority())
+  assert.deepEqual(await readCommittedDesignClarityAuthority(copy, f.project.projectId), await f.authority())
   const copiedJournal = new DesignJournalStorage(join(designProjectRecordsRoot(copy), 'journal'), {}, { projectRoot: copy })
   assert.deepEqual(await copiedJournal.read(String(f.project.projectId)), a)
+}))
+
+test('a concurrent KAG record after clarity preparation retries and returns an actually committed score', async () => fixture(async f => {
+  const value = report(f.kit, 80), path = 'design_records/clarity.json'
+  await clarityPublisher(f, async attempt => {
+    if (attempt === 1) await f.git.commitExact('Concurrent KAG archive', new Map([
+      ['design_records/knowledge/archive.json', '{}'],
+    ]), await f.git.head())
+  }, async attempts => {
+    assert.equal((await f.design.reportClarity(f.agent('records-race'), value, f.options)).replayed, false)
+    assert.equal(attempts(), 2)
+    const committed = JSON.parse(await f.git.readTextAt(await f.git.head(), path))
+    assert.equal(committed.report.digest, value.digest)
+    assert.equal((await f.authority()).report.u.score, 80)
+    assert.equal(await f.git.readTextAt(await f.git.head(), 'design_records/knowledge/archive.json'), '{}')
+    assert.equal((await f.journal()).revision, 1)
+  })
+}))
+
+for (const prior of [false, true]) test(`failed clarity publication ${prior ? 'preserves the last committed score' : 'remains unassessed'} until explicit retry`, async () => fixture(async f => {
+  const agent = f.agent('failed-publication'), path = 'design_records/clarity.json'
+  if (prior) await f.design.reportClarity(agent, report(f.kit, 60), f.options)
+  let fail = true
+  const value = report(f.kit, 80)
+  await clarityPublisher(f, () => {
+    if (fail) throw new Error('Injected clarity publication I/O failure')
+  }, async attempts => {
+    await assert.rejects(f.design.reportClarity(agent, value, f.options), /Injected clarity publication I\/O failure/)
+    assert.equal(attempts(), 1, 'non-CAS failures must not retry')
+    const auditRevision = (await f.journal()).revision
+    assert.equal(auditRevision, prior ? 2 : 1, 'audit facts do not prove authority publication')
+    assert.equal((await readDesignClarityAuthority(designProjectRecordsRoot(f.project.root), f.project.projectId)).report.u.score, 80,
+      'the pending file remains available to the explicit report retry')
+    const head = await f.git.head()
+    assert.equal((await f.authority())?.report.u.score, prior ? 60 : undefined)
+    assert.equal((await f.authority())?.report.u.score, prior ? 60 : undefined, 'reads never settle the pending publication')
+    assert.equal(await f.git.head(), head)
+    const committed = await f.git.readTextAt(head, path)
+    assert.equal(committed === undefined ? undefined : JSON.parse(committed).report.u.score, prior ? 60 : undefined)
+    fail = false
+    const retried = await f.design.reportClarity(agent, value, f.options)
+    assert.equal(retried.replayed, true)
+    assert.equal((await f.journal()).revision, auditRevision, 'explicit retry must not duplicate the audit fact')
+    assert.equal((await f.authority()).report.u.score, 80)
+    assert.equal(JSON.parse(await f.git.readTextAt(await f.git.head(), path)).report.digest, value.digest)
+  })
 }))
 
 test('project record reads do not fall back to old runtime authority or change Git', async () => fixture(async f => {
@@ -200,6 +262,7 @@ test('pre-write symlink confinement protects project journal, clarity and review
   await mkdir(external)
   await writeFile(join(external, 'clarity.json'), 'External user file')
   await symlink(external, designProjectRecordsRoot(f.project.root))
+  await assert.rejects(f.authority(), /symbolic link/)
   await assert.rejects(f.design.reportClarity(f.agent('symlink'), report(f.kit), f.options), /symbolic link/)
   await assert.rejects(f.journals.append(f.project.root, String(f.project.projectId),
     { type: 'design/clarity-reported', data: { assessedCheckpoint: f.commit, report: report(f.kit) } }), /symbolic link/)

@@ -41,7 +41,11 @@ working copy. They never use host filesystem or shell access.
 
 - **Plan.** Maintain the complete plan state in `research/research.json`: rounds
   with directions (`title` + `research_points`) and deterministic direct
-  artifact paths for new work. The Producer updates its working copy and calls
+  artifact paths for new work. Preserve explicit source limits, allowed source
+  types, product scope and exclusions in the affected direction's existing
+  `research_points`, alongside its questions, so the saved plan retains the
+  complete brief across confirmation, delegation and serial takeover. Do not
+  invent a limit when the user supplied none. The Producer updates its working copy and calls
   `design_publish({action:"handoff"})` to enter the independently configured gate,
   and the runtime presents `开始调研` / `Start Research`; the user may revise
   the plan before starting it.
@@ -148,6 +152,34 @@ Frame each direction around what needs to be understood and why it matters to
 the current product or requested exploration. Express this in the existing
 `research_points`, not extra plan fields. Broad landscape research can discover
 useful questions; it need not pretend the user has already chosen a solution.
+
+### Honor the user's evidence bounds
+
+The user's source limit is an acceptance condition for the requested output,
+separate from the Host's tool/time/token budget. Carry the complete current
+constraint into every Worker brief. Before serial research or taking over a
+failed Worker, reread the saved direction and apply the same constraint; a failed
+attempt does not permit a larger source set or broader product scope.
+
+For a limit on report sources, count distinct cited document URLs across the
+findings and its `信息来源` section, not domains, repeated citations or search
+result counts. For example, “at most two first-party sources per direction”
+permits at most two distinct first-party document URLs in that direction's
+findings and matching `source_urls`. It does not mean two websites with unlimited
+pages, nor two new sources in addition to retained ones. A limit on pages opened
+or tool calls instead applies before retrieval; follow the user's actual wording.
+
+Before integrating a Worker receipt or publishing serial findings, inspect the
+landed report against the current direction's questions and bounds. If it exceeds
+the source limit, keep the strongest permitted evidence and revise or qualify
+every claim that depended on a removed source. Update inline links, the source
+list and `source_urls` together; trimming only JSON or the bibliography does not
+repair an over-budget report. Regenerate the affected round conclusion from the
+accepted findings without adding external sources. If the permitted evidence
+cannot support the requested answer, keep that limitation explicit rather than
+silently adding a source. Report the actual per-direction source counts and any
+unmet bound in the handoff. Ordinary Bundle validation does not mechanically
+interpret these free-text constraints; passing it never waives this review.
 
 Apply the same evidence standard to every statement, including headings,
 table cells, chart labels and recommendation reasons:
@@ -399,7 +431,8 @@ For each direction:
 1. Cover every `research_points` bullet from more than one useful search angle.
    Stop when credible retrieved evidence supports a useful answer, or when the
    Host's configured tool/time/token budget is exhausted. The Host owns those
-   limits; this Skill Body does not promise a fixed number of search or fetch
+   runtime limits; the user's evidence/output bounds still apply to both Worker
+   and serial execution. This Skill Body does not promise a fixed number of search or fetch
    calls. If important evidence remains missing at the configured boundary,
    leave the gap explicit instead of extending the run indefinitely.
 2. Open the most authoritative hits with `web_fetch` when available — search
@@ -410,8 +443,9 @@ For each direction:
    writes and repairs that exact path; the Producer reads the file, checks the
    receipt, and updates the direction state.
 
-When delegating a direction, include this bounded-evidence policy, all of that
-direction's `research_points`, and the complete findings contract below in the
+When delegating a direction, include this bounded-evidence policy, the user's
+explicit source/scope constraints, all of that direction's `research_points`,
+and the complete findings contract below in the
 Worker prompt. Search depth must not depend on whether the Producer performs the
 direction itself or delegates it.
 

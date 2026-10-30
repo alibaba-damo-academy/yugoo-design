@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict'
-import { valid } from 'semver'
+import { createRequire } from 'node:module'
+
+// The source identity map is also needed before dependency installation.
+const require = createRequire(import.meta.url)
+const valid = value => require('semver').valid(value)
+
+export const DSH_AGGREGATE_SOURCE = '@yugoo-design/dsh-design-system-dsh'
 
 export const RELEASE_PACKAGES = Object.freeze({
   '@ladybugdb/wasm-core': 'vendor/ladybug/runtime',
@@ -12,7 +18,7 @@ export const RELEASE_PACKAGES = Object.freeze({
   'dsh-design-studio': 'packages/studio',
   'dsh-design-studio-ui': 'packages/studio-ui',
   'dsh-design-studio-dsh': 'packages/studio-dsh',
-  'dsh-design-system-dsh': 'packages/dsh',
+  [DSH_AGGREGATE_SOURCE]: 'packages/dsh',
 })
 
 export function releasePackagesFor({ ladybugSource = 'vendored' } = {}) {

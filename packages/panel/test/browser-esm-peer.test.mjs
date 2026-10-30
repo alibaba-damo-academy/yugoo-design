@@ -1,44 +1,61 @@
-/** Run after the normal interpreter ESM configuration. */
+/** Run after the normal interpreter/sample-preview ESM configurations.
+ * PANEL_BROWSER_ESM_LIB may select another complete normal emitted lib for
+ * read-only reuse; it is not a source alias or an installed-package check. */
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFile, readdir } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
+import { pathToFileURL } from 'node:url'
+import { isAbsolute, resolve, sep } from 'node:path'
 import vm from 'node:vm'
 import * as React from 'react'
-import ts from 'typescript'
 import { analyzeEmittedLoaders, proveKnownBrowserLodash } from '../../../scripts/emitted-loader-check.mjs'
 
-const lib = new URL('../lib/', import.meta.url)
-// A normal Panel build also emits Node UI chunks and the DSH module-table
-// factory. Only the browser interpreter's static and lazy ESM imports belong
-// to this peer boundary; DSH's injected require is a different public entry.
-const available = new Set(await readdir(lib))
-const files = new Map()
-const pending = ['interpreter.js']
-while (pending.length) {
-  const name = pending.pop()
+const outputRoot = process.env.PANEL_BROWSER_ESM_LIB
+assert.ok(outputRoot === undefined || isAbsolute(outputRoot), 'An alternate normal output root must be absolute')
+const lib = outputRoot === undefined ? new URL('../lib/', import.meta.url) : pathToFileURL(resolve(outputRoot) + sep)
+const require = createRequire(import.meta.url)
+const { parseSync } = await import(pathToFileURL(createRequire(require.resolve('tsdown')).resolve('rolldown/utils')))
+// The same lib also contains the native client CJS factory and Node entries.
+// Follow the actual two public browser graphs, including their lazy imports,
+// so a reachable CJS dependency still fails the peer checks below.
+const files = new Map(), pendingFiles = ['interpreter.js', 'sample-preview.js']
+while (pendingFiles.length) {
+  const name = pendingFiles.pop()
   if (files.has(name)) continue
-  assert.ok(available.has(name), 'Missing normal interpreter dependency: ' + name)
-  const code = await readFile(new URL(name, lib), 'utf8')
+  const url = new URL(name, lib), code = await readFile(url, 'utf8')
   files.set(name, code)
-  // Embedded Browserify require tables are verified by loader proofs below;
-  // they are not relative ESM chunks. Keep the scanner's JS require mode off.
-  for (const dependency of ts.preProcessFile(code, true, false).importedFiles) {
-    if (!dependency.fileName.startsWith('./') || !dependency.fileName.endsWith('.js')) continue
-    const relative = new URL(dependency.fileName, new URL(name, lib)).href
-    assert.ok(relative.startsWith(lib.href), 'Interpreter import must stay in its normal output')
-    pending.push(relative.slice(lib.href.length))
+  const parsed = parseSync(name, code)
+  assert.deepEqual(parsed.errors, [], 'Normal browser output must parse: ' + name)
+  const nodes = [parsed.program], imports = []
+  while (nodes.length) {
+    const node = nodes.pop()
+    if (node.type === 'ImportExpression') {
+      assert.equal(typeof node.source?.value, 'string', name + ': lazy imports must be explicit')
+      imports.push(node.source.value)
+    } else if (['ImportDeclaration', 'ExportNamedDeclaration', 'ExportAllDeclaration'].includes(node.type) && node.source) {
+      imports.push(node.source.value)
+    }
+    for (const value of Object.values(node)) {
+      if (Array.isArray(value)) nodes.push(...value.filter(child => child?.type))
+      else if (value?.type) nodes.push(value)
+    }
+  }
+  for (const specifier of imports) if (specifier.startsWith('.')) {
+    const target = new URL(specifier, url)
+    assert.ok(target.href.startsWith(lib.href) && target.href.endsWith('.js'), name + ': unexpected local browser edge ' + specifier)
+    pendingFiles.push(decodeURIComponent(target.href.slice(lib.href.length)))
   }
 }
-assert.ok(files.size > 1, 'Exercise the real interpreter dependency graph')
 
 test('normal public ESM graphs retain the React peer instead of opaque requires or an embedded React runtime', () => {
-  assert.ok(files.has('interpreter.js'), 'The normal interpreter entry must be present')
+  assert.ok(files.has('interpreter.js') && files.has('sample-preview.js'))
   for (const [name, code] of files) {
-    assert.equal(/\b(?:__require(?:\$\d+)?|require)\s*\(\s*["']react["']/u.test(code), false, name + ' must not require a browser peer')
-    assert.equal(/\/node_modules\/react\/cjs\/react\./u.test(code), false, name + ' must not embed another React runtime')
+    assert.doesNotMatch(code, /\b(?:__require(?:\$\d+)?|require)\s*\(\s*["']react["']/u, name + ' must not require a browser peer')
+    assert.doesNotMatch(code, /\/node_modules\/react\/cjs\/react\./u, name + ' must not embed another React runtime')
   }
-  assert.ok([...files].some(([name, code]) => name.startsWith('excalidraw-surface-') && /from ["']react["']/u.test(code)),
-    'The normal interpreter canvas graph must import the external React peer')
+  assert.match(files.get('sample-preview.js'), /from ["']react["']/u)
+  assert.ok([...files].some(([name, code]) => name.startsWith('excalidraw-surface-') && /from ["']react["']/u.test(code)), 'The normal canvas graph imports the external React peer')
 })
 
 function region(code, marker) {

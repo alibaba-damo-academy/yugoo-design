@@ -17,7 +17,7 @@ import {
 
 // --- Completeness gate: upstream pilot-design/v2 allowlist -----------------
 const UPSTREAM_COMPONENTS = [
-  'tabs', 'split', 'stack', 'record_nav', 'record_tree', 'record_form',
+  'tabs', 'stack', 'record_form',
   'related_records', 'question_list', 'question_rounds', 'relation_matrix',
   'mind_map', 'bpmn_canvas', 'doc_lifecycle_studio', 'rowview_workbench',
 ]

@@ -4,7 +4,7 @@ import type { ComponentNode, PanelManifest } from './dsl.ts'
 import { fieldValuesOf, pathGet, pathSet, recordsAtPath, sectionBindingOf, type DesignData } from './record-state.ts'
 import { insertVisualRecord } from './visual-components.tsx'
 import type { RenderOptions } from './interpreter.ts'
-import { PanelWorkspace, PanelWorkspaceTree, PanelWorkspaceTreeItem, PanelWorkspaceTreeRecord, PanelWorkspaceTreeGroup, PanelWorkspaceTreeAdd } from './panel-workspace.tsx'
+import { PanelWorkspace, PanelDisclosureIcon, PanelWorkspaceTree, PanelWorkspaceTreeItem, PanelWorkspaceTreeRecord, PanelWorkspaceTreeGroup, PanelWorkspaceTreeAdd } from './panel-workspace.tsx'
 import { usePanelI18n } from './panel-i18n.tsx'
 import { BpmnSurface } from './bpmn-surface.tsx'
 import { PANEL_TEXT_ARTIFACTS_KEY, confinedEditableArtifact, type PendingTextArtifact } from './text-artifact-edit.ts'
@@ -96,8 +96,7 @@ export function DiagramWorkspace({ node, manifest, data, options, render }: { no
     catch (failure) { setNavigationError(String(failure)) }
     finally { setSwitching(false) }
   }
-  const detailHints = (config.detail_hint_fields ?? []).filter(key => { const field = manifest.fields.find(field => field.key === key && field.applies_to?.includes(section)); return field && !field.hidden && (Array.isArray(value?.[key]) ? value[key].length > 0 : !!value?.[key]) }).map(key => manifest.fields.find(field => field.key === key && field.applies_to?.includes(section))?.label ?? key)
-  const detailsLabel = (inspector ? inspectorOpen : details) ? t('closeDetails') : detailHints.join(' · ') || t('details')
+  const detailsLabel = t('diagramDetails')
   const canEdit = !!options?.editable && !!options.onStageArtifact && !!options.registerBeforeSave && !!file && canonical === file && !!xml
   return <PanelWorkspace guidance={node.guidance} autoSaveId={`diagram:${manifest.panel_kind}:${node.id}`} sidebar={<PanelWorkspaceTree icon={sidebarIcon(node.sidebar_icon)} title={node.title ?? t('diagram')}>
     {ids.map(id => {
@@ -134,8 +133,8 @@ export function DiagramWorkspace({ node, manifest, data, options, render }: { no
     <div className="dsh-diagram-workspace">
       <header className="dsh-diagram-heading"><strong>{selected ? labelFor(selected) : node.title || t('diagram')}</strong>
         {value ? config.tags?.map(tag => { const key = String(value[tag.field] ?? ''); const field = manifest.fields.find(field => field.key === tag.field && field.applies_to?.includes(section)); return key && field && !field.hidden ? <span key={tag.field} className={`dsh-diagram-tag is-${tag.tones?.[key] ?? 'neutral'}`}>{tag.labels?.[key] ?? field?.options?.find(option => option.value === key)?.label ?? key}</span> : null }) : null}
-        <span role="status" className={`dsh-diagram-status is-${execution.status}`}>{t(`artifact_${execution.status}`)}</span>
-        <button type="button" disabled={switching} aria-expanded={inspector ? inspectorOpen : details} onClick={() => { void navigable(() => { if (inspector) setInspectorOpen(!inspectorOpen); else showDetails(!details); setEditing(false) }) }}>{detailsLabel}{!details ? ' ▾' : ''}</button>
+        {execution.status !== 'completed' ? <span role="status" className={`dsh-diagram-status is-${execution.status}`}>{t(`artifact_${execution.status}`)}</span> : null}
+        <button type="button" disabled={switching} aria-expanded={inspector ? inspectorOpen : details} onClick={() => { void navigable(() => { if (inspector) setInspectorOpen(!inspectorOpen); else showDetails(!details); setEditing(false) }) }}>{detailsLabel}<PanelDisclosureIcon expanded={inspector ? inspectorOpen : details} /></button>
         <button type="button" disabled={switching || (!inspector && details) || !canEdit} aria-pressed={editing} onClick={() => { void navigable(() => setEditing(!editing)) }}>{editing ? t('finishEditing') : t('editDiagram')}</button>
         {pending ? <span aria-label={t('unsavedDiagram')}>●</span> : null}
       </header>

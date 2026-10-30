@@ -2,7 +2,7 @@
 
 语构设计系统（Yugoo Design）把设计成果保存为普通本地文件，并用项目自己的 Git 仓库记录版本。聊天是协作入口，不是设计的唯一存储位置；关闭面板、结束会话或更新插件，不会因此删除已经保存的项目文件。
 
-本页解释文件用途、写入职责、版本记录及迁移边界。项目操作的完整参数见[命令参考](commands.md)，服务如何读写这些文件见[运行机制](architecture.md)。
+本页解释文件用途、写入职责、版本记录及迁移边界。项目操作的完整参数见[命令参考](commands.md)，服务如何读写这些文件见[运行机制](architecture.md)。项目内 `design_kit` 的说明对应当前开发源码；安装版只有包含相应运行时才支持，使用前核对[发行与宿主范围](hosts.md)。
 
 ## 项目保存在哪里
 
@@ -20,6 +20,10 @@
 ├── README.md
 ├── .gitignore
 ├── .git/
+├── design_kit/
+│   ├── source.json
+│   ├── kit/
+│   └── bundles/<identity>/
 ├── design_files/
 │   └── <Bundle 名>/
 │       ├── <规范设计数据>.json
@@ -35,10 +39,11 @@
 
 | 路径 | 内容与作用 | 谁维护，怎样记录 |
 | --- | --- | --- |
-| `project.json` | 项目身份、创建时间、精确 Kit 引用与知识 Provider 选择 | 项目管理服务创建或通过明确操作更新；Git 跟踪 |
+| `project.json` | 项目身份、创建时间、Kit 来源记录与知识 Provider 选择 | 项目管理服务创建或通过明确操作更新；Git 跟踪 |
 | `README.md` | 给人和 Agent 的项目阅读与继续使用说明，不是业务需求或额外授权 | 创建项目时生成；Git 跟踪 |
 | `.gitignore` | Git 忽略规则；新项目默认只忽略 `.DS_Store`、`Thumbs.db` | 项目初始化生成；Git 跟踪。不是对任意临时文件的自动清理规则 |
 | `.git/` | 提交、对象、分支等 Git 历史元数据 | 版本管理维护；它承载历史，而不是另一个被 Git 跟踪的普通文件夹 |
+| `design_kit/` | 项目自己的完整 Kit 与挂载 Bundle 方法、定义和资源；`source.json` 记录布局与来源 | 首次选择 Kit 时复制；之后通过获准的文件编辑、校验与 Git 操作维护，完整备份须包含它 |
 | `design_files/` | 规范设计数据（canonical data）及它引用的实际产物 | 用户通过 Panel、Agent 通过所属 Bundle 修订；校验发布后 Git 跟踪 |
 | `design_records/clarity.json` | 最近一次成功保存的 U/S/T 评估及其所依据版本 | 评估报告工具写入；Git 跟踪 |
 | `design_records/journal/*.jsonl` | 设计过程中的持久化事实，例如保存、评估和交接记录 | 共享 Journal 服务追加；Git 跟踪，不是宿主完整聊天记录 |
@@ -60,11 +65,13 @@
 | `name` | 显示名称；当前登记中名称须唯一 |
 | `createdAt` | 创建时的 UTC ISO 时间 |
 | `knowledge.provider` | 由宿主安装并解析的知识 Provider ID，不存数据库路径或凭据 |
-| `kit.name`、`kit.version` | 选定 Kit 的技术身份与精确内容版本；未选 Kit 时整个 `kit` 字段可缺省 |
-| `kit.bundles` | 可选的成员 Bundle 精确版本覆盖，不是另一份设计数据 |
-| `kit.contentHash` | 可选的有效内容定义摘要，用于识别精确内容，不替代完整 Kit 文件 |
+| `kit.name`、`kit.version` | 选定 Kit 的技术身份与所记录的来源版本；未选 Kit 时整个 `kit` 字段可缺省 |
+| `kit.bundles` | 可选的成员 Bundle 精确版本记录，旧格式项目恢复时用于还原实际原内容，不是另一份设计数据 |
+| `kit.contentHash` | 可选的来源内容摘要，用于核对所记录的定义，不替代项目完整 Kit 文件 |
 
-不要为了消除报错而修改 `id`、版本或摘要。同名同版本的内容不一定相同；项目 Git 保存设计数据，但不自动把外部 Kit、Provider 和安装依赖全部备份进来。内容交付与版本选择见[Kit 分享](kit-sharing.md)。
+不要为了消除报错而修改 `id`、版本或摘要。同名同版本的内容不一定相同；这些来源记录不是本地版本选择器，也不要求修改方法前先发布新版本。项目运行时读取自己的 `design_kit/kit` 与 `design_kit/bundles/<identity>`，包括方法、schema、validation、Panel、摘要和二进制资源。内容库的修改或删除不会替换这些文件。
+
+旧格式项目尚无 `design_kit` 时，只能从它实际保留的原 Kit/Bundle 内容初始化；原内容缺失时先恢复，不能静默改用内容库新版。需要更新已有项目时，让 Agent 对比目标内容与项目文件，保留定制、设计事实和标识，再沿普通校验及 Git 流程记录修改。Provider 与安装依赖仍需单独保留，详见[Kit 分享与项目维护](kit-sharing.md)及[项目内容维护](../project-content-upgrade.md)。
 
 ## design_files 中的数据与产物
 
@@ -94,9 +101,11 @@ Panel、图上的详情表单和 Agent 应读写同一份规范数据，不各�
 
 新评估失败不会被记成零分，也不应清除上一次有效结果；旧结果可能被标为待更新。文件不存在表示尚无评估。用户可在对话里要求更新，历史评估通过 Git 查看，Journal 保留报告事实。普通使用不需要手写这个 JSON。
 
-## Git 怎样记录变化
+## 审查策略记录
 
 GRA 策略文件中的 `mode` 可为 `auto`、`continuous`、`every-publication` 或 `off`；`autoMergeWindowMs` 是合并自动触发的静默窗口，可选的 `continuousIntervalMs` 是连续检查间隔，单位均为毫秒。文件尚未生成时默认使用 `auto` 和 30 秒静默窗口。关闭自动审查仍保留用户手动检查入口，同步执行需本次明确同意；具体行为见[共享触发规则](../../packages/companion/README.md#kag--gra-trigger-model-shared-with-dsh)。策略修改通过设置接口保存，不需要手写 JSON；它随完整项目备份保留，`migrate` 不复制旧策略等系统记录。
+
+## Git 怎样记录变化
 
 创建项目会生成初始提交；设计发布、Panel 保存和显式系统记录写入通过各自已有流程提交对应文件。Git commit 是版本依据，无需维护第二套人工设计版本号。
 
@@ -115,7 +124,8 @@ GRA 策略文件中的 `mode` 可为 `auto`、`continuous`、`every-publication`
 | Companion connection 文件 | 本地服务地址、连接授权及会话关联 | **不共享、不公开、不借用旧连接**；服务重新打开后使用本次返回的连接 |
 | 运行状态、锁、投递收据、原生任务绑定 | 协调当前进程和真实宿主任务 | 不是可恢复的设计内容；复制它们不会复活旧任务 |
 | 知识数据库、向量索引、模型缓存 | 加速查询或提供本地计算 | 与项目内知识归档不同；可重建部分按实际诊断处理，不在运行时随意清空 |
-| Kit/Bundle 内容库、工作副本、Provider 及 npm runtime | 提供方法、面板和执行能力 | 独立安装/交付；不能因为不在项目里就当作可删除缓存 |
+| Kit/Bundle 内容库与作者源 | 为未来项目提供当前方法和定义，并保留可复用的专业内容 | 项目取得的完整副本在 `design_kit/`；库与作者源仍应独立保留，不能当作可删除缓存 |
+| Provider 及 npm runtime | 提供受信任的执行、原生面板与宿主接入能力 | 不因复制 `design_kit` 而被安装；按安装与发行入口单独维护 |
 
 这些位置由宿主及安装方式决定，项目命令返回的 `stateRoot` 也是运行位置，不写回 `project.json`。DSH 和 Companion 有不同状态目录；同一台机器安装多个宿主，不意味着复制项目目录或各生成一份设计事实。完整职责见[共享底层与宿主适配](architecture.md#共享底层与宿主适配)。
 
@@ -133,7 +143,7 @@ GRA 策略文件中的 `mode` 可为 `auto`、`continuous`、`every-publication`
 
 ## 备份、分享与清理
 
-先保存编辑，确认没有正在写入的任务。完整备份应保留项目根目录，包括隐藏的 `.git/`、`design_files/` 和 `design_records/`；同时保留所用精确 Kit/Bundle 的可获取来源或完整交付内容。仅做 Git clone 不会带走尚未提交或未跟踪的文件。
+先保存编辑，确认没有正在写入的任务。完整备份应保留项目根目录，包括隐藏的 `.git/`、`design_kit/`、`design_files/` 和 `design_records/`。旧格式项目尚未形成项目内 Kit 文件时，还需保留其实际所用的完整 Kit/Bundle 原件；独立 Provider 和安装依赖另行备份。仅做 Git clone 不会带走尚未提交或未跟踪的文件。
 
 复制项目用于备份不会生成新身份。同一注册表不接受同一个 ID 同时指向两个项目路径；不要手改 ID 来制造分支项目。使用副本继续工作前先明确保留哪一份登记，或使用 `migrate` 创建新项目。
 
@@ -141,4 +151,4 @@ GRA 策略文件中的 `mode` 可为 `auto`、`continuous`、`every-publication`
 
 清理空间时先区分业务成果、持久化记录、安装依赖和运行缓存。不要把 `design_records/` 当临时目录，也不要把删状态目录当通用修复方法。真正删除项目目录是文件删除，不包含在 `delete` 命令中，需要另行明确确认。
 
-实现入口：[项目元数据与初始化](../../packages/core/src/design-project.ts)、[注册与迁移](../../packages/core/src/design-project-registry.ts)、[持久化记录分类](../../packages/core/src/design-project-record-paths.ts)、[UST 文件](../../packages/core/src/design-clarity-authority.ts)、[知识归档](../../packages/core/src/design-knowledge-records.ts)。
+实现入口：[项目元数据与初始化](../../packages/core/src/design-project.ts)、[注册与迁移](../../packages/core/src/design-project-registry.ts)、[项目 Kit 文件](../../packages/core/src/project-kit-source.ts)、[持久化记录分类](../../packages/core/src/design-project-record-paths.ts)、[UST 文件](../../packages/core/src/design-clarity-authority.ts)、[知识归档](../../packages/core/src/design-knowledge-records.ts)。

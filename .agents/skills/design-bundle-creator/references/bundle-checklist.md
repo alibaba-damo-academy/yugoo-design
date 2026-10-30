@@ -4,16 +4,18 @@
 
 | 文件/资源 | 必须表达什么 |
 | --- | --- |
-| `skill.yaml` | 独立 catalog identity 与运行时 name 分开，配合精确 version、可读 title/label、presentation；execution.mode(main/subagent) 与 handoff 分开选择，不添加自造调度字段 |
+| `skill.yaml` | 独立 catalog identity 与运行时 name 分开，配合精确 version、可读 title 与 label（两者都必需，且各含非空 zh/en）、presentation；execution.mode(main/subagent) 与 handoff 分开选择，不添加自造调度字段 |
 | `SKILL.md` | 调用 design-skill-creator 产出可执行方法；frontmatter name 与 manifest 的运行时 name 一致。独立目录使用 identity，不强迫运行时名称随目录改动 |
 | `schema.yaml` | canonical 结构、类型/枚举、扩展策略；问答真实答案、记录集合、跨文件引用/metadata 使用已有知识标注能力 |
-| `validation.yaml` | 工作中与 completion 的真实消费者约束，不以长度、图表数、风格偏好充当有效性 |
+| `validation.yaml` | 工作中与 completion 的真实消费者约束；先读[校验创作说明](validation-authoring.md)中的完整 rule 与合法算子，不以长度、图表数、风格偏好充当有效性 |
 | `panel.yaml` | declarative profile 必需；先核对 `packages/core/src/panel-dsl.ts` 的 `CONTROL_KINDS` / `COMPONENT_KINDS`，不用猜测的控件名。字段与 schema 对齐，引用选项来自实际记录，交互能落回本 Bundle 状态 |
 | `skill.yaml.summary` | 可选模型摘要声明；缺省不阻断加载、执行、面板和保存。`fields` 和集合记录字段仅支持 scalar；数组/嵌套对象不可直接塞入 fields。旧 renderer.md 迁移时保留说明为注释，禁止双源 |
 | 可读契约/例子 | 方法内联完整形状，或链接 Bundle 内的实际资源；不假设 schema 固定槽位能从资源工具读 |
 | `reference/canvas-guide.md` | 含画布时的统一方法入口；按 [画布创作规范](canvas-authoring.md) 说明本领域表达、生成、布局责任及验收，索引而非替换已有专项资料。不是新增 loader 必需槽位 |
 | `reference/cooperation-guide.md` | 有跨 Bundle 对齐/补充需求时按 [协作方法规范](cooperation-authoring.md) 填写真实 owner、证据与回交边界；方法和输出契约双入口可达。按需内容位置，不是 loader 必需槽位或强制协作流程 |
 | scripts/artifact refs | 仅在必要时提供；领域代码归 Bundle，参数/文件范围/返回状态明确，不能借另一个 Bundle 的私有脚本 |
+
+完整 manifest 起点见 [skill.template.yaml](../assets/skill.template.yaml)，不要只凭字段名称重写槽位；`title` 与 `label` 都要保留。安装版作者通过资源索引读取本说明、模板、校验说明及成熟示例，无需开发源码路径。
 
 ## 可选 profile
 

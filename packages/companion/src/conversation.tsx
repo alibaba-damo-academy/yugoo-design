@@ -4,24 +4,7 @@ import type { DesignPanelWorkspaceRead, DesignExecutionLogRead } from '../../pan
 import type { ReactNode } from 'react'
 import { compactConversationHistory, conversationWork } from './conversation-history.mjs'
 
-function WorkActivity({rows,active,terminal}:{rows:RecordedConversation['rows'];active:boolean;terminal:boolean}) {
-  const [open,setOpen]=useState(active)
-  const prior=useRef(active)
-  useEffect(()=>{
-    if(active && !prior.current)setOpen(true)
-    else if(terminal)setOpen(false)
-    prior.current=active
-  },[active,terminal])
-  return <details className="companion-activity" open={open} onToggle={event=>setOpen(event.currentTarget.open)}>
-    <summary>{active && <span className="companion-spinner" aria-hidden="true"/>}工作记录 · {rows.length} 项操作{active && ' · 进行中'}
-      {rows.some(row=>row.status==='failed') && <span className="companion-activity-failed"> · 有失败记录</span>}
-    </summary>
-    <div>{rows.map(row=><article key={row.id} data-role="tool" data-message-id={row.id}>
-      <div className="companion-message-label">{row.label} · {row.status}</div>
-      {row.text && <ExecutionLogMessage message={row.text}/>}
-    </article>)}</div>
-  </details>
-}
+import { ConversationActivity as WorkActivity, ConversationMessage } from '../../studio-ui/src/ConversationActivity.tsx'
 
 export interface RecordedConversation {
   available: boolean
@@ -38,8 +21,15 @@ export interface RecordedConversation {
     questions?: { id: string; question: string; options: { label: string; description: string }[] }[] }[]
 }
 
-export function Conversation({ hostLabel = '原生 Agent', value, thread, visible, onClose, send, attempts = [], readExecutionLog, beforeComposer, continuation }: { hostLabel?: string; value?: RecordedConversation; thread?: string; visible: boolean; onClose: () => void; send: (text: string) => Promise<void>; attempts?: DesignPanelWorkspaceRead['executionAttempts']; readExecutionLog?: (runId: string, afterSeq?: number) => Promise<DesignExecutionLogRead>; beforeComposer?: ReactNode; continuation?: ReactNode }) {
-  const [draft, setDraft] = useState('')
+export function Conversation({ hostLabel = '原生 Agent', value, thread, visible, onClose, send, attempts = [], readExecutionLog, beforeComposer, continuation, composerDisabledReason, showDesignShortcut = true, onDraftChange, initialDraft, renderError }: { hostLabel?: string; value?: RecordedConversation; thread?: string; visible: boolean; onClose: () => void; send: (text: string) => Promise<void>; attempts?: DesignPanelWorkspaceRead['executionAttempts']; readExecutionLog?: (runId: string, afterSeq?: number) => Promise<DesignExecutionLogRead>; beforeComposer?: ReactNode; continuation?: ReactNode; composerDisabledReason?: string; showDesignShortcut?: boolean; onDraftChange?: (draft: string) => void; initialDraft?: string; renderError?: (message: string, source: 'history' | 'send') => ReactNode }) {
+  const [draft, setDraft] = useState(initialDraft ?? '')
+  const usedPrefill = useRef(initialDraft)
+  useEffect(() => {
+    if (!initialDraft || usedPrefill.current === initialDraft) return
+    usedPrefill.current = initialDraft
+    setDraft(current => current.trim() ? current : initialDraft)
+  }, [initialDraft])
+  useEffect(() => { onDraftChange?.(draft) }, [draft, onDraftChange])
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const [notifying, setNotifying] = useState(false)
@@ -87,7 +77,7 @@ export function Conversation({ hostLabel = '原生 Agent', value, thread, visibl
         <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12 5-5 5 5 5"/></svg>
       </button>
     </header>
-    {!value?.available && <p role="status" className="companion-conversation-hint">{value?.error ?? '正在读取会话…'}</p>}
+    {!value?.available && (value?.error && renderError ? renderError(value.error, 'history') : <p role="status" className="companion-conversation-hint">{value?.error ?? '正在读取会话…'}</p>)}
     {value?.catchingUp && <p role="status" className="companion-conversation-hint companion-sync-status"><span className="companion-spinner" aria-hidden="true"/>正在追赶会话记录…</p>}
     <div className="companion-conversation-history" data-conversation-scroll ref={scrollRef} onScroll={event => {
       if (!visible || event.currentTarget.clientHeight === 0) return
@@ -96,16 +86,14 @@ export function Conversation({ hostLabel = '原生 Agent', value, thread, visibl
     }}>
       {!!value?.omitted && <p className="companion-conversation-hint">显示最近 {value.rows.length} 条；更早记录请在 {hostLabel} 中查看。</p>}
       {visible && compactConversationHistory(value?.rows, attempts).map(entry => entry.kind === 'activity' ? <WorkActivity key={entry.rows[0].id} rows={entry.rows}
-        active={work.activeId===entry.rows[0].id} terminal={['completed','failed','interrupted'].includes(work.status)}/>
-      : entry.kind === 'message' ? <article className="companion-message" key={entry.row.id} data-role={entry.row.role} data-message-id={entry.row.id}>
-        <div className="companion-message-label">{entry.row.label}{entry.row.role === 'tool' ? ` · ${entry.row.status}` : ''}</div>
-        {entry.row.text && <div className="companion-message-content"><ExecutionLogMessage message={entry.row.text} /></div>}
+        active={work.activeId===entry.rows[0].id} terminal={['completed','failed','interrupted'].includes(work.status)} renderText={text => <ExecutionLogMessage message={text} />}/>
+      : entry.kind === 'message' ? <ConversationMessage key={entry.row.id} row={entry.row} renderText={text => <ExecutionLogMessage message={text} />}>
         {entry.row.questions?.map(question => <section key={question.id} aria-label="原生提问" className="companion-native-question">
           <p>{question.question}</p>
           <ul>{question.options.map((option, i) => <li key={i}><span>{option.label}</span>{option.description && <p>{option.description}</p>}</li>)}</ul>
           <small>{entry.row.status === 'running' ? `请在 ${hostLabel} 中选择或回答；此处同步展示，不代替原生回答。` : `原生提问调用已结束，请以 ${hostLabel} 中的结果为准。`}</small>
         </section>)}
-      </article> : <div key={entry.attempt.attemptId} data-producer-run={entry.attempt.runId}>
+      </ConversationMessage> : <div key={entry.attempt.attemptId} data-producer-run={entry.attempt.runId}>
         {entry.earlier && <p className="companion-conversation-hint">该任务的启动条目不在当前历史窗口中</p>}
         <ExecutionRollingLog runId={entry.attempt.runId} label={`${entry.attempt.skill} · Producer`} presentation="conversation"
           active={entry.attempt.phase === 'working' || entry.attempt.phase === 'queued'}
@@ -117,9 +105,9 @@ export function Conversation({ hostLabel = '原生 Agent', value, thread, visibl
     {continuation}
     <form data-composer-card onSubmit={async event => {
       event.preventDefault()
-      if (!thread || !draft.trim() || sending) return
+      if (!thread || !draft.trim() || sending || composerDisabledReason) return
       setSending(true); setError('')
-      try { await send(draft); setDraft('') }
+      try { await send(draft); setDraft(current => current === draft ? '' : current) }
       catch (error) { setError(String(error)) }
       finally { setSending(false) }
     }}>
@@ -128,12 +116,12 @@ export function Conversation({ hostLabel = '原生 Agent', value, thread, visibl
         onKeyDown={event => {
           if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return
           event.preventDefault()
-          if (!sending && thread && draft.trim()) event.currentTarget.form?.requestSubmit()
+          if (!sending && thread && draft.trim() && !composerDisabledReason) event.currentTarget.form?.requestSubmit()
         }} />
       <div className="companion-composer-actions">
         <div className="companion-send-group">
-          <button type="submit" disabled={!thread || sending || !draft.trim()}>{sending ? '正在发送…' : `发送到 ${hostLabel}`}</button>
-          <details ref={sendMenu} className="companion-send-menu" onKeyDown={event => {
+          <button type="submit" disabled={!thread || sending || !draft.trim() || !!composerDisabledReason}>{sending ? '正在发送…' : `发送到 ${hostLabel}`}</button>
+          {showDesignShortcut && <details ref={sendMenu} className="companion-send-menu" onKeyDown={event => {
             if (event.key === 'Escape') {
               event.currentTarget.open = false
               event.currentTarget.querySelector('summary')?.focus()
@@ -151,11 +139,12 @@ export function Conversation({ hostLabel = '原生 Agent', value, thread, visibl
                 finally { setNotifying(false) }
               }}>{notifying ? '正在通知…' : '读取当前设计文件并继续'}</button>
             </div>
-          </details>
+          </details>}
         </div>
       </div>
       </div>
-      {error && <p role="alert">{error}</p>}
+      {composerDisabledReason && <p role="status">{composerDisabledReason}</p>}
+      {error && (renderError ? renderError(error, 'send') : <p role="alert">{error}</p>)}
     </form>
   </section>
 }

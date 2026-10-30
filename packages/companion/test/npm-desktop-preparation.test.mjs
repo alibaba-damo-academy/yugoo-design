@@ -4,6 +4,7 @@ import { cp, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/pr
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
+import { pathToFileURL } from 'node:url'
 import { createHash } from 'node:crypto'
 import { stageDesktopPreparationMaterials } from '../npm-desktop-materials.mjs'
 import { prepareDesktopPackage } from '../src/npm-desktop-preparation.mjs'
@@ -11,6 +12,32 @@ import { installerMain, INSTALL_HOSTS } from '../src/npm-installer.mjs'
 import { readQwenWorkRuntimePins, inspectQwenWorkProcess } from '../src/qwenwork-connection.mjs'
 const hash = b => createHash('sha256').update(b).digest('hex')
 const json = async path => JSON.parse(await readFile(path, 'utf8'))
+
+test('desktop material helper closures import outside the repository and reject a missing sibling', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'desktop-material-closure-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const destination = join(root, 'materials')
+  await stageDesktopPreparationMaterials(destination)
+  const probe = path => spawnSync(process.execPath,
+    ['--input-type=module', '--eval', 'await import(process.argv[1])', pathToFileURL(path).href],
+    { cwd: root, encoding: 'utf8', env: { ...process.env, NODE_OPTIONS: '', NODE_PATH: '' } })
+  for (const relative of ['src', 'qwenwork-template/scripts']) {
+    const directory = join(destination, relative)
+    for (const name of ['windows-private-storage.mjs', 'windows-native-platform.mjs']) {
+      assert.deepEqual(await readFile(join(directory, name)), await readFile(new URL('../../studio/src/node/' + name, import.meta.url)))
+      const result = probe(join(directory, name))
+      assert.equal(result.status, 0, result.stderr)
+    }
+    const hook = probe(join(directory, 'qwenwork-hook-transport.mjs'))
+    assert.equal(hook.status, 0, hook.stderr)
+    await rm(join(directory, 'windows-native-platform.mjs'))
+    const missing = probe(join(directory, 'windows-private-storage.mjs'))
+    assert.notEqual(missing.status, 0)
+    assert.match(missing.stderr, /ERR_MODULE_NOT_FOUND/)
+    assert.match(missing.stderr, /windows-native-platform\.mjs/)
+  }
+})
+
 async function fixture(t, version = '1.2.3', { legacyMarket = false } = {}) {
   const root = await mkdtemp(join(tmpdir(), 'desktop-preparation-fixture-')); t.after(() => rm(root, { recursive: true, force: true }))
   const npmRoot = join(root, 'npm package'), destination = join(root, 'prepared'), runtime = join(npmRoot, 'payload/shared')
@@ -44,6 +71,10 @@ test('WorkBuddy stages from exact acquired package, retaining native protocol an
   const suite = join(result.nativeImport.market, market.plugins[0].source), mcp = await json(join(suite, '.mcp.json'))
   assert.equal(mcp.mcpServers['design-system-workbuddy-probe'].args[0], 'D:\\Yugoo\\npm-v123\\payload\\shared\\scripts\\design.mjs')
   assert.ok((await readFile(join(suite, 'skills/yugoo/SKILL.md'), 'utf8')).includes('present_files'))
+  for (const name of ['design-kit-creator', 'design-bundle-creator', 'design-skill-creator']) {
+    assert.match(await readFile(join(suite, 'skills', name, 'SKILL.md'), 'utf8'), /professional method/)
+  }
+  assert.ok((await json(join(suite, 'authoring/studio-creators/material.json'))).resources['source/.agents/skills/design-skill-creator/references/standards.md'])
   const sharedPath = 'plugin/design-system/skills/design-panel/native-execution.md'
   const shared = await readFile(new URL('../' + sharedPath, import.meta.url))
   const staged = join(f.npmRoot, 'payload/desktop-preparation')
@@ -128,7 +159,9 @@ test('QwenWork ZIP is independently readable, thin, pinned externally and suppor
   const connector = await json(native.connector); assert.deepEqual(connector.mcpServers['design-system'].args.slice(0, 2), ['--import', location.runtimeBootstrap])
   const checked = spawnSync('python3', ['-c', 'import sys,zipfile,json; z=zipfile.ZipFile(sys.argv[1]); assert z.testzip() is None; print(json.dumps(z.namelist()))', native.archive], { encoding: 'utf8' })
   assert.equal(checked.status, 0, checked.stderr); const members = JSON.parse(checked.stdout)
-  assert.ok(members.includes('skills/yugoo/native-execution.md')); assert.ok(members.includes('.claude-plugin/plugin.json')); assert.ok(!members.some(p => /node_modules|web\/|kits\//.test(p)))
+  assert.ok(members.includes('skills/yugoo/native-execution.md')); assert.ok(members.includes('.claude-plugin/plugin.json')); assert.ok(!members.some(p => /^(?:node_modules|web|kits)\//.test(p)))
+  for (const name of ['design-kit-creator', 'design-bundle-creator', 'design-skill-creator']) assert.ok(members.includes('skills/' + name + '/SKILL.md'))
+  assert.ok(members.includes('authoring/studio-creators/material.json'))
   assert.ok(members.includes('skills/design-component/SKILL.md'))
   assert.equal((await json(join(native.suite, '.claude-plugin/plugin.json'))).version, '0.2.1')
   assert.ok((await readFile(join(native.suite, 'skills/yugoo/SKILL.md'), 'utf8')).includes('--import RUNTIME_BOOTSTRAP'))

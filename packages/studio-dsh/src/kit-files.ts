@@ -2,6 +2,7 @@
 import { isAbsolute, join } from 'node:path'
 import type { FileSystem, FsTarget } from '@deepseek-ai/dsh-fs'
 import { StudioBinaryContentError, type StudioBundleSourcePort } from 'dsh-design-studio'
+import type { StudioSourceEntry } from 'dsh-design-studio/node'
 
 const MAX_TEXT_BYTES = 1024 * 1024
 
@@ -10,6 +11,8 @@ const excludedDirectory = (name: string): boolean => /^(?:\.git|node_modules)$/i
 
 interface InstalledSourceFiles extends StudioBundleSourcePort {
   readFile(path: string): Promise<{ readonly content: string }>
+  /** Complete bounded byte capture; no UTF-8 viewer conversion or installed writes. */
+  captureTree(): Promise<readonly StudioSourceEntry[]>
 }
 
 /** A code survives the Remote gateway while the message remains useful in the viewer. */
@@ -32,6 +35,61 @@ export async function openInstalledSourceFiles(fs: FileSystem, root: string, kin
   }
   const code = (error: unknown) => typeof error === 'object' && error !== null && 'code' in error ? error.code : undefined
   return {
+    async captureTree() {
+      // The public Fs resolves targets and owns containment/grants. These reads
+      // detect observed changes; they do not add a raw-path symlink policy or
+      // promise an atomic snapshot across the whole installed tree.
+      const files: StudioSourceEntry[] = [], seen = new Set<FsTarget['targetKey']>()
+      let visited = 0, total = 0
+      const limit = (message: string) => kitFileError('studio.source_limit', message)
+      const invalid = (message: string) => kitFileError('studio.source_invalid', message)
+      const unchanged = async (item: FsTarget, before: Awaited<ReturnType<FileSystem['stat']>>) => {
+        const after = await fs.stat(item)
+        if (!before || !after || before.type !== after.type || before.version !== after.version
+          || before.size !== after.size) throw kitFileError('studio.source_changed', 'Installed source changed during capture. Retry the exact source.')
+      }
+      const walk = async (directory: FsTarget, prefix: string, observed?: Awaited<ReturnType<FileSystem['stat']>>): Promise<void> => {
+        if (seen.has(directory.targetKey)) throw invalid('Repeated directory identity in installed source.')
+        seen.add(directory.targetKey)
+        const info = observed ?? await fs.stat(directory)
+        if (info?.type !== 'directory') throw invalid('Installed source directory is missing or not a directory.')
+        const entries = await fs.listDir(directory)
+        visited += entries.length
+        if (visited > 20000) throw limit('Installed source exceeds 20000 directory entries.')
+        const names = new Set<string>()
+        for (const entry of entries) {
+          if (typeof entry.name !== 'string' || !entry.name || /[\\/:\u0000-\u001f\u007f]/u.test(entry.name)
+            || ['.', '..', '__proto__', 'constructor', 'prototype'].includes(entry.name) || names.has(entry.name)) throw invalid('Invalid or duplicate installed source entry name.')
+          names.add(entry.name)
+        }
+        for (const entry of [...entries].sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0)) {
+          if (excludedDirectory(entry.name)) continue
+          if (!fs.contains(base, entry.target)) throw kitFileError('studio.source_forbidden', 'Capture target escapes installed resource root.')
+          const path = prefix ? `${prefix}/${entry.name}` : entry.name
+          if (path.length > 1024 || path.split('/').length > 32) throw limit('Installed source exceeds path length or depth limit.')
+          const before = await fs.stat(entry.target)
+          if (!before || before.type !== entry.type) throw invalid('Installed source entry changed or has invalid metadata.')
+          if ((entry.version !== undefined && entry.version !== before.version)
+            || (entry.size !== undefined && before.size !== undefined && entry.size !== before.size)) throw kitFileError('studio.source_changed', 'Listed source metadata differs from its first stat.')
+          if (entry.type === 'directory') await walk(entry.target, path, before)
+          else if (entry.type === 'file') {
+            if (files.length >= 4096 || (before.size ?? entry.size ?? 0) > 16 * 1024 * 1024 - total) throw limit('Installed source exceeds 4096 files or 16 MiB.')
+            let bytes: Uint8Array
+            try { bytes = await fs.readBytes(entry.target, undefined, 16 * 1024 * 1024 - total) }
+            catch (error) { if (code(error) === 'FS_TOO_LARGE') throw limit('Installed source exceeds 16 MiB.'); throw error }
+            if (!(bytes instanceof Uint8Array) || bytes.byteLength > 16 * 1024 * 1024 - total) throw limit('Installed source exceeds its byte budget.')
+            if ((before.size !== undefined && bytes.byteLength !== before.size)
+              || (entry.size !== undefined && bytes.byteLength !== entry.size)) throw kitFileError('studio.source_changed', 'Source byte length differs from its observed metadata.')
+            await unchanged(entry.target, before)
+            total += bytes.byteLength
+            files.push({ path, base64: Buffer.from(bytes).toString('base64') })
+          } else throw invalid('Installed source contains a non-regular entry.')
+        }
+        await unchanged(directory, info)
+      }
+      await walk(await target(root), '')
+      return files.sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0)
+    },
     async readFile(path) {
       if (typeof path !== 'string' || /[\\:\u0000-\u001f\u007f]/u.test(path)
         || path.split('/').some(part => !part || part === '.' || part === '..' || excludedDirectory(part))) {

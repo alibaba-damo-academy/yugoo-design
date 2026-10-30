@@ -21,7 +21,7 @@ const threadId='11111111-1111-4111-8111-111111111111'
 const kitRoot=fileURLToPath(new URL('../../skills-web-app/',import.meta.url))
 const installedVersion=(await loadDesignKit(companionFs,kitRoot,{sourceId:'companion:explicit-kit',resolveBundle:createDirectoryBundleResolver(companionFs,[{rootDir:join(kitRoot,'bundles'),sourceId:'companion:explicit-kit'}])})).version
 
-for(const host of ['codex','qoder','claude-code'])test(`${host}: unconfigured Panel survives live Kit pin, mismatch and recovery`,async()=>{
+for(const host of ['codex','qoder','claude-code'])test(`${host}: unconfigured Panel activates one project source and ignores a changed provenance version`,async()=>{
   const root=await mkdtemp(join(tmpdir(),'companion-access-'))
   let server
   try {
@@ -73,15 +73,10 @@ for(const host of ['codex','qoder','claude-code'])test(`${host}: unconfigured Pa
     assert.ok((await call('savePanel',{skill:'smart_questions',state:{questions:{}},eventId:'active-save'})).commit)
     assert.equal((await call('finishMainBundle',{invocationId:invocation.invocationId,scope:'state',outcome:'pause'})).accepted,true)
     await registry.setKitPin(project.projectId,{name:'web_app',version:'999.0'})
-    const recovery=await call('readWorkspace')
-    assert.equal(recovery.access.mode,'recovery');assert.equal(recovery.access.writable,false)
-    assert.equal(recovery.clarity.assessment,null)
-    assert.equal(recovery.clarity.needsReassessment,true,'recovery access cannot certify a current assessment')
+    const current=await call('readWorkspace')
+    assert.equal(current.access.mode,'writable');assert.equal(current.access.writable,true)
     assert.equal((await call('readArtifact',{path:'archived_bundle/notes.md'})).content,'Preserved source evidence')
-    await blocked()
-    assert.equal((await call('sendPrompt',{text:'Please restore the installed Kit pin'})).accepted,true)
-    await registry.setKitPin(project.projectId,{name:'web_app',version:installedVersion})
-    assert.equal((await call('readWorkspace')).access.writable,true)
+    assert.ok((await call('listSkills')).skills.some(skill=>skill.id==='smart_questions'))
     assert.equal((await call('prepareBundle',{skill:'smart_questions'})).skill,'smart_questions')
   }finally {await server?.close();await rm(root,{recursive:true,force:true})}
 })

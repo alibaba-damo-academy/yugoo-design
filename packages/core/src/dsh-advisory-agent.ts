@@ -11,15 +11,11 @@ import type { AdvisorySubagentPort } from './dsh-advisory-runner.ts'
 import { designUnseededChildSessionMeta } from './dsh-child-session-meta.ts'
 import { designSessionEvents } from './dsh-session-events.ts'
 import { createYugooDesignMessage } from './dsh-message-source.ts'
+import { dshSubagentBackend } from './dsh-subagent-backend.ts'
 
 /** Select only the two public Host capability shapes covered by SDK tests. */
 export function dshAdvisoryBackend(runtime: unknown): 'one-shot-runtime' | 'agent-factory' {
-  if (runtime === null || typeof runtime !== 'object') throw new Error('design advisory: native Subagent Runtime is unavailable')
-  const shape = runtime as Record<string, unknown>
-  if (typeof shape.start === 'function' && typeof shape.registerProvider === 'function') return 'one-shot-runtime'
-  if (shape.start === undefined && ['startActivation', 'prepareContinuable', 'waitForChildren', 'registerProvider']
-    .every(key => typeof shape[key] === 'function')) return 'agent-factory'
-  throw new Error('design advisory: unsupported native Subagent Runtime API')
+  return dshSubagentBackend(runtime, 'design advisory')
 }
 
 /** Completion requires a successful structured tool record and a normal native end. */

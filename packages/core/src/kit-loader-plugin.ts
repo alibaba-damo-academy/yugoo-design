@@ -14,6 +14,7 @@ import { DesignContentStore } from './content-store.ts'
 import { watch as watchFiles, type FSWatcher } from 'chokidar'
 import type { DesignKit } from './types.ts'
 import { startKitDiscovery } from './kit-discovery.ts'
+import { restoreDshProjectContent } from './dsh-project-content.ts'
 
 export const name = 'dsh-design-core/kit-loader'
 export const inject = ['design']
@@ -148,6 +149,11 @@ async function resolvePackageLocation(ctx: Context, packageName: string): Promis
 
 /** Shared loader for discovery and explicit hosts, preserving the original compiled projection. */
 export async function loadConfiguredDesignKit(fs: KitFsLike, location: string | DesignKitLocation, sourceId: string, config: Config): Promise<DesignKit> {
+  const source = await configuredKitSource(fs, location, sourceId, config)
+  return loadDesignKit(fs, source.location, source.options)
+}
+
+async function configuredKitSource(fs: KitFsLike, location: string | DesignKitLocation, sourceId: string, config: Config) {
   const paths = typeof location === 'string' ? await resolveDesignKitPackage(fs, location) ?? location : location
   const roots = [
     ...(typeof paths === 'string' || !paths.bundlesDir ? [] : [{rootDir: paths.bundlesDir, sourceId}]),
@@ -155,9 +161,11 @@ export async function loadConfiguredDesignKit(fs: KitFsLike, location: string | 
   ]
   const directoryResolver = createDirectoryBundleResolver(fs, roots)
   const retained = config.contentStateRoot ? new DesignContentStore(config.contentStateRoot) : undefined
-  return loadDesignKit(fs, paths, {sourceId, resolveBundle: async pin =>
-    await directoryResolver(pin) ?? await retained?.resolveBundle(pin) })
+  return { location: paths, options: { sourceId, resolveBundle: async (pin: import('./kit-loader.ts').DesignBundlePin) =>
+    await directoryResolver(pin) ?? await retained?.resolveBundle(pin) } }
 }
+
+
 
 async function registerBundleRoots(design: DesignService, sources: Config['bundleRoots']): Promise<void> {
   for (const source of sources ?? []) {
@@ -226,17 +234,12 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     if (!isAbsolute(source.rootDir) || typeof source.sourceId !== 'string' || !source.sourceId) throw new Error('design kit: invalid trusted Bundle root')
   }
   const design = (ctx as unknown as { design: DesignService }).design
-  if (config.contentStateRoot) {
-    const retained = new DesignContentStore(config.contentStateRoot)
-    for (const pin of await retained.listKits()) {
-      const kit = await retained.loadRetainedKit(pin)
-      if (kit) design.registerRetainedKit(kit)
-    }
-    for (const pin of await retained.listBundles()) {
-      const bundle = await retained.resolveBundle(pin)
-      if (bundle) design.registerBundleContent(bundle, {retained: true})
-    }
+  // The Core root is the acceptance authority. A previous explicit loader root
+  // remains readable; choosing it never redirects new project acceptance writes.
+  for (const root of new Set([config.contentStateRoot, design.contentStateRoot].filter((value): value is string => value !== undefined))) {
+    await restoreDshProjectContent(design, root)
   }
+  config = { ...config, contentStateRoot: config.contentStateRoot ?? design.contentStateRoot }
   const discovery = config.discoveryRoots !== undefined || (!config.kitDir && !config.packageName)
   if (config.discoveryRoots !== undefined && (!Array.isArray(config.discoveryRoots)
     || config.discoveryRoots.some(root => typeof root !== 'string' || !isAbsolute(root)))) {

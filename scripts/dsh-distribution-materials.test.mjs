@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { mkdtemp, mkdir, readFile, writeFile, rm, cp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { createHash } from 'node:crypto'
 import { copyDshDistributionMaterials } from './dsh-distribution-materials.mjs'
 import { EMBEDDED_PICA_LICENSE_SOURCE_PATHS } from './companion-bundled-license.mjs'
@@ -11,6 +12,28 @@ import { satisfies, subset, valid, validRange } from 'semver'
 import { releasePackagesFor } from './release-consumer-config.mjs'
 
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
+
+test('canonical aggregate resolves its unchanged recorded material selection and preserves output guards', async t => {
+  const name = '@yugoo-design/dsh-design-system-dsh'
+  const source = fileURLToPath(new URL('../', import.meta.url))
+  const recorded = JSON.parse(await readFile(new URL('../release/dsh-distribution-materials.json', import.meta.url)))
+  assert.equal(recorded.packages['dsh-design-system-dsh'], undefined)
+  const selection = recorded.packages[name]
+  assert.ok(selection)
+  const target = await mkdtemp(join(tmpdir(), 'dsh-canonical-materials-'))
+  t.after(() => rm(target, { recursive: true, force: true }))
+  await cp(new URL('../packages/dsh/index.js', import.meta.url), join(target, 'index.js'))
+  await writeFile(join(target, 'NOTICE'), 'Synthetic staging notice; not an installed package.\n')
+  await copyDshDistributionMaterials({ source, target, sourceName: name, packageName: name })
+  const index = JSON.parse(await readFile(join(target, 'licenses/dsh-distribution.json')))
+  assert.equal(index.package, name)
+  assert.equal(index.sourceArchiveObserved, selection.observedArchiveSha256)
+  assert.deepEqual(index.outputSha256, selection.observedOutputSha256)
+  assert.equal(index.releaseLicenseAcceptance, false)
+  await assert.rejects(copyDshDistributionMaterials({ source, target, sourceName: 'dsh-design-system-dsh', packageName: name }), /Explicit DSH package material selection/)
+  await writeFile(join(target, 'index.js'), 'export function apply() { throw Error("changed") }\n')
+  await assert.rejects(copyDshDistributionMaterials({ source, target, sourceName: name, packageName: name }), /DSH material output observation is stale/)
+})
 
 test('observed DSH Pica prebundle receives original embedded notices without weakening output or version guards', async t => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-pica-materials-'))

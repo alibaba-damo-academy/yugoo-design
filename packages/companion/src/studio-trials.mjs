@@ -195,7 +195,7 @@ export async function createStudioTrials({ stateRoot, kitRoot, readInstalledKit,
           return publicRecord(record)
         } catch (error) {
           record = await updateRecord(id, current => ({ ...current, status: current.dispatchAttempted ? 'unknown' : 'failed', terminalVerified: !current.dispatchAttempted,
-            message: current.dispatchAttempted ? 'Native delivery is unverified; no automatic retry.' : 'Trial preparation failed before native dispatch.' }))
+            message: current.dispatchAttempted ? 'Native delivery is unverified; no automatic retry.' : `Trial preparation failed before native dispatch: ${String(error.message ?? error).slice(0, 2048)}` }))
           if (!record.dispatchAttempted) {
             try { await host?.close(); live.delete(id) }
             catch { record = { ...record, message: 'Preparation failed; owned Panel cleanup must be retried before removal.' }; await persist(record) }

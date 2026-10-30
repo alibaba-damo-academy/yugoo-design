@@ -18,17 +18,19 @@ test('explicit list presents real primary records and add actions while preservi
   ], fields: [
     { key: 'title', label: 'Title', control: 'text', applies_to: ['parents', 'children', 'others'] },
     { key: 'parent_ref', control: 'record_select', options_from_section: 'parents', hidden: true, applies_to: ['children'] },
+    { key: 'other_ref', control: 'record_select', options_from_section: 'others', hidden: true, applies_to: ['children'] },
   ] }
   let data = { parents: { p: { id: 'p', title: 'First parent' }, q: { id: 'q', title: 'Second parent' } },
     children: { c: { title: 'Child', parent_ref: 'p' } }, others: { o: { title: 'Other record' } } }
   const before = structuredClone(data)
   let updates
-  const show = async (layout, editable = false, sources = ['parents', 'children'], relatedEditor = true) => React.act(async () => root.render(renderNode({
+  const show = async (layout, editable = false, sources = ['parents', 'children'], config = {}) => React.act(async () => root.render(renderNode({
     component: 'record_workspace', id: 'workspace', title: 'Workspace title', sources,
     ...(layout ? { navigation_layout: layout } : {}),
-    children: [{ component: 'record_inspector', id: 'inspector', children: relatedEditor ? [
-      { component: 'record_related_editor', id: 'related', title: 'Related editor', source: 'children', bindings: { reference: 'parent_ref' } },
-    ] : [] }],
+    ...(config.workspaceView ? { workspace_view: config.workspaceView } : {}),
+    children: [{ component: 'record_inspector', id: 'inspector', children: config === false ? [] : [
+      { component: 'record_related_editor', id: 'related', title: 'Related editor', source: 'children', bindings: { reference: config.reference ?? 'parent_ref' } },
+    ] }],
   }, manifest, data, { locale: 'en-US', editable, onPanelUpdate: next => { updates = next } })))
   const nav = () => document.querySelector('nav')
   try {
@@ -63,8 +65,12 @@ test('explicit list presents real primary records and add actions while preservi
     await show(undefined, false)
     assert.equal(nav().querySelectorAll('.dsh-panel-workspace-tree-group').length, 0, 'default tree shows one real collection directly without a redundant category')
     await React.act(async () => nav().querySelector('button[aria-label="First parent"]').click())
-    assert.equal(nav().querySelector('button[aria-label="Child"]'), null, 'a complete inline editor avoids duplicating its child records in navigation')
-    assert.ok(document.querySelector('.dsh-record-related-editor [data-record="c"]'), 'the child remains available in its owner detail')
+    assert.ok(nav().querySelector('button[aria-label="Child"]'), 'contextual navigation remains in tree')
+    await show(undefined, false, ['parents', 'children'], { workspaceView: 'switch' })
+    assert.equal(nav().querySelector('button[aria-label="Child"]'), null, 'canvas/form view uses the owner detail instead of duplicate contextual navigation')
+    assert.ok(document.querySelector('.dsh-record-related-editor [data-record="c"]'), 'the related record remains reachable in its owner detail')
+    await show(undefined, false, ['parents', 'children'], { workspaceView: 'switch', reference: 'other_ref' })
+    assert.ok(nav().querySelector('button[aria-label="Child"]'), 'a different relation binding cannot hide the contextual record')
     await show(undefined, false, ['parents', 'children'], false)
     assert.ok(nav().querySelector('button[aria-label="Child"]'), 'without an inline editor the contextual child remains in the tree')
     await React.act(async () => nav().querySelector('button[aria-label="Child"]').click())

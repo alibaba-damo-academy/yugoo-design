@@ -12,35 +12,47 @@ globalThis.cancelAnimationFrame = clearTimeout
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 const React = await import('react'); globalThis.React = React
 const { createRoot } = await import('react-dom/client')
-const { PanelWorkspace, PanelWorkspaceTip } = await import('../src/panel-workspace.tsx')
+const { PanelWorkspace, PanelWorkspaceTree, PanelWorkspaceTip } = await import('../src/panel-workspace.tsx')
 const { PanelLocaleContext } = await import('../src/panel-i18n.tsx')
 const { renderManifest } = await import('../src/interpreter.ts')
 const { RecordBoard } = await import('../src/record-board.tsx')
 const { CanvasWorkspace } = await import('../src/canvas-workspace.tsx')
 
-test('workspace guidance dismisses only local presentation and remains closed during editing and locale changes', async () => {
+test('corner help opens on demand and closes without changing edits or preferences', async () => {
   const root = createRoot(document.getElementById('root'))
-  const show = (id = 'first', locale = 'zh-CN', guidance = '编辑当前对象，再保存设计。') => React.act(async () => root.render(
+  const show = (locale = 'zh-CN', guidance = '编辑当前对象，再保存设计。') => React.act(async () => root.render(
     React.createElement(PanelLocaleContext.Provider, { value: locale }, React.createElement('div', { className: 'dsh-design-panel' },
-      React.createElement(PanelWorkspace, { sidebar: 'Navigation', autoSaveId: id, guidance }, React.createElement('input', { 'aria-label': 'Name', defaultValue: 'Preserved' }))))))
+      React.createElement(PanelWorkspace, { autoSaveId: 'first', guidance, sidebar: React.createElement(PanelWorkspaceTree,
+        { title: 'Objects' }, React.createElement('button', null, 'Object')) }, React.createElement('input', { 'aria-label': 'Name', defaultValue: 'Preserved' }))))))
+  const clickHelp = () => React.act(async () => document.querySelector('.dsh-panel-guidance-trigger').click())
   try {
     await show()
     const main = document.querySelector('main')
-    assert.ok(main.firstElementChild.classList.contains('dsh-panel-workspace-guidance'))
-    assert.equal(main.querySelector('[role="note"] > div').textContent, '编辑当前对象，再保存设计。')
-    assert.equal(document.querySelector('.dsh-panel-guidance-dismiss').getAttribute('aria-label'), '关闭操作引导')
-    await React.act(async () => document.querySelector('.dsh-panel-guidance-dismiss').click())
-    assert.equal(document.querySelector('[role="note"]'), null)
+    assert.equal(main.firstElementChild.tagName, 'INPUT', 'help does not displace content or tools')
+    assert.ok(document.querySelector('.dsh-panel-workspace > .dsh-panel-workspace-guidance'))
+    assert.equal(document.querySelector('aside .dsh-panel-guidance-trigger'), null, 'guidance does not depend on a sidebar heading')
+    assert.equal(document.querySelector('[role="tooltip"]'), null)
+    assert.equal(document.querySelector('.dsh-panel-guidance-trigger').getAttribute('aria-label'), '行动指引')
+    await clickHelp()
+    assert.match(document.querySelector('[role="tooltip"]').textContent, /编辑当前对象，再保存设计。/)
+    await React.act(async () => document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
+    assert.equal(document.querySelector('[role="tooltip"]'), null)
+    assert.equal(document.activeElement, document.querySelector('.dsh-panel-guidance-trigger'))
     assert.equal(main.querySelector('input').value, 'Preserved')
     assert.equal(window.localStorage.getItem('dsh-panel-workspace:first:guidance'), null)
-    await show('first', 'en-US', 'Edit the current object, then save the design.')
-    assert.equal(document.querySelector('[role="note"]'), null, 'locale changes do not reopen dismissed guidance')
-    await show('second', 'en-US', 'Edit the current object, then save the design.')
-    assert.equal(document.querySelector('.dsh-panel-guidance-dismiss').getAttribute('aria-label'), 'Dismiss panel guidance')
-    await show('second', 'en-US', '')
-    assert.equal(document.querySelector('.dsh-panel-guidance-dismiss'), null, 'no empty banner or close control')
+    await show('en-US', 'Edit the current object, then save the design.')
+    assert.equal(document.querySelector('[role="tooltip"]'), null, 'locale changes do not open help')
+    await clickHelp()
+    assert.match(document.querySelector('[role="tooltip"]').textContent, /Edit the current object/)
+    await React.act(async () => main.querySelector('input').focus())
+    assert.equal(document.querySelector('[role="tooltip"]'), null)
+    await clickHelp()
+    await React.act(async () => main.dispatchEvent(new window.Event('pointerdown', { bubbles: true })))
+    assert.equal(document.querySelector('[role="tooltip"]'), null)
+    await show('en-US', '')
+    assert.equal(document.querySelector('.dsh-panel-guidance-trigger'), null)
     await React.act(async () => root.render(React.createElement(PanelWorkspaceTip, null, 'Contextual explanation')))
-    assert.equal(document.querySelector('.dsh-panel-guidance-dismiss'), null, 'contextual and warning content is not automatically dismissible')
+    assert.equal(document.querySelector('[role="note"]').textContent, 'Contextual explanation', 'contextual warnings remain visible')
   } finally { await React.act(async () => root.unmount()) }
 })
 
@@ -58,26 +70,43 @@ test('declarative panel_workspace uses independent localized guidance, never emp
       main: { component: 'text_block', id: 'main', text: 'Content' } } } }
   try {
     await React.act(async () => root.render(renderManifest(manifest, data, { locale: 'en-US', editable: false, onPanelUpdate: () => updates++ })))
-    assert.equal(document.querySelector('[role="note"] > div').textContent, 'Select an object, then edit it.')
+    assert.equal(document.querySelector('[role="tooltip"]'), null)
+    await React.act(async () => document.querySelector('.dsh-panel-guidance-trigger').click())
+    assert.equal(document.querySelector('[role="tooltip"] > div').textContent, 'Select an object, then edit it.')
     assert.doesNotMatch(document.getElementById('root').textContent, /capability description/)
-    await React.act(async () => document.querySelector('.dsh-panel-guidance-dismiss').click())
-    assert.equal(document.querySelector('[role="note"]'), null)
+    await React.act(async () => document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
+    assert.equal(document.querySelector('[role="tooltip"]'), null)
     assert.equal(updates, 0, 'dismissal does not invoke the write callback even in a readonly panel')
     assert.deepEqual(data, before)
   } finally { await React.act(async () => root.unmount()) }
 })
 
-test('plain authored forms receive one dismissible guidance without suppressing their content', async () => {
+test('plain authored forms retain content while opening and closing help', async () => {
   const root = createRoot(document.getElementById('root'))
   const manifest = { version: 1, panel_kind: 'document', sections: [], fields: [],
     ui: { component: 'stack', id: 'plain', guidance: 'Review the saved facts.',
       children: [{ component: 'text_block', id: 'content', text: 'Canonical content remains visible.' }] } }
   try {
     await React.act(async () => root.render(renderManifest(manifest, {}, { locale: 'en-US' })))
-    assert.equal(document.querySelectorAll('[role="note"]').length, 1)
-    await React.act(async () => document.querySelector('.dsh-panel-guidance-dismiss').click())
-    assert.equal(document.querySelector('[role="note"]'), null)
+    assert.equal(document.querySelector('[role="tooltip"]'), null)
+    await React.act(async () => document.querySelector('.dsh-panel-guidance-trigger').click())
+    assert.equal(document.querySelectorAll('[role="tooltip"]').length, 1)
+    await React.act(async () => document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
+    assert.equal(document.querySelector('[role="tooltip"]'), null)
     assert.match(document.getElementById('root').textContent, /Canonical content remains visible/)
+    document.activeElement?.blur()
+    await React.act(async () => document.querySelector('.dsh-panel-guidance-trigger').dispatchEvent(new window.MouseEvent('pointerover', { bubbles: true })))
+    assert.ok(document.querySelector('[role="tooltip"]'), 'hover reveals guidance without clicking')
+    await React.act(async () => {
+      document.querySelector('.dsh-panel-guidance-trigger').dispatchEvent(new window.MouseEvent('pointerout', { bubbles: true, relatedTarget: document.body }))
+      await new Promise(resolve => setTimeout(resolve, 180))
+    })
+    assert.equal(document.querySelector('[role="tooltip"]'), null, 'leaving the tip closes hover help')
+    const { guidance, ...withoutGuidance } = manifest.ui
+    await React.act(async () => root.render(renderManifest({ ...manifest, ui: { ...withoutGuidance, description: 'Not action guidance' } }, {})))
+    assert.equal(document.querySelector('.dsh-panel-guidance-trigger'), null, 'an omitted guidance creates no tip or description fallback')
+    await React.act(async () => root.render(renderManifest({ ...manifest, ui: { component: 'panel_workspace', id: 'custom', description: 'Not action guidance', slots: { main: withoutGuidance } } }, {})))
+    assert.equal(document.querySelector('.dsh-panel-guidance-trigger'), null, 'workspace descriptions are not a fallback either')
   } finally { await React.act(async () => root.unmount()) }
 })
 
@@ -144,11 +173,11 @@ test('board and canvas names use the original canonical update and do not offer 
   } finally { await React.act(async () => root.unmount()) }
 })
 
-test('guidance spans the main content without an outer inset or an artificial scrollbar gutter', () => {
+test('guidance uses an overlay without padding or artificial scrollbar gutters', () => {
   const css = readFileSync(new URL('../src/visual-components.css', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
   const rules = [...css.matchAll(/([^{}]+)\{([^{}]+)\}/g)]
-  const wrapper = rules.find(match => match[1].trim() === '.dsh-panel-workspace-guidance')
+  const wrapper = rules.find(match => match[1].trim().endsWith('.dsh-panel-workspace-guidance'))
   assert.ok(wrapper && /(?:^|;)\s*padding:\s*0\s*;/.test(wrapper[2]))
   assert.ok(!rules.some(match => match[1].includes('.dsh-panel-workspace-guidance') && /scrollbar-gutter:/.test(match[2])))
-  assert.ok(rules.some(match => match[1].trim() === '.dsh-panel-workspace-guidance > .dsh-panel-workspace-tip' && /margin:\s*0\s*;/.test(match[2])))
+  assert.ok(rules.some(match => match[1].trim() === '.dsh-panel-guidance-popup' && /position:\s*fixed\s*;/.test(match[2])), 'help overlays rather than shifting content')
 })

@@ -46,7 +46,7 @@
 | 模块职责、事实来源与宿主边界 | [可读运行机制导览](wiki/architecture.md)、[系统架构基线](system-design-baseline.md) |
 | 哪些设计内容进入知识关联 | [独立设计知识来源](design-knowledge-source-policy.md) |
 | 怎样将设计交给开发任务 | [设计到开发交接](design-development-handoff.md) |
-| 宿主适配与后续演进 | [独立框架演进说明](standalone-roadmap.md) |
+| 架构演进方向与待实现目标（规划） | [独立框架路线图](standalone-roadmap.md)；当前安装能力以[宿主指南](wiki/hosts.md)为准 |
 | 清晰度评估和独立审查怎样辅助判断 | [U/S/T 解释](ust-score-explanations.md)、[建议阅读](advisory-reading.md)、[宿主范围](wiki/hosts.md) |
 
 ## 技术参考
@@ -58,11 +58,13 @@
 | 共享交互、排版与信息组织 | [Panel UIUX 规范](panel-uiux-standard.md)、[面板创作指南](../.agents/skills/design-bundle-creator/references/panel-authoring.md) |
 | 项目入口与套件启用 | [设计命令入口](design-command-agent-entry.md) |
 | 建议阅读、未读状态与评估解释 | [建议阅读](advisory-reading.md)、[面板未读状态](panel-unread.md)、[U/S/T 解释](ust-score-explanations.md) |
-| 已有项目的内容版本更新 | [项目内容升级](project-content-upgrade.md) |
+| 项目内套件与内容更新 | [项目内容维护](project-content-upgrade.md) |
 
 ## 开发与维护
 
 从[开发指南](wiki/development.md)准备源码工作区，按 [AGENTS.md](../AGENTS.md) 和[贡献指南](../CONTRIBUTING.md)确定修改位置与验证范围。宿主接入细节由[各宿主入口](../packages/companion/HOSTS.md)及对应包的 README 维护。
+
+每次开发交付按[Agentic E2E 测试剧本](testing/agentic-e2e.md)检查新任务、旧项目迁移与 Studio 创作三条真实链路；同一剧本也规定发布后的实际 npm 全新安装、升级及业务抽查。按剧本区分本次检查、可复用的相同运行产物证据和未执行项，文档维护也须交代 E2E 状态。具体结果保留在对应工作记录；文档或自动测试通过不等于原生 Agent 验收通过。
 
 文档用词遵循[命名与术语规范](wiki/terminology.md)，公开内容按[文档同步规范](public-document-sync.md)从固定源码提交导出。敏感信息按[安全报告方式](../SECURITY.md)处理。
 

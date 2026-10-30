@@ -3,6 +3,42 @@ import assert from 'node:assert/strict'
 const { register } = await import('tsx/esm/api'); register()
 const { renderAdvisoryAcceptancePrompt } = await import('../src/client/ported/design/AdvisoryReviewCard.tsx')
 const { TYPERT_REMOTE } = await import('../../core/src/typert.remote-client.ts')
+const { officialAdvisoryProfile, OFFICIAL_GROUNDING_PROFILE } = await import('../../core/src/official-advisory-profiles.ts')
+
+test('Grounding acceptance retains exact report identity and server facts despite repeated item ids and generic titles', () => {
+  for (const userContextSummary of ['Please repair the CSS href.', '请修复页面样式引用。']) {
+  const profile = officialAdvisoryProfile(OFFICIAL_GROUNDING_PROFILE)
+  const advice = (runId, detail, correction) => profile.project({ schemaVersion: 1, runId, resultId: 'grounding',
+    userContextSummary, pins: [{ source: 'design-revision', revision: '38' }], facetRefs: ['page_design', 'design_style'] },
+  { schemaVersion: 1, inconsistencies: [{ id: 'GND-004', facets: ['page_design', 'design_style'], summary: detail,
+    authoritativeReference: 'design_files/page_design/pages/detail.html', correction, affectedFacets: ['page_design', 'design_style'] }] })
+  const previous = advice('previous', 'The layout uses a sidebar.', 'Change layout to standalone.')
+  const current = advice('current', 'The HTML href ../tokens.css points to a missing file.', 'Use ../../design_style/tokens.css.')
+  assert.equal(previous.items[0].id, current.items[0].id)
+  assert.equal(previous.items[0].title, current.items[0].title)
+  const authority = { actionReceipts: ['design_style', 'page_design'].map(skillName => ({
+    actionId: `bundle:${skillName}`, receiptId: `exact-${skillName}`, state: 'ready',
+    target: { kitName: 'fixture', kitVersion: '1.0', skillName, bundleVersion: '1.0', entityRefs: [current.items[0].id] },
+  })) }
+  const before = structuredClone(authority)
+  const prompt = renderAdvisoryAcceptancePrompt(current, authority)
+  assert.ok(prompt.includes(`advisoryId: ${JSON.stringify(current.id)}`))
+  assert.ok(prompt.includes(current.acceptanceInstruction), 'reuse the exact server-bounded instruction')
+  assert.match(prompt, /\.\.\/tokens\.css/)
+  assert.match(prompt, /\.\.\/\.\.\/design_style\/tokens\.css/)
+  assert.doesNotMatch(prompt, /Change layout to standalone|previous\/grounding/)
+  for (const action of authority.actionReceipts) assert.ok(prompt.includes(`${action.target.skillName} · ${current.items[0].id} · receipt: ${action.receiptId}`))
+  assert.deepEqual(authority, before, 'facts never mint, replace or retarget receipts')
+  }
+})
+
+test('legacy acceptance without a server instruction still retains item facts and references', () => {
+  const prompt = renderAdvisoryAcceptancePrompt({ id: 'exact/report', summary: 'Review finding',
+    items: [{ id: 'reused-item', title: 'Generic title', detail: 'Repair only the CSS href.', rationale: 'Styles fail to load.', references: ['page_design/pages/detail.html'] }],
+    actionSpec: { kind: 'none' } }, { actionReceipts: [] })
+  for (const text of ['exact/report', 'reused-item', 'Repair only the CSS href.', 'Styles fail to load.', 'page_design/pages/detail.html']) assert.ok(prompt.includes(text))
+  assert.match(prompt, /No Bundle action was authorized/)
+})
 
 test('DSH review-choice acceptance sends identity and selection steps, not the old no-Bundle fallback', () => {
   for (const summary of ['Clarify audience', '请澄清用户范围']) {

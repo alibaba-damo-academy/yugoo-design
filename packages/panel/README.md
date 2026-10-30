@@ -13,6 +13,7 @@ discovery, compilation and rendering have separate entry points.
 | `dsh-design-panel/interpreter` | Browser renderer library | Browser and React 18 |
 | `dsh-design-panel/client-api` | Broad shared APIs consumed by trusted browser providers | React 18 and the shared provider/renderer dependency graph |
 | `dsh-design-panel/select` | Isolated browser choice control and popup stylesheet | React 18, ReactDOM, Radix Select and Lucide; no workspace/canvas runtime |
+| `dsh-design-panel/sample-preview` | Isolated declarative sample using the runtime interpreter and shared styles | Browser and React 18; sample data only |
 | `dsh-design-panel/client` | DSH browser plugin factory | DSH client module loader and its shared platform instances |
 
 Public npm specifiers use the `@yugoo-design/` scope. Development source uses
@@ -55,6 +56,32 @@ UI-associated advisory, project and continuation helpers remain with their
 components in `ui`.
 
 ## Shared presentation and editing
+
+The interpreter uses the existing component catalog’s workspace ownership for
+both host scrolling and a shared, inset-free layout surface. Full workspaces,
+single-child stacks and switches between workspaces pass the allocated height
+through this surface. Components own scrolling within their navigation and content
+areas; ordinary document content keeps its natural height. Hosts supply the outer
+space instead of styling individual component wrappers.
+
+Trusted native Providers can opt into the bounded
+[component-package contract](../../docs/component-package-contract.md) for exact
+file/dependency admission and provenance in the existing native registry. This
+entry supports native Panel API 1 with Host React 18; it does not extend the DSL
+vocabulary or install executable code through content imports.
+
+`PanelSamplePreview` accepts `skill`, `panelYaml` and an original `sample` record.
+It defaults to read-only while retaining navigation and disclosure. To edit a
+local sample, set `readOnly={false}`; optional `value`/`onChange` let the caller
+control that sample. Replacing `sample` resets uncontrolled edits; locale changes
+preserve them. This surface never reads project artifacts, accepts attachments,
+submits prompts, saves or publishes. Callers own any explicit adoption of edits.
+Hosts may supply already confined, bounded synthetic `artifacts` from the same
+definition snapshot. The sample reads only those supplied bytes through its
+existing sandbox; it has no project or filesystem fallback.
+Its component lifetime includes the existing shared presentation and content-state
+styles. Source consumers use their existing CSS build pipeline; the standalone
+browser entry emits resources through the Panel's ordinary CSS asset routes.
 
 Artifact readers keep refresh in the current record's top toolbar. Shared
 Markdown uses a bounded heading scale and paragraph rhythm; user-authored HTML

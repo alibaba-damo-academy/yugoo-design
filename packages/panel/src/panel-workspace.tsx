@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState, type CSSProperties, type InputHTMLAttributes, type KeyboardEvent, type PointerEvent, type ReactElement, type ReactNode } from 'react'
-import { PanelsTopLeft, Pencil, X } from 'lucide-react'
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type InputHTMLAttributes, type KeyboardEvent, type PointerEvent, type ReactElement, type ReactNode } from 'react'
+import { Info, PanelsTopLeft, Pencil, X } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { panelPopupTheme } from './panel-select.tsx'
 import { Handle, Position } from '@xyflow/react'
 import { RELATION_SIDES } from './relation-graph-layout.ts'
 import { panelText, usePanelI18n } from './panel-i18n.tsx'
@@ -7,6 +9,15 @@ import { panelText, usePanelI18n } from './panel-i18n.tsx'
 const DEFAULT_SIDEBAR_WIDTH = 220
 const MIN_SIDEBAR_WIDTH = 160
 const MAX_SIDEBAR_WIDTH = 460
+
+/** Record forms and specialized readers share the complete title-bar layout.
+ * Without a declared variant, preserve the existing unframed record title. */
+export function PanelRecordHeader({ variant, placement, children }: { variant?: 'detail' | 'card'; placement?: 'workspace'; children?: ReactNode }): ReactElement {
+  const style = variant ?? (placement === 'workspace' ? 'detail' : undefined)
+  return style
+    ? <header className={`dsh-design-record-title dsh-design-record-header is-${style}${placement === 'workspace' ? ' is-workspace' : ''}`}>{children}</header>
+    : <div className='dsh-design-record-title'>{children}</div>
+}
 
 /** The existing name binding remains the only editor; the pencil only focuses it. */
 export function PanelEditableTitle({ locale, ...props }: InputHTMLAttributes<HTMLInputElement> & { locale?: string }): ReactElement {
@@ -90,7 +101,7 @@ export function PanelWorkspaceCanvasToggle(props: { label: string; onOpen: () =>
 export function PanelWorkspace(props: {
   sidebar: ReactNode
   children?: ReactNode
-  /** Workspace-wide guidance appears first, above toolbars and record content. */
+  /** Optional action guidance anchored to the workspace, independent of navigation. */
   guidance?: ReactNode
   className?: string
   /** Stable identity used to restore the user's chosen navigation width. */
@@ -105,6 +116,49 @@ export function PanelWorkspace(props: {
     if (!props.autoSaveId || typeof window === 'undefined') return
     window.localStorage.setItem(`dsh-panel-workspace:${props.autoSaveId}:sidebar-width`, String(Math.round(sidebarWidth)))
   }, [props.autoSaveId, sidebarWidth])
+
+  useEffect(() => {
+    const workspace = root.current
+    const main = workspace?.querySelector<HTMLElement>(':scope > .dsh-panel-workspace-main')
+    const view = main?.ownerDocument.defaultView
+    if (!workspace || !main || !view?.requestAnimationFrame || typeof ResizeObserver !== 'function') return
+    // A classic scrollbar reduces a surface's content width; an overlay one
+    // does not. Measure only a visible, full-width scroll owner in this workspace,
+    // never a nested workspace, canvas sidecar or the document inside an iframe.
+    const selector = '.dsh-question-workspace-content,.dsh-record-workspace-body,.dsh-record-inspector,.dsh-component-tabs-panel,.dsh-record-board-content,.dsh-artifact-content'
+    let frame = 0
+    const measure = () => {
+      frame = 0
+      const bounds = main.getBoundingClientRect()
+      let inset = 0
+      for (const surface of main.querySelectorAll<HTMLElement>(selector)) {
+        if (surface.closest('.dsh-panel-workspace') !== workspace) continue
+        const rect = surface.getBoundingClientRect()
+        if (!rect.height || Math.abs(rect.left - bounds.left) > 1 || Math.abs(rect.right - bounds.right) > 1) continue
+        const css = view.getComputedStyle(surface)
+        if (!['auto', 'scroll'].includes(css.overflowY) || surface.scrollHeight <= surface.clientHeight) continue
+        const border = (parseFloat(css.borderLeftWidth) || 0) + (parseFloat(css.borderRightWidth) || 0)
+        inset = Math.max(inset, surface.offsetWidth - surface.clientWidth - border)
+      }
+      const value = `${Math.max(0, inset)}px`
+      if (main.style.getPropertyValue('--ygd-panel-scrollbar-inset') !== value) main.style.setProperty('--ygd-panel-scrollbar-inset', value)
+    }
+    const schedule = () => { if (!frame) frame = view.requestAnimationFrame(measure) }
+    const sizes = new ResizeObserver(schedule)
+    const observe = () => {
+      sizes.disconnect(); sizes.observe(main)
+      for (const surface of main.querySelectorAll<HTMLElement>(selector)) {
+        if (surface.closest('.dsh-panel-workspace') !== workspace) continue
+        sizes.observe(surface)
+        for (const child of surface.children) sizes.observe(child)
+      }
+      schedule()
+    }
+    const changes = new view.MutationObserver(observe)
+    changes.observe(main, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['hidden', 'class', 'open'] })
+    observe()
+    return () => { changes.disconnect(); sizes.disconnect(); if (frame) view.cancelAnimationFrame(frame); main.style.removeProperty('--ygd-panel-scrollbar-inset') }
+  }, [])
 
   useEffect(() => {
     if (!resizing) return
@@ -136,7 +190,7 @@ export function PanelWorkspace(props: {
   return (
     <section
       ref={root}
-      className={`dsh-panel-workspace${resizing ? ' is-resizing' : ''}${props.className ? ` ${props.className}` : ''}`}
+      className={`dsh-panel-workspace${props.guidance ? ' has-guidance' : ''}${resizing ? ' is-resizing' : ''}${props.className ? ` ${props.className}` : ''}`}
       style={{ '--dsh-panel-sidebar-width': `${sidebarWidth}px` } as CSSProperties}
     >
       <aside className='dsh-panel-workspace-sidebar'>{props.sidebar}</aside>
@@ -156,9 +210,9 @@ export function PanelWorkspace(props: {
         onKeyDown={resizeFromKeyboard}
       />
       <main className='dsh-panel-workspace-main'>
-        {props.guidance ? <PanelWorkspaceGuidance key={props.autoSaveId} children={props.guidance} /> : null}
         {props.children}
       </main>
+      {props.guidance ? <PanelWorkspaceGuidance key={props.autoSaveId} children={props.guidance} /> : null}
     </section>
   )
 }
@@ -321,12 +375,70 @@ export function PanelWorkspaceTip(props: {
   )
 }
 
-/** Dismissal belongs to this mounted workspace, never to Design Files or a profile. */
-export function PanelWorkspaceGuidance(props: { children: ReactNode }): ReactElement | null {
-  const [dismissed, setDismissed] = useState(false)
-  return dismissed ? null : <div className='dsh-panel-workspace-guidance'>
-    <PanelWorkspaceTip onDismiss={() => setDismissed(true)}>{props.children}</PanelWorkspaceTip>
-  </div>
+/** Read-on-demand help never changes Panel data or remembers a profile preference. */
+export function PanelWorkspaceGuidance(props: { children: ReactNode }): ReactElement {
+  const { t } = usePanelI18n()
+  const id = useId(), trigger = useRef<HTMLButtonElement>(null), popup = useRef<HTMLDivElement>(null)
+  const [open, setOpen] = useState(false)
+  const closeTimer = useRef<ReturnType<typeof setTimeout>>()
+  const cancelClose = () => { clearTimeout(closeTimer.current) }
+  const show = () => { cancelClose(); setOpen(true) }
+  const leave = () => {
+    cancelClose()
+    closeTimer.current = setTimeout(() => {
+      if (!trigger.current?.matches(':focus-visible') && !popup.current?.contains(document.activeElement)) setOpen(false)
+    }, 150)
+  }
+  useEffect(() => () => cancelClose(), [])
+  const [position, setPosition] = useState<CSSProperties>({ visibility: 'hidden' })
+  useLayoutEffect(() => {
+    if (!open || !trigger.current || !popup.current) return
+    const rect = trigger.current.getBoundingClientRect()
+    const view = trigger.current.ownerDocument.defaultView!
+    const width = Math.min(360, view.innerWidth - 24)
+    const theme = panelPopupTheme(trigger.current)
+    // Popup typography is owned by the shared stylesheet, not the compact trigger.
+    delete theme.fontSize; delete theme.fontWeight; delete theme.lineHeight; delete theme.color
+    const below = Math.max(0, view.innerHeight - rect.bottom - 20), above = Math.max(0, rect.top - 20)
+    // Bound the chosen side before layout; long/localized text can scroll without
+    // relying on a first-frame height measured at the wrong width.
+    setPosition({ ...theme, width, left: Math.max(12, Math.min(rect.left, view.innerWidth - width - 12)),
+      ...(above < 160 && below > above
+        ? { top: rect.bottom + 8, maxHeight: below }
+        : { bottom: view.innerHeight - rect.top + 8, maxHeight: above }) })
+  }, [open, props.children])
+  useEffect(() => {
+    if (!open || !trigger.current) return
+    const doc = trigger.current.ownerDocument, view = doc.defaultView!
+    const outside = (event: Event) => {
+      if (!trigger.current?.contains(event.target as Node) && !popup.current?.contains(event.target as Node)) setOpen(false)
+    }
+    const escape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); trigger.current?.focus(); setOpen(false) }
+    }
+    const close = () => setOpen(false)
+    doc.addEventListener('pointerdown', outside)
+    doc.addEventListener('focusin', outside)
+    doc.addEventListener('keydown', escape)
+    doc.addEventListener('scroll', outside, true)
+    view.addEventListener('resize', close)
+    return () => {
+      doc.removeEventListener('pointerdown', outside)
+      doc.removeEventListener('focusin', outside)
+      doc.removeEventListener('keydown', escape)
+      doc.removeEventListener('scroll', outside, true)
+      view.removeEventListener('resize', close)
+    }
+  }, [open])
+  return <span className='dsh-panel-workspace-guidance' onPointerEnter={show} onPointerLeave={leave}>
+    <button ref={trigger} type='button' className='dsh-panel-guidance-trigger' aria-label={t('panelGuidance')}
+      aria-expanded={open} aria-describedby={open ? id : undefined}
+      onFocus={show} onClick={show}><Info size={16} aria-hidden='true' /></button>
+    {open && trigger.current ? createPortal(<div ref={popup} id={id} role='tooltip' aria-label={t('panelGuidance')}
+      className='dsh-panel-guidance-popup' style={position} onPointerEnter={cancelClose} onPointerLeave={leave}>
+      <div>{props.children}</div>
+    </div>, trigger.current.closest<HTMLDialogElement>('dialog[open]') ?? trigger.current.ownerDocument.body) : null}
+  </span>
 }
 
 /** Card navigation: title plus secondary context, distinct from structure navigation. */

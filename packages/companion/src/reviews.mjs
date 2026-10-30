@@ -357,7 +357,7 @@ export function createCompanionReviews({ project, stateRoot, threadId, host = 'c
         stale:entry.advisory.inputs.some(pin=>pin.source==='design-worktree' && !validPins.has(pin.revision))}))
   }
   const readClarity = async (workspace) => {
-      const authority=await core.readDesignClarityAuthority(recordsRoot,projectId)
+      const authority=await core.readCommittedDesignClarityAuthority(project.project.root,projectId)
       // Missing authority means unassessed, never a current score. Keep the
       // display summary consistent with the main-conversation context.
       if(!authority)return {assessment:null,needsReassessment:true}

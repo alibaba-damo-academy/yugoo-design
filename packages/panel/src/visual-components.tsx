@@ -5,7 +5,7 @@ import { sidebarIcon } from './sidebar-icon.tsx'
 import { PanelSelect } from './panel-select.tsx'
 import { ReactFlow, Background, Controls, BaseEdge, EdgeLabelRenderer, MarkerType, Position, ConnectionMode, applyNodeChanges, useUpdateNodeInternals,
   type EdgeProps, type Node, type NodeProps, type ReactFlowInstance } from '@xyflow/react'
-import type { ComponentNode, EditorField, PanelManifest } from './dsl.ts'
+import type { ComponentNode, EditorField, PanelManifest, SidebarIcon } from './dsl.ts'
 import type { ELK } from 'elkjs/lib/elk-api.js'
 import { fieldValuesOf, recordLabel, recordsAtPath, sectionBindingOf, freshRecordId, pathSet, pathGet,
   type DesignData } from './record-state.ts'
@@ -13,11 +13,12 @@ import type { RenderOptions } from './interpreter.ts'
 import { displayValue, relationCanvasLabel, graphRecords, pivotRows, replaceMatrixCell, type RecordMap } from './visual-records.ts'
 import { secureDesignSrcDoc } from './client/srcdoc-security.ts'
 import { usePanelI18n } from './panel-i18n.tsx'
+import { ComponentTabsNavigation } from './component-tabs.tsx'
 import { relationParents, relationAncestors, relationRoots, relationHasCycle, reverseRelation, relationParticipants, projectParticipantRelations } from './relation-records.ts'
 import { RELATION_GRAPH_AUTO_FIT, isRelationSide, relationFallbackCurve, relationGraphFitViewport, relationLayoutInput, relationRoute, relationNodeId, relationEdgeId, type RelationSide, type RelationRoute, type RelationLayoutLink, type GraphSize } from './relation-graph-layout.ts'
 import { planRelationHierarchyCreate } from './relation-hierarchy-create.ts'
 import { planRelationParentEdit, relationHasParentConflict } from './relation-parent-edit.ts'
-import { projectReferenceGraph, referenceMatches, referenceNodeKey, referenceRecordLabel } from './reference-graph.ts'
+import { projectReferenceGraph, referenceMatches, referenceNodeKey, referenceRecordLabel, withReferenceContext } from './reference-graph.ts'
 import { RecordCardDraftScope } from './record-card-drafts.tsx'
 import { ReferenceHub } from './reference-hub-view.tsx'
 import { useFlowContainerFit } from './use-flow-container-fit.ts'
@@ -41,21 +42,41 @@ type HierarchyCreateRequest = { section: string; parent: string } &
 interface SelectionContextValue {
   selected?: Selection
   select: (value: Selection) => void
+  openRelated?: (value: Selection) => void
+  returnTo?: Selection
   createHierarchy?: (request: HierarchyCreateRequest) => void
   graph?: ComponentNode['graph']
   referenceGraph?: boolean
   showDetails?: () => void
   canvasView?: boolean
+  artifactReferences?: readonly { source: string; reference: string; target: string }[]
+  headerOutside?: boolean
+  previewLayout?: boolean
 }
 const SelectionContext = createContext<SelectionContextValue>({ select: () => {} })
 /** Shared selection for composed views; reading context never changes canonical data. */
 export function useRecordSelection(): SelectionContextValue { return useContext(SelectionContext) }
+const RecordFlowContext = createContext(false)
 interface Props { node: ComponentNode; manifest: PanelManifest; data: DesignData; options?: RenderOptions }
+
+/** Bare workspace prose owns a content gutter; prose inside an inspector does not. */
+export function WorkspaceTextBlock({ id, children }: { id: string; children?: ReactNode }): ReactElement {
+  const flow = useContext(RecordFlowContext)
+  return <p className={`dsh-design-auto-text${flow ? ' is-workspace-content' : ''}`} data-node={id}>{children}</p>
+}
+
+/** A one-child stack arranges content; it does not change the view's identity. */
+function workspaceView(node: ComponentNode): ComponentNode {
+  let view = node
+  while (view.component === 'stack' && !view.guidance && view.children?.length === 1) view = view.children[0]!
+  return view
+}
 
 interface BusinessRecordNodeData extends Record<string, unknown> {
   record: string
   label: string
   kind?: string
+  icon?: SidebarIcon
   connecting?: 'source'
   onDetail?: () => void
   detailLabel?: string
@@ -67,7 +88,7 @@ function BusinessRecordNode({ data, selected, isConnectable }: NodeProps): React
   return <div data-graph-measure={relationNodeId(value.record)} className={`dsh-business-node${selected ? ' is-selected' : ''}${value.connecting === 'source' ? ' is-connection-source' : ''}`}>
     <PanelCanvasHandles isConnectable={isConnectable} />
     <div className="dsh-business-node-heading">
-      <span className="dsh-business-node-symbol" aria-hidden="true">◇</span>
+      <span className="dsh-business-node-symbol" aria-hidden="true">{sidebarIcon(value.icon) ?? '◇'}</span>
       <span className="dsh-business-node-title">{value.label}</span>
       {value.kind ? <span className="dsh-business-node-kind">{value.kind}</span> : null}
     </div>
@@ -166,7 +187,7 @@ export function insertVisualRecord(props: Props, section: string, values: Record
   return id
 }
 
-export function RecordWorkspace(props: Props & { children: ReactNode }): ReactElement {
+export function RecordWorkspace(props: Props & { children: ReactNode; renderHeader?: (selection: Selection) => ReactElement }): ReactElement {
   const { t } = usePanelI18n()
   const sections = props.node.sources ?? []
   const graph = props.node.children?.find(child => child.component === 'relation_graph')?.graph
@@ -191,7 +212,9 @@ export function RecordWorkspace(props: Props & { children: ReactNode }): ReactEl
   }
   const [view, setView] = useState<'form' | 'graph'>('form')
   const first = sections.flatMap(section => Object.keys(records(props, section)).map(record => ({ section, record })))[0]
-  const [selection, select] = useState<Selection | undefined>(first)
+  const [selection, setSelection] = useState<Selection | undefined>(first)
+  const [returnTo, setReturnTo] = useState<Selection>()
+  const select = (value: Selection) => { setReturnTo(undefined); setSelection(value) }
   const workspaceElement = useRef<HTMLElement>(null)
   const pendingNameFocus = useRef<Selection>()
   const selectCreatedRecord = (section: string, record: string) => {
@@ -239,20 +262,35 @@ export function RecordWorkspace(props: Props & { children: ReactNode }): ReactEl
   // branches. They remain in scope so the same inspector can edit selected edges.
   const navigableSections = sections.filter(section => section !== graph?.edges
     && props.manifest.sections.find(value => value.id === section)?.navigation !== 'contextual')
+  const inlineArtifacts: Array<{ source: string; reference: string; target: string }> = []
+  const collectInlineArtifacts = (node: ComponentNode) => {
+    if (node.component === 'record_artifact' && node.source && node.artifact?.reference_field) {
+      const field = props.manifest.fields.find(field => field.key === node.artifact!.reference_field
+        && field.applies_to?.includes(node.source!))
+      if (field?.options_from_section && !inlineArtifacts.some(binding => binding.source === node.source)) {
+        inlineArtifacts.push({ source: node.source, reference: field.key, target: field.options_from_section })
+      }
+    }
+    node.children?.forEach(collectInlineArtifacts)
+  }
+  props.node.children?.forEach(collectInlineArtifacts)
   const hierarchyField = (section: string) => props.manifest.fields.find(field => field.hierarchy !== undefined
     && field.control === 'record_select' && field.options_from_section === section && field.applies_to?.includes(section))
   const contextualChildren = (parentSection: string, parentRecord: string) => props.manifest.sections.flatMap(section => {
     if (!sections.includes(section.id) || section.navigation !== 'contextual') return []
-    // An inherited related editor presents own + source records in the detail
-    // pane. Its collection is not a second branch of the hierarchy outline.
-    if (props.node.children?.some(child => child.component === 'record_inspector'
-      && child.children?.some(editor => editor.component === 'record_related_editor'
-        && editor.source === section.id))) return []
     const reference = props.manifest.fields.find(field => field.applies_to?.includes(section.id)
       && referenceTargets(field).includes(parentSection)
       && ['record_select', 'record_multi_select'].includes(field.control))
     if (!reference || !contextualParents(props, reference, parentRecord)
       .some(parent => parent.section === parentSection)) return []
+    if (inlineArtifacts.some(binding => binding.source === section.id && binding.reference === reference.key
+      && binding.target === parentSection)) return []
+    // Canvas/form workspaces expose these records in the selected owner's
+    // related editor. Preserve contextual branches in ordinary tree workspaces.
+    if (props.node.children?.some(child => child.component === 'record_inspector'
+      && child.children?.some(editor => editor.component === 'record_related_editor'
+        && (editor.inherit_from_graph || props.node.workspace_view === 'switch')
+        && editor.source === section.id && editor.bindings?.reference === reference.key))) return []
     return [{ section, reference, entries: Object.entries(records(props, section.id))
       .filter(([, record]) => contextualParents(props, reference, record[reference.key])
         .some(parent => parent.section === parentSection && parent.record === parentRecord)) }]
@@ -507,11 +545,28 @@ export function RecordWorkspace(props: Props & { children: ReactNode }): ReactEl
       onToggle={() => setExpandedSections(current => ({ ...current, [section]: !(current[section] ?? true) }))}>{hierarchyContent}</PanelWorkspaceTreeGroup>
   }) : null
   const detailChildren = props.node.workspace_view === 'switch' ? props.node.children?.slice(1) : props.node.children
-  const detailWithPreview = detailChildren?.length === 2
-    && detailChildren[0]?.component === 'record_inspector'
-    && detailChildren[1]?.component === 'record_preview'
-  const detailForm = detailWithPreview || (detailChildren?.length === 1 && detailChildren[0]?.component === 'record_inspector')
-  return <SelectionContext.Provider value={{ selected, select, createHierarchy: beginHierarchy, graph, referenceGraph,
+  const detailViews = detailChildren?.map(workspaceView)
+  const detailWithPreview = detailViews?.length === 2
+    && detailViews[0]?.component === 'record_inspector'
+    && detailViews[1]?.component === 'record_preview'
+  const detailTabs = detailViews?.length === 1 && detailViews[0]?.component === 'tabs'
+    && (detailViews[0].children?.length ?? 0) > 0
+  const tabViews = detailTabs ? detailViews[0]!.children!.map(workspaceView) : []
+  const splitDetail = detailWithPreview || (detailViews?.length === 2
+    && ['relation_graph', 'reference_graph'].includes(detailViews[0]!.component)
+    && detailViews[1]?.component === 'record_inspector')
+  // Sibling views describe the same selected record. Its original title and
+  // lifecycle controls belong above those views, not inside the first page.
+  const headerOutside = !!(graph?.hierarchy?.parent_control !== 'header' && props.node.workspace_view !== 'switch' && detailTabs && selected && props.renderHeader
+    && props.manifest.sections.find(section => section.id === selected.section)?.form?.header?.variant !== 'card'
+    && tabViews.filter(child => child.component === 'record_inspector').length === 1
+    && tabViews.every(child => ['record_inspector', 'record_artifact'].includes(child.component)))
+  // Tabs own their outer slot independently of sibling content types. The
+  // direct inspector receives form rhythm locally, never the whole mixed frame.
+  const detailForm = detailWithPreview || (detailChildren?.length === 1 && ['record_inspector', 'math_document'].includes(detailChildren[0]?.component ?? ''))
+  return <SelectionContext.Provider value={{ selected, select, returnTo,
+    openRelated: value => { setReturnTo(selected); setSelection(value) },
+    createHierarchy: beginHierarchy, graph, referenceGraph, artifactReferences: inlineArtifacts, headerOutside, previewLayout: detailWithPreview,
     canvasView: props.node.workspace_view === 'switch' && view === 'graph',
     showDetails: props.node.workspace_view === 'switch' ? () => setView('form') : undefined }}>
     <RecordCardDraftScope><section ref={workspaceElement} className="dsh-record-workspace" aria-label={props.node.title ?? t('recordWorkspace')}>
@@ -521,8 +576,8 @@ export function RecordWorkspace(props: Props & { children: ReactNode }): ReactEl
           {selected && props.node.children?.[0]?.references?.layout?.kind !== 'hub' ? <button type="button" className="dsh-record-workspace-open-detail" onClick={() => setView('form')}>{t('recordDetails')}</button> : null}
         </div>}>
       <PanelWorkspace
-        guidance={props.node.guidance ?? props.node.description}
-        className={`dsh-record-workspace-frame${props.node.workspace_view === 'switch' ? ' is-canvas-switch' : ''}${detailForm ? ' is-record-form' : ''}${detailForm && detailWithPreview ? ' is-record-preview' : ''}`}
+        guidance={props.node.guidance}
+        className={`dsh-record-workspace-frame${props.node.workspace_view === 'switch' ? ' is-canvas-switch' : ''}${detailForm ? ' is-record-form' : ''}${detailWithPreview ? ' is-record-preview' : ''}${detailTabs ? ' is-record-tabs' : ''}`}
         autoSaveId={`record-workspace:${props.manifest.panel_kind}:${props.node.id}`}
         sidebar={(
           <><PanelWorkspaceTree icon={sidebarIcon(props.node.sidebar_icon)} title={props.node.title ?? t('records')}>
@@ -579,8 +634,11 @@ export function RecordWorkspace(props: Props & { children: ReactNode }): ReactEl
         )}
       >
         {props.node.workspace_view === 'switch' ? <>
-          <div className="dsh-record-workspace-body is-detail-cover">{Children.toArray(props.children).slice(1)}</div>
-        </> : <div className="dsh-record-workspace-body">{props.children}</div>}
+          <div className="dsh-record-workspace-body is-detail-cover"><RecordFlowContext.Provider value>{Children.toArray(props.children).slice(1)}</RecordFlowContext.Provider></div>
+        </> : <div className={`dsh-record-workspace-body${splitDetail ? ' is-split-view' : ''}${headerOutside ? ' has-record-header' : ''}`}>
+          {headerOutside && selected ? <div className="dsh-record-workspace-header" key={JSON.stringify(selected)}>{props.renderHeader!(selected)}</div> : null}
+          <RecordFlowContext.Provider value>{props.children}</RecordFlowContext.Provider>
+        </div>}
       </PanelWorkspace>
       </PanelWorkspaceCover>
       {createRequest && props.options?.editable && props.options.onPanelUpdate ? <div className="dsh-record-create-backdrop" onMouseDown={event => {
@@ -644,9 +702,9 @@ function RecordInheritance({ graph, parents, nodes, select }: {
   </section>
 }
 
-export function RecordInspector(props: Props & { render: (selection: Selection, headerAccessory?: ReactNode) => ReactElement; children?: ReactNode }): ReactElement {
+export function RecordInspector(props: Props & { render: (selection: Selection, headerAccessory?: ReactNode, headerOutside?: boolean) => ReactElement; children?: ReactNode }): ReactElement {
   const { t } = usePanelI18n()
-  const { selected, select, createHierarchy, graph, canvasView, showDetails } = useContext(SelectionContext)
+  const { selected, select, returnTo, createHierarchy, graph, canvasView, showDetails, artifactReferences, headerOutside, previewLayout } = useContext(SelectionContext)
   const [actionError, setActionError] = useState('')
   useEffect(() => setActionError(''), [selected?.section, selected?.record])
   const directParents = graph?.hierarchy && selected?.section === graph.nodes
@@ -663,13 +721,19 @@ export function RecordInspector(props: Props & { render: (selection: Selection, 
       .some(parent => parent.section === selected.section)) return []
     // An explicit selected-parent editor already presents this collection.
     // Keep summaries for all other references; no Bundle field names belong here.
-    const covered = props.node.children?.some(child => child.component === 'record_related_editor'
-      && child.source === section.id && child.bindings?.reference === reference.key)
+    const covered = artifactReferences?.some(binding => binding.source === section.id
+      && binding.reference === reference.key && binding.target === selected.section)
+      || props.node.children?.some(child => child.source === section.id
+      && ((child.component === 'record_related_editor' && child.bindings?.reference === reference.key)
+        || (child.component === 'record_artifact' && child.artifact?.reference_field === reference.key)))
     if (covered) return []
     return [{ section, reference, entries: Object.entries(records(props, section.id))
       .filter(([, record]) => contextualParents(props, reference, record[reference.key])
         .some(parent => parent.section === selected.section && parent.record === selected.record)) }]
   }) : []
+  // A return link belongs only to an explicit related-preview detail action.
+  // Sidebar selection and arbitrary canonical references never invent a trail.
+  const parent = returnTo && Object.hasOwn(records(props, returnTo.section), returnTo.record) ? returnTo : undefined
   const hierarchy = selected ? props.manifest.fields.find(field => field.hierarchy !== undefined
     && field.control === 'record_select' && field.options_from_section === selected.section
     && field.applies_to?.includes(selected.section)) : undefined
@@ -719,7 +783,7 @@ export function RecordInspector(props: Props & { render: (selection: Selection, 
     {directParents.length === 1 ? <button type="button" className="dsh-record-parent-source" aria-label={t('viewSourceRecord', { item: String(records(props, graph.nodes)[directParents[0]!]!?.[graph.label_field] ?? directParents[0]) })}
       onClick={() => select({ section: graph.nodes, record: directParents[0]! })}><ArrowUpRight size={14} aria-hidden="true" /></button> : null}
   </span> : undefined
-  return <aside className="dsh-record-inspector" aria-label={t('recordProperties')}>
+  return <aside className={`dsh-record-inspector${previewLayout ? ' is-preview-pane' : ''}`} aria-label={t('recordProperties')}>
     {graph && !inlineParent ? <RecordInheritance graph={graph} parents={directParents} nodes={records(props, graph.nodes)} select={select} /> : null}
     {!inlineParent && graph?.hierarchy?.max_parents === 1 && selected?.section === graph.nodes && props.options?.editable && props.options.onPanelUpdate ?
       <label className="dsh-record-parent-select"><span>{graph.hierarchy.label}</span>
@@ -749,8 +813,13 @@ export function RecordInspector(props: Props & { render: (selection: Selection, 
     }}>{graph.reverse.label}</button> : null}
     {invalidCycle || invalidParent || directParents.length > (graph?.hierarchy?.max_parents ?? Infinity) || actionError
       ? <p role="alert">{actionError || (invalidCycle ? t('graphCycle') : t('graphSingleParent'))}</p> : null}
-    {selected ? <div className="dsh-record-inspector-content" key={JSON.stringify(selected)}>{props.render(selected, headerAccessory)}</div> : <p>{props.manifest.empty_description ?? t('selectRecord')}</p>}
-    {selected ? props.children : null}
+    {parent ? <button type="button" className="dsh-record-inspector-back" onClick={() => select(parent)}>
+      ← {t('backTo', { item: recordLabel(records(props, parent.section)[parent.record]!, parent.record) })}
+    </button> : null}
+    {selected ? <RecordFlowContext.Provider value={false}>
+      <div className="dsh-record-inspector-content" key={JSON.stringify(selected)}>{props.render(selected, headerAccessory, headerOutside)}</div>
+      {props.children}
+    </RecordFlowContext.Provider> : <p>{props.manifest.empty_description ?? t('selectRecord')}</p>}
     {contextual.length ? <section className="dsh-record-context-summary" aria-label={t('childRecords')}>
       {contextual.map(({ section, entries }) => <div key={section.id}>
         <span>{section.title}</span><strong>{entries.length}</strong>
@@ -805,11 +874,11 @@ export function RecordRelatedEditor(props: Props & { render: (ids: readonly stri
 
 export function RecordPreview(props: Props & { record?: string }): ReactElement {
   const { t } = usePanelI18n()
-  const { selected } = useContext(SelectionContext)
+  const { selected, previewLayout } = useContext(SelectionContext)
   const binding = props.node.preview!
   const selection = props.record !== undefined ? { section: props.node.source!, record: props.record } : selected
   const value = selection && selection.section === props.node.source ? records(props, selection.section)[selection.record] : undefined
-  return <section className="dsh-record-preview" aria-label={props.node.title ?? t('preview')}>
+  return <section className={`dsh-record-preview${previewLayout ? ' is-preview-pane' : ''}`} aria-label={props.node.title ?? t('preview')}>
     <small>{props.node.title ?? t('preview')}</small>
     {value ? <article><h3>{String(value[binding.title] ?? '')}</h3>
       <p>{String(value[binding.body] || binding.empty || t('emptyContent'))}</p>
@@ -880,10 +949,24 @@ function ParticipantRelationGraph(props: Props): ReactElement {
   const parent = useContext(SelectionContext), { t } = usePanelI18n()
   const graph = props.node.graph!, binding = graph.participants!
   const originals = records(props, graph.nodes), relations = records(props, graph.edges)
-  const projection = projectParticipantRelations(originals, relations, graph)
+  const base = projectParticipantRelations(originals, relations, graph)
+  const contextProjection = props.node.references ? withReferenceContext(base, props.node.references,
+    source => records(props, source), source => props.manifest.sections.find(section => section.id === source)?.title ?? source) : undefined
+  const projection = contextProjection ?? base
+  const nodeIcons: Record<string, SidebarIcon> = {}
+  const undirected = new Set(Object.entries(base.edges).filter(([, value]) => !base.connectable.has(String(value.target))).map(([id]) => id))
   const nodes = '__participant_nodes', edges = '__participant_edges'
   for (const [key, value] of Object.entries(projection.nodes)) {
     const owner = projection.owners[key]!
+    const context = props.node.references?.nodes.find(node => node.source === owner.section)
+    const original = context && records(props, owner.section)[owner.record]
+    const icon = context?.kind_icons?.[String(original?.[context.kind_field ?? ''])] ?? context?.icon
+    if (icon) nodeIcons[key] = icon
+    if (owner.section !== graph.nodes && owner.section !== graph.edges) {
+      const kind = context && displayValue(props.manifest, owner.section, context.kind_field, original?.[context.kind_field ?? ''])
+      value.kind = [value.kind, kind].filter(Boolean).join(' · ')
+      continue
+    }
     const isRelation = owner.section === graph.edges
     const kind = displayValue(props.manifest, owner.section, isRelation ? graph.edge_kind_field : graph.node_kind_field, value.kind)
     value.kind = isRelation ? [props.manifest.sections.find(section => section.id === graph.edges)?.title, kind].filter(Boolean).join(' · ') : kind
@@ -919,19 +1002,28 @@ function ParticipantRelationGraph(props: Props): ReactElement {
         parent.select({ section: graph.edges, record: id }); parent.showDetails?.()
       }}>{String(relations[id]?.[graph.label_field] ?? id)}</button>)}
     </div> : null}
+    {contextProjection?.missing.length ? <div className="dsh-relation-issues" role="alert">
+      {contextProjection.missing.map((value, index) => <button key={index} type="button" onClick={() => {
+        parent.select({ section: value.section, record: value.record }); parent.showDetails?.()
+      }}>{recordLabel(records(props, value.section)[value.record] ?? {}, value.record)} · {props.manifest.fields.find(field =>
+        field.key === value.field && field.applies_to?.includes(value.section))?.label ?? value.field}: {value.id} ⚠</button>)}
+    </div> : null}
     <RelationCanvas node={{ ...props.node, graph: {
       nodes, edges, source_field: 'source', target_field: 'target', label_field: 'title', node_kind_field: 'kind', edge_kind_field: 'kind',
       source_annotation_field: 'source_role', target_annotation_field: 'target_role', edge_state_field: 'state', edge_pending_values: graph.edge_pending_values,
     } }} manifest={manifest} data={{ [nodes]: projection.nodes, [edges]: projection.edges }}
       options={{ ...props.options, onEdit: undefined, onPanelUpdate: undefined, onTransaction: undefined }}
       createConnection={createConnection} connectableRecords={projection.connectable}
-      counts={t('graphCounts', { nodes: Object.keys(originals).length, edges: Object.keys(relations).length - projection.invalid.length })}
-      undirectedRecords={new Set(Object.entries(projection.edges).filter(([, value]) => !projection.connectable.has(String(value.target))).map(([id]) => id))} />
+      nodeIcons={nodeIcons}
+      counts={t('graphCounts', { nodes: Object.keys(originals).length, edges: Object.keys(relations).length - projection.invalid.length })
+        + (contextProjection ? t('graphContextCounts', { nodes: contextProjection.contextNodes, references: contextProjection.referenceEdges.size }) : '')}
+      undirectedRecords={undirected} />
   </SelectionContext.Provider>
 }
 
 function RelationCanvas(props: Props & { createConnection?: (source: string, target: string) => string | undefined;
-  connectableRecords?: ReadonlySet<string>; undirectedRecords?: ReadonlySet<string>; counts?: string }): ReactElement {
+  connectableRecords?: ReadonlySet<string>; undirectedRecords?: ReadonlySet<string>; counts?: string;
+  nodeIcons?: Readonly<Record<string, SidebarIcon>> }): ReactElement {
   const binding = props.node.graph!
   const { t } = usePanelI18n()
   const { selected, select, showDetails, canvasView } = useContext(SelectionContext)
@@ -1096,7 +1188,7 @@ function RelationCanvas(props: Props & { createConnection?: (source: string, tar
       <ReactFlow nodeTypes={relationNodeTypes} edgeTypes={relationEdgeTypes} nodes={nodes.map(node => {
         const record = String(node.data.record), value = nodeRecords[record] ?? {}
         return { ...node, type: 'business-record', connectable: editable && (!props.connectableRecords || props.connectableRecords.has(record)), selected: selected?.section === binding.nodes && selected.record === node.data.record,
-          data: { ...node.data, label: String(value[binding.label_field] ?? node.data.record),
+          data: { ...node.data, label: String(value[binding.label_field] ?? node.data.record), icon: props.nodeIcons?.[record],
             onDetail: showDetails ? () => { select({ section: binding.nodes, record }); showDetails() } : undefined,
             detailLabel: t('recordDetails'),
             kind: displayValue(props.manifest, binding.nodes, binding.node_kind_field, value[binding.node_kind_field ?? '']),
@@ -1154,15 +1246,38 @@ function RelationCanvas(props: Props & { createConnection?: (source: string, tar
 }
 
 /** Only landed, indexed project artifacts are fetched through the host's scoped reader. */
+/** Related artifacts are a view over explicit references, never copied records. */
 export function RecordArtifact(props: Props): ReactElement {
-  const { t } = usePanelI18n()
   const { selected } = useContext(SelectionContext)
-  const record = selected && props.node.source && selected.section === props.node.source ? records(props, props.node.source)[selected.record] : undefined
+  const source = props.node.source!
+  const all = records(props, source)
+  const reference = props.node.artifact?.reference_field
+  const parent = reference && props.manifest.fields.find(field => field.key === reference
+    && field.applies_to?.includes(source))?.options_from_section
+  const entries: Array<[string, Record<string, unknown>]> = selected?.section === source
+    ? Object.hasOwn(all, selected.record) ? [[selected.record, all[selected.record]!]] : []
+    : reference && selected && selected.section === parent
+      ? Object.entries(all).filter(([, record]) => record[reference] === selected.record) : []
+  // Inlined related collections have no empty page. Matching records with an
+  // absent/broken file still render their own availability/error state.
+  if (reference && entries.length === 0) return props.node.description
+    ? <section className="dsh-record-artifact"><p role="status">{props.node.description}</p></section> : <></>
+  if (!reference) return <RecordArtifactFile {...props} record={entries[0]?.[1]} recordId={entries[0]?.[0]} />
+  return <div className="dsh-record-related-artifacts">{entries.map(([recordId, record]) =>
+    <RecordArtifactFile key={recordId} {...props} record={record} recordId={recordId} />)}</div>
+}
+
+function RecordArtifactFile(props: Props & { record?: Record<string, unknown>; recordId?: string }): ReactElement {
+  const { t } = usePanelI18n()
+  const { selected, select, openRelated, headerOutside } = useContext(SelectionContext)
+  const showSibling = useContext(ComponentTabsNavigation)
+  const { record, recordId } = props
   const path = record?.[props.node.artifact!.field]
   const revision = typeof path === 'string' ? props.options?.artifactFiles?.[path] : undefined
+  const sourceRevision = props.options?.sourceRevision
   const read = props.options?.readArtifact
   const [attempt, retry] = useState(0)
-  const key = JSON.stringify([selected, path, revision, attempt])
+  const key = JSON.stringify([recordId, path, revision, sourceRevision, attempt])
   const [result, setResult] = useState<{ key: string; html?: string; error?: string;
     errorKey?: 'artifactUnsupported' | 'artifactNotReadable' | 'artifactTooLarge' }>()
   useEffect(() => {
@@ -1171,25 +1286,35 @@ export function RecordArtifact(props: Props): ReactElement {
     if (!/\.(?:html|svg)$/i.test(path) || path.split('/').some(part => !part || part === '.' || part === '..') || /[\\:\x00-\x1f]/.test(path)) {
       setResult({ key, errorKey: 'artifactUnsupported' }); return
     }
-    void read(path).then(value => {
+    void read(path, sourceRevision).then(value => {
       if (cancelled) return
       if (!value.found) { setResult({ key, errorKey: 'artifactNotReadable' }); return }
       if (value.content.length > 2_000_000) { setResult({ key, errorKey: 'artifactTooLarge' }); return }
       setResult({ key, html: secureDesignSrcDoc(value.content, 'static-document') })
     }).catch(error => { if (!cancelled) setResult({ key, error: String(error) }) })
     return () => { cancelled = true }
-  }, [key, path, revision, read])
+  }, [key, path, revision, sourceRevision, read])
   let message = ''
   if (!record) message = t('artifactSelectRecord')
-  else if (typeof path !== 'string' || !path) message = t('artifactNotGenerated')
+  else if (typeof path !== 'string' || !path) message = props.node.description ?? t('artifactNotGenerated')
   else if (!read || !revision) message = t('artifactNotPublished')
   else if (result?.key !== key) message = t('artifactReading')
-  const error = result?.errorKey ? t(result.errorKey) : result?.error
-  return <section className="dsh-record-artifact" aria-label={props.node.title ?? t('artifactPreview')}>
-    <h3>{record && selected ? recordLabel(record, selected.record) : props.node.title ?? t('artifactPreview')}</h3>
-    <p className="dsh-visual-hint">{t('artifactPreviewHint')}</p>
+  const error = result?.key === key ? result.errorKey ? t(result.errorKey) : result.error : undefined
+  const explanation = props.node.artifact?.explanation_field && record?.[props.node.artifact.explanation_field]
+  const title = record && recordId ? recordLabel(record, recordId) : props.node.title ?? t('artifactPreview')
+  const ownHeader = headerOutside && selected !== undefined && selected.section === props.node.source && selected.record === recordId
+  return <section className="dsh-record-artifact" aria-label={title}>
+    {!ownHeader ? <h3>{title}</h3> : null}
+    {typeof explanation === 'string' && explanation.trim() ? <p className="dsh-artifact-explanation">{explanation}</p> : null}
+    {recordId && props.node.artifact?.reference_field && selected?.section !== props.node.source
+      ? <button type="button" className="dsh-artifact-details-link" onClick={() => {
+        const target = { section: props.node.source!, record: recordId }
+        if (openRelated) openRelated(target)
+        else select(target)
+        showSibling?.('record_inspector')
+      }}>{t('artifactDetails')}</button> : null}
     {message ? <p role="status">{message}</p> : error ? <div role="alert">{error}<button type="button" onClick={() => retry(n => n + 1)}>{t('artifactRetryPreview')}</button></div>
-      : <iframe title={record && selected ? recordLabel(record, selected.record) : t('artifactPreview')} sandbox="" referrerPolicy="no-referrer" srcDoc={result?.html} />}
+      : <iframe title={title} sandbox="" referrerPolicy="no-referrer" srcDoc={result?.key === key ? result.html : undefined} />}
   </section>
 }
 

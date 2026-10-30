@@ -6,14 +6,15 @@ import { isDeepStrictEqual } from 'node:util'
 import { createHash } from 'node:crypto'
 import {
   DesignProjectManager, DesignFilesStore, GitVersioning, DesignJournalStorage, DesignExecutionHandoffJournal, nodeDesignProjectSpawn,
-  applyPanelEdit, buildPanelSaveNote, parsePanelArtifacts, projectWorktreeDesign, validateSkillDesign, validatorFromSchemaYaml,
+  applyPanelEdit, buildPanelSaveNote, parsePanelArtifacts, DESIGN_PANEL_SAVE_ASSESSMENT_GUIDANCE, projectWorktreeDesign, validateSkillDesign, validatorFromSchemaYaml,
   deriveCurrentDesignExecutionGate, deriveDesignContinuation, pendingMustEditAuthorityForSave,
   parseSchemaYaml, resolveAutoPanel, assertResolvedAutoPanelSave, retainResolvedAutoPanel,
   autoPanelGenerationPrompt, publishAutoPanelComponents,
   projectKitContentHash, sameProjectContentPin,
-  ProjectContentMigration, ProjectContentTransaction, recordProjectContentAdoption, parseDesignProjectJson, readDesignGit,
+  ensureProjectKit,
+  readDesignGit,
 } from '../../core/lib/index.js'
-import { assertCompanionKitContributions, createCompanionContentLibrary } from './content-library.mjs'
+import { createCompanionContentLibrary } from './content-library.mjs'
 import { createAutoPanelTickets } from './auto-panel-tickets.mjs'
 import { nativeExecutionContract } from './native-execution-contract.mjs'
 import { createSavedContinuation } from './saved-continuation.mjs'
@@ -34,24 +35,18 @@ export const companionFs = {
 const gitSpawn = nodeDesignProjectSpawn
 
 export async function openCompanionProject({ projectRoot, kitRoot, stateRoot, connection, getConnectionPath, statusEntryPath, trustedContentSources, workbuddyProducer = false, getMainAssessmentContext, nativeCwd, transcriptPath }) {
-  const adoptionGit = new GitVersioning(gitSpawn, projectRoot)
-  const recordAdoption = async (receipt, journalOwner) => {
-    const metadata = parseDesignProjectJson(await adoptionGit.readTextAt(receipt.checkpoint, 'project.json'))
-    if (metadata.id !== receipt.projectId || !metadata.kit) throw new Error('Content adoption receipt/project mismatch.')
-    await recordProjectContentAdoption(new DesignJournalStorage(join(stateRoot, metadata.id)),
-      journalOwner ?? `${connection.host ?? 'codex'}:${connection.threadId}`, receipt, metadata.kit)
-  }
-  // Resume only the already authorized exact transaction; never create another migration.
-  await new ProjectContentTransaction({ root: projectRoot, spawn: gitSpawn, mutate: operation => operation(), record: recordAdoption }).recover()
   let project = await new DesignProjectManager().open(projectRoot)
   const fs = companionFs
   const contentLibrary = createCompanionContentLibrary({ fs, kitRoot, stateRoot, trustedContentSources })
-  let kit = await contentLibrary.resolveProject(project.metadata.kit)
-  const definitionRevision = projectKitContentHash
-  let kitRevision = definitionRevision(kit)
+  const readDefinition = async metadata => metadata.kit
+    ? ensureProjectKit(projectRoot, { loadSource: () => contentLibrary.resolveExactProject(metadata.kit) })
+    : contentLibrary.loadInstalled().then(kit => ({ kit, revision: projectKitContentHash(kit) }))
+  const initialDefinition = await readDefinition(project.metadata)
+  let kit = initialDefinition.kit
+  let kitRevision = initialDefinition.revision
   let kitReload = { status: 'ready', revision: kitRevision }
   const accessFor = pin => !pin ? { mode: 'unconfigured', writable: false }
-    : pin.name === kit.name && pin.version === kit.version
+    : pin.name === kit.name
       ? { mode: 'writable', writable: true, kit: { ...pin } }
       : { mode: 'recovery', writable: false, kit: { ...pin } }
   let access = accessFor(project.metadata.kit)
@@ -59,15 +54,15 @@ export async function openCompanionProject({ projectRoot, kitRoot, stateRoot, co
     if (access.writable) return kit
     throw new Error(access.mode === 'unconfigured'
       ? 'No Kit is active. Select a mindset in the native Design command before starting Bundle work; this Panel can remain open.'
-      : `The pinned Kit ${access.kit.name}@${access.kit.version} is unavailable. Restore that exact Kit before editing. No implicit upgrade is allowed.`)
+      : `The project's Kit ${access.kit.name} is unavailable. Check its project-local definition files before editing.`)
   }
   const refreshAccess = async (displayOnly = false) => {
     const manager = new DesignProjectManager()
     const current = displayOnly ? await manager.readMetadata(projectRoot) : await manager.open(projectRoot)
     if (current.metadata.id !== project.metadata.id) throw new Error('Project identity changed. Reopen the Companion explicitly.')
-    if (!sameProjectContentPin(current.metadata.kit, project.metadata.kit)) {
-      const resolved = await contentLibrary.resolveProject(current.metadata.kit)
-      kit = resolved; kitRevision = definitionRevision(kit)
+    const resolved = await readDefinition(current.metadata)
+    if (resolved.revision !== kitRevision || !sameProjectContentPin(current.metadata.kit, project.metadata.kit)) {
+      kit = resolved.kit; kitRevision = resolved.revision
       projection = undefined; continuationCache = undefined; publishedSnapshot = undefined
     }
     project = current
@@ -100,7 +95,7 @@ export async function openCompanionProject({ projectRoot, kitRoot, stateRoot, co
   const requireSkill = name => {
     assertWritable()
     const skill = kit.skills.find(item => item.name === name)
-    if (!skill) throw new Error('Unknown Bundle in the pinned Kit.')
+    if (!skill) throw new Error('Unknown Bundle in the project Kit.')
     return skill
   }
   const requireArtifact = path => {
@@ -133,6 +128,7 @@ export async function openCompanionProject({ projectRoot, kitRoot, stateRoot, co
   })
   const api = {
     get project() { return project }, get installedKit() { return kit }, get kit() { return assertWritable() }, store, refreshAccess, requireWritable, contentLibrary,
+    get definitionRevision() { return kitRevision },
     mutateKnowledge: mutate,
     mutateAssessment: mutate,
     async readGit(params, signal) {
@@ -148,44 +144,14 @@ export async function openCompanionProject({ projectRoot, kitRoot, stateRoot, co
       signal?.throwIfAborted()
       return result
     },
-    createContentMigration({ assertQuiescent, verifyNativeProducer }) {
-      return new ProjectContentMigration({ root: project.root, stateRoot: join(stateRoot, project.metadata.id), spawn: gitSpawn, mutate,
-        journalOwner: journalId,
-        resolveKit: pin => contentLibrary.resolveExactProject(pin), assertQuiescent, verifyNativeProducer, record: recordAdoption,
-        assertCompatible(target) {
-          assertCompanionKitContributions(target, kit)
-        },
-        async validate(target, files) {
-          for (const path of files.keys()) {
-            const canonical = /^design_files\/([^/]+)\/\1\.json$/u.exec(path)
-            if (canonical && !target.skills.some(skill => skill.name === canonical[1])) throw new Error(`Upgrade cannot orphan saved canonical source ${path}.`)
-          }
-          for (const skill of target.skills) {
-            const bytes = files.get(`design_files/${skill.name}/${skill.name}.json`)
-            if (!bytes) continue
-            const state = JSON.parse(Buffer.from(bytes).toString('utf8'))
-            const issues = await validateSkillDesign(skill, state, { scopes: ['state'], artifactText: async path => {
-              const bytes = files.get(`design_files/${path}`)
-              return bytes === undefined ? undefined : Buffer.from(bytes).toString('utf8')
-            } })
-            if (issues.length) throw new Error(JSON.stringify(issues))
-          }
-        },
-      })
-    },
     prepareAutoPanel: request => autoTickets.prepare(request),
     submitAutoPanel: request => autoTickets.submit(request),
     async reloadKit() {
       return mutate(async () => {
         try {
-          await contentLibrary.reloadInstalled()
-          const candidate = await contentLibrary.resolveProject(project.metadata.kit)
-          if (candidate.name !== kit.name || candidate.version !== kit.version) {
-            throw new Error('Kit identity/version changed. Reopen explicitly; content reload cannot upgrade the pinned Kit.')
-          }
-          const revision = definitionRevision(candidate)
-          const changed = revision !== kitRevision
-          if (changed) { kit = candidate; kitRevision = revision }
+          const previous = kitRevision
+          await refreshAccess()
+          const changed = previous !== kitRevision
           kitReload = { status: changed ? 'updated' : 'unchanged', revision: kitRevision }
         } catch (error) {
           kitReload = { status: 'rejected', revision: kitRevision, error: String(error.message ?? error) }
@@ -198,21 +164,26 @@ export async function openCompanionProject({ projectRoot, kitRoot, stateRoot, co
       const skill = requireSkill(name)
       const execution = { ...skill.execution, mode: skill.execution.mode ?? 'subagent' }
       const executionContract = nativeExecutionContract({ host: connection.host ?? 'codex', mode: execution.mode,
-        skill: name, projectRoot: project.root, designFiles: project.designFilesRoot, kitRoot, stateRoot, cliEntry: statusEntryPath })
+        skill: name, projectRoot: project.root, designFiles: project.designFilesRoot, kitRoot: kit.sourceRoot, stateRoot, cliEntry: statusEntryPath })
       return { skill: name, version: skill.version, kit: { name: kit.name, version: kit.version },
         designFiles: project.designFilesRoot, resources: skill.resourceRoot ?? join(kitRoot, 'skills', name),
-        mindset: join(kit.sourceRoot ?? kitRoot, 'mindset.md'), executionContract,
-        method: `${executionContract.instructions}\n\n# Version-pinned Bundle method (unaltered)\n\n${skill.content}`,
+        mindset: kit.sourceLocation?.mindsetPath ?? join(kit.sourceRoot ?? kitRoot, 'mindset.md'), executionContract,
+        definitionRevision: kitRevision,
+        method: `${executionContract.instructions}\n\n# Current project Bundle method (unaltered)\n\n${skill.content}`,
         host: `${connection.host ?? 'codex'}-native`,
         execution,
       }
     },
-    async settleBundle({ skill: name, invocationId, scope = 'completion', outcome }) {
+    async settleBundle({ skill: name, invocationId, scope = 'completion', outcome, definitionRevision }) {
       return mutate(async () => {
         await requireWritable()
         const skill = requireSkill(name)
         if (typeof invocationId !== 'string' || !/^[\w.-]{1,128}$/.test(invocationId)) throw new Error('Exact invocation ID required.')
         if (['failed', 'cancelled', 'no-progress'].includes(outcome)) return store.auditInvocation(name, { eventId: invocationId, outcome })
+        const checkDefinition = () => {
+          if (definitionRevision !== undefined && definitionRevision !== kitRevision) throw new Error('The project Bundle definitions changed during this invocation. Re-read the current method and repair the existing files before starting another invocation.')
+        }
+        checkDefinition()
         if (!['state', 'completion'].includes(scope)) throw new Error('Invalid validation scope.')
         const state = await store.read(name)
         if (!state) throw new Error('Canonical Design JSON is missing.')
@@ -224,6 +195,8 @@ export async function openCompanionProject({ projectRoot, kitRoot, stateRoot, co
         }
         const publication = { skill: name, bundleVersion: skill.version, invocationId,
           stateStatus: scope === 'state' ? 'pending' : 'complete', handoff: scope === 'state' ? skill.execution.handoff : 'none', outcome: scope === 'state' ? 'pause' : 'complete' }
+        await refreshAccess()
+        checkDefinition()
         return store.write(name, state, { origin: 'agent', artifacts, ownedArtifacts: Object.keys(artifacts), publication,
           settleEvent: async event => {
             const history = await journal.read(journalId)
@@ -472,12 +445,12 @@ export async function openCompanionProject({ projectRoot, kitRoot, stateRoot, co
       if (bytes?.length > 10 * 1024 * 1024) throw new Error('Preview exceeds 10 MiB.')
       return { found: bytes !== undefined, mediaType, base64: bytes ? Buffer.from(bytes).toString('base64') : '', byteLength: bytes?.length ?? 0 }
     },
-    async sendPrompt({ text, requestId, saved }) {
+    async sendPrompt({ text, requestId, saved, studio, verifyStudio }) {
       await refreshAccess()
       if (typeof text !== 'string' || !text.trim()) throw new Error('Message is required.')
       if (/^\/(?:yugoo|design)(?:\s|$)/u.test(text)) throw new Error('Project management commands are not connected in this first companion slice. Use the bound project.')
       const kitHash = notificationKitHash()
-      const attempt = await savedContinuation.begin({ text, requestId, saved, kitHash })
+      const attempt = await savedContinuation.begin({ text, requestId, saved: studio ? [] : saved, kitHash })
       if (attempt.prior) return attempt.prior
       const notes = []
       let result, dispatched = false
@@ -492,8 +465,22 @@ export async function openCompanionProject({ projectRoot, kitRoot, stateRoot, co
       const assessment = getMainAssessmentContext && attempt.entries.length ? await getMainAssessmentContext(attempt.entries) : undefined
       await refreshAccess()
       if (notificationKitHash() !== kitHash) throw Error('Project Kit changed before notification. Reopen the current project.')
+      if (studio) {
+        if (typeof verifyStudio !== 'function') throw Error('Studio context must be verified by the bound service.')
+        await verifyStudio()
+      }
       dispatched = true
-      result = await connection.send([
+      const studioPrompt = studio ? [
+        'Studio Kit/Bundle customization in this exact main conversation. This request concerns reusable authoring source, not the running Design Project or its Design Files.',
+        `Working-copy target: ${JSON.stringify({ id: studio.id, expectedRevision: studio.expectedRevision, kind: studio.kind, title: studio.title, ...(studio.bundle ? { bundle: studio.bundle } : {}) })}. Read this exact copy with design_studio_customize before proposing changes; a changed revision or preview pin requires reopening, never guessing another target. For a Kit, include the exact selected preview Bundle pin only when this request has one. Kit-owned source authoring may omit it; never select a first or latest mount to fill an absent pin.`,
+        ...(studio.context ? [`Current editing intent: ${JSON.stringify(studio.context)}. This is editor focus, not additional file/save authority. Read the current saved file through the exact working-copy tools; preserve human edits and ask for clarification if their intended scope is unclear.`] : []),
+        'Read the installed design-bundle-creator skill for Bundle changes or design-kit-creator for Kit changes; use design-skill-creator when revising professional methods and output contracts. These are authoring methods; the working copy\'s SKILL.md describes execution of that Bundle and is not a substitute. Read relevant saved methods/contracts through the exact working-copy file list instead of guessing paths. For Panel/component changes, use design-component and design_list_panel_components to discover the actual installed vocabulary, then its exact name with reference=contract/docs/examples for parameters and guidance. If a required tool or authoring method is unavailable, report that limit rather than inventing APIs or component parameters.',
+        `Use design_studio_customize with action prepareChanges and top-level authoringRequestId ${JSON.stringify(attempt.requestId)} so the same S2 candidate can be reviewed in Studio. Preparation does not save. Save only when the user explicitly authorizes it, using the same request and digest through saveChanges. Do not publish, install, edit the running Design Files, launch a Bundle/GRA, or create another model/session.`,
+        ...(connectionPath ? [`Exact Companion connection file: ${JSON.stringify(connectionPath)}. Pass only this path to the tool; never read or expose its contents or choose a latest connection.`] : []),
+        'If the customization tool is unavailable in this host, report that limitation. Message acceptance is not proof that authoring or saving completed.',
+        text,
+      ] : undefined
+      result = await connection.send(studioPrompt ? studioPrompt.join('\n\n') : [
         `Design Project: ${project.metadata.name}\nDesign Files: ${project.designFilesRoot}\nKit: ${project.metadata.kit ? `${project.metadata.kit.name}@${project.metadata.kit.version}` : 'not selected'}\nAccess: ${access.mode}`,
         ...(!access.writable ? ['Select an available Kit for an unconfigured project, or restore the exact pinned Kit for recovery. Do not start Bundle generation or reviews until workspace access is writable.'] : []),
         connection.host === 'workbuddy' && workbuddyProducer ? 'WorkBuddy supports serial foreground native Producers through its yugoo Skill bootstrap/register/resume sequence. Follow the exact declared Bundle execution mode. Workers remain unsupported; GRA follows the shared execution choice, not Bundle placement. Do not launch replacement models.' : connection.host === 'workbuddy' ? 'WorkBuddy adapter currently supports explicitly main-mode Bundles only. Native Producer/Worker execution is unavailable; do not launch replacements or change Bundle execution mode. Use the exact connection for main Bundle prepare/begin/finish and saved-state readback. GRA follows the separate shared execution choice.' : connection.host === 'qwenwork' ? 'Follow the QwenWork native-execution reference for the declared foreground Bundle path and GRA. Read this exact connection\'s design_status.hostCapabilities and reviewPolicy; only current ready capability and an authorized dispatch reference permit a background launch.' : 'Use the Design Panel plugin native-execution reference for Bundle work: native Producer/Worker subagents, not DSH-only tool names. GRA is never a prerequisite for foreground design work.',
@@ -504,7 +491,7 @@ export async function openCompanionProject({ projectRoot, kitRoot, stateRoot, co
           `Exact Companion connection file: ${JSON.stringify(connectionPath)}. Pass the path only; do not read, print, or copy its token or file contents. Never search for a latest/global connection.`,
           ...(statusEntryPath ? [`If design_status is not available in this host, use the existing installed CLI: node ${JSON.stringify(statusEntryPath)} call --connection ${JSON.stringify(connectionPath)} --request /absolute/temporary-status-request.json. The temporary request must contain {"method":"readWorkspace","params":{}}; inspect reviews and reviewPolicy once. Do not install tools or scan unrelated connections.`] : []),
         ] : []),
-        ...(notes.length ? ['After this Panel save, read design_status once. Continue the authorized design task using the saved changes; assess U/S/T at a meaningful task boundary rather than before and after every intermediate revision. Complete planned edits before preparing a manual review batch. A due review is not an instruction to start another review or repeatedly ask for consent. Follow the native-execution reference and the user\'s execution choice; do not wait for background GRA, busy-poll, or automatically retry failed reviews.'] : []),
+        ...(notes.length ? [...(assessment ? [] : [DESIGN_PANEL_SAVE_ASSESSMENT_GUIDANCE]), 'After this Panel save, read design_status once. Complete planned edits before preparing a manual review batch. A due review is not an instruction to start another review or repeatedly ask for consent. Follow the native-execution reference and the user\'s execution choice; do not wait for background GRA, busy-poll, or automatically retry failed reviews.'] : []),
         'Read the current Design Files when this notification has no save diff (for example after restarting the companion). File bytes are authoritative; do not reapply already saved edits.',
         text,
       ].join('\n\n'), { requestId: attempt.requestId, saved: attempt.entries.map(({ eventId, commit }) => ({ eventId, commit })) })
@@ -523,7 +510,7 @@ export async function openCompanionProject({ projectRoot, kitRoot, stateRoot, co
     async listSkills() {
       await refreshAccess()
       return { mindset: access.writable ? kit.name : undefined,
-        mindsetMethod: access.writable ? join(kit.sourceRoot ?? kitRoot, 'mindset.md') : undefined,
+        mindsetMethod: access.writable ? kit.sourceLocation?.mindsetPath ?? join(kit.sourceRoot ?? kitRoot, 'mindset.md') : undefined,
         skills: (access.writable ? kit.skills : []).map(skill => ({ id: skill.name, description: skill.description,
           manifest: skill.metadata.skillManifest, execution: { ...skill.execution, mode: skill.execution.mode ?? 'subagent' } })) }
     },

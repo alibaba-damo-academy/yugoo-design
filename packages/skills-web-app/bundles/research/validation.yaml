@@ -3,6 +3,9 @@
 # declared below. Citation provenance and report quality are reviewed by the
 # executing Agent against SKILL.md, not by a separate citation/report driver
 # declared in this Bundle. A successful validation is not proof of grounding.
+# Explicit per-direction source/scope bounds in research_points are also
+# Agent-reviewed against the actual report; these rules do not infer numeric
+# source limits from free text. Passing them does not waive the user's bounds.
 #
 # Contract summary:
 # - Every accepted direction has a direct `findings_file` and non-empty file.

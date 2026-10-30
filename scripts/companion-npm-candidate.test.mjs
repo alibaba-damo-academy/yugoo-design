@@ -12,6 +12,7 @@ import { buildCompanionCandidate, copyCompanionRegistration, OFFICIAL_SMALL_INPU
 import * as candidateAssembly from './companion-npm-candidate.mjs'
 import { BUNDLED_LICENSE_PINS, BUNDLED_JS_LICENSE_NOTICE, BROWSER_LICENSE_NOTICE } from './companion-bundled-license.mjs'
 import { preparePanelAuthoringMaterial } from './companion-authoring-material.mjs'
+import { prepareStudioAuthoringMaterial, writeStudioAuthoringMaterial } from './studio-authoring-material.mjs'
 import { copyNativeExecutionReference } from '../packages/companion/build-plugin.mjs'
 import { stageNativeInventoryFixture } from './test-fixtures/companion-native-inventory.mjs'
 
@@ -34,6 +35,8 @@ async function setup(t) {
   await stageNativeInventoryFixture(join(source, 'shared'))
   authoring ??= preparePanelAuthoringMaterial(workspace)
   await put('shared/authoring/panel-components.json', (await authoring).bytes)
+  const creatorMethods = await prepareStudioAuthoringMaterial(workspace)
+  await writeStudioAuthoringMaterial(join(source, 'shared'), creatorMethods, { skills: false })
   for (const [host, directory] of Object.entries(hosts)) {
     await put(`overlays/${host}/${directory}/plugin.json`, JSON.stringify({ name: 'yugoo-design', version: '0.1.0+mutable', skills: './skills/', mcpServers: './.mcp.json' }))
     const overlay = { codex: 'plugin', 'claude-code': 'plugin-claude', qoder: 'plugin-qoder' }[host]
@@ -41,6 +44,7 @@ async function setup(t) {
     await put(`overlays/${host}/skills/yugoo/SKILL.md`, 'Fixture method')
     await put(`overlays/${host}/skills/design-panel/SKILL.md`, 'Fixture panel method')
     await put(`overlays/${host}/skills/design-panel/native-execution.md`, 'Fixture native contract')
+    await writeStudioAuthoringMaterial(join(source, 'overlays', host), creatorMethods)
   }
   const officialInputRoot = join(root, 'official input fixture')
   for (const path of [...Object.keys(OFFICIAL_SMALL_INPUTS.files), 'provenance.json']) {
@@ -51,6 +55,25 @@ async function setup(t) {
     scope: '@fixture-design-release', version: '0.1.0-review.1', ladybugVersion: '0.19.1-walfix.1', fixture: true }
   return { root, source, options, put }
 }
+
+test('candidate installer bin carries the closed shared Windows helpers outside the repository', async t => {
+  const { root, options } = await setup(t)
+  const { target } = await buildCompanionCandidate(options)
+  for (const name of ['windows-private-storage.mjs', 'windows-native-platform.mjs']) {
+    assert.deepEqual(await readFile(join(target, 'bin', name)), await readFile(new URL('../packages/studio/src/node/' + name, import.meta.url)))
+  }
+  assert.deepEqual(await readFile(join(target, 'bin/npm-embedding-preparation.mjs')), await readFile(new URL('../packages/companion/src/npm-embedding-preparation.mjs', import.meta.url)))
+  const probe = () => spawnSync(process.execPath, [join(target, 'bin/yugoo-design.mjs'), '--help'],
+    { cwd: root, encoding: 'utf8', env: { ...process.env, NODE_OPTIONS: '', NODE_PATH: '' } })
+  const ready = probe()
+  assert.equal(ready.status, 0, ready.stderr)
+  assert.equal(JSON.parse(ready.stdout).kind, 'installer-help')
+  await rm(join(target, 'bin/windows-native-platform.mjs'))
+  const missing = probe()
+  assert.notEqual(missing.status, 0)
+  assert.match(missing.stderr, /ERR_MODULE_NOT_FOUND/)
+  assert.match(missing.stderr, /windows-native-platform\.mjs/)
+})
 
 test('explicit pinned release map emits a local successor without changing the maintained default', async t => {
   const { root, options } = await setup(t)
@@ -217,7 +240,13 @@ test('candidate uses fixed versions and deterministic inventory; source and lice
   assert.ok(first.inventory.assets['bin/npm-installer-dsh.mjs'])
   for (const name of ['npm-installer-dsh-desktop.mjs', 'npm-installer-paths.mjs', 'npm-agent-installation.mjs', 'npm-node-runtime.mjs', 'npm-node-registration.mjs', 'windows-private-storage.mjs', 'windows-native-platform.mjs']) {
     assert.ok(first.inventory.assets['bin/' + name])
-    assert.deepEqual(await readFile(join(first.target, 'bin', name)), await readFile(join(workspace, 'packages/companion/src', name)))
+    const owner = name.startsWith('windows-') ? 'packages/studio/src/node' : 'packages/companion/src'
+    assert.deepEqual(await readFile(join(first.target, 'bin', name)), await readFile(join(workspace, owner, name)))
+  }
+  for (const host of Object.keys(hosts)) {
+    const overlay = join(first.target, 'payload/overlays', host)
+    for (const name of ['design-kit-creator', 'design-bundle-creator', 'design-skill-creator']) assert.match(await readFile(join(overlay, 'skills', name, 'SKILL.md'), 'utf8'), /professional method/)
+    assert.ok(JSON.parse(await readFile(join(overlay, 'authoring/studio-creators/material.json'), 'utf8')).resources['source/.agents/skills/design-kit-creator/references/mindset-authoring.md'])
   }
   assert.ok(first.inventory.assets['bin/npm-installer-claude.mjs'])
   assert.deepEqual(await readFile(join(first.target,'bin/npm-desktop-preparation.mjs')),await readFile(join(workspace,'packages/companion/src/npm-desktop-preparation.mjs')))
@@ -284,6 +313,17 @@ test('missing or changed component materials reject before candidate creation', 
     if (mode === 'missing') await rm(input)
     else await writeFile(input, 'altered license')
     await assert.rejects(buildCompanionCandidate({ ...options, licenseRoot }))
+    await assert.rejects(lstat(options.destination), { code: 'ENOENT' })
+  }
+})
+
+test('missing or changed creator method resources reject before candidate creation', async t => {
+  for (const mode of ['missing', 'changed']) {
+    const { options } = await setup(t)
+    const path = join(options.payloadSource, 'overlays/codex/authoring/studio-creators/source/.agents/skills/design-bundle-creator/SKILL.md')
+    if (mode === 'missing') await rm(path)
+    else await writeFile(path, 'incomplete replacement')
+    await assert.rejects(buildCompanionCandidate(options), /ENOENT|differs/)
     await assert.rejects(lstat(options.destination), { code: 'ENOENT' })
   }
 })

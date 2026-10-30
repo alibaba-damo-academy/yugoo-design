@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 反馈指南 / Feedback guide
+    url: https://github.com/alibaba-damo-academy/yugoo-design/blob/main/docs/wiki/support.md
+    about: 查看普通反馈渠道与填写提纲；无仓库权限可使用指南中的邮箱。 / Contact options and reporting guidance, including email for people without repository access.
+  - name: 敏感安全问题 / Sensitive security reports
+    url: https://github.com/alibaba-damo-academy/yugoo-design/blob/main/SECURITY.md
+    about: 分享敏感细节前先按安全政策确认私密渠道。 / Follow the security policy before sharing sensitive details.

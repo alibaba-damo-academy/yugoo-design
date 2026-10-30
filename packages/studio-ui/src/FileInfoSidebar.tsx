@@ -5,7 +5,7 @@ type Text = Readonly<{ zh: string; en: string }>
 /** System-owned file roles, not per-Kit annotations or inferred descriptions. */
 const FILE_ROLES: Readonly<Record<string, Text>> = {
   'mindset.md': { zh: '设计心智：描述领域设计方法、判断原则，以及如何选择和协同使用技能包。', en: 'Design mindset: domain methods, judgment principles, and guidance for selecting and coordinating bundles.' },
-  'kit.yaml': { zh: '挂载清单：声明此设计套件引用的技能包及其精确版本。', en: 'Mount manifest: bundles referenced by this kit and their exact versions.' },
+  'kit.yaml': { zh: '挂载清单：声明此设计套件引用的技能包及其顺序。', en: 'Mount manifest: bundles referenced by this kit and their order.' },
   'relations.yaml': { zh: '关系词汇：定义此设计套件扩展的知识关联类型，不是项目设计内容。', en: 'Relationship vocabulary: kit-specific knowledge relationship types, not project design content.' },
   'SKILL.md': { zh: '技能方法：描述适用场景、设计方法、证据要求与交付规范。', en: 'Skill method: applicability, domain methods, evidence and delivery rules.' },
   'skill.yaml': { zh: '技能包声明：定义身份、展示名称、执行策略、面板模式及可选摘要规则。', en: 'Bundle manifest: identity, display names, execution policy, panel mode and optional summary rules.' },
@@ -27,9 +27,10 @@ export function standardFileDescription(path: string | undefined, locale: 'zh' |
   return path === undefined ? undefined : FILE_ROLES[path.replaceAll('\\', '/')]?.[locale]
 }
 
-export function FilePurpose({ path, locale }: { path?: string; locale: 'zh' | 'en' }): ReactElement | null {
+export function FileName({ path, locale }: { path?: string; locale: 'zh' | 'en' }): ReactElement | null {
+  if (!path) return null
   const role = standardFileDescription(path, locale)
-  return role ? <span className="ygd-studio-file-purpose">{role}</span> : null
+  return <strong className="ygd-studio-document-name" title={role} aria-description={role}>{path}</strong>
 }
 
 /** Read-only display copy stays outside the byte-exact source. */

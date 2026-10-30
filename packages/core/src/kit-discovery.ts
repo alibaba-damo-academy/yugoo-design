@@ -95,7 +95,8 @@ export async function startKitDiscovery(ctx: Context, config: Config, fs: KitFsL
           if (kit.name !== existing.name) throw new Error('Kit name changed in-place; restart to replace the retained process-level identity')
           if (existing.digest !== digest) { existing.publisher.publish(kit); existing.digest = digest }
         } else {
-          if (installed.some(value => value.name === kit.name)) throw new Error(`duplicate Kit identity ${kit.name}; existing source is retained`)
+          // Immutable accepted versions do not own the mutable source family.
+          if (design.latestKit(kit.name)) throw new Error(`duplicate Kit identity ${kit.name}; existing source is retained`)
           owned.set(path, { publisher: design.registerKitSource(kit), name: kit.name, digest })
         }
       } catch (error) { warn(`design kit: discovery rejected ${path}: ${String(error)}`) }

@@ -74,9 +74,11 @@
     }
   },
   "scripts": {
+    "test:project-content-retention": "TSX_TSCONFIG_PATH=./tsconfig.json node --import tsx --test test/dsh-project-content-retention.test.mjs",
     "test:advisory-readonly": "node --import tsx --test test/advisory-evidence.test.mjs test/dsh-advisory-agent-sdk.test.mjs",
     "test:dsh-message-source": "node --import tsx --test test/dsh-message-source.test.mjs test/dsh-message-source-lifecycle.test.mjs",
     "test:dsh-message-source-v4": "node --import tsx --test test/dsh-message-source-v4.test.mjs",
+    "test:asar-loader": "node --test test/dsh-asar-test-loader.test.mjs",
     "test:dependency-baseline": "node --test test/dsh-dependency-baseline.test.mjs",
     "test:consumer-dependency-baseline": "node --test test/dsh-dependency-baseline.test.mjs test/dsh-consumer-dependency-baseline.test.mjs",
     "test:workspace-navigation": "node --import tsx --test test/record-workspace-navigation-groups.test.mjs",
@@ -93,7 +95,8 @@
     "test:project-migration": "node smoke-design-project-migration.mjs",
     "test:project-reconstruction": "node smoke-design-project-reconstruction.mjs",
     "test:skill-script-port": "node smoke-skill-script-port.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:component-packages": "node --import tsx --test test/component-package.test.mjs"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.2",

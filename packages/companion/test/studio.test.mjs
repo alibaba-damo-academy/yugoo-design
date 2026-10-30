@@ -9,6 +9,25 @@ import { callCompanion } from '../src/connection-file.mjs'
 import { createCompanionStudio } from '../src/studio.mjs'
 import { loadDesignKit, createDirectoryBundleResolver } from '../../core/lib/index.js'
 
+test('installed-source previews retain only registered synthetic chart bytes from the selected Kit', async () => {
+  const packageRoot = fileURLToPath(new URL('../../skills-decision-modeling/', import.meta.url))
+  const fs = { readText: async path => readFile(path, 'utf8').catch(error => { if (error.code === 'ENOENT') return undefined; throw error }), listDir: path => readdir(path) }
+  const installed = await loadDesignKit(fs, packageRoot, { sourceId: 'companion:synthetic-preview-test' })
+  const service = await createCompanionStudio(installed, packageRoot)
+  const kit = { name: installed.name, version: String(installed.version) }
+  for (const name of ['decision_results', 'decision_comparison']) {
+    const skill = installed.skills.find(entry => entry.name === name)
+    const result = await service.previewInstalledPanel({ kit, bundle: { name, version: String(skill.version) }, revision: 2 })
+    assert.deepEqual(result.diagnostics, [])
+    const mapping = JSON.parse(await readFile(join(packageRoot, 'bundles', name, 'reference/preview-artifacts.json'), 'utf8'))
+    assert.equal(Object.keys(result.preview.artifacts).length, Object.keys(mapping.files).length)
+    for (const [path, resource] of Object.entries(mapping.files)) {
+      assert.equal(result.preview.artifacts[path], await readFile(join(packageRoot, 'bundles', name, resource), 'utf8'))
+    }
+    assert.deepEqual(result.preview.sample, JSON.parse(await readFile(join(packageRoot, 'bundles', name, 'reference/preview.json'), 'utf8')))
+  }
+})
+
 test('official declarative Bundle previews load without caller-authored JSON', async () => {
   const packageRoot = fileURLToPath(new URL('../../skills-web-app/', import.meta.url))
   const root = join(packageRoot, 'kits/web_app')

@@ -26,7 +26,7 @@ You can contribute domain expertise or report a confusing design interaction wit
 
 Put domain methods, output schemas, validation declarations, examples, and panel definitions in a Kit or Bundle. Keep the core independent of a particular domain or Bundle name. A genuinely new reusable component or execution capability belongs in the runtime and requires a runtime release; changing a supported panel declaration should not require rebuilding the host application.
 
-Studio authoring uses the shared `packages/studio` domain and `packages/studio-ui` presentation, with host mounting in `packages/studio-dsh` or Companion. The source editor maintains Kit and Bundle methods and Panel definitions; source editing is separate from runtime Design File publication. Available save, copy, preview and import operations depend on the runtime version. Current-content editing and complete project-owned `design_kit` copies require the development runtime; do not assume that updating documentation changes a stable installation. AI collaborator definitions, methods and schemas belong in `packages/skills-web-app/bundles/ai_agent_capabilities`, while shared runtime behavior remains in Core and Panel. The [Studio walkthrough](docs/wiki/usage.md#6-studio查看定制和检验套件) distinguishes these operations and their version boundaries.
+Studio authoring uses the shared `packages/studio` domain and `packages/studio-ui` presentation, with host mounting in `packages/studio-dsh` or Companion. Studio’s source editor saves current Kit and Bundle definitions in place; copying creates an independent identity. Projects keep their own complete `design_kit` files, and library edits do not replace them. Source editing is separate from runtime Design File publication. AI collaborator definitions, methods and schemas belong in `packages/skills-web-app/bundles/ai_agent_capabilities`, while shared runtime behavior remains in Core and Panel. The [Studio walkthrough](docs/wiki/usage.md#6-studio查看定制和检验套件) distinguishes source inspection, current-content editing, sample previews, native trials and source import/export. Available controls depend on the installed runtime version; documentation updates do not change an existing installation.
 
 Keep host adapters thin. The host owns its agents, model access, search tools, and credentials. Do not add a development gateway, ask users for an unrelated search key, or require modifications to host source code as an installation step.
 
@@ -65,6 +65,8 @@ pnpm run test:public-contracts
 ```
 
 These commands are not the entire product acceptance suite. The public-contract suite uses synthetic fixtures for many paths. Its public Settings Provider lifecycle case is skipped unless `DSH_SETTINGS_TEST_MODULE` identifies a separately verified official provider module; never use a private development path as a public installation instruction. Full build, installed-host, Kit authoring, KAG/GRA, and platform checks remain separate.
+
+The following source-export, package-publication, recovery and catalog procedures are for release maintainers. Contributors provide the verification relevant to their patch; maintainers retain responsibility for integrated acceptance and authorized publication. To prepare a contribution report, continue to [Submit evidence without private data](#submit-evidence-without-private-data). These procedures do not grant publication permissions.
 
 ## Prepare and approve a source export
 
@@ -343,11 +345,11 @@ announcing a reporting channel and supported-version policy:
 - Check that npm and source distributions contain no private reporting addresses,
   development credentials, or real user projects.
 
-Complete these checks before activating the reporting policy; the local evaluation
-package does not establish that they passed. GitHub and npm publication still
-require the user's package testing and separate authorization. Do not announce
-released or supported versions, response commitments or other support terms in
-the security policy before they have been established.
+Record successful checks of the actual public reporting channel before announcing
+it. A local build or package test does not establish that the channel is monitored.
+Publish released or supported versions, response expectations and other support
+terms only after they have been established. GitHub and npm publication still
+require the user's package testing and separate authorization.
 
 ## Release checklist
 

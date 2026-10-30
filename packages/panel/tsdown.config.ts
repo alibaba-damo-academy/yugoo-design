@@ -35,6 +35,7 @@ const { esmExternalRequirePlugin } = await import(pathToFileURL(
 ).href)
 // One descriptor per fresh release build; watch/cache reuse is not supported here.
 const interpreterAssets = canvasBrowserAssets(import.meta.url)
+const samplePreviewAssets = canvasBrowserAssets(import.meta.url)
 const clientAssets = canvasBrowserAssets(import.meta.url)
 
 export default withNormalBuildEvidence('dsh-release-panel', defineConfig([
@@ -80,6 +81,20 @@ export default withNormalBuildEvidence('dsh-release-panel', defineConfig([
     noExternal: ['react', 'elkjs', '@excalidraw/excalidraw', '@excalidraw/excalidraw/index.css', 'bpmn-js'],
     plugins: [esmExternalRequirePlugin({ external: ['react'] }), canvasBrowserDependencies(import.meta.url), interpreterAssets.plugin,
       dshClientStyles(ID, import.meta.url, { preprocessCss: interpreterAssets.preprocessCss, resources: cssResourceBuildOptions('dsh-design-panel-renderer') })],
+  },
+  // Isolated sample surface; shares the runtime interpreter and CSS pipeline.
+  {
+    entry: ['src/sample-preview.tsx'],
+    outDir: 'lib',
+    format: 'esm',
+    platform: 'browser',
+    target: 'es2024',
+    fixedExtension: false,
+    dts: true,
+    clean: false,
+    noExternal: ['react', 'elkjs', '@excalidraw/excalidraw', '@excalidraw/excalidraw/index.css', 'bpmn-js'],
+    plugins: [esmExternalRequirePlugin({ external: ['react'] }), canvasBrowserDependencies(import.meta.url), samplePreviewAssets.plugin,
+      dshClientStyles(ID, import.meta.url, { preprocessCss: samplePreviewAssets.preprocessCss, resources: cssResourceBuildOptions('dsh-design-panel-sample-preview') })],
   },
   // Browser client half: a closure-factory artifact. The bundle calls
   // window.__ModuleLoader__.load({ id, factory }) and resolves externals

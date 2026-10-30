@@ -16,7 +16,7 @@ import { createYugooDesignMessage } from './dsh-message-source.ts'
 import { emitDshGitScopeTiming, emitDshTimingDiagnostic } from './dsh-timing-diagnostics.ts'
 import type { PreToolDecision, ToolExecution } from '@deepseek-ai/dsh-tools'
 import { homedir } from 'node:os'
-import { join, resolve, relative, sep } from 'node:path'
+import { join, resolve, relative, sep, dirname, basename } from 'node:path'
 import { designProjectRecordsRoot } from './design-project-record-paths.ts'
 import { commitDesignProjectRecords } from './design-project-records.ts'
 import { AsyncLocalStorage } from 'node:async_hooks'
@@ -39,11 +39,10 @@ import type { DesignClarityRuntime, SavedDesignAssessmentRequest, SettledDesignP
 import { designSessionEvents } from './dsh-session-events.ts'
 import { openDshGitScope, runDshGitScope } from './dsh-git-scope.ts'
 import { activeMainBundleWork, interruptedMainBundleWork } from './dsh-main-bundle.ts'
-import { ProjectContentPanelGuard } from './project-content-guard.ts'
-import { isContentRecoveryTool } from './dsh-content-recovery-tool.ts'
 import {
   DESIGN_CLARITY_AUTHORITY_SCHEMA_VERSION,
   readDesignClarityAuthority,
+  readCommittedDesignClarityAuthority,
   writeDesignClarityAuthority,
   type DesignClarityAuthority,
 } from './design-clarity-authority.ts'
@@ -67,10 +66,8 @@ import {
 import { DesignProjectRegistry, type RegisteredDesignProject } from './design-project-registry.ts'
 import type { DesignProjectId } from './design-project.ts'
 import type { DesignProjectKitPin } from './design-project.ts'
+import { ensureProjectKit, type ProjectKitSource } from './project-kit-source.ts'
 import { composeProjectKit, projectBundleOverrides, sameProjectContentPin, latestInstalledKit, projectKitContentHash } from './project-content.ts'
-import { ProjectContentMigration, type ProjectContentMigrationPorts } from './project-content-migration.ts'
-import { ProjectContentTransaction } from './project-content-transaction.ts'
-import { recordProjectContentAdoption } from './project-content-journal.ts'
 import { parseDesignProjectJson } from './design-project.ts'
 import { createAdvisoryEvidence } from './advisory-evidence.ts'
 import { validateSkillDesign } from './validate-design.ts'
@@ -108,7 +105,7 @@ import {
   type DesignAdvisoryRuntimeStatus,
   type DesignAdvisoryRuntimeStatusProvider,
 } from './advisory-runtime-status.ts'
-import { designFileToolDenial } from './design-file-tool-policy.ts'
+import { designFileToolDenial, projectDefinitionMutationPaths } from './design-file-tool-policy.ts'
 import { isDesignWorkspaceTool } from './dsh-producer-design-tools.ts'
 import { DesignKnowledgeLeaseId } from './design-knowledge-manager.ts'
 import {
@@ -233,6 +230,8 @@ export interface DesignServiceConfig {
   readonly projectsRoot?: string
   /** Global project registry and runtime-state directory. */
   readonly stateRoot?: string
+  /** Accepted immutable Kit/Bundle closures. Defaults to the same Core state root. */
+  readonly contentStateRoot?: string
   /** Stable identity of this DSH installation inside the plugin state root. */
   readonly hostInstanceId?: string
   /** Maximum graph records supplied to one background advisory snapshot. */
@@ -283,6 +282,8 @@ export default class DesignService extends Service {
   /** Durable published content loaded by the trusted host; never disposed with a working source. */
   private readonly retainedKits = new Map<string, Map<DesignKitVersion, DesignKit>>()
   private readonly independentBundles = new Map<string, {readonly content: import('./kit-loader.ts').DesignBundleContent; readonly retained: boolean}>()
+  /** Trusted capture capabilities attached to catalog objects, not another version catalog. */
+  readonly contentStateRoot: string
   private readonly projectMutations = new Map<string, Promise<void>>()
   /** Derived KAG writes serialize independently from authoritative Design Files. */
   private readonly knowledgeMutations = new Map<string, Promise<void>>()
@@ -294,12 +295,12 @@ export default class DesignService extends Service {
   private readonly hostInstanceId: string
   private readonly activeWorkspaces = new WeakMap<Agent, ActiveDesignWorkspace>()
   private settledDesignChanges?: WeakMap<Agent, Set<string>>
-  private readonly contentRecoveryLocations = new WeakMap<Agent, { projectId: string; root: string }>()
   private readonly workspaceContentEpochs = new WeakMap<Agent, number>()
   private readonly projectContentEpochs = new Map<string, number>()
+  private readonly projectKits = new Map<string, ProjectKitSource>()
+  private currentKitSource?: { load(name: string): Promise<DesignKit | undefined>; list?(): Promise<readonly { name: string; version: string; description?: string }[]> }
   private readonly selectedAgents = new Set<WeakRef<Agent>>()
   private readonly selectedAgentRefs = new WeakMap<Agent, WeakRef<Agent>>()
-  private readonly contentPanelGuards = new Map<string, ProjectContentPanelGuard>()
   private readonly workspaceChangeListeners = new Set<DesignWorkspaceChangeListener>()
   private readonly executionObservations = new WeakMap<Agent, {
     revision: number
@@ -400,6 +401,7 @@ export default class DesignService extends Service {
     super(ctx, 'design')
     this.context = ctx
     const stateRoot = config.stateRoot ?? join(homedir(), '.dsh', 'design-system')
+    this.contentStateRoot = config.contentStateRoot ?? stateRoot
     this.advisoryKnowledgeLimit = config.advisoryKnowledgeLimit ?? 256
     if (!Number.isSafeInteger(this.advisoryKnowledgeLimit) || this.advisoryKnowledgeLimit < 1) {
       throw new Error('design: advisoryKnowledgeLimit must be a positive safe integer')
@@ -466,7 +468,7 @@ export default class DesignService extends Service {
         if (assembly.agent === undefined) return ''
         const work = interruptedMainBundleWork(assembly.agent)
         if (work === undefined) return ''
-        return `The prior main-mode Design Bundle ${JSON.stringify(work.skillName)} ended before publication, so its scoped Design tools were revoked. Working files may remain. To continue that work, call run_design_skill again for the exact same Bundle${work.brief === undefined ? '' : ` with a brief that preserves the prior intent ${JSON.stringify(work.brief)}`}; do not use ordinary host write/edit/patch, do not delegate canonical JSON to a Worker, and do not silently switch execution mode.`
+        return `The prior main-mode Design Bundle ${JSON.stringify(work.skillName)} ended before publication, so its scoped Design tools were revoked. Working files may remain. To continue that work, call run_design_skill again for the exact same Bundle${work.brief === undefined ? '' : ` with a brief that preserves the prior intent ${JSON.stringify(work.brief)}`}; do not use ordinary host write/edit/patch for Design Files, do not delegate canonical JSON to a Worker, and do not silently switch execution mode.`
       },
     })
     // Host-neutral orchestration judgement for derived Knowledge and GRA:
@@ -494,24 +496,37 @@ export default class DesignService extends Service {
       // reopening the registry here both duplicates authorization and lets an
       // unrelated registry/Git probe delay an already-bound Bundle write.
       if (isDesignWorkspaceTool(agent.ctx.tools.get(execution.name, agent))) return next()
-      const recovery = this.contentRecoveryLocation(agent)
-      if (recovery) {
-        if (isContentRecoveryTool(agent.ctx.tools.get(execution.name, agent))) return next()
-        const reason = designFileToolDenial({ name: execution.name, arguments: execution.arguments,
-          projectRoot: recovery.root, designFilesRoot: join(recovery.root, 'design_files'), isSubagent: false })
-        return reason === undefined ? next() : { kind: 'deny', reason }
-      }
       const selection = this.selectionForAgent(agent)
       if (selection === undefined) return next()
       const project = await this.projects.require(selection.projectId, execution.signal)
       this.assertProjectSelection(agent, project.projectId)
-      const reason = designFileToolDenial({
+      const policy = {
         name: execution.name,
         arguments: execution.arguments,
         projectRoot: project.root,
         designFilesRoot: project.designFilesRoot,
+        workingDirectory: agent.session.header.cwd,
         isSubagent: false,
-      })
+      }
+      const targets = projectDefinitionMutationPaths(policy)
+      let resolvedTargets: string[] | undefined
+      if (targets) {
+        // Resolve the actual existing ancestor even for a newly created file.
+        // A source symlink cannot turn the lexical exception into a data write.
+        const canonical = async (path: string): Promise<string> => {
+          try { return await realpath(path) }
+          catch (error) {
+            if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+            const parent = dirname(path)
+            if (parent === path) throw error
+            return join(await canonical(parent), basename(path))
+          }
+        }
+        const root = await realpath(project.root)
+        policy.projectRoot = root
+        resolvedTargets = await Promise.all(targets.map(canonical))
+      }
+      const reason = designFileToolDenial({ ...policy, ...(resolvedTargets ? { resolvedTargets } : {}) })
       return reason === undefined ? next() : { kind: 'deny', reason }
     })
     // Explicit Design Project lifecycle; bare `/yugoo` is help and status.
@@ -568,6 +583,7 @@ export default class DesignService extends Service {
           throw new Error(`design project migration: cannot determine Mindset from the source or current project; available Mindsets: ${names || 'none'}`)
         }
         const knowledge = current?.knowledge ?? { provider: this.requireKnowledgeRuntime().defaultProvider }
+        signal.throwIfAborted()
         return this.projects.migrate(reference, {
           knowledge, kit: { name: kit.name, version: kit.version },
         }, kit.skills.map(skill => skill.name), signal)
@@ -630,17 +646,10 @@ export default class DesignService extends Service {
     const binding = await this.bindings.read(this.bindingKey(agent))
     if (binding.projectId === null) {
       this.activeWorkspaces.delete(agent)
-      this.contentRecoveryLocations.delete(agent)
       return undefined
     }
-    const location = await this.projects.contentRecoveryLocation(binding.projectId)
-    if (existsSync(join(location.root, '.git', 'design-system-content-adoption'))) {
-      this.contentRecoveryLocations.set(agent, location)
-      this.activeWorkspaces.delete(agent)
-      return undefined
-    }
-    this.contentRecoveryLocations.delete(agent)
     const project = await this.projects.require(binding.projectId)
+    await this.prepareProjectKit(project)
     const snapshot = await this.projects.snapshot(project.projectId)
     const workspace = Object.freeze({
       binding,
@@ -696,58 +705,12 @@ export default class DesignService extends Service {
     return result
   }
 
-  private projectPanelGuard(projectId: string): ProjectContentPanelGuard {
-    let guard = this.contentPanelGuards.get(projectId)
-    if (!guard) this.contentPanelGuards.set(projectId, guard = new ProjectContentPanelGuard(projectId))
-    return guard
-  }
-
-  async observeProjectPanel(agent: Agent, observation: import('./project-content-guard.ts').PanelDraftObservation): Promise<void> {
-    const selection = await this.currentSelection(agent)
-    if (!selection || selection.projectId !== observation.projectId) throw new Error('design: Panel observation project binding changed')
-    this.projectPanelGuard(selection.projectId).observe(observation)
-  }
-
-  async resolveDisconnectedProjectPanels(agent: Agent, signal: AbortSignal): Promise<{ discarded: number }> {
-    const project = await this.projectForAgent(agent, signal), guard = this.contentPanelGuards.get(project.projectId)
-    const snapshot = guard?.disconnected() ?? []
-    if (!snapshot.length) return { discarded: 0 }
-    const host = this.context as unknown as { userQuestions?: { ask(input: { agent: Agent; signal: AbortSignal; questions: readonly { id: string; question: string; options: readonly { label: string }[] }[] }): Promise<{ answers: readonly { id: string; selected: readonly string[] }[] }> } }
-    if (!host.userQuestions) throw new Error('content upgrade: this Host cannot obtain actual user confirmation; reconnect the original pages')
-    const result = await host.userQuestions.ask({ agent, signal, questions: [{ id: 'discard-disconnected-design-drafts',
-      question: `项目“${project.name}”的 ${snapshot.length} 个设计面板已断开，草稿状态未知。确认已放弃这些页面的未保存编辑？这不会保存任何文件。`,
-      options: [{ label: '保留并返回原页面' }, { label: '确认放弃未保存编辑' }] }] })
-    if (!result.answers.some(answer => answer.id === 'discard-disconnected-design-drafts' && answer.selected.includes('确认放弃未保存编辑'))) return { discarded: 0 }
-    signal.throwIfAborted()
-    if ((await this.bindings.read(this.bindingKey(agent))).projectId !== project.projectId) throw new Error('content upgrade: project binding changed; no draft was discarded')
-    guard!.discardDisconnected(snapshot)
-    return { discarded: snapshot.length }
-  }
-
-  /** Project-wide actual foreground/worker/review state, including other selected sessions. */
-  async assertContentUpgradeQuiescent(projectId: string): Promise<void> {
-    this.contentPanelGuards.get(projectId)?.assertQuiescent()
-    for (const agent of this.agentsForProject(projectId)) {
-      if (activeMainBundleWork(agent, projectId)) throw new Error('design: settle active main Bundle before upgrading')
-      const attempts = new Map<string, DesignExecutionAttemptObservation>()
-      for (const item of this.executionAttemptsFor(agent, projectId)) attempts.set(item.attemptId, item)
-      // Bounded presentation history must not evict an actual still-running attempt.
-      for (const item of this.executionObservations.get(agent)?.active?.values() ?? []) {
-        if (item.projectId === projectId) attempts.set(item.attemptId, item)
-      }
-      if ([...attempts.values()].some(item => item.phase === 'queued' || item.phase === 'working')) throw new Error('design: native Producer or Worker is still running')
-      const reviews = this.advisoryRuntimeStatus(agent)
-      if (reviews.phase === 'running' || reviews.phase === 'scheduled') throw new Error('design: settle scheduled or running native reviews before upgrading')
-    }
-  }
-
   private invalidateProjectContent(projectId: string): void {
     this.projectContentEpochs.set(projectId, (this.projectContentEpochs.get(projectId) ?? 0) + 1)
     for (const agent of this.agentsForProject(projectId)) this.notifyWorkspaceChange({ kind: 'selection-changed', agent })
   }
 
   private assertCurrentContent(agent: Agent, project: RegisteredDesignProject): void {
-    if (existsSync(join(project.root, '.git', 'design-system-content-adoption'))) throw new Error('design: content adoption requires recovery before reading or writing')
     if (this.workspaceContentEpochs.get(agent) !== (this.projectContentEpochs.get(project.projectId) ?? 0)) {
       throw new Error('design: project content changed; reopen its workspace before using scoped tools')
     }
@@ -788,10 +751,9 @@ export default class DesignService extends Service {
     return {
       current: async () => this.currentSelection(agent),
       select: (record, snapshot) => this.serializeConversationMutation(agent, async () => {
-        const unavailableKitWarning = record.kit !== undefined
-          && this.resolveProjectKit(record.kit) === undefined
-          ? `项目 pin 的设计心智 ${JSON.stringify(record.kit.name)}@${JSON.stringify(record.kit.version)} 不可用；当前已按恢复模式打开，依赖设计心智的读取与写入保持禁用。请恢复完整的精确版本定义；更改 mindset 不会升级已有项目。`
-          : undefined
+        let unavailableKitWarning: string | undefined
+        try { await this.prepareProjectKit(await this.projects.require(record.projectId, signal)) }
+        catch (error) { unavailableKitWarning = `项目源不可用：${error instanceof Error ? error.message : String(error)}` }
         const current = await this.bindings.read(key)
         const preparation = await lifecycle.prepare(current.projectId, record, snapshot)
         try {
@@ -850,13 +812,15 @@ export default class DesignService extends Service {
       }),
       changeMindset: (projectId, kitName) => this.serializeConversationMutation(agent, async () => {
         return this.serializeProjectMutation(agent, projectId, 'selection', async () => {
-          const kit = this.listKits().find(item => item.name === kitName)
-          if (kit === undefined) throw new Error(`design: unknown mindset ${JSON.stringify(kitName)}`)
           const previous = await this.projects.open(projectId, signal)
-          if (previous.kit && previous.kit.name !== kit.name) throw new Error('design: changing an active Kit requires an explicit semantic migration')
+          if (previous.kit && previous.kit.name !== kitName) throw new Error('design: this project already owns another Kit; revise its source explicitly before changing its business model')
+          const kit = previous.kit ? await this.prepareProjectKit(previous)
+            : await this.currentKitSource?.load(kitName) ?? this.listKits().find(item => item.name === kitName)
+          if (kit === undefined) throw new Error(`design: unknown mindset ${JSON.stringify(kitName)}`)
           const pin = previous.kit ?? { name: kit.name, version: kit.version }
-          const effective = this.resolveProjectKit(pin)
-          if (!effective) throw new Error('design: restore the exact pinned Kit or explicitly migrate; mindset selection cannot upgrade saved design')
+          const effective = await this.prepareProjectKit({ ...previous, kit: pin } as RegisteredDesignProject, previous.kit ? undefined : kit)
+          signal?.throwIfAborted()
+          if (!effective) throw new Error('design: project Kit source unavailable')
           const project = await this.projects.setKitPin(projectId, pin, signal)
           const sourceRevision = await this.appendJournalKit(project, agent, effective.name, effective.version)
           const snapshot = await this.projects.snapshot(projectId, signal)
@@ -1026,7 +990,7 @@ export default class DesignService extends Service {
   async rebuildDerivedKnowledge(projectId: DesignProjectId, service: import('./design-knowledge.ts').DesignKnowledgeService) {
     // Host-only recovery reads the registered project, never caller-supplied paths.
     const project = await this.projects.require(projectId)
-    const kit = project.kit && this.resolveProjectKit(project.kit)
+    const kit = await this.prepareProjectKit(project)
     if (!kit) throw new Error('Knowledge recovery requires the project\'s pinned Kit')
     const schemas: Record<string, SchemaSpec> = {}
     for (const skill of kit.skills) if (typeof skill.metadata?.schemaYaml === 'string') schemas[`${skill.name}/${skill.name}.json`] = parseSchemaYaml(skill.metadata.schemaYaml)
@@ -1551,7 +1515,7 @@ export default class DesignService extends Service {
     if (options && project.projectId !== options.expectedProjectId) throw new Error('design clarity: selected project changed before evidence capture')
     const evidence = await createAdvisoryEvidence({
       git: new GitVersioning(this.spawnAdapter(), project.root), commit, projectId: String(project.projectId), signal,
-      resolveKit: pin => this.resolveProjectKit(pin), resolveBundle: pin => this.resolveBundle(pin),
+      resolveKit: pin => this.resolveProjectKit(pin, project), resolveBundle: pin => this.resolveBundle(pin),
     })
     if (options) this.assertProjectSelection(agent, options.expectedProjectId)
     return evidence
@@ -2038,16 +2002,17 @@ export default class DesignService extends Service {
         throw new Error('design advisory: selected project changed')
       }
       const entry = read.snapshot.advisories.find(item => item.advisory.id === advisoryId)
-      if (!entry || entry.advisory.schemaVersion !== 2 || entry.advisory.actionSpec.kind !== 'review-choice') {
-        throw new Error('design advisory: no agentic choice for this advisory')
-      }
+      if (!entry) throw new Error(`design advisory: unknown advisory ${JSON.stringify(advisoryId)}; pass the full advisoryId, not an item id or entity reference`)
+      const choice = entry.advisory.schemaVersion === 2 && entry.advisory.actionSpec.kind === 'review-choice'
       const kit = this.kitForAgent(agent)
       if (!kit) throw new Error('design advisory: select a Kit first')
       return { entry, projectId: project.projectId, selectionRevision: binding.revision,
         revision: read.revision, kitName: kit.name, kitVersion: kit.version,
-        candidates: kit.skills.map(skill => ({ skillName: skill.name, bundleVersion: skill.version,
-          description: skill.description, review_support: reviewSupportOf(skill) })),
-        instruction: 'Candidate hints are not a binding. Revalidate current evidence and necessity before selecting. Host actions grant no Design File write authority.' }
+        candidates: choice ? kit.skills.map(skill => ({ skillName: skill.name, bundleVersion: skill.version,
+          description: skill.description, review_support: reviewSupportOf(skill) })) : [],
+        instruction: choice
+          ? 'Candidate hints are not a binding. Revalidate current evidence and necessity before selecting. Host actions grant no Design File write authority.'
+          : 'Read the exact advisory findings and references. This read grants no execution authority and does not permit design_select_review_action for this advisory. Only its existing accepted action receipts, paired with their exact targets, can authorize Bundle execution; do not substitute another finding in the same Bundle.' }
     })
   }
 
@@ -2500,8 +2465,8 @@ export default class DesignService extends Service {
   }
 
   /**
-   * Read one project's latest clarity authority document. Current clarity
-   * state comes from this file only; journal folds never serve it.
+   * Read the latest Git-published version of the same clarity authority file.
+   * Local files awaiting/retrying publication and journal folds never serve it.
    * @param projectId - the project whose authority is read.
    * @param signal - optional cancellation for the registry read.
    * @returns the validated authority, or undefined when no assessment exists.
@@ -2511,7 +2476,7 @@ export default class DesignService extends Service {
     signal?: AbortSignal,
   ): Promise<DesignClarityAuthority | undefined> {
     const project = await this.projects.require(projectId, signal)
-    return readDesignClarityAuthority(designProjectRecordsRoot(project.root), projectId)
+    return readCommittedDesignClarityAuthority(project.root, projectId, { spawn: this.spawnAdapter(), signal })
   }
 
   /**
@@ -2520,68 +2485,6 @@ export default class DesignService extends Service {
    */
   assertKitInstallable(kit: DesignKit): void {
     this.contributions.assertKit(kit)
-  }
-
-  /** Host adapter entry. Native confinement/receipts and all Panel/run observations remain Host-owned. */
-  async contentMigrationFor(agent: Agent,
-    host: Pick<ProjectContentMigrationPorts, 'assertQuiescent' | 'verifyNativeProducer'>): Promise<ProjectContentMigration> {
-    const selection = await this.currentSelection(agent)
-    if (!selection) throw new Error('design: select the existing project before upgrading')
-    const project = await this.projects.require(selection.projectId)
-    const git = new GitVersioning(this.spawnAdapter(), project.root)
-    return new ProjectContentMigration({ root: project.root, stateRoot: project.stateRoot, spawn: this.spawnAdapter(),
-      journalOwner: String(agent.id),
-      mutate: operation => this.serializeProjectMutation(agent, project.projectId, 'selection', operation),
-      resolveKit: pin => this.resolveProjectKit(pin), assertCompatible: kit => this.assertKitInstallable(kit),
-      assertQuiescent: async () => { this.assertProjectSelection(agent, project.projectId); await host.assertQuiescent() },
-      verifyNativeProducer: host.verifyNativeProducer,
-      validate: async (kit, files) => {
-        for (const path of files.keys()) {
-          const canonical = /^design_files\/([^/]+)\/\1\.json$/u.exec(path)
-          if (canonical && !kit.skills.some(skill => skill.name === canonical[1])) throw new Error(`design: upgrade cannot orphan ${path}`)
-        }
-        for (const skill of kit.skills) {
-          const bytes = files.get(`design_files/${skill.name}/${skill.name}.json`)
-          if (!bytes) continue
-          const issues = await validateSkillDesign(skill, JSON.parse(Buffer.from(bytes).toString('utf8')), {
-            scopes: ['state'], resolveValidationDriver: id => this.validationDriverFor(skill, id),
-            artifactText: async path => {
-              const bytes = files.get(`design_files/${path}`)
-              return bytes === undefined ? undefined : Buffer.from(bytes).toString('utf8')
-            },
-          })
-          if (issues.length) throw new Error(JSON.stringify(issues))
-        }
-      },
-      record: async (receipt, journalOwner) => {
-        const metadata = parseDesignProjectJson((await git.readTextAt(receipt.checkpoint, 'project.json'))!)
-        if (!metadata.kit || metadata.id !== project.projectId) throw new Error('design: mismatched adoption metadata')
-        await recordProjectContentAdoption({ atomicMutate: (_conversation, mutator) => this.journals.atomicMutate(project.root, String(project.projectId), mutator) },
-          journalOwner ?? String(agent.id), receipt, metadata.kit)
-        // Invalidate the old effective closure immediately; ordinary reopen restores the committed pin.
-        this.invalidateProjectContent(project.projectId)
-      },
-    })
-  }
-
-  /** Recover an already authorized adoption after restart without reading a mixed closure. */
-  async recoverContentMigrationFor(agent: Agent): Promise<import('./project-content-transaction.ts').ProjectContentAdoptionReceipt | undefined> {
-    const binding = await this.bindings.read(this.bindingKey(agent))
-    if (!binding.projectId) throw new Error('design: select the exact recovery project')
-    const project = await this.projects.contentRecoveryLocation(binding.projectId)
-    const git = new GitVersioning(this.spawnAdapter(), project.root)
-    const receipt = await new ProjectContentTransaction({ root: project.root, spawn: this.spawnAdapter(),
-      mutate: operation => this.serializeProjectMutation(agent, project.projectId, 'recovery', operation),
-      record: async (receipt, journalOwner) => {
-        const metadata = parseDesignProjectJson((await git.readTextAt(receipt.checkpoint, 'project.json'))!)
-        if (!metadata.kit || metadata.id !== project.projectId) throw new Error('design: mismatched recovery identity')
-        await recordProjectContentAdoption({ atomicMutate: (_conversation, mutator) => this.journals.atomicMutate(project.root, String(project.projectId), mutator) },
-          journalOwner ?? String(agent.id), receipt, metadata.kit)
-        this.invalidateProjectContent(project.projectId)
-      },
-    }).recover()
-    await this.restoreWorkspace(agent)
-    return receipt
   }
 
   /**
@@ -2610,6 +2513,7 @@ export default class DesignService extends Service {
         const current = this.kits.get(initial.name) as DesignKitFamily
         // Same-version publication atomically replaces the registered content:
         // pre-release source files stay authoritative without a version bump.
+        current.versions.clear()
         current.versions.set(candidate.version, candidate)
         if (current.latestVersion === candidate.version) return false
         current.latestVersion = candidate.version
@@ -2630,7 +2534,9 @@ export default class DesignService extends Service {
     let family = this.retainedKits.get(kit.name)
     if (!family) { family = new Map(); this.retainedKits.set(kit.name, family) }
     const existing = family.get(kit.version)
-    if (existing && JSON.stringify(existing) !== JSON.stringify(kit)) throw new Error('design: retained Kit version conflict')
+    // Installation paths may change when an already verified closure is copied
+    // from a previous content root. Authored content and authority still match.
+    if (existing && projectKitContentHash(existing) !== projectKitContentHash(kit)) throw new Error('design: retained Kit version conflict')
     family.set(kit.version, kit)
   }
 
@@ -2740,13 +2646,16 @@ export default class DesignService extends Service {
     return this.contributions.requireValidation(skill.authority, id)
   }
 
-  /** All installed kits. */
+  /** Current library sources. Retained old closures serve recovery, not new selections. */
   listKits(): readonly DesignKit[] {
-    const contents = new Map<string, DesignKit>()
-    for (const family of this.kits.values()) for (const kit of family.versions.values()) contents.set(`${kit.name}\0${kit.version}`, kit)
-    for (const versions of this.retainedKits?.values() ?? []) for (const kit of versions.values()) contents.set(`${kit.name}\0${kit.version}`, kit)
-    const kits = [...contents.values()]
-    return [...new Set(kits.map(kit => kit.name))].map(name => latestInstalledKit(kits, name)!)
+    return [...this.kits.values()].map(family => family.versions.get(family.latestVersion)!).filter(Boolean)
+  }
+
+  /** Host supplies the existing S2 library reader; project content never enters this port. */
+  registerCurrentKitSource(source: { load(name: string): Promise<DesignKit | undefined>; list?(): Promise<readonly { name: string; version: string; description?: string }[]> }): () => void {
+    if (this.currentKitSource) throw new Error('design: current Kit source already registered')
+    this.currentKitSource = source
+    return () => { if (this.currentKitSource === source) this.currentKitSource = undefined }
   }
 
   /** Browser-safe Design Project and Mindset catalog for the current conversation. */
@@ -2769,7 +2678,9 @@ export default class DesignService extends Service {
       updatedAt: project.updatedAt,
       ...(project.kit === undefined ? {} : { kit: { ...project.kit, version: String(project.kit.version) } }),
     }))
-    const mindsets = this.listKits()
+    const current = new Map(this.listKits().map(kit => [kit.name, { name: kit.name, version: String(kit.version), description: kit.description }]))
+    for (const kit of await this.currentKitSource?.list?.() ?? []) current.set(kit.name, { ...kit, description: kit.description })
+    const mindsets = [...current.values()]
       .map(kit => Object.freeze({
         name: kit.name,
         version: String(kit.version),
@@ -2790,13 +2701,44 @@ export default class DesignService extends Service {
     return family.versions.get(family.latestVersion)
   }
 
+  /** Read the project's one current source closure; only initialization consults the library. */
+  private async prepareProjectKit(project: RegisteredDesignProject, selected?: DesignKit): Promise<DesignKit | undefined> {
+    if (!project.kit) return undefined
+    const loadSource = async () => {
+      const source = selected ?? this.resolveProjectKit(project.kit!)
+      if (!source) throw new Error(`design: original Kit source unavailable: ${project.kit!.name}`)
+      return source
+    }
+    const source = selected ?? this.projectKits.get(project.root)?.kit
+    // In-memory provider fixtures have no file-backed authoring source.
+    const fallback = existsSync(join(project.root, 'design_kit')) ? undefined : source ?? this.resolveProjectKit(project.kit)
+    const current = fallback && !fallback.sourceRoot
+      ? { kit: fallback, revision: projectKitContentHash(fallback) }
+      : await ensureProjectKit(project.root, { loadSource })
+    this.assertKitInstallable(current.kit)
+    const previous = this.projectKits.get(project.root)
+    this.projectKits.set(project.root, current)
+    if (previous && previous.revision !== current.revision) {
+      this.invalidateProjectContent(project.projectId)
+      // Existing workspaces follow current sources; only already-issued stores retain a stale epoch.
+      for (const agent of this.agentsForProject(project.projectId)) this.workspaceContentEpochs.set(agent, this.projectContentEpochs.get(project.projectId) ?? 0)
+    }
+    return current.kit
+  }
+
+  async refreshProjectKit(agent: Agent): Promise<DesignKit | undefined> {
+    const project = this.activeWorkspaces.get(agent)?.project
+    return project ? this.prepareProjectKit(project) : undefined
+  }
+
   /** Resolve one exact registered Kit version. */
   resolveKit(pin: DesignKitPin): DesignKit | undefined {
     return this.retainedKits?.get(pin.kit)?.get(pin.version) ?? this.kits.get(pin.kit)?.versions.get(pin.version)
   }
 
   /** Project overrides affect methods, schema, summary, Panel and runtime as one closure. */
-  resolveProjectKit(pin: DesignProjectKitPin): DesignKit | undefined {
+  resolveProjectKit(pin: DesignProjectKitPin, project?: { readonly root: string }): DesignKit | undefined {
+    if (project) return this.projectKits.get(project.root)?.kit
     const base = this.resolveKit({ kit: pin.name, version: pin.version })
     if (!base) return undefined
     const replacements = projectBundleOverrides(pin, base).map(target => {
@@ -2814,7 +2756,7 @@ export default class DesignService extends Service {
     const project = this.activeWorkspaces.get(agent)?.project
     if (project) this.assertCurrentContent(agent, project)
     const pin = project?.kit
-    return pin === undefined ? undefined : this.resolveProjectKit(pin)
+    return pin === undefined ? undefined : this.resolveProjectKit(pin, project)
   }
 
   /** Require the exact Kit pinned by the selected Design Project. */
@@ -2823,7 +2765,7 @@ export default class DesignService extends Service {
     if (workspace) this.assertCurrentContent(agent, workspace.project)
     const pin = workspace?.project.kit
     if (pin === undefined) throw new Error('design: no mindset is active in the selected Design Project')
-    const kit = this.resolveProjectKit(pin)
+    const kit = this.resolveProjectKit(pin, workspace?.project)
     if (kit === undefined) {
       throw new Error(`design: restore the full exact pinned Kit ${JSON.stringify(pin.name)}@${JSON.stringify(pin.version)} before using or migrating saved design`)
     }
@@ -2841,7 +2783,7 @@ export default class DesignService extends Service {
    */
   async selectProjectMindset(agent: Agent, name: string, signal?: AbortSignal): Promise<DesignKit> {
     const project = await this.projectForAgent(agent, signal)
-    if (project.kit !== undefined && this.resolveProjectKit(project.kit) === undefined) {
+    if (project.kit !== undefined && this.resolveProjectKit(project.kit, project) === undefined) {
       throw new Error('design: restore the full exact pinned Kit before selecting or migrating saved design')
     }
     const selected = await this.conversationPort(agent, signal).changeMindset(project.projectId, name)
@@ -2863,6 +2805,7 @@ export default class DesignService extends Service {
     if (selection === undefined) return undefined
     const project = await this.projects.require(selection.projectId, signal)
     this.assertProjectSelection(agent, selection.projectId)
+    await this.prepareProjectKit(project)
     return project
   }
 
@@ -2917,9 +2860,7 @@ export default class DesignService extends Service {
     if (!sameProjectKitPin(before.kit, project.kit)) {
       throw new Error('design: project Kit pin changed while reading the workspace checkpoint')
     }
-    const kit = project.kit === undefined
-      ? undefined
-      : this.resolveProjectKit(project.kit)
+    const kit = await this.prepareProjectKit(project)
     const skills = new Map(kit?.skills.map(skill => [skill.name, skill]) ?? [])
     const design = Object.freeze(Object.fromEntries(Object.entries(snapshot.bundleStates).map(([skillName, state]) => {
       const skill = skills.get(skillName)
@@ -3149,7 +3090,7 @@ export default class DesignService extends Service {
     this.assertCurrentContent(agent, project)
     const pin = project.kit
     if (pin === undefined) throw new Error('design: no mindset is active in the selected Design Project')
-    const kit = this.resolveProjectKit(pin)
+    const kit = this.resolveProjectKit(pin, project)
     if (kit === undefined) {
       throw new Error(`design: restore the full exact pinned Kit ${JSON.stringify(pin.name)}@${JSON.stringify(pin.version)} before using or migrating saved design`)
     }
@@ -3332,28 +3273,14 @@ export default class DesignService extends Service {
     return this.withJournalForProject(project, String(agent.id), (stateRoot, conversation) => operation(stateRoot, conversation, project))
   }
 
-  /** Location-only recovery routing never interprets a possibly mixed content closure. */
-  private contentRecoveryLocation(agent: Agent | undefined): { projectId: string; root: string } | undefined {
-    if (!agent) return undefined
-    const location = this.contentRecoveryLocations.get(agent) ?? this.activeWorkspaces.get(agent)?.project
-    return location && existsSync(join(location.root, '.git', 'design-system-content-adoption')) ? location : undefined
-  }
-
-  private contentRecoveryPrompt(agent: Agent | undefined): string {
-    const location = this.contentRecoveryLocation(agent)
-    return location ? `<design_content_recovery project="${location.projectId}">\nThe selected project's already authorized content adoption was interrupted. Ordinary Design reads and writes remain blocked. Call design_recover_content_upgrade to reconcile the exact recorded commit and journal before continuing. Do not start another upgrade, create another project, or edit files through Host tools.\n</design_content_recovery>` : ''
-  }
-
   /** Render the requesting session's selected Mindset and Bundle catalog for the system prompt. */
   private renderMindset(agent: Agent | undefined): string {
-    const recovery = this.contentRecoveryPrompt(agent)
-    if (recovery) return recovery
     const workspace = agent === undefined ? undefined : this.activeWorkspaces.get(agent)
     const pin = workspace?.project.kit
     const active = agent === undefined ? undefined : this.kitForAgent(agent)
     if (pin !== undefined && active === undefined) {
       return `<design_kit_unavailable name="${pin.name}" version="${pin.version}">
-This project's pinned Design Kit version is unavailable. Preserve the existing Design Files and do not run design write tools until the user explicitly upgrades the project.
+This project's complete Kit source is unavailable. Preserve its existing Design Files and restore the actual project source; do not substitute library content or invent missing definitions.
 </design_kit_unavailable>`
     }
     if (active === undefined) {
@@ -3370,7 +3297,6 @@ ${lines.join('\n')}
 
   /** Render the host-neutral decision loop shared by every active Design Kit. */
   private renderDesignProgression(agent: Agent | undefined): string {
-    if (this.contentRecoveryLocation(agent)) return ''
     if (agent === undefined || this.kitForAgent(agent) === undefined) return ''
     return DESIGN_CORE_PROGRESSION_PROMPT + `\n<design_experience>
 The system tool design_experience creates derived views across Bundles, not another Bundle. When enough saved evidence exists for a meaningful user situation, you may proactively offer a concrete, skippable experience invitation in the main conversation. Do not automatically run it or repeat it on every save; no all-Bundles-complete or score gate. A user can opt in directly; this is not a run_design_skill selection and must not be disguised as a catalog title. Use HTML as a medium: choose a comparison, explanatory diagram, role handoff, simulation or narrative based on what the user needs to understand, not a mandatory sequence of page prototypes. Reuse relevant saved visual assets and CSS when present, otherwise clearly label a neutral sketch. Present temporary assumptions separately; never treat realistic demo data as accepted facts. Who generates validates and repairs fidelity, clarity and presentation within this view's scope. Discuss in the existing main conversation, then apply authorized product changes through the original owner Bundles and refresh affected views. Never only edit a demo and claim the product design changed. Files under _experiences/ are derived, not authoritative product evidence; never feed them back as new requirements, GRA findings or clarity evidence.
@@ -3383,7 +3309,6 @@ Discuss reactions in the main conversation; if a reaction requires durable clari
 
   /** Render the evidence standard used to assess design clarity. */
   private renderClarityRubric(agent: Agent | undefined): string {
-    if (this.contentRecoveryLocation(agent)) return ''
     if (agent === undefined || this.kitForAgent(agent) === undefined) return ''
     const input = this.clarityInputForAgent(agent)
     return DESIGN_CORE_CLARITY_RUBRIC_PROMPT + (input === undefined ? ''
@@ -3407,7 +3332,6 @@ Discuss reactions in the main conversation; if a reaction requires durable clari
    */
   renderDesignState(agent: Agent | undefined): string {
     if (agent === undefined) return ''
-    if (this.contentRecoveryLocation(agent)) return ''
     const kit = this.kitForAgent(agent)
     if (kit === undefined) return ''
     const workspace = this.activeWorkspaces.get(agent)

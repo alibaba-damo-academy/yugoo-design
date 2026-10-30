@@ -127,6 +127,7 @@ export {
   DESIGN_CLARITY_AUTHORITY_SCHEMA_VERSION,
   parseDesignClarityAuthority,
   readDesignClarityAuthority,
+  readCommittedDesignClarityAuthority,
   writeDesignClarityAuthority,
   type DesignClarityAuthority,
 } from './design-clarity-authority.ts'
@@ -140,7 +141,7 @@ export {
   type DesignMustEditHandoffDescriptor,
 } from './design-continuation.ts'
 export { parseValidationYaml, evaluateValidationRules, type ValidationDoc, type ValidationRule, type ValidationEnv } from './validation-rules.ts'
-export { applyPanelEdit, buildPanelSaveNote, parsePanelArtifacts, type PanelEdit, type PanelSaveResult } from './panel-save.ts'
+export { applyPanelEdit, buildPanelSaveNote, parsePanelArtifacts, DESIGN_PANEL_SAVE_ASSESSMENT_GUIDANCE, type PanelEdit, type PanelSaveResult } from './panel-save.ts'
 export { projectWorktreeDesign, type WorktreeProjection } from './panel-worktree.ts'
 export {
   DESIGN_PROJECT_FORMAT_VERSION,
@@ -501,11 +502,10 @@ export {
   type KitResourceContent,
 } from './kit-loader.ts'
 export { DesignContentStore, contentNodeFs } from './content-store.ts'
+export { ensureProjectKit, loadProjectKit, DESIGN_PROJECT_KIT_DIRECTORY, type ProjectKitSource } from './project-kit-source.ts'
+export { restoreDshProjectContent } from './dsh-project-content.ts'
 export { composeProjectKit, projectBundleOverrides, projectKitContentHash, sameProjectContentPin,
   compareContentVersions, latestInstalledKit, groupContentVersions } from './project-content.ts'
-export { ProjectContentTransaction, assertProjectContentSettled,
-  type ProjectContentAdoptionReceipt, type ProjectContentTransactionOptions } from './project-content-transaction.ts'
-export { ProjectContentMigration, type NativeContentMigrationEvidence, type ProjectContentMigrationPorts } from './project-content-migration.ts'
 export {
   parsePanelManifest,
   validatePanelManifest,
@@ -564,6 +564,19 @@ export {
   type DesignBundleContribution,
   type DesignBundleContributionIds,
 } from './runtime-drivers.ts'
+export {
+  COMPONENT_PACKAGE_FORMAT,
+  ComponentPackageError,
+  parseComponentPackageManifest,
+  validateComponentPackageClosure,
+  requireValidatedComponentPackage,
+  registerComponentPackageContributions,
+  type ComponentPackagePin,
+  type ComponentPackageManifest,
+  type ComponentPackageSource,
+  type ComponentPackageHost,
+  type ValidatedComponentPackage,
+} from './component-package.ts'
 export {
   continueAfterDesignPanelEdit,
   DesignExecutionInvocationId,
@@ -707,7 +720,3 @@ export { DEFAULT_DESIGN_REVIEW_POLICY, parseDesignReviewPolicy, readDesignReview
 export { renderAdvisoryReviewMemory } from './advisory-review-memory.ts'
 export { workspacePollResult, type WorkspacePollResult } from './workspace-poll.ts'
 export type { DesignReviewMode, DesignReviewPolicy } from './design-review-policy.ts'
-export { ProjectContentPanelGuard } from './project-content-guard.ts'
-export { recordProjectContentAdoption } from './project-content-journal.ts'
-export { ProjectContentCandidate } from './project-content-candidate.ts'
-export { migrationDefinitionReadPlan } from './project-content-definition.ts'

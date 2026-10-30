@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises'
-import { join } from 'node:path'
+import { mkdtemp, readFile, readdir, rm, rename, mkdir } from 'node:fs/promises'
+import { join, basename } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { createStudioInstances } from '../src/studio-instances.mjs'
@@ -69,8 +69,12 @@ function ports() {
 async function fixture(t) {
   const stateRoot = await mkdtemp(join(tmpdir(), 'studio-independent-'))
   t.after(() => rm(stateRoot, { recursive: true, force: true }))
-  const adapters = ports(), options = { stateRoot, kitRoot, readInstalledKit: () => kit, ...adapters }
-  return { ...adapters, options, service: await createStudioInstances(options), stateRoot }
+  const trashRoot = join(stateRoot, 'test-os-trash'), trashed = []
+  await mkdir(trashRoot)
+  // Isolated test port; ordinary regressions must not use the real user trash.
+  const moveToTrash = async file => { trashed.push(file); await rename(file, join(trashRoot, basename(file))) }
+  const adapters = ports(), options = { stateRoot, kitRoot, readInstalledKit: () => kit, moveToTrash, ...adapters }
+  return { ...adapters, options, service: await createStudioInstances(options), stateRoot, trashRoot, trashed }
 }
 
 test('local display copy follows retained source and saved edits, not the mutable installed base', async t => {
@@ -222,6 +226,27 @@ test('Kit generated catalog projection preserves prose and mount refs across reo
   assert.ok((await reopened.read({ id: created.id })).availableBundles.some(item => item.name === alpha.name))
 })
 
+test('batch Kit edits keep mount ownership and do not partially add files on membership rejection', async t => {
+  const { service, options } = await fixture(t)
+  const created = await service.copy({ kind: 'kit', kit })
+  const mindset = (await service.readFile({ id: created.id, path: 'mindset.md' })).content
+  for (const changes of [
+    [{ path: 'kit.yaml', content: '{}' }],
+    [{ path: 'skills/alpha/SKILL.md', content: method }],
+    [{ path: 'notes.md', content: 'must not be partially added' }, { path: 'mindset.md', content: mindset.replace('## alpha', '## other') }],
+  ]) await assert.rejects(service.saveChanges({ id: created.id, expectedRevision: 0, changes }), /mount management|Kit-owned/)
+  assert.equal((await service.read(created.id)).revision, 0)
+  await assert.rejects(service.readFile({ id: created.id, path: 'notes.md' }), /does not exist/)
+  const saved = await service.saveChanges({ id: created.id, expectedRevision: 0, changes: [
+    { path: 'mindset.md', content: mindset + '\nUser-owned method additions.\n' },
+    { path: 'relations.yaml', content: 'incomplete: [' },
+  ] })
+  assert.equal(saved.changeReceipt.mode, 'draft')
+  const reopened = await createStudioInstances(options)
+  assert.deepEqual((await reopened.read(created.id)).mounts, created.mounts)
+  assert.equal((await reopened.readFile({ id: created.id, path: 'relations.yaml' })).content, 'incomplete: [')
+})
+
 test('explicit legacy migration retains recoverable original and independently scoped Bundle bytes', async t => {
   const { service, options, installed, stateRoot } = await fixture(t)
   const ports = await createStudioDraftPorts(options, 'instance')
@@ -280,4 +305,128 @@ test('legacy Kit migration preserves linked Bundle identity and refuses orphan e
   const untrusted = await ports.repository.create({ kind: 'kit', source: { kit }, title, baseSnapshot: changed.id, overlays: {}, mounts: [{ bundle: alpha }], confirmed: false })
   await assert.rejects(service.migrate({ id: untrusted.id, expectedRevision: 0 }), /differ from the trusted catalog/)
   assert.equal((await ports.repository.read(untrusted.id)).revision, 0)
+})
+
+test('blank Kit and Bundle creation retains new sources without copying installed content; save and reopen share S2', async t => {
+  const f = await fixture(t)
+  f.catalog.captureKit = f.catalog.captureBundle = async () => { throw Error('Blank creation must never capture an installed source') }
+  const kit = await f.service.create({ kind: 'kit', title: { zh: '新套件', en: 'New Kit' } })
+  const bundle = await f.service.create({ kind: 'bundle', title: { zh: '新技能包', en: 'New Bundle' } })
+  assert.equal(kit.createdBlank, true)
+  assert.deepEqual(kit.source, {})
+  assert.deepEqual(kit.mounts, [])
+  assert.deepEqual(kit.files.map(file => file.path).sort(), ['kit.yaml', 'mindset.md'])
+  const mindset = await f.service.readFile({ id: kit.id, path: 'mindset.md' })
+  assert.match(mindset.content, /^---\nname:/)
+  assert.match(mindset.content, /<design_skills>\n<\/design_skills>/)
+  assert.equal(bundle.runtimeName, bundle.bundle.name)
+  assert.notEqual(kit.id, bundle.id)
+  assert.equal(bundle.files.length, 7)
+  assert.equal(bundle.files.every(file => file.editable), true)
+  const { parse } = await import('yaml')
+  const manifest = parse((await f.service.readFile({ id: bundle.id, path: 'skill.yaml' })).content)
+  assert.deepEqual(manifest.title, { zh: '新技能包', en: 'New Bundle' })
+  assert.deepEqual(manifest.label, manifest.title, 'blank source declares the required bilingual picker label')
+  assert.equal(parse((await f.service.readFile({ id: bundle.id, path: 'validation.yaml' })).content).rules.length, 0,
+    'metadata completeness does not fabricate domain validation for an unfinished draft')
+  assert.deepEqual(f.captured, [])
+  const file = await f.service.readFile({ id: bundle.id, path: 'SKILL.md' })
+  const saved = await f.service.saveFile({ id: bundle.id, expectedRevision: bundle.revision, path: file.path, content: file.content + '\nUser-owned authoring notes.\n' })
+  await assert.rejects(f.service.saveFile({ id: bundle.id, expectedRevision: bundle.revision, path: file.path, content: 'stale' }), /changed/)
+  const reopened = await createStudioInstances(f.options)
+  assert.equal((await reopened.read({ id: bundle.id })).revision, saved.revision)
+  assert.equal((await reopened.readFile({ id: bundle.id, path: file.path })).content, file.content + '\nUser-owned authoring notes.\n')
+  assert.equal((await reopened.list()).length, 2)
+})
+
+test('blank creation rejects unsupported targets, extra filesystem inputs and invalid titles before retaining an object', async t => {
+  const { service } = await fixture(t)
+  for (const input of [null, { kind: 'project', title }, { kind: 'kit', title, root: '/outside' }, { kind: 'kit', title: { zh: '', en: 'X' } }, { kind: 'bundle', title: { zh: 'x'.repeat(201), en: 'X' } }]) {
+    await assert.rejects(service.create(input))
+  }
+  assert.deepEqual(await service.list(), [])
+})
+
+test('mount choices project installed and retained local descriptions without changing source or exact pins', async t => {
+  const { service, options, installed, catalog } = await fixture(t)
+  catalog.listBundles = async () => [
+    { ...alpha, title, runtimeName: alpha.name, description: 'Installed method routing.', displayDescription: { zh: '已安装简介', en: 'Installed introduction' } },
+    { ...beta, title, runtimeName: beta.name },
+  ]
+  const files = installed.get(beta.name)
+  files.find(file => file.path === 'SKILL.md').base64 = entry('SKILL.md', '---\nname: beta\ndescription: Retained method routing.\n---\n' + method).base64
+  files.push(entry('panel.yaml', 'i18n:\n  locales:\n    zh-CN: locales/zh-CN.json\n    en-US: locales/en-US.json\n'),
+    entry('locales/zh-CN.json', '{"bundleDescription":"本地简介"}'), entry('locales/en-US.json', '{"bundleDescription":"Local introduction"}'))
+  const local = await service.copy({ kind: 'bundle', bundle: beta })
+  const retainedSkill = await service.readFile({ id: local.id, path: 'SKILL.md' })
+  const kitCopy = await service.copy({ kind: 'kit', kit })
+  const choices = await service.listBundles()
+  const installedChoice = choices.find(item => item.name === alpha.name), absent = choices.find(item => item.name === beta.name)
+  assert.equal(installedChoice.description, 'Installed method routing.')
+  assert.deepEqual(installedChoice.displayDescription, { zh: '已安装简介', en: 'Installed introduction' })
+  assert.equal(Object.hasOwn(absent, 'description'), false); assert.equal(Object.hasOwn(absent, 'displayDescription'), false)
+  const localChoice = choices.find(item => item.instanceId === local.id)
+  assert.equal(localChoice.description, 'Retained method routing.')
+  assert.deepEqual(localChoice.displayDescription, { zh: '本地简介', en: 'Local introduction' })
+  assert.deepEqual({ name: localChoice.name, version: localChoice.version, revision: localChoice.revision }, { ...local.bundle, revision: local.revision })
+  assert.deepEqual(kitCopy.availableBundles.find(item => item.instanceId === local.id), localChoice)
+  assert.deepEqual(await service.readFile({ id: local.id, path: 'SKILL.md' }), retainedSkill, 'listing choices preserves exact source bytes and revision')
+  const mounted = await service.updateMounts({ id: kitCopy.id, expectedRevision: kitCopy.revision, bundles: [beta] })
+  assert.deepEqual({ name: mounted.mounts[0].bundle.name, version: mounted.mounts[0].bundle.version }, beta, 'missing optional descriptions do not block mounting')
+  assert.equal(Object.hasOwn(mounted.mounts[0].bundle, 'description'), false)
+  const updated = await service.saveFile({ id: local.id, expectedRevision: local.revision, path: 'locales/en-US.json', content: '{"bundleDescription":"Exact user wording remains"}' })
+  const reopened = await createStudioInstances(options)
+  const refreshed = (await reopened.read({ id: mounted.id })).availableBundles.find(item => item.instanceId === local.id)
+  assert.equal(refreshed.displayDescription.en, 'Exact user wording remains')
+  assert.equal(refreshed.revision, updated.revision)
+  assert.deepEqual(await reopened.readFile({ id: local.id, path: 'SKILL.md' }), { ...retainedSkill, revision: updated.revision })
+})
+
+
+test('remove trashes the original record, preserves shared snapshots and restores editable copies', async t => {
+  const { service, options, stateRoot, trashRoot, trashed } = await fixture(t)
+  const first = await service.copy({ kind: 'bundle', bundle: alpha })
+  const second = await service.copy({ kind: 'bundle', sourceId: first.id, expectedRevision: first.revision })
+  const root = join(stateRoot, 'studio-instance-drafts'), file = join(root, `${first.id}.json`)
+  const before = await readFile(file, 'utf8')
+  const snapshots = await readdir(join(root, 'snapshots'))
+  const result = await service.remove({ id: first.id, expectedRevision: first.revision })
+  assert.deepEqual(result, { id: first.id, revision: first.revision, trashed: true })
+  assert.deepEqual(trashed, [file])
+  await assert.rejects(readFile(file), { code: 'ENOENT' })
+  assert.equal((await service.list()).some(record => record.id === first.id), false)
+  assert.equal(await readFile(join(trashRoot, basename(file)), 'utf8'), before)
+  assert.deepEqual(await readdir(join(root, 'snapshots')), snapshots)
+  assert.equal((await service.readFile({ id: second.id, path: 'SKILL.md' })).content, method)
+  // The OS/user restores the same file; the application has no restore workflow.
+  await rename(join(trashRoot, basename(file)), file)
+  const reopened = await createStudioInstances(options)
+  assert.equal((await reopened.list()).some(record => record.id === first.id), true)
+  assert.equal((await reopened.readFile({ id: first.id, path: 'SKILL.md' })).content, method)
+  const saved = await reopened.saveFile({ id: first.id, expectedRevision: first.revision, path: 'SKILL.md', content: method + 'Restored edit.\n' })
+  assert.equal(saved.revision, first.revision + 1)
+})
+
+test('failed or ineffective system trash keeps source and does not write a tombstone', async t => {
+  const f = await fixture(t)
+  const record = await f.service.copy({ kind: 'bundle', bundle: alpha })
+  const file = join(f.stateRoot, 'studio-instance-drafts', `${record.id}.json`)
+  const before = await readFile(file, 'utf8')
+  for (const moveToTrash of [async () => { throw new Error('System trash unavailable') }, async () => {}]) {
+    const service = await createStudioInstances({ ...f.options, moveToTrash })
+    await assert.rejects(service.remove({ id: record.id, expectedRevision: record.revision }), /trash/)
+    assert.equal(await readFile(file, 'utf8'), before)
+    assert.equal((await service.read(record.id)).deletedAt, undefined)
+    assert.equal((await service.readFile({ id: record.id, path: 'SKILL.md' })).content, method)
+  }
+})
+
+test('stale revisions and referenced Bundles never reach the system trash port', async t => {
+  const { service, trashed } = await fixture(t)
+  const record = await service.copy({ kind: 'bundle', bundle: alpha })
+  await assert.rejects(service.remove({ id: record.id, expectedRevision: record.revision + 1 }), /changed/)
+  const kitCopy = await service.copy({ kind: 'kit', kit })
+  await service.updateMounts({ id: kitCopy.id, expectedRevision: kitCopy.revision, bundles: [{ ...record.bundle, instanceId: record.id, revision: record.revision }] })
+  await assert.rejects(service.remove({ id: record.id, expectedRevision: record.revision }), /referenced/)
+  assert.deepEqual(trashed, [])
 })

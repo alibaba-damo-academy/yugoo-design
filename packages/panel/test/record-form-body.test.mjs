@@ -444,3 +444,49 @@ test('native composition and neutral records preserve binding, conditional clean
     assert.equal(document.activeElement.id, 'outside', 'a preset click cancels an outstanding custom focus request')
   } finally { await React.act(async () => root.unmount()); dom.window.close() }
 })
+
+
+test('record artifact sibling views keep one original editable header above tabs and preserve lifecycle authority', async () => {
+ const localDom = new JSDOM('<body></body>', { url: 'https://panel.test/', pretendToBeVisual: true })
+ for (const key of ['window', 'document', 'HTMLElement', 'Element', 'Node']) globalThis[key] = localDom.window[key]
+ document.head.appendChild(document.createElement('style')).textContent = readFileSync(new URL('../src/visual-components.css', import.meta.url), 'utf8')
+ const container = document.body.appendChild(document.createElement('div'))
+ container.className = 'dsh-design-panel'
+ const root = createRoot(container)
+ const manifest = { version: 1, panel_kind: 'document', sections: [{ id: 'cases', title: 'Cases', form: {
+   header: { variant: 'detail', title: { field: 'title', editable: true } }, body: [{ kind: 'field', field: 'note' }, { kind: 'field', field: 'file' }],
+ } }], fields: [{ key: 'title', label: 'Case title', control: 'text', required: true }, { key: 'note', label: 'Note', control: 'textarea' }, { key: 'file', label: 'File', control: 'artifact_ref' }],
+ ui: { component: 'record_workspace', id: 'case-views', sources: ['cases'], navigation_layout: 'list', children: [{ component: 'tabs', id: 'case-tabs', children: [
+ { component: 'record_inspector', id: 'reading', title: 'Read' }, { component: 'record_artifact', id: 'report', title: 'Report', source: 'cases', artifact: { field: 'file' } },
+ ] }] } }
+ for (const field of manifest.fields) field.applies_to = ['cases']
+ assert.deepEqual(validatePanelManifest(manifest), [])
+ let data = { cases: { one: { title: 'First case', note: 'Saved note' }, two: { title: 'Second case', note: 'Other note' } } }, writes = 0
+ const render = (editable = true) => root.render(renderNode(manifest.ui, manifest, data, { editable, onPanelUpdate: patch => { writes++; data = { ...data, ...patch }; render() }, onEdit: edit => { writes++; data = pathSet(data, edit.section + '.' + edit.record + '.' + edit.field, edit.value); render() } }))
+ try {
+  await React.act(() => render())
+  const header = document.querySelector('.dsh-record-workspace-header'), tabs = document.querySelector('[role=tablist]')
+  assert.ok(header.compareDocumentPosition(tabs) & Node.DOCUMENT_POSITION_FOLLOWING)
+  assert.equal(document.querySelectorAll('[data-panel-title]').length, 1)
+  assert.equal(document.querySelector('.dsh-record-inspector [data-panel-title]'), null)
+  assert.equal(header.querySelector('.dsh-design-record'), null, 'workspace title has no padded record shell or negative-inset dependency')
+  assert.equal(window.getComputedStyle(header.querySelector('.dsh-design-record-header')).margin, '0px')
+  assert.equal(window.getComputedStyle(header.querySelector('.dsh-design-record-header')).height, '44px')
+  container.parentElement.classList.add('dsh-design-auto-surface')
+  assert.equal(window.getComputedStyle(header.querySelector('.dsh-design-record-header')).padding, '0px 16px', 'auto surface cannot restyle a framed shared title')
+  container.parentElement.classList.remove('dsh-design-auto-surface')
+  const note = document.querySelector('[data-field=note] textarea')
+  await React.act(() => document.querySelectorAll('[role=tab]')[1].click())
+  assert.equal(header.querySelector('[data-panel-title]').value, 'First case')
+  assert.equal(document.querySelector('[data-field=note] textarea'), note, 'body stays mounted')
+  await React.act(() => header.querySelector('.dsh-panel-title-edit').click())
+  assert.equal(document.activeElement, header.querySelector('[data-panel-title]'))
+  assert.equal(writes, 0, 'view and pencil focus are not edits')
+  await React.act(() => header.querySelector('[data-testid=record-remove-one]').click())
+  assert.equal(writes, 1); assert.equal(data.cases.one, undefined); assert.equal(document.querySelector('[data-panel-title]').value, 'Second case')
+  await React.act(() => render(false))
+  assert.equal(document.querySelector('[data-panel-title]'), null); assert.equal(document.querySelector('[data-testid=record-remove-two]'), null)
+  assert.match(document.querySelector('.dsh-record-workspace-header').textContent, /Second case/)
+  assert.equal(writes, 1)
+ } finally { await React.act(() => root.unmount()); container.remove(); localDom.window.close() }
+})

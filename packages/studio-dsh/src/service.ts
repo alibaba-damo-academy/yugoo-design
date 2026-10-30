@@ -1,7 +1,7 @@
 /** DSH lifecycle and Remote adapter for the read-only Studio service. */
 import { Service, type Context } from '@deepseek-ai/cordis'
 import type { FileSystem } from '@deepseek-ai/dsh-fs'
-import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
+import { TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import type DesignService from 'dsh-design-core'
 import { DesignKitVersion } from 'dsh-design-core'
 import {
@@ -18,6 +18,7 @@ import {
   type StudioWorkspaceView,
 } from 'dsh-design-studio'
 import { openInstalledSourceFiles, kitFileError } from './kit-files.ts'
+import { markStudioRemote } from './remote-method.ts'
 import { openDshStudioBundleSource, resolveKitSourceRoot, type StudioKitSourceConfig } from './kit-sources.ts'
 
 /** DSH Studio adapter configuration. */
@@ -290,15 +291,7 @@ function markRemote<Args extends unknown[], Result>(
   name: string,
   method: (this: DshStudioManagementService, ...args: Args) => Result,
 ): void {
-  Remote(method, {
-    kind: 'method',
-    name,
-    static: false,
-    private: false,
-    addInitializer(initializer: (this: DshStudioManagementService) => void): void {
-      initializer.call(Object.create(DshStudioManagementService.prototype) as DshStudioManagementService)
-    },
-  } as unknown as ClassMethodDecoratorContext<DshStudioManagementService, typeof method>)
+  markStudioRemote(DshStudioManagementService.prototype, name, method)
 }
 
 // Plain ESM must stay parseable on every supported Node engine.

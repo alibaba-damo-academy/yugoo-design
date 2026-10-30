@@ -308,7 +308,7 @@ test('static grouped records reject invalid schema bindings at the authored path
       sections: [{ id: 'rules', title: 'Rules', fields_path: 'details' }],
       fields: [{ key: 'title', label: 'Title', control: 'text', applies_to: ['rules'] }],
       ui: placement === 'slot'
-        ? { id: 'layout', component: 'split', slots: { main: group } }
+        ? { id: 'layout', component: 'panel_workspace', slots: { sidebar: { id: 'context', component: 'text_block', text: 'Groups' }, main: group } }
         : { id: 'layout', component: 'stack', children: [group] },
     }
     return loadDesignKit({ ...fs, readText: async path => {

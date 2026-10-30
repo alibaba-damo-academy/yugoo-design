@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os'
 import { bindObservedComponents, dataUrls, observeDshBuild } from './dsh-release-observations.mjs'
 import { copyDshDistributionMaterials, hydrateDshSelection, FIRST_PARTY_MATERIAL } from './dsh-distribution-materials.mjs'
 import { captureOutputModuleMap, verifyOutputModuleFiles } from './companion-output-module-map.mjs'
+import { DSH_AGGREGATE_SOURCE } from './release-consumer-config.mjs'
 import { withNormalBuildEvidence } from './normal-build-module-evidence.mjs'
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 const component = { name: 'example', version: '1.2.3', packageMetadataSha256: 'a'.repeat(64), outputs: ['lib/old.js'], correspondence: 'bounded source material selection' }
@@ -129,4 +130,23 @@ test('real changed first-party metadata binds current identity, keeps prior hash
   await assert.rejects(observeDshBuild({ workspace, report: { mapping: { example: { name: '@yugoo-design/example', directory: 'packages/example' } } }, evidenceDirectory: evidence, sourceCommit }), /Normal module input changed/)
   await writeFile(join(output, 'new.js'), 'changed after normal build hook')
   await assert.rejects(observeDshBuild({ workspace, report: { mapping: { example: { name: '@yugoo-design/example', directory: 'packages/example' } } }, evidenceDirectory: evidence, sourceCommit }), /Output file.*changed|Emitted output|Output.*mismatch|changed|identity/u)
+})
+
+test('scoped aggregate needs no compiler receipt while compiled packages retain that guard', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-aggregate-observation-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  await mkdir(join(root, 'release')); await mkdir(join(root, 'normal-build'))
+  const selection = { components: [], observedOutputSha256: {} }
+  await writeFile(join(root, 'release/dsh-distribution-materials.json'), JSON.stringify({ packages: {
+    [DSH_AGGREGATE_SOURCE]: selection, 'dsh-design-core': selection,
+  } }))
+  const input = { workspace: root, evidenceDirectory: join(root, 'normal-build'), sourceCommit: 'a'.repeat(40) }
+  const observation = await observeDshBuild({ ...input, report: { mapping: { [DSH_AGGREGATE_SOURCE]: {
+    name: DSH_AGGREGATE_SOURCE, directory: 'packages/dsh',
+  } } } })
+  assert.deepEqual(Object.keys(observation.packages), [DSH_AGGREGATE_SOURCE])
+  assert.deepEqual(observation.packages[DSH_AGGREGATE_SOURCE].normalBuildMaps, [])
+  await assert.rejects(observeDshBuild({ ...input, report: { mapping: { 'dsh-design-core': {
+    name: '@yugoo-design/dsh-design-core', directory: 'packages/core',
+  } } } }), /Normal build receipt missing/)
 })

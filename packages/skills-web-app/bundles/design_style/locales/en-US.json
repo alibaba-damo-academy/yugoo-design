@@ -1,5 +1,5 @@
 {
-  "guidance": "Choose a palette and adjust settings. Save and regenerate the preview after structural or component-language changes.",
+  "guidance": "Judge whether the visual style fits the users and context, and whether text and actions are clear. Check the preview after adjustments; structural or component-language changes require regeneration after saving.",
   "bundleDescription": "- **Capability**: visual direction for a web/mobile product — palette, typography, component language, and one representative UI preview.\n- **Resolves**: S/T gaps in visual hierarchy, component language, and reviewable interface direction; visible feedback may also add U evidence.\n- **Candidate when**: the user explicitly asks for visual direction, one representative screen is the smallest useful way to settle a material product decision, or the user has explicitly requested high-fidelity pages and the project has no visual baseline.\n- **Do not infer**: website, page, or app alone does not make visual work mandatory; an explicit high-fidelity Page request is an output dependency rather than keyword inference.\n- **Output**: `design_style` panel, generated `DESIGN.md`, generated `tokens.css`, and one representative HTML preview.",
   "config.colors.primary": "Primary",
   "config.colors.primaryLight": "Primary light",

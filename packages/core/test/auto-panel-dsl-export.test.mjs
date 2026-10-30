@@ -47,13 +47,11 @@ test('question fallback preserves declared extra content through snapshot, DSL r
     assert.equal(renderToStaticMarkup(renderManifest(ignored, questionContext.state)).includes('UNIQUE-DOMAIN-CONTENT'), false)
     assert.throws(() => makeSnapshot(ignored), /unrendered branches/)
   }
-  for (const layout of ['stack', 'tabs', 'split']) {
+  for (const layout of ['stack', 'tabs']) {
     const composed = structuredClone(manifest)
     const question = { ...composed.ui.children[0], title: 'Question' }
     const data = { ...overview, title: 'Overview' }
-    composed.ui = layout === 'split'
-      ? { id: 'layout', component: layout, slots: { sidebar: question, main: data } }
-      : { id: 'layout', component: layout, children: [question, { id: 'nested', component: 'stack', title: 'Overview', children: [data] }] }
+    composed.ui = { id: 'layout', component: layout, children: [question, { id: 'nested', component: 'stack', title: 'Overview', children: [data] }] }
     assert.doesNotThrow(() => makeSnapshot(composed))
     assert.match(renderToStaticMarkup(renderManifest(composed, questionContext.state)), /UNIQUE-DOMAIN-CONTENT/)
   }

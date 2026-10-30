@@ -34,7 +34,7 @@ export function panelGraphSaveRules(doc: ValidationDoc, panel: unknown): readonl
     visited.add(node)
     if (Array.isArray(node.children)) pending.push(...node.children.filter(record))
     if (record(node.slots)) pending.push(...Object.values(node.slots).filter(record))
-    if (node.component === 'reference_graph' && record(node.references) && Array.isArray(node.references.links)) {
+    if (['reference_graph', 'relation_graph'].includes(String(node.component)) && record(node.references) && Array.isArray(node.references.links)) {
       for (const link of node.references.links.filter(record)) {
         const source = sections.get(link.source), target = sections.get(link.target)
         if (!source || !target || source.fields_path !== undefined || target.fields_path !== undefined

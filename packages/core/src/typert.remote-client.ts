@@ -285,17 +285,6 @@ export const TYPERT_REMOTE = {
       result: { mode: 'strict', typeSymbol: 'dsh-design-core#designPanel/retainAutoPanel:result', create: () => z.object({ retained: z.literal(true) }).strict() },
     },
     {
-      id: 'dsh-design-core#designPanel/observePanelDraft', service: 'designPanel', namespace: 'designPanel', method: 'observePanelDraft',
-      invocation: { kind: 'direct' }, scope: { context: 'agent', wire: 'agentId' },
-      parameters: [
-        { name: 'agent', wire: 'agentId', source: 'lookup', lookup: 'agent', codec: { mode: 'strict', typeSymbol: '@deepseek-ai/dsh-session/types#SessionId', create: () => agentIdSchema } },
-        { name: 'observation', wire: 'observation', source: 'json', codec: { mode: 'strict', typeSymbol: 'dsh-design-core#designPanel/observePanelDraft:observation',
-          create: () => z.object({ projectId: z.string().uuid(), pageId: z.string().uuid(), sequence: z.number().int().positive(), dirty: z.boolean(), saving: z.boolean(), lifecycle: z.enum(['opened', 'observed', 'closed']).optional() }).strict() } },
-      ],
-      cancellation: { parameter: 'signal' },
-      result: { mode: 'strict', typeSymbol: 'dsh-design-core#designPanel/observePanelDraft:result', create: () => z.object({ observed: z.literal(true) }).strict() },
-    },
-    {
       id: 'dsh-design-core#designPanel/readWorkspace',
       service: 'designPanel',
       namespace: 'designPanel',

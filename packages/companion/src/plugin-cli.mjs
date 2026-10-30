@@ -164,8 +164,8 @@ export async function main(args = process.argv.slice(2)) {
     const workspace = await project.readWorkspace()
     console.log(JSON.stringify({ project: project.project.metadata, designFiles: project.project.designFilesRoot,
       access: workspace.access, availableMindsets: (await project.listProjects()).mindsets,
-      kitRoot: options.kitRoot, bundles: (workspace.access.writable ? project.kit.skills : []).map(skill => ({ name: skill.name, description: skill.description,
-        directory: skill.resourceRoot ?? join(options.kitRoot, 'skills', skill.name), hasState: Object.hasOwn(workspace.design, skill.name) })),
+      kitRoot: workspace.access.writable ? project.kit.sourceRoot : undefined, bundles: (workspace.access.writable ? project.kit.skills : []).map(skill => ({ name: skill.name, description: skill.description,
+        directory: skill.resourceRoot, hasState: Object.hasOwn(workspace.design, skill.name) })),
       files: Object.keys(workspace.artifactFiles),
     }, null, 2))
     return

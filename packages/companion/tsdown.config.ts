@@ -24,6 +24,7 @@ export default defineConfig({
   inputOptions: { resolve: { conditionNames: ['import', 'browser', 'default'] } },
   alias: {
     'dsh-design-panel/client-api': new URL('../panel/src/client-api.ts', import.meta.url).pathname,
+    'dsh-design-panel/sample-preview': new URL('../panel/src/sample-preview.tsx', import.meta.url).pathname,
     'dsh-design-core/dsl': fileURLToPath(new URL('../core/src/panel-dsl.ts', import.meta.url)),
     'dsh-design-core/experience-view': fileURLToPath(new URL('../core/src/experience-view.ts', import.meta.url)),
     'dsh-design-core/source-reference': fileURLToPath(new URL('../core/src/design-source-reference.ts', import.meta.url)),

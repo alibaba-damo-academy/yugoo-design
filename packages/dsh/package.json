@@ -1,9 +1,7 @@
 {
-  "name": "dsh-design-system-dsh",
+  "name": "@yugoo-design/dsh-design-system-dsh",
   "version": "0.0.0",
   "license": "Apache-2.0",
-  "type": "module",
-  "description": "Yugoo Design (yugoo-design) installation plugin for DeepSeek Harness.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/alibaba-damo-academy/yugoo-design.git",
@@ -13,6 +11,14 @@
   "bugs": {
     "url": "https://github.com/alibaba-damo-academy/yugoo-design/issues"
   },
+  "keywords": [
+    "dsh-plugin",
+    "yugoo-design",
+    "design-system",
+    "interactive-design"
+  ],
+  "type": "module",
+  "description": "Yugoo Design (yugoo-design) installation plugin for DeepSeek Harness.",
   "exports": {
     ".": "./index.js",
     "./package.json": "./package.json"

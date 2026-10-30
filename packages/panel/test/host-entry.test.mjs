@@ -95,6 +95,7 @@ test('moved Host entry retains packaged CSS route registration and disposal', as
   assert.deepEqual(routes.map(route => route.path), [
     '/design-system-assets/dsh-design-panel-renderer',
     '/design-system-assets/dsh-design-panel-client',
+    '/design-system-assets/dsh-design-panel-sample-preview',
   ])
   assert.ok(routes.every(route => route.kind === 'prefix' && typeof route.handler === 'function'))
   for (const dispose of effects.reverse()) dispose()

@@ -6,7 +6,7 @@ This tutorial creates a Yugoo Design Kit focused only on project scope and chang
 
 The exercise corresponds to the [client project delivery case](web-app-demo.en.md): when a client asks for “one more small change,” how do you record the request, judge its relationship to the original delivery scope, and explain what follows? The result is an independent content directory; the original Web App Kit and existing Design Projects remain intact.
 
-Editing current content in place, importing source archives and using project-owned `design_kit` files require the corresponding development runtime; the current stable runtime does not provide this workflow. For an installed stable version, use its bundled guide and actual controls. These methods and examples do not update the plugin.
+The current source implements the in-place editing, source import and project-owned `design_kit` flows used in this tutorial. For an installed release, use the capabilities and instructions shipped with that version; documentation updates do not change an existing installation.
 
 ## 1. Decide what to change first
 

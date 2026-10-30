@@ -14,6 +14,7 @@ export type {
   NativePanelDefinition,
   NativePanelFeatureEntry,
   NativePanelMetadata,
+  NativePanelPackageRuntime,
   NativePanelRegistry,
   NativePanelRenderProps,
   NativePanelSaveArtifact,

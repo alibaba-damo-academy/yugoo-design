@@ -22,6 +22,37 @@ async function inspectionContext(repo) {
   const declarations = new Map(source.statements
     .filter(node => ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node))
     .map(node => [node.name.text, node]))
+  const constants = new Map(source.statements
+    .filter(node => ts.isVariableStatement(node) && (node.declarationList.flags & ts.NodeFlags.Const))
+    .flatMap(node => [...node.declarationList.declarations])
+    .filter(node => ts.isIdentifier(node.name))
+    .map(node => [node.name.text, node]))
+  // Follow only same-source typeof dependencies. Keep raw declarations rather
+  // than evaluating initializers or exposing every implementation constant.
+  // A work queue makes even a cyclic dependency graph finite.
+  const pending = [...declarations.values()]
+  for (let index = 0; index < pending.length; index++) {
+    function visit(node) {
+      if (ts.isTypeQueryNode(node)) {
+        if (!ts.isIdentifier(node.exprName)) {
+          throw new Error(`Unsupported local typeof contract reference: ${node.exprName.getText(source)}`)
+        }
+        const name = node.exprName.text
+        const constant = constants.get(name)
+        if (!constant) throw new Error(`Unknown local typeof contract constant: ${name}`)
+        if (!constant.initializer) throw new Error(`Missing local typeof contract initializer: ${name}`)
+        if (declarations.has(name) && declarations.get(name) !== constant) {
+          throw new Error(`Ambiguous local typeof contract name: ${name}`)
+        }
+        if (!declarations.has(name)) {
+          declarations.set(name, constant)
+          pending.push(constant)
+        }
+      }
+      ts.forEachChild(node, visit)
+    }
+    visit(pending[index])
+  }
   return { repo, ts, PANEL_COMPONENT_CATALOG, GENERATED_COMPONENT_KINDS, contractPath, source, declarations }
 }
 
@@ -49,6 +80,10 @@ async function inspectWithContext(context, name, typeName, options = {}) {
       if (ts.isTypeReferenceNode(child) && ts.isIdentifier(child.typeName)
         && declarations.has(child.typeName.text) && child.typeName.text !== root) {
         references.add(child.typeName.text)
+      }
+      if (ts.isTypeQueryNode(child) && ts.isIdentifier(child.exprName)
+        && child.exprName.text !== root) {
+        references.add(child.exprName.text)
       }
       ts.forEachChild(child, visit)
     }
@@ -183,8 +218,9 @@ export async function exportPanelAuthoringReference(repo) {
       }
     }
   }
-  for (const node of source.statements) {
+  for (const [name, node] of context.declarations) {
     if (ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)) properties(node, node.name.text)
+    else names.push(name)
   }
   const components = Object.create(null), contracts = Object.create(null)
   for (const name of COMPONENT_KINDS) {

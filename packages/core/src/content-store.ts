@@ -43,7 +43,7 @@ function retainedKitLocation(rootDir: string, paths?: KitPaths): string | Design
 }
 
 /** Copy bytes, rejecting symlinks and special files. Also hash empty directories. */
-async function copyTree(source: string, target: string, digest: ReturnType<typeof createHash>, relativePath = '', budget = { bytes: 0, nodes: 0 }): Promise<void> {
+export async function copyTree(source: string, target: string, digest = createHash('sha256'), relativePath = '', budget = { bytes: 0, nodes: 0 }): Promise<void> {
   if (++budget.nodes > 20000 || relativePath.split('/').length > 32) throw new Error('content: resource tree exceeds limits')
   const info = await lstat(source)
   if (info.isSymbolicLink()) throw new Error(`content: symlink resource is not retained: ${source}`)
@@ -136,6 +136,17 @@ export class DesignContentStore {
     })
     if (kit.name !== pin.name || String(kit.version) !== pin.version) throw new Error('content: retained Kit pin mismatch')
     return kit
+  }
+  /** Reuse a verified closure from another configured store without exposing or
+   * inferring its internal layout. The source index owns provenance and paths. */
+  async retainKitFrom(source: DesignContentStore, pin: DesignBundlePin): Promise<DesignKit> {
+    const entry = (await source.index()).kits.find(value => key(value) === key(pin))
+    const kit = await source.loadRetainedKit(pin)
+    if (!entry || !kit) throw new Error('content: unavailable exact retained Kit source')
+    const root = join(source.directory('kits', pin), 'files')
+    return this.retainKitClosure(retainedKitLocation(root, entry.kitPaths), {
+      sourceId: entry.sourceId, resolveBundle: bundle => source.resolveBundle(bundle),
+    })
   }
   /** All project reads and writes resolve the same exact closure. */
   async resolveProjectKit(pin: DesignProjectKitPin): Promise<DesignKit | undefined> {

@@ -6,6 +6,7 @@ import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { qwenWorkNativeExecutionReference } from './qwenwork-package.mjs'
 import { copyComponentSkill } from './component-skill-package.mjs'
+import { prepareStudioAuthoringMaterial, writeStudioAuthoringMaterial } from '../../scripts/studio-authoring-material.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 export const DESKTOP_MATERIAL_PATH = 'payload/desktop-preparation'
@@ -23,13 +24,18 @@ export async function stageDesktopPreparationMaterials(destination, { companionR
       for (const name of (await readdir(source)).sort()) { assert.notEqual(name, 'node_modules'); await copy(join(source, name), join(target, name)) }
     } else { assert.ok(info.isFile()); await mkdir(dirname(target), { recursive: true }); await cp(source, target, { errorOnExist: true, force: false }) }
   }
+  // Keep the shared Windows helpers together; the Companion entries only forward in-repo.
+  const moduleSource = name => join(companionRoot, name.startsWith('windows-') ? '../studio/src/node' : 'src', name)
   for (const name of ['qwenwork-package.mjs', 'workbuddy-package.mjs']) await copy(join(companionRoot, name), join(destination, name))
-  for (const name of modules) await copy(join(companionRoot, 'src', name), join(destination, 'src', name))
+  for (const name of modules) await copy(moduleSource(name), join(destination, 'src', name))
   await copy(join(companionRoot, 'hosts/workbuddy/design-SKILL.md'), join(destination, 'hosts/workbuddy/design-SKILL.md'))
   const qwen = join(destination, 'qwenwork-template')
   await copy(join(companionRoot, 'plugin-qwenwork/design-system'), qwen)
   await copyComponentSkill(qwen, join(companionRoot, 'plugin/design-system/skills/design-component/SKILL.md'))
-  for (const name of ['native-hook-transport.mjs', 'windows-private-storage.mjs', 'windows-native-platform.mjs', 'qwenwork-hook-transport.mjs', 'qwenwork-connection.mjs']) await copy(join(companionRoot, 'src', name), join(qwen, 'scripts', name))
+  const creatorMethods = await prepareStudioAuthoringMaterial(join(companionRoot, '../..'))
+  await writeStudioAuthoringMaterial(qwen, creatorMethods)
+  await writeStudioAuthoringMaterial(join(destination, 'studio-authoring-template'), creatorMethods)
+  for (const name of ['native-hook-transport.mjs', 'windows-private-storage.mjs', 'windows-native-platform.mjs', 'qwenwork-hook-transport.mjs', 'qwenwork-connection.mjs']) await copy(moduleSource(name), join(qwen, 'scripts', name))
   const sharedPath = 'plugin/design-system/skills/design-panel/native-execution.md'
   await copy(join(companionRoot, sharedPath), join(destination, sharedPath))
   const shared = await readFile(join(destination, sharedPath), 'utf8')

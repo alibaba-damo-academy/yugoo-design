@@ -33,6 +33,12 @@ Auto Panel 是 Design JSON `schema.yaml` 与当前 Design Files / 同 Bundle 产
 
 ## 当前目录边界
 
+`math_document` 为声明式作者提供同一记录的数学表达与解释视图：业务含义和公式
+相邻显示，符号、完整表达、来源及其他字段可展开。它通过既有字段编辑与保存
+通道工作，不拥有模型生成、数学校验或求解能力。绑定契约见
+[DSL 的数学解释视图](dsl-spec.md#mathematical-explanations-in-a-record-workspace)。
+目录中提供双语固定样例；当前不设 `autoOrder`，因此不进入生成式 A2UI 子集。
+
 ### Studio 组件库查看与扩展入口
 
 Studio 的可选组件库能力读取同一构建的真实目录，提供可信合成样例、共享渲染器

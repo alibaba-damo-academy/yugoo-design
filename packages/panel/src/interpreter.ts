@@ -7,7 +7,9 @@
 import { Fragment, cloneElement, createElement, useId, useState, type ReactElement, type ReactNode } from 'react'
 import { ArrowDown, ArrowUp, Trash2 } from 'lucide-react'
 import type { ComponentKind, ComponentNode, EditorField, FieldOption, FormField, FormRow, FormGroup, FormTabs, PanelManifest, RowColumn } from './dsl.ts'
-import { useRecordSelection, RecordWorkspace, RecordInspector, RecordPreview, RecordRelatedEditor, RelationGraph, ReferenceGraph, RecordMatrix, RecordArtifact } from './visual-components.tsx'
+import { useRecordSelection, RecordWorkspace, RecordInspector, RecordPreview, RecordRelatedEditor, RelationGraph, ReferenceGraph, RecordMatrix, RecordArtifact, WorkspaceTextBlock } from './visual-components.tsx'
+import { DataTable } from './data-table.tsx'
+import { MathDocument } from './math-document.tsx'
 import { CustomChoice } from './custom-choice.tsx'
 import { NavigationWorkspace } from './navigation-workspace.tsx'
 import { CompactRecordDetails } from './compact-record-details.tsx'
@@ -28,9 +30,9 @@ import { referenceMatches } from './reference-graph.ts'
 import { PanelSelect } from './panel-select.tsx'
 import { PanelLocaleContext, panelText } from './panel-i18n.tsx'
 import { localizePanelManifest } from './dsl.ts'
-import { WORKSPACE_COMPONENT_KINDS } from './dsl.ts'
+import { WORKSPACE_COMPONENT_KINDS, declarativePanelOwnsWorkspace } from './dsl.ts'
 import { StandardQuestionList, StandardQuestionWorkspace, type StandardQuestionItem, type StandardQuestionWorkspaceProps } from './question-list.tsx'
-import { PanelWorkspace, PanelDisclosureIcon, PanelEditableTitle, PanelWorkspaceGuidance } from './panel-workspace.tsx'
+import { PanelWorkspace, PanelDisclosureIcon, PanelEditableTitle, PanelRecordHeader, PanelWorkspaceGuidance } from './panel-workspace.tsx'
 import {
   DECLARATIVE_PANEL_ARTIFACTS_KEY,
   prepareDeclarativeQuestionAttachment,
@@ -147,6 +149,7 @@ function resolveFieldOptions(
 }
 
 function referenceWarning(field: EditorField, value: string, data: DesignData, options?: RenderOptions): string {
+  if (field.options_from_panel !== undefined && options?.panelData === undefined) return panelText('unloadedReference', options?.locale, { value })
   const ambiguous = field.options_from_sections && referenceMatches(field.options_from_sections, value, section => data[section] ?? {}).length > 1
   return panelText(ambiguous ? 'ambiguousReference' : 'staleReference', options?.locale, { value })
 }
@@ -360,6 +363,10 @@ function renderRowsControl(
           { ...accessibility, className: 'dsh-design-field-input', value: cellText, onChange: (event: { target: { value: string } }) => { replaceCell(event.target.value) } },
           createElement('option', { value: '' }, ''),
           resolved.map((option) => createElement('option', { key: option.value, value: option.value }, option.label)),
+          cellText && !resolved.some(option => option.value === cellText)
+            ? createElement('option', { value: cellText, disabled: true }, panelText(
+              column.options_from_panel !== undefined && options?.panelData === undefined ? 'unloadedReference' : 'staleReference',
+              options?.locale, { value: cellText })) : null,
         ),
       )
     }
@@ -563,6 +570,9 @@ function renderField(
     control = createElement(TokenList, { key: JSON.stringify([sectionId, recordId, field.key]), value, label: field.label ?? field.key, options: resolveFieldOptions(field, record, data, options), layout: field.token_layout, addMode: field.token_add_mode,
       addDescription: field.token_add_description, customIcon: field.token_custom_icon, customDescription: field.custom_description, editable, required: field.required,
       onChange: next => options?.onEdit?.({ section: sectionId, record: recordId, field: field.key, value: next }) })
+  } else if (field.control === 'data_table') {
+    control = createElement(DataTable, { key: JSON.stringify([sectionId, recordId, field.key]), value, label: field.label ?? field.key, locale: options?.locale, editable: editable && !!options?.onEdit, registerBeforeSave: options?.registerBeforeSave,
+      onChange: next => options?.onEdit?.({ section: sectionId, record: recordId, field: field.key, value: next }) })
   } else if (field.control === 'rows') {
     control = renderRowsControl(field, record, data, sectionId, recordId, options)
   } else if (field.control === 'source_list') {
@@ -743,7 +753,7 @@ function RecordTableRow(props: {
         createElement('div', { id: detailId }, props.detail))) : null)
 }
 
-function renderRecordForm(node: ComponentNode, manifest: PanelManifest, data: DesignData, options?: RenderOptions, selectedRecord?: string | readonly string[], bodyOnly = false, omittedFields: readonly string[] = [], supplement?: (id: string) => ReactElement, headerAccessory?: ReactNode): ReactElement {
+function renderRecordForm(node: ComponentNode, manifest: PanelManifest, data: DesignData, options?: RenderOptions, selectedRecord?: string | readonly string[], bodyOnly = false, omittedFields: readonly string[] = [], supplement?: (id: string) => ReactElement, headerAccessory?: ReactNode, part?: 'header'): ReactElement {
   const sectionId = node.source ?? ''
   const binding = sectionBindingOf(manifest, sectionId)
   const records = recordsAtPath(data, binding.recordsPath)
@@ -943,15 +953,11 @@ function renderRecordForm(node: ComponentNode, manifest: PanelManifest, data: De
       const fallback = fields.filter(field => !consumed.has(field.key) && fieldIsVisible(field, values))
         .map(field => renderField(field, values, sectionId, id, data, fieldOptions(id, record, values)))
       const hasBody = Boolean(body?.some(Boolean) || fallback.length)
-      // Empty projections are not visual sections. A title-only projection must
-      // not reserve a second grid row before the next projection's real fields.
+      // Preserve same-record projections without reserving empty body rows.
       if (bodyOnly && !hasBody) return null
-      return createElement(
-        'div',
-        { className: `dsh-design-record${header && !bodyOnly ? ` has-form-header is-${header.variant}` : ''}`, 'data-record': id, key: id },
-        bodyOnly ? null : createElement(
-          header ? 'header' : 'div',
-          { className: `dsh-design-record-title${header ? ` dsh-design-record-header is-${header.variant}` : ''}` },
+      const recordHeader = bodyOnly ? null : createElement(
+          PanelRecordHeader,
+          { variant: header?.variant, placement: part === 'header' ? 'workspace' : undefined, key: id },
           title,
           headerAccessory,
           lifecycle
@@ -992,10 +998,12 @@ function renderRecordForm(node: ComponentNode, manifest: PanelManifest, data: De
               }, createElement(Trash2, { size: 16, 'aria-hidden': true })),
             )
             : null,
-        ),
-        hasBody ? createElement('div', { className: `dsh-design-record-fields${sectionMeta?.form?.body ? ' has-form-body' : ''}` },
-          body, fallback) : null,
-      )
+        )
+      if (part === 'header') return recordHeader!
+      return createElement('div', {
+        className: `dsh-design-record${header && !bodyOnly ? ` has-form-header is-${header.variant}` : ''}`,
+        'data-record': id, key: id,
+      }, recordHeader, hasBody ? createElement('div', { className: `dsh-design-record-fields${sectionMeta?.form?.body ? ' has-form-body' : ''}` }, body, fallback) : null)
     }),
     lifecycle && selectedRecord === undefined
       ? createElement('button', {
@@ -1077,42 +1085,6 @@ function renderRelatedArtifacts(node: ComponentNode, data: DesignData, options?:
       { key: label, className: 'dsh-design-related-artifact-group' },
       createElement('h4', null, label || panelText('relatedArtifacts', options?.locale)),
       createElement(ArtifactGallery, { paths, options }))))
-}
-
-function renderRecordTree(node: ComponentNode, manifest: PanelManifest, data: DesignData): ReactElement {
-  const sectionId = node.source ?? ''
-  const records = data[sectionId] ?? {}
-  const groupField = (node.row_group as { parent_field?: string } | undefined)?.parent_field
-  const groups = new Map<string, Array<[string, Record<string, unknown>]>>()
-  for (const [id, record] of Object.entries(records)) {
-    const group = groupField !== undefined && typeof record[groupField] === 'string'
-      ? (record[groupField] as string)
-      : ''
-    if (!groups.has(group)) groups.set(group, [])
-    groups.get(group)?.push([id, record])
-  }
-  return createElement(
-    'div',
-    { className: 'dsh-design-record-tree', 'data-section': sectionId },
-    [...groups.entries()].map(([group, entries]) => createElement(
-      'div',
-      { className: 'dsh-design-tree-group', key: group === '' ? '(ungrouped)' : group },
-      group === '' ? null : createElement('div', { className: 'dsh-design-tree-group-label' }, group),
-      createElement('ul', { className: 'dsh-design-tree-list' }, entries.map(([id, record]) =>
-        createElement('li', { 'data-record': id, key: id }, recordLabel(record, id)))),
-    )),
-  )
-}
-
-function renderRecordNav(node: ComponentNode, _manifest: PanelManifest, data: DesignData): ReactElement {
-  const sectionId = node.source ?? ''
-  const records = data[sectionId] ?? {}
-  return createElement(
-    'nav',
-    { className: 'dsh-design-record-nav', 'data-section': sectionId },
-    createElement('ul', null, Object.entries(records).map(([id, record]) =>
-      createElement('li', { 'data-record': id, key: id }, recordLabel(record, id)))),
-  )
 }
 
 function standardQuestionFromRecord(id: string, question: Record<string, unknown>): StandardQuestionItem {
@@ -1237,7 +1209,7 @@ function questionWorkspaceProps(node: ComponentNode, sectionId: string, options?
   return {
     title: node.title ?? panelText('questions', options?.locale),
     sidebarIcon: node.sidebar_icon,
-    description: node.guidance ?? node.description,
+    description: node.guidance,
     rounds: roundsSource === undefined ? undefined : Object.fromEntries(Object.entries(data?.[roundsSource] ?? {}).flatMap(([id, value]) =>
       value && typeof value.title === 'string' && typeof value.description === 'string' ? [[id, { title: value.title, description: value.description }]] : [])),
     cardGroups: node.card_groups?.map(group => ({ id: group.id, title: group.title, questionIds: group.question_ids,
@@ -2140,10 +2112,18 @@ export function renderNode(node: ComponentNode, manifest: PanelManifest, data: D
     ? PANEL_COMPONENT_RENDERERS[node.component] : undefined
   if (!render) throw new Error(`No registered panel component renderer: ${String(node.component)}`)
   const content = render(node, manifest, data, options)
-  return node.guidance && !WORKSPACE_COMPONENT_KINDS.includes(node.component)
-    ? createElement('div', { className: 'dsh-panel-guided-content' },
-      createElement(PanelWorkspaceGuidance, { key: node.id, children: node.guidance }), content)
+  const ownsWorkspace = declarativePanelOwnsWorkspace({ ...manifest, ui: node })
+  const guided = node.guidance && !WORKSPACE_COMPONENT_KINDS.includes(node.component)
+    ? createElement('div', { className: 'dsh-panel-guided-content', 'data-layout': ownsWorkspace ? 'workspace' : 'document' },
+      createElement('div', { className: 'dsh-panel-guided-body' }, content),
+      createElement(PanelWorkspaceGuidance, { key: node.id, children: node.guidance }))
     : content
+  // The catalog's existing workspace ownership governs layout as well as the
+  // host scroll boundary. Wrappers and view switches cannot drop the allocated
+  // height; ordinary document nodes keep their natural flow.
+  return ownsWorkspace
+    ? createElement('div', { className: 'dsh-design-workspace-surface', 'data-workspace-node': node.id }, guided)
+    : guided
 }
 
 /** Trusted renderer contract. All data writes still go through RenderOptions
@@ -2212,7 +2192,7 @@ export const PANEL_COMPONENT_RENDERERS: Readonly<Record<ComponentKind, PanelComp
     children: (node.children ?? []).map(child => createElement('details', { key: child.id },
       createElement('summary', null, child.title ?? child.id), renderNode(child, manifest, data, options))),
     render: (section, id, editOptions, displayData) => renderRecordForm({ component: 'record_form', id: `${node.id}-${section}`, source: section }, manifest, (displayData ?? data) as DesignData, editOptions, id) }),
-  text_block: node => createElement('p', { className: 'dsh-design-auto-text', 'data-node': node.id }, node.text ?? ''),
+  text_block: node => createElement(WorkspaceTextBlock, { id: node.id }, node.text ?? ''),
   structured_data: (node, _manifest, data, options) => createElement('section', { className: 'dsh-design-structured-data', 'data-node': node.id },
     renderNodeHeader(node), readableValue(pathGet(data as unknown as Record<string, unknown>, node.source ?? ''), 0, options?.locale)),
   schema_field: (node, _manifest, data, options) => renderSchemaField(node, data, options),
@@ -2283,11 +2263,11 @@ export const PANEL_COMPONENT_RENDERERS: Readonly<Record<ComponentKind, PanelComp
     } }),
   grouped_records: renderGroupedRecords,
   nested_collection: (node, _manifest, data, options) => renderNestedCollection(node, data, options),
-  record_tree: renderRecordTree,
   record_workspace: (node, manifest, data, options) => createElement(RecordWorkspace, { node, manifest, data, options, key: node.id,
+    renderHeader: selected => renderRecordForm({ component: 'record_form', id: `${node.id}-header`, source: selected.section }, manifest, data, options, selected.record, false, [], undefined, undefined, 'header'),
     children: (node.children ?? []).map(child => keyed(renderNode(child, manifest, data, options), child.id)) }),
   record_inspector: (node, manifest, data, options) => createElement(RecordInspector, { node, manifest, data, options,
-    render: (selected, headerAccessory) => {
+    render: (selected, headerAccessory, headerOutside) => {
       // Explicit same-record projections share one selection and the original
       // section edit bindings; no flattened copy or second data authority.
       const selectedPath = sectionBindingOf(manifest, selected.section).recordsPath
@@ -2295,10 +2275,22 @@ export const PANEL_COMPONENT_RENDERERS: Readonly<Record<ComponentKind, PanelComp
       const views = sources?.length ? sources : [selected.section]
       if (node.record_cards) return renderReadingCards(node, views, [selected.record], manifest, data, options)
       const forms = views.map((source, index) => keyed(
-        renderRecordForm({ component: 'record_form', id: `${node.id}-${source}`, source }, manifest, data, options, selected.record, index > 0, [], undefined, index === 0 ? headerAccessory : undefined), source))
+        renderRecordForm({ component: 'record_form', id: `${node.id}-${source}`, source }, manifest, data, options, selected.record, index > 0 || headerOutside === true, [], undefined, index === 0 ? headerAccessory : undefined), source))
       return forms.length === 1 ? forms[0]! : createElement('div', { className: 'dsh-record-inspector-views' }, ...forms)
     },
     children: (node.children ?? []).map(child => keyed(renderNode(child, manifest, data, options), child.id)) }),
+  math_document: (node, manifest, data, options) => createElement(RecordInspector, { node, manifest, data, options, render: selection => {
+    if (selection.section !== node.source) return renderRecordForm({ component: 'record_form', id: node.id, source: selection.section }, manifest, data, options, selection.record)
+    const binding = sectionBindingOf(manifest, selection.section)
+    const record = fieldValuesOf(recordsAtPath(data, binding.recordsPath)[selection.record] ?? {}, binding.fieldsPath)
+    return createElement(MathDocument, { key: `${selection.section}/${selection.record}`, node, manifest, value: record,
+      editable: options?.editable === true && !!options.onEdit,
+      collapseToken: options?.collapseToken,
+      artifactContext: options,
+      onChange: (field, value) => { if (options?.editable && !field.readonly && !field.hidden) options.onEdit?.({ section: selection.section, record: selection.record, field: field.key, value }) },
+      renderField: field => renderField(field, record, selection.section, selection.record, data, options),
+    })
+  } }),
   record_preview: (node, manifest, data, options) => createElement(RecordPreview, { node, manifest, data, options }),
   record_related_editor: (node, manifest, data, options) => createElement(RecordRelatedEditor, { node, manifest, data, options,
     render: (ids, readonly = false) => {
@@ -2313,22 +2305,30 @@ export const PANEL_COMPONENT_RENDERERS: Readonly<Record<ComponentKind, PanelComp
     } }),
   relation_graph: (node, manifest, data, options) => createElement(RelationGraph, { node, manifest, data, options }),
   reference_graph: (node, manifest, data, options) => createElement(ReferenceGraph, { node, manifest, data, options }),
+  data_table: (node, manifest, data, options) => createElement(RecordInspector, { node, manifest, data, options, render: selection => {
+    if (selection.section !== node.source) return createElement('p', null, panelText('matrixSelectRecord', options?.locale))
+    const binding = sectionBindingOf(manifest, selection.section)
+    const record = fieldValuesOf(recordsAtPath(data, binding.recordsPath)[selection.record] ?? {}, binding.fieldsPath)
+    const field = manifest.fields.find(field => field.key === node.table?.field && field.applies_to?.includes(selection.section))
+    return field ? renderField(field, record, selection.section, selection.record, data, options) : createElement('p', null, panelText('matrixSelectRecord', options?.locale))
+  } }),
   record_matrix: (node, manifest, data, options) => createElement(RecordMatrix, { node, manifest, data, options }),
   record_artifact: (node, manifest, data, options) => createElement(RecordArtifact, { node, manifest, data, options }),
-  record_nav: renderRecordNav,
   question_list: renderQuestionList,
   question_workspace: renderQuestionWorkspace,
   stack: (node, manifest, data, options) => createElement('div', { className: 'dsh-design-stack' },
     (node.children ?? []).map(child => keyed(renderNode(child, manifest, data, options), child.id))),
   tabs: (node, manifest, data, options) => createElement(ComponentTabs, { node,
     render: child => renderNode(child, manifest, data, options) }),
-  split: (node, manifest, data, options) => createElement('div', { className: 'dsh-design-split' },
-    node.slots?.sidebar !== undefined ? keyed(renderNode(node.slots.sidebar, manifest, data, options), 'sidebar') : null,
-    node.slots?.main !== undefined ? keyed(renderNode(node.slots.main, manifest, data, options), 'main') : null),
-  panel_workspace: (node, manifest, data, options) => createElement(PanelWorkspace, {
-    guidance: node.guidance ?? node.description,
-    sidebar: node.slots?.sidebar !== undefined ? keyed(renderNode(node.slots.sidebar, manifest, data, options), 'sidebar') : null,
-  }, node.slots?.main !== undefined ? keyed(renderNode(node.slots.main, manifest, data, options), 'main') : null),
+  panel_workspace: (node, manifest, data, options) => {
+    const main = node.slots?.main
+    const content = main ? keyed(renderNode(main, manifest, data, options), 'main') : null
+    return createElement(PanelWorkspace, {
+      guidance: node.guidance,
+      sidebar: node.slots?.sidebar ? keyed(renderNode(node.slots.sidebar, manifest, data, options), 'sidebar') : null,
+    }, main && declarativePanelOwnsWorkspace({ ...manifest, ui: main }) ? content
+      : createElement('div', { className: 'dsh-panel-workspace-content' }, content))
+  },
   relation_matrix: renderRelationMatrix,
   mind_map: renderMindMap,
   bpmn_canvas: renderBpmnCanvas,
@@ -2374,7 +2374,7 @@ export function renderManifest(manifest: PanelManifest, data: DesignData, option
   const logical = logicalSectionData(manifest, data)
   return createElement(PanelLocaleContext.Provider, { value: options?.locale ?? 'zh-CN' }, createElement(
     'div',
-    { className: 'dsh-design-panel', 'data-panel-kind': manifest.panel_kind },
+    { className: 'dsh-design-panel', 'data-panel-kind': manifest.panel_kind, 'data-layout': declarativePanelOwnsWorkspace(manifest) ? 'workspace' : 'document' },
     renderNode(manifest.ui, manifest, logical, { ...options, canonicalData: data }),
   ))
 }

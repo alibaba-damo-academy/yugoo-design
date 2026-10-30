@@ -29,7 +29,7 @@ test('browser access defaults remain compatible and invalid modes fail closed', 
     'prepareContentUpgrade', 'readContentUpgradeDefinition', 'listContentUpgradeFiles',
     'readContentUpgradeFile', 'writeContentUpgradeFile', 'validateContentUpgrade',
     'finishContentUpgrade', 'recoverContentUpgrade', 'submitTrialInput',
-    'prepareAutoPanel', 'submitAutoPanel', 'constructor',
+    'prepareAutoPanel', 'submitAutoPanel', 'studioAuthoringPrepareChanges', 'constructor',
   ]) {
     assert.equal(browserMethods.has(method), false, method)
   }
@@ -67,13 +67,12 @@ test('full and panel-only local views admit draft guards and Studio lifecycle op
     }
     assert.equal(browserRequestAllowed(headers, origin), true, view)
     for (const method of [
-      'observePanelDraft', 'savePanel', 'decideAdvisory',
+      'savePanel', 'decideAdvisory',
       'studioKitFiles', 'studioKitFile', 'studioInstalledPreview',
-      'studioInstanceList', 'studioInstanceRead', 'studioInstanceCopy', 'studioInstanceRename',
-      'studioInstanceRemove', 'studioInstanceFile', 'studioInstanceSave', 'studioInstancePreview', 'studioInstanceMounts',
+      'studioInstanceList', 'studioInstanceRead', 'studioInstanceEditCurrent', 'studioInstanceCopy', 'studioInstanceRename',
+      'studioInstanceRemove', 'studioInstanceFile', 'studioInstanceSave', 'studioInstancePreview', 'studioInstanceMounts', 'studioInstancePrepareChanges', 'studioInstanceSaveChanges',
       'studioTrialAvailability', 'studioTrialStart', 'studioTrialList', 'studioTrialRead', 'studioTrialStop', 'studioTrialRemove',
-      'studioContentExport', 'studioContentImport', 'studioContentImportRead',
-      'studioContentImportList', 'studioContentImportAdopt',
+      'studioContentExport', 'studioContentReadArchive',
     ]) assert.equal(browserMethods.has(method), true, `${view}: ${method}`)
     // Neither a view choice nor an extra native credential expands browser authority.
     headers['x-design-token'] = 'a'.repeat(64)

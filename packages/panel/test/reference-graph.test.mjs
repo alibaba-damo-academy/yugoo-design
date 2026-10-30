@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {projectReferenceGraph,referenceNodeKey} from '../src/reference-graph.ts'
+import {projectReferenceGraph,referenceNodeKey,withReferenceContext} from '../src/reference-graph.ts'
+import {projectParticipantRelations} from '../src/relation-records.ts'
 test('reference projection preserves ownership, independent IDs and missing targets without writes',()=>{
  const bindings={nodes:[{source:'actors',label_field:'name'},{source:'resources',label_field:'name'}],links:[
   {source:'actors',field:'service',target:'resources',label:'Model',reverse:true},
@@ -15,6 +16,24 @@ test('reference projection preserves ownership, independent IDs and missing targ
  assert.equal(result.missing[0].id,'absent');assert.equal(result.missing[0].record,'same')
  for(const key of Object.keys(result.edges))assert.deepEqual(result.owners[key],{section:'actors',record:'same'})
  assert.equal(JSON.stringify(data),before)
+})
+
+test('participant context keeps business ownership and connection scope with different section bindings',()=>{
+ const graph={nodes:'people',edges:'meetings',label_field:'caption',node_kind_field:'kind',participants:{field:'roles',reference_field:'person',role_field:'role',order_field:'order'}}
+ const data={people:{same:{caption:'Person',kind:'Human'},other:{caption:'Other'}},meetings:{same:{caption:'Meeting',roles:{a:{person:'same',role:'Host'},b:{person:'other',role:'Guest'}},order:['a','b']}},groups:{same:{caption:'Group',members:['same','gone']}},sequences:{same:{caption:'Sequence',group:'same'}}}
+ const bindings={nodes:['people','groups','sequences'].map(source=>({source,label_field:'caption'})),links:[{source:'groups',field:'members',target:'people',label:'Members'},{source:'sequences',field:'group',target:'groups',label:'Organizes'}]}
+ const before=structuredClone(data),base=projectParticipantRelations(data.people,data.meetings,graph),baseBefore=structuredClone(base)
+ const result=withReferenceContext(base,bindings,id=>data[id],id=>id)
+ assert.equal(result.nodes[referenceNodeKey('people','same')].kind,'Human')
+ assert.equal(result.nodes[referenceNodeKey('groups','same')].title,'Group')
+ assert.equal(result.contextNodes,2);assert.equal(result.referenceEdges.size,2)
+ assert.equal(Object.keys(result.nodes).length,4);assert.equal(Object.keys(result.edges).length,3)
+ assert.deepEqual(result.connectable,new Set([referenceNodeKey('people','same'),referenceNodeKey('people','other')]))
+ assert.deepEqual(result.owners[JSON.stringify(['sequences','same','group','same'])],{section:'sequences',record:'same'})
+ assert.deepEqual(result.missing,[{section:'groups',record:'same',field:'members',target:'people',targets:['people'],id:'gone',reason:'missing'}])
+ assert.deepEqual(data,before);assert.deepEqual(base,baseBefore)
+ const empty=withReferenceContext(projectParticipantRelations({}, {},graph),bindings,()=>({}),id=>id)
+ assert.deepEqual(empty.nodes,{});assert.equal(empty.contextNodes,0);assert.deepEqual(empty.missing,[])
 })
 
 test('nested target projection shares canonical records and never creates a second collaboration map',()=>{

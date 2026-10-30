@@ -22,6 +22,10 @@ export default defineConfig({
     '../../core/lib/kit-loader.js': new URL('./src/core-entry.ts', import.meta.url).pathname,
   },
   plugins: [companionPackagedKnowledge(), {
+    name: 'companion-system-trash',
+    // Keep the dependency's platform executables and import.meta.url together.
+    resolveId(id) { if (id === 'trash') return { id, external: true } },
+  }, {
     name: 'companion-native-git-binding',
     // Keep the binding's own __dirname/native lookup intact. Core's worker
     // and its JS imports are built from source; only the addon stays external.
@@ -34,7 +38,7 @@ export default defineConfig({
       for (const output of Object.values(bundle)) {
         if (output.type !== 'chunk') continue
         for (const path of [...output.imports, ...output.dynamicImports]) {
-          if (!path.startsWith('node:') && !bundle[path] && ![PACKAGED_KNOWLEDGE_IMPORT, PACKAGED_CLI_LIFECYCLE_IMPORT, COMPANION_NATIVE_GIT_IMPORT].includes(path)) throw new Error(`Unbundled companion dependency: ${path}`)
+          if (!path.startsWith('node:') && !bundle[path] && ![PACKAGED_KNOWLEDGE_IMPORT, PACKAGED_CLI_LIFECYCLE_IMPORT, COMPANION_NATIVE_GIT_IMPORT, 'trash'].includes(path)) throw new Error(`Unbundled companion dependency: ${path}`)
         }
       }
     },

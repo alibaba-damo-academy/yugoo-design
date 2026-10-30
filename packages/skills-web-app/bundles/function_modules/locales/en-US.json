@@ -6,8 +6,7 @@
   "source": "Origin", "ai": "AI proposal", "user": "User added", "reason": "Notes", "references": "Pinned sources",
   "situation": "Usage scenario", "behaviors": "Core behaviors", "behavior": "Behavior", "inputs": "Inputs", "input": "Input",
   "outputs": "Outcomes", "output": "Outcome", "limits": "Scope boundaries", "limit": "Boundary", "exceptions": "Exception handling", "exception": "Exception", "condition": "Condition", "response": "System response",
-  "guidance": "Browse functions by group and adjust descriptions or priorities. New function requests go to the main conversation for refinement.",
-  "applicationMindMap": "Application Functional Mind Map",
+  "guidance": "Check that the functions cover what users need to accomplish. Look for omissions, overlap or excess scope, and adjust descriptions and priorities.",
   "createRequest": "Please add the following function",
   "createSubmit": "Add with AI",
   "detailsAndEvidence": "Function details"

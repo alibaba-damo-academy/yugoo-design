@@ -6,8 +6,7 @@
   "source": "来源", "ai": "AI 提出", "user": "用户添加", "reason": "备注", "references": "关联来源",
   "situation": "使用场景", "behaviors": "核心行为", "behavior": "行为", "inputs": "输入", "input": "输入",
   "outputs": "结果", "output": "结果", "limits": "范围边界", "limit": "边界", "exceptions": "异常处理", "exception": "异常情况", "condition": "发生条件", "response": "处理方式",
-  "guidance": "按分组浏览功能，调整说明和优先级；新增功能会交给主对话继续完善。",
-  "applicationMindMap": "应用功能脑图",
+  "guidance": "检查功能是否覆盖用户要完成的事情，有无遗漏、重复或超出范围；调整不准确的说明和优先级。",
   "createRequest": "请新增以下功能",
   "createSubmit": "AI 智能添加",
   "detailsAndEvidence": "功能详情"

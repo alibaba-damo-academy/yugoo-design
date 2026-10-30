@@ -1,18 +1,221 @@
 # WorkBuddy integration
 
-## Installation and confirmed use
+Yugoo Design uses WorkBuddy's existing conversation, models and tools. Its
+Design Panel opens through the native preview or in your system browser; saved
+Design Files remain in your Design Project.
 
-Start with the [shared installation prompt](../../HOSTS.md#install-or-update-workbuddy)
-and [stable installation and updates](#stable-installation-and-updates).
-Product npm versions and numeric native suite versions are independent.
-On 2026-10-21 the user confirmed manual foreground GRA on WorkBuddy; the observed
-5.8.3 asynchronous path still occupied the main conversation. This is acceptance
-of the confirmed foreground flow, not nonblocking background execution or an
-installation result for every published Companion version. The
-[current host status](../../../../docs/wiki/hosts.md#后台能力与评审降级)
-separates this result from the historical candidate records below.
+Start with [installation and updates](#stable-installation-and-updates), then
+[open and use a Panel](#open-and-use-a-panel). For a disconnected page, use
+[connection recovery](#connection-recovery-and-service-lifetime). The
+[adapter reference](#adapter-reference-for-maintainers) describes protocol
+constraints and is not an additional installation checklist.
 
-## Current source: main U/S/T and conditional native background GRA
+This guide distinguishes the current adapter source from installed-host results.
+Use the acquired package's own help and supported native version. Windows
+WorkBuddy 5.7.x checks established main-mode design, serial foreground Producers,
+Panel saving and original-conversation readback for their tested candidates.
+Workers remain unsupported. In WorkBuddy 5.8.3, background review is conditional
+on a verified native launch; an observed asynchronous review still occupied the
+main conversation. Manual foreground GRA was user-confirmed, which does not
+establish nonblocking background execution or acceptance of every npm release.
+See [host compatibility](../../../../docs/wiki/hosts.md#workbuddy).
+
+## Stable installation and updates
+
+Use the [WorkBuddy installation prompt](../../HOSTS.md#install-or-update-workbuddy)
+in your existing desktop conversation. The Agent should inspect the requested
+exact `yugoo-design` npm version and integrity, reuse a matching retained
+installation or acquire the new version in a separate persistent directory.
+The [shared package guide](../../README.md#npm-candidate-and-native-installation-boundary)
+covers Node selection, CPU dependency installation and model preparation.
+
+1. Prepare materials from that acquired package with its
+   `yugoo-design install --host workbuddy` entry. Supply the verified Windows public
+   Node path, an external persistent preparation destination and an explicit numeric
+   native suite version, using the actual options in the package's help.
+2. Import the returned `nativeImport.market` directory through WorkBuddy's
+   marketplace importer and enable its `yugoo-design` suite and MCP connection.
+   In the inspected 5.7.6 desktop, the entry was **Skills → Skill Market → Suites
+   → + (Add Marketplace)**; use the equivalent native control in your version.
+   A full plugin belongs in the marketplace importer, not the standalone Skill
+   ZIP importer.
+3. Complete only the required native activation or normal new-session/reload
+   action. Confirm the actual installed version, loaded `yugoo` Skill and tools.
+   Preparing files or seeing a success notice does not prove native loading.
+4. Continue with the first-project request below when you are ready to start a
+   design task. Verify a meaningful Panel edit/save/reopen and the original
+   Agent's consumption separately from installation.
+
+The acquired manifest selects the Node range; current packages use Node.js
+`>=22.19.0`. Product npm versions and numeric native suite versions are
+independent. Select a native version for the acquired package; an owned update
+must exceed the previous preparation receipt's suite version. Historical test
+suite numbers are not version recommendations for a new installation.
+Preparation from WSL or another OS must use the explicit Windows path mappings
+in the [desktop preparation guide](../../README.md#desktop-npm-package-preparation);
+preparation there does not verify the target Windows runtime.
+
+A fresh market is named `yugoo-design`; it does not need a prior test market or
+`--previous-receipt`. For an owned update, keep the old npm directory and receipt,
+acquire the next exact npm version in a new directory, and use the same
+preparation destination with `--previous-receipt` and a greater suite version.
+The preparer preserves the registered market name and path, including an older
+test-market identity, instead of silently migrating it. Keep one active Yugoo
+Design integration; duplicate Hooks or MCP copies can interfere with delivery.
+
+Use the market-name menu **Refresh**, confirm its listed new version, then
+**Update** the installed suite. These are separate actions: the inspected desktop
+keeps a marketplace list cache, and Update can use that old list. Check the
+actual loaded Skill and tools after the host's normal refresh or new-session
+action; an existing conversation may still hold the old runtime. Do not promise
+hot reload or silently restart WorkBuddy.
+
+Keep the acquired npm runtime, preparation output and selected public Node at
+their persistent paths. The small installed suite does not contain the complete
+runtime, and a market refresh cannot restore deleted dependencies. Do not edit
+WorkBuddy's plugin cache or register a separate host launcher. To remove the
+integration, use the [native removal instructions](../../HOSTS.md#disable-uninstall-and-retained-files)
+while preserving Design Projects and any runtime still needed by another host.
+
+## Open and use a Panel
+
+After activation, select the installed `yugoo` Skill in the original WorkBuddy
+conversation. For a new project, you can say:
+
+```text
+Use Yugoo Design to create a Design Project named my-first-design with the
+Web App Kit. Help me describe one useful workflow, then open its Design Panel
+so I can inspect and change it. Do not generate the entire application yet.
+```
+
+For an existing project, ask the same conversation to reopen it. The Agent uses
+`design_command` with the current WorkBuddy identity and then
+`yugoo_workbuddy_open_panel` for the selected project. You do not need to find a
+connection file, type a session UUID or create another project to reopen a page.
+
+The current native connection widget connects automatically after its exact
+metadata and host channel are ready. The host may render it before opening the
+Panel; connection readiness does not prove a page is visible. Keep the widget
+in the originating conversation: opening a browser alone does not establish
+the route for **Save and continue**. Saving files is independent of notification
+and remains valid if the message cannot be delivered.
+
+Edit one useful field, save it, reopen the Panel and ask the original Agent to
+explain the saved change. Check those outcomes separately: a visible page, a
+connected relay, persisted files and native consumption are different states.
+The [first design cycle](../../../../docs/wiki/getting-started.md#3-创建设计项目)
+and [project commands](../../../../docs/wiki/commands.md) give the next steps.
+
+### Host-side design view (automatic opening and connection control)
+
+The Agent passes the returned `nativePreview.arguments` unchanged to WorkBuddy's
+native `present_files` tool once. This is a direct native tool call, not an MCP
+wrapper call. Reuse an already successful open-panel result; navigation does not
+require another service startup, new project or regenerated Bundle. The tool
+opens the actual local HTTP page, not an HTML redirect artifact.
+
+WorkBuddy owns the preview container and toolbar. In the inspected 5.7.7 desktop,
+local URLs without a native-browser binding use a preview that hides the address
+input; public URLs can show it. The `present_files` schema exposes no browser
+container selector. Automatic opening in an address-bar browser tab therefore
+remains unverified. A `previewed` receipt alone cannot identify the visible
+container or establish save-notification delivery.
+
+If native navigation is unavailable or fails, reuse the same live Panel through
+**其他打开方式 → 在系统浏览器打开**, or the connection help's copy-address action
+and WorkBuddy's native **打开浏览器** entry. A browser URL can open that existing
+service; it cannot select a new project or rebind the destination conversation.
+Do not repeat navigation to prove a different container, change URL hostnames
+to influence the toolbar, invoke private IPC or install an unrelated browser
+extension as a substitute for native support.
+
+The embedded `panel-only` view omits history and the composer, starts with the
+right rail collapsed, and puts project information and U/S/T under **当前项目**.
+Hover/focus previews that information; click pins it. Outside click or Escape
+closes the popover. Design suggestions and project settings remain available.
+The same live service can also open a full browser view with history and input.
+Changing presentation does not create another token, service or native binding.
+
+## Connection recovery and service lifetime
+
+If delivery is uncertain, check the original WorkBuddy conversation before any
+retry. Accepted interface delivery is not proof that the Agent read or completed
+it. Do not send the same saved edit again or regenerate a Bundle merely because
+a browser receipt is missing.
+
+For an unavailable Panel, use **Restore design Panel**, or explicitly ask the
+original conversation to reopen the same existing project once. That request
+uses the ordinary original-session user-input route; it does not authorize a
+new project, Bundle execution or replay of the old message. Check the new native
+reply and use the returned page and current widget, which connects automatically.
+An accepted recovery request is not yet successful Panel startup.
+
+Host restart or worker recycling can invalidate a service while historical
+widgets remain visible. A plugin update does not replace those saved widget
+snapshots. The earlier widget `tools/call` recovery path failed in the tested
+host; use the current original-conversation recovery above. Unknown startup or
+message submission must be inspected rather than automatically attempted again.
+A security-policy rejection is not a reason to recreate a service or bypass CSP.
+
+Current services allow one hour without widget pulses or authenticated Companion
+API activity before idle shutdown, with an unchanged four-hour maximum lifetime.
+These settings apply to newly started updated runtimes, not an old running
+service. Static or unauthorized requests do not extend the lifetime. Service
+activity is not proof that a person is editing, and a browser cannot send through
+a missing native widget. Closure leaves saved Design Files intact. Reopen against
+the new native process after restarting WorkBuddy; a browser refresh cannot
+restore a service that has stopped.
+
+Bridge failures distinguish `WB_BRIDGE_NETWORK`, `WB_BRIDGE_TIMEOUT`,
+`WB_BRIDGE_POLICY` and `WB_BRIDGE_RESPONSE`. A policy diagnosis requires an
+observed violation for that exact origin; a network error alone does not prove
+idle shutdown or its cause. Retain the existing failure and inspect its own
+connection. Do not search for a latest/global connection or remove unrelated
+runtime state to recover one Panel.
+
+## Reviews, clarity and knowledge
+
+U/S/T reports and KAG have their own lifecycles. They do not require a native
+background GRA capability. Review policy, a background launch, a completed review
+and a user's decision to change Design Files are also separate states.
+
+WorkBuddy 5.8.3 can expose a native background descriptor, but its public
+`run_in_background` option can fall back to attached execution. The observed
+asynchronous review still occupied the main conversation. When the current host
+cannot keep the conversation available, choose either **Disable automatic GRA**
+(`off`, retaining manual review) or **Run this review synchronously in the main
+conversation**. The latter requires an explicit choice for this batch and uses
+the shared review validation path; it does not enable permanent automatic
+foreground review. Without a choice, the Agent does not change the policy or
+start the review. User-confirmed foreground use is not nonblocking background
+acceptance. See the [host review choices](../../../../docs/wiki/hosts.md#后台能力与评审降级).
+
+Local semantic indexing needs dependencies built for the actual Windows runtime
+and the fixed model in that Windows user's cache. A Linux/WSL dependency tree or
+cache does not establish Windows readiness. Use the acquired package's
+[model preparation guide](../../README.md#local-embedding-model-preparation),
+not another host's service or a copied foreign-platform dependency closure.
+Unavailable embeddings do not prevent basic design work; report structural and
+semantic readiness separately. Do not clear a user's database or rewrite Design
+Files to hide a model-loading failure.
+
+In the earlier 5.7.x KAG path, installed checks covered a nonempty project's
+refresh, matching-checkpoint query and canonical readback. They do not certify
+every current package or query mode. The recorded text filter matched substrings
+rather than expanding natural-language synonyms; embedding readiness alone is
+not evidence that a paraphrased query will return an expected record. Use the
+actual query's source pins and coverage. Recovery and query failures remain
+visible, and explicit refresh is bounded rather than an automatic retry loop.
+
+## Adapter reference for maintainers
+
+The remaining sections explain runtime identity, delivery and execution
+contracts. Ordinary users follow the installation and usage sections above;
+source tests, isolated probes and a successful package build do not replace
+installed-host acceptance. The [shared host contract](../../HOSTS.md#shared-contract-host-specific-adapters)
+owns the domain boundary, and the WorkBuddy adapter owns its native protocol.
+
+### Current source: main U/S/T and conditional native background GRA
 
 The current source exposes ordinary `design_main_context` /
 `report_design_clarity` over project records and Git. Reports check the selected
@@ -22,11 +225,6 @@ are allowed. An assessment failure does not block authorized work. KAG and GRA
 remain independent of saving and notification delivery. Scores/reasons and
 suggestions/dispositions are durable project records; native handles, claims,
 notifications and caches stay local to the runtime.
-
-The Companion Panel service now waits one hour without widget pulses or
-authenticated Companion API activity before idle shutdown. The four-hour
-maximum service lifetime remains unchanged. The new idle timeout applies to
-services started from an updated runtime; it does not alter a running service.
 
 WorkBuddy 5.8.3 exposes a structured background descriptor and TaskOutput status
 route. Real GRA dispatch requires `design_status.hostCapabilities` to report
@@ -146,1050 +344,144 @@ U/S/T do not depend on this switch.
 The standalone suite copies the maintained shared native execution reference
 beside its actual installed `skills/yugoo/SKILL.md`, which links to it. This is
 source/protocol implementation, not installed-host acceptance or a new release
-claim. Historical acceptance and limitations below remain pinned to their tested
-versions; they do not permanently disable the new conditional route.
-
-## Historical integration records
-
-The following sections retain version-specific protocol investigations and test
-results. For installation or an update, use [Stable installation and updates](#stable-installation-and-updates).
-
-## 0.3.20 connection card and secondary browser action
-
-The user confirmed installed 0.3.19 panel interaction/save reached the original
-WorkBuddy conversation: one exact-connection status read, with no duplicate write
-or new Bundle. That is native consumption evidence, separate from local fixtures.
-
-The MCP App regains its own bounded border. In panel-only its initial state shows
-connection status, with the external full browser button collapsed under
-"其他打开方式". There is no delay or second binding click. Full-view opening and
-explicit recovery retain a directly visible action. Host-owned tool-result card
-ordering is unchanged: the card can arrive before `present_files`. Relay readiness
-is not evidence that a browser page is visible; no timer or fabricated readiness
-claim is added. This change does not alter browser admission, persistence, message
-transport, the Companion page, CLI entry or DSH. The installed Skill also corrects
-the stale recovery instruction to click the replacement widget: since 0.3.18 the
-new original-conversation widget connects automatically, so recovery reuses that
-opening flow and does not ask for an obsolete binding click.
-
-
-## 0.3.19 current-project sidebar information
-
-The user's installed 0.3.18 report and `捕获4` screenshot confirm automatic
-`present_files` navigation, the panel-only layout and the compact project header.
-That report opened the page only; refresh and save-notice consumption remain
-separate native acceptance checks.
-
-The user then requested removal of the Companion project header in this view.
-Version 0.3.19 places the same U/S/T, project name and full path under the right
-sidebar's "当前项目" entry. Hover/focus previews it; clicking pins it for reading.
-Keyboard score explanations, closing and narrow-window wrapping are retained.
-This is shared panel-only presentation, not a WorkBuddy-specific field projection.
-Full Companion and DSH retain their existing headers. The host-owned preview
-menu/toolbar above the webpage is separate and is not removed by this change.
-
-## 0.3.18 local browser and panel-only preview
-
-The preview package now explicitly selects `browserAccess: local` in
-`scripts/workbuddy-package-runtime.json`. The server still binds the selected
-project and original native conversation before returning a URL. Its public
-instance URL contains no browser bearer and does not require storage: refresh,
-history-back and an additional full browser remain valid during that service.
-Changing the runtime config to `token` before startup restores token admission;
-this setting is not an Agent tool argument. Existing CLI defaults and DSH native
-Remote authentication remain unchanged.
-
-Use `view: panel-only` (`design` is a compatibility alias). The right rail starts
-collapsed; U/S/T and project name share one header, with a focusable path tooltip.
-History/composer are absent and not polled. The original MCP App automatically
-connects after host readiness and exact metadata, without sending a synthetic
-message. Its primary button opens a full view in the system browser. An external
-window failure does not disable the connected save relay. The host still owns
-its browser chrome; no address-bar change is claimed.
-
-Source/isolated browser verification and native installed acceptance are separate.
-The final WorkBuddy check must verify the actual loaded 0.3.18 Skill, automatic
-connection, refresh/back, and one saved notification consumed in the original
-conversation. No new Bundle is needed for that check.
-
-
-Read-only comparison on 2026-10-07 found WorkBuddy desktop **5.7.6** installed
-on Windows (`@genie/workbuddy-desktop`). Initial discovery established suite
-installation, a real MCP catalog call and a visible identity Hook marker;
-0.3.0 then added the shared Companion for explicit main-mode Bundles.
-Later checks verified serial foreground native Producers through 0.3.8.
-Workers and detached GRA remain unavailable, and no generic
-`serve --host workbuddy` entry is supplied.
-
-### Host-side design view (automatic opening and connection control)
-
-Version **0.3.17** attempts automatic opening of the local Companion. After obtaining the panel result,
-the Agent calls native `present_files` with `nativePreview.arguments` unchanged
-once. A successful result already obtained for this request is reused instead
-of restarting the service. This is direct HTTP navigation, not an HTML artifact.
-Manual URL copying and discovery of another browser Skill are not prerequisites.
-The address-bar difference below is a separate host UI limitation, not a reason
-to refuse automatic page opening.
-
-On 2026-10-11, the user returned a real-session execution report confirming
-the installed `0.3.17/skills/design` path, reuse of the existing WorkBuddy test
-project, one successful `open_panel(view: design)`, and automatic opening of
-the local design page through `present_files`. Its result had `files: []`, the
-loopback URL in `previewed`, and `Successfully opened 1 preview(s).` The report
-also confirmed that no Bundle ran and no Design Files were changed. This is
-user-supplied native-session evidence, not another independently observed UI run.
-
-The same report exposed a routing mistake: an initial call through an MCP tool
-wrapper said `present_files` was unavailable. Calling it directly as the native
-top-level tool then succeeded once. `present_files` belongs to the host's native
-tool catalog, not an MCP server's catalog. Invoke the native tool directly with
-the returned arguments; a failed MCP lookup does not establish its absence.
-Reuse the successful panel result when correcting the tool route rather than
-starting another service. This evidence covers the native tool call and preview
-navigation only. The user subsequently rejected completion: the page still did
-not open in the required built-in browser tab. The original address-bar/browser
-requirement was never waived. Automatic opening in that target remains unfinished;
-the report also establishes no new save-notice delivery. The current widget must
-still be connected to the original conversation.
-
-The 0.3.15 real-session test successfully loaded the local Companion through
-`present_files`, using its existing browser-access URL. The user's latest
-screenshot (`捕获3.PNG`) shows a preview surface without an address bar and with
-unwanted space above the page. The user requires the actual address-bar browser
-shown by their earlier manual navigation (`捕获2.PNG`). Automatic opening of that
-specific container is **not accepted**. A `previewed` tool receipt proves neither
-browser chrome nor native rendering. The user's public-URL test opened Baidu
-with an address bar. Both observations are valid: this host distinguishes the
-display of public and local URLs even on the same preview path.
-
-Read-only inspection of installed WorkBuddy 5.7.7 found that `present_files`
-emits a generic `openBrowser` request, whose renderer path opens a preview. In
-`renderer/assets/ui-docs-viewer-CREovSeD.js`, the `qDe` toolbar treats a URL as a
-local preview when there is no `nativeBrowser` binding and it starts with
-`file://`, or matches the HTTP(S) `localhost` / `127.0.0.1` pattern. That branch
-hides Back/Forward and replaces the address input with a local-file title while
-keeping the toolbar. A public URL such as Baidu does not match and retains the
-address input. A real native-browser binding also avoids this local-preview
-branch. This explains the address-bar difference and the retained top region;
-it is not a token, query parameter, or Companion layout decision.
-
-The inspected `present_files` schema has only `files`, `cwd`, and `explanation`;
-its handler forwards no browser-container selector. The native session browser
-has a separate tab-opening path. The app contains a browser-control runtime,
-but that does not prove a public browser control tool or Skill is installed and
-available in the current conversation. A successful `previewed` receipt alone
-does not identify which toolbar branch rendered. These findings are specific
-to the inspected 5.7.7 installation, not a claim about every host version.
-Do not invoke private IPC, patch the host, change URL hostnames to influence
-classification, or substitute an external/headless browser to claim acceptance.
-
-A separate candidate was identified by read-only inspection on 2026-10-11.
-The installed host's BrowserRuntimeHost supports Windows and macOS and, by
-default, registers an Electron session-browser provider named `WorkBuddy Browser`
-with type `desktop`. Its tab-open operation calls the existing BrowserManager
-with the product conversation ID. The first-party `browser-use` runtime receives
-this provider endpoint when the host prepares that conversation's runtime.
-The official Windows runtime feed supplies browser-use 1.1.0 for app versions
-at least 5.6.0; its packaged Skill names `mcp__browser__browsers_list`,
-`mcp__browser__browser_info` and `mcp__browser__tabs_new`.
-
-This is a candidate, not a verified replacement. The official Skill primarily
-describes external Chrome, Edge and QQ extensions. The settings UI is also gated
-by the BrowserUse product feature, and the first-party MCP entry is gated by
-the conversation's enabled browser capability. Neither current-conversation
-availability nor selection of the desktop provider has been demonstrated.
-Do not install an external browser extension just to claim the internal-browser
-requirement is satisfied. An eventual native check must enumerate the actual
-providers, verify that the selected provider is the WorkBuddy session browser,
-and check its visible tab after opening the existing Companion URL. No private
-endpoint may be manufactured or invoked to bypass host preparation.
-
-The design-view adapter returns `nativePreview` for automatic native navigation.
-It contains the actual local service URL, not an HTML artifact. If the native
-tool is unavailable or navigation fails, reuse the running service and
-"连接帮助" → "复制页面地址" with the native new-tab "打开浏览器" entry as recovery.
-No further service startup, project creation or binding is needed to navigate.
-
-The browser-access URL can be model-visible in authorized native navigation,
-as it already is in CLI startup. Do not extract its token, read the connection
-file, echo the link in reports or send it to unrelated services. The separate
-message-relay token remains exclusively in host-only widget metadata. Existing
-Host/Origin/token checks are unchanged. Credentials did not cause the wrong
-container; removing them would not choose the correct native browser path.
-
-The compact widget has no view dropdown: layout is selected at entry. Click
-"连接当前对话" so the Panel's "保存并继续" can send the already saved result to
-this conversation. It then reads "已连接当前对话". Saving files itself does not
-depend on the relay. Copy fallback and lifecycle details are under "连接帮助";
-full view retains its "打开设计面板" button. Opening a page does not connect the
-relay, and a successful relay receipt is not proof of agent consumption.
-
-The design page retains project navigation, settings and GRA surfaces and has no
-history or composer. A full-view browser can use the same service. Hidden history
-subscriptions and child logs pause; opening them again catches up. CLI, QwenWork
-and DSH adapters are unchanged by this widget/host-instruction correction.
-
-Instruction correction: 0.3.16 gated automatic `present_files` navigation on
-finding a distinct address-bar browser capability. Version 0.3.17 restored the
-direct URL call after incorrectly interpreting the user's clarification as
-relaxing that target. The user explicitly rejected that interpretation. Keep the
-successful preview evidence, but do not accept it as completion or ask the user
-to repeat the same call to prove a different container. The
-URL handoff, credential boundary, exact connection, original-session save route,
-no-retry rule and main/subagent execution protocols are retained. No Bundle
-methods or output contracts are changed.
-
-Diagnostic correction: do not generalize the local-preview result to
-"present_files never displays an address bar". The user observation and the
-installed toolbar condition supersede that interpretation. Public URL success
-also does not establish an argument for forcing the local URL into a native
-browser. Repeating the same local URL call cannot select a different container.
-For a future host regression check, compare a public HTTP(S) URL, a reachable
-loopback HTTP URL through the same tool, and that exact loopback URL entered in
-the native browser. Record visible toolbar controls separately from navigation
-receipts. A local test page without credentials can reproduce the classification;
-no project creation, Bundle execution, or binding replacement is needed.
-
-The 0.3.14 widget binds connect, polling and host-receipt continuations to one
-transport generation. Disposal or replacement retires that generation; late
-replies and old timers cannot enable controls, claim another notice or join a
-later explicit reconnect. Requests already sent to the host cannot be withdrawn.
-If disposal precedes their receipt, delivery remains unconfirmed and is not
-automatically acknowledged or retried. Switching between full/design is a
-presentation choice and does not replace the original-session route.
-
-Automatic rendering in the required address-bar tab remains unverified. Existing
-manual rendering and earlier consumed-save acceptance retain their stated scope;
-source fixtures cannot establish a new native navigation path. Neither layout
-nor browser handoff enables Workers or detached GRA.
-
-Earlier installed acceptance: **0.3.10** separates recorded conversation polling
-from project/Panel reads. The user confirmed improved perceived delay in the
-real WorkBuddy test, and the bound native log recorded the 0.3.10 Skill path and
-test-message reply. This is qualitative native acceptance, not a measured
-desktop latency guarantee. Version **0.3.9** moved the test deployment to
-persistent paths, retaining the shared publication fixes verified in **0.3.8**.
-The Windows test package records its publication source, adapter source and complete
-build-tree pins separately; this remains a bounded preview.
-
-Version **0.3.7** requests same-project recovery through an explicit
-user message in the original conversation, replacing the failed 0.3.6 widget
-`tools/call` route after a host worker restart. This follows 0.3.5's actionable bridge failure diagnostics and the
-verified serial foreground native Producers introduced in 0.3.4.
-Windows-native embedding dependencies and the fixed model cache remain from 0.3.3. Native save and
-notification passed with the user in 0.3.1; conversation history passed in 0.3.2.
-See the final acceptance sections for the remaining installed-session limits.
-
-| Boundary | QwenWork evidence | WorkBuddy evidence and next check |
-| --- | --- | --- |
-| Distribution | Tested suite Skills/Hooks and separately imported MCP; the tested organization rejected the suite connector | Official plugin ecosystem supports Skills, MCP, Hooks, Agents and Rules; prefer its supported distribution format rather than copying Qwen's organization-specific workaround |
-| MCP dependencies | Independent JSON import reached the real catalog tool | The user installed the native test suite and reported a successful real `design_list_panel_components` call; separate MCP import was not needed for this test |
-| Shared local runtime | Existing local Companion with native session binding | Official connector documentation permits local stdio MCP; reuse the shared local runtime and Panel, subject to actual host discovery and path checks |
-| Original-session input | Experimental desktop control passed actual composer reply and save readback; ordinary restart is still unverified | Public local-assistant API sends messages, but its documented body has no existing desktop session selector; it does not establish exact original-session delivery |
-| Agent execution | Report each actual supported mode separately | Expert/Agent packaging does not prove isolated Producer, optional Workers, detached review or their authority boundaries |
-
-Official sources:
-[plugin system](https://www.workbuddy.cn/docs/workbuddy/Plugins),
-[expert package and MCP dependencies](https://open.workbuddy.cn/docs/expert),
-[connector formats](https://open.workbuddy.cn/docs/connector), and
-[Open API](https://open.workbuddy.cn/docs/openapi).
-The connector guide distinguishes MCP + Skill from CLI + Skill; do not combine
-both connector formats merely because our MCP server is launched with Node.
-The expert format defines an Agent with optional Skills and dependencies; an
-expert is not just an arbitrary directory of Skills. An expert listing may be an
-optional discovery surface, but must not replace the existing host conversation
-with a separately created design agent as a prerequisite to using Design System.
-
-The public local-assistant message API requires a registered third-party
-application and user OAuth authorization. Its documented request contains
-`content` and `msg_type`; cloud-task ACP examples instead address cloud tasks.
-Neither proves access to an arbitrary existing local desktop conversation.
-Do not create a cloud task, route to an unrelated local-assistant conversation,
-or reuse the host's private account credentials to simulate original-session
-input. First establish a supported exact-session route and its authorization.
-
-Installed-code inspection corroborates package parsing, not runtime acceptance:
-`main/module.app-server.js` reads expert MCP dependencies and recognizes both
-`.codebuddy-plugin` and `.workbuddy-plugin` manifests. Its SHA-256 is
-`8317127ccef27621c3c493872ff0dcf68b58331f14656a9fe7d4fd690ee95e93`.
-`main/conversations.js` contains native prompt handling, and `main/server.js`
-contains session queue methods; these internal symbols are investigation leads,
-not a public external API or permission to invoke a diagnostic execution server.
-CodeBuddy CLI documentation alone is not acceptance evidence for WorkBuddy desktop.
-
-Next acceptance should establish, in order: plugin/MCP discovery, trustworthy
-current-session identity, one composer input with a native reply, then one durable
-Panel save with exact native readback. Check idle, busy and restart behavior before
-claiming automatic notification. Keep background Hook context distinct from
-explicit user input. No WorkBuddy user profile or installed plugin was changed
-during this comparison, and no separate host launcher is proposed.
-
-## Owning discovery entry
-
-- [Probe package builder](../../workbuddy-package.mjs): creates one separate local
-  `yugoo-workbuddy-probe` package using `.codebuddy-plugin/plugin.json`, Skills,
-  `.mcp.json`, and Hooks. It refuses an existing output directory.
-- [Context probe](../../src/workbuddy-context-probe.mjs): emits bounded native
-  identity fields only; no binding registry, transcript reads or profile writes.
-- [Source tests](../../test/workbuddy-package.test.mjs): packaging, Bash quoting,
-  overwrite rejection, bounded identity, and exclusion of tool-response contents.
-
-The user confirmed the actual WorkBuddy 5.7.6 entry after local renderer inspection:
-**Skills > Skill Market > Suites > + (Add Marketplace)**. The official
-[changelog](https://www.workbuddy.cn/docs/workbuddy/Changelog) records plugins
-moving into the Skills page in 4.7.3. Absence of a separate sidebar Plugin item
-is not evidence that full plugins are unavailable.
-
-`packageWorkBuddyProbeMarketplace` creates a `.codebuddy-plugin/marketplace.json`
-with one versioned relative source under `plugins/yugoo-workbuddy-probe-<version>`. Add the
-market directory, then install that named suite. This follows the documented
-[marketplace format](https://www.workbuddy.cn/docs/cli/plugin-marketplaces);
-the user subsequently reported actual desktop MCP loading and a visible Hook marker.
-Both manifests and plugin source are self-contained in the small test market;
-Node and the shared MCP runtime are explicitly selected existing test inputs.
-Remove the test suite/market through WorkBuddy to undo installation.
-
-`packageWorkBuddySkillConnector` is an optional fallback for an environment
-without suite access. It produces a standalone `SKILL.md` directory and separate
-MCP JSON; neither installs Hooks. Never import a full plugin into the Skill ZIP
-importer or infer that skill import establishes native identity or reverse input.
-All builders refuse existing output directories and do not install into a profile.
-
-Official [Skill format](https://open.workbuddy.cn/docs/skill) uses `SKILL.md` with
-YAML frontmatter, not a required `skill.yaml` entrypoint. Local Skill/MCP discovery
-does not require GitHub Secrets, a Claw Webhook, a memory Skill, or a security
-Skill. Such third-party automation instructions do not define this adapter.
-
-The [CodeBuddy Hook reference](https://www.workbuddy.cn/docs/cli/hooks) specifies
-Git Bash commands on Windows, unlike the tested QwenWork PowerShell path. The
-probe follows that syntax, but only WorkBuddy's actual execution can verify its
-applicability to this desktop version. It declares SessionStart/PostToolUse only,
-not QwenWork's unverified-on-WorkBuddy `asyncRewake` property. A received context
-marker is not an authenticated runtime binding or a proven reverse message path.
-
-Return to the [host integration index](../../HOSTS.md).
-
-## Reported desktop discovery result (2026-10-07)
-
-After installing `yugoo-workbuddy-probe` from `workbuddy-test-market-v1`, the user
-forwarded the host's result: `design_list_panel_components` with
-`{"name":"question_workspace"}` returned the real component vocabulary, and
-`YUGOO_WORKBUDDY_IDENTITY_PROBE` was visible with a session UUID and native cwd.
-This is user-reported real host evidence, distinct from our four package/source
-tests. The probe did not create a project, open a Panel, run subagents or read a
-transcript. The marker is diagnostic identity, not authenticated runtime binding.
-
-At the initial discovery stage original-session transport was unverified. The documented local-assistant
-Open API has no target desktop-session parameter. Installed `server.js` contains
-an internal `session/enqueue_message` client, but its presence does not establish
-an externally callable authorized route. The desktop `/workbuddy/probe` server
-only reports application/version/platform over GET; it cannot send messages.
-Do not treat any of these as a successful composer or save-notification test.
-
-## Native MCP App message probe
-
-The documented [MCP Apps message contract](https://www.workbuddy.cn/docs/cli/mcp-apps)
-uses `ui/message` for a user message, separately from `ui/update-model-context`.
-Installed WorkBuddy 5.7.6 renderer code corroborates a desktop implementation:
-`desktop-sdk-setup-Bmlg9Ea7.js` handles `onUserMessage` by calling
-`requestSendPrompt({ sessionId: currentConversation.id, prompt: contentBlocks })`.
-This is stronger evidence than an internal queue method, but still needs actual
-native consumption. It also depends on the app remaining mounted and the correct
-conversation being active; do not infer unattended external Companion delivery.
-
-The fixed `yugoo-workbuddy-probe` suite includes the native message diagnostic.
-Its only MCP tool `yugoo_workbuddy_message_probe` exposes a self-contained MCP App
-resource. Loading the tool does not send a message. The user clicks once to send
-a fixed test request through `ui/message`; it requests only a recognizable ACK.
-The widget checks the advertised message capability, times out without retry,
-and distinguishes an interface receipt from an actual native agent response.
-It uses no remote script, model client, transcript reader or diagnostic eval API.
-Existing discovery/MCP/Hook capabilities remain in that same suite. No WorkBuddy Panel, KAG or save acceptance is
-claimed by this UI test. A future external browser relay needs its own exact
-binding, lifecycle and duplicate-delivery checks even if this test passes.
-
-The user confirmed the native message widget rendered, clicked it, and received
-`YUGOO_WORKBUDDY_MESSAGE_ACK` in the original WorkBuddy conversation. An initially
-omitted leading Y was a copy/paste omission corrected by the user. This establishes
-user-reported native UI-to-conversation delivery for this test, not external
-Companion or durable Design save acceptance.
-
-## External input relay test
-
-The same fixed suite includes the external-input transport diagnostic.
-The MCP App must remain loaded in the originating WorkBuddy conversation. A user
-click enables its loopback bridge and opens an external input page. Only that
-page's explicit submission enqueues a message; the widget claims it once, passes
-it through `ui/message`, and reports the interface result. Browser and widget
-credentials are distinct, instance-local and absent from logs. The browser API
-checks both token and same Origin; the sandbox bridge uses its own token because
-sandbox Origins can be opaque, and declares the exact endpoint in resource CSP.
-No external script or application account credential is used.
-
-The queue rejects absent/stale/competing widgets, retains message IDs to prevent
-replay, and distinguishes unclaimed expiry from uncertain claimed delivery.
-An uncertain claimed message is not automatically retried. Closing the server
-revokes the bridge. Interface success remains `submitted_unverified`, never an
-agent reply or durable-save receipt. WorkBuddy's observed active-app guard can
-silently ignore a message when the user switches conversations; we therefore
-cannot promise delivery while its original app is inactive. Visibility and
-heartbeat checks reduce that window but do not constitute host consumption proof.
-
-This external page is a transport test, not a substitute Design Panel or a host
-launcher. It does not create/edit projects, start KAG/GRA, or register native
-runtime authority. The full Companion must continue using shared save/validation
-and preserve saved files if notification is unavailable. Actual relay CSP/network,
-external-to-native message delivery passed the user-operated 0.2.1 check below.
-Conversation switching and actual-host cleanup checks remain pending.
-
-## Stable installation and updates
-
-For a fresh installation, check and acquire the exact `yugoo-design` npm version
-in a persistent user-owned directory and use `yugoo-design install --host workbuddy`
-entry with the verified Node path, external preparation destination and
-an explicit native suite version (the recorded beta.18 preparation used
-`--suite-version 0.3.30`). Select the version for the acquired package; an update
-must be greater than the previous receipt's version. The acquired manifest
-selects the required Node range. The updated package supports Node.js
-`>=22.19.0`; older versions retain their original engine requirements.
-Import the returned `nativeImport.market` directory through WorkBuddy's normal
-marketplace importer, then enable the `yugoo-design` suite and its MCP connection.
-The new market is named `yugoo-design`; no historical test installation or
-`--previous-receipt` is required for first use. Preparation alone does not prove
-native registration, activation or the actually loaded version.
-
-For updates to an existing owned preparation, pass its verified
-`--previous-receipt`, a new exact npm directory/version and a greater native suite
-version. The preparer retains that market's original name and directory, including
-the historical `yugoo-workbuddy-test` identity. It does not migrate or remove a
-registered market. Never enable duplicate Yugoo Design Hooks/MCP copies.
-
-Historical diagnostics used `yugoo-workbuddy-probe`: version 0.2.0 retained the
-shared design MCP and identity Hooks and added `design-system-workbuddy-ui` for
-both native-message and external-relay tests. The separate message/relay market
-builders were removed; those suites remain historical test artifacts, not fresh
-installation prerequisites.
-
-Use WorkBuddy's market-name menu **Refresh**, then update the existing suite to
-the new version. These are separate operations. In the tested desktop build, the
-local directory marketplace keeps an in-memory plugin-list cache; the plugin
-**Update** path can use that old list and return success without installing the
-new catalog version. Refresh the marketplace first, confirm its listed version,
-then update the suite. Verify the actual installed version and loaded Skill path;
-a success notice or reloading an old Skill does not prove a new installation.
-An existing conversation may retain its older runtime snapshot;
-report actual new-tool availability separately from the catalog update. Do not
-promise automatic hot reload, silently restart WorkBuddy, or create a new host
-launch entry. Keep both the acquired npm runtime and explicit Node executable
-in persistent storage; a market refresh cannot restore a deleted runtime.
-
-
-### Preparing market releases (maintainers)
-
-Build each release in a fresh staging directory with matching suite/market-entry
-versions. Preserve the stable registered market directory and its name; place
-new source bytes in a new versioned child directory before replacing the catalog.
-Do not rewrite old installed cache directories or host registry/settings.
-
-### External relay request-process lifetime correction (0.2.1)
-
-The user saw the MCP App but clicking Connect returned `Failed to fetch`.
-Read-only host diagnostics showed the exact relay origin in the applied CSP;
-a native Windows request to that port returned `ECONNREFUSED`, while the host
-continued serving the cached widget. The 0.2.0 relay belonged to the MCP process
-and closed at stdio EOF, so rendered-widget lifetime could exceed service lifetime.
-
-Version 0.2.1 starts the loopback diagnostic in an owned detached Node child when
-the resource is read; EOF of the MCP entry does not stop that service. It is not
-a host/model launcher and has no project IO. Distinct browser/widget tokens and
-original-widget ownership still apply. It expires after five minutes without a
-widget pulse or fifteen minutes overall. Tests cover parent exit and service
-expiry. The subsequent user-operated host acceptance passed as recorded below.
-
-
-### User-operated external message acceptance (0.2.1)
-
-On 2026-10-07 the user reported that the updated widget opened the external web
-page, that they clicked Send there, and that the original WorkBuddy conversation
-replied `YUGOO_WORKBUDDY_EXTERNAL_ACK`. This establishes actual external-browser
-input through the mounted native MCP App to the original conversation and an
-agent response. It is user-reported host evidence, distinct from synthetic tests
-and the Windows loopback parent-exit check. No further marketplace installation
-or repetition of this same ACK test is needed for this fixed version.
-
-This result does not verify delivery after conversation switching, a closed widget,
-normal restart, or an expired relay. It also does not establish authenticated
-project/session binding, Design save, Producer/Worker authority or KAG/GRA execution.
-
-Next production slice: connect the shared Companion input and save-notification
-transport to this native MCP App route, using one exact verified project/session
-binding. Reuse the existing validated save and checkpoint path, preserve saved
-files when notification fails, and distinguish queued/interface delivery from
-native consumption. The current `server.mjs` has no WorkBuddy host branch and its
-unknown-host observer fallback is Codex-specific: extending only its host allowlist
-would misreport execution capabilities. WorkBuddy must explicitly negotiate its
-supported run/review capabilities before that shared server path is enabled.
-The next user acceptance is one real question answer save, original-host notice
-and exact saved-state readback; the transport ACK alone cannot close that slice.
-
-
-## Shared Companion main-mode preview (0.3.0)
-
-The existing suite now includes the host-owned `design` Skill and
-`yugoo_workbuddy_open_panel`. Use `design_command` with `host: workbuddy` and the
-current Hook's exact session UUID to select a project. The open tool takes that
-selected root, session UUID and native cwd explicitly; it starts only an owned
-local Companion process. The user clicks its native MCP App to enable the bound
-browser route. UI credentials are passed in tool-result `_meta`, not model text.
-Its reusable UI resource accepts only loopback connections in its CSP because
-each invocation supplies a new local port. Separate per-instance tokens still
-authenticate all requests. A configured installed runtime supplies code and Kit
-paths; model/tool arguments cannot select arbitrary executable code.
-
-The native App itself supplies the originating conversation route. Supplied Hook
-identity is routing context, not a new native subagent authority claim. Native
-child execution, transcript observation, GRA dispatch and review binding fail
-explicitly; they never fall through to a Codex adapter. Main-mode Bundle prepare,
-begin/finish, shared validation, file/Git save, project commands and KAG use the
-existing implementations. Do not rewrite Bundle modes to bypass this boundary.
-The shared browser labels this host WorkBuddy and separates save from notification.
-A message receipt means the interface accepted it, not that the model read it.
-
-The service expires after fifteen minutes without widget pulses or four hours
-overall and closes its Panel/connection file. Saved Design Files remain intact.
-Switching/closing the native conversation is not verified delivery. This preview
-uses explicit local Node/runtime paths and reuses the unchanged local knowledge
-runtime through an owned junction; it is not an npm release or permanent install.
-
-Verification: 19 source-level checks (Core source aliases were needed because the
-shared development `lib` belonged to a different revision), plus normal server
-and browser builds. The Windows compiled acceptance is recorded separately from
-human-rendered/native-agent acceptance. Next human check is one real question
-save, original WorkBuddy notice and exact canonical answer readback. No new ACK
-probe or additional marketplace is needed.
-
-
-Windows compiled acceptance for 0.3.0 passed with a new isolated project: shared
-project creation and Mindset selection, main Bundle preparation, real schema/Git
-save, offline notification rejection with canonical bytes retained, and a synthetic
-widget receipt for the exact saved-state notification. The direct canonical read
-used the Bundle's returned `designFiles` path. Shared KAG reported `state: current`
-and `semanticLayer: enabled` for this small empty-question checkpoint; this is not
-a meaningful nonempty-project semantic retrieval or GRA evaluation acceptance.
-Owned servers were closed and the isolated project removed. A reused WASM runtime
-kept its importer's Node worker handles alive after close in the harness; the
-standalone WorkBuddy service now exits its owned process when its lifecycle ends.
-No user WorkBuddy process or real project was stopped or removed.
-
-### Native 0.3.0 question preparation diagnosis
-
-The user opened the real Panel and activated the Kit, but the native agent tried
-Kit/component or guessed names as Bundle IDs. The WorkBuddy placement guard
-misreported unknown IDs as requiring a Producer. Read-only calls against that
-same live connection confirmed that its installed catalog includes
-`smart_questions` and that preparing it returns `mode: main`, `handoff: must_edit`.
-No question publication, saved-answer consumption or transcript synchronization
-was verified by this diagnosis. Recorded conversation remains unsupported in 0.3.0.
-
-The source successor exposes the existing catalog as `design_list_bundles`, with
-execution declarations and the Mindset method path; the Skill uses these exact
-IDs. Preparation resolves the Bundle before checking host placement support, so
-an unknown ID cannot masquerade as a native-agent limitation. Eight focused
-source-alias tests passed, covering MCP discovery, unknown IDs, supported main
-execution, rejected subagent execution and save/notification behavior. A separate
-project-access test could not load because reused Knowledge build output expects
-Core exports absent from this checkout; it is not reported as passing. These
-source changes are not yet installed in the user's 0.3.0 runtime.
-
-### 0.3.1 notification availability correction
-
-The real user published questions and saved five answers, but notification was
-rejected as offline. The saved canonical file was read back without modifying it.
-The 0.3.0 widget incorrectly gated heartbeats on IntersectionObserver visibility
-and document visibility. Scrolling the connection out of view could therefore
-disable a still-mounted native App. The successor keeps the explicitly enabled
-bridge alive independently of viewport visibility; disposal, stale heartbeats,
-competing widget ownership and uncertain-send guards remain in force. A network
-failure enables explicit reconnect without automatically replaying any message.
-
-Installed WorkBuddy 5.7.6 renderer inspection confirms that its native MCP App
-message callback is guarded by the active App instance for the conversation.
-The adapter continues using that route; it does not send through a global composer
-or private session API. Interface receipts remain unverified consumption, and
-switching/closing native conversations is not a verified delivery scenario.
-The shared history status now explicitly says WorkBuddy history is unsupported
-instead of suggesting the user failed to bind it. This does not implement history.
-
-Fifteen focused source-alias tests passed, including hidden/offscreen delivery,
-disposal, reconnect without replay, stale/competing ownership and durable save
-on notification failure. The normal server build and native Windows compiled MCP
-catalog check passed. Version 0.3.1 is staged in the original local marketplace;
-the user's installed suite and running 0.3.0 Panel are not edited in place. Real
-save-and-continue consumption after updating remains to be verified. Unchanged
-assets and the Knowledge runtime are reused through owned Windows junctions;
-retain 0.3.0 assets until the dependent 0.3.1 runtime is removed or replaced.
-
-### 0.3.1 user save acceptance and 0.3.2 history/Knowledge successor
-
-The user confirmed that saving answers in Companion notified the original
-WorkBuddy conversation, which used the exact new connection and confirmed the
-auth/storage changes. The host subsequently completed the existing main Bundle.
-This closes the real main-question save/notification/consumption slice, not
-native Producer/Worker, GRA or semantic Knowledge acceptance.
-
-WorkBuddy 5.7.6 records a flat JSONL grammar (`message`, `function_call`,
-`function_call_result`), distinct from QwenWork's Claude-style format. The new
-read-only observer takes `transcriptPath` from the current Hook, verifies exact
-session UUID and native cwd, and uses the shared durable conversation-start store
-under a host-specific namespace. First activation captures the current byte
-boundary; reopening the same project/session reuses it. Earlier turns are not
-backfilled. Public user/assistant text and tool names/statuses are presented;
-reasoning, arguments, results and provider metadata are excluded. The reader is
-incremental and retains at most 200 rows. This observation does not enable native
-agent execution or review dispatch.
-
-The real KAG failure was traced to packaging: both earlier WorkBuddy runtimes
-reused old QwenWork Knowledge output with read-only file flush and Windows
-directory flush calls. The source already had the proper durability fix. Version
-0.3.2 rebuilds Knowledge from that source into its own runtime and reuses only
-unchanged dependencies. It does not suppress EPERM or modify saved Design Files.
-
-Validation: 15 history/boundary tests plus 9 focused integration/package tests
-passed (the integration tests use explicit Core source aliases). Native Windows
-passed the 3 history regressions and 2 file durability tests. Compiled Windows
-service readback against the actual native session, using isolated runtime state,
-reported `available: true`, `source: workbuddy-native-transcript`, and no native
-subagent capability. Its zero initial rows are intentional at the new boundary.
-A separate native Windows old-schema database recovery reached `ready`, retained
-byte-identical backup bytes, and cleaned up only its isolated test database.
-Normal server and Knowledge builds passed. Native rendering of new messages and
-recovery of the user's actual Knowledge database remain user-session checks.
-
-Update the existing suite from Installed after refreshing the original market.
-Reopen the existing project using current Hook sessionId/nativeCwd/transcriptPath.
-The new connection starts observing subsequent public replies; no project or
-question regeneration is needed. Read Knowledge status and, if recovery is due,
-request the existing bounded `design_refresh_knowledge` operation once. Preserve
-the old database and recovery backups. This is still a local preview, not npm
-publication or a persistent installer.
-
-
-### 0.3.3 Windows semantic indexing recovery
-
-The user's nonempty project exposed a second packaging defect after file recovery:
-the reused QwenWork dependency closure was installed on Linux, and Windows failed
-to load sharp before inference. The default Windows embedding cache also lacked
-the configured model. This is not evidence of a WorkBuddy model limitation.
-
-The owned test runtime now resolves transformers 3.8.1, undici 8.10.0 and
-onnxruntime-common 1.21.0 from a separate native Windows pnpm 11.7.0 installation
-using the checked-in lockfile resolutions. The existing portable Ladybug WASM
-0.21.1 runtime is reused. No old runtime or installed plugin cache is modified.
-Four model files for multilingual-e5-small revision
-761b726dd34fb83930e26aab4e9ac3899aa1fa78 were copied from the existing local cache
-and SHA-256 compared. Inference remains local-only; no design text is uploaded.
-An installer must prepare and verify native dependencies and fixed model assets
-for its target OS rather than carry another OS's node_modules into delivery.
-The temporary native closure/cache is test preparation, not a finished installer.
-
-Shared embedding workers now catch native-import, model-load and inference errors
-inside the IPC boundary. Only a bounded category reaches public status; raw paths,
-input and exception text are suppressed. Windows child processes are hidden.
-No retry, remote fallback, capability change or graph authority was added.
-
-Verification: 12 semantic orchestration/IPC regressions passed against the rebuilt
-semantic module with explicit Core source aliases, and 5 suite packaging tests
-passed. The normal portable Knowledge build passed. Native Windows local inference
-returned a 384-dimensional vector. Against the user's unchanged d5e63ff checkpoint,
-a separate disposable Knowledge state reached current/matching and returned five
-question records, exact pins and the current login/storage answers through the
-normal Companion query endpoint. A mismatched checkpoint was rejected. Owned test
-servers and databases were closed and removed; canonical files were not changed.
-This proves native runtime indexing and query, not recovery of the user's live
-Knowledge database: after updating the existing suite to 0.3.3 and reopening the
-same project, use the new exact connection, request one refresh if needed, and
-read its terminal status before querying. Do not regenerate questions or answers.
-
-### 0.3.3 installed WorkBuddy KAG acceptance
-
-The user updated the existing suite and reopened the same native session/project.
-One explicit refresh moved the actual Knowledge database from due to current,
-freshness matching, at checkpoint d5e63ff2978dbb16f19669c580994d8e18cb7dc5,
-revision rev:3. Native MCP context returned real pins and five design records;
-sourceFiles queries returned the login/storage evidence. The native agent reread
-the canonical file and confirmed anonymous/browser_temp without changing files.
-Independent read-only calls through the exact user-supplied connection confirmed
-current/rev:3 and embedding ready; no extra refresh or project creation occurred.
-The single warning was an explanatory graph notice (aggregation and similarity
-are not proof of business relationships), not an indexing failure.
-
-The shared text filter currently performs case-insensitive substring matching
-against serialized entities/relations, not semantic query expansion. Unmatched
-Chinese paraphrases returned zero records; sourceFiles filters correctly located
-the evidence. Embedding readiness does not imply natural-language semantic search.
-Projected option labels aid reading, while submitted values remain governed by
-the pinned source and schema. This acceptance closes the actual-session local KAG
-refresh/query/readback slice. It does not verify native isolated Producers,
-Workers, detached GRA, or a persistent production installer.
-
-
-### 0.3.4 serial native Producer acceptance and background limitation
-
-WorkBuddy 5.7.6's actual native Agent tool completed a foreground read-only child
-and resumed that same child with its original context. Native results store
+claim. Earlier 5.7.x results retain their tested scope; they do not permanently
+disable the new conditional 5.8.3 route or establish its native acceptance.
+
+### Native identity and foreground execution
+
+Use the current Hook's exact session UUID, native cwd and transcript path.
+`design_command` selects the Design Project; `yugoo_workbuddy_open_panel` takes
+that selected root and native identity explicitly and starts only an owned
+Companion service. A configured installed runtime supplies code and Kit paths;
+model arguments cannot choose arbitrary executable code. A shell `cd` is not
+proof of a native workspace change, and a supplied Hook marker is not by itself
+authenticated execution authority.
+WorkBuddy uses its owning open-panel tool; there is no generic
+`serve --host workbuddy` entry to substitute for it.
+
+WorkBuddy's observed foreground Agent results use
 `providerData.toolResult.subAgent.sessionId`, `afterId` and `lastId`. The returned
-Agent ID is not the child JSONL's internal session UUID. Its transcript lives in
-the bound main session's subagents directory. Do not reuse QwenWork's task JSON or
-Claude Code's metadata grammar, infer parentage from a filename alone, or trust
-an assistant's pasted Agent ID.
+Agent ID differs from the child JSONL's internal UUID. The adapter checks the
+exact main dispatch/result pair, structured Agent ID, canonical child location,
+parentage, cwd/session consistency and terminal child cursor. A filename or an
+assistant's pasted ID cannot establish that binding. Resume stays running until
+the native parent result confirms its child cursor; unbound later activity is
+unknown. These identity checks do not claim OS-level filesystem sandboxing.
 
-The dedicated adapter checks the exact main dispatch/result pair, structured
-native Agent ID, canonical child location, cwd/session consistency and terminal
-child message ID. Resume remains running until the native parent result confirms
-its child cursor; unbound subsequent activity is unknown. Reasoning, raw tool
-arguments/results and private provider data are not projected into the panel.
-Bounded transcript identity checks do not claim OS-level filesystem sandboxing.
+The serial Producer flow bootstraps without writes, registers the actual native
+receipt, then resumes that same Producer with the complete Bundle method,
+resources, exact connection and scoped task. Main-mode Bundles stay main-mode;
+missing Workers or background GRA are not bypassed by changing Bundle placement.
+After the Producer returns, main settles the registered run through the shared
+validation/publication path. It does not repair the Producer's files or replay
+already accepted settlement. A committed publication with deferred ordinary
+index maintenance remains committed; follow the existing bounded
+[publication recovery contract](../../README.md#verified-scope) for an unfinished
+receipt rather than changing Git settings or deleting locks.
 
-The design Skill uses one foreground general-purpose Agent: bootstrap with no
-writes, register its real native receipt, then resume that same Producer with the
-full Bundle method, exact resources, connection and scoped task. Validation and
-publication reuse the existing Core path. Main-mode Bundles remain main-mode;
-Workers and GRA stay disabled separately. A server opt-in is set by this preview's
-own panel entry, not by changing Bundle declarations or creating a host launcher.
+### Native message route and browser admission
 
-Actual Windows acceptance used a separate temporary Design Project and state root,
-the unchanged official role_access Bundle and the original WorkBuddy session.
-The native Producer authored a minimal private-note role design. Its first state
-settlement intentionally used string schema_version and was rejected. The same
-Producer corrected it to integer 5, then settled pause successfully at commit
-f12ea5c422709fcf1ebce4882c41b6f2886ee3be. Main performed coordination and readback,
-not file repair. The test did not claim completion or rendered visual acceptance.
-The user's original project's d5e63ff head and clean worktree were preserved.
-Seven identity/resume regressions, five panel integration tests and five package
-tests passed; four existing Claude/native-resolution regressions also passed.
-Panel integration uses explicit Core source aliases; the actual Windows probe
-uses a normal compiled server and the existing Windows native dependency closure.
+WorkBuddy's documented [MCP Apps contract](https://www.workbuddy.cn/docs/cli/mcp-apps)
+separates `ui/message` user input from `ui/update-model-context`. The originating
+MCP App supplies the conversation route. The observed native callback is guarded
+by the active App for that conversation, so switching or closing the conversation
+is not a verified delivery scenario. The local-assistant Open API and cloud-task
+ACP examples do not establish delivery to an arbitrary existing desktop session.
+Do not create another conversation/cloud task, use private application IPC or
+reuse account credentials to simulate original-session input.
 
-A separate no-tools native Agent call with run_in_background=true actually returned
-its completed result synchronously, with no background task handle. Installed
-runtime code contains a synchronous fallback when background/team execution is
-unavailable; the precise active host flag was not established. Schema acceptance
-is not background execution evidence. Do not enable GRA on this result or replace
-it with foreground reviewers. Future GRA support needs a separately verified native
-background route. No host settings were changed to force it.
+Current local packages explicitly select `browserAccess: local`. The returned
+`/browser/<instance>/` URL carries a public service generation, not a bearer
+credential or a project identity. Refresh, history-back and an additional full
+view remain valid for that service. Host/Origin checks and the UI-operation
+allowlist still apply. Browser access mode is a startup declaration, not a model
+tool argument; CLI defaults and DSH's native access remain separate.
 
-### Installed 0.3.4 Producer, input and save acceptance
+Browser admission and the native relay have separate credentials and authority.
+The MCP App relay retains per-instance credentials in host-only metadata,
+requires the exact original widget, and declares its endpoint in resource CSP.
+Sandbox Origins may be opaque; that does not remove relay authentication. The
+browser-access URL may be passed unchanged to an authorized native navigation
+tool, but do not extract tokens, print private connection files, publish the URL
+in reports or send it to unrelated services.
 
-After updating the existing suite, the user tested the original WorkBuddy session
-and existing project 3c55ece8-b67e-403b-8d8a-8715625682ca. Native Producer
-agent-4d23a01db9704a87 completed bootstrap, registration and same-Agent resume for
-role_access, publishing state/pause without diagnostics at
-d9ac741412f5d8482f2470a336263645abe83677. This is installed-session publication
-acceptance, not Bundle completion. Independent Git inspection confirmed that
-commit and the unchanged smart_questions checkpoint d5e63ff.
+Widgets renew their lease independently of polling and native RPC. Stale,
+competing, expired or disposed generations cannot claim or settle another
+instance's message. A claimed message whose owner is lost remains unknown;
+old accepted/unknown receipts are retained during explicit recovery, never
+replayed into a new service. Late replies cannot reactivate an old widget.
+Unclaimed expiry and uncertain claimed delivery remain distinct. Source fixtures
+for these guards do not establish unattended delivery in every desktop version.
 
-The first new connection widget immediately reported Failed to fetch. By the time
-of inspection its connection file and relay listener were gone; this does not
-establish why the original immediate click failed. A single panel-only reopen
-recovered access without reinstalling, rerunning a Bundle or changing project
-data. Before the user clicked, both new loopback services returned HTTP 200 and
-the bridge preflight returned 204 with the required CORS headers. The user then
-confirmed that Companion input reached the original conversation and received
-WORKBUDDY_CONNECTED. The intermittent first-click failure remains unresolved;
-successful reopening must not be reported as a root-cause fix.
+### Recorded history and shutdown diagnostics
 
-On that same recovered connection, the user changed view_and_organize from single
-to multiple and selected kanban_columns,simple_list,list_with_filter, then used
-Save and continue. The user reported automatic native notice consumption, exact
-connection design_status and saved-diff acknowledgement without a manual reminder
-or duplicate write. Independent Git inspection confirmed exactly those two field
-changes at e3567be1505ccda9aad1cf3ea8ff43eefcb74af4, above d9ac741, with a clean
-worktree. This verifies durable save and native consumption on the recovered
-installed connection. KAG currency at this newer checkpoint was not checked;
-the earlier rev:3 acceptance remains pinned to d5e63ff. Workers, detached GRA,
-restart reliability and production installation remain separate boundaries.
+The 5.7.x native observer uses WorkBuddy's flat JSONL `message`, `function_call`
+and `function_call_result` grammar, not QwenWork's Claude-style records. It reads
+the exact Hook-provided transcript and verifies session/cwd. First activation
+captures a durable byte boundary for the bound project/session; reopening it
+reuses that boundary without backfilling earlier conversation history.
 
-### Current-checkpoint KAG and 0.3.5 connection diagnostics
+Only public user/assistant text and top-level tool names/status are projected.
+Reasoning, tool arguments/results and private provider metadata are excluded.
+The reader is incremental and retains at most 200 rows. History reads are
+independent of project/Panel refresh, but native transcript persistence can lag.
+Hidden or collapsed history stops its subscription and catches up when reopened;
+sending does not fabricate an optimistic native reply. Neither polling nor a
+fast fixture establishes an end-to-end desktop latency guarantee.
 
-Subsequent read-only checks on that exact recovered connection found KAG already
-current/matching at e3567be1505ccda9aad1cf3ea8ff43eefcb74af4, revision rev:7.
-No explicit refresh was needed. A sourceFiles/design-record query with those real
-pins returned all five question records, including the three selected view labels.
-Canonical source readback confirmed the corresponding multiple-choice values.
-This verifies the newer saved facts in the local index; it does not imply native
-agent consumption of this particular KAG query or enable GRA.
+Normal service closure writes a bounded, credential-free
+`<connection>.closed.json` beside the existing connection file, then revokes the
+live file. The diagnostic records the exact project/session, times and
+idle/maximum/explicit reason; it grants no routing or execution authority. A
+write failure does not prevent cleanup, and forced OS termination cannot promise
+this receipt. Inspect a recorded reason rather than assuming every missing
+listener was an idle timeout.
 
-An isolated Chrome 9222 context using the installed WorkBuddy sandbox HTML and
-its actual CSP headers allowed the loopback bridge, with no policy violation.
-Host initialization/open-link were test replies, not a new native host acceptance.
-This check does not reproduce or explain the original intermittent failure.
+### Packaging and official extension surfaces
 
-Version 0.3.5 reports WB_BRIDGE_NETWORK, WB_BRIDGE_TIMEOUT, WB_BRIDGE_POLICY or
-WB_BRIDGE_RESPONSE instead of a bare fetch error. A policy classification requires
-an observed connect-src violation for this exact bridge origin. Network failure
-does not assert that the service is offline or that a timeout caused the failure.
-The widget offers explicit reconnect, then reopening the same project if needed;
-saved files remain intact. No automatic handshake or message retry was added,
-and explicit reconnect retains the widget identity and existing no-replay rules.
-Seventeen focused relay/package/panel tests passed, including timeout, policy,
-invalid-response, explicit reconnect and absence of open-link/message requests
-after a failed handshake. An additional browser fault-injection attempt timed out
-in CDP Runtime.evaluate, so it provides no rendered-failure acceptance evidence.
-Shared compiled runtime and embedding/model assets are unchanged from 0.3.4;
-the stable marketplace update only changes the small versioned suite. Installed
-0.3.5 behavior and the first-click root cause remain unverified.
+The [WorkBuddy package builder](../../workbuddy-package.mjs) owns the native
+suite/market material. Keep source/runtime assets outside temporary directories,
+retain old versions and receipts, and use the npm preparer's normal owned-update
+route. Do not rewrite installed caches or host registry/settings. The
+[installed Design Skill](design-SKILL.md) and its shared native execution
+reference carry the runtime instructions; a packaging check does not prove that
+a running host loaded them.
 
-### 0.3.6 host-worker restart recovery
+The existing low-level `packageWorkBuddyProbe` and
+`packageWorkBuddyProbeMarketplace` APIs retain their historical code names.
+They emit `.codebuddy-plugin/plugin.json`, `.mcp.json`, Skills and Hooks, with
+the marketplace's `.codebuddy-plugin/marketplace.json` pointing to a versioned
+relative plugin source. The builders refuse an existing output directory.
+`packageWorkBuddySkillConnector` is the separate standalone Skill/MCP fallback;
+it does not install Hooks. These source APIs do not register a native profile
+and are not extra commands required after the npm installer.
 
-The user normally restarted WorkBuddy and loaded installed suite 0.3.5. A new
-connection was created at 2026-10-07T17:04:56Z. At 17:05:31Z the native session
-log explicitly recorded `runtime refresh requires worker restart`, changes to
-TENCENT_DOCS_LOCAL_MCP/TENCENT_DOCS_LOCAL_SERVER/editor_sdk_port, then killWorker
-and runtime-refreshed. Less than two minutes after startup, an independent Windows
-request to the exact panel port returned ECONNREFUSED, no panel-service process
-remained, and its connection file was still present. This is evidence of host
-runtime recycling invalidating a connection, not the normal 15-minute idle close.
-It does not retroactively prove the cause of the earlier 0.3.4 first-click failure.
+The official [plugin system](https://www.workbuddy.cn/docs/workbuddy/Plugins),
+[expert package](https://open.workbuddy.cn/docs/expert),
+[connector formats](https://open.workbuddy.cn/docs/connector) and
+[marketplace format](https://www.workbuddy.cn/docs/cli/plugin-marketplaces)
+define distinct surfaces. An expert is not an arbitrary directory of Skills.
+A Node-launched MCP server does not require simultaneously importing both MCP +
+Skill and CLI + Skill formats. A standalone Skill/MCP fallback does not install
+Hooks or establish original-session identity and delivery. A separate design
+expert or model conversation is not a prerequisite for this integration.
 
-The versioned connect-v2 resource retains original project/session startup inputs
-only in host-provided metadata. After a network failure, an explicit user click
-on the reopen button calls the existing yugoo_workbuddy_open_panel through the
-standard MCP App tools/call route. It validates the returned project, session and
-startup inputs before accepting the new connection, opening its page and updating
-the model's routing context. The routing update grants no design-task authority;
-if unavailable, the widget directs subsequent requests through the new Companion,
-whose existing notices carry the exact connection. No project creation, Bundle
-execution, saved-file rewrite or old-message replay occurs in this recovery flow.
+The official [Skill format](https://open.workbuddy.cn/docs/skill) uses `SKILL.md`
+with YAML frontmatter. This integration does not require GitHub Secrets, a Claw
+Webhook, or unrelated memory/security Skills. The
+[Hook reference](https://www.workbuddy.cn/docs/cli/hooks) specifies Git Bash
+commands on Windows; the adapter's actual desktop checks remain authoritative
+for its supported version. Do not borrow QwenWork's PowerShell or `asyncRewake`
+behavior without independent host verification.
 
-A timeout or unconfirmed startup binding disables further startup attempts until
-the user checks the original conversation. Policy failures do not trigger service
-recreation. This does not evade the host's process lifecycle or keep services alive
-across host shutdown. It provides explicit recovery within the original host
-conversation rather than a separate host launcher or model client.
+For protocol work, the [context probe](../../src/workbuddy-context-probe.mjs)
+provides bounded identity fields without a binding registry, transcript reads
+or profile writes. Probe suites and ACK messages are diagnostics, not normal
+installation prerequisites. The [package tests](../../test/workbuddy-package.test.mjs)
+cover packaging and identity boundaries; real native discovery, user input,
+save/readback, restart/idle behavior and each execution mode still need their
+own evidence. The [Open API](https://open.workbuddy.cn/docs/openapi) does not
+supply proof of exact original-session access merely because it can send a
+message.
 
-Eighteen focused source-level panel/package/relay tests passed; the panel/package
-subset was rerun after the final context-routing and resource-version changes.
-Tests cover an offline old service, same-project recovery, mismatched project,
-permission rejection, uncertain startup and no automatic retry/replay. Real
-WorkBuddy MCP App recovery and successful restart round-trip still require
-installed 0.3.6 acceptance. The compiled 0.3.4 runtime and model assets are reused.
-
-
-### Installed 0.3.6 recovery failure
-
-The fresh 5b996 connection served HTTP 200 and returned the correct project/session
-and current/matching Knowledge rev:7. After the host was subsequently reopened,
-the historical widget was restored from a snapshot while both loopback listeners
-were unavailable. At 2026-10-08T02:20:46Z the user's explicit recovery click reached
-`rpc.callTool` and `proxyAppToolCall.start`. The native session connected, but
-`_codebuddy.ai/mcpUiCallTool` failed after 30006 ms at 02:21:21Z, followed by
-`killWorker` and an opaque `[object Object]` RPC error. These observations do not
-establish whether the underlying panel tool started before host cancellation.
-The widget recovery path has therefore failed this installed acceptance; do not
-advertise it as verified restart recovery. The previously demonstrated fallback
-is an explicit request in the original conversation to reopen the existing project
-once, check the result, and use its new widget/connection without rerunning a Bundle.
-Source error rendering now substitutes actionable text for opaque RPC objects;
-this is an error-reporting correction, not a fix for the native RPC timeout.
-
-
-### Missing-resource startup diagnosis and scoped repair
-
-A subsequent native conversation tool call returned `WorkBuddy Panel exited
-before startup`. Direct Windows import succeeded. A bounded diagnostic using the
-same startup implementation, with process-exit callbacks disabled, exposed ENOENT
-for the runtime's `web` directory. The v034 runtime also lacked its Kit, Knowledge
-and dependency junctions; the original resource directories remained present.
-The cause of the missing junctions is not established. This is a separate concrete
-failure from the earlier MCP App RPC timeout.
-
-The owned test runtime's links were restored to its existing v030 UI/Kit, v033
-Knowledge and native dependency closure. Native pnpm 11.7.0 restored the latter's
-missing dependency links with the existing frozen lockfile, offline, no lifecycle
-scripts and zero downloads. No installed plugin cache or host profile was changed.
-A bounded Windows startup then returned ready for the original project; the owned
-server and its connection file were cleaned up. This is runtime startup proof,
-not a new installed-widget/input acceptance.
-
-Startup cleanup previously called onStopped before the service could return its
-failure over IPC. The source now invokes that callback only after successful
-startup. A missing-web regression verifies the original ENOENT survives cleanup
-without triggering the normal service shutdown callback. This source correction
-is not yet rebuilt into the installed runtime. The restored test layout is not a
-production installer: final distribution must validate its complete resource and
-native-dependency closure before reporting ready.
-
-
-### 0.3.7 recovery through original-session user input
-
-A second installed failure on 2026-10-08 confirmed the same boundary: at
-06:24:47Z WorkBuddy logged an environment-triggered worker restart; at 06:25:32Z
-its `_codebuddy.ai/mcpUiCallTool` recovery RPC timed out after 30 seconds. The
-new connection file existed, but its port refused connections and no panel
-service remained. Independent Windows fork/start checks on an isolated clone
-succeeded, which does not establish host-owned process lifetime.
-
-The connect-v3 widget retains the original identity metadata. On a failed local
-connection, one explicit user click now uses `ui/message`, the same supported
-original-session input route already exercised by the composer. The request tells
-the native agent to verify identity, reopen the existing project once, return a
-new widget and stop. It authorizes no Bundle, project creation, design edit or
-message replay. An accepted message is not a successful Panel startup; the user
-checks the native reply and clicks its new widget. Ambiguous delivery disables
-further sends. Explicit rejection is reported separately. Security-policy errors
-do not enter the recovery-message path.
-
-This version supersedes the 0.3.6 direct widget tool-call recovery design; it does
-not prevent WorkBuddy from recycling its worker. Unit/package checks and isolated
-Windows startup checks are separate from the pending installed 0.3.7 recovery
-round-trip. Historical widgets retain their old snapshots: updating the plugin
-does not modify those already-rendered controls.
-
-Thirteen focused panel/package tests passed for 0.3.7, including accepted,
-rejected and uncertain recovery messages, no direct tool call, and no replay.
-The actual installed widget/agent recovery remains to be verified with the user.
-
-
-### 0.3.8 publication recovery candidate
-
-This candidate includes the shared raw Git blob, committed receipt and exact
-finish replay fixes from the reviewed publication source. Commit success remains
-visible when index maintenance or a subsequent Journal/diff step is pending.
-An exact retry reconciles the original publication rather than regenerating the
-Bundle or changing Git configuration. The existing MCP App transport, serial
-native Producer route and previously delivered browser UI are retained.
-
-Compilation and isolated Windows publication checks are separate from the pending
-installed WorkBuddy timing run. Do not claim that the 23-minute run is fixed until
-a real successor run is measured. Workers and detached GRA remain unavailable.
-
-### 0.3.8 installed publication acceptance, 2026-10-10
-
-The user loaded the installed 0.3.8 Skill and reused project
-`3c55ece8-b67e-403b-8d8a-8715625682ca`. Its 14 declared suite files matched the
-prepared market source. Native Agent `agent-fdad500e48464e7e` bootstrapped,
-registered and resumed in the original parent conversation. One `design_finish_run`
-returned `accepted: true`, no diagnostics, and commit
-`6df40ccbca0c3edd327844a99fddc29afb3f7381`. The existing index lock remained;
-`indexMaintenance.state: deferred` did not reject the committed publication.
-Read-only Git checks found a clean worktree, no changed paths in this commit,
-and the same 8,233 raw Git blob bytes as the previous function map. No new Git
-configuration change or lock removal was performed. This real run did not
-exercise CRLF conversion: the project still had the previous `core.autocrlf=false`.
-That boundary remains covered by the separately reported Windows Git checks.
-
-Native event timestamps measured 199.818 seconds for this Producer's resumed
-invocation and 13 tool calls, versus 1,387.563 seconds and 60 calls in the previous
-run. The previous first finish occurred after 234.269 seconds; 1,084.451 additional
-seconds elapsed from that failed response to the final accepted finish during
-runtime diagnosis and retries. The new run accepted its first finish. This
-confirms removal of that publication failure path, not equivalent generation
-throughput: the new task checked and retained an existing design while the old
-one created it, and the user reported a busy computer. Tool event intervals
-still include substantial host-side waiting; they do not isolate MCP service time.
-KAG was due at the start and was not refreshed or queried as current knowledge.
-
-The failed `a72ba6b506e5e3ffd80295af` connection was replaced only by
-`4e8995e3e33507dafd688a90`, already returned by the same conversation's explicit
-reopen. No global or latest-connection search was used. This does not validate
-the widget's historical recovery button or promise every stale connection recovers.
-
-### Persistent preview deployment
-
-After the successful run, the user cleaned temporary files. At about 18:29 local
-time, the owned Temp runtime lost its entry and Kit assets, and the Temp market
-manifest disappeared. The installed 0.3.8 suite's 14 files remained intact;
-an installed suite alone is not its external runtime closure. Do not repair this
-by editing WorkBuddy's cache or repeatedly restoring a runtime under Temp.
-
-The 0.3.9 candidate keeps the same fixed runtime bytes and prepares versioned
-runtime, Node/dependency inputs and the existing test market under
-`%LOCALAPPDATA%/YuGoo/WorkBuddyPreview`. It is still a bounded development
-preview, not an npm installer. Repoint the existing market source once through
-WorkBuddy's own plugin management and update the suite normally. Later updates
-reuse that persistent market source. User profiles, authentication, existing
-projects and host launch registration are outside this staging operation.
-Installed 0.3.9 loading, save/input consumption and reopening must be reported
-separately from preparation and packaged startup checks.
-
-The user subsequently loaded the real 0.3.9 Skill, reopened the same project
-once and confirmed an original-session reply to Companion input. Read-only
-registry/cache checks matched the suite's 14 files. That verifies loading,
-reopening and input consumption; a new durable save and KAG-current run remain
-separate from this check.
-
-### Recorded conversation refresh
-
-The user reported that WorkBuddy had already displayed a message while the
-Companion history waited for a later Agent action. Read-only measurements of
-the installed service found full workspace reads taking about 1.8–2.8 seconds,
-even when their conditional response contained no changed workspace. History
-was assembled only after project, native-run, review and knowledge projections.
-Those measurements establish a concrete dependency delay; they do not measure
-when WorkBuddy itself persists each displayed message to its native JSONL.
-
-The shared Companion now polls recorded conversation independently, using the
-same exact-session observer, durable activation boundary, token/Origin guards
-and verified foreground/review partition. Read-only review presentation does
-not wait for mutation locks. Panel reads no longer include duplicate history;
-legacy tool reads retain the full response. Sending still uses the same MCP App
-bridge and does not create an optimistic user-message record or retry delivery.
-This shared change also applies to QwenWork and CLI-host Companion presentation;
-it does not replace their individual input adapters.
-
-Source regressions and a normally built browser verified that native-format
-user and assistant records appear while workspace reads remain blocked, without
-any subsequent Agent action. In one isolated WorkBuddy-format check, they
-appeared about 0.64 and 0.74 seconds after the fixture record was written. These
-are bounded fixture timings, not a desktop-host latency guarantee.
-
-On 2026-10-10 the user performed marketplace-level Refresh and installed
-0.3.10. Read-only verification matched the installed registry and all 14 suite
-files to the delivered source. The exact original-session log reported a Skill
-path containing 0.3.10 and recorded the user test message and assistant's
-`WORKBUDDY_HISTORY_OK` reply. The user then reported that delay had improved.
-This establishes installation, native input/reply and qualitative history
-improvement for this test. Native-log event timestamps include model and host
-work; they do not measure the browser's display delay. Delayed host log
-persistence, if observed, remains a distinct cause. A new durable-save or
-KAG-current run was not part of this performance check.
-
-### Active Panel lifetime correction (0.3.11 candidate)
-
-The user's follow-up native save, current-checkpoint KAG query and browser reply
-display passed on 0.3.10. Its original service later stopped: the exact connection
-file was gone and both ports from its native startup receipt refused connections,
-while WorkBuddy remained running. The service had started at 14:55:31 UTC and
-was unavailable by 15:46 UTC, below the four-hour cap. An idle shutdown fits that
-interval, but the old service wrote no exit reason; do not claim a proven trigger.
-
-The old lifecycle counted only native widget pulses. Consequently an active
-browser could be closed after fifteen minutes without that widget, even while
-the user was reading or editing the Panel. The 0.3.11 candidate counts both
-widget pulses and authenticated Companion API activity before idle cleanup.
-Static or unauthorized requests do not extend it. This keeps the active Panel
-available while its authenticated polling continues, including background-tab
-polling; service activity does not prove that a person is currently editing.
-It does not claim that a missing widget can send messages: native
-bridge freshness, ownership, uncertain-delivery and no-retry guards stay intact.
-The four-hour service cap and cleanup when both surfaces are idle remain.
-
-Normal closure writes a bounded, credential-free `<connection>.closed.json`
-diagnostic in the existing connection directory before revoking the live file.
-It records only exact project/session, times and idle/maximum/explicit reason;
-it grants no routing or execution authority. Diagnostic-write failure does not
-prevent cleanup, and forced OS termination cannot promise this receipt.
-This source correction is not yet installed-host lifetime acceptance.
-
-The 0.3.11 source passed 25 related service regressions and 5 package checks.
-Independent review found no new blocker. Its normally built Windows service
-also passed isolated activity/idle, absent-widget send rejection, credential-free
-closure receipt and four-hour-cap checks using an accelerated process-local
-clock. This verifies the compiled Windows boundary, not fifteen minutes elapsed
-in the real WorkBuddy session.
-
-Update the existing test marketplace through marketplace-level Refresh, then
-update the same suite. Verify the loaded Skill path includes 0.3.11 and ask the
-original conversation to reopen the existing project once. Use its new exact
-connection; the stopped 0.3.10 connection cannot be recovered by browser refresh.
-No new project, Bundle execution or host launcher is needed for this check.
+Return to the [host integration entry points](../../HOSTS.md).

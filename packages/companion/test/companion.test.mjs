@@ -150,6 +150,7 @@ test('Codex unknown queue-add delivery receipts never leak raw failures or retry
       assert.equal(receipt.rpcCode, failure === 'add' ? -32600 : undefined)
       assert.equal(receipt.turnId, undefined)
       assert.equal(receipt.accepted, undefined)
+      assert.equal(error.notSubmitted, undefined, 'an attempted queue insertion is never safe to replay')
       assert.doesNotMatch(JSON.stringify(error), /SECRET|private.invalid|notification body/)
       assert.doesNotMatch(JSON.stringify(receipt), /SECRET|private.invalid|notification body/)
       return true
@@ -157,6 +158,152 @@ test('Codex unknown queue-add delivery receipts never leak raw failures or retry
     assert.equal(calls.filter(c => c.method === 'thread/queue/add').length, 1)
     assert.equal(calls.filter(c => c.method === 'thread/queue/start').length, 0)
   }
+})
+
+test('Codex setup failures before queue-add are safe, staged and never submit a message', async () => {
+  for (const failure of ['proxy-connect', 'initialize', 'initialized']) {
+    const calls = []; let closed = 0
+    const secret = Object.assign(new Error('SECRET token https://private.invalid/raw'), { transportCategory: 'rpc-rejected', rpcCode: -32600, raw: 'SECRET' })
+    const connection = createCodexConnection(threadId, async () => {
+      if (failure === 'proxy-connect') throw secret
+      return { close() { closed++ }, notify(method) { calls.push(method); if (failure === method) throw secret },
+        async request(method) { calls.push(method); if (failure === method) throw secret; return {} } }
+    })
+    for (const operation of ['send', 'probe']) {
+      await assert.rejects(operation === 'send' ? connection.send('SECRET notification body') : connection.probe(), error => {
+        const receipt = notificationErrorResponse(error)
+        assert.equal(receipt?.delivery, 'not-submitted')
+        assert.equal(receipt.notSubmitted, true)
+        assert.equal(receipt.stage, failure === 'proxy-connect' ? failure : 'initialize')
+        assert.equal(receipt.status, 'unavailable')
+        assert.equal(receipt.transportCategory, 'rpc-rejected')
+        assert.equal(receipt.rpcCode, -32600)
+        assert.match(receipt.error, /setup.*unavailable/i)
+        assert.doesNotMatch(JSON.stringify(receipt), /SECRET|private.invalid|notification body/)
+        assert.doesNotMatch(JSON.stringify(error), /SECRET|private.invalid|notification body/)
+        return true
+      })
+    }
+    assert.equal(calls.includes('thread/queue/add'), false)
+    assert.equal(calls.includes('thread/read'), false, 'failed initialization cannot probe a thread')
+    assert.equal(closed, failure === 'proxy-connect' ? 0 : 2)
+  }
+})
+
+test('Codex setup safe HTTP receipt survives CLI transport without trusting raw fields', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'notification-setup-'))
+  const originalFetch = globalThis.fetch
+  try {
+    const connection = join(root, 'connection.json')
+    await writeFile(connection, JSON.stringify({ origin: 'http://127.0.0.1:12345', token: 'a'.repeat(64) }))
+    const serialized = notificationErrorResponse({ delivery: 'not-submitted', notSubmitted: true, stage: 'websocket-handshake',
+      transportCategory: 'disconnected', token: 'SECRET', raw: 'SECRET' })
+    let calls = 0
+    globalThis.fetch = async () => { calls++; return new Response(JSON.stringify({ ...serialized, error: 'SECRET', raw: 'SECRET' }), { status: 400 }) }
+    await assert.rejects(callCompanion(connection, { method: 'sendPrompt', params: { text: 'SECRET' } }), error => {
+      assert.deepEqual(notificationErrorResponse(error), serialized)
+      assert.equal(error.notSubmitted, true)
+      assert.match(error.message, /setup.*unavailable/i)
+      assert.doesNotMatch(JSON.stringify(error), /SECRET/)
+      return true
+    })
+    assert.equal(calls, 1)
+    assert.equal(notificationErrorResponse({ delivery: 'not-submitted', stage: 'initialize' }), undefined)
+    assert.equal(notificationErrorResponse({ delivery: 'not-submitted', notSubmitted: true, stage: 'SECRET' }), undefined)
+    const unknown = notificationErrorResponse({ delivery: 'unknown', stage: 'queue-add', notSubmitted: true })
+    assert.equal(unknown.notSubmitted, undefined, 'an unknown receipt cannot acquire recovery authority')
+  } finally { globalThis.fetch = originalFetch; await rm(root, { recursive: true, force: true }) }
+})
+
+test('Codex proxy exit and real WebSocket handshake rejection report setup without exposing stderr', async () => {
+  for (const mode of ['proxy-exit', 'proxy-error', 'handshake-rejected', 'handshake-timeout']) {
+    const child = new EventEmitter()
+    Object.assign(child, { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), exitCode: null, signalCode: null })
+    const signals = []; const input = []
+    child.kill = signal => { signals.push(signal); child.signalCode = signal; child.emit('exit') }
+    child.stdin.on('data', bytes => {
+      input.push(bytes.toString())
+      if (mode === 'handshake-rejected') child.stdout.write('HTTP/1.1 403 SECRET\r\nX-Private: SECRET\r\nContent-Length: 0\r\n\r\n')
+    })
+    await assert.rejects(openNativeConnection(['app-server', 'proxy'], { timeoutMs: 100,
+      spawnProxy() {
+        setImmediate(() => {
+          child.stderr.write('SECRET socket/path token native notification body')
+          if (mode === 'proxy-exit') { child.exitCode = 1; child.emit('exit', 1) }
+          if (mode === 'proxy-error') child.emit('error', Error('SECRET spawn error'))
+        })
+        return child
+      },
+    }), error => {
+      const receipt = notificationErrorResponse(error)
+      assert.equal(receipt?.notSubmitted, true)
+      assert.equal(receipt.stage, mode.startsWith('proxy-') ? 'proxy-connect' : 'websocket-handshake')
+      assert.equal(receipt.transportCategory, mode === 'handshake-timeout' ? 'timeout' : 'disconnected')
+      assert.doesNotMatch(JSON.stringify(error), /SECRET|socket\/path|notification body/)
+      return true
+    })
+    assert.match(input.join(''), /^GET \/ HTTP\/1\.1/)
+    assert.doesNotMatch(input.join(''), /initialize|thread\/queue|notification body/)
+    assert.deepEqual(signals, mode === 'proxy-exit' ? [] : ['SIGTERM'])
+    assert.equal(child.stdin.destroyed, true)
+    assert.equal(child.stdout.destroyed, true)
+  }
+})
+
+test('Codex initialize timeout/rejection is not submitted but queue timeout/rejection stays unknown', async () => {
+  for (const stage of ['initialize', 'queue-add']) for (const failure of ['timeout', 'rejected']) {
+    const child = new EventEmitter()
+    Object.assign(child, { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), exitCode: null, signalCode: null })
+    const signals = []; const methods = []
+    child.kill = signal => { signals.push(signal); child.signalCode = signal; child.emit('exit') }
+    class Socket extends EventEmitter {
+      constructor() { super(); queueMicrotask(() => this.emit('open')) }
+      terminate() {}
+      send(text) {
+        const request = JSON.parse(text); methods.push(request.method)
+        if (!request.id) return
+        const failed = request.method === (stage === 'initialize' ? stage : 'thread/queue/add')
+        if (failed && failure === 'timeout') return
+        queueMicrotask(() => this.emit('message', Buffer.from(JSON.stringify({ id: request.id,
+          ...(failed ? { error: { code: -32600, message: 'SECRET native body' } } : { result: {} }),
+        }))))
+      }
+    }
+    const connection = createCodexConnection(threadId, args => openNativeConnection(args, { WebSocket: Socket, timeoutMs: 50, spawnProxy: () => child }))
+    await assert.rejects(connection.send('SECRET user text'), error => {
+      const receipt = notificationErrorResponse(error)
+      assert.equal(receipt.delivery, stage === 'initialize' ? 'not-submitted' : 'unknown')
+      assert.equal(receipt.notSubmitted, stage === 'initialize' ? true : undefined)
+      assert.equal(receipt.stage, stage)
+      assert.equal(receipt.transportCategory, failure === 'timeout' ? 'timeout' : 'rpc-rejected')
+      assert.doesNotMatch(JSON.stringify(error), /SECRET/)
+      return true
+    })
+    assert.equal(methods.filter(method => method === 'thread/queue/add').length, stage === 'initialize' ? 0 : 1)
+    assert.equal(methods.some(method => ['thread/resume', 'turn/start', 'thread/queue/start'].includes(method)), false)
+    assert.deepEqual(signals, ['SIGTERM'])
+  }
+})
+
+test('Codex existing availability probe and send API expose only safe setup feedback', async () => {
+  let connections = 0
+  const connection = createCodexConnection(threadId, async () => { connections++; throw Error('SECRET native setup failure') })
+  const f = await fixture({ serverOptions: { connection } })
+  try {
+    const probe = await callCompanion(f.server.connectionPath, { method: 'studioTrialAvailability', params: {} })
+    assert.equal(probe.status, 'unavailable')
+    assert.equal(probe.stage, 'proxy-connect')
+    assert.equal(probe.notSubmitted, true)
+    assert.doesNotMatch(JSON.stringify(probe), /SECRET/)
+    await assert.rejects(callCompanion(f.server.connectionPath, { method: 'sendPrompt', params: { text: 'Fixture only', saved: [] } }), error => {
+      assert.equal(error.notSubmitted, true)
+      assert.equal(error.stage, 'proxy-connect')
+      assert.doesNotMatch(error.message, /SECRET/)
+      return true
+    })
+    assert.equal(connections, 2)
+    assert.deepEqual(f.messages, [])
+  } finally { await f.close() }
 })
 
 test('Codex unknown delivery safe HTTP receipt survives CLI transport and excludes untrusted fields', async () => {
@@ -330,8 +477,8 @@ test('local browser access survives fresh clients without opening the native too
     }
     assert.deepEqual(f.messages, [], 'loading a page never sends a native message')
     assert.equal((await call('readWorkspace')).status, 200)
-    // Studio and panel draft lifecycle remain usable through the new local entry.
-    for (const method of ['studioWorkspace', 'studioInstanceList', 'studioDraftList', 'studioKitDraftList', 'studioContentImportList']) {
+    // Current library editing remains usable through the local entry.
+    for (const method of ['studioWorkspace', 'studioInstanceList']) {
       const response = await call(method)
       assert.equal(response.status, 200, `${method}: ${await response.text()}`)
     }

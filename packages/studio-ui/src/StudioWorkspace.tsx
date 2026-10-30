@@ -1,25 +1,27 @@
 /** Reusable host-neutral React workspace for the read-only Kit-first Studio surface. */
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type ReactElement, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type ReactElement, type ReactNode } from 'react'
 import { StudioWorkspaceController, type StudioKitWorkspaceTab } from './controller.ts'
 import { renderStudioDocument, renderStudioMarkdown, splitFrontmatter } from './markdown.tsx'
 import { STUDIO_WORKSPACE_CSS } from './styles.ts'
 import { LoadingIndicator } from './LoadingIndicator.tsx'
-import { StudioSelect, StudioSelectContext, type StudioSelectRenderer } from './StudioSelect.tsx'
+import { StudioFeedback } from './StudioFeedback.tsx'
+import { StudioEmptyState } from './StudioEmptyState.tsx'
+import { StudioSelectContext, type StudioSelectRenderer } from './StudioSelect.tsx'
 import { FileExplorer } from './FileExplorer.tsx'
 import { KitFiles } from './KitFiles.tsx'
-import { FileInfoSidebar, FilePurpose } from './FileInfoSidebar.tsx'
+import { FileInfoSidebar, FileName } from './FileInfoSidebar.tsx'
+import { BundleCard, StudioGlyph } from './BundleCard.tsx'
 import { BundleMounts } from './BundleMounts.tsx'
 import { groupInstalledContent } from './content-versions.ts'
 import type { StudioManagementClient } from './types.ts'
-import { KitDraftWorkbench, type StudioKitAuthoring } from './KitDraftWorkbench.tsx'
-import { MindsetInlineEditor, type MindsetInlineEditorProps } from './MindsetInlineEditor.tsx'
-import { PanelDraftWorkbench, PanelDraftEditor, type StudioAuthoring } from './PanelDraftWorkbench.tsx'
+import type { StudioAuthoring } from './authoring.ts'
 import { BundleTrial } from './BundleTrial.tsx'
-import { InstanceWorkbench, type StudioInstanceClient, type StudioInstance } from './InstanceWorkbench.tsx'
+import { InstanceWorkbench, type InstanceWorkbenchProps, type StudioInstanceClient, type StudioInstance, InstanceActionsMenu, InstanceTrashAction, confirmInstanceRemoval } from './InstanceWorkbench.tsx'
 import { ComponentLibrary, type StudioComponentLibrary } from './ComponentLibrary.tsx'
-import { ContentArchiveWorkbench, type StudioContentClient } from './ContentArchiveWorkbench.tsx'
+import { readStudioImportFiles } from './content-source-import.ts'
+import { assertStudioImportRequestSize, downloadStudioContent, formatStudioImportError, type StudioContentClient } from './content-transfer.ts'
 import type { StudioTrialClient } from './trial-controller.ts'
-import type { DesignKitVersionPin, DesignBundleVersionPin, StudioPanelPreviewResult, StudioPanelDraftRecord } from 'dsh-design-studio'
+import type { DesignKitVersionPin, DesignBundleVersionPin, StudioPanelPreviewResult } from 'dsh-design-studio'
 
 /** Props accepted by embedded and companion Studio presentations. */
 export interface StudioWorkspaceProps {
@@ -32,9 +34,16 @@ export interface StudioWorkspaceProps {
   readonly controller?: StudioWorkspaceController
   /** Explicit host capability; omitted hosts remain read-only. */
   readonly authoring?: StudioAuthoring
-  readonly kitAuthoring?: StudioKitAuthoring
+  /** Sample-only rendering for saved instances, including ordinary read-only Open. */
+  readonly renderPreview?: StudioAuthoring['renderPreview']
   readonly trials?: StudioTrialClient
   readonly instances?: StudioInstanceClient
+  /** Open one exact working copy supplied by the host, without selecting a latest revision or first Bundle. */
+  readonly initialInstance?: { id: string; expectedRevision: number; bundle?: DesignBundleVersionPin }
+  /** Optional host presentation for an existing instance; nullish returns use the standard workbench. */
+  readonly renderInstanceWorkbench?: (props: InstanceWorkbenchProps) => ReactNode
+  /** Only an explicit editable object enters host authoring; catalog browsing is never wrapped. */
+  readonly renderContent?: (content: ReactNode, context: StudioObjectAuthoringContext) => ReactNode
   /** Trusted host-owned catalog and sample-only shared renderer. */
   readonly componentLibrary?: StudioComponentLibrary
   /** Optional host-owned shared choice control; no Panel implementation enters Studio UI. */
@@ -43,6 +52,21 @@ export interface StudioWorkspaceProps {
   readonly contentClient?: StudioContentClient
   /** Lets the host guard dialog closure as well as internal navigation. */
   readonly onDraftDirtyChange?: (dirty: boolean) => void
+}
+
+export interface StudioObjectAuthoringContext {
+  readonly id: string
+  readonly intent: 'create' | 'edit'
+  readonly initialPrompt?: string
+  readonly onDirtyChange: (dirty: boolean) => void
+}
+
+/** The instance ID owns presentation lifetime; all operations stay on the supplied ports. */
+function presentInstanceWorkbench(props: InstanceWorkbenchProps, render?: StudioWorkspaceProps['renderInstanceWorkbench']): ReactElement {
+  return <InstancePresentation key={`${props.id}:${props.readOnly ? 'read' : 'edit'}`} props={props} render={render} />
+}
+function InstancePresentation({ props, render }: { props: InstanceWorkbenchProps; render?: StudioWorkspaceProps['renderInstanceWorkbench'] }): ReactElement {
+  return <>{render?.(props) ?? <InstanceWorkbench {...props} />}</>
 }
 
 const KIT_TABS: readonly StudioKitWorkspaceTab[] = ['mindset', 'mounts']
@@ -54,10 +78,27 @@ type StudioLocale = 'zh' | 'en'
 type DocViewMode = 'rich' | 'source'
 const displayName = (name: string): string => name.replace(/[_-]+/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase())
 
-// Keep the selected recovery ID stable while create/save receipts update the parent.
-function InlineMindset(props: MindsetInlineEditorProps): ReactElement {
-  const [initialId] = useState(props.initialId)
-  return <MindsetInlineEditor {...props} initialId={initialId} />
+function CatalogHeader({ label, query, onQueryChange, count, total, noun, locale, children }: {
+  label: string; query: string; onQueryChange: (query: string) => void
+  count: number; total: number; noun: string; locale: StudioLocale; children?: ReactNode
+}): ReactElement {
+  return <header className="ygd-studio-content-header ygd-studio-catalog-header">
+    <div className="ygd-studio-catalog-tools" role="search" aria-label={label}>
+      <input className="ygd-studio-search-input" type="search" value={query}
+        placeholder={label} aria-label={label} onChange={event => onQueryChange(event.currentTarget.value)} />
+      <span role="status">{locale === 'zh'
+        ? count === total ? `共 ${total} 个${noun}` : `找到 ${count} 个${noun}，共 ${total} 个`
+        : count === total ? `${total} ${total === 1 ? noun.replace(/s$/, '') : noun} in total` : `${count} of ${total} ${noun}`}</span>
+    </div>
+    {children && <div className="ygd-studio-hero-actions">{children}</div>}
+  </header>
+}
+
+function catalogMatches(item: { name: string; description?: string; title?: Readonly<{ zh: string; en: string }>;
+  displayDescription?: Readonly<{ zh: string; en: string }> }, query: string): boolean {
+  const text = [item.name, displayName(item.name), item.description, item.title?.zh, item.title?.en,
+    item.displayDescription?.zh, item.displayDescription?.en].filter(Boolean).join(' ').toLowerCase()
+  return text.includes(query.trim().toLowerCase())
 }
 
 /** Follow the host document or browser language; Chinese is the product default. */
@@ -71,18 +112,17 @@ const STRINGS = {
   en: {
     kitsTitle: 'Kits',
     kitsContext: 'Studio 1.0 · Kits',
-    kitsSubtitle: 'Manage domain methods and mounted Bundles.',
+    kitsSubtitle: 'Browse installed Kits and editable working copies',
+    kitsSearchPlaceholder: 'Search kits…',
     browseOfficialKits: 'Browse official kits',
     officialKitsHelp: 'Browse official kits: descriptions and acquisition guidance (opens in a new tab)',
     bundlesTitle: 'Bundles',
     bundlesContext: 'Studio 1.0 · Bundles',
-    bundlesSubtitle: 'Installed Bundles, read-only inspection',
+    bundlesSubtitle: 'Browse installed Bundles and editable working copies',
     searchPlaceholder: 'Search bundles…',
     kitContext: 'Studio 1.0 · Kit Workspace',
     bundleContext: 'Studio 1.0 · Bundle Workspace',
-    officialReadonly: 'Official content · read-only · Studio 1.0',
     readonlyBadge: 'Read-only',
-    versionBadge: (version: string) => `Version ${version}`,
     mountedBundlesLabel: 'Mounted Bundles',
     openWorkspace: 'Open workspace',
     openInBundleWorkspace: 'Open in bundle workspace',
@@ -100,7 +140,6 @@ const STRINGS = {
     tabRelations: 'KAG Relations',
     tabMounts: 'Bundles',
     noRelations: 'This Kit declares no relation extensions and uses only the Core vocabulary.',
-    relationExtensionNote: 'Validated Kit extension · read-only preview. Versioned editing and publishing will be enabled with Studio authoring.',
     sourceFiles: 'Source Files',
     richToggle: 'Read',
     sourceToggle: 'Source',
@@ -116,25 +155,23 @@ const STRINGS = {
     panelProviderOwned: 'provider-owned',
     panelDeclarative: 'declarative',
     panelReadonly: 'readonly',
-    panelPlaceholderSub: 'Provider-owned read-only rendering · Version 1.0 static declaration',
     requestFailed: 'Request failed',
     loading: 'Loading…',
   },
   zh: {
     kitsTitle: '设计套件',
     kitsContext: 'Studio 1.0 · 设计套件',
-    kitsSubtitle: '管理领域方法与技能包挂载。',
+    kitsSubtitle: '浏览已安装设计套件与可编辑的工作副本',
+    kitsSearchPlaceholder: '搜索设计套件…',
     browseOfficialKits: '浏览官方设计套件',
     officialKitsHelp: '浏览官方设计套件：简介和获取指引（在新标签页打开）',
     bundlesTitle: '技能包',
     bundlesContext: 'Studio 1.0 · 技能包',
-    bundlesSubtitle: '只读查看已安装技能包',
+    bundlesSubtitle: '浏览已安装技能包与可编辑的工作副本',
     searchPlaceholder: '搜索技能包…',
     kitContext: 'Studio 1.0 · Kit Workspace',
     bundleContext: 'Studio 1.0 · Bundle Workspace',
-    officialReadonly: '官方内容只读 · Studio 1.0',
     readonlyBadge: '只读',
-    versionBadge: (version: string) => `Version ${version}`,
     mountedBundlesLabel: '已挂载技能包',
     openWorkspace: '打开工作区',
     openInBundleWorkspace: '在技能包工作区打开',
@@ -152,7 +189,6 @@ const STRINGS = {
     tabRelations: 'KAG 关系',
     tabMounts: '技能包',
     noRelations: '该 Kit 未声明关系扩展，仅使用 Core 关系词汇。',
-    relationExtensionNote: '已校验的 Kit 扩展 · 当前只读预览；版本化编辑与发布将在 Studio 作者模式开放。',
     sourceFiles: '源文件',
     richToggle: '阅读',
     sourceToggle: '原文',
@@ -168,7 +204,6 @@ const STRINGS = {
     panelProviderOwned: 'provider 所有',
     panelDeclarative: '声明式',
     panelReadonly: '只读',
-    panelPlaceholderSub: 'provider 所有的只读渲染 · 1.0 版静态声明',
     requestFailed: '请求失败',
     loading: '加载中…',
   },
@@ -190,126 +225,70 @@ function mindsetBody(source: string): string {
   return splitFrontmatter(source).body.replace(/<design_skills\b[^>]*>[\s\S]*?<\/design_skills>/g, '').trim()
 }
 
-function StudioDialog({ title, children, close }: { title: string; children: ReactNode; close: () => void }): ReactElement {
+function StudioDialog({ title, children, close, busy = false }: { title: string; children: ReactNode; close: () => void; busy?: boolean }): ReactElement {
   const ref = useRef<HTMLDialogElement>(null)
-  useEffect(() => { ref.current?.showModal(); return () => { ref.current?.close() } }, [])
-  return <dialog ref={ref} className="ygd-studio-modal" onCancel={close} onClose={close} aria-label={title}>
-    <header><h2>{title}</h2><button type="button" aria-label="Close" onClick={close}>×</button></header>
+  useEffect(() => {
+    const dialog = ref.current, active = document.activeElement as HTMLElement | null
+    const opener = active?.closest('details')?.querySelector('summary') ?? active
+    dialog?.showModal()
+    return () => { dialog?.close(); if (opener?.isConnected) opener.focus() }
+  }, [])
+  return <dialog ref={ref} className="ygd-studio-modal" onCancel={event => { event.preventDefault(); if (!busy) close() }} aria-label={title}>
+    <header><h2>{title}</h2><button className="ygd-studio-btn-link" type="button" aria-label="Close" disabled={busy} onClick={close}>×</button></header>
     {children}
   </dialog>
 }
 
-function StudioGlyph({ bundle = false }: { bundle?: boolean }): ReactElement {
-  return <span className="ygd-studio-kitmark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round">
-    {bundle ? <><path d="m12 3 9 5v9l-9 5-9-5V8zM3 8l9 5 9-5M12 13v9" /></> : <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9h18M9 9v11" /></>}
-  </svg></span>
-}
 
-function draftMatches(record: StudioPanelDraftRecord, kit?: DesignKitVersionPin, bundle?: DesignBundleVersionPin): boolean {
-  return !!kit && !!bundle && record.kit.name === kit.name && record.kit.version === kit.version
-    && record.bundle.name === bundle.name && record.bundle.version === bundle.version
-}
-
-function InstalledPreview({ authoring, client, kit, bundle, locale, declarative, onDirtyChange, onRecord }: { authoring?: StudioAuthoring; client: StudioManagementClient; kit?: DesignKitVersionPin; bundle: DesignBundleVersionPin; locale: StudioLocale; declarative: boolean; onDirtyChange: (dirty: boolean) => void; onRecord: (record: StudioPanelDraftRecord) => void }): ReactElement {
+/** Installed content is a reading surface; edits use the same current-content editor. */
+function InstalledPreview({ authoring, client, kit, bundle, locale, declarative, onEdit }: { onEdit?: () => void; authoring?: StudioAuthoring; client: StudioManagementClient; kit?: DesignKitVersionPin; bundle: DesignBundleVersionPin; locale: StudioLocale; declarative: boolean }): ReactElement {
   const [result, setResult] = useState<StudioPanelPreviewResult>()
-  const [error, setError] = useState(''), [busy, setBusy] = useState(false)
-  const [panelSource, setPanelSource] = useState<string>(), [record, setRecord] = useState<StudioPanelDraftRecord>()
-  const editedSource = useRef<string>(), installedSource = useRef<string>(), creatingDraft = useRef(false)
-  const sourceInput = useRef<HTMLTextAreaElement>(null), initialSelection = useRef<{ start: number; end: number }>()
-  const [recoverableId, setRecoverableId] = useState<string>()
-  const restoreRequest = useRef(0)
-  const callbacks = useRef({ onDirtyChange, onRecord }); callbacks.current = { onDirtyChange, onRecord }
-  const request = useRef(0)
-  // Optional transport: a read-only preview must never manufacture a saved draft.
+  const [busy, setBusy] = useState(false), [error, setError] = useState('')
+  const [sourceError, setSourceError] = useState(''), [panelSource, setPanelSource] = useState<string>()
+  const [retry, setRetry] = useState(0)
   const previewInstalled = authoring?.client.previewInstalled
-  const preview = async (sampleSource?: string) => {
-    if (!previewInstalled) return
-    const revision = ++request.current
-    setBusy(true); setError(''); setResult(undefined)
-    try {
-      const value = await previewInstalled({ kit, bundle, revision, ...(sampleSource === undefined ? {} : { sampleSource }) })
-      if (revision !== request.current) return
-      if (value.preview && (value.preview.kit?.name !== kit?.name || value.preview.kit?.version !== kit?.version || value.preview.bundle.name !== bundle.name || value.preview.bundle.version !== bundle.version || value.preview.revision !== revision)) throw new Error('Preview identity mismatch')
+  useEffect(() => {
+    let active = true
+    setResult(undefined); setError(''); setBusy(!!previewInstalled)
+    if (previewInstalled) void previewInstalled({ kit, bundle, revision: retry }).then(value => {
+      if (!active) return
+      if (value.preview && (value.preview.bundle.name !== bundle.name || value.preview.bundle.version !== bundle.version)) throw Error('Preview identity mismatch')
       setResult(value)
-    } catch (failure) { if (revision === request.current) setError(failure instanceof Error ? failure.message : String(failure)) }
-    finally { if (revision === request.current) setBusy(false) }
-  }
-  useEffect(() => { void preview(); return () => { ++request.current } }, [previewInstalled, kit?.name, kit?.version, bundle.name, bundle.version])
+    }).catch(failure => { if (active) setError(String(failure instanceof Error ? failure.message : failure)) })
+      .finally(() => { if (active) setBusy(false) })
+    return () => { active = false }
+  }, [previewInstalled, kit?.name, kit?.version, bundle.name, bundle.version, retry])
   useEffect(() => {
-    let current = true
+    let active = true
+    setPanelSource(undefined); setSourceError('')
     if (declarative) void client.readBundleFile({ name: bundle.name, version: bundle.version, path: 'panel.yaml' }).then(value => {
-      if (!current) return
-      if (!value.file || value.file.path !== 'panel.yaml') throw new Error('Panel source is unavailable')
-      installedSource.current = value.file.content; setPanelSource(value.file.content)
-    }).catch(failure => { if (current) setError(String(failure instanceof Error ? failure.message : failure)) })
-    return () => { current = false; callbacks.current.onDirtyChange(false) }
-  }, [client, bundle.name, bundle.version, declarative])
-  useEffect(() => {
-    let current = true
-    if (authoring && kit && declarative) void authoring.client.list().then(records => {
-      if (!current) return
-      const matches = records.filter(value => !value.confirmed && value.kit.name === kit.name && value.kit.version === kit.version && value.bundle.name === bundle.name && value.bundle.version === bundle.version)
-      // Never arbitrarily choose among several independently retained drafts.
-      setRecoverableId(matches.length === 1 ? matches[0].id : undefined)
-    }).catch(() => {})
-    return () => { current = false }
-  }, [authoring, kit?.name, kit?.version, bundle.name, bundle.version, declarative])
-  const restore = async () => {
-    if (!authoring || !recoverableId || !kit || creatingDraft.current) return
-    const revision = request.current, operation = ++restoreRequest.current, id = recoverableId
-    try {
-      const value = await authoring.client.read(id)
-      if (revision !== request.current || operation !== restoreRequest.current) return
-      if (value.id !== id || !draftMatches(value, kit, bundle)) throw new Error('Draft identity mismatch')
-      editedSource.current = undefined; initialSelection.current = undefined
-      setRecord(value); callbacks.current.onRecord(value)
-    } catch (failure) { if (revision === request.current && operation === restoreRequest.current) setError(String(failure instanceof Error ? failure.message : failure)) }
-  }
-  const editSource = (source: string) => {
-    // Continued typing wins over a pending explicit recovery read. It must
-    // still retain every keystroke while the first draft creation is pending.
-    ++restoreRequest.current
-    editedSource.current = source; setPanelSource(source); callbacks.current.onDirtyChange(source !== installedSource.current)
-    if (source === installedSource.current) return
-    if (!authoring || !kit || !result?.preview || creatingDraft.current) return
-    creatingDraft.current = true; setError('')
-    const revision = request.current
-    void authoring.client.create({ kit, bundle, sampleSource: JSON.stringify(result.preview.sample) }).then(value => {
-      if (revision !== request.current) return
-      if (value.kit.name !== kit.name || value.kit.version !== kit.version || value.bundle.name !== bundle.name || value.bundle.version !== bundle.version) throw new Error('Draft identity mismatch')
-      const input = sourceInput.current
-      if (input && document.activeElement === input) initialSelection.current = { start: input.selectionStart, end: input.selectionEnd }
-      setRecord(value); callbacks.current.onRecord(value)
-    }).catch(failure => { if (revision === request.current) { creatingDraft.current = false; setError(String(failure instanceof Error ? failure.message : failure)) } })
-  }
-  const editorGeneration = request.current
-  if (record && authoring) return <PanelDraftEditor key={`${record.id}:${record.revision}`} record={record} authoring={authoring} locale={locale} initialPanelSource={editedSource.current} initialSelection={initialSelection.current} onDirtyChange={onDirtyChange} onRecord={value => {
-    // A completed CAS save stays durable, but a receipt from a closed preview
-    // must never switch a different Bundle's current trial source.
-    if (editorGeneration !== request.current || value.id !== record.id || !draftMatches(value, kit, bundle)) return
-    editedSource.current = undefined; initialSelection.current = undefined; setRecord(value); callbacks.current.onRecord(value)
-  }} />
-  const rendered = <>
-    {!previewInstalled ? <p className="ygd-studio-empty">{locale === 'zh' ? '此宿主暂未提供已安装面板的只读预览。' : 'This host does not provide installed Panel previews.'}</p> : <>
-      {busy && <LoadingIndicator label={locale === 'zh' ? '正在加载预览' : 'Loading preview'} />}
-      {error && <p role="alert">{error}</p>}
-      {result?.diagnostics.map((diagnostic, index) => <p role="status" key={index}>{locale === 'zh' && diagnostic.code === 'preview.sample_missing' ? '此 Bundle 尚未提供预览样例。作者可添加 reference/preview.json。预览不会读取项目数据。' : diagnostic.message}</p>)}
-      {result?.preview && authoring?.renderPreview(result.preview, () => {}, { readOnly: false, toolbarTarget: null })}
-    </>}
-  </>
+      if (!active) return
+      if (!value.file || value.file.path !== 'panel.yaml') throw Error('Panel source is unavailable')
+      setPanelSource(value.file.content)
+    }).catch(failure => { if (active) setSourceError(String(failure instanceof Error ? failure.message : failure)) })
+    return () => { active = false }
+  }, [client, bundle.name, bundle.version, declarative, retry])
   return <section className="ygd-studio-panel-split">
     <section className="ygd-studio-yaml-pane">
-      <header><strong>panel.yaml</strong><span>{locale === 'zh' ? '编辑将使用本地副本' : 'Edits use a local copy'}</span>{recoverableId && <button className="ygd-studio-btn-secondary" type="button" onClick={() => void restore()}>{locale === 'zh' ? '继续编辑副本' : 'Continue local copy'}</button>}</header>
-      {panelSource === undefined ? declarative ? error ? null : <LoadingIndicator label={locale === 'zh' ? '正在读取面板定义' : 'Loading Panel definition'} /> : <p className="ygd-studio-empty">{locale === 'zh' ? '此面板由原生组件提供，没有可编辑的 panel.yaml。' : 'This native Panel has no editable panel.yaml.'}</p>
-        : <textarea ref={sourceInput} aria-label="Panel YAML" spellCheck={false} value={panelSource} readOnly={!authoring || !kit || !result?.preview} onChange={event => editSource(event.currentTarget.value)} />}
-      {error && <p role="alert">{error}</p>}
+      <header><FileName path="panel.yaml" locale={locale} />{onEdit && <button className="ygd-studio-btn-secondary" type="button" onClick={onEdit}>{locale === 'zh' ? '编辑' : 'Edit'}</button>}</header>
+      {panelSource !== undefined ? <textarea aria-label="Panel YAML" spellCheck={false} value={panelSource} readOnly /> : sourceError
+        ? <StudioFeedback feedbackId={`source:${retry}:${sourceError}`} tone="error" locale={locale} title={locale === 'zh' ? '无法读取面板定义' : 'Could not read Panel source'} message={sourceError} actions={[{ label: locale === 'zh' ? '重试' : 'Retry', onClick: () => setRetry(value => value + 1) }]} />
+        : declarative ? <LoadingIndicator label={locale === 'zh' ? '正在读取面板定义' : 'Loading Panel definition'} /> : <StudioEmptyState title={locale === 'zh' ? '此面板由原生组件提供' : 'This is a native Panel'} />}
     </section>
-    <section className="ygd-studio-live-pane"><div className="ygd-studio-live-pane-body">{rendered}</div></section>
+    <section className="ygd-studio-live-pane"><div className="ygd-studio-live-pane-body">
+      {!previewInstalled && <StudioEmptyState title={locale === 'zh' ? '此处暂不支持面板预览' : 'Panel preview is unavailable here'} />}
+      {busy && <LoadingIndicator label={locale === 'zh' ? '正在加载预览' : 'Loading preview'} />}
+      {error && <StudioFeedback feedbackId={`preview:${retry}:${error}`} tone="error" locale={locale} title={locale === 'zh' ? '无法载入面板预览' : 'Could not load Panel preview'} message={error} actions={[{ label: locale === 'zh' ? '重试' : 'Retry', onClick: () => setRetry(value => value + 1) }]} />}
+      {!!result?.diagnostics.length && (result.diagnostics.every(item => item.code === 'preview.sample_missing')
+        ? <StudioEmptyState title={locale === 'zh' ? '缺少预览样例' : 'Preview sample is missing'} description={locale === 'zh' ? '添加 reference/preview.json 后，可在这里查看面板效果。' : 'Add reference/preview.json to preview the Panel here.'} />
+        : <StudioFeedback feedbackId={`preview:${retry}:${JSON.stringify(result.diagnostics)}`} tone="error" locale={locale} title={locale === 'zh' ? '面板预览未能生成' : 'Panel preview could not be generated'} details={result.diagnostics.map(item => ({ message: item.message }))} />)}
+      {result?.preview && authoring?.renderPreview(result.preview, () => {}, { readOnly: false, toolbarTarget: null })}
+    </div></section>
   </section>
 }
 
 /** Read-only Studio surface: one complete page with global nav, sidebar, and workspace main. */
-export function StudioWorkspace({ client, controller: supplied, authoring, kitAuthoring, trials, instances, componentLibrary, renderSelect, contentClient, onDraftDirtyChange, locale: hostLocale, onLocaleChange }: StudioWorkspaceProps): ReactElement {
+export function StudioWorkspace({ client, controller: supplied, authoring, renderPreview, trials, instances, initialInstance, renderInstanceWorkbench, renderContent, componentLibrary, renderSelect, contentClient, onDraftDirtyChange, locale: hostLocale, onLocaleChange }: StudioWorkspaceProps): ReactElement {
   const controller = useMemo(() => supplied ?? new StudioWorkspaceController(client), [client, supplied])
   const snapshot = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot)
   const tabElements = useRef(new Map<StudioKitWorkspaceTab, HTMLButtonElement>())
@@ -321,22 +300,32 @@ export function StudioWorkspace({ client, controller: supplied, authoring, kitAu
   const [bundleTab, setBundleTab] = useState<'files' | 'preview'>('files')
   const [previewMode, setPreviewMode] = useState<'sample' | 'trial'>('sample')
   const [previewOpened, setPreviewOpened] = useState(false)
-  const [panelDraft, setPanelDraft] = useState<StudioPanelDraftRecord>()
-  const previewOwner = useRef<{ kit?: DesignKitVersionPin; bundle?: DesignBundleVersionPin }>({})
   const launchTrial = useRef<(() => void) | undefined>()
   const [trialTarget, setTrialTarget] = useState<HTMLDivElement | null>(null)
-  const [fullMindset, setFullMindset] = useState(false)
-  const [recoveryOpen, setRecoveryOpen] = useState(false)
   const [fileLocationOpen, setFileLocationOpen] = useState(false)
   const [mountsOpen, setMountsOpen] = useState(false)
+  const mountRequest = useRef<string>()
   const [mountQuery, setMountQuery] = useState('')
-  const [kitFilesOpen, setKitFilesOpen] = useState(false)
-  const [toc, setToc] = useState<readonly string[]>([])
-  const mindsetDocument = useRef<HTMLDivElement>(null)
-  const [draftsOpen, setDraftsOpen] = useState<false | 'panel' | 'kit'>(false)
-  const [archivesOpen, setArchivesOpen] = useState(false)
+  const [archiveBusy, setArchiveBusy] = useState(false)
+  const archiveLock = useRef(false)
+  const exportGeneration = useRef(0)
+  const [exportError, setExportError] = useState('')
+  const [importBusy, setImportBusy] = useState(false)
+  const importLock = useRef(false)
+  const [importError, setImportError] = useState('')
+  const importKind = useRef<'kit' | 'bundle'>('kit')
+  const importFileInput = useRef<HTMLInputElement>(null)
+  const importFolderInput = useRef<HTMLInputElement | null>(null)
+  const [incompleteImport, setIncompleteImport] = useState<StudioInstance>()
+  const [initialPrompt, setInitialPrompt] = useState<string>()
+  const [importNotice, setImportNotice] = useState('')
+  const [refreshFailure, setRefreshFailure] = useState<{ message: string; imported?: string }>()
+  const [refreshBusy, setRefreshBusy] = useState(false)
+  const refreshGeneration = useRef(0)
+  useEffect(() => () => { refreshGeneration.current++ }, [])
+  const importGeneration = useRef(0)
+  useEffect(() => { ++exportGeneration.current; return () => { importGeneration.current++; ++exportGeneration.current } }, [contentClient])
   const createGeneration = useRef(0)
-  const [draftId, setDraftId] = useState<string>()
   const draftDirty = useRef(false)
   const panelDirty = useRef(false), trialDirty = useRef(false)
   const reportPreviewDirty = (kind: 'panel' | 'trial', value: boolean) => {
@@ -345,81 +334,210 @@ export function StudioWorkspace({ client, controller: supplied, authoring, kitAu
     onDraftDirtyChange?.(draftDirty.current)
   }
   useEffect(() => {
-    const guard = (event: BeforeUnloadEvent) => { if (draftDirty.current) { event.preventDefault(); event.returnValue = '' } }
+    const guard = (event: BeforeUnloadEvent) => { if (draftDirty.current || authoringDirty.current) { event.preventDefault(); event.returnValue = '' } }
     window.addEventListener('beforeunload', guard)
     return () => window.removeEventListener('beforeunload', guard)
   }, [])
   const [creating, setCreating] = useState(false)
   const [authoringError, setAuthoringError] = useState('')
+  const [trashNotice, setTrashNotice] = useState(0)
+  const [kitQuery, setKitQuery] = useState('')
   const [localInstances, setLocalInstances] = useState<readonly StudioInstance[]>([])
-  const [instanceId, setInstanceId] = useState<string>()
-  const refreshInstances = async () => { if (instances) setLocalInstances(await instances.list()) }
+  const [instanceId, setInstanceId] = useState<string | undefined>(initialInstance?.id)
+  const [instanceMode, setInstanceMode] = useState<'read' | 'edit'>('edit')
+  const [authoringIntent, setAuthoringIntent] = useState<'create' | 'edit'>('edit')
+  const authoringDirty = useRef(false)
+  const authoringDirtyChange = useCallback((value: boolean) => {
+    authoringDirty.current = value
+    onDraftDirtyChange?.(value || draftDirty.current)
+  }, [onDraftDirtyChange])
+  // Handoff identity is fixed on page entry; subsequent navigation/save keeps its ordinary lifecycle.
+  const [entryInstance] = useState(initialInstance)
+  const [entryRevisionConsumed, setEntryRevisionConsumed] = useState(false)
+  const instanceListRequest = useRef(0)
+  const refreshInstances = useCallback(async () => {
+    if (!instances) return
+    const request = ++instanceListRequest.current
+    const records = await instances.list()
+    if (request === instanceListRequest.current) setLocalInstances(records)
+  }, [instances])
   useEffect(() => {
     let live = true
-    if (instances) void instances.list().then(records => { if (live) setLocalInstances(records) }).catch(error => { if (live) setAuthoringError(String(error)) })
-    return () => { live = false }
-  }, [instances])
+    void refreshInstances().catch(error => { if (live) setAuthoringError(String(error)) })
+    return () => { live = false; ++instanceListRequest.current }
+  }, [refreshInstances])
   const [localLocale, setLocalLocale] = useState<StudioLocale>()
   useEffect(() => { setLocalLocale(undefined) }, [hostLocale])
   const locale = localLocale ?? hostLocale ?? detectLocale()
   const changeLocale = (next: StudioLocale) => { if (onLocaleChange) onLocaleChange(next); else setLocalLocale(next) }
   const t = STRINGS[locale]
   const workspace = snapshot.kitWorkspace
-  const mindsetRecords = useRef(new Map<string, string>())
-  const [savedMindsets, setSavedMindsets] = useState<Record<string, string>>({})
-  const [mindsetChoices, setMindsetChoices] = useState<readonly { id: string; revision: number }[]>([])
-  const [mindsetEditorEpoch, setMindsetEditorEpoch] = useState(0)
   const kitKey = workspace ? `${workspace.name}@${workspace.version}` : ''
-  const visibleMindset = savedMindsets[kitKey] ?? workspace?.mindsetSource ?? ''
-  useEffect(() => {
-    let active = true
-    setMindsetChoices([])
-    if (kitAuthoring && workspace) void kitAuthoring.client.list().then(records => {
-      if (active) setMindsetChoices(previous => [...new Map([
-        ...records.filter(record => !record.confirmed && record.baseKit.name === workspace.name && record.baseKit.version === workspace.version).map(record => [record.id, record] as const),
-        ...previous.map(record => [record.id, record] as const),
-      ]).values()])
-    }).catch(error => { if (active) setAuthoringError(String(error)) })
-    return () => { active = false }
-  }, [kitAuthoring, kitKey])
   const bundleWorkspace = snapshot.bundleWorkspace
   const bundleTitle = (name: string, version: string) => snapshot.view?.bundles.find(bundle => bundle.name === name && bundle.version === version)?.title?.[locale] ?? displayName(name)
   const bundleFile = snapshot.bundleFile
-  useEffect(() => { setBundleTab('files'); setPreviewMode('sample'); setPreviewOpened(false); setPanelDraft(undefined); setMountsOpen(false) }, [bundleWorkspace?.name, bundleWorkspace?.version])
-  useEffect(() => { setFullMindset(false); setKitFilesOpen(false) }, [workspace?.name, workspace?.version])
-  useEffect(() => {
-    const headings = [...(mindsetDocument.current?.querySelectorAll('h1,h2,h3') ?? [])]
-    headings.forEach((heading, index) => { heading.id = `studio-mindset-heading-${index}` })
-    setToc(headings.map(heading => heading.textContent ?? ''))
-  }, [visibleMindset, mindsetMode, snapshot.kitTab, bundleWorkspace, draftsOpen])
+  useEffect(() => { setBundleTab('files'); setPreviewMode('sample'); setPreviewOpened(false); setMountsOpen(mountRequest.current === `${bundleWorkspace?.name}@${bundleWorkspace?.version}`); mountRequest.current = undefined }, [bundleWorkspace?.name, bundleWorkspace?.version])
   useEffect(() => { createGeneration.current++ }, [workspace?.name, workspace?.version, bundleWorkspace?.name, bundleWorkspace?.version])
   const leaveDrafts = (next: () => void) => {
-    if (draftDirty.current && !window.confirm(locale === 'zh' ? '离开会丢失尚未保存的修改，继续吗？' : 'Discard unsaved changes and leave?')) return
-    createGeneration.current++; panelDirty.current = false; trialDirty.current = false; draftDirty.current = false; onDraftDirtyChange?.(false); setDraftsOpen(false); setArchivesOpen(false); setInstanceId(undefined); setSidebarOpen(false); next()
+    if ((draftDirty.current || authoringDirty.current) && !window.confirm(locale === 'zh' ? '离开会丢失尚未保存的修改，继续吗？' : 'Discard unsaved changes and leave?')) return
+    setEntryRevisionConsumed(true)
+    createGeneration.current++; setCreating(false); panelDirty.current = false; trialDirty.current = false; draftDirty.current = false; authoringDirty.current = false; onDraftDirtyChange?.(false); setInitialPrompt(undefined); setInstanceId(undefined); setAuthoringIntent('edit'); setSidebarOpen(false); next()
   }
-  const copyInstalled = async (kind: 'kit' | 'bundle', kit?: DesignKitVersionPin, bundle?: DesignBundleVersionPin) => {
+  const exportContent = async (target: { id: string; expectedRevision: number } | { kind: 'kit' | 'bundle'; pin: DesignKitVersionPin }, filename: string) => {
+    if (!contentClient || archiveLock.current) return
+    const generation = exportGeneration.current
+    archiveLock.current = true; setArchiveBusy(true); setExportError('')
+    try {
+      const source = await contentClient.export(target)
+      if (generation !== exportGeneration.current) return
+      downloadStudioContent(source, filename)
+    } catch (error) { setExportError(error instanceof Error ? error.message : String(error)) }
+    finally { archiveLock.current = false; setArchiveBusy(false) }
+  }
+  const exportInstance = (record: StudioInstance) => {
+    if (!contentClient || record.deletedAt || (record.id === instanceId && draftDirty.current)) return
+    void exportContent({ id: record.id, expectedRevision: record.revision }, record.title[locale])
+  }
+  // A completed adoption stays completed if a subsequent read fails. Retry reads,
+  // never the write, and keep one actionable outcome for that operation.
+  const refreshCatalog = async (imported?: string) => {
+    const request = ++refreshGeneration.current
+    setRefreshBusy(true); setRefreshFailure(undefined)
+    try {
+      await controller.load()
+      if (request !== refreshGeneration.current) return false
+      const failure = controller.getSnapshot().failure
+      if (failure) throw new Error(failure.message)
+      await refreshInstances()
+      if (request !== refreshGeneration.current) return false
+      if (imported) setImportNotice(locale === 'zh' ? `已导入「${imported}」。` : `Imported “${imported}”.`)
+      return true
+    } catch (error) {
+      if (request === refreshGeneration.current) {
+        if (imported) setImportNotice('')
+        setRefreshFailure({ message: error instanceof Error ? error.message : String(error), imported })
+      }
+      return false
+    } finally { if (request === refreshGeneration.current) setRefreshBusy(false) }
+  }
+  const importFiles = async (files: readonly File[], kind: 'kit' | 'bundle') => {
+    if (!instances?.importSources || importLock.current || refreshBusy) return
+    importLock.current = true; setImportBusy(true)
+    const request = ++importGeneration.current
+    setImportNotice(''); setImportError(''); setRefreshFailure(undefined)
+    try {
+      const input = await readStudioImportFiles(kind, files, contentClient ? async source => { assertStudioImportRequestSize(source); return contentClient.readArchive({ source }) } : undefined)
+      if (request !== importGeneration.current) return
+      const record = await instances.importSources(input)
+      if (request !== importGeneration.current) return
+      // Imported content is already saved. A failed list refresh must never repeat the import.
+      setLocalInstances(previous => [record, ...previous.filter(item => item.id !== record.id)])
+      if (record.readiness && !record.readiness.ready) setIncompleteImport(record)
+      await refreshCatalog(record.title[locale])
+    } catch (error) {
+      if (request === importGeneration.current) setImportError(error instanceof Error ? error.message : String(error))
+    } finally { if (request === importGeneration.current) { importLock.current = false; setImportBusy(false) } }
+  }
+  const chooseImport = (kind: 'kit' | 'bundle', folder = false) => {
+    importKind.current = kind
+    ;(folder ? importFolderInput : importFileInput).current?.click()
+  }
+  const importButton = (kind: 'kit' | 'bundle') => instances?.importSources ? <div className="ygd-studio-import-actions">
+    <button className="ygd-studio-btn-secondary" type="button" disabled={importBusy || refreshBusy} onClick={() => chooseImport(kind)}>{locale === 'zh' ? '导入' : 'Import'}</button>
+    <InstanceActionsMenu locale={locale}><button className="ygd-studio-btn-link" type="button" disabled={importBusy || refreshBusy} onClick={() => chooseImport(kind, true)}>{locale === 'zh' ? '导入文件夹' : 'Import folder'}</button></InstanceActionsMenu>
+  </div> : undefined
+  const importFeedback = <>{importBusy && <LoadingIndicator label={locale === 'zh' ? '正在导入' : 'Importing'} />}
+    {archiveBusy && <LoadingIndicator label={locale === 'zh' ? '正在导出' : 'Exporting'} />}
+    {exportError && <StudioFeedback feedbackId={`export:${exportError}`} tone="error" locale={locale} title={locale === 'zh' ? '导出失败' : 'Export failed'} message={exportError} />}
+    {importError && <StudioFeedback feedbackId={`import:${importGeneration.current}:${importError}`} tone="error" locale={locale}
+      title={locale === 'zh' ? '无法导入文件' : 'Could not import the file'} message={formatStudioImportError(importError, locale)}
+      actions={[{ label: locale === 'zh' ? '选择文件' : 'Choose file', onClick: () => chooseImport(importKind.current) }]} />}
+    {importNotice && <StudioFeedback feedbackId={`import:${importGeneration.current}:saved`} tone="success" locale={locale} title={importNotice} />}</>
+  const installedExport = (kind: 'kit' | 'bundle', pin: DesignKitVersionPin) => contentClient && <InstanceActionsMenu locale={locale}><button className="ygd-studio-btn-link" type="button" disabled={archiveBusy} onClick={() => void exportContent({ kind, pin: { name: pin.name, version: pin.version } }, pin.name)}>{locale === 'zh' ? '导出' : 'Export'}</button></InstanceActionsMenu>
+  const copyInstalled = async (kind: 'kit' | 'bundle', kit?: DesignKitVersionPin, bundle?: DesignBundleVersionPin, sourceId?: string) => {
     if (!instances || creating) return
     if (draftDirty.current && !window.confirm(locale === 'zh' ? '放弃未保存修改并复制？' : 'Discard unsaved edits and duplicate?')) return
     const request = ++createGeneration.current
     setCreating(true); setAuthoringError('')
     try {
-      const record = await instances.copy({ kind, kit, ...(bundle ? { bundle } : {}) })
+      const record = await instances.copy({ kind,
+        ...(kit ? { kit: { name: kit.name, version: kit.version } } : {}),
+        ...(bundle ? { bundle: { name: bundle.name, version: bundle.version } } : {}),
+        ...(sourceId ? { sourceId } : {}),
+      })
       await refreshInstances()
       if (request !== createGeneration.current) return
-      draftDirty.current = false; onDraftDirtyChange?.(false); setInstanceId(record.id)
-    } catch (error) { setAuthoringError(String(error)) }
-    finally { setCreating(false) }
+      draftDirty.current = false; onDraftDirtyChange?.(false); setAuthoringIntent('edit'); setInstanceMode('read'); setInstanceId(record.id)
+    } catch (error) { if (request === createGeneration.current) setAuthoringError(String(error)) }
+    finally { if (request === createGeneration.current) setCreating(false) }
   }
   const copyMenu = (kind: 'kit' | 'bundle', kit?: DesignKitVersionPin, bundle?: DesignBundleVersionPin) => instances && <button type="button" className="ygd-studio-btn-secondary" disabled={creating} onClick={() => { void copyInstalled(kind, kit, bundle) }}>{locale === 'zh' ? '复制' : 'Copy'}</button>
+  const editInstalled = async (kind: 'kit' | 'bundle', pin: DesignKitVersionPin) => {
+    if (!instances?.editCurrent || creating) return
+    if ((draftDirty.current || authoringDirty.current) && !window.confirm(locale === 'zh' ? '放弃未保存的修改？' : 'Discard unsaved changes?')) return
+    const request = ++createGeneration.current
+    setCreating(true); setAuthoringError('')
+    try {
+      const record = await instances.editCurrent({ kind, [kind]: { name: pin.name, version: pin.version } })
+      await refreshInstances()
+      if (request !== createGeneration.current) return
+      draftDirty.current = false; authoringDirty.current = false; onDraftDirtyChange?.(false)
+      setAuthoringIntent('edit'); setInstanceMode('edit'); setInstanceId(record.id)
+    } catch (error) { if (request === createGeneration.current) setAuthoringError(String(error)) }
+    finally { if (request === createGeneration.current) setCreating(false) }
+  }
+  const editButton = (kind: 'kit' | 'bundle', pin: DesignKitVersionPin) => instances?.editCurrent && <button type="button" className="ygd-studio-btn-secondary" disabled={creating} onClick={() => { void editInstalled(kind, pin) }}>{locale === 'zh' ? '编辑' : 'Edit'}</button>
+  const createObject = async (kind: 'kit' | 'bundle') => {
+    if (!instances?.create || creating) return
+    const request = ++createGeneration.current
+    setCreating(true); setAuthoringError('')
+    try {
+      const record = await instances.create({ kind, title: kind === 'kit'
+        ? { zh: '新建设计套件', en: 'New Kit' } : { zh: '新建技能包', en: 'New Bundle' } })
+      await refreshInstances()
+      if (request !== createGeneration.current) return
+      setAuthoringIntent('create'); setInstanceMode('edit'); setInstanceId(record.id)
+    } catch (error) { if (request === createGeneration.current) setAuthoringError(String(error)) }
+    finally { if (request === createGeneration.current) setCreating(false) }
+  }
+  const newButton = (kind: 'kit' | 'bundle') => instances?.create && <button type="button" className="ygd-studio-btn-primary" disabled={creating} onClick={() => { void createObject(kind) }}>
+    {kind === 'kit' ? locale === 'zh' ? '新建设计套件' : 'New Kit' : locale === 'zh' ? '新建技能包' : 'New Bundle'}
+  </button>
   const bundleCopyMenu = (bundle: DesignBundleVersionPin) => {
     return copyMenu('bundle', undefined, bundle)
   }
-  const localCards = (kind: 'kit' | 'bundle') => localInstances.filter(record => record.kind === kind && (!snapshot.bundleQuery || kind === 'kit' || Object.values(record.title).some(title => title.toLowerCase().includes(snapshot.bundleQuery.toLowerCase())))).map(record => <article key={record.id} className="ygd-studio-kit-card">
-    <div className="ygd-studio-card-top"><StudioGlyph bundle={kind === 'bundle'} /><span className="ygd-studio-card-pill">{locale === 'zh' ? '本地副本' : 'Local copy'}</span></div>
+  const visibleLocalInstances = (kind: 'kit' | 'bundle') => localInstances.filter(record => record.kind === kind
+    && catalogMatches({ name: record.title.en, title: record.title, description: record.description, displayDescription: record.displayDescription }, kind === 'kit' ? kitQuery : snapshot.bundleQuery))
+  const searchRow = (query: string, change: (value: string) => void, count: number, label: string, placeholder: string) => <div className="ygd-studio-filter-row">
+    <input className="ygd-studio-search-input" type="search" value={query} placeholder={placeholder} aria-label={placeholder} onChange={event => change(event.currentTarget.value)} />
+    <span>{count} {label}</span>
+  </div>
+  const openLocal = (record: StudioInstance, mode: 'read' | 'edit') => leaveDrafts(() => {
+    setInstanceMode(mode); setAuthoringIntent('edit'); setInstanceId(record.id)
+  })
+  const removeLocal = async (record: StudioInstance) => {
+    if (!instances || creating || !confirmInstanceRemoval(record, locale)) return
+    const request = ++createGeneration.current
+    setCreating(true); setAuthoringError('')
+    try {
+      await instances.remove({ id: record.id, expectedRevision: record.revision })
+      setTrashNotice(value => value + 1)
+      await refreshInstances()
+    } catch (failure) { if (request === createGeneration.current) setAuthoringError(String(failure)) }
+    finally { if (request === createGeneration.current) setCreating(false) }
+  }
+  const localCards = (kind: 'kit' | 'bundle') => visibleLocalInstances(kind).map(record => <article key={record.id} className="ygd-studio-kit-card">
+    <div className="ygd-studio-card-top"><StudioGlyph bundle={kind === 'bundle'} /><span className="ygd-studio-card-pill">{locale === 'zh' ? '本地内容' : 'Local content'}</span></div>
     <h3 className="ygd-studio-kit-card-name">{record.title[locale]}</h3>
     <div className="ygd-studio-card-description">{renderStudioMarkdown(record.displayDescription?.[locale] ?? record.description ?? '')}</div>
-    <p className="ygd-studio-card-meta">{locale === 'zh' ? '可编辑 · 未发布' : 'Editable · unpublished'}</p>
-    <div className="ygd-studio-kit-card-actions"><button type="button" className="ygd-studio-btn-secondary" onClick={() => leaveDrafts(() => setInstanceId(record.id))}>{locale === 'zh' ? '打开 →' : 'Open →'}</button></div>
+    {record.readiness && !record.readiness.ready && <button type="button" className="ygd-studio-btn-link ygd-studio-import-warning" onClick={() => setIncompleteImport(record)}>{locale === 'zh' ? '⚠ 待完善' : '⚠ Incomplete'}</button>}
+    <p className="ygd-studio-card-meta">{locale === 'zh' ? '已保存 · 可编辑' : 'Saved · editable'}</p>
+    <div className="ygd-studio-kit-card-actions">
+      <button type="button" className="ygd-studio-btn-secondary" disabled={creating} onClick={() => openLocal(record, 'read')}>{locale === 'zh' ? '打开' : 'Open'}</button>
+      <button type="button" className="ygd-studio-btn-secondary" disabled={creating} onClick={() => void copyInstalled(record.kind, record.source.kit, record.source.bundle, record.id)}>{locale === 'zh' ? '复制' : 'Copy'}</button>
+      <button type="button" className="ygd-studio-btn-secondary" disabled={creating} onClick={() => openLocal(record, 'edit')}>{locale === 'zh' ? '编辑' : 'Edit'}</button>
+      <InstanceActionsMenu locale={locale}>{contentClient && <button className="ygd-studio-btn-link" type="button" disabled={creating || archiveBusy} onClick={() => exportInstance(record)}>{locale === 'zh' ? '导出' : 'Export'}</button>}<InstanceTrashAction locale={locale} disabled={creating} onClick={() => void removeLocal(record)} /></InstanceActionsMenu>
+    </div>
   </article>)
   // A Kit can provide execution context without owning the Bundle source.
   const bundleContextKit = () => {
@@ -428,10 +546,6 @@ export function StudioWorkspace({ client, controller: supplied, authoring, kitAu
     const candidates = entry?.usedBy ?? snapshot.view?.kits.filter(kit => kit.name === bundleWorkspace.kit) ?? []
     if (workspace && candidates.some(pin => pin.name === workspace.name && pin.version === workspace.version)) return workspace
     return candidates.length === 1 ? candidates[0] : undefined
-  }
-  previewOwner.current = { kit: bundleContextKit(), bundle: bundleWorkspace }
-  const receivePanelDraft = (record: StudioPanelDraftRecord) => {
-    if (draftMatches(record, previewOwner.current.kit, previewOwner.current.bundle)) setPanelDraft(record)
   }
   useEffect(() => () => { createGeneration.current++ }, [])
   // Each opened document starts on its own default view: markdown rich, everything else source.
@@ -447,9 +561,10 @@ export function StudioWorkspace({ client, controller: supplied, authoring, kitAu
     }
   }
   const bundleQuery = snapshot.bundleQuery.trim().toLowerCase()
-  const listedBundles = (snapshot.view?.bundles ?? []).filter((bundle) => bundleQuery === ''
-    || bundle.name.toLowerCase().includes(bundleQuery)
-    || bundle.description.toLowerCase().includes(bundleQuery))
+  const catalogBundles = (snapshot.view?.bundles ?? []).filter(bundle => !localInstances.some(record => record.current && record.kind === 'bundle' && record.bundle?.name === bundle.name))
+  const listedBundles = catalogBundles.filter(bundle => catalogMatches(bundle, bundleQuery))
+  const catalogKits = (snapshot.view?.kits ?? []).filter(kit => !localInstances.some(record => record.current && record.kind === 'kit' && record.kit?.name === kit.name))
+  const listedKits = catalogKits.filter(kit => catalogMatches(kit, kitQuery))
 
   const switchTab = (id: StudioKitWorkspaceTab): void => {
     if (snapshot.kitTab === id) { tabElements.current.get(id)?.focus(); return }
@@ -488,12 +603,11 @@ export function StudioWorkspace({ client, controller: supplied, authoring, kitAu
 
   const diagnostics = <>
     {snapshot.phase === 'loading' && <LoadingIndicator label={t.loading} />}
-    {snapshot.failure !== undefined && <div className="ygd-studio-diagnostics" role="alert">
-      <strong>{t.requestFailed}</strong>: {snapshot.failure.message}
-    </div>}
-    {snapshot.diagnostics.length > 0 && <ul className="ygd-studio-diagnostics" aria-label="Validation diagnostics">
-      {snapshot.diagnostics.map((entry, index) => <li key={`${entry.code}:${index}`}><strong>{entry.code}</strong>: {entry.message}</li>)}
-    </ul>}
+    {snapshot.failure !== undefined && !refreshFailure && <StudioFeedback feedbackId={`request:${snapshot.failure.message}`} tone="error" locale={locale}
+      title={t.requestFailed} message={snapshot.failure.message} />}
+    {snapshot.diagnostics.length > 0 && <StudioFeedback feedbackId={`content:${JSON.stringify(snapshot.diagnostics)}`} tone="info" locale={locale}
+      title={locale === 'zh' ? '内容检查提示' : 'Content check information'}
+      details={snapshot.diagnostics.map(entry => ({ message: entry.message }))} />}
   </>
 
   const codeFrame = (content: string, ariaLabel: string): ReactElement => (
@@ -509,7 +623,7 @@ export function StudioWorkspace({ client, controller: supplied, authoring, kitAu
 
   const docToggle = (mode: DocViewMode, select: (mode: DocViewMode) => void, _byteCount: number, actions?: ReactNode): ReactElement => (
     <div className="ygd-studio-doc-toolbar">
-      <div className="ygd-studio-file-heading"><strong className="ygd-studio-document-name">{bundleWorkspace ? bundleFile?.path : 'mindset.md'}</strong><FilePurpose path={bundleWorkspace ? bundleFile?.path : 'mindset.md'} locale={locale} /></div>
+      <div className="ygd-studio-file-heading"><FileName path={bundleWorkspace ? bundleFile?.path : 'mindset.md'} locale={locale} /></div>
       <div className="ygd-studio-doc-toggle-group">
         {(!bundleFile || isMarkdownPath(bundleFile.path)) && <button className="ygd-studio-doc-toggle" type="button" aria-pressed={mode === 'rich'} onClick={() => select('rich')}>{t.richToggle}</button>}
         <button className="ygd-studio-doc-toggle" type="button" aria-pressed={mode === 'source'} onClick={() => select('source')}>{t.sourceToggle}</button>
@@ -519,10 +633,8 @@ export function StudioWorkspace({ client, controller: supplied, authoring, kitAu
     </div>
   )
 
-  const docFooter = (content: string, draft: boolean): ReactElement => <footer className="ygd-studio-doc-footer">
+  const docFooter = (content: string): ReactElement => <footer className="ygd-studio-doc-footer">
     <span>{locale === 'zh' ? '完整文件' : 'Complete file'} · {t.bytes(new TextEncoder().encode(content).length)}</span>
-    {!bundleWorkspace && kitAuthoring && mindsetChoices.length > 0 && <button type="button" className="ygd-studio-btn-link" onClick={() => setRecoveryOpen(true)}>{locale === 'zh' ? '恢复工作副本' : 'Restore working copy'}</button>}
-    <span>{draft ? locale === 'zh' ? '工作副本 · 未发布' : 'Working copy · unpublished' : locale === 'zh' ? '已安装内容' : 'Installed content'}</span>
   </footer>
 
   const markdownDoc = (source: string, ariaLabel: string): ReactElement => renderStudioDocument(source, { locale, ariaLabel })
@@ -531,7 +643,7 @@ export function StudioWorkspace({ client, controller: supplied, authoring, kitAu
   const cardDescription = (description: string): ReactElement => (
     <div className="ygd-studio-card-description">{renderStudioMarkdown(description)}</div>
   )
-  const installedStatus = <span className="ygd-studio-installed-status" title={locale === 'zh' ? '已安装内容受保护，复制后可以编辑。' : 'Installed content is protected. Make a copy to edit.'}>{locale === 'zh' ? '已安装 · 只读' : 'Installed · read-only'}</span>
+
 
   const bundleMain = bundleWorkspace === undefined ? undefined : <main className="ygd-studio-main ygd-studio-bundle-main">
     <header className="ygd-studio-content-header">
@@ -540,29 +652,23 @@ export function StudioWorkspace({ client, controller: supplied, authoring, kitAu
           <button type="button" className="ygd-studio-back" aria-label={locale === 'zh' ? '返回' : 'Back'} title={locale === 'zh' ? '返回' : 'Back'} onClick={() => leaveDrafts(() => controller.closeBundleWorkspace())}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="m12 5-7 7 7 7M5 12h14" /></svg></button>
           <StudioGlyph bundle />
           <h1 className="ygd-studio-page-title">{bundleTitle(bundleWorkspace.name, bundleWorkspace.version)}</h1>
-          <label>{locale === 'zh' ? '版本 ' : 'Version '}<StudioSelect aria-label={locale === 'zh' ? 'Bundle 版本' : 'Bundle version'} value={bundleWorkspace.version}
-            onValueChange={version => leaveDrafts(() => void controller.openBundleWorkspace(bundleWorkspace.name, version))}
-            options={groupInstalledContent(snapshot.view?.bundles ?? []).find(group => group.name === bundleWorkspace.name)?.versions
-              .map(bundle => ({ value: bundle.version, label: bundle.version })) ?? []} /></label>
         </div>
         <div className="ygd-studio-hero-actions">
-        {installedStatus}
         <button className="ygd-studio-btn-secondary" type="button" aria-expanded={mountsOpen} onClick={() => setMountsOpen(!mountsOpen)}>{locale === 'zh' ? '挂载管理' : 'Mount management'}</button>
-        {bundleCopyMenu(bundleWorkspace)}
+        {bundleCopyMenu(bundleWorkspace)}{editButton('bundle', bundleWorkspace)}{installedExport('bundle', bundleWorkspace)}
         <button type="button" className="ygd-studio-btn-primary" disabled={!trials || !bundleContextKit()} aria-pressed={bundleTab === 'preview' && previewMode === 'trial'} onClick={() => {
           if (panelDirty.current) { setAuthoringError(locale === 'zh' ? '请先保存左侧的面板修改，再试运行。' : 'Save the Panel changes before starting a trial.'); return }
           setAuthoringError(''); launchTrial.current?.()
         }}>{locale === 'zh' ? '试运行' : 'Trial run'}</button>
         {trials && (() => {
           const kit = bundleContextKit()
-          return kit && <BundleTrial key={`${kit.name}:${bundleWorkspace.name}:${bundleWorkspace.version}`} client={trials} locale={locale} launchRef={launchTrial} target={trialTarget} onDirtyChange={value => reportPreviewDirty('trial', value)} visible={bundleTab === 'preview' && previewMode === 'trial'} onOpen={() => { setBundleTab('preview'); setPreviewMode('trial') }} source={panelDraft && draftMatches(panelDraft, kit, bundleWorkspace) ? { kind: 'panel-draft', id: panelDraft.id, expectedRevision: panelDraft.revision, kit: panelDraft.kit, bundle: panelDraft.bundle } : { kind: 'installed', kit: { name: kit.name, version: kit.version }, bundle: { name: bundleWorkspace.name, version: bundleWorkspace.version } }} />
+          return kit && <BundleTrial key={`${kit.name}:${bundleWorkspace.name}:${bundleWorkspace.version}`} client={trials} locale={locale} launchRef={launchTrial} target={trialTarget} onDirtyChange={value => reportPreviewDirty('trial', value)} visible={bundleTab === 'preview' && previewMode === 'trial'} onOpen={() => { setBundleTab('preview'); setPreviewMode('trial') }} source={{ kind: 'installed', kit: { name: kit.name, version: kit.version }, bundle: { name: bundleWorkspace.name, version: bundleWorkspace.version } }} />
         })()}
         </div>
-        {authoringError && <p role="alert">{authoringError}</p>}
       </div>
     </header>
     {mountsOpen && <StudioDialog title={`${locale === 'zh' ? '挂载管理' : 'Mount Management'} · ${bundleWorkspace.name}`} close={() => setMountsOpen(false)}>
-      <BundleMounts client={instances} bundle={bundleWorkspace} installed={snapshot.view?.bundles.find(bundle => bundle.name === bundleWorkspace.name && bundle.version === bundleWorkspace.version)?.usedBy ?? []} locale={locale} />
+      <BundleMounts onEditKit={instances?.editCurrent ? kit => { setMountsOpen(false); void editInstalled('kit', kit) } : undefined} client={instances} bundle={bundleWorkspace} installed={snapshot.view?.bundles.find(bundle => bundle.name === bundleWorkspace.name && bundle.version === bundleWorkspace.version)?.usedBy ?? []} locale={locale} />
     </StudioDialog>}
     <div className="ygd-studio-workplane-bar" aria-label="Bundle content">
       <button className="ygd-studio-workplane-tab" type="button" aria-pressed={bundleTab === 'files'} onClick={() => setBundleTab('files')}>{locale === 'zh' ? '原始文件' : 'Source Files'}</button>
@@ -582,89 +688,59 @@ export function StudioWorkspace({ client, controller: supplied, authoring, kitAu
               ? markdownDoc(bundleFile.content, 'Bundle file source')
               : codeFrame(bundleFile.content, 'Bundle file source')}
           </div>
-          {docFooter(bundleFile.content, false)}
+          {docFooter(bundleFile.content)}
         </>}
       </div>
       <FileInfoSidebar kind="bundle" description={bundleWorkspace.displayDescription?.[locale] ?? bundleWorkspace.description} locale={locale} />
     </div>
 
     <div className="ygd-studio-trial-slot" ref={setTrialTarget} hidden={bundleTab !== 'preview' || previewMode !== 'trial'} />
-    {previewOpened && <div className="ygd-studio-preview-slot" hidden={bundleTab !== 'preview' || previewMode !== 'sample'}><InstalledPreview key={`${bundleWorkspace.name}@${bundleWorkspace.version}`} client={client} authoring={authoring} locale={locale} bundle={{ name: bundleWorkspace.name, version: bundleWorkspace.version }} kit={bundleContextKit()} declarative={bundleWorkspace.panel?.kind === 'declarative'} onDirtyChange={value => reportPreviewDirty('panel', value)} onRecord={receivePanelDraft} /></div>}
+    {previewOpened && <div className="ygd-studio-preview-slot" hidden={bundleTab !== 'preview' || previewMode !== 'sample'}><InstalledPreview key={`${bundleWorkspace.name}@${bundleWorkspace.version}`} client={client} authoring={authoring} onEdit={instances?.editCurrent ? () => { void editInstalled('bundle', bundleWorkspace) } : undefined} locale={locale} bundle={{ name: bundleWorkspace.name, version: bundleWorkspace.version }} kit={bundleContextKit()} declarative={bundleWorkspace.panel?.kind === 'declarative'} /></div>}
   </main>
 
-  const bundleCard = (bundle: { name: string; version: string; description: string; title?: Readonly<{ zh: string; en: string }>; displayDescription?: Readonly<{ zh: string; en: string }> }, uses: number, inKit = false): ReactElement => <article className="ygd-studio-kit-card ygd-studio-bundle-card" key={`${bundle.name}@${bundle.version}`}>
-    <div className="ygd-studio-card-top"><StudioGlyph bundle /><span className="ygd-studio-card-pill">{inKit ? locale === 'zh' ? '引用挂载' : 'Mounted reference' : `${uses} Kit`}</span></div>
-    <h3 className="ygd-studio-kit-card-name">{bundle.title?.[locale] ?? displayName(bundle.name)}</h3>
-    <div className="ygd-studio-source-id">{bundle.name}</div>
-    {cardDescription(bundle.displayDescription?.[locale] ?? bundle.description)}
-    <div className="ygd-studio-kit-card-actions">
-      <button className="ygd-studio-btn-secondary ygd-studio-btn-soft" type="button" onClick={() => void controller.openBundleWorkspace(bundle.name, bundle.version)}>{locale === 'zh' ? '打开 →' : 'Open →'}</button>
-      {bundleCopyMenu(bundle)}
-      {!inKit && <button className="ygd-studio-btn-link" type="button" onClick={() => { void controller.openBundleWorkspace(bundle.name, bundle.version).then(() => setMountsOpen(true)) }}>{locale === 'zh' ? '查看挂载' : 'View mounts'}</button>}
-    </div>
-  </article>
+  const bundleCard = (bundle: { name: string; version: string; description: string; title?: Readonly<{ zh: string; en: string }>; displayDescription?: Readonly<{ zh: string; en: string }> }, uses: number, inKit = false): ReactElement => <BundleCard key={`${bundle.name}@${bundle.version}`} bundle={bundle} locale={locale}
+    badge={inKit ? locale === 'zh' ? '引用挂载' : 'Mounted reference' : `${uses} Kit`}
+    badgeLabel={locale === 'zh' ? `${uses} Kit · 查看挂载` : `${uses} Kit · View mounts`}
+    onBadgeClick={inKit ? undefined : () => {
+      if (bundleWorkspace?.name === bundle.name && bundleWorkspace.version === bundle.version) setMountsOpen(true)
+      else { mountRequest.current = `${bundle.name}@${bundle.version}`; void controller.openBundleWorkspace(bundle.name, bundle.version) }
+    }}>
+    <button className="ygd-studio-btn-secondary" type="button" onClick={() => void controller.openBundleWorkspace(bundle.name, bundle.version)}>{locale === 'zh' ? '打开' : 'Open'}</button>
+    {bundleCopyMenu(bundle)}{editButton('bundle', bundle)}{installedExport('bundle', bundle)}
+  </BundleCard>
 
   const bundlesListMain = <main className="ygd-studio-main">
-    <header className="ygd-studio-content-header">
-      <div>
-        <div className="ygd-studio-header-title-group">
-          <h1 className="ygd-studio-page-title">{t.bundlesTitle}</h1>
-
-
-        </div>
-        <p className="ygd-studio-subtitle">{t.bundlesSubtitle}</p>
-      </div>
-    </header>
+    <CatalogHeader label={t.searchPlaceholder} query={snapshot.bundleQuery} onQueryChange={value => controller.setBundleQuery(value)}
+      count={groupInstalledContent(listedBundles).length + visibleLocalInstances('bundle').length}
+      total={groupInstalledContent(catalogBundles).length + localInstances.filter(item => item.kind === 'bundle').length}
+      noun={t.bundlesTitle} locale={locale}>{importButton('bundle')}{newButton('bundle')}</CatalogHeader>
     <div className="ygd-studio-content-body">
       {diagnostics}
-      <div className="ygd-studio-filter-row"><span>{groupInstalledContent(listedBundles).length} {t.bundlesTitle}</span>
-        <input
-          className="ygd-studio-search-input"
-          type="search"
-          value={snapshot.bundleQuery}
-          placeholder={t.searchPlaceholder}
-          aria-label={t.searchPlaceholder}
-          onChange={(event) => controller.setBundleQuery(event.currentTarget.value)}
-        />
-      </div>
-      {listedBundles.length === 0 && <div className="ygd-studio-empty">{t.noBundles}</div>}
+      {listedBundles.length === 0 && visibleLocalInstances('bundle').length === 0 && <div className="ygd-studio-empty">{t.noBundles}</div>}
       <div className="ygd-studio-kits-grid" aria-label="Catalog Bundles">
         {localCards('bundle')}
-        {groupInstalledContent(listedBundles).map(({ latest: bundle, versions }) => bundleCard(bundle,
-          new Set(versions.flatMap(version => version.usedBy.map(kit => `${kit.name}@${kit.version}`))).size))}
+        {groupInstalledContent(listedBundles).map(({ latest: bundle }) => bundleCard(bundle,
+          new Set(bundle.usedBy.map(kit => `${kit.name}@${kit.version}`)).size))}
       </div>
     </div>
   </main>
 
-  const mindsetDocumentView = (actions?: ReactNode, editor?: ReactNode, editing = false): ReactElement => <article className="ygd-studio-document-card">
-    {docToggle(mindsetMode, setMindsetMode, 0, actions)}
-    <div className="ygd-studio-mindset-document" ref={mindsetDocument}>
-      {editing ? <div className="ygd-studio-mindset-inline">{editor}</div> : <>
-        {editor}
-        {mindsetMode === 'rich' ? markdownDoc(mindsetBody(visibleMindset), 'Mindset source') : codeFrame(mindsetBody(visibleMindset), 'Mindset body source')}
-      </>}
-    </div>
-    {docFooter(visibleMindset, !!mindsetRecords.current.get(kitKey))}
-  </article>
-
   const kitMain = workspace === undefined ? <main className="ygd-studio-main">
-    <header className="ygd-studio-content-header">
-      <div>
-        <div className="ygd-studio-header-title-group">
-          <h1 className="ygd-studio-page-title">{t.kitsTitle}</h1>
-        </div>
-        <p className="ygd-studio-subtitle">{t.kitsSubtitle}</p>
+    <CatalogHeader label={t.kitsSearchPlaceholder} query={kitQuery} onQueryChange={setKitQuery}
+      count={groupInstalledContent(listedKits).length + visibleLocalInstances('kit').length}
+      total={groupInstalledContent(catalogKits).length + localInstances.filter(item => item.kind === 'kit').length}
+      noun={t.kitsTitle} locale={locale}>
         <a className="ygd-studio-btn-link ygd-studio-catalog-link" href={OFFICIAL_KITS_URL} target="_blank" rel="noopener noreferrer" title={t.officialKitsHelp} aria-label={t.officialKitsHelp}>
           {t.browseOfficialKits}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M14 3h7v7M10 14 21 3M21 14v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h6" /></svg>
         </a>
-      </div>
-    </header>
+      {importButton('kit')}{newButton('kit')}
+    </CatalogHeader>
     <div className="ygd-studio-content-body">
       {diagnostics}
-      {snapshot.view?.kits.length === 0 && <div className="ygd-studio-empty">{t.noKits}</div>}
+      {listedKits.length === 0 && visibleLocalInstances('kit').length === 0 && <div className="ygd-studio-empty">{t.noKits}</div>}
       <div className="ygd-studio-kits-grid" aria-label="Installed Kits">
         {localCards('kit')}
-        {groupInstalledContent(snapshot.view?.kits ?? []).map(({ latest: kit }) => {
+        {groupInstalledContent(listedKits).map(({ latest: kit }) => {
           const bundleCount = bundleCountByKit.get(`${kit.name}\u0000${kit.version}`) ?? 0
           return (
             <article className="ygd-studio-kit-card ygd-studio-library-card" key={`${kit.name}@${kit.version}`}>
@@ -674,8 +750,8 @@ export function StudioWorkspace({ client, controller: supplied, authoring, kitAu
               {cardDescription(kit.displayDescription?.[locale] ?? kit.description ?? '')}
               <p className="ygd-studio-card-meta">{bundleCount} {locale === 'zh' ? '个技能包' : 'bundles'}</p>
               <div className="ygd-studio-kit-card-actions">
-                <button className="ygd-studio-btn-secondary ygd-studio-btn-soft" type="button" onClick={() => void controller.selectKit(kit.name, kit.version)}>{locale === 'zh' ? '打开 →' : 'Open →'}</button>
-                {copyMenu('kit', kit)}
+                <button className="ygd-studio-btn-secondary" type="button" onClick={() => void controller.selectKit(kit.name, kit.version)}>{locale === 'zh' ? '打开' : 'Open'}</button>
+                {copyMenu('kit', kit)}{editButton('kit', kit)}{installedExport('kit', kit)}
               </div>
             </article>
           )
@@ -689,16 +765,11 @@ export function StudioWorkspace({ client, controller: supplied, authoring, kitAu
           <button type="button" className="ygd-studio-back" aria-label={locale === 'zh' ? '返回' : 'Back'} title={locale === 'zh' ? '返回' : 'Back'} onClick={() => leaveDrafts(() => controller.backToList())}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="m12 5-7 7 7 7M5 12h14" /></svg></button>
           <StudioGlyph />
           <h1 className="ygd-studio-page-title">{displayName(workspace.name)}</h1>
-          <label>{locale === 'zh' ? '版本 ' : 'Version '}<StudioSelect aria-label={locale === 'zh' ? 'Kit 版本' : 'Kit version'} value={workspace.version}
-            onValueChange={version => leaveDrafts(() => void controller.selectKit(workspace.name, version))}
-            options={groupInstalledContent(snapshot.view?.kits ?? []).find(group => group.name === workspace.name)?.versions
-              .map(kit => ({ value: kit.version, label: kit.version })) ?? []} /></label>
         </div>
         <div className="ygd-studio-hero-actions">
-        {installedStatus}
-        {copyMenu('kit', workspace)}
+        {copyMenu('kit', workspace)}{editButton('kit', workspace)}
+        {installedExport('kit', workspace)}
         </div>
-        {authoringError && <p role="alert">{authoringError}</p>}
       </div>
     </header>
     <div className="ygd-studio-workplane-bar" role="tablist" aria-label="Kit Workspace sections">
@@ -709,7 +780,7 @@ export function StudioWorkspace({ client, controller: supplied, authoring, kitAu
       {diagnostics}
       {snapshot.kitTab === 'mounts'
         ? <>
-          <div className="ygd-studio-filter-row"><span>{workspace.mounts.length} {t.bundlesTitle}</span><input className="ygd-studio-search-input" type="search" aria-label={t.searchPlaceholder} placeholder={t.searchPlaceholder} value={mountQuery} onChange={event => setMountQuery(event.currentTarget.value)} /></div>
+          {searchRow(mountQuery, setMountQuery, workspace.mounts.length, t.bundlesTitle, t.searchPlaceholder)}
           <div className="ygd-studio-bundles-list" aria-label="Mounted Bundles">
             {workspace.mounts.length === 0 && <div className="ygd-studio-empty">{t.noMounts}</div>}
             {workspace.mounts.filter(mount => `${mount.name} ${mount.description} ${mount.title?.[locale] ?? ''} ${mount.displayDescription?.[locale] ?? ''}`.toLowerCase().includes(mountQuery.toLowerCase())).map(mount => bundleCard(mount, mount.mountedBy.length, true))}
@@ -717,15 +788,17 @@ export function StudioWorkspace({ client, controller: supplied, authoring, kitAu
 
         </>
         : <>
-          <KitFiles key={kitKey} client={client} name={workspace.name} version={workspace.version} mindset={workspace.mindsetSource} description={workspace.displayDescription?.[locale] ?? workspace.description} locale={locale} canNavigate={() => !draftDirty.current || window.confirm(locale === 'zh' ? '放弃未保存的修改？' : 'Discard unsaved changes?')} renderMindset={kitAuthoring ? sourceToggle => <InlineMindset key={`${kitKey}:${mindsetEditorEpoch}`} authoring={kitAuthoring}
-            kit={{ name: workspace.name, version: workspace.version }} installedSource={workspace.mindsetSource}
-            initialId={mindsetRecords.current.get(kitKey)} locale={locale}
-            onRecord={record => { mindsetRecords.current.set(kitKey, record.id); setMindsetChoices(previous => [...previous.filter(item => item.id !== record.id), { id: record.id, revision: record.revision }]) }}
-            onSource={source => setSavedMindsets(previous => ({ ...previous, [kitKey]: source }))}
-            onDirtyChange={value => { draftDirty.current = value; onDraftDirtyChange?.(value) }} renderContent={parts => <><div className="ygd-studio-doc-toolbar"><div className="ygd-studio-file-heading"><strong className="ygd-studio-document-name">mindset.md</strong><FilePurpose path="mindset.md" locale={locale} /></div><div className="ygd-studio-doc-toggle-group">{!parts.editing && sourceToggle}{parts.actions}</div></div><div className="ygd-studio-document-body">{parts.editing ? parts.editor : markdownDoc(mindsetBody(visibleMindset), 'Mindset source')}</div></>} /> : undefined} />
+          <KitFiles key={kitKey} client={client} name={workspace.name} version={workspace.version} mindset={workspace.mindsetSource} description={workspace.displayDescription?.[locale] ?? workspace.description} locale={locale} canNavigate={() => !draftDirty.current || window.confirm(locale === 'zh' ? '放弃未保存的修改？' : 'Discard unsaved changes?')} />
         </>}
     </div>
   </main>
+
+  const instanceKind = localInstances.find(record => record.id === instanceId)?.kind
+  const objectAuthoring = instanceMode === 'edit' && !!instanceId && !!instances && !componentsOpen
+  const visibleSection = instanceKind === 'bundle' ? 'bundles' : instanceKind === 'kit' ? 'kits' : snapshot.section
+  const contentView = componentsOpen && componentLibrary ? <ComponentLibrary library={componentLibrary} locale={locale} /> : <>
+        {snapshot.phase === 'loading' && !instanceId ? <main className="ygd-studio-main"><LoadingIndicator label={t.loading} /></main> : instanceId && instances ? presentInstanceWorkbench({ client: instances, id: instanceId, readOnly: instanceMode === 'read', onEdit: () => setInstanceMode('edit'), initialSelection: !entryRevisionConsumed && entryInstance?.id === instanceId ? entryInstance : undefined, locale, authoringIntent, renderPreview: renderPreview ?? authoring?.renderPreview, onBack: () => leaveDrafts(() => visibleSection === 'bundles' ? controller.setSection('bundles') : controller.backToList()), onExport: contentClient ? exportInstance : undefined, onChanged: record => { if (!record) { setTrashNotice(value => value + 1); controller.setSection(visibleSection) } setEntryRevisionConsumed(true); if (record && record.id !== instanceId) setInstanceMode('read'); setInstanceId(record?.id); void refreshInstances().catch(error => setAuthoringError(String(error))) }, onDirtyChange: value => { draftDirty.current = value; onDraftDirtyChange?.(value || authoringDirty.current) } }, instanceMode === 'edit' ? renderInstanceWorkbench : undefined) : bundleMain !== undefined ? bundleMain : snapshot.section === 'bundles' ? bundlesListMain : kitMain}
+        </>
 
   return <StudioSelectContext.Provider value={renderSelect}><section className="ygd-studio-workspace" aria-label="Design Studio">
     <style>{STUDIO_WORKSPACE_CSS}</style>
@@ -734,8 +807,8 @@ export function StudioWorkspace({ client, controller: supplied, authoring, kitAu
       <aside className={`ygd-studio-sidebar${sidebarOpen ? ' open' : ''}`} aria-label="Product navigation">
         <div className="ygd-studio-sidebar-logo">Yugoo Design</div>
         <nav className="ygd-studio-sidebar-nav" aria-label="Studio sections">
-          <button className="ygd-studio-sidebar-item" type="button" aria-current={!componentsOpen && !archivesOpen && !draftsOpen && !bundleWorkspace && snapshot.section === 'kits' ? 'page' : undefined} onClick={() => leaveDrafts(() => { setComponentsOpen(false); controller.backToList() })}><StudioGlyph />{t.kitsTitle}</button>
-          <button className="ygd-studio-sidebar-item" type="button" aria-current={!componentsOpen && !archivesOpen && !draftsOpen && (bundleWorkspace || snapshot.section === 'bundles') ? 'page' : undefined} onClick={() => leaveDrafts(() => { setComponentsOpen(false); controller.setSection('bundles') })}><StudioGlyph bundle />{t.bundlesTitle}</button>
+          <button className="ygd-studio-sidebar-item" type="button" aria-current={!componentsOpen && !bundleWorkspace && visibleSection === 'kits' ? 'page' : undefined} onClick={() => leaveDrafts(() => { setComponentsOpen(false); controller.backToList() })}><StudioGlyph />{t.kitsTitle}</button>
+          <button className="ygd-studio-sidebar-item" type="button" aria-current={!componentsOpen && (bundleWorkspace || visibleSection === 'bundles') ? 'page' : undefined} onClick={() => leaveDrafts(() => { setComponentsOpen(false); controller.setSection('bundles') })}><StudioGlyph bundle />{t.bundlesTitle}</button>
         </nav>
         <div className="ygd-studio-sidebar-footer">{componentLibrary && <nav className="ygd-studio-sidebar-utilities" aria-label={locale === 'zh' ? 'Studio 工具' : 'Studio utilities'}><button className="ygd-studio-sidebar-item" type="button" aria-current={componentsOpen ? 'page' : undefined} onClick={() => leaveDrafts(() => setComponentsOpen(true))}><span className="ygd-studio-kitmark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>{locale === 'zh' ? '面板组件库' : 'Panel Component Library'}</button></nav>}<div className="ygd-studio-language" role="group" aria-label={locale === 'zh' ? '界面语言' : 'Interface language'}>
           <button type="button" lang="zh-CN" aria-pressed={locale === 'zh'} onClick={() => changeLocale('zh')}>中文</button>
@@ -744,59 +817,50 @@ export function StudioWorkspace({ client, controller: supplied, authoring, kitAu
       </aside>
       <div className="ygd-studio-stage">
         <div className="ygd-studio-topbar"><span aria-label="Breadcrumb">
-          <button className="ygd-studio-breadcrumb-button" type="button" onClick={() => { if (!componentsOpen) leaveDrafts(() => snapshot.section === 'kits' ? controller.backToList() : controller.closeBundleWorkspace()) }}>{componentsOpen ? (locale === 'zh' ? '面板组件库' : 'Panel Component Library') : snapshot.section === 'kits' ? t.kitsTitle : t.bundlesTitle}</button>
-          {!componentsOpen && !archivesOpen && !instanceId && workspace && <><span aria-hidden="true">/</span>{bundleWorkspace ? <button className="ygd-studio-breadcrumb-button" type="button" onClick={() => leaveDrafts(() => controller.closeBundleWorkspace())}>{displayName(workspace.name)}</button> : <span aria-current="page">{displayName(workspace.name)}</span>}</>}
-          {!componentsOpen && !archivesOpen && !instanceId && bundleWorkspace && <><span aria-hidden="true">/</span>{bundleTitle(bundleWorkspace.name, bundleWorkspace.version)}</>}
+          <button className="ygd-studio-breadcrumb-button" type="button" onClick={() => { if (!componentsOpen) leaveDrafts(() => visibleSection === 'kits' ? controller.backToList() : controller.setSection('bundles')) }}>{componentsOpen ? (locale === 'zh' ? '面板组件库' : 'Panel Component Library') : visibleSection === 'kits' ? t.kitsTitle : t.bundlesTitle}</button>
+          {!componentsOpen && !instanceId && workspace && <><span aria-hidden="true">/</span>{bundleWorkspace ? <button className="ygd-studio-breadcrumb-button" type="button" onClick={() => leaveDrafts(() => controller.closeBundleWorkspace())}>{displayName(workspace.name)}</button> : <span aria-current="page">{displayName(workspace.name)}</span>}</>}
+          {!componentsOpen && !instanceId && bundleWorkspace && <><span aria-hidden="true">/</span>{bundleTitle(bundleWorkspace.name, bundleWorkspace.version)}</>}
           {!componentsOpen && instanceId && <><span aria-hidden="true">/</span>{localInstances.find(record => record.id === instanceId)?.title[locale]}</>}
-          {archivesOpen && <><span aria-hidden="true">/</span><span aria-current="page">{locale === 'zh' ? '内容归档' : 'Content archives'}</span></>}
-        </span><div className="ygd-studio-topbar-actions">{contentClient && <button className="ygd-studio-btn-link" type="button" disabled={archivesOpen} onClick={() => leaveDrafts(() => { setComponentsOpen(false); setArchivesOpen(true) })}>{locale === 'zh' ? '内容归档' : 'Content archives'}</button>}{!componentsOpen && <button className="ygd-studio-btn-link" type="button" disabled={snapshot.phase === 'loading'} onClick={() => leaveDrafts(() => { void (async () => {
-          await controller.load()
-          await refreshInstances()
+        </span><div className="ygd-studio-topbar-actions">{!componentsOpen && <button className="ygd-studio-btn-link" type="button" disabled={snapshot.phase === 'loading' || refreshBusy} onClick={() => leaveDrafts(() => { void (async () => {
+          if (!await refreshCatalog(refreshFailure?.imported)) return
           if (workspace) await controller.selectKit(workspace.name, workspace.version)
           if (bundleWorkspace) { await controller.openBundleWorkspace(bundleWorkspace.name, bundleWorkspace.version); if (bundleFile) await controller.openBundleFile(bundleFile.path) }
         })() })}>{locale === 'zh' ? '刷新内容' : 'Refresh content'}</button>}</div></div>
-        {componentsOpen && componentLibrary ? <ComponentLibrary library={componentLibrary} locale={locale} /> : <>
-        {authoringError && <p role="alert" className="ygd-studio-error">{authoringError}</p>}
-        {archivesOpen && contentClient ? <ContentArchiveWorkbench client={contentClient} installedKit={workspace ? { name: workspace.name, version: workspace.version } : undefined} locale={locale} canAdoptKit={!!kitAuthoring}
-          onBack={() => leaveDrafts(() => {})}
-          onAdopt={result => leaveDrafts(() => {
-            if (result.draft && kitAuthoring) { setDraftId(result.draft.id); setDraftsOpen('kit'); void controller.load(); return }
-            const bundle = result.contents.find(item => item.kind === 'bundle')
-            if (!bundle) return
-            const request = createGeneration.current
-            void (async () => {
-              await controller.load()
-              if (request !== createGeneration.current || controller.getSnapshot().phase !== 'ready') return
-              controller.setSection('bundles')
-              await controller.openBundleWorkspace(bundle.pin.name, bundle.pin.version)
-            })()
-          })}
-          onDirtyChange={value => { draftDirty.current = value; onDraftDirtyChange?.(value) }} />
-          : snapshot.phase === 'loading' && !instanceId && !draftsOpen ? <main className="ygd-studio-main"><LoadingIndicator label={t.loading} /></main> : instanceId && instances ? <InstanceWorkbench key={instanceId} client={instances} id={instanceId} locale={locale} renderPreview={authoring?.renderPreview} onBack={() => leaveDrafts(() => controller.backToList())} onChanged={record => { setInstanceId(record?.id); void refreshInstances().catch(error => setAuthoringError(String(error))) }} onDirtyChange={value => { draftDirty.current = value; onDraftDirtyChange?.(value) }} /> : draftsOpen === 'kit' && kitAuthoring ? <KitDraftWorkbench authoring={kitAuthoring} initialId={draftId} locale={locale} onDirtyChange={value => { draftDirty.current = value; onDraftDirtyChange?.(value) }} /> : draftsOpen === 'panel' && authoring ? <PanelDraftWorkbench onBack={() => leaveDrafts(() => { setBundleTab('preview'); setPreviewMode('sample') })} trials={trials} authoring={authoring} initialId={draftId} locale={locale} onDirtyChange={value => { draftDirty.current = value; onDraftDirtyChange?.(value) }} /> : bundleMain !== undefined ? bundleMain : snapshot.section === 'bundles' ? bundlesListMain : kitMain}
-        </>}
+        <div className="ygd-studio-notification-area" hidden={componentsOpen}>
+        {trashNotice > 0 && <StudioFeedback feedbackId={`trash:${trashNotice}`} tone="success" locale={locale} title={locale === 'zh' ? '已移到系统回收站' : 'Moved to the system Trash'} />}
+        {authoringError && <StudioFeedback feedbackId={`authoring:${authoringError}`} tone="error" locale={locale} title={locale === 'zh' ? '未能完成操作' : 'Could not complete the operation'} message={authoringError} />}
+        {refreshFailure && <StudioFeedback feedbackId={`refresh:${refreshGeneration.current}`} tone="error" locale={locale}
+          title={refreshFailure.imported ? (locale === 'zh' ? `「${refreshFailure.imported}」已导入，列表刷新失败。` : `“${refreshFailure.imported}” was imported, but the list could not refresh.`) : (locale === 'zh' ? '无法刷新内容' : 'Could not refresh content')}
+          message={refreshFailure.message} actions={[{ label: locale === 'zh' ? '重试刷新' : 'Retry refresh', onClick: () => { void refreshCatalog(refreshFailure.imported) }, disabled: refreshBusy }]} />}
+          {importFeedback}
+        </div>
+        {objectAuthoring && renderContent ? renderContent(contentView, { id: instanceId!, intent: authoringIntent, initialPrompt, onDirtyChange: authoringDirtyChange }) : contentView}
       </div>
     </div>
-    {workspace && recoveryOpen && <StudioDialog title={locale === 'zh' ? '恢复工作副本' : 'Restore working copy'} close={() => setRecoveryOpen(false)}>
-              {kitAuthoring && mindsetChoices.length > 0 && <label className="ygd-studio-mindset-recovery">{locale === 'zh' ? '工作副本' : 'Working copy'} <StudioSelect aria-label="Mindset working copy" value={mindsetRecords.current.get(kitKey) ?? ''} onValueChange={id => {
-                leaveDrafts(() => {
-                  if (id) mindsetRecords.current.set(kitKey, id); else mindsetRecords.current.delete(kitKey)
-                  setSavedMindsets(previous => { const next = { ...previous }; delete next[kitKey]; return next })
-                  setMindsetEditorEpoch(epoch => epoch + 1); setRecoveryOpen(false)
-                })
-              }} options={[{ value: '', label: locale === 'zh' ? '已安装原文' : 'Installed source' }, ...mindsetChoices.map(record => ({ value: record.id, label: `${record.id.slice(0, 8)} · r${record.revision}` }))]} /></label>}
+    {instances?.importSources && <>
+      <input ref={importFileInput} type="file" hidden accept=".zip,.md,.json" aria-label={locale === 'zh' ? '选择导入文件' : 'Choose import file'} disabled={importBusy} onChange={event => { const files = [...(event.currentTarget.files ?? [])]; event.currentTarget.value = ''; if (files.length) void importFiles(files, importKind.current) }} />
+      <input ref={node => { importFolderInput.current = node; node?.setAttribute('webkitdirectory', '') }} type="file" hidden multiple aria-label={locale === 'zh' ? '选择导入文件夹' : 'Choose import folder'} disabled={importBusy} onChange={event => { const files = [...(event.currentTarget.files ?? [])]; event.currentTarget.value = ''; if (files.length) void importFiles(files, importKind.current) }} />
+    </>}
+    {incompleteImport && <StudioDialog title={locale === 'zh' ? '已导入，内容待完善' : 'Imported — needs completion'} close={() => setIncompleteImport(undefined)}>
+      <p>{incompleteImport.title[locale]}</p>
+      <ul className="ygd-studio-import-issues">{incompleteImport.readiness?.diagnostics.map((issue, index) => <li key={index}>{locale === 'zh' && issue.code === 'instance.missing_source' && issue.path ? `缺少 ${issue.path}` : issue.message}</li>)}</ul>
+      <p>{locale === 'zh' ? '可以先保留，稍后继续编辑。' : 'You can keep this copy and finish it later.'}</p>
+      <footer className="ygd-studio-modal-actions">
+        <button className="ygd-studio-btn-secondary" type="button" onClick={() => setIncompleteImport(undefined)}>{locale === 'zh' ? '暂不补齐' : 'Not now'}</button>
+        <button className="ygd-studio-btn-primary" type="button" onClick={() => {
+          const record = incompleteImport
+          leaveDrafts(() => {
+            setIncompleteImport(undefined); setInstanceMode('edit'); setInstanceId(record.id)
+            if (record.kind === 'bundle') setInitialPrompt(locale === 'zh'
+              ? `请使用技能包创作方法，保留当前 SKILL.md 的原有能力、方法和配套资源，补齐这个技能包的缺项并修复以下问题：\n${record.readiness?.diagnostics.map(issue => issue.code === 'instance.missing_source' && issue.path ? `缺少 ${issue.path}` : issue.message).join('\n')}\n请围绕这项技能中用户需要理解、比较、修改或确认的内容，设计贴合任务的可交互面板，并提供能体现主要用途的预览样例。保存后的判断和修改应能继续供 Agent 使用。请提供可查看差异并保存的修改建议。`
+              : `Use the Bundle authoring skill to complete this Bundle, preserving its existing SKILL.md capabilities, methods and supporting resources. Address these issues:\n${record.readiness?.diagnostics.map(issue => issue.message).join('\n')}\nDesign an interactive Panel suited to what people need to understand, compare, change or confirm in this skill, with a representative preview example. Saved decisions and edits should remain available for the Agent to continue using. Return source changes that can be reviewed as a diff and saved.`)
+          })
+        }}>{incompleteImport.kind === 'bundle' ? locale === 'zh' ? 'AI 补齐' : 'Complete with AI' : locale === 'zh' ? '继续编辑' : 'Edit'}</button>
+      </footer>
     </StudioDialog>}
     {fileLocationOpen && <StudioDialog title={locale === 'zh' ? '文件位置' : 'File location'} close={() => setFileLocationOpen(false)}>
       <p>{bundleWorkspace ? `${bundleWorkspace.name}/${bundleFile?.path ?? ''}` : 'mindset.md'}</p>
       <p>{locale === 'zh' ? '当前为包内相对路径。此宿主尚未提供本机绝对路径或打开编辑器接口。' : 'Package-relative path. This host does not expose a local absolute path or editor launch capability.'}</p>
-    </StudioDialog>}
-    {workspace && fullMindset && <StudioDialog title="mindset.md · 完整文件" close={() => setFullMindset(false)}>
-      <p>{locale === 'zh' ? '包含 frontmatter 与 <design_skills>；阅读视图不会修改或丢弃文件内容。' : 'Includes frontmatter and <design_skills>; the reading view never changes file content.'}</p>
-      {codeFrame(visibleMindset, 'Complete Mindset file')}
-    </StudioDialog>}
-    {workspace && kitFilesOpen && <StudioDialog title={`${locale === 'zh' ? '设计套件文件' : 'Kit Files'} · ${workspace.name}`} close={() => setKitFilesOpen(false)}>
-      <button className="ygd-studio-tree-node" type="button" onClick={() => { setKitFilesOpen(false); setFullMindset(true) }}>mindset.md</button>
-
-      <p className="ygd-studio-subtitle">{locale === 'zh' ? 'Bundle 资源请在对应 Bundle 的文件树中查看；其他 Kit 根目录文件读取尚未接入。' : 'Compiled resource list; reading other Kit-root files is not yet connected.'}</p>
     </StudioDialog>}
   </section></StudioSelectContext.Provider>
 }

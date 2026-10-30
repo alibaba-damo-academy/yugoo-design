@@ -1,6 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { readdir, readFile, lstat, realpath, stat } from 'node:fs/promises'
+import { readdir, readFile, lstat, realpath, stat, mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { createStudioInstances } from '../src/studio-instances.mjs'
 import { join, resolve, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parse, stringify } from 'yaml'
@@ -51,6 +53,10 @@ test('real Core catalog captures independent Bundle titles, runtime names and ex
   assert.deepEqual(catalog.map(item => item.name), [originalPin.name, otherPin.name])
   assert.deepEqual(catalog[0].title, { zh: '业务规则', en: 'Business Rules' })
   assert.equal(catalog[0].runtimeName, originalPin.name)
+  assert.equal(catalog[0].description, parseFrontmatter(textOf(f.bundleFiles.get(originalPin.name), 'SKILL.md'), 'SKILL.md').meta.description)
+  const english = JSON.parse(textOf(f.bundleFiles.get(originalPin.name), 'locales/en-US.json'))
+  const chinese = JSON.parse(textOf(f.bundleFiles.get(originalPin.name), 'locales/zh-CN.json'))
+  assert.deepEqual(catalog[0].displayDescription, { zh: chinese.bundleDescription, en: english.bundleDescription })
   const captured = await f.catalog.captureKit(kitPin)
   assert.deepEqual(captured.mounts, [{ bindingKey: originalPin.name, ...originalPin }])
   assert.ok(captured.files.every(file => !file.path.startsWith('skills/')))
@@ -102,6 +108,56 @@ test('Kit projection changes only declared identity/catalog slots and Core rejec
   await assert.rejects(f.composition.validateKit({ kit: newKit, kitFiles: staleXml, mounts: mountsFor(otherPin, originalPin), resolveBundle: pin => f.catalog.captureBundle(pin) }), /catalog differs/)
   await assert.rejects(f.composition.projectMounts({ kit: newKit, kitFiles: f.projected, mounts: [{ bindingKey: 'wrong_runtime', ...originalPin }] }), /bindingKey must preserve/)
   await assert.rejects(f.composition.projectMounts({ kit: newKit, kitFiles: f.projected, mounts: [] }), /nonempty/)
+})
+
+test('Kit identity projection rebases only owned relation identifiers and retains namespace guards', async () => {
+  const f = await fixture(), nextKit = { name: 'copied_kit', version: '1.0' }
+  const relations = `schema_version: 1
+# Keep the author comment about web_app:corroborates.
+relations:
+  - type: web_app:corroborates # typed identity
+    meaning: web_app:supports
+    direction: forward
+    label: {zh: 佐证, en: 'web_app:corroborates label'}
+    description: {zh: 原始说明, en: 'Keep web_app/problem and web_app:corroborates in prose.'}
+    domain: [web_app/business_rules#/properties/rules/value, design/artifact#file]
+    range: [web_app/business_rules#/properties/rules/value]
+    inverse: web_app:contradicts
+  - type: web_app:contradicts
+    meaning: contradicts
+    direction: symmetric
+    label: {zh: 反证, en: Contradicts}
+    description: {zh: 保留来源, en: Keep supplied source.}
+    inverse: web_app:corroborates
+`.replaceAll('\n', '\r\n')
+  const reference = entry('reference/namespace-notes.md', 'Keep web_app:corroborates and web_app/problem as supplied method evidence.\r\n')
+  const owned = [...f.projected.filter(file => file.path !== 'relations.yaml'), entry('relations.yaml', relations), reference]
+  const before = structuredClone(owned), mounts = [{ bindingKey: originalPin.name, ...originalPin }]
+  await f.composition.validateKit({ kit: kitPin, kitFiles: owned, mounts: mountsFor(originalPin), resolveBundle: pin => f.catalog.captureBundle(pin) })
+  const projected = await f.composition.projectMounts({ kit: nextKit, kitFiles: owned, mounts })
+  const output = textOf(projected, 'relations.yaml'), parsed = parse(output)
+  assert.deepEqual(parsed.relations.map(row => row.type), ['copied_kit:corroborates', 'copied_kit:contradicts'])
+  assert.equal(parsed.relations[0].meaning, 'copied_kit:supports')
+  assert.equal(parsed.relations[1].meaning, 'contradicts', 'Core meanings retain their authority')
+  assert.deepEqual(parsed.relations[0].domain, ['copied_kit/business_rules#/properties/rules/value', 'design/artifact#file'])
+  assert.deepEqual(parsed.relations[0].range, ['copied_kit/business_rules#/properties/rules/value'])
+  assert.deepEqual(parsed.relations.map(row => row.inverse), ['copied_kit:contradicts', 'copied_kit:corroborates'])
+  assert.equal(parsed.relations[0].label.en, 'web_app:corroborates label')
+  assert.equal(parsed.relations[0].description.en, 'Keep web_app/problem and web_app:corroborates in prose.')
+  assert.ok(output.includes('# Keep the author comment about web_app:corroborates.\r\n'))
+  assert.ok(output.includes('# typed identity\r\n'))
+  assert.equal(output.replaceAll('\r\n', '').includes('\n'), false, 'CRLF survives scalar edits')
+  assert.deepEqual(projected.find(file => file.path === reference.path), reference)
+  assert.deepEqual(owned, before, 'captured input is never rewritten')
+  const input = { kit: nextKit, kitFiles: projected, mounts: mountsFor(originalPin), resolveBundle: pin => f.catalog.captureBundle(pin) }
+  await f.composition.validateKit(input)
+  const sameIdentity = await f.composition.projectMounts({ kit: nextKit, kitFiles: projected, mounts })
+  assert.equal(textOf(sameIdentity, 'relations.yaml'), output, 'ordinary mount updates retain relation bytes')
+  for (const invalid of [relations.replace('type: web_app:corroborates', 'type: unrelated:corroborates'),
+    relations.replace('range: [web_app/business_rules#/properties/rules/value]', 'range: [unrelated/result]')]) {
+    const bad = await f.composition.projectMounts({ kit: nextKit, kitFiles: owned.map(file => file.path === 'relations.yaml' ? entry(file.path, invalid) : file), mounts })
+    await assert.rejects(f.composition.validateKit({ ...input, kitFiles: bad }), /current Kit namespace|ontology types must use/)
+  }
 })
 
 test('real loader failures, unsafe captures, pin mismatch and absent authority are never successful validation', async () => {
@@ -241,4 +297,55 @@ test('existing shared Kit preview keeps exact pin checks and compiles independen
   assert.equal((await prepareStudioPanelPreview(source, kitRoot, { ...request, kit: { ...kitPin, version: '9.9' } }, options)).diagnostics[0].code, 'preview.kit_pin')
   assert.equal((await prepareStudioPanelPreview(source, kitRoot, { ...request, bundle: { ...originalPin, version: '9.9' } }, options)).diagnostics[0].code, 'preview.bundle_pin')
   assert.equal((await prepareStudioPanelPreview(source, kitRoot, { ...request, panelSource: 'components: [' }, options)).diagnostics[0].code, 'preview.definition')
+})
+
+test('only explicit blank drafts can keep an empty Kit; adding its first real mount uses Core and preserves authored prose', async () => {
+  const f = await fixture(), kit = { name: 'local_kit_blank_fixture', version: '1.0' }
+  const body = '---\nname: local_kit_blank_fixture\nversion: "1.0"\ndescription: "New Kit"\n---\n\nUser-owned purpose.\n\n<design_skills>\n</design_skills>\n'
+  const files = [entry('mindset.md', body), entry('kit.yaml', 'version: 1\nmounts: []\n')]
+  await assert.rejects(f.composition.projectMounts({ kit, kitFiles: files, mounts: [] }), /nonempty/)
+  const blank = await f.composition.projectMounts({ kit, kitFiles: files, mounts: [], allowEmptyDraft: true })
+  assert.equal(parseFrontmatter(textOf(blank, 'mindset.md'), 'mindset.md').body, parseFrontmatter(body, 'mindset.md').body)
+  await assert.rejects(f.composition.validateKit({ kit, kitFiles: blank, mounts: [], resolveBundle: pin => f.catalog.captureBundle(pin) }), /nonempty/)
+  const mounted = await f.composition.projectMounts({ kit, kitFiles: blank, mounts: [{ bindingKey: originalPin.name, ...originalPin }], allowEmptyDraft: true })
+  assert.match(textOf(mounted, 'mindset.md'), /User-owned purpose\.[\s\S]*## business_rules/)
+  await f.composition.validateKit({ kit, kitFiles: mounted, mounts: mountsFor(originalPin), resolveBundle: pin => f.catalog.captureBundle(pin) })
+  await assert.rejects(f.composition.projectMounts({ kit, kitFiles: [entry('mindset.md', body.replace('<design_skills>', '<design_skills>Not an authored catalog'))], mounts: [], allowEmptyDraft: true }), /empty|catalog/)
+})
+
+
+test('new source objects save and reopen through the real adapter; incomplete Bundle is not a valid preview and Kit can mount its first Bundle', async t => {
+  const f = await fixture(), stateRoot = await mkdtemp(join(tmpdir(), 'studio-blank-core-'))
+  t.after(() => rm(stateRoot, { recursive: true, force: true }))
+  const options = { stateRoot, kitRoot: packageRoot, readInstalledKit: async () => kitPin, catalog: f.catalog, composition: f.composition }
+  const service = await createStudioInstances(options)
+  const title = { zh: '空白创作', en: 'New authoring' }
+  const kit = await service.create({ kind: 'kit', title })
+  const mindset = await service.readFile({ id: kit.id, path: 'mindset.md' })
+  const saved = await service.saveFile({ id: kit.id, expectedRevision: kit.revision, path: 'mindset.md', content: mindset.content + '\nMy domain purpose.\n' })
+  const bundle = await service.create({ kind: 'bundle', title })
+  const rejected = await service.preview({ id: bundle.id, expectedRevision: bundle.revision })
+  assert.equal(rejected.preview, undefined, 'unfinished validation and domain content are not accepted as a usable Bundle')
+  assert.ok(rejected.diagnostics.length > 0)
+  const mounted = await service.updateMounts({ id: saved.id, expectedRevision: saved.revision, bundles: [originalPin] })
+  assert.equal(mounted.mounts.length, 1)
+  assert.deepEqual(mounted.mounts[0].bundle.name, originalPin.name)
+  const reopened = await createStudioInstances(options)
+  assert.match((await reopened.readFile({ id: kit.id, path: 'mindset.md' })).content, /## business_rules[\s\S]*My domain purpose\./)
+  const preview = await reopened.preview({ id: kit.id, expectedRevision: mounted.revision, bundle: originalPin })
+  assert.ok(preview.preview, 'first real mount uses the actual Core loader and shared declarative preview')
+})
+
+test('installed catalog descriptions come from parsed Bundle sources and translated copy stays optional', async () => {
+  const f = await fixture()
+  const files = f.bundleFiles.get(originalPin.name)
+  for (const path of ['locales/zh-CN.json', 'locales/en-US.json']) {
+    const locale = JSON.parse(textOf(files, path)); delete locale.bundleDescription
+    files.find(file => file.path === path).base64 = entry(path, JSON.stringify(locale)).base64
+  }
+  const before = structuredClone([...f.bundleFiles])
+  const selected = (await f.catalog.listBundles()).find(item => item.name === originalPin.name)
+  assert.equal(selected.description, parseFrontmatter(textOf(files, 'SKILL.md'), 'SKILL.md').meta.description)
+  assert.equal(Object.hasOwn(selected, 'displayDescription'), false)
+  assert.deepEqual([...f.bundleFiles], before, 'catalog projection does not rewrite author-owned locale or method bytes')
 })

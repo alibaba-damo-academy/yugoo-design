@@ -10,6 +10,11 @@ save path. Codex remains the Agent host. No DSH process or second model is start
 The plugin root is two directories above this skill directory; resolve that
 location from this skill's installed path, not from the current working directory.
 
+For creating or changing reusable Kit/Bundle source in Studio, follow
+[the customization entry](../yugoo/SKILL.md#customize-kits-and-bundles-in-studio).
+Use its authoring skills and the same connection; design Bundle execution below
+does not author reusable content.
+
 ## Choose the current Codex entry
 
 In the macOS Codex desktop app, use [the desktop entry](codex-desktop.md) for

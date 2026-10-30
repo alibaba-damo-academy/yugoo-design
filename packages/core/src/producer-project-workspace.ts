@@ -865,11 +865,19 @@ export class ProducerProjectWorkspace {
     return this.store.readCurrentBytes(revision, path, this.signal)
   }
 
-  /** Open the invocation Bundle's isolated working copy at the latest actual project revision. */
-  async openWorkingCopy(): Promise<ProducerBundleWorkingCopy> {
+  /** Open at the latest commit, preserving any supplied invocation's Design evidence pin. */
+  async openWorkingCopy(expectedRevision?: string): Promise<ProducerBundleWorkingCopy> {
     this.signal.throwIfAborted()
     const revision = await this.store.head(this.signal)
     if (revision === undefined) throw new Error('producer project workspace: selected Design Project has no committed revision')
+    // Scores, Journal and derived records share the repository but do not
+    // change the invocation's Design inputs. Adopt their latest commit as the
+    // publication baseline only after the existing evidence guard proves it.
+    if (expectedRevision !== undefined && revision !== expectedRevision
+      && !await this.store.sameDesignEvidenceAt?.(expectedRevision, revision, this.signal)) {
+      throw new ProducerWorkingCopyConflictError(expectedRevision, revision)
+    }
+    this.signal.throwIfAborted()
     this.currentRevision = revision
     return new BundleWorkingCopy(this.workingCopyHost, this.invocationSkill, revision)
   }

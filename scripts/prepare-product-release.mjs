@@ -8,10 +8,11 @@ import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { setTimeout as delay } from 'node:timers/promises'
+import { DSH_AGGREGATE_SOURCE, releasePackagesFor } from './release-consumer-config.mjs'
 import { PRODUCT_NAME, readProductRelease, validateProductRelease, validateReleaseVersion, selectProductRelease, productReleaseHosts } from './product-release.mjs'
 export { selectProductRelease } from './product-release.mjs'
 
-export const DSH_SOURCE_PACKAGES = Object.freeze(['yugoo-design-git-native', 'dsh-design-core', 'dsh-design-knowledge-ladybug', 'dsh-design-panel', 'dsh-design-provider-web-app', 'dsh-design-skills-web-app', 'dsh-design-studio', 'dsh-design-studio-ui', 'dsh-design-studio-dsh', 'dsh-design-system-dsh'])
+export const DSH_SOURCE_PACKAGES = Object.freeze(Object.keys(releasePackagesFor({ ladybugSource: 'registry' })))
 export const REGISTRY = 'https://registry.npmjs.org'
 export const REPOSITORY = 'alibaba-damo-academy/yugoo-design'
 export const RELEASE_SOURCE_PACKAGES = Object.freeze([...DSH_SOURCE_PACKAGES, PRODUCT_NAME])
@@ -22,7 +23,7 @@ export const ARTIFACT_STEPS = Object.freeze({
   upload: 'Retain the prepared product archives before any publication',
 })
 const MAX_ARTIFACT_BYTES = 256 * 1024 * 1024
-export const packageNameFor = sourceName => sourceName === PRODUCT_NAME ? PRODUCT_NAME : '@yugoo-design/' + sourceName
+export const packageNameFor = sourceName => sourceName === PRODUCT_NAME || sourceName === DSH_AGGREGATE_SOURCE ? sourceName : '@yugoo-design/' + sourceName
 export const archiveNameFor = (sourceName, version) => packageNameFor(sourceName).replace(/^@/u, '').replace('/', '-') + '-' + version + '.tgz'
 const workspace = fileURLToPath(new URL('../', import.meta.url))
 export const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
@@ -35,7 +36,7 @@ export function assertDshPublicationMetadata(manifests, mapping) {
   assert.deepEqual(Object.keys(manifests).sort(), [...DSH_SOURCE_PACKAGES].sort(), 'Exactly ten DSH publication manifests required')
   assert.deepEqual(Object.keys(mapping).sort(), [...DSH_SOURCE_PACKAGES].sort(), 'Existing DSH candidate mapping required')
   for (const name of DSH_SOURCE_PACKAGES) {
-    assert.equal(manifests[name].name, '@yugoo-design/' + name, 'DSH publication identity changed')
+    assert.equal(manifests[name].name, packageNameFor(name), 'DSH publication identity changed')
     assert.deepEqual(manifests[name].repository, {
       type: 'git', url: `git+https://github.com/${REPOSITORY}.git`, directory: mapping[name].directory,
     }, `DSH publication repository metadata must match the public source: ${name}`)
@@ -500,7 +501,7 @@ async function compareRegistryArchive(entry, { fetchImpl = fetch, maxBytes = 128
   const url = new URL(data.dist.tarball)
   assert.equal(url.origin, REGISTRY, 'Official registry tarball required')
   assert.equal(url.username + url.password + url.search + url.hash, '', 'Unexpected tarball URL credentials/query/fragment')
-  assert.equal(url.pathname, `/${entry.name}/-/${entry.sourceName}-${entry.version}.tgz`, 'Unexpected registry tarball path')
+  assert.equal(url.pathname, `/${entry.name}/-/${entry.name.split('/').at(-1)}-${entry.version}.tgz`, 'Unexpected registry tarball path')
   assert.ok(entry.bytes > 0 && entry.bytes <= maxBytes, 'Archive exceeds registry comparison bound')
   const tar = await fetchImpl(url.href, { ...options, signal: requestSignal() })
   // Only post-publication confirmation may wait after exact metadata/SRI matched.
@@ -638,7 +639,6 @@ export async function prepareProductRelease({ version, output, npmCli }) {
     await mkdir(dirname(destination), { recursive: true })
     await cp(join(output, 'native-artifacts', item.path), destination, { force: false, errorOnExist: true })
   }
-  const { releasePackagesFor } = await import('./release-consumer-config.mjs')
   const { readNpmCandidates } = await import('./release-npm-candidates.mjs')
   const { assembleDshDistribution, createDshDistributionManifest } = await import('./assemble-dsh-distribution.mjs')
   const report = await readNpmCandidates(workspace, { scope: '@yugoo-design', version, ladybugVersion: '0.21.1', ladybugSource: 'registry' })

@@ -8,6 +8,7 @@ import { execFileSync } from 'node:child_process'
 import { createServer } from 'node:http'
 import YAML from 'yaml'
 import { DSH_SOURCE_PACKAGES, RELEASE_SOURCE_PACKAGES, packageNameFor, archiveNameFor, REGISTRY, REPOSITORY, integrity, sha256, selectProductRelease, assertDshPublicationMetadata, publicationOrder, registryState, assertLatestPublicationAllowed, preflight, nextPublication, confirmPublication, verifyProductReceipt } from './prepare-product-release.mjs'
+import { DSH_AGGREGATE_SOURCE, releasePackagesFor } from './release-consumer-config.mjs'
 import { readNpmCandidates } from './release-npm-candidates.mjs'
 import { createDshDistributionManifest } from './assemble-dsh-distribution.mjs'
 import { PRODUCT_NAME, productReleaseHosts, validateReleaseVersion } from './product-release.mjs'
@@ -16,6 +17,7 @@ import { ARTIFACT_STEPS, PRODUCT_WORKFLOW, productActionsContext, productArtifac
   restoreProductArtifact, recordProductUploadedArtifact, productActionsApi, productOidcDiagnostics, productRegistryStateDirectory } from './prepare-product-release.mjs'
 
 const product = JSON.parse(await readFile(new URL('../release/product.json', import.meta.url), 'utf8')), version = product.version
+const newerVersion = `${Number(version.split('.')[0]) + 1}.0.0`
 const bytes = Buffer.from('synthetic archive; no product/Host acceptance')
 const entries = () => RELEASE_SOURCE_PACKAGES.map((sourceName, index) => ({ sourceName, name: packageNameFor(sourceName), version,
   filename: archiveNameFor(sourceName, version), bytes: bytes.length, sha256: sha256(bytes), integrity: integrity(bytes),
@@ -56,14 +58,14 @@ function registry(states = new Map(), mutate = {}) {
     calls.push(String(url)); assert.equal(options.redirect, 'error'); assert.equal(options.credentials, 'omit')
     assert.ok(options.signal instanceof AbortSignal)
     const path = decodeURIComponent(new URL(url).pathname)
-    const entry = entries().find(x => ['/' + x.name, '/' + x.name + '/' + x.version, '/' + x.name + '/-/' + x.sourceName + '-' + x.version + '.tgz'].includes(path))
+    const entry = entries().find(x => ['/' + x.name, '/' + x.name + '/' + x.version, '/' + x.name + '/-/' + x.name.split('/').at(-1) + '-' + x.version + '.tgz'].includes(path))
     assert.ok(entry, String(url))
     if (String(url).endsWith('.tgz')) return { status: mutate.tarStatus ?? 200, body: (async function* () { yield mutate.bytes ?? bytes })() }
     const state = states.get(entry.name) ?? 'absent'
     if (state === 'error') throw Error('network failed')
     if (state === 'absent') return { status: 404 }
     return { status: mutate.status ?? 200, json: async () => ({ name: mutate.name ?? entry.name, version: mutate.version ?? version,
-      dist: { integrity: mutate.integrity ?? entry.integrity, tarball: mutate.tarball ?? `${REGISTRY}/${entry.name}/-/${entry.sourceName}-${version}.tgz` } }) }
+      dist: { integrity: mutate.integrity ?? entry.integrity, tarball: mutate.tarball ?? `${REGISTRY}/${entry.name}/-/${entry.name.split('/').at(-1)}-${version}.tgz` } }) }
   }
   return { fetchImpl, calls }
 }
@@ -74,6 +76,16 @@ test('product version comes only from product.json and exact formal tag', () => 
   for (const expectedVersion of ['latest', '0.1.0-beta.8', '$(id)', version + '\n']) assert.throws(() => selectProductRelease({ product: manifest, expectedVersion }))
   assert.throws(() => selectProductRelease({ product: { ...manifest, extra: true } }))
   for (const value of ['0.1.0-beta.1','01.0.0','0.1.0+build','v0.1.0']) assert.throws(()=>validateReleaseVersion(value))
+})
+test('formal release uses canonical source keys while archive and registry identities stay exact', async () => {
+  assert.deepEqual(DSH_SOURCE_PACKAGES, Object.keys(releasePackagesFor({ ladybugSource: 'registry' })))
+  assert.ok(DSH_SOURCE_PACKAGES.includes(DSH_AGGREGATE_SOURCE))
+  assert.ok(!DSH_SOURCE_PACKAGES.includes('dsh-design-system-dsh'))
+  assert.equal(packageNameFor(DSH_AGGREGATE_SOURCE), '@yugoo-design/dsh-design-system-dsh')
+  assert.equal(archiveNameFor(DSH_AGGREGATE_SOURCE, version), `yugoo-design-dsh-design-system-dsh-${version}.tgz`)
+  const entry = entries().find(row => row.sourceName === DSH_AGGREGATE_SOURCE)
+  assert.equal(await registryState(entry, registry(new Map([[entry.name, 'identical']]))), 'identical')
+  assert.throws(() => publicationOrder(entries().map(row => row.sourceName === DSH_AGGREGATE_SOURCE ? { ...row, sourceName: 'dsh-design-system-dsh' } : row)))
 })
 test('all eleven form a strict dependency DAG and product is last', () => {
   assert.deepEqual(publicationOrder([...entries()].reverse()), entries())
@@ -89,7 +101,7 @@ test('only 404 means absent; skip requires metadata AND actual tarball integrity
     { integrity: integrity(Buffer.from('other')) }, { bytes: Buffer.alloc(bytes.length) }, { bytes: Buffer.alloc(bytes.length - 1) },
     { bytes: Buffer.alloc(bytes.length + 1) }, { tarStatus: 404 }, { tarball: 'https://example.invalid/package.tgz' },
     { tarball: `${REGISTRY}/@yugoo-design/yugoo-design-git-native/-/other.tgz` },
-    { tarball: `${REGISTRY}/${entry.name}/-/${entry.sourceName}-${version}.tgz?token=unexpected` }]) {
+    { tarball: `${REGISTRY}/${entry.name}/-/${entry.name.split('/').at(-1)}-${version}.tgz?token=unexpected` }]) {
     await assert.rejects(registryState(entry, registry(states, mutate)))
   }
   await assert.rejects(registryState(entry, registry(new Map([[entry.name, 'error']]))), /network failed/)
@@ -147,7 +159,7 @@ test('confirmation waits for metadata 404 and then exact-metadata tarball 404 wi
 test('confirmation propagates metadata, permission, transport and raw archive failures without another poll', async () => {
   const entry = entries()[0], states = new Map([[entry.name, 'identical']])
   const mutations = [{ status: 403 }, { status: 500 }, { tarStatus: 403 }, { tarStatus: 500 },
-    { name: '@other/package' }, { version: '0.2.0' }, { integrity: integrity(Buffer.from('different')) },
+    { name: '@other/package' }, { version: newerVersion }, { integrity: integrity(Buffer.from('different')) },
     { bytes: Buffer.alloc(bytes.length) }, { bytes: bytes.subarray(1) }, { bytes: Buffer.concat([bytes, Buffer.from('extra')]) },
     { tarball: 'https://example.invalid/archive.tgz' }]
   for (const mutate of mutations) {
@@ -199,7 +211,7 @@ for (const phase of ['metadata', 'tarball']) test(`confirmation deadline aborts 
     if (request.url.endsWith('.tgz')) { response.writeHead(200); response.write(bytes.subarray(0, 1)); return }
     response.setHeader('content-type', 'application/json')
     response.end(JSON.stringify({ name: entry.name, version: entry.version,
-      dist: { integrity: entry.integrity, tarball: `${REGISTRY}/${entry.name}/-/${entry.sourceName}-${entry.version}.tgz` } }))
+      dist: { integrity: entry.integrity, tarball: `${REGISTRY}/${entry.name}/-/${entry.name.split('/').at(-1)}-${entry.version}.tgz` } }))
   })
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
   t.after(() => { server.closeAllConnections(); return new Promise(resolve => server.close(resolve)) })
@@ -240,7 +252,7 @@ test('publish plan rechecks history after preflight; first stable and identical 
   const rows = entries(), states = new Map(rows.slice(1).map(entry => [entry.name, 'identical']))
   let newer = false, reads = 0
   const options = historyRegistry(registry(states), entry => { reads++; return { status: 200,
-    json: async () => packageHistory(entry, newer ? ['0.2.0'] : ['0.0.1', '1.0.0-rc.1']) } })
+    json: async () => packageHistory(entry, newer ? [newerVersion] : ['0.0.1', '1.0.0-rc.1']) } })
   assert.equal((await preflight(rows, options))[0].state, 'absent')
   assert.equal((await nextPublication({ entries: rows }, 0, options)).action, 'publish')
   newer = true
@@ -601,10 +613,10 @@ test('pre-install CLI selection and recovery imports use only Node builtins with
     if(new URL(url).origin==='https://registry.npmjs.org'){
       const decoded=decodeURIComponent(path);
       const entry=v.receipt.entries.find(x=>[ '/'+x.name, '/'+x.name+'/'+x.version,
-        '/'+x.name+'/-/'+x.sourceName+'-'+x.version+'.tgz' ].includes(decoded));
+        '/'+x.name+'/-/'+x.name.split('/').at(-1)+'-'+x.version+'.tgz' ].includes(decoded));
       if(!entry)throw Error('Unexpected synthetic registry package');
       if(path.endsWith('.tgz'))return new Response(fs.readFileSync(v.payload+'/distribution/tarballs/'+entry.filename));
-      const published={name:entry.name,version:entry.version,dist:{integrity:entry.integrity,tarball:'https://registry.npmjs.org/'+entry.name+'/-/'+entry.sourceName+'-'+entry.version+'.tgz'}};
+      const published={name:entry.name,version:entry.version,dist:{integrity:entry.integrity,tarball:'https://registry.npmjs.org/'+entry.name+'/-/'+entry.name.split('/').at(-1)+'-'+entry.version+'.tgz'}};
       return new Response(JSON.stringify(path.endsWith('/'+entry.version)?published:{name:entry.name,versions:{[entry.version]:published},'dist-tags':{latest:entry.version,beta:entry.version}}));
     }
     if(String(url).startsWith('https://storage.example/')) return new Response(fs.readFileSync(new URL('./original.zip',import.meta.url)));

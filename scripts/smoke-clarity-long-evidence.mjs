@@ -36,6 +36,7 @@ try {
     readClarityAuthority: async () => readDesignClarityAuthority(root, projectId),
     designFilesForProject: async () => ({ listPathsAt: async () => [], listWorktreeFiles: async () => [], sameDesignEvidenceAt: async () => true }),
     executionAttemptsFor: () => [], assertProjectSelection() {}, resolveProjectKit: () => undefined, latestKit: () => undefined,
+    advisoryRuntimeStatus: () => ({ available: false, profiles: [], phase: 'idle' }),
   } })
   const workspace = await remote.readWorkspace({ id: 'fixture', session: { id: 'fixture', events: [] } }, new AbortController().signal)
   assert.equal(workspace.clarity.explanation.s, text)

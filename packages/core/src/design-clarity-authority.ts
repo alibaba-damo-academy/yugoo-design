@@ -4,7 +4,8 @@
  * One `design_records/clarity.json` inside the Git-tracked project is the direct
  * authority for the project's current clarity assessment. The journal's
  * `design/clarity-reported` facts stay an audit record only: current-state
- * reads come from this file, never from a journal fold. An absent file means
+ * reads come from the Git-published version of this file, never from a journal
+ * fold or an uncommitted replacement. An absent committed file means
  * no assessment — reads never scan journals and nothing is backfilled or
  * migrated. The embedded report digest remains the report content digest;
  * the checkpoint is bound by this outer document. Writes replace the whole
@@ -15,9 +16,11 @@ import { renameSync } from 'node:fs'
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { parseDesignClarityReported } from './design-clarity-report.ts'
-import { DesignProjectId } from './design-project.ts'
+import { DesignProjectId, nodeDesignProjectSpawn } from './design-project.ts'
 import type { DesignClarityReportedPayload } from './types.ts'
 import { resolveConfinedFilePath } from './confined-fs.ts'
+import { GitVersioning, type SpawnFn } from './git.ts'
+import { DESIGN_PROJECT_RECORDS_DIRECTORY, designProjectRecordsRoot } from './design-project-record-paths.ts'
 
 /** On-disk clarity authority document version. */
 export const DESIGN_CLARITY_AUTHORITY_SCHEMA_VERSION = 1 as const
@@ -95,7 +98,8 @@ function serializeDesignClarityAuthority(authority: DesignClarityAuthority): str
 }
 
 /**
- * Read and strictly parse one project's clarity authority.
+ * Read and strictly parse the local file for an explicit report/retry operation.
+ * Display and context reads use readCommittedDesignClarityAuthority instead.
  * @param projectStateRoot - trusted records root inside one project.
  * @param projectId - the project the document must be bound to.
  * @returns the validated authority, or undefined when no assessment exists.
@@ -112,16 +116,42 @@ export async function readDesignClarityAuthority(
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
     throw error
   }
+  return decodeDesignClarityAuthority(bytes, projectId)
+}
+
+/** Decode the same strict document from a local retry file or committed blob. */
+function decodeDesignClarityAuthority(bytes: Uint8Array, projectId: DesignProjectId): DesignClarityAuthority {
   if (bytes.byteLength > MAX_AUTHORITY_BYTES) {
     throw new Error(`design clarity authority: file exceeds ${MAX_AUTHORITY_BYTES} bytes`)
   }
   let decoded: unknown
   try {
-    decoded = JSON.parse(bytes.toString('utf8'))
+    decoded = JSON.parse(Buffer.from(bytes).toString('utf8'))
   } catch (error) {
     throw new Error('design clarity authority: invalid JSON', { cause: error })
   }
   return parseDesignClarityAuthority(decoded, projectId)
+}
+
+/**
+ * Read the last Git-published assessment from the same project authority file.
+ * A local replacement whose publication failed is retained for explicit retry,
+ * but cannot replace the last successful score in display or Agent context.
+ * This read never commits, repairs, migrates, or folds journal audit facts.
+ */
+export async function readCommittedDesignClarityAuthority(
+  projectRoot: string,
+  projectId: DesignProjectId,
+  options?: { readonly spawn?: SpawnFn; readonly signal?: AbortSignal },
+): Promise<DesignClarityAuthority | undefined> {
+  options?.signal?.throwIfAborted()
+  const root = designProjectRecordsRoot(projectRoot)
+  await resolveConfinedFilePath(root, DESIGN_CLARITY_AUTHORITY_FILE)
+  const git = new GitVersioning(options?.spawn ?? nodeDesignProjectSpawn, projectRoot)
+  const head = await git.head(options?.signal)
+  const bytes = head === undefined ? undefined : await git.readBytesAt(head,
+    `${DESIGN_PROJECT_RECORDS_DIRECTORY}/${DESIGN_CLARITY_AUTHORITY_FILE}`, options?.signal, MAX_AUTHORITY_BYTES)
+  return bytes === undefined ? undefined : decodeDesignClarityAuthority(bytes, projectId)
 }
 
 /**

@@ -5,29 +5,14 @@
 import { useEffect, useMemo, useRef, type ReactElement } from 'react'
 import { renderManifest, type RenderOptions } from '../../interpreter.ts'
 import { applyDesignEditToDraft, applyPanelUpdatesToDraft, recordsAtPath, sectionBindingOf, fieldValuesOf, type DesignData, type DesignEdit } from '../../record-state.ts'
-import { parsePanelManifest, WORKSPACE_COMPONENT_KINDS, type PanelManifest } from '../../dsl.ts'
+import { parsePanelManifest, declarativePanelOwnsWorkspace, type PanelManifest } from '../../dsl.ts'
 import { isRecord } from '../types.ts'
 import type { SkillPanelProps } from './shared.ts'
 import { DECLARATIVE_PANEL_ARTIFACTS_KEY, QUESTION_MAX_ATTACHMENTS, type StandardQuestionAttachment, type PendingDeclarativeArtifact } from '../../question-attachments.tsx'
 import { panelText } from '../../panel-i18n.tsx'
 import { PANEL_TEXT_ARTIFACTS_KEY, stageTextArtifact } from '../../text-artifact-edit.ts'
 
-const WORKSPACE_COMPONENTS = new Set(WORKSPACE_COMPONENT_KINDS)
-
-/** True when the manifest root owns its full two-dimensional panel surface. */
-export function declarativePanelOwnsWorkspace(manifest: PanelManifest): boolean {
-  const ownsWorkspace = (node: PanelManifest['ui']): boolean => {
-    if (WORKSPACE_COMPONENTS.has(node.component)) return true
-    // A view switch between complete workspaces still owns the panel surface.
-    // Ordinary or mixed document tabs must retain the body's natural scrolling.
-    if (node.component === 'tabs') return Boolean(node.children?.length)
-      && node.children!.every(child => ownsWorkspace(child as PanelManifest['ui']))
-    return node.component === 'stack' && node.children?.length === 1
-      ? ownsWorkspace(node.children[0] as PanelManifest['ui'])
-      : false
-  }
-  return ownsWorkspace(manifest.ui)
-}
+export { declarativePanelOwnsWorkspace } from '../../dsl.ts'
 
 /** Pure atomic composition used by the live DslPanel and attachment regressions. */
 export function applyDeclarativePanelTransaction(

@@ -46,7 +46,7 @@ test('endpoint creation label translates only its explicit text slot and validat
     panel.i18n.messages['en-US'].newEdge = value
     assert.ok(validatePanelTranslations(panel, true).some(error => error.includes('new_label')))
   }
-  const nested = { ...panel, ui: { component: 'split', slots: { main: panel.ui } } }
+  const nested = { ...panel, ui: { component: 'panel_workspace', slots: { main: panel.ui } } }
   assert.ok(validatePanelTranslations(nested, true).some(error => error.includes('new_label')), 'slot composition must validate resolved labels too')
 })
 

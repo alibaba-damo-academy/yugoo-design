@@ -3,6 +3,7 @@ import { Service } from '@deepseek-ai/cordis'
 import type { Context } from '@deepseek-ai/cordis'
 import type { ReactElement } from 'react'
 import type { SkillPanelProps } from './panels/shared.ts'
+import { ComponentPackageError, validateComponentPackageClosure, type ComponentPackagePin, type ComponentPackageSource, type ValidatedComponentPackage } from '../../../core/src/component-package.ts'
 import { DECLARATIVE_PANEL_ARTIFACTS_KEY, type PendingDeclarativeArtifact } from '../question-attachment-contract.ts'
 import { PANEL_TEXT_ARTIFACTS_KEY, collectTextArtifactEdits } from '../text-artifact-edit.ts'
 
@@ -72,6 +73,8 @@ export interface NativePanelFeatureEntry {
 
 /** Optional descriptive properties for native panel chrome and diagnostics. */
 export interface NativePanelMetadata {
+  /** Byte-validated trusted Provider provenance, projected from the existing registry. */
+  readonly componentPackage?: ValidatedComponentPackage
   readonly editable?: boolean
   readonly artifactBacked?: boolean
   /** Official feature-popover entry; absent for non-feature renderers. */
@@ -92,6 +95,14 @@ export interface NativePanelDefinition {
   }
   readonly action?: (host: NativePanelActionHost) => void
   readonly metadata?: NativePanelMetadata
+}
+
+/** Actual runtime references supplied by trusted Host/Provider code, not manifest strings. */
+export interface NativePanelPackageRuntime {
+  readonly hostReact: { readonly version: string }
+  readonly providerReact: object
+  readonly hostReactDOM: { readonly version: string }
+  readonly providerReactDOM: object
 }
 
 /** One browser-prepared file persisted atomically with its owning panel state. */
@@ -209,16 +220,65 @@ export class NativePanelRegistry extends Service {
       Object.freeze(definition.metadata)
     }
     Object.freeze(definition)
-    const dispose = this.ctx.effect(() => {
-      state.definitions.set(definition.id, definition)
-      publishRegistryChange(state)
-      return () => {
+    const dispose = this.ctx.effect(function* () {
+      // Cordis must own cleanup before synchronous observers can throw or unload
+      // the provider while publication is in progress.
+      let setupFailed = false
+      yield () => {
         if (state.definitions.get(definition.id) !== definition) return
         state.definitions.delete(definition.id)
-        publishRegistryChange(state)
+        try { publishRegistryChange(state) } catch (error) {
+          if (!setupFailed) throw error
+        }
+      }
+      state.definitions.set(definition.id, definition)
+      try { publishRegistryChange(state) } catch (error) {
+        setupFailed = true
+        throw error
       }
     }, `designNativePanels.register(${JSON.stringify(definition.id)})`)
     return () => { void dispose() }
+  }
+
+  /** Admit a checked package through the same native definitions and effect lifetime. */
+  async registerPackage(sources: readonly ComponentPackageSource[], root: ComponentPackagePin, createDefinitions: (value: ValidatedComponentPackage) => readonly NativePanelDefinition[], runtime: NativePanelPackageRuntime): Promise<() => void> {
+    if (runtime.hostReact !== runtime.providerReact || runtime.hostReactDOM !== runtime.providerReactDOM
+      || !runtime.hostReact || !runtime.hostReactDOM) {
+      throw new ComponentPackageError('package.react_source', '$runtime', 'Provider must use the actual admitted Host React and ReactDOM singletons.')
+    }
+    // Validation runs in this registry's own artifact: no serialized certificate
+    // or module-local brand is treated as admission across separate bundles.
+    const rootSnapshot = { ...root }
+    const closure = await validateComponentPackageClosure(sources, rootSnapshot, { nativePanelApi: 1, reactVersion: runtime.hostReact.version, reactDOMVersion: runtime.hostReactDOM.version })
+    const value = closure.find(entry => entry.name === rootSnapshot.name)!
+    const definitions = createDefinitions(value)
+    if (!Array.isArray(definitions) || definitions.some(definition => !definition || typeof definition.render !== 'function' || !['panel', 'workspace'].includes(definition.scrollOwner))) {
+      throw new ComponentPackageError('package.interface', '$definitions', 'Native-panel API 1 requires render(props) and a declared scroll owner.')
+    }
+    const expected = new Set(value.manifest.components.map(component => component.id))
+    if (definitions.length !== expected.size || definitions.some(definition => !expected.delete(definition.id)) || expected.size) {
+      throw new ComponentPackageError('package.contributions', '$definitions', 'Definitions must match every declared native component exactly once.')
+    }
+    for (const definition of definitions) {
+      if (this.state.definitions.has(definition.id)) throw new ComponentPackageError('package.component_conflict', '$definitions', `Native component ${definition.id} is already registered.`)
+      const other = this.installedDefinitions().find(entry => entry.metadata?.componentPackage?.manifest.namespace === value.manifest.namespace)
+      if (other) throw new ComponentPackageError('package.namespace_conflict', '$definitions', `Namespace ${value.manifest.namespace} is already registered.`)
+    }
+    const disposers: (() => void)[] = []
+    const disposeAll = () => {
+      const errors: unknown[] = []
+      for (const dispose of [...disposers].reverse()) {
+        try { dispose() } catch (error) { errors.push(error) }
+      }
+      if (errors.length) throw new AggregateError(errors, 'Native component package cleanup failed.')
+    }
+    try {
+      for (const definition of definitions) disposers.push(this.register({ ...definition, metadata: Object.freeze({ ...definition.metadata, componentPackage: value }) }))
+    } catch (error) {
+      try { disposeAll() } catch { /* Preserve the setup error after attempting every cleanup. */ }
+      throw error
+    }
+    return disposeAll
   }
 
   /**

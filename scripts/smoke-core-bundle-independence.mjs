@@ -125,7 +125,7 @@ assert.ok(rows.some(row => row.name === 'dsh-design-panel'), 'the generic Panel 
 assert.ok(rows.some(row => row.name === 'dsh-design-core'), 'generic Core must be mounted as a direct package-root Loader row')
 assert.ok(rows.some(row => row.name === 'dsh-design-core/kit-loader' && row.config?.packageName === 'dsh-design-skills-web-app'), 'the generic Kit loader must mount the official content Kit')
 for (const row of rows) {
-  assert.ok(!String(row.name).startsWith('dsh-design-system-dsh/'), `distribution facade row is forbidden: ${row.name}`)
+  assert.ok(!['dsh-design-system-dsh/', '@yugoo-design/dsh-design-system-dsh/'].some(prefix => String(row.name).startsWith(prefix)), `distribution facade row is forbidden: ${row.name}`)
 }
 
 if (violations.length > 0) {

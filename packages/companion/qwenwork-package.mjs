@@ -40,6 +40,10 @@ export async function packageQwenWorkExpertKit(runtimeDirectory, target, runtime
   const runtime = validateQwenWorkRuntime(JSON.parse(await readFile(join(runtimeDirectory,'scripts/qwenwork-runtime.json'),'utf8')))
   await mkdir(target)
   for (const name of ['.claude-plugin','hooks','skills','LICENSE','NOTICE','THIRD_PARTY_NOTICES.md']) await cp(join(runtimeDirectory,name),join(target,name),{recursive:true,errorOnExist:true,force:false})
+  // Skills may reference the same-build authoring capsule; retain it in the thin suite.
+  const authoring = join(runtimeDirectory, 'authoring')
+  try { await cp(authoring, join(target, 'authoring'), { recursive: true, errorOnExist: true, force: false }) }
+  catch (error) { if (error.code !== 'ENOENT' || error.path !== authoring) throw error }
   await mkdir(join(target,'scripts'))
   for (const name of ['qwenwork-runtime.json','qwenwork-context.mjs','qwenwork-notification.mjs','qwenwork-hook-transport.mjs','qwenwork-connection.mjs','native-hook-transport.mjs','windows-private-storage.mjs','windows-native-platform.mjs']) await cp(join(runtimeDirectory,'scripts',name),join(target,'scripts',name),{errorOnExist:true,force:false})
   await writeFile(join(target,'scripts/runtime-location.json'),JSON.stringify({runtimeRoot:runtimeRootWindows,nodeExecutable:runtime.nodeExecutable},null,2)+'\n',{flag:'wx'})

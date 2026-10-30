@@ -1,0 +1,37 @@
+name: 功能建议 / Feature request
+description: 描述场景、阻碍与期望 / Describe your use case, obstacle, and desired outcome.
+title: "[Feature] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        建议不需要复现步骤。请说明你希望完成什么，或哪里难以理解、判断、修改和表达。
+        No reproduction steps are needed. Explain your goal or what is hard to understand, decide, change, or express.
+        请去除私密信息；敏感安全问题沿 [SECURITY.md](https://github.com/alibaba-damo-academy/yugoo-design/blob/main/SECURITY.md) 处理。
+        Remove private information. Follow that policy for sensitive security reports.
+  - type: textarea
+    id: scenario
+    attributes:
+      label: 使用场景 / Use case
+      description: 你正在做什么，希望完成哪项任务或作出什么决定？ / What are you doing, and what task or decision do you want to complete?
+    validations:
+      required: true
+  - type: textarea
+    id: obstacle
+    attributes:
+      label: 当前阻碍 / Current obstacle
+      description: 当前哪里不方便、缺少信息或无法表达？ / What is difficult, missing, or hard to express today?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: 期望结果 / Desired outcome
+      description: 你希望怎样帮助你；已有方案想法也可以写在这里。 / How should the system help? Include a proposed approach if you have one.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: 补充信息（选填） / Additional context (optional)
+      description: 相关宿主、套件或面板、已尝试的方法，以及去除隐私信息的示例。 / Relevant host, Kit or panel, approaches tried, and sanitized examples.

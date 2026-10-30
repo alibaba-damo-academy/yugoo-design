@@ -10,6 +10,50 @@ const { createRoot } = await import('react-dom/client')
 const { ExecutionTrace, ArtifactWorkspace, artifactGroups } = await import('../src/artifact-workspace.tsx')
 const { PanelLocaleContext } = await import('../src/panel-i18n.tsx')
 after(() => dom.window.close())
+test('serial fallback files remain readable and counted while failed Worker records stay failed', async () => {
+  const root = createRoot(document.getElementById('root'))
+  const summary = 'research/R/summary.html', first = 'research/R/A.md', second = 'research/R/B.md'
+  const node = { id: 'serial-fallback', component: 'artifact_workspace', artifacts: {
+    records_path: 'rounds', title_field: 'title', file_field: 'file', artifact_kind: 'round',
+    children: { records_field: 'directions', title_field: 'title', file_field: 'file', artifact_kind: 'direction', scoped_ids: true },
+  } }
+  const data = { rounds: { R: { title: 'Summary', file: summary, directions: {
+    A: { title: 'Direction A', file: first }, B: { title: 'Direction B', file: second },
+  } } } }
+  const before = structuredClone(data)
+  const executionAttempts = ['A', 'B'].map((id, sequence) => ({ skill: 'research', role: 'worker',
+    artifactKind: 'direction', artifactId: `R/${id}`, artifactFile: `research/R/${id}.md`,
+    invocationId: 'native-main', attemptId: `worker-${id}`, runId: `worker-${id}`, phase: 'failed', sequence }))
+  try {
+    for (const [locale, warning, available] of [
+      ['zh-CN', '1/2 个子项产物可用', '产物可阅读；存在执行失败记录'],
+      ['en-US', '1/2 child outputs are available', 'Artifact available; a failed execution is recorded'],
+    ]) {
+      const options = { skill: 'research', executionAttempts, artifactFiles: { [summary]: 'summary', [first]: 'serial-fallback' },
+        readArtifact: async path => ({ found: true, content: path.endsWith('.md') ? '# Serial fallback result' : '<html>Summary</html>' }) }
+      const groups = artifactGroups(data, node.artifacts, options.skill, executionAttempts, options.artifactFiles)
+      assert.equal(groups[0].children[0].fileAvailable, true)
+      assert.equal(groups[0].children[1].fileAvailable, false)
+      assert.equal(groups[0].children[0].status, 'failed', 'file availability never rewrites the Worker outcome')
+      assert.equal(groups[0].children[0].runId, 'worker-A')
+      const render = async () => React.act(async () => root.render(React.createElement(PanelLocaleContext.Provider, { value: locale },
+        React.createElement(ArtifactWorkspace, { node, data, options }))))
+      await render()
+      await React.act(async () => document.querySelector('button[aria-label="Summary"]').click())
+      assert.match(document.querySelector('.dsh-artifact-warning').textContent, new RegExp(warning))
+      await React.act(async () => document.querySelector('button[aria-label="Direction A"]').click())
+      assert.equal(document.querySelector('.dsh-document-toolbar [role="status"]').textContent, available)
+      assert.equal(document.querySelector('button[aria-label="Direction A"] [data-execution-status]').dataset.executionStatus, 'failed')
+      assert.equal(document.querySelector('.dsh-artifact-markdown h1').textContent, 'Serial fallback result')
+      options.artifactFiles = { ...options.artifactFiles, [second]: 'second-serial-fallback' }
+      await render()
+      await React.act(async () => document.querySelector('button[aria-label="Summary"]').click())
+      assert.equal(Boolean(document.querySelector('.dsh-artifact-warning')), false, 'both observed files are available despite failed attempts')
+    }
+    assert.deepEqual(data, before)
+    assert.ok(executionAttempts.every(attempt => attempt.phase === 'failed'))
+  } finally { await React.act(async () => root.unmount()) }
+})
 test('top artifact toolbar refresh keeps the same readable document after failure and never retries automatically', async () => {
   const root = createRoot(document.getElementById('root'))
   let fail = false, calls = 0

@@ -1,5 +1,6 @@
 /** Strict Host Typert contribution for Studio management. */
 import TYPERT_REMOTE from './typert.remote-client.ts'
+import { STUDIO_AUTHORING_REMOTE } from './authoring.remote-client.ts'
 
 /** Host invocation definitions discovered through the package `./typert` export. */
 export const TYPERT = {
@@ -7,7 +8,7 @@ export const TYPERT = {
   face: 'host',
   schemas: [],
   model: { services: [], events: [], objects: [] },
-  invocations: TYPERT_REMOTE.descriptors,
+  invocations: [...TYPERT_REMOTE.descriptors, ...STUDIO_AUTHORING_REMOTE.descriptors],
 } as const
 
 export default TYPERT

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { cp, mkdir, mkdtemp, readFile, writeFile, rm, symlink, rename } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
+import { fileURLToPath } from 'node:url'
 import { parse, stringify } from 'yaml'
 import { writeContentCatalog } from './fixtures/content-catalog.mjs'
 const { register } = await import('tsx/esm/api'); register()
@@ -11,6 +12,7 @@ const { loadDesignKit, loadDesignBundle, createDirectoryBundleResolver, parseKit
 const { default: DesignService } = await import('../src/design-service.ts')
 const { DesignBundleContributionRegistry } = await import('../src/runtime-drivers.ts')
 const { createSkillScriptPort } = await import('../src/dsh-design-execution-plugin.ts')
+const { compileSchema } = await import('../src/schema.ts')
 
 function resourceProjectionFixture() {
   const root = resolve('/virtual-resource-bundle')
@@ -235,6 +237,50 @@ test('independent catalog and retained pin survive Kit source disposal; scripts 
   await port.run('ok.mjs',[],'',new AbortController().signal)
   assert.equal(invocation.argv[1],join(bundle.resourceRoot,'scripts','ok.mjs'))
   await assert.rejects(port.run('../skill.yaml',[],'',new AbortController().signal),/escapes/)
+})
+
+test('the current Research release coexists with retained 1.0 content and its Kit mounts only the new exact version', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'research-version-coexistence-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const packageRoot = fileURLToPath(new URL('../../skills-web-app/', import.meta.url))
+  const sourceRoot = join(packageRoot, 'bundles/research'), sourceId = 'package:dsh-design-skills-web-app'
+  const store = new DesignContentStore(join(root, 'state'))
+  // Synthetic previous content, isolated from any real profile or imported tree.
+  const oldRoot = join(root, 'old-research')
+  await cp(sourceRoot, oldRoot, { recursive: true })
+  const manifest = parse(await readFile(join(oldRoot, 'skill.yaml'), 'utf8'))
+  manifest.version = '1.0'
+  await writeFile(join(oldRoot, 'skill.yaml'), stringify(manifest))
+  await writeFile(join(oldRoot, 'SKILL.md'), (await readFile(join(oldRoot, 'SKILL.md'), 'utf8')) + '\nRetained historical method fixture.\n')
+  const oldPin = { name: 'research', version: '1.0' }, newPin = { name: 'research', version: '1.1' }
+  const retained = await store.retainBundle(oldRoot, { sourceId }, oldPin)
+  const previousMethod = await readFile(join(retained.resourceRoot, 'SKILL.md'))
+  const previousEntry = JSON.parse(await readFile(join(store.root, 'index.json'), 'utf8')).bundles[0]
+  const released = await store.retainBundle(sourceRoot, { sourceId }, newPin)
+  assert.notEqual(released.skill.content, retained.skill.content)
+  assert.equal(released.skill.authority, retained.skill.authority, 'authority is stable while versions distinguish immutable content')
+  const preview = JSON.parse(released.resources['reference/preview.json'])
+  assert.deepEqual(compileSchema(released.skill.metadata.schemaDocument)(preview), [], 'the released nonempty example still matches its existing schema')
+
+  const reopened = new DesignContentStore(join(root, 'state'))
+  const oldContent = await reopened.resolveBundle(oldPin), newContent = await reopened.resolveBundle(newPin)
+  assert.deepEqual(await readFile(join(oldContent.resourceRoot, 'SKILL.md')), previousMethod)
+  assert.deepEqual(JSON.parse(await readFile(join(store.root, 'index.json'), 'utf8')).bundles.find(pin => pin.version === '1.0'), previousEntry)
+  const design = Object.create(DesignService.prototype)
+  design.kits = new Map(); design.independentBundles = new Map()
+  design.registerBundleContent(oldContent, { retained: true })
+  design.registerBundleContent(newContent, { retained: true })
+  assert.deepEqual(design.listBundles().map(skill => `${skill.name}@${skill.version}`), ['research@1.0', 'research@1.1'])
+  assert.equal(design.resolveBundle(oldPin), oldContent)
+  assert.equal(design.resolveBundle(newPin), newContent)
+  assert.throws(() => design.registerBundleContent({ ...newContent, skill: { ...newContent.skill, version: '1.0' } }), /immutable Bundle version conflict/, 'a version collision still fails')
+
+  const kit = await loadDesignKit(contentNodeFs, packageRoot, { sourceId })
+  assert.equal(kit.version, '1.2')
+  assert.equal(kit.skills.find(skill => skill.name === 'research').version, '1.1')
+  assert.equal(kit.skills.find(skill => skill.name === 'flow_design').version, '1.1')
+  assert.ok(kit.skills.filter(skill => !['research', 'flow_design'].includes(skill.name)).every(skill => skill.version === '1.0'))
+  assert.ok(kit.resources['research/reference/artifact-contract.md'])
 })
 
 test('fork catalog identity preserves runtime name, method and data paths but cannot inherit authority',async t=>{

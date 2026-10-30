@@ -1,5 +1,5 @@
 {
-  "guidance": "Browse the PRD by chapter and use source labels to return to the design. Request generation or revision in the main conversation.",
+  "guidance": "Check that the PRD reflects the agreed scope and key decisions. Follow source labels back to the original design when something is wrong, or request a revision in the conversation.",
   "bundleDescription": "- **Capability**: generate or update one development-ready Web App PRD from current design evidence and user material.\n- **Resolves**: the delivery gap where product, design, engineering, test, and operations still lack one shared implementation-ready specification.\n- **Candidate when**: the user asks to generate, export, update, or inspect a complete PRD.\n- **Do not infer**: PRD assembly is an on-demand delivery action, not a required design gate and not permission to mutate owner Bundles.\n- **Output**: one stable canonical `prd.html`; Git retains history.",
   "contents": "Contents", "empty": "No PRD yet. Ask in the conversation to generate or revise the complete PRD.",
   "pending": "Pending confirmation", "legend": "Purple rail: temporary completion to keep the PRD coherent; not yet confirmed by the user",

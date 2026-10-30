@@ -1,5 +1,5 @@
 {
-  "guidance": "Describe the connection's purpose, then add verified information and usage instructions. Do not enter real secrets.",
+  "guidance": "Check what each external connection exchanges, why it is needed and what happens on failure. Add actual interface references, without entering real secrets.",
   "bundleDescription": "- **Capability**: design each product-relevant external connection as a complete new Plugin, with concise product-side notes.\n- **Resolves**: S/T gaps around which external capability the product needs, how the Agent accesses and uses it, and what the product does when the connection succeeds or fails.\n- **Candidate when**: a product behavior depends on an external API, webhook, SDK, MCP tool, third-party component, device, or team-operated system.\n- **Do not infer**: never invent vendor behavior, URL, credential, endpoint, or field-level API contract.\n- **Output**: `integration_design` panel — one editable Plugin-style connection record plus product-side remarks for every external capability.",
   "empty": "No integrations yet. Add connection instructions and product-side rules as needed.",
   "integrations": "System integrations",

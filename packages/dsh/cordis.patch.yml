@@ -54,3 +54,5 @@
         followInstalledSources: true
     - id: dsh-design-studio-page
       name: dsh-design-studio-dsh/studio-page
+    - id: dsh-design-studio-authoring
+      name: dsh-design-studio-dsh/authoring-entry

@@ -35,8 +35,10 @@ test('conversation chrome does not override nested shared advisory cards', async
   assert.doesNotMatch(source, /\.companion-conversation\s+article\s*\{/)
   assert.doesNotMatch(source, /\.companion-conversation\s+header\s+span/)
   assert.match(source, /\.companion-conversation-heading>span,\.companion-conversation-hint\{/)
-  assert.match(source, /\.companion-conversation \.companion-message\{[^}]*overflow-wrap:anywhere/)
-  assert.match(source, /\.companion-activity article\{[^}]*overflow-wrap:anywhere/)
+  const shared = await readFile(new URL('../../studio-ui/src/ConversationActivity.tsx', import.meta.url), 'utf8')
+  assert.match(source, /\$\{CONVERSATION_ACTIVITY_CSS\}/)
+  assert.match(shared, /\.companion-message\{[^}]*overflow-wrap:anywhere/)
+  assert.match(shared, /\.companion-activity article\{[^}]*overflow-wrap:anywhere/)
 })
 
 test('panel-only reuses one lightbulb-anchored inbox instead of a full-workspace cover', async () => {

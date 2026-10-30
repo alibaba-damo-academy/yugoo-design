@@ -5,7 +5,7 @@
   "newAgent": "New Agent",
   "numberedAgent": "New Agent {index}",
   "empty": "Add an Agent and reference Skills and tools as needed.",
-  "guidance": "Define the Agent's job, then configure Skills and tools. Resources can be shared; saving does not install or run them.",
+  "guidance": "Check whether the Agent goals, responsibilities and tools fit together, and whether capabilities are missing or unnecessary. Saving here records the design; it does not install or run tools.",
   "name": "Name",
   "description": "Responsibility and goal",
   "functionRefs": "Related functions",

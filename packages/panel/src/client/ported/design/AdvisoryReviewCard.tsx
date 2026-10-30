@@ -235,22 +235,30 @@ export interface AdvisoryAcceptanceAuthority {
 
 /**
  * Render one concise, conversation-visible acceptance request. The advisory
- * card already presented rationale and references for human review, so the
- * queued message carries only the decision, actionable items, and the exact
- * receipt/Bundle pairs the Agent needs. Enforcement remains server-side.
+ * Agent needs the exact advisory identity and the same bounded facts the human
+ * accepted, independently of generic titles or repeated item ids. Only the
+ * separately supplied receipt/Bundle pairs grant execution authority.
  */
 export function renderAdvisoryAcceptancePrompt(
-  advisory: Pick<AdvisoryCardView, 'id' | 'summary' | 'items' | 'actionSpec'>,
+  advisory: Pick<AdvisoryCardView, 'id' | 'summary' | 'items' | 'actionSpec'> & Partial<Pick<AdvisoryCardView, 'acceptanceInstruction'>>,
   authority: Pick<AdvisoryAcceptanceAuthority, 'actionReceipts'>,
 ): string {
   const isZh = /[\u3400-\u9fff]/u.test(advisory.summary)
-  const items = advisory.items.map((item, index) => `${index + 1}. ${item.title}`)
+  // Reuse the server's bounded instruction rather than rebuilding a title-only
+  // summary. Legacy callers without it retain their actual item facts too.
+  const context = advisory.acceptanceInstruction?.trim() ? advisory.acceptanceInstruction : [
+    advisory.summary,
+    ...advisory.items.map((item, index) => [
+      `${index + 1}. ${item.title} (${JSON.stringify(item.id)}): ${item.detail}`,
+      ...(item.rationale ? [item.rationale] : []),
+      ...(item.references.length ? [JSON.stringify(item.references)] : []),
+    ].join('\n')),
+  ].join('\n')
   if (advisory.actionSpec?.kind === 'review-choice') {
     return [
       isZh ? '已接受这条设计建议；尚未授予 Bundle 执行权限。' : 'This design advisory was accepted; Bundle execution is not yet authorized.',
       `advisoryId: ${JSON.stringify(advisory.id)}`,
-      advisory.summary,
-      ...items,
+      context,
       isZh
         ? '调用 design_read_review_action 读取此建议的最新证据、接受凭据及候选。复核当前需要，再调用 design_select_review_action 记录选择与理由：合适的 Bundle、宿主原生提问/检索，或无需执行。review_support 只是候选提示，不是绑定；没有候选也可使用宿主能力。仅选择返回的精确 action receipt 可授权对应 Bundle；接受凭据不能用于执行。选择不代表完成，不授权直接写设计文件。'
         : 'Call design_read_review_action for this advisory to read current evidence, acceptance receipt and candidates. Revalidate the need, then call design_select_review_action with a reason: a suitable Bundle, host-native questioning/research, or no action. review_support is a hint, not a binding; host capabilities remain available without candidates. Only the selected exact action receipt authorizes its paired Bundle; the acceptance receipt cannot authorize execution. Selection is not completion and grants no direct Design File write authority.',
@@ -270,11 +278,11 @@ export function renderAdvisoryAcceptancePrompt(
       ].join('\n')
   return [
     isZh ? '已接受这条设计建议。' : 'This design advisory was accepted.',
-    advisory.summary,
-    ...(items.length === 0 ? [] : [isZh ? '需要处理：' : 'Items to address:', ...items]),
+    `advisoryId: ${JSON.stringify(advisory.id)}`,
+    context,
     isZh
-      ? '请根据当前设计文件重新核验：已解决则说明依据；仍未解决则按下列授权执行。'
-      : 'Revalidate against the current Design Files. Cite current evidence if resolved; otherwise act only under the authority below.',
+      ? '请根据当前设计文件重新核验这条建议的具体事项；不要替换成相同 Bundle 中的其他问题。需要补读时，用上述完整 advisoryId 调用 design_read_review_action，不要传 item id 或 entityRefs。已解决则说明依据；仍未解决则按下列授权执行。'
+      : 'Revalidate this advisory’s specific findings against the current Design Files; do not substitute another issue in the same Bundle. To read details, call design_read_review_action with the full advisoryId above, not an item id or entityRefs. Cite current evidence if resolved; otherwise act only under the authority below.',
     authorityText,
   ].join('\n')
 }

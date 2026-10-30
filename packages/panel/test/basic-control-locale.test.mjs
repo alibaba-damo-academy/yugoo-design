@@ -5,6 +5,37 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { renderManifest } from '../src/interpreter.ts'
 globalThis.React = React
 
+test('missing cross-panel port is unavailable, while complete empty data is stale and read errors propagate', () => {
+  const panelRef = { panel_type: 'other', section_id: 'records' }
+  const manifest = { version: 1, panel_kind: 'neutral_records', sections: [{ id: 'items' }],
+    fields: [
+      { key: 'one', control: 'record_select', options_from_panel: panelRef, applies_to: ['items'] },
+      { key: 'many', control: 'record_multi_select', options_from_panel: panelRef, applies_to: ['items'] },
+      { key: 'rows', control: 'rows', columns: [{ key: 'ref', label: 'Target', control: 'ref', options_from_panel: panelRef }], applies_to: ['items'] },
+    ], ui: { id: 'form', component: 'record_form', source: 'items' } }
+  const state = { items: { a: { one: 'kept', many: ['kept'], rows: [{ ref: 'kept' }] } } }, before = structuredClone(state)
+  for (const [locale, unloaded, stale] of [
+    ['zh-CN', '引用来源未加载', '已失效引用'], ['en-US', 'reference source not loaded', 'invalid reference'],
+  ]) {
+    const render = panelData => renderToStaticMarkup(renderManifest(manifest, state, {
+      locale, editable: true, panelData, onEdit: () => assert.fail('reading must not edit saved references'),
+    }))
+    const missing = render(undefined)
+    assert.equal(missing.split(unloaded).length - 1, 3)
+    assert.ok(!missing.includes(stale))
+    const absent = render(() => ({}))
+    assert.equal(absent.split(stale).length - 1, 3)
+    const valid = render((bundle, section) => {
+      assert.equal(bundle, 'other'); assert.equal(section, 'records')
+      return { kept: { title: 'Actual target' } }
+    })
+    assert.equal(valid.split('Actual target').length - 1, 3)
+    assert.ok(!valid.includes(stale) && !valid.includes(unloaded))
+    assert.throws(() => render(() => { throw Error('source read failed') }), /source read failed/)
+    assert.deepEqual(state, before)
+  }
+})
+
 test('shared reference, row and source controls translate diagnostics without rewriting preserved values', () => {
   const manifest = { version: 1, panel_kind: 'neutral_records', sections: [{ id: 'items', title: 'User section' }],
     fields: [

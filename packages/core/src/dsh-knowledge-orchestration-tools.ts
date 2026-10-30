@@ -15,7 +15,7 @@ import type DesignService from './design-service.ts'
 export function registerKnowledgeOrchestrationTools(ctx: Context, design: DesignService): void {
   ctx.tools.register(defineTool({
     name: 'design_read_review_action',
-    description: 'Read an advisory, its acceptance receipt, current selection revision and Kit catalog candidate hints. Revalidate current evidence and user intent before choosing. Does not accept advice or grant execution authority.',
+    description: 'Read the complete findings, references and existing acceptance/action receipts for one exact advisoryId (the full run/result identity, never an item id or entityRefs). Grounding and fixed-target advice are readable too; only review-choice advice includes Kit catalog candidate hints for a subsequent choice. Revalidate the specific accepted finding and current evidence, never substitute another issue in the same Bundle. This read does not accept advice, mint receipts or grant execution authority.',
     parameters: { advisoryId: { type: 'string', required: true } },
     output: { schema: { type: 'object', additionalProperties: false, properties: { content: { type: 'string', required: true } } },
       render: (_args, result) => [{ type: 'text', text: result.content }] },

@@ -4,6 +4,7 @@
  * This is what makes a community design system a zero-code content package: the
  * loader is shared machinery, the kit is data.
  */
+import { dataTableSchemaMatches } from './data-table.ts'
 import { isAbsolute, relative, resolve } from 'node:path'
 import { parse, stringify } from 'yaml'
 import { DesignBundleVersion, DesignKitVersion, deriveDesignBundleAuthorityId, DesignResumeActionId, type DesignBilingualText, type DesignKit, type DesignExecutionPolicy, type DesignResumeAction, type DesignSkill } from './types.ts'
@@ -20,6 +21,8 @@ import { compileDesignOntologyContract } from './design-ontology.ts'
 
 /** Filesystem surface needed to read a kit directory. */
 export interface KitFsLike {
+  /** Byte-complete captures (including binary resources) for project-owned copies. */
+  readBytes?(path: string): Promise<Uint8Array | undefined>
   readText(path: string): Promise<string | undefined>
   /** Optional attached-resource projection only; definition slots still use readText. */
   readResource?(path: string): Promise<KitResourceContent | undefined>
@@ -53,6 +56,8 @@ export interface DesignKitLocation {
 
 /** Trusted loader inputs that are not authored by Kit content. */
 export interface DesignKitLoadOptions {
+  /** Current authoring/project sources resolve identity, not an old release version. */
+  readonly current?: boolean
   /** Stable package- or absolute-directory identity supplied by host composition. */
   readonly sourceId: string
   readonly resolveBundle?: (pin: DesignBundlePin) => Promise<DesignBundleContent | undefined>
@@ -399,6 +404,7 @@ function collectionRecordSpec(spec: SchemaSpec): SchemaSpec | undefined {
 function controlAcceptsSchema(control: string, spec: SchemaSpec): boolean {
   if (control === 'record_map' || control === 'source_reference_map') return spec.type === 'map' && spec.value?.type === 'object'
   if (control === 'radio_custom') return spec.type === 'string'
+  if (control === 'data_table') return dataTableSchemaMatches(spec)
   if (control === 'rows') return spec.type === 'array'
   if (control === 'list' || control === 'multi_select' || control === 'record_multi_select' || control === 'source_list' || control === 'token_list') {
     return spec.type === 'array' && (spec.items?.type === 'string'
@@ -866,8 +872,8 @@ async function collectResourceInputs(
  */
 export async function loadDesignBundle(
   fs: KitFsLike,
-  location: { readonly rootDir: string; readonly sourceId: string },
-  expectedPin?: DesignBundlePin,
+  location: { readonly rootDir: string; readonly sourceId: string; readonly current?: boolean },
+  expectedPin?: { readonly name: string; readonly version?: string },
 ): Promise<DesignBundleContent> {
   const base = location.rootDir
   if (!isAbsolute(base)) throw new Error('design bundle: root must be absolute')
@@ -904,13 +910,13 @@ export async function loadDesignBundle(
     if (manifest.name !== entry) {
       throw new Error(`design kit: ${base}/skill.yaml name must equal directory ${JSON.stringify(entry)}`)
     }
-    if (manifest.version === undefined) {
+    if (manifest.version === undefined && !location.current) {
       throw new Error(`design kit: ${base}/skill.yaml must declare a top-level version`)
     }
-    if (typeof manifest.version !== 'string') {
+    if (manifest.version !== undefined && typeof manifest.version !== 'string') {
       throw new Error(`design kit: ${base}/skill.yaml version must be a string`)
     }
-    const bundleVersion = DesignBundleVersion(manifest.version)
+    const bundleVersion = DesignBundleVersion(manifest.version ?? '1.0')
     assertSkillRuntime(manifest, `${base}/skill.yaml`)
     const title = parseBilingualManifestField(manifest, 'title', `${base}/skill.yaml`)
     const label = parseBilingualManifestField(manifest, 'label', `${base}/skill.yaml`)
@@ -1009,7 +1015,7 @@ export async function loadDesignBundle(
     const authority = deriveDesignBundleAuthorityId(location.sourceId, catalogName)
     const bundleResources = await collectResourceInputs(fs, base, '', undefined, realBundleRootConfinement)
     const skill: DesignSkill = {
-      resourceRoot: base,
+      resourceRoot: base, sourceId: location.sourceId, sourceFs: fs,
       ...(manifest.identity === undefined ? {} : {catalogName}),
       name: typeof frontmatter.meta.name === 'string' ? frontmatter.meta.name : entry,
       authority,
@@ -1022,7 +1028,7 @@ export async function loadDesignBundle(
       execution: manifest.execution as DesignExecutionPolicy,
       metadata,
     }
-  if (expectedPin && ((skill.catalogName ?? skill.name) !== expectedPin.name || String(skill.version) !== expectedPin.version)) {
+  if (expectedPin && ((skill.catalogName ?? skill.name) !== expectedPin.name || (expectedPin.version !== undefined && String(skill.version) !== expectedPin.version))) {
     throw new Error('design bundle: exact pin does not match content')
   }
   return Object.freeze({ skill: Object.freeze(skill), resourceRoot: base, sourceId: location.sourceId,
@@ -1044,13 +1050,13 @@ export async function loadDesignKit(
   if (typeof name !== 'string' || name.trim() === '') {
     throw new Error(`design kit: mindset file missing "name" frontmatter: ${paths.mindsetPath}`)
   }
-  if (meta.version === undefined) {
+  if (meta.version === undefined && !options.current) {
     throw new Error(`design kit: mindset file missing "version" frontmatter: ${paths.mindsetPath}`)
   }
-  if (typeof meta.version !== 'string') {
+  if (meta.version !== undefined && typeof meta.version !== 'string') {
     throw new Error(`design kit: mindset file "version" frontmatter must be a string: ${paths.mindsetPath}`)
   }
-  const version = DesignKitVersion(meta.version)
+  const version = DesignKitVersion(meta.version ?? '1.0')
   const relationsPath = paths.relationsPath ?? resolve(paths.rootDir, 'relations.yaml')
   let relationsSource: string | undefined
   if (fs.realPath !== undefined && realKitRoot !== undefined) {
@@ -1098,7 +1104,7 @@ export async function loadDesignKit(
         : createDirectoryBundleResolver(fs, [{rootDir: paths.bundlesDir, sourceId: options.sourceId}]))
       if (!resolver) throw new Error('design kit: independent mounts require a Bundle resolver')
       bundle = await resolver(entry)
-      if (!bundle || (bundle.skill.catalogName ?? bundle.skill.name) !== entry.name || String(bundle.skill.version) !== entry.version) {
+      if (!bundle || (bundle.skill.catalogName ?? bundle.skill.name) !== entry.name || (!options.current && String(bundle.skill.version) !== entry.version)) {
         throw new Error(`design kit: unavailable exact Bundle ${entry.name}@${entry.version}`)
       }
       if (bundle.skill.name !== entry.bindingKey) {
@@ -1131,7 +1137,7 @@ export async function loadDesignKit(
     executionPolicies: Object.fromEntries(skills.map(skill => [skill.name, skill.execution])),
   })
   return {
-    sourceRoot: paths.rootDir,
+    sourceRoot: paths.rootDir, sourceLocation: paths, sourceId: options.sourceId, sourceFs: fs,
     name,
     version,
     ...(typeof meta.description === 'string' ? { description: meta.description } : {}),

@@ -1,14 +1,11 @@
 /** Companion adapter over the shared Core content authority, not a second store. */
 import { dirname, join, resolve, relative, isAbsolute, sep } from 'node:path'
-import { mkdir, mkdtemp, writeFile, rm, readdir, readFile, lstat } from 'node:fs/promises'
-import { createHash } from 'node:crypto'
 import {
   DesignContentStore, createDirectoryBundleResolver, loadDesignBundle, loadDesignKit, resolveDesignKitPackage,
-  composeProjectKit, projectBundleOverrides, latestInstalledKit,
+  composeProjectKit, projectBundleOverrides,
   parseFrontmatter,
 } from '../../core/lib/index.js'
 
-import { normalizeLegacyKitImport } from './content-import-legacy.mjs'
 
 const SOURCE_ID = 'companion:explicit-kit'
 
@@ -27,7 +24,7 @@ export function assertCompanionKitContributions(target, installed) {
   const available = new Set(contributions(installed).map(key))
   for (const contribution of contributions(target)) {
     if (!available.has(key(contribution))) {
-      throw new Error(`Install and verify the required Host ${contribution.kind} contribution ${contribution.id} for Bundle authority ${contribution.authority} before selecting or upgrading this Kit.`)
+      throw new Error(`Install and verify the required Host ${contribution.kind} contribution ${contribution.id} for Bundle authority ${contribution.authority} before selecting this Kit.`)
     }
   }
 }
@@ -36,44 +33,32 @@ export function assertCompanionKitContributions(target, installed) {
 export function createCompanionContentLibrary({ fs, kitRoot, stateRoot, trustedContentSources }) {
   const store = new DesignContentStore(stateRoot)
   let installed
+  let studio
   const loadInstalled = async () => {
     const location = await resolveDesignKitPackage(fs, kitRoot) ?? kitRoot
     const ownedRoot = typeof location === 'string' ? location : location.rootDir
-    const manifest = await fs.readText(typeof location === 'string' ? join(ownedRoot, 'kit.yaml') : location.manifestPath ?? join(ownedRoot, 'kit.yaml'))
-    if (manifest === undefined) {
-      // Existing directory authoring remains explicit mutable development input.
-      // Formal independent content below never replaces an immutable same pin.
-      return loadDesignKit(fs, location, { sourceId: SOURCE_ID })
-    }
     const bundleRoot = typeof location !== 'string' && location.bundlesDir
       ? location.bundlesDir : join(dirname(dirname(ownedRoot)), 'bundles')
     const resolveBundle = trustedContentSources ? async pin => {
       const source = trustedContentSources.bundles.find(entry => entry.name === pin.name && entry.version === pin.version)
       return source ? loadDesignBundle(fs, source, pin) : undefined
     } : createDirectoryBundleResolver(fs, [{ rootDir: bundleRoot, sourceId: SOURCE_ID }])
-    return store.retainKitClosure(location, { sourceId: trustedContentSources?.sourceId ?? SOURCE_ID, resolveBundle })
-  }
-  const sameFiles = async (root, files) => {
-    const actual = new Map()
-    const walk = async dir => {
-      for (const entry of await readdir(dir, { withFileTypes: true })) {
-        const path = join(dir, entry.name)
-        if (entry.isSymbolicLink()) throw new Error('Retained content contains a symlink.')
-        if (entry.isDirectory()) await walk(path)
-        else if (entry.isFile()) actual.set(relative(root, path).split(sep).join('/'), await readFile(path))
-        else throw new Error('Retained content contains a non-regular resource.')
-      }
-    }
-    await walk(root)
-    return actual.size === files.length && files.every(file => actual.get(file.path)?.equals(Buffer.from(file.base64, 'base64')))
+    return loadDesignKit(fs, location, { sourceId: trustedContentSources?.sourceId ?? SOURCE_ID, resolveBundle })
   }
   return {
     store,
     loadInstalled: () => installed ??= loadInstalled().catch(error => { installed = undefined; throw error }),
     reloadInstalled: async () => { const value = await loadInstalled(); installed = Promise.resolve(value); return value },
+    /** The shared Studio store owns current library edits; projects take a copy. */
+    async studio() {
+      return studio ??= import('./studio.mjs')
+        .then(({ createCompanionStudio }) => createCompanionStudio(() => this.loadInstalled(), kitRoot, stateRoot, this))
+        .catch(error => { studio = undefined; throw error })
+    },
+    async loadCurrentKit(pin) { return (await this.studio()).loadCurrentKit(pin) },
     /** Discovery labels only: no Bundle loading, validation or immutable retention. */
     async availableMindsetNames() {
-      const names = (await store.listKits()).map(pin => pin.name)
+      const names = (await (await this.studio()).listInstances({ kind: 'kit' })).flatMap(record => record.kit ? [record.kit.name] : [])
       const location = await resolveDesignKitPackage(fs, kitRoot) ?? kitRoot
       const sourceRoot = typeof location === 'string' ? location : location.rootDir
       const path = typeof location === 'string' ? join(location, 'mindset.md') : location.mindsetPath
@@ -94,68 +79,20 @@ export function createCompanionContentLibrary({ fs, kitRoot, stateRoot, trustedC
       }
       return [...new Set(names)].sort()
     },
-    /** One latest complete closure per catalog name, including explicitly adopted Kits. */
+    /** Current library identities; old retained definitions only seed old projects. */
     async availableKits() {
       const base = await this.loadInstalled()
-      const retained = await Promise.all((await store.listKits()).map(pin => store.loadRetainedKit(pin)))
-      const kits = [base, ...retained.filter(Boolean)]
-      return [...new Set(kits.map(kit => kit.name))].map(name => latestInstalledKit(kits, name))
+      const entries = new Map([[base.name, base]])
+      for (const record of await (await this.studio()).listInstances({ kind: 'kit' })) {
+        if (record.kit) entries.set(record.kit.name, { ...record.kit, description: record.description })
+      }
+      return [...entries.values()]
     },
-    /** New selection only; an existing project always resolves its retained exact pin. */
+    /** New selection only; existing projects read their own current source tree. */
     async latestInstalled(name) {
       const selectedName = name ?? (await this.loadInstalled()).name
-      return (await this.availableKits()).find(kit => kit.name === selectedName)
-    },
-    /** Prepared inert bytes only: staging is private and never runs dependency scripts. */
-    async adoptPrepared(prepared) {
-      if (!prepared.validation?.valid || !prepared.contents?.length) throw new Error('Only a validated content archive can be adopted.')
-      await mkdir(stateRoot, { recursive: true })
-      const staging = await mkdtemp(join(stateRoot, 'content-import-'))
-      const sourceId = `import:${createHash('sha256').update(JSON.stringify(prepared.archive)).digest('hex')}`
-      let staged = []
-      let total = 0, count = 0
-      try {
-        for (const [index, unit] of prepared.contents.entries()) {
-          const rootDir = join(staging, String(index))
-          await mkdir(rootDir)
-          for (const file of unit.files) {
-            if (typeof file.path !== 'string' || /[\\:\u0000]/.test(file.path)
-              || file.path.split('/').some(part => !part || ['.', '..', '.git', 'node_modules'].includes(part))) throw new Error('Unsafe imported resource path.')
-            const target = resolve(rootDir, file.path), rel = relative(rootDir, target)
-            if (isAbsolute(rel) || rel.startsWith(`..${sep}`) || rel === '..') throw new Error('Imported resource escapes its content root.')
-            const bytes = Buffer.from(file.base64, 'base64')
-            if (++count > 4096 || (total += bytes.length) > 16 * 1024 * 1024) throw new Error('Imported content exceeds bounded archive limits.')
-            await mkdir(dirname(target), { recursive: true })
-            await writeFile(target, bytes, { flag: 'wx', mode: 0o600 })
-          }
-          staged.push({ ...unit, rootDir })
-        }
-        staged = await normalizeLegacyKitImport(staged, { stagingRoot: staging, sourceId })
-        const bundles = new Map()
-        for (const unit of staged.filter(unit => unit.kind === 'bundle')) {
-          const existing = await store.resolveBundle(unit.pin)
-          if (existing && !await sameFiles(existing.resourceRoot, unit.files)) throw new Error('Imported Bundle conflicts with an existing exact version.')
-          const content = existing ?? await loadDesignBundle(fs, { rootDir: unit.rootDir, sourceId }, unit.pin)
-          bundles.set(`${unit.pin.name}@${unit.pin.version}`, content)
-        }
-        const kit = staged.find(unit => unit.kind === 'kit')
-        if (kit) {
-          const existing = await store.loadRetainedKit(kit.pin)
-          if (existing && !await sameFiles(existing.sourceRoot, kit.files)) throw new Error('Imported Kit conflicts with an existing exact version.')
-          if (!existing) await store.retainKitClosure(kit.rootDir, { sourceId, resolveBundle: pin => bundles.get(`${pin.name}@${pin.version}`) })
-        } else {
-          for (const unit of staged) {
-            const existing = await store.resolveBundle(unit.pin)
-            if (existing) {
-              if (!await sameFiles(existing.resourceRoot, unit.files)) throw new Error('Imported Bundle conflicts with an existing exact version.')
-            } else await store.retainBundle(unit.rootDir, { sourceId }, unit.pin)
-          }
-        }
-        return { contents: staged.map(({ kind, pin }) => ({ kind, pin })), executionGranted: false }
-      } finally {
-        // Only this call's exact private staging directory is disposable.
-        if ((await lstat(staging)).isDirectory()) await rm(staging, { recursive: true })
-      }
+      const pin = (await this.availableKits()).find(kit => kit.name === selectedName)
+      return pin ? this.loadCurrentKit(pin) : undefined
     },
     async resolveProject(pin) {
       if (pin) {

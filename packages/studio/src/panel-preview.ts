@@ -22,6 +22,8 @@ export interface StudioPanelPreview {
   /** Loader-resolved YAML, including the installed Bundle's translations. */
   readonly panelYaml: string
   readonly sample: Readonly<Record<string, unknown>>
+  /** Explicit bounded synthetic files; never project artifacts or filesystem access. */
+  readonly artifacts?: Readonly<Record<string, string>>
 }
 
 export interface StudioPanelPreviewResult {
@@ -40,13 +42,15 @@ export function finalizeStudioPanelPreview(input: {
   readonly kit?: DesignKitVersionPin
   readonly revision: number
   readonly sampleSource: string
+  /** Reads only the already confined definition snapshot, not a project. */
+  readonly readSampleResource?: (path: string) => string | undefined
 }): StudioPanelPreviewResult {
   const { compiled, revision, sampleSource } = input
   const bundle = { ...input.bundle }, kit = input.kit === undefined ? undefined : { ...input.kit }
   if (!Number.isSafeInteger(revision) || revision < 0 || typeof sampleSource !== 'string') {
     return failure('preview.request', 'Select an exact Bundle, text sample JSON and a non-negative editor revision.')
   }
-  if ((compiled.catalogName ?? compiled.name) !== bundle.name || String(compiled.version) !== bundle.version) {
+  if ((compiled.catalogName ?? compiled.name) !== bundle.name) {
     return failure('preview.bundle_pin', 'The source does not match the selected Bundle version.')
   }
   const panelYaml = compiled.metadata?.panelYaml
@@ -61,7 +65,35 @@ export function finalizeStudioPanelPreview(input: {
   try {
     const errors = compileSchema(schema)(sample)
     if (errors.length > 0) return { diagnostics: errors.map(message => ({ code: 'preview.sample_schema', message })) }
-    return { preview: { revision, ...(kit === undefined ? {} : { kit }), bundle, panelYaml, sample: sample as Record<string, unknown> }, diagnostics: [] }
+    let artifacts: Record<string, string> | undefined
+    try {
+      const mapping = input.readSampleResource?.('reference/preview-artifacts.json')
+      if (mapping !== undefined) {
+        if (new TextEncoder().encode(mapping).length > 16_384) throw new Error('Sample artifact mapping exceeds 16 KiB.')
+        const parsed = JSON.parse(mapping)
+        if (parsed?.version !== 1 || !parsed.files || typeof parsed.files !== 'object' || Array.isArray(parsed.files)
+          || Object.keys(parsed).some(key => !['version', 'files'].includes(key)) || Object.keys(parsed.files).length > 8) {
+          throw new Error('Sample artifact mapping needs version 1 and at most eight files.')
+        }
+        artifacts = Object.create(null) as Record<string, string>
+        let bytes = 0
+        const safe = (path: unknown): path is string => typeof path === 'string'
+          && !/[\\:\x00-\x20?#%]/u.test(path) && path.split('/').every(part => part !== ''
+            && !['.', '..', '__proto__', 'constructor', 'prototype'].includes(part))
+        for (const [path, resource] of Object.entries(parsed.files)) {
+          if (!safe(path) || !path.startsWith(`${compiled.name}/artifacts/`) || !/\.(?:html|svg)$/iu.test(path)
+            || !safe(resource) || !resource.startsWith('reference/preview-artifacts/') || !/\.(?:html|svg)$/iu.test(resource)) {
+            throw new Error('Sample artifacts must map Bundle HTML/SVG paths to confined preview resources.')
+          }
+          const content = input.readSampleResource?.(resource)
+          const size = typeof content === 'string' ? new TextEncoder().encode(content).length : 0
+          if (!size || size > 262_144 || (bytes += size) > 1_048_576) throw new Error('Sample artifact missing or exceeds the 256 KiB file / 1 MiB total limit.')
+          artifacts[path] = content!
+        }
+      }
+    } catch (error) { return failure('preview.sample_artifacts', error instanceof Error ? error.message : String(error)) }
+    return { preview: { revision, ...(kit === undefined ? {} : { kit }), bundle, panelYaml,
+      sample: sample as Record<string, unknown>, ...(artifacts === undefined ? {} : { artifacts }) }, diagnostics: [] }
   } catch (error) { return failure('preview.definition', error instanceof Error ? error.message : String(error)) }
 }
 
@@ -103,11 +135,11 @@ export async function prepareStudioPanelPreview(
   }
   try {
     const base = await loadStudioKit(source, kitRoot, loadOptions)
-    if (base.name !== kitPin.name || String(base.version) !== kitPin.version) {
+    if (base.name !== kitPin.name) {
       return failure('preview.kit_pin', 'The source does not match the selected Kit version.')
     }
     const bundle = base.skills.find(skill => (skill.catalogName ?? skill.name) === bundlePin.name)
-    if (bundle === undefined || String(bundle.version) !== bundlePin.version) {
+    if (bundle === undefined) {
       return failure('preview.bundle_pin', 'The source does not match the selected Bundle version.')
     }
     if (typeof bundle.metadata?.panelYaml !== 'string') {
@@ -125,7 +157,8 @@ export async function prepareStudioPanelPreview(
     const candidate = await loadStudioKit(overlay, kitRoot, loadOptions)
     const compiled = candidate.skills.find(skill => (skill.catalogName ?? skill.name) === bundlePin.name)
     if (compiled === undefined) return failure('preview.bundle_pin', 'The source does not match the selected Bundle version.')
-    return finalizeStudioPanelPreview({ compiled, revision, kit: kitPin, bundle: bundlePin, sampleSource })
+    return finalizeStudioPanelPreview({ compiled, revision, kit: kitPin, bundle: bundlePin, sampleSource,
+      readSampleResource: path => candidate.resources[`${compiled.name}/${path}`] })
   } catch (error) {
     return failure('preview.definition', error instanceof Error ? error.message : String(error))
   }

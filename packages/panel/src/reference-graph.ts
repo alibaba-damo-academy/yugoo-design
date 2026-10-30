@@ -1,5 +1,6 @@
 import type { ComponentNode } from './dsl.ts'
 import type { RecordMap } from './visual-records.ts'
+import type { projectParticipantRelations } from './relation-records.ts'
 
 type ReferenceNode = NonNullable<ComponentNode['references']>['nodes'][number]
 
@@ -47,4 +48,23 @@ export function projectReferenceGraph(bindings: NonNullable<ComponentNode['refer
     }
   }
   return { nodes, edges, owners, missing }
+}
+
+/** Overlay declared references without replacing business nodes/relations or
+ * granting connection handles to contextual records. Every selection still
+ * resolves to its original record; derived links have no independent write. */
+export function withReferenceContext(base: ReturnType<typeof projectParticipantRelations>,
+  bindings: NonNullable<ComponentNode['references']>, read: (section: string) => RecordMap,
+  title: (section: string) => string) {
+  const context = projectReferenceGraph(bindings, read, title)
+  const titled = (map: RecordMap): RecordMap => Object.fromEntries(Object.entries(map)
+    .map(([key, { name, ...value }]) => [key, { ...value, title: name }]))
+  return { ...base,
+    nodes: { ...titled(context.nodes), ...base.nodes },
+    edges: { ...base.edges, ...titled(context.edges) },
+    owners: { ...context.owners, ...base.owners },
+    missing: context.missing,
+    contextNodes: Object.keys(context.nodes).filter(key => !Object.hasOwn(base.nodes, key)).length,
+    referenceEdges: new Set(Object.keys(context.edges)),
+  }
 }

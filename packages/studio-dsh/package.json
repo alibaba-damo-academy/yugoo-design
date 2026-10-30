@@ -8,7 +8,7 @@
   "version": "0.0.0",
   "license": "Apache-2.0",
   "type": "module",
-  "description": "DSH lifecycle, Remote, source, and Settings adapter for the read-only Design Studio.",
+  "description": "DSH Studio inspection, source and Settings adapters plus bounded native authoring over shared Studio ports.",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "exports": {
@@ -33,47 +33,114 @@
       "types": "./lib/typert.host.d.ts",
       "default": "./lib/typert.host.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./authoring": {
+      "types": "./lib/authoring-agent.d.ts",
+      "default": "./lib/authoring-agent.js"
+    },
+    "./authoring-session": {
+      "types": "./lib/authoring-session.d.ts",
+      "default": "./lib/authoring-session.js"
+    },
+    "./authoring-reference-store": {
+      "types": "./lib/authoring-reference-store.d.ts",
+      "default": "./lib/authoring-reference-store.js"
+    },
+    "./authoring-sources": {
+      "types": "./lib/authoring-sources.d.ts",
+      "default": "./lib/authoring-sources.js"
+    },
+    "./authoring-remote": {
+      "types": "./lib/authoring.page-rpc.d.ts",
+      "default": "./lib/authoring.page-rpc.js"
+    },
+    "./authoring-host": {
+      "types": "./lib/authoring-host.d.ts",
+      "default": "./lib/authoring-host.js"
+    },
+    "./authoring-service": {
+      "types": "./lib/authoring-service.d.ts",
+      "default": "./lib/authoring-service.js"
+    },
+    "./authoring-workbench": {
+      "types": "./lib/authoring-workbench.d.ts",
+      "default": "./lib/authoring-workbench.js"
+    },
+    "./authoring-entry": {
+      "types": "./lib/authoring-entry.d.ts",
+      "default": "./lib/authoring-entry.js"
+    }
   },
   "dsh": {
     "client": {
       "platform": "web",
       "inject": [
         "@deepseek-ai/dsh-client-locale",
-        "@deepseek-ai/dsh-client-ui-settings"
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-session",
+        "@deepseek-ai/dsh-api-session-controller"
       ]
     }
   },
   "scripts": {
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
-    "test": "node tests/service.test.mjs && node --test tests/independent-catalog.test.mjs && node tests/page.test.mjs && node tests/page-rpc.test.mjs && node tests/client.test.mjs && node tests/boundary.test.mjs"
+    "test": "node tests/service.test.mjs && node --test tests/independent-catalog.test.mjs && node tests/page.test.mjs && node tests/page-loader.test.mjs && node tests/page-workers.test.mjs && node tests/page-rpc.test.mjs && node tests/client.test.mjs && node --test tests/client-boot.test.mjs && node tests/boundary.test.mjs",
+    "test:authoring-agent": "node --import tsx --test tests/authoring-agent-sdk.test.mjs",
+    "test:authoring-session": "node --import tsx --test tests/authoring-session-sdk.test.mjs",
+    "test:authoring-reference-store": "node --experimental-strip-types --test tests/authoring-reference-store.test.mjs tests/authoring-private-directory.test.mjs",
+    "test:authoring-sources": "node --experimental-strip-types --test tests/authoring-sources.test.mjs",
+    "test:authoring-rpc": "node --experimental-strip-types --test tests/authoring-rpc.test.mjs",
+    "test:authoring-host": "node --import tsx --test tests/authoring-host-sdk.test.mjs",
+    "test:authoring-service": "node --experimental-strip-types --test tests/authoring-service-sdk.test.mjs",
+    "test:authoring-workbench": "TSX_TSCONFIG_PATH=./tsconfig.json node --import tsx --test tests/authoring-workbench.test.mjs",
+    "test:page-authoring": "TSX_TSCONFIG_PATH=./tsconfig.json node --import tsx --test tests/page-authoring.test.mjs",
+    "test:page-loaders": "node tests/page-loader.test.mjs && node tests/page-workers.test.mjs",
+    "test:authoring-entry": "node --experimental-strip-types --test tests/authoring-entry.test.mjs",
+    "test:authoring-material": "node --experimental-strip-types --test tests/authoring-material.test.mjs"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-agent": "0.2.1-rc.3 || 0.2.0-rc.2",
     "@deepseek-ai/dsh-client-locale": "0.2.1-rc.3 || 0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-settings": "0.2.1-rc.3 || 0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-slots": "0.2.1-rc.3 || 0.2.0-rc.2",
     "@deepseek-ai/dsh-fs": "0.2.1-rc.3 || 0.2.0-rc.2",
     "@deepseek-ai/dsh-host-webserver": "0.2.1-rc.3 || 0.2.0-rc.2",
+    "@deepseek-ai/dsh-llm": "0.2.1-rc.3 || 0.2.0-rc.2",
+    "@deepseek-ai/dsh-session": "0.2.1-rc.3 || 0.2.0-rc.2",
+    "@deepseek-ai/dsh-session-query": "0.2.1-rc.3 || 0.2.0-rc.2",
+    "@deepseek-ai/dsh-subagent": "0.2.1-rc.3 || 0.2.0-rc.2",
+    "@deepseek-ai/dsh-system-prompt": "0.2.1-rc.3 || 0.2.0-rc.2",
+    "@deepseek-ai/dsh-tools": "0.2.1-rc.3 || 0.2.0-rc.2",
     "@deepseek-ai/dsh-typert-protocol": "0.2.1-rc.3 || 0.2.0-rc.2",
     "dsh-design-core": "0.0.0",
     "dsh-design-panel": "0.0.0",
     "dsh-design-studio": "0.0.0",
     "dsh-design-studio-ui": "0.0.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "@deepseek-ai/dsh-client-ui-session": "0.2.1-rc.3 || 0.2.0-rc.2",
+    "@deepseek-ai/dsh-api-session-controller": "0.2.1-rc.3 || 0.2.0-rc.2",
+    "@deepseek-ai/dsh-home-paths": "0.2.1-rc.3 || 0.2.0-rc.2"
   },
   "dependencies": {
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.5",
+    "@deepseek-ai/dsh-agent": "0.2.0-rc.2",
     "@deepseek-ai/dsh-client-locale": "0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-settings": "0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-slots": "0.2.0-rc.2",
     "@deepseek-ai/dsh-fs": "0.2.0-rc.2",
     "@deepseek-ai/dsh-host-webserver": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-llm": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-session": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-session-query": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-subagent": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
     "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.2",
     "@types/node": "^22.20.0",
     "@types/react": "^18.3.1",
@@ -85,11 +152,17 @@
     "react": "^18.2.0",
     "react-dom": "^18.3.1",
     "tsdown": "^0.22.2",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "@deepseek-ai/dsh-client-ui-session": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-api-session-controller": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-home-paths": "0.2.0-rc.2"
   },
   "files": [
     "lib/**/*.js",
     "lib/**/*.d.ts",
+    "lib/authoring/studio-creators/material.json",
+    "lib/authoring/panel-components.json",
+    "lib/css-assets/**",
     "README.md",
     "LICENSE",
     "NOTICE",

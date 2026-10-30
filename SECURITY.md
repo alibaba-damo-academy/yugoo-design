@@ -6,7 +6,7 @@ This policy explains how to report security issues for yugoo-design without expo
 
 Do not post credentials, private design projects, conversation transcripts, or an exploitable reproduction in a public issue.
 
-This policy does not yet list a verified private reporting entry or a monitored security email address. If no private channel is available, ask the maintainers to provide one before sharing sensitive details. Do not send the reproduction publicly while waiting.
+A private reporting channel has not yet been verified in this policy. Contact the maintainers through the [feedback guide](docs/wiki/support.md) with the subject “Private security reporting channel request”. Include only a brief, non-sensitive description and a way to contact you. The ordinary feedback email is not a verified security-reporting channel. Wait for a confirmed private channel before sending reproduction steps or affected private data.
 
 GitHub private vulnerability reporting is the intended primary channel. Once it is enabled in the public repository, use its private reporting entry, following [GitHub's reporting instructions](https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/report-privately). Use a security email alternative only after its monitored address is explicitly listed here; no address is currently configured in this policy.
 

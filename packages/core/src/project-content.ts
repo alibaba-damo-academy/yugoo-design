@@ -15,8 +15,8 @@ function canonical(value: unknown): unknown {
 
 /** Paths are installation details; all authored methods, manifests and captured resources participate. */
 export function projectKitContentHash(kit: DesignKit): string {
-  const { sourceRoot: _root, ...definition } = kit
-  const skills = kit.skills.map(({ resourceRoot: _resourceRoot, ...skill }) => skill)
+  const { sourceRoot: _root, sourceLocation: _location, sourceFs: _fs, sourceId: _sourceId, ...definition } = kit
+  const skills = kit.skills.map(({ resourceRoot: _resourceRoot, sourceFs: _fs, sourceId: _sourceId, ...skill }) => skill)
   return createHash('sha256').update(JSON.stringify(canonical({ ...definition, skills }))).digest('hex')
 }
 

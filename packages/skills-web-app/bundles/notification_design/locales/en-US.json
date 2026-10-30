@@ -1,5 +1,5 @@
 {
-  "guidance": "Specify when to notify whom, through which channel, and the next action. The content preview does not send notifications.",
+  "guidance": "Check that the trigger, recipients and channel are appropriate and that the message helps them take the next action. Previewing content does not send a notification.",
   "bundleDescription": "- **Capability**: decide when an established business moment should proactively reach which people, through which human channel, with what useful message and next action.\n- **Resolves**: S/T gaps where a user could miss a material approval, deadline, exception, handoff, or completed result while not looking at the relevant page.\n- **Candidate when**: an established flow contains waiting, handoff, deadline, exception, or material status change and somebody must know or act without already being on that page.\n- **Do not infer**: every state change needs a notification; page feedback, dashboards, reports, exports, audit history, machine webhooks, and final marketing copy belong elsewhere.\n- **Output**: `notification_design` panel — an ordered, editable set of proactive notification moments.",
   "empty": "Add a notification: when it appears, who receives it, which channel is used and what it says.",
   "notifications": "Notifications",

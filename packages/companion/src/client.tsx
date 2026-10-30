@@ -1,6 +1,6 @@
+import { CONVERSATION_ACTIVITY_CSS } from '../../studio-ui/src/ConversationActivity.tsx'
 import { Context } from '@deepseek-ai/cordis'
 import { browserRandomUuid } from '../../panel/src/browser-uuid.ts'
-import { usePanelDraftObservation } from '../../panel/src/client/panel-draft-observation.tsx'
 import { alignConversationHeader } from './header-alignment.mjs'
 import { browserTransport, companionView } from './browser-access.mjs'
 import { CanvasFontRoot } from '../../panel/src/use-canvas-ui-font.mjs'
@@ -22,13 +22,17 @@ import { panelStore, setSaving } from '../../panel/src/client/store.ts'
 import { Conversation, type RecordedConversation } from './conversation.tsx'
 import { BackgroundReviewPanel, type BackgroundReviews } from './background-reviews.tsx'
 import { requireNotificationAccepted, notificationAutoDismiss } from './notification-result.mjs'
+import { notificationDeliveryReceipt } from './notification-delivery.mjs'
 import { ConversationResize, savedChatWidth, DEFAULT_CHAT_WIDTH } from './conversation-resize.tsx'
 import { StudioWorkspace } from '../../studio-ui/src/StudioWorkspace.tsx'
+import { StudioConversationLayout } from './studio-conversation.tsx'
+import { StudioEntryFeedback } from './studio-feedback.tsx'
+import { studioConversationHandoff } from './studio-conversation.mjs'
 import { PanelSelect } from '../../panel/src/panel-select.tsx'
 import type { StudioManagementClient } from '../../studio-ui/src/types.ts'
-import type { StudioContentClient } from '../../studio-ui/src/ContentArchiveWorkbench.tsx'
-import type { StudioAuthoring } from '../../studio-ui/src/PanelDraftWorkbench.tsx'
-import type { StudioTrialClient } from '../../studio-ui/src/trial-controller.ts'
+import type { StudioContentClient } from '../../studio-ui/src/content-transfer.ts'
+import type { StudioAuthoring } from '../../studio-ui/src/authoring.ts'
+import { checkStudioTrialConnection, type StudioTrialClient } from '../../studio-ui/src/trial-controller.ts'
 import { StudioRuntimePreview } from './studio-preview.tsx'
 import { studioComponentLibrary } from './studio-components.tsx'
 import { AdvisorySidebarEntry } from '../../panel/src/client/advisory-sidebar-entry.tsx'
@@ -61,9 +65,9 @@ async function rpc<T>(method: string, params = {}): Promise<T> {
   // A stalled read must release its single-flight slot so the next visible
   // tick can recover. Mutations/submissions retain their no-replay semantics.
   const signal = method === 'readWorkspace' || method === 'readConversation' ? AbortSignal.timeout(10000) : undefined
-  const response = await fetch(transport.endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', ...transport.headers }, body: JSON.stringify({ method, params }), signal, keepalive: method === 'observePanelDraft' })
+  const response = await fetch(transport.endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', ...transport.headers }, body: JSON.stringify({ method, params }), signal })
   const result = await response.json()
-  if (!response.ok) throw new Error(result.error ?? 'Companion request failed')
+  if (!response.ok) throw Object.assign(new Error(result.error ?? 'Companion request failed'), notificationDeliveryReceipt(result) ?? {})
   return result as T
 }
 const context = new Context()
@@ -77,17 +81,19 @@ const studioClient: StudioManagementClient = {
 }
 const studioContentClient: StudioContentClient = {
   export: input => rpc('studioContentExport', input),
-  prepare: input => rpc('studioContentImport', input),
-  list: () => rpc('studioContentImportList'),
-  read: input => rpc('studioContentImportRead', input),
-  adopt: input => rpc('studioContentImportAdopt', input),
+  readArchive: input => rpc('studioContentReadArchive', input),
 }
 const studioInstances: import('../../studio-ui/src/InstanceWorkbench.tsx').StudioInstanceClient = {
+  create: input => rpc('studioInstanceCreate', input),
+  importSources: input => rpc('studioInstanceImportSources', input),
   list: input => rpc('studioInstanceList', input), read: input => rpc('studioInstanceRead', input),
+  editCurrent: input => rpc('studioInstanceEditCurrent', input),
   copy: input => rpc('studioInstanceCopy', input), rename: input => rpc('studioInstanceRename', input),
   remove: input => rpc('studioInstanceRemove', input), readFile: input => rpc('studioInstanceFile', input),
   saveFile: input => rpc('studioInstanceSave', input), preview: input => rpc('studioInstancePreview', input),
   updateMounts: input => rpc('studioInstanceMounts', input),
+  prepareChanges: input => rpc('studioInstancePrepareChanges', input),
+  saveChanges: input => rpc('studioInstanceSaveChanges', input),
 }
 const nativePanels = new NativePanelRegistry(context)
 const studioTrials: StudioTrialClient = {
@@ -102,21 +108,8 @@ const studioTrials: StudioTrialClient = {
 const studioAuthoring: StudioAuthoring = {
   client: {
     previewInstalled: input => rpc('studioInstalledPreview', input),
-    create: input => rpc('studioDraftCreate', input), list: () => rpc('studioDraftList'),
-    read: id => rpc('studioDraftRead', { id }), save: input => rpc('studioDraftSave', input),
-    preview: input => rpc('studioDraftPreview', input), confirm: input => rpc('studioDraftConfirm', input),
-    fork: id => rpc('studioDraftFork', { id }),
   },
   renderPreview: (preview, adoptSample, options) => <StudioRuntimePreview key={`${preview.kit?.name ?? 'standalone'}:${preview.bundle.name}:${preview.revision}`} preview={preview} adoptSample={adoptSample} readOnly={options.readOnly} toolbarTarget={options.toolbarTarget} />,
-}
-const studioKitAuthoring: import('../../studio-ui/src/KitDraftWorkbench.tsx').StudioKitAuthoring = {
-  client: {
-    create: input => rpc('studioKitDraftCreate', input), list: () => rpc('studioKitDraftList'),
-    read: id => rpc('studioKitDraftRead', { id }), save: input => rpc('studioKitDraftSave', input),
-    validate: input => rpc('studioKitDraftValidate', input), preview: input => rpc('studioKitDraftPreview', input),
-    confirm: input => rpc('studioKitDraftConfirm', input), fork: id => rpc('studioKitDraftFork', { id }),
-  },
-  renderPreview: studioAuthoring.renderPreview,
 }
 let nativeHostLabel = '原生 Agent'
 const readConversation = createWorkspacePollReader<{ conversation: RecordedConversation; backgroundRows: RecordedConversation['rows'] }>(
@@ -177,6 +170,60 @@ const runtime: DesignRuntime = {
   decideAdvisory: (_session, advisoryId, decision) => rpc('decideAdvisory', { advisoryId, decision }),
 }
 
+const CONVERSATION_CSS = `
+      .companion-icon-button{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:6px;flex-shrink:0;color:#625879}
+      .companion-icon-button:hover,.companion-sidebar-action:hover{background:#f3f0f8}
+      .companion-icon-button:focus-visible,.companion-sidebar-action:focus-visible{outline:2px solid #7c5af6;outline-offset:2px}
+      .companion-icon-button svg,.companion-sidebar-action svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+      .companion-conversation{width:var(--chat-width,30%);min-width:0;flex-shrink:0;display:flex;flex-direction:column;font-size:14px;line-height:1.5}
+      .companion-resize{width:6px;flex-shrink:0;cursor:col-resize;touch-action:none;background:#f6f5f8}
+      .companion-resize:hover,.companion-resize:focus-visible{background:#b9a2f4;outline:none}
+      .companion-conversation[hidden]{display:none}
+      .companion-conversation>header{gap:8px;justify-content:space-between}
+      .companion-conversation-heading{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
+      .companion-conversation-title{display:flex;align-items:center;gap:6px;min-width:0}
+      .companion-conversation-heading>span,.companion-conversation-hint{font-size:12px;color:#6d6d6d}
+      .companion-conversation .companion-conversation-hint{padding:8px 16px;margin:0}
+      .companion-sync-status{display:flex;align-items:center;gap:6px;background:#faf9fd;border-bottom:1px solid #eee;flex-shrink:0}
+      .companion-sync-status .companion-spinner{margin-right:0;flex-shrink:0}
+      .companion-conversation-history{flex:1;min-height:0;overflow:auto;padding:0 16px;overflow-anchor:none}
+      ${CONVERSATION_ACTIVITY_CSS}
+      .companion-native-question{border:1px solid #ddd;border-radius:8px;padding:12px;margin:10px 0;background:#fff;color:#222}
+      .companion-native-question ul{padding-left:20px;margin:10px 0}
+      .companion-native-question li{margin:8px 0}
+      .companion-native-question li p{color:#666;margin:3px 0;font-size:12px}
+      .companion-native-question small{display:block;color:#666;line-height:1.5}
+      .companion-conversation form{padding:12px;border-top:1px solid #e8e8e8;display:flex;flex-direction:column;gap:8px}
+      .companion-input-shell{border:1px solid #dfdfdf;border-radius:16px;padding:10px;background:#fff;display:flex;flex-direction:column;gap:6px;min-width:0;transition:border-color .15s,box-shadow .15s}
+      .companion-input-shell:focus-within{border-color:#b9a2f4;box-shadow:0 0 0 2px #7c5af612}
+      .companion-conversation textarea{resize:vertical;box-sizing:border-box;width:100%;min-height:64px;max-height:180px;border:0;border-radius:0;padding:2px;background:transparent;font:inherit;outline:none}
+      .companion-composer-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
+      .companion-composer-actions button{min-height:32px;border:1px solid #e2ddea;border-radius:6px;padding:6px 10px;font-size:12px;line-height:18px}
+      .companion-conversation button[type=submit]{flex-shrink:0;background:#7c5af6;border-color:#7c5af6;color:#fff}
+      .companion-composer-actions button:focus-visible{outline:2px solid #7c5af6;outline-offset:2px}
+      .companion-send-group{display:inline-flex;align-items:stretch;position:relative;max-width:100%}
+      .companion-send-group button[type=submit]{border-radius:6px 0 0 6px}
+      .companion-send-menu{position:relative;flex-shrink:0}
+      .companion-send-menu>summary{list-style:none;display:flex;align-items:center;justify-content:center;width:28px;height:32px;box-sizing:border-box;background:#7c5af6;color:#fff;border-left:1px solid #ffffff50;border-radius:0 6px 6px 0;cursor:pointer}
+      .companion-send-menu>summary::-webkit-details-marker{display:none}
+      .companion-send-menu>summary svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.5}
+      .companion-send-menu>summary:focus-visible{outline:2px solid #7c5af6;outline-offset:2px}
+      .companion-send-options{position:absolute;right:0;bottom:calc(100% + 8px);width:max-content;max-width:280px;padding:4px;background:#fff;border:1px solid #e2ddea;border-radius:8px;box-shadow:0 4px 16px #0002;z-index:20}
+      .companion-composer-actions .companion-send-options button{width:100%;border:0;text-align:left;justify-content:flex-start}
+      .companion-send-options button:hover:not(:disabled){background:#f3f0f8}
+      .companion-conversation button:disabled{opacity:.5;cursor:default}
+      .companion-connection{position:relative;font-size:12px;color:#6d6d6d;overflow:visible}
+      .companion-connection>button{cursor:pointer;display:flex;align-items:center;justify-content:center;width:24px;height:24px;border:0;padding:0;border-radius:6px;background:transparent;color:inherit}
+      .companion-connection>button svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5}
+      .companion-connection>button:hover{background:#f3f0f8}
+      .companion-connection>button:focus-visible{outline:2px solid #7c5af6;outline-offset:2px}
+      .companion-connection-popover{display:none;position:absolute;top:calc(100% + 6px);left:-80px;width:260px;max-width:calc(100vw - 48px);padding:10px 12px;background:#fff;border:1px solid #e2ddea;border-radius:8px;box-shadow:0 4px 16px #0002;z-index:30;overflow-wrap:anywhere}
+      .companion-connection[data-open]>.companion-connection-popover,.companion-connection:hover>.companion-connection-popover,.companion-connection:focus-within>.companion-connection-popover{display:block}
+      .companion-connection-popover p{margin:0 0 6px}
+      .companion-connection-popover p:last-child{margin-bottom:0}
+      .companion-notify{min-width:0;color:#625879;background:#fff;text-align:left;overflow-wrap:anywhere}
+`
+
 function App() {
   const trialBridge = useRef<ReturnType<typeof createTrialPanelBridge>>()
   const trialControls = useRef<DesignWorkspaceControls>()
@@ -188,19 +235,15 @@ function App() {
   const shellRoot = useRef<HTMLDivElement>(null)
   useEffect(() => !designOnly && shellRoot.current ? alignConversationHeader(shellRoot.current) : undefined, [])
   const [workspace, setWorkspace] = useState<DesignPanelWorkspaceRead>()
-  const drafts = usePanelDraftObservation(!studioPage && workspace?.projectId
-    ? { key: `${transport.headers['X-Design-Token']?.slice(0, 24) ?? transport.endpoint}:${workspace.projectId}`, projectId: workspace.projectId } : undefined,
-    message => rpc('observePanelDraft', message))
   const [panelSaving, setPanelSaving] = useState(false)
   const [panelDirty, setPanelDirty] = useState(false)
   const [panelControlsReady, setPanelControlsReady] = useState(false)
   const publishControls = useCallback((value: DesignWorkspaceControls | undefined) => {
     publishTrialControls(value)
-    drafts.observe(value)
     setPanelSaving(value?.saving ?? false)
     setPanelDirty(value?.dirty ?? false)
     setPanelControlsReady(value !== undefined)
-  }, [publishTrialControls, drafts.observe])
+  }, [publishTrialControls])
   const [conversation, setConversation] = useState<RecordedConversation>()
   const [backgroundReviews, setBackgroundReviews] = useState<BackgroundReviews>()
   const reviewDialog = useRef<HTMLDialogElement>(null)
@@ -427,10 +470,6 @@ function App() {
       .companion-sidebar-heading>strong{font-size:18px;line-height:24px;white-space:nowrap}
       .companion-sidebar .dsh-project-sidebar-entry,.companion-sidebar .dsh-advisory-sidebar-entry{margin:0}
       .companion-sidebar .dsh-project-sidebar-trigger,.companion-sidebar .dsh-advisory-sidebar-trigger{height:40px}
-      .companion-icon-button{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:6px;flex-shrink:0;color:#625879}
-      .companion-icon-button:hover,.companion-sidebar-action:hover{background:#f3f0f8}
-      .companion-icon-button:focus-visible,.companion-sidebar-action:focus-visible{outline:2px solid #7c5af6;outline-offset:2px}
-      .companion-icon-button svg,.companion-sidebar-action svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
       .companion-sidebar-action{display:flex;align-items:center;gap:10px;min-height:40px;padding:0 8px;border-radius:6px;font-size:14px;line-height:22px;text-align:left}
       .companion-sidebar-action[aria-expanded=true]{background:#f1ecff;color:#663ae8}
       .companion-sidebar[data-collapsed=true] .companion-sidebar-action{width:36px;justify-content:center;padding:0}
@@ -441,71 +480,7 @@ function App() {
       .companion-review-statuses small{width:100%;color:#777}
       .companion-main{position:relative;display:flex;flex-direction:column;flex:1;min-width:0;min-height:0}
       .companion-content{display:flex;flex:1;min-width:0;min-height:0}
-      .companion-conversation{width:var(--chat-width,30%);min-width:0;flex-shrink:0;display:flex;flex-direction:column;font-size:14px;line-height:1.5}
-      .companion-resize{width:6px;flex-shrink:0;cursor:col-resize;touch-action:none;background:#f6f5f8}
-      .companion-resize:hover,.companion-resize:focus-visible{background:#b9a2f4;outline:none}
-      .companion-conversation[hidden]{display:none}
-      .companion-conversation>header{gap:8px;justify-content:space-between}
-      .companion-conversation-heading{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
-      .companion-conversation-title{display:flex;align-items:center;gap:6px;min-width:0}
-      .companion-conversation-heading>span,.companion-conversation-hint{font-size:12px;color:#6d6d6d}
-      .companion-conversation .companion-conversation-hint{padding:8px 16px;margin:0}
-      .companion-sync-status{display:flex;align-items:center;gap:6px;background:#faf9fd;border-bottom:1px solid #eee;flex-shrink:0}
-      .companion-sync-status .companion-spinner{margin-right:0;flex-shrink:0}
-      .companion-conversation-history{flex:1;min-height:0;overflow:auto;padding:0 16px;overflow-anchor:none}
-      .companion-conversation .companion-message{padding:12px 0;border:0;min-width:0;overflow-wrap:anywhere}
-      .companion-message-content{font-size:16px;line-height:24px;padding:9px 4px;min-width:0;overflow-wrap:anywhere}
-      .companion-message[data-role=assistant] .companion-message-content{font-size:14px;line-height:1.7}
-      .companion-message-content> :first-child{margin-top:0}
-      .companion-message-content> :last-child{margin-bottom:0}
-      .companion-conversation .companion-message[data-role=user]{display:flex;flex-direction:column;align-items:flex-end;padding-left:52px}
-      .companion-message[data-role=user] .companion-message-label{text-align:right}
-      .companion-message[data-role=user] .companion-message-content{box-sizing:border-box;max-width:100%;padding:10px 12px;border-radius:8px;background:#f6f6f6;font-size:14px}
-      .companion-message-label{font-size:12px;color:#6d6d6d;margin-bottom:4px}
-      .companion-activity{margin:8px 0;font-size:12px;color:#6d6d6d}
-      .companion-spinner{display:inline-block;width:12px;height:12px;margin-right:6px;border:2px solid #ddd;border-top-color:#666;border-radius:50%;vertical-align:middle;animation:companion-spin .8s linear infinite}
-      @keyframes companion-spin{to{transform:rotate(360deg)}}
-      @media(prefers-reduced-motion:reduce){.companion-spinner{animation:none}}
-      .companion-activity>summary{cursor:pointer;padding:5px 0;overflow-wrap:anywhere}
-      .companion-activity>summary:focus-visible{outline:2px solid #7c5af6;outline-offset:2px;border-radius:3px}
-      .companion-activity>div{padding-left:12px;border-left:1px solid #e8e8e8}
-      .companion-activity article{padding:4px 0;border:0;overflow-wrap:anywhere}
-      .companion-activity .companion-message-label{margin:0}
-      .companion-activity-failed{color:#a34232}
-      .companion-native-question{border:1px solid #ddd;border-radius:8px;padding:12px;margin:10px 0;background:#fff;color:#222}
-      .companion-native-question ul{padding-left:20px;margin:10px 0}
-      .companion-native-question li{margin:8px 0}
-      .companion-native-question li p{color:#666;margin:3px 0;font-size:12px}
-      .companion-native-question small{display:block;color:#666;line-height:1.5}
-      .companion-conversation form{padding:12px;border-top:1px solid #e8e8e8;display:flex;flex-direction:column;gap:8px}
-      .companion-input-shell{border:1px solid #dfdfdf;border-radius:16px;padding:10px;background:#fff;display:flex;flex-direction:column;gap:6px;min-width:0;transition:border-color .15s,box-shadow .15s}
-      .companion-input-shell:focus-within{border-color:#b9a2f4;box-shadow:0 0 0 2px #7c5af612}
-      .companion-conversation textarea{resize:vertical;box-sizing:border-box;width:100%;min-height:64px;max-height:180px;border:0;border-radius:0;padding:2px;background:transparent;font:inherit;outline:none}
-      .companion-composer-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
-      .companion-composer-actions button{min-height:32px;border:1px solid #e2ddea;border-radius:6px;padding:6px 10px;font-size:12px;line-height:18px}
-      .companion-conversation button[type=submit]{flex-shrink:0;background:#7c5af6;border-color:#7c5af6;color:#fff}
-      .companion-composer-actions button:focus-visible{outline:2px solid #7c5af6;outline-offset:2px}
-      .companion-send-group{display:inline-flex;align-items:stretch;position:relative;max-width:100%}
-      .companion-send-group button[type=submit]{border-radius:6px 0 0 6px}
-      .companion-send-menu{position:relative;flex-shrink:0}
-      .companion-send-menu>summary{list-style:none;display:flex;align-items:center;justify-content:center;width:28px;height:32px;box-sizing:border-box;background:#7c5af6;color:#fff;border-left:1px solid #ffffff50;border-radius:0 6px 6px 0;cursor:pointer}
-      .companion-send-menu>summary::-webkit-details-marker{display:none}
-      .companion-send-menu>summary svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.5}
-      .companion-send-menu>summary:focus-visible{outline:2px solid #7c5af6;outline-offset:2px}
-      .companion-send-options{position:absolute;right:0;bottom:calc(100% + 8px);width:max-content;max-width:280px;padding:4px;background:#fff;border:1px solid #e2ddea;border-radius:8px;box-shadow:0 4px 16px #0002;z-index:20}
-      .companion-composer-actions .companion-send-options button{width:100%;border:0;text-align:left;justify-content:flex-start}
-      .companion-send-options button:hover:not(:disabled){background:#f3f0f8}
-      .companion-conversation button:disabled{opacity:.5;cursor:default}
-      .companion-connection{position:relative;font-size:12px;color:#6d6d6d;overflow:visible}
-      .companion-connection>button{cursor:pointer;display:flex;align-items:center;justify-content:center;width:24px;height:24px;border:0;padding:0;border-radius:6px;background:transparent;color:inherit}
-      .companion-connection>button svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5}
-      .companion-connection>button:hover{background:#f3f0f8}
-      .companion-connection>button:focus-visible{outline:2px solid #7c5af6;outline-offset:2px}
-      .companion-connection-popover{display:none;position:absolute;top:calc(100% + 6px);left:-80px;width:260px;max-width:calc(100vw - 48px);padding:10px 12px;background:#fff;border:1px solid #e2ddea;border-radius:8px;box-shadow:0 4px 16px #0002;z-index:30;overflow-wrap:anywhere}
-      .companion-connection[data-open]>.companion-connection-popover,.companion-connection:hover>.companion-connection-popover,.companion-connection:focus-within>.companion-connection-popover{display:block}
-      .companion-connection-popover p{margin:0 0 6px}
-      .companion-connection-popover p:last-child{margin-bottom:0}
-      .companion-notify{min-width:0;color:#625879;background:#fff;text-align:left;overflow-wrap:anywhere}
+      ${CONVERSATION_CSS}
       .companion-main .dsh-design-dock{position:relative;width:100%;flex:1;min-width:0;min-height:0;border:0}
       .companion-feedback{display:flex;align-items:center;justify-content:space-between;gap:12px;pointer-events:auto;box-sizing:border-box;max-width:min(520px,calc(100vw - 32px));max-height:25vh;overflow:auto;overflow-wrap:anywhere}
       .companion-feedback>div{min-width:0}
@@ -656,10 +631,18 @@ function App() {
     </dialog>
   </div>
 }
+const readStudioConversation = () => readConversation('bound')
+const checkStudioConnection = () => checkStudioTrialConnection(studioTrials)
+
 function StudioPage(): ReactElement {
   const locale = useCurrentLanguage()
+  const [handoff] = useState(() => {
+    try { return { request: studioConversationHandoff(location.search), error: '' } }
+    catch { return { request: undefined, error: '修改建议链接不完整，请从原对话重新打开。' } }
+  })
   useEffect(() => { document.documentElement.lang = companionDocumentLanguage(locale); document.title = 'Yugoo Design · Studio' }, [locale])
   useEffect(() => bindDesignHostLocale(companionLocale), [])
-  return <><style>{'html,body,#root{height:100%;margin:0}body{overflow:hidden}'}</style><StudioWorkspace locale={locale === 'zh_CN' ? 'zh' : 'en'} onLocaleChange={value => companionLocale.setPreference(value)} client={studioClient} instances={studioInstances} trials={studioTrials} authoring={studioAuthoring} kitAuthoring={studioKitAuthoring} componentLibrary={studioComponentLibrary} renderSelect={PanelSelect} contentClient={studioContentClient} /></>
+  const presentation = new URLSearchParams(location.search).get('presentation') === 'content-only' ? 'content-only' : 'conversation'
+  return <><style>{DOCK_CSS}{CONVERSATION_CSS}{'html,body,#root{height:100%;margin:0}body{overflow:hidden}'}</style>{handoff.error ? <StudioEntryFeedback error={handoff.error} locale={locale === 'zh_CN' ? 'zh' : 'en'} onOpenCatalog={() => location.assign('?view=studio')} /> : <StudioConversationLayout rpc={rpc} readConversation={readStudioConversation} checkConnection={checkStudioConnection} presentation={presentation} initialRequest={handoff.request}>{(renderInstanceWorkbench, initialInstance, renderContent) => <StudioWorkspace renderContent={renderContent} initialInstance={initialInstance} renderInstanceWorkbench={renderInstanceWorkbench} locale={locale === 'zh_CN' ? 'zh' : 'en'} onLocaleChange={value => companionLocale.setPreference(value)} client={studioClient} instances={studioInstances} trials={studioTrials} authoring={studioAuthoring} componentLibrary={studioComponentLibrary} renderSelect={PanelSelect} contentClient={studioContentClient} />}</StudioConversationLayout>}</>
 }
 createRoot(document.getElementById('root')!).render(<CanvasFontRoot>{studioPage ? <StudioPage /> : <App />}</CanvasFontRoot>)

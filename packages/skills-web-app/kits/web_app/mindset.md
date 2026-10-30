@@ -1,6 +1,6 @@
 ---
 name: web_app
-version: "1.1"
+version: "1.2"
 description: >
   Calibration guidance for design choices in general web applications, SaaS,
   and enterprise products. It ranks genuine alternatives; it never chooses a

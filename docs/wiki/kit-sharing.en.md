@@ -4,7 +4,7 @@ English · [简体中文](kit-sharing.md)
 
 Use this page to share and receive Yugoo Design Kits. You can copy the [community workshop example](../../examples/community-workshop-delivery/README.md) directly; see [extension development](extending.en.md) for authoring rules. Kit content and Design Projects are different materials: sharing a Kit does not include user projects, conversations, model credentials, or host installations.
 
-**Version scope:** The in-place Studio editing, direct source import, and project-owned `design_kit` files described below require the unreleased development runtime. The current stable runtime does not provide this workflow. Check [host support](hosts.en.md) and [release status](preview-status.md) before using them. The historical records below retain their original scope.
+**Version scope:** The in-place Studio editing, direct source import, and project-owned `design_kit` files described below refer to the current development source. An installed release supports these steps only when it includes the corresponding runtime. Check [host support](hosts.en.md) and [release status](preview-status.md) before using them. The historical records below retain their original scope.
 
 Choose the delivery method supported by the target release: Studio receives files through source import, complete content directories use the host's loader, and npm packages use release and host-registration paths. On first receipt, verify in an independent project to avoid overwriting content already in use.
 
@@ -216,7 +216,7 @@ If a project with `design_kit` fails to load, repair the indicated file or resto
 
 For older projects without this tree, retain project files, Git history, and original Kit backups. Restore the complete Kit/Bundle content actually referenced, including recorded Bundle overrides and resources, so the corresponding runtime can initialize it. If originals are missing, report that and restore them, or let the user explicitly choose an update. Do not relabel new library content with an old version string and call it the original. Process-level last-good content is not a complete backup.
 
-The `migrate` project command preserves an original project while moving its Design Files into a new project for validation and adaptation. It is separate from content maintenance within the same project, does not download or recover missing Kits, and does not copy complete history unchanged. See the [command reference](commands.md) for arguments and [project files](project-files.md) for what is retained. Git repositories, marketplace installation, and automatic external-dependency installation are not implied capabilities. See the [project content contract](kit-sharing.en.md#update-and-restore-project-content).
+The `migrate` project command preserves an original project while moving its Design Files into a new project for validation and adaptation. It is separate from content maintenance within the same project, does not download or recover missing Kits, and does not copy complete history unchanged. See the [command reference](commands.md) for arguments and [project files](project-files.md) for what is retained. Git repositories, marketplace installation, and automatic external-dependency installation are not implied capabilities. See the [project content contract](../project-content-upgrade.md).
 
 ## Verified scope and applicability limits
 

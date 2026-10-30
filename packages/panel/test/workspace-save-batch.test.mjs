@@ -146,8 +146,10 @@ test('mounted Workspace hands off only its fully saved, current batch', async t 
         assert.equal(new Set(eventIds).size, 2, 'the correlation uses distinct actual operation ids')
         const [session, text, requestId, receipts] = fixture.calls.prompts[0]
         assert.equal(session, 'session-a')
-        assert.match(text, /Save and continue designing/)
-        assert.equal(requestId, undefined, 'Workspace does not invent a native Host request id')
+        assert.equal(text, 'Save and assess next step', 'the native main request carries the same assessment intent as the save control')
+        assert.match(requestId, /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i,
+          'the existing client delivery correlation is a UUID, not a claimed native Host invocation id')
+        assert.equal(eventIds.includes(requestId), false, 'batch delivery and individual save identities stay distinct')
         assert.deepEqual(receipts, [
           { eventId: eventIds[0], commit: 'checkpoint-alpha' },
           { eventId: eventIds[1], commit: 'checkpoint-beta' },
@@ -227,7 +229,7 @@ test('mounted Workspace hands off only its fully saved, current batch', async t 
         assert.equal(fixture.calls.saves.length, 1)
         assert.deepEqual(fixture.calls.saves[0].slice(0, 3), ['session-a', 'alpha', { title: 'Regenerate Alpha' }])
         assert.match(fixture.calls.prompts[0][1], /alpha/)
-        assert.doesNotMatch(fixture.calls.prompts[0][1], /^Save and continue designing$/)
+        assert.doesNotMatch(fixture.calls.prompts[0][1], /^Save and assess next step$/)
         assert.deepEqual(fixture.calls.prompts[0][3], [
           { eventId: fixture.calls.saves[0][4], commit: 'checkpoint-alpha' },
         ])

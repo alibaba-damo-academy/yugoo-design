@@ -17184,7 +17184,7 @@
       "normalSourceRevision": "0e4184db8590e99a971c45c777830018d7d9ac24",
       "normalBuildEvidenceNotPackaged": []
     },
-    "dsh-design-system-dsh": {
+    "@yugoo-design/dsh-design-system-dsh": {
       "observedArchiveSha256": null,
       "normalBuildMaps": [],
       "observedOutputSha256": {

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { StudioManagementClient } from 'dsh-design-studio-ui'
 import type { DshRemoteResult, DshStudioRemote } from './client-adapter.tsx'
 import TYPERT_REMOTE from './typert.remote-client.ts'
+import type { StudioStrictCodec } from './typert.remote-client.ts'
 import { isDshDesktopLocation } from './page-path.ts'
 
 /** Strict outer gateway result: success carries the schema-validated value. */
@@ -23,6 +24,13 @@ const serverResponseSchema = z.object({
 
 /** Page transport with the same signature as the global fetch. */
 export type StudioPageFetch = (input: URL, init: RequestInit) => Promise<Response>
+
+/** Shared carrier for the existing read namespace and optional scoped methods. */
+export interface StudioPageRpcDescriptor {
+  readonly namespace: string
+  readonly method: string
+  readonly result: StudioStrictCodec
+}
 
 function resolveBase(): string {
   const location = (globalThis as { location?: { origin?: string; href?: string } }).location
@@ -53,13 +61,23 @@ async function callStudioManagement<T>(
 ): Promise<T> {
   const descriptor = TYPERT_REMOTE.descriptors.find((candidate) => candidate.method === method)
   if (descriptor === undefined) throw new Error(`studio page rpc: unknown method ${JSON.stringify(method)}`)
+  return callStudioRemote<T>(descriptor, args, doFetch)
+}
+
+/** Same Host wire, correlation, strict result and custom-scheme proxy for every Studio namespace. */
+export async function callStudioRemote<T>(
+  descriptor: StudioPageRpcDescriptor,
+  args: Record<string, unknown>,
+  doFetch: StudioPageFetch,
+): Promise<T> {
+  const { namespace, method } = descriptor
   const rpcId = crypto.randomUUID()
   const response = await doFetch(
-    new URL(`/api/studioManagement/${method}`, resolveBase()),
+    new URL(`/api/${namespace}/${method}`, resolveBase()),
     {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ type: 'client-request', rpcId, method: `studioManagement/${method}`, payload: { args } }),
+      body: JSON.stringify({ type: 'client-request', rpcId, method: `${namespace}/${method}`, payload: { args } }),
     },
   )
   if (!response.ok) throw new Error(`studio page rpc: transport failure for ${method}: HTTP ${response.status}`)

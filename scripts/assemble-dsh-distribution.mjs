@@ -1,12 +1,13 @@
 /** Assemble public DSH archives from already built own packages. Never builds or publishes. */
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { cp, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { cp, lstat, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
 import ts from 'typescript'
 import { parse, stringify } from 'yaml'
+import { DSH_AGGREGATE_SOURCE, RELEASE_PACKAGES } from './release-consumer-config.mjs'
 import { readNpmCandidates } from './release-npm-candidates.mjs'
 import { OWN_LICENSE_FILES } from './release-own-license.mjs'
 import { copyDshDistributionMaterials } from './dsh-distribution-materials.mjs'
@@ -90,7 +91,7 @@ export function createDshDistributionManifest(report, sourceName) {
   if (manifest.dsh?.client?.inject) manifest.dsh.client.inject = manifest.dsh.client.inject.map(value => mapOwnSpecifier(value, report.mapping))
   // The source manifest owns the dependency graph. Release inventory membership
   // is not permission to install every artifact as an aggregate dependency.
-  if (sourceName === 'dsh-design-system-dsh') {
+  if (sourceName === DSH_AGGREGATE_SOURCE) {
     // DSH disables automatic peer installation. Supply only required own peers
     // reached from the actual runtime closure, leaving host peers to the host.
     const own = new Map(Object.values(report.candidates).map(candidate => [candidate.name, candidate]))
@@ -149,6 +150,19 @@ export function selectDshDistributionPackages(report, { packageNames = Object.ke
   return { packageNames: [...packageNames], retained }
 }
 
+/** Stage only a known physical source package; retain exclusive leaf creation. */
+export async function createDshPackageStage(packagesRoot, sourceName) {
+  assert.ok(isAbsolute(packagesRoot) && Object.hasOwn(RELEASE_PACKAGES, sourceName), 'Known package and absolute stage root required')
+  const root = await lstat(packagesRoot)
+  assert.ok(root.isDirectory() && !root.isSymbolicLink(), 'Nonregular package stage root')
+  const target = join(packagesRoot, sourceName), parent = dirname(target)
+  await mkdir(parent, { recursive: true })
+  const directory = await lstat(parent)
+  assert.ok(directory.isDirectory() && !directory.isSymbolicLink(), 'Nonregular package stage parent')
+  await mkdir(target)
+  return target
+}
+
 export async function assembleDshDistribution({ source, destination, npmCli, scope = '@yugoo-design', version, versions, packageNames, retainedManifests, observationFile, observationSha256 }) {
   source = resolve(source); destination = resolve(destination)
   assert.ok(isAbsolute(npmCli), 'Absolute npm CLI required')
@@ -161,8 +175,7 @@ export async function assembleDshDistribution({ source, destination, npmCli, sco
   const records = [], mutations = []
   for (const originalName of selection.packageNames) {
     const item = report.mapping[originalName]
-    const original = join(source, item.directory), target = join(packagesRoot, originalName)
-    await mkdir(target)
+    const original = join(source, item.directory), target = await createDshPackageStage(packagesRoot, originalName)
     // npm owns package file selection; scripts are intentionally not invoked by assembly.
     const inventory = JSON.parse(execFileSync(process.execPath, [npmCli, 'pack', '--dry-run', '--json', '--ignore-scripts'], { cwd: original, encoding: 'utf8' }))[0]
     const manifest = createDshDistributionManifest(report, originalName)
@@ -179,7 +192,7 @@ export async function assembleDshDistribution({ source, destination, npmCli, sco
         const result = projectDistributionCode(await readFile(join(original, path), 'utf8'), report.mapping, path)
         await writeFile(output, result.code)
         if (result.replacements) mutations.push({ package: originalName, path, replacements: result.replacements })
-      } else if (originalName === 'dsh-design-system-dsh' && path === 'cordis.patch.yml') {
+      } else if (originalName === DSH_AGGREGATE_SOURCE && path === 'cordis.patch.yml') {
         const data = parse(await readFile(join(original, path), 'utf8'))
         function project(value) {
           if (Array.isArray(value)) return value.map(project)
@@ -196,8 +209,8 @@ export async function assembleDshDistribution({ source, destination, npmCli, sco
     const archive = join(archiveRoot, packed.filename)
     records.push({ sourceName: originalName, name: item.name, version: item.version, archive, sha256: sha(await readFile(archive)), files: packed.files })
   }
-  const result = { kind: 'dsh-distribution-archives', version: report.mapping['dsh-design-system-dsh'].version, mapping: report.mapping, archives: records,
-    packageNames: selection.packageNames, retained: selection.retained, codeProjections: mutations, aggregate: report.mapping['dsh-design-system-dsh'].name, registry: 'https://registry.npmjs.org', published: false, installed: false }
+  const result = { kind: 'dsh-distribution-archives', version: report.mapping[DSH_AGGREGATE_SOURCE].version, mapping: report.mapping, archives: records,
+    packageNames: selection.packageNames, retained: selection.retained, codeProjections: mutations, aggregate: report.mapping[DSH_AGGREGATE_SOURCE].name, registry: 'https://registry.npmjs.org', published: false, installed: false }
   await writeFile(join(destination, 'RESULT.json'), JSON.stringify(result, null, 2) + '\n')
   return result
 }

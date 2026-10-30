@@ -8,6 +8,7 @@ import { join } from 'node:path'
 import { inspectPanelComponent, exportPanelAuthoringReference } from '../../../.agents/skills/design-bundle-creator/scripts/inspect-panel-component.mjs'
 import { COMPONENT_KINDS } from '../src/panel-component-catalog.ts'
 import { queryPanelAuthoringReference } from '../src/panel-authoring-reference.ts'
+import { PANEL_KINDS, SIDEBAR_ICONS, CONTROL_KINDS, ROW_COLUMN_CONTROLS } from '../src/panel-dsl.ts'
 
 const repo = fileURLToPath(new URL('../../../', import.meta.url))
 
@@ -44,6 +45,26 @@ test('portable references preserve every catalog entry and focused source contra
   const options = queryPanelAuthoringReference(material, 'record_form', 'contract', 'EditorField.options')
   assert.deepEqual(options.contract.references.find(item => item.name === 'FieldOption').read,
     { name: 'record_form', reference: 'contract', type: 'FieldOption' })
+  const source = await readFile(join(repo, 'packages/core/src/panel-dsl.ts'), 'utf8')
+  for (const [alias, constant, values] of [
+    ['PanelKind', 'PANEL_KINDS', PANEL_KINDS],
+    ['SidebarIcon', 'SIDEBAR_ICONS', SIDEBAR_ICONS],
+    ['ControlKind', 'CONTROL_KINDS', CONTROL_KINDS],
+    ['RowColumnControl', 'ROW_COLUMN_CONTROLS', ROW_COLUMN_CONTROLS],
+  ]) {
+    const reference = queryPanelAuthoringReference(material, 'record_workspace', 'contract', alias)
+      .contract.references.find(item => item.name === constant)
+    assert.ok(reference, `${alias} must expose its typeof dependency`)
+    assert.deepEqual(reference.read, { name: 'record_workspace', reference: 'contract', type: constant })
+    const { contract } = queryPanelAuthoringReference(material,
+      reference.read.name, reference.read.reference, reference.read.type)
+    assert.equal(contract.file, 'packages/core/src/panel-dsl.ts')
+    assert.ok(source.includes(`export const ${contract.declaration}`), 'preserve the source initializer verbatim')
+    assert.equal(contract.line, source.slice(0, source.indexOf(`export const ${contract.declaration}`)).split('\n').length)
+    assert.match(contract.declaration, /as const$/)
+    for (const value of values) assert.ok(contract.declaration.includes(`'${value}'`))
+    assert.deepEqual(contract.references, [])
+  }
   assert.match(material.hostCallbackContract.declaration, /registerBeforeSave/)
   assert.match(material.hostCallbackContract.authority, /not DSL event handlers/)
   for (const name of ['__proto__', 'constructor', 'unknown']) assert.throws(() => queryPanelAuthoringReference(material, name, 'docs'), /Unknown/)
@@ -116,4 +137,47 @@ test('focused configuration lookup follows real nested properties without unrela
   const fields = await inspectPanelComponent(repo, 'record_form', 'EditorField.options')
   assert.ok(fields.contract.references.some(reference => reference.name === 'FieldOption'))
   assert.equal(result.examples, undefined)
+})
+
+async function contractFixture(t, source) {
+  const root = await mkdtemp(join(tmpdir(), 'panel-authoring-typeof-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  await writeFile(join(root, 'package.json'), '{"type":"module"}\n')
+  await symlink(join(repo, 'node_modules'), join(root, 'node_modules'), 'dir')
+  await mkdir(join(root, 'packages/core/src'), { recursive: true })
+  await symlink(join(repo, 'packages/core/src/panel-component-catalog.ts'),
+    join(root, 'packages/core/src/panel-component-catalog.ts'))
+  await writeFile(join(root, 'packages/core/src/panel-dsl.ts'), source)
+  return type => inspectPanelComponent(root, 'record_workspace', type)
+}
+
+test('typeof closure retains cyclic source dependencies without evaluating initializers or exposing unrelated constants', async t => {
+  const first = `FIRST: typeof SECOND = (() => { throw new Error('initializer must not run') })()`
+  const second = `SECOND: typeof FIRST = ['second'] as const`
+  const inspect = await contractFixture(t, `
+const ${first}, UNRELATED = ['private implementation'] as const
+const ${second}
+type Choice = (typeof FIRST)[number]
+`)
+  assert.deepEqual((await inspect('Choice')).contract.references, [{ name: 'FIRST', read: '--type FIRST' }])
+  const a = (await inspect('FIRST')).contract
+  assert.equal(a.declaration, first)
+  assert.deepEqual(a.references, [{ name: 'SECOND', read: '--type SECOND' }])
+  const b = (await inspect('SECOND')).contract
+  assert.equal(b.declaration, second)
+  assert.deepEqual(b.references, [{ name: 'FIRST', read: '--type FIRST' }])
+  await assert.rejects(inspect('UNRELATED'), /Unknown local contract type/)
+})
+
+test('typeof closure rejects unresolved, non-constant, qualified and ambiguous references explicitly', async t => {
+  for (const [source, error] of [
+    ['type Choice = typeof MISSING', /Unknown local typeof contract constant: MISSING/],
+    ['let MUTABLE = 1; type Choice = typeof MUTABLE', /Unknown local typeof contract constant: MUTABLE/],
+    ['type Choice = typeof constructor', /Unknown local typeof contract constant: constructor/],
+    ['const SOURCE = {}; type Choice = typeof SOURCE.value', /Unsupported local typeof contract reference: SOURCE.value/],
+    ['const SAME = 1; type SAME = string; type Choice = typeof SAME', /Ambiguous local typeof contract name: SAME/],
+  ]) {
+    const inspect = await contractFixture(t, source)
+    await assert.rejects(inspect('Choice'), error)
+  }
 })

@@ -14,7 +14,7 @@ mounts:
   # Research markets, competitors and domain context, with sources and design implications.
   - bindingKey: research
     name: research
-    version: "1.0"
+    version: "1.1"
 
   # 功能模块：将产品目标与使用场景展开为可逐项推敲的功能卡片。
   # Turn product goals and scenarios into function cards that can be reviewed individually.

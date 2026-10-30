@@ -14,9 +14,9 @@ export interface PanelComponentExample {
 
 /** Display names only. Availability and generation permission come from Core. */
 const TITLES: Record<ComponentKind, string> = {
-  stack: '纵向布局', tabs: '页签布局', split: '双栏布局', panel_workspace: '侧栏工作区',
+  stack: '纵向布局', tabs: '页签布局', panel_workspace: '侧栏工作区',
   text_block: '说明文字', schema_field: '单字段编辑', structured_data: '结构化数据',
-  record_nav: '记录导航', record_tree: '结构树', record_form: '记录表单', related_records: '关联记录',
+  record_form: '记录表单', related_records: '关联记录',
   grouped_records: '分组记录', nested_collection: '嵌套集合', related_artifacts: '关联产物', artifact_gallery: '产物浏览',
   question_list: '问题清单', question_rounds: '轮次导航', question_workspace: '问题工作区',
   relation_matrix: '关系矩阵', mind_map: '思维图', bpmn_canvas: '流程图', lifecycle_canvas: '生命周期图',
@@ -25,7 +25,7 @@ const TITLES: Record<ComponentKind, string> = {
   execution_log: '运行日志', artifact_workspace: '产物工作区', diagram_workspace: '流程工作区',
   canvas_workspace: '白板工作区', preview_workspace: '效果预览工作区', navigation_workspace: '导航地图',
   record_inspector: '记录详情', record_preview: '记录预览', record_related_editor: '关联记录编辑',
-  relation_graph: '关系画布', reference_graph: '引用画布', record_matrix: '记录矩阵', record_artifact: '记录产物',
+  math_document: '数学表达与解释', data_table: '数据表格', relation_graph: '关系画布', reference_graph: '引用画布', record_matrix: '记录矩阵', record_artifact: '记录产物',
 }
 
 export function panelComponentTitle(kind: ComponentKind, locale: ComponentExampleLocale): string {
@@ -36,7 +36,7 @@ export function panelComponentCategory(kind: ComponentKind): 'layout' | 'data' |
   const entry = PANEL_COMPONENT_CATALOG[kind] as { ownsWorkspace?: boolean }
   // Display grouping is not binding or generation permission.
   if (entry.ownsWorkspace) return 'workspace'
-  return ['stack', 'tabs', 'split', 'text_block'].includes(kind) ? 'layout' : 'data'
+  return ['stack', 'tabs', 'text_block'].includes(kind) ? 'layout' : 'data'
 }
 
 /** Return undefined rather than fabricate a working standalone preview. */
@@ -55,15 +55,14 @@ export function createPanelComponentExample(kind: ComponentKind, locale: Compone
   switch (kind) {
     case 'stack': ui = { id: 'stack', component: kind, children: [note, field] }; break
     case 'tabs': ui = { id: 'tabs', component: kind, children: [{ id: 'edit', component: 'stack', title: text('编辑', 'Edit'), children: [field] }, { id: 'read', component: 'structured_data', title: text('数据', 'Data'), source: 'items' }] }; break
-    case 'split': ui = { id: 'split', component: kind, slots: { sidebar: note, main: form } }; break
     case 'panel_workspace': ui = { id: 'panel', component: kind, slots: { sidebar: note, main: form } }; break
     case 'text_block': ui = note; break
     case 'schema_field': ui = field; break
     case 'structured_data': ui = { id: 'data', component: kind, source: 'items' }; break
     case 'record_form': ui = form; break
+    case 'math_document': ui = workspace({ id: 'math', component: kind, source: 'items', math: { heading: 'title', introduction: 'description', statements: { field: 'statements', title: 'label', formula: 'latex', meaning: 'explanation' } } }); break
     case 'grouped_records': ui = { id: 'groups', component: kind, source: 'items', group_by: 'category' }; break
     case 'nested_collection': ui = { id: 'nested', component: kind, source: 'folders', children_field: 'children', label_field: 'title', child_label_field: 'title' }; break
-    case 'record_nav': case 'record_tree': ui = { id: 'navigation', component: kind, source: 'items' }; break
     case 'question_list': case 'question_rounds': case 'question_workspace': ui = question; break
     case 'record_workspace': ui = workspace(inspector); break
     case 'record_inspector': ui = workspace(inspector); break
@@ -82,6 +81,7 @@ export function createPanelComponentExample(kind: ComponentKind, locale: Compone
     case 'rowview_workbench': ui = { id: 'workbench', component: kind, source: 'items' }; break
     case 'record_related_editor': ui = { ...workspace(inspector), sources: ['items', 'notes'], children: [{ ...inspector, children: [{ id: 'related', component: kind, source: 'notes', bindings: { reference: 'owner' }, record_table: { columns: [{ fields: ['title'] }, { fields: ['description'] }] } }] }] }; break
     case 'reference_graph': ui = { ...workspace(inspector), sources: ['items', 'notes'], children: [{ id: 'references', component: kind, references: { nodes: [{ source: 'items', label_field: 'title', description_field: 'description' }, { source: 'notes', label_field: 'title' }], links: [{ source: 'notes', field: 'owner', target: 'items', label: text('属于', 'Belongs To') }] } }, inspector] }; break
+    case 'data_table': ui = workspace({ id: 'table', component: kind, source: 'items', table: { field: 'table' } }); break
     case 'record_matrix': ui = workspace({ id: 'matrix', component: kind, source: 'items', matrix: { field: 'cells', row: 'material', column: 'progress', value: 'value' } }); break
     case 'record_artifact': ui = workspace({ id: 'artifact', component: kind, source: 'items', artifact: { field: 'file' } }); break
     case 'artifact_workspace': ui = { id: 'artifacts', component: kind, sidebar_icon: 'search', artifacts: { records_path: 'reports', title_field: 'title', file_field: 'file', artifact_kind: 'report', children: { records_field: 'directions', title_field: 'title', file_field: 'file', artifact_kind: 'direction', scoped_ids: true } } }; break
@@ -135,6 +135,35 @@ export function createPanelComponentExample(kind: ComponentKind, locale: Compone
     extendFields(['title', 'description'], 'notes')
     sample.notes = { key_point: { title: text('重点摘要', 'Key Summary'), description: text('每天安排十五分钟阅读，并保留重点。', 'Read for fifteen minutes daily and keep the key points.'), owner: 'first' } }
   }
+  if (kind === 'math_document') {
+    ui.children![0]!.math!.checks = { status: 'check_state', summary: 'check_note' }
+    ui.children![0]!.math!.provenance = ['input_note']
+    manifest.fields = [...manifest.fields,
+      { key: 'check_state', label: text('检查状态', 'Recorded Check Status'), control: 'select', applies_to: ['items'], readonly: true,
+        options: [{ value: 'not_run', label: text('尚未运行检查', 'Checks Not Run') }] },
+      { key: 'check_note', label: text('检查说明', 'Check Summary'), control: 'textarea', applies_to: ['items'], readonly: true },
+      { key: 'input_note', label: text('建模依据', 'Model Inputs'), control: 'text', applies_to: ['items'], readonly: true },
+    ]
+    items.first!.check_state = 'not_run'
+    items.first!.check_note = text('这是阅读时间分配的展示样例，尚未运行模型检查。', 'This reading-time example has not undergone model checks.')
+    items.first!.input_note = text('示例阅读计划；不包含真实执行记录。', 'A synthetic reading plan, with no execution record.')
+    manifest.fields = [...manifest.fields, { key: 'statements', label: text('阅读时间安排', 'Reading Time Allocation'), control: 'rows', applies_to: ['items'], columns: [
+      { key: 'label', label: text('名称', 'Name'), control: 'text' }, { key: 'latex', label: text('公式', 'Formula'), control: 'textarea' },
+      { key: 'explanation', label: text('含义', 'Meaning'), control: 'textarea' },
+    ] }]
+    items.first!.statements = [{ label: text('每天至少阅读十五分钟', 'Read at least fifteen minutes daily'), latex: 'x_1 + x_2 \\ge 15',
+      explanation: text('文章和书籍的阅读时间分别为 \\(x_1\\)、\\(x_2\\)，合计至少十五分钟；两者如何分配可以调整。', 'Article and book reading times are \\(x_1\\) and \\(x_2\\); spend at least fifteen minutes in total, with either allocation adjustable.') }]
+    items.second!.statements = []
+  }
+  if (kind === 'data_table') {
+    manifest.fields = [...manifest.fields, { key: 'table', label: text('阅读清单', 'Reading List'), control: 'data_table', applies_to: ['items'] }]
+    items.first!.table = { columns: [
+      { id: 'title', name: text('材料', 'Material'), type: 'text' },
+      { id: 'minutes', name: text('阅读时间', 'Reading Time'), type: 'number', unit: text('分钟', 'min') },
+      { id: 'finished', name: text('已完成', 'Completed'), type: 'boolean' },
+    ], rows: { article: { title: text('文章', 'Article'), minutes: '15', finished: 'false' }, book: { title: text('书籍', 'Book'), minutes: '30' } } }
+    items.second!.table = { columns: [], rows: {} }
+  }
   if (kind === 'record_matrix') {
     manifest.fields = [...manifest.fields, { key: 'cells', label: text('阅读进度', 'Reading Progress'), control: 'rows', applies_to: ['items'], columns: [{ key: 'material', label: text('材料', 'Material'), control: 'text' }, { key: 'progress', label: text('阶段', 'Stage'), control: 'text' }, { key: 'value', label: text('进度', 'Progress'), control: 'text' }] }]
     items.first!.cells = [{ material: text('文章', 'Articles'), progress: text('计划', 'Planned'), value: '3' }, { material: text('文章', 'Articles'), progress: text('完成', 'Completed'), value: '2' }, { material: text('书籍', 'Books'), progress: text('计划', 'Planned'), value: '1' }, { material: text('书籍', 'Books'), progress: text('完成', 'Completed'), value: '1' }]
@@ -169,8 +198,8 @@ export function createPanelComponentExample(kind: ComponentKind, locale: Compone
   }
   sample.preview = { title: text('阅读卡片', 'Reading Card'), file: 'component_example/card.html' }
   sample.reports = { reading: { title: text('阅读资料整理', 'Reading Review'), file: 'component_example/report.md', directions: { summary: { title: text('重点摘要', 'Key Summary'), file: 'component_example/summary.md' } } } }
-  const previewLayout = panelComponentCategory(ui.component) === 'workspace' || ['split', 'mind_map'].includes(ui.component) ? 'workspace'
-    : ['record_nav', 'record_tree', 'question_rounds'].includes(ui.component) ? 'navigation' : 'inline'
+  const previewLayout = panelComponentCategory(ui.component) === 'workspace' || ui.component === 'mind_map' ? 'workspace'
+    : ui.component === 'question_rounds' ? 'navigation' : 'inline'
   return { panelYaml: stringify(manifest), sample, previewLayout, ...(kind === 'execution_log' ? { logEntries: [
     { seq: 1, timestamp: 1791676800000, eventType: 'message' as const, message: text('正在整理阅读材料，先确认需要保留的信息。', 'Review reading material and identify the information to retain.') },
     { seq: 2, timestamp: 1791676801000, eventType: 'search' as const, message: text('从样例材料中查找相关要点。', 'Find relevant points in the sample material.') },

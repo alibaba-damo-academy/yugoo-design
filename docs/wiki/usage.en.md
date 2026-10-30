@@ -198,7 +198,7 @@ See the [command reference](commands.md) for full parameters and migration prere
 
 Studio manages the methods and panels used during design; the everyday Design Panel edits your design results. In Companion, open Studio from settings to reuse the current service connection in a separate browser page. DSH uses the Studio entry point provided by the host.
 
-**Version scope:** the in-place editing, source import and project-owned content steps below require the unreleased development runtime. The current stable runtime does not provide this workflow. Check the [host guide](hosts.en.md) and [release status](preview-status.md) first; use the matching instructions for older entry points.
+**Version scope:** the in-place editing, source import and project-owned content steps below describe the current development source. Installed releases provide them only when they include the corresponding runtime. Check the [host guide](hosts.en.md) and [release status](preview-status.md) first; use the matching instructions for older entry points.
 
 ### Inspect Kits and Bundles
 

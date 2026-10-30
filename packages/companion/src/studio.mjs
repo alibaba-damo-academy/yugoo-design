@@ -1,56 +1,43 @@
 /** Thin read-only port for the existing Studio domain; no second catalog. */
-import { readFile, readdir, lstat, realpath, mkdir } from 'node:fs/promises'
+import { readFile, readdir, lstat, realpath } from 'node:fs/promises'
 import { join, relative, resolve, sep, isAbsolute } from 'node:path'
+import { stringify } from 'yaml'
 import { StudioManagementService } from '../../studio/src/management.ts'
 import { StudioBundleSourceService } from '../../studio/src/bundle-source.ts'
 import { StudioBinaryContentError } from '../../studio/src/types.ts'
 import { snapshotKit } from '../../studio/src/snapshot.ts'
 import { loadStudioKit } from '../../studio/src/load.ts'
 import { finalizeStudioPanelPreview } from '../../studio/src/panel-preview.ts'
-import { createStudioPanelDrafts, createStudioDraftPorts } from './studio-panel-drafts.mjs'
-import { StudioKitDraftService } from '../../studio/src/kit-drafts.ts'
-import { ensureWindowsPrivateDirectory } from './windows-private-storage.mjs'
+import { readStudioContentArchive } from '../../studio/src/content-archive.ts'
 
 export async function createCompanionStudio(kit, kitRoot, stateRoot, contentLibrary) {
-  const currentKit = () => typeof kit === 'function' ? kit() : kit
-  const root = await realpath(currentKit().sourceRoot ?? kitRoot)
-  let kitSnapshot, bundleSnapshot, catalogKit = currentKit()
+  const currentKit = async () => typeof kit === 'function' ? kit() : kit
+  // Existing S2 sources are independently editable even when their installation
+  // is absent. Resolve installed trees only when a catalog/capture needs them.
+  const root = resolve(typeof kit === 'function' ? kitRoot : kit.sourceRoot ?? kitRoot)
+  let kitSnapshot, bundleSnapshot, catalogKit
   const invalidateCatalog = () => { kitSnapshot = undefined; bundleSnapshot = undefined }
-  const checkCatalogKit = () => {
-    const selected = currentKit()
+  const checkCatalogKit = async () => {
+    const selected = await currentKit()
     if (selected !== catalogKit) { invalidateCatalog(); catalogKit = selected }
   }
-  // Retained exact versions are immutable. Reuse their compiled definitions
-  // across detail/file reads; explicit refresh, adoption and host Kit changes
-  // invalidate the projection. Source reads still perform confinement checks.
-  const installedKits = () => {
-    checkCatalogKit()
-    return kitSnapshot ??= (async () => {
-      const selected = currentKit(), entries = new Map([[`${selected.name}@${selected.version}`, selected]])
-      if (contentLibrary) for (const pin of await contentLibrary.store.listKits()) {
-        const retained = await contentLibrary.store.loadRetainedKit(pin)
-        if (retained) entries.set(`${pin.name}@${pin.version}`, retained)
-      }
-      return [...entries.values()]
-    })().catch(error => { kitSnapshot = undefined; throw error })
+  // The catalog exposes installed identities. Historical retained closures are
+  // read only when an old project is materialized, never as library versions.
+  const installedKits = async () => {
+    await checkCatalogKit()
+    return kitSnapshot ??= Promise.resolve(currentKit()).then(selected => [selected])
+      .catch(error => { kitSnapshot = undefined; throw error })
   }
   const selectedKit = async pin => {
     const selected = (await installedKits()).find(item => item.name === pin.name && String(item.version) === pin.version)
     if (!selected) throw new Error('Select the exact registered Kit version.')
     return selected
   }
-  const installedBundles = () => {
-    checkCatalogKit()
+  const installedBundles = async () => {
+    await checkCatalogKit()
     return bundleSnapshot ??= readInstalledBundles().catch(error => { bundleSnapshot = undefined; throw error })
   }
-  const readInstalledBundles = async () => {
-    const entries = new Map(currentKit().skills.map(skill => [`${skill.catalogName ?? skill.name}@${skill.version}`, skill]))
-    if (contentLibrary) for (const pin of await contentLibrary.store.listBundles()) {
-      const retained = await contentLibrary.store.resolveBundle(pin)
-      if (retained) entries.set(`${pin.name}@${pin.version}`, retained.skill)
-    }
-    return [...entries.values()]
-  }
+  const readInstalledBundles = async () => [...(await currentKit()).skills]
   const catalog = { snapshot: async () => {
     // Legacy directory authoring is mutable and keeps its existing fresh-read
     // behavior; only the retained content-library catalog can be reused.
@@ -65,7 +52,7 @@ export async function createCompanionStudio(kit, kitRoot, stateRoot, contentLibr
     if (!owner) throw new Error('Studio path outside registered content.')
     const rel = relative(owner, resolve(path))
     if (rel.split(sep).some(part => ['.git', 'node_modules'].includes(part))) throw new Error('Studio path outside registered content.')
-    let current = owner
+    let current = await realpath(owner)
     for (const part of rel.split(sep).filter(Boolean)) { current = join(current, part); if ((await lstat(current)).isSymbolicLink()) throw new Error('Studio does not follow source symlinks.') }
     return current
   }
@@ -190,26 +177,12 @@ export async function createCompanionStudio(kit, kitRoot, stateRoot, contentLibr
       // This is an unedited installed Panel, already compiled above from the
       // confined capture. Reuse the shared sample finalizer; the authoring
       // overlay path would redundantly compile this unchanged Kit twice more.
-      return finalizeStudioPanelPreview({ compiled: bundle, kit: kitPin, bundle: bundlePin, revision, sampleSource })
+      return finalizeStudioPanelPreview({ compiled: bundle, kit: kitPin, bundle: bundlePin, revision, sampleSource,
+        readSampleResource: path => texts.get(join(bundleRoot, path)) })
     } catch (error) { return diagnostic('preview.definition', error instanceof Error ? error.message : String(error)) }
   }
   const hasBundle = async name => (await installedBundles()).some(skill => (skill.catalogName ?? skill.name) === name)
   const unknownBundle = name => ({ diagnostics: [{ code: 'bundle.missing', message: 'Select an installed Bundle by its exact name.', subject: String(name) }] })
-  let draftService
-  const drafts = () => {
-    if (!stateRoot) throw new Error('Studio authoring storage is not configured.')
-    return draftService ??= createStudioPanelDrafts({ stateRoot, kitRoot: root, readInstalledKit: currentKit, readInstalledBundle: pin => contentLibrary?.store.resolveBundle(pin) })
-  }
-  let kitDraftService
-  let kitDraftPorts
-  const kitPorts = () => {
-    if (!stateRoot) throw new Error('Studio authoring storage is not configured.')
-    return kitDraftPorts ??= createStudioDraftPorts({ stateRoot, kitRoot: root, readInstalledKit: currentKit, readInstalledBundle: pin => contentLibrary?.store.resolveBundle(pin) }, 'kit')
-  }
-  const kitDrafts = () => {
-    return kitDraftService ??= kitPorts().then(({ repository, sources }) => new StudioKitDraftService(repository, sources))
-  }
-  let contentArchiveService
   let instanceService
   const captureRegisteredTree = async base => {
     const paths = await source.listFiles(base)
@@ -233,7 +206,17 @@ export async function createCompanionStudio(kit, kitRoot, stateRoot, contentLibr
         listBundles: async () => (await installedBundles()).map(skill => ({ name: skill.catalogName ?? skill.name, version: String(skill.version) })),
         captureKit: async pin => {
           const selected = await selectedKit(pin)
-          return { files: await captureRegisteredTree(selected.sourceRoot ?? root), title: selected.title }
+          let files = await captureRegisteredTree(selected.sourceRoot ?? root)
+          if (!files.some(file => file.path === 'kit.yaml')) {
+            // Explicit embedded development sources still enter the same flat
+            // S2 Kit contract; mounted Bundles are captured independently below.
+            const engineering = new Set(['skills', 'node_modules', 'lib', 'dist', 'src', 'test', 'tests', 'scripts', '.git', '.cache', 'package.json', 'pnpm-lock.yaml', 'tsconfig.json', 'tsdown.config.ts'])
+            files = files.filter(file => !engineering.has(file.path.split('/')[0]))
+            files.push({ path: 'kit.yaml', base64: Buffer.from(stringify({ version: 1, mounts: selected.skills.map(skill => ({
+              bindingKey: skill.name, name: skill.catalogName ?? skill.name, version: String(skill.version),
+            })) })).toString('base64') })
+          }
+          return { files, title: selected.title }
         },
         captureBundle: async pin => {
           const selected = (await installedBundles()).find(skill => (skill.catalogName ?? skill.name) === pin.name && String(skill.version) === pin.version)
@@ -246,39 +229,27 @@ export async function createCompanionStudio(kit, kitRoot, stateRoot, contentLibr
       return createStudioInstances({ stateRoot, ...ports })
     }).catch(error => { instanceService = undefined; throw error })
   }
-  const contentArchives = () => {
-    if (!stateRoot) throw new Error('Studio import storage is not configured.')
-    return contentArchiveService ??= import('./studio-content-archive.mjs').then(async ({ createStudioContentArchives }) => {
-      // Do not chmod the host's existing state directory. This new, dedicated
-      // parent is private; the adapter validates it and all path ancestors.
-      // The host may name an OS-aliased parent (for example /var on macOS).
-      // Reject a linked leaf before resolving that trusted root for noLinks.
-      const statePath = resolve(stateRoot)
-      if (!(await lstat(statePath)).isDirectory()) throw new Error('Studio archive state must be an existing canonical directory.')
-      const state = await realpath(statePath)
-      const privateRoot = join(state, 'studio-content-state')
-      const inside = (base, target) => { const rel = relative(base, target); return !isAbsolute(rel) && rel !== '..' && !rel.startsWith(`..${sep}`) }
-      if (inside(root, privateRoot) || inside(privateRoot, root)) throw new Error('Studio archive state and installed Kit must not be nested.')
-      if (process.platform === 'win32') await ensureWindowsPrivateDirectory(privateRoot)
-      else await mkdir(privateRoot, { mode: 0o700 }).catch(error => { if (error.code !== 'EEXIST') throw error })
-      const bundles = []
-      for (const skill of await installedBundles()) {
-        const pin = { name: skill.catalogName ?? skill.name, version: String(skill.version) }
-        const retained = contentLibrary ? await contentLibrary.store.resolveBundle(pin) : undefined
-        bundles.push({ ...pin, rootDir: retained?.resourceRoot ?? skill.resourceRoot ?? join(root, 'skills', skill.name), sourceId: retained?.sourceId ?? 'companion:explicit-kit' })
-      }
-      return createStudioContentArchives({ stateRoot: privateRoot, kitRoot: root, readInstalledKit: currentKit, sourceId: 'companion:explicit-kit', bundles })
-    })
-  }
   return {
     listInstances: async input => (await instances()).list(input),
     readInstance: async input => (await instances()).read(input),
+    createInstance: async input => (await instances()).create(input),
+    importInstanceSources: async input => (await instances()).importSources(input),
     copyInstance: async input => (await instances()).copy(input),
+    editCurrentInstance: async input => (await instances()).editCurrent(input),
+    // Trusted Host-only composition: never serialize filesystem capabilities.
+    loadCurrentKit: async kit => {
+      const service = await instances()
+      const records = (await service.list({ kind: 'kit' })).filter(record => record.kit?.name === kit.name)
+      const current = records.find(record => record.current) ?? records[0] ?? await service.editCurrent({ kind: 'kit', kit })
+      return service.loadKit({ id: current.id })
+    },
     renameInstance: async input => (await instances()).rename(input),
     removeInstance: async input => (await instances()).remove(input),
     updateInstanceMounts: async input => (await instances()).updateMounts(input),
     readInstanceFile: async input => (await instances()).readFile(input),
     saveInstanceFile: async input => (await instances()).saveFile(input),
+    prepareInstanceChanges: async input => (await instances()).prepareChanges(input),
+    saveInstanceChanges: async input => (await instances()).saveChanges(input),
     previewInstance: async input => (await instances()).preview(input),
     workspace: ({ query = '' }) => { invalidateCatalog(); return management.workspace(query) },
     readKitFiles: async ({ name, version }) => {
@@ -298,42 +269,29 @@ export async function createCompanionStudio(kit, kitRoot, stateRoot, contentLibr
     readBundleWorkspace: async ({ name, version }) => await hasBundle(name) ? bundles.readBundleWorkspace(name, version) : unknownBundle(name),
     readBundleFile: async input => await hasBundle(input.name) ? bundles.readBundleFile(input) : unknownBundle(input.name),
     previewInstalledPanel,
-    createPanelDraft: async input => (await drafts()).create(input),
-    listPanelDrafts: async () => (await drafts()).list(),
-    readPanelDraft: async ({ id }) => (await drafts()).read(id),
-    savePanelDraft: async input => (await drafts()).save(input),
-    previewPanelDraft: async input => (await drafts()).preview(input),
-    confirmPanelDraft: async input => (await drafts()).confirm(input),
-    forkPanelDraft: async ({ id }) => (await drafts()).fork(id),
-    createKitDraft: async input => (await kitDrafts()).create(input),
-    listKitDrafts: async () => (await kitDrafts()).list(),
-    readKitDraft: async ({ id }) => (await kitDrafts()).read(id),
-    saveKitDraft: async input => (await kitDrafts()).save(input),
-    validateKitDraft: async input => (await kitDrafts()).validate(input),
-    previewKitDraft: async input => (await kitDrafts()).preview(input),
-    confirmKitDraft: async input => (await kitDrafts()).confirm(input),
-    forkKitDraft: async ({ id }) => (await kitDrafts()).fork(id),
-    exportContentArchive: async input => (await contentArchives()).exportArchive(input),
-    prepareContentImport: async input => (await contentArchives()).prepareImport(input),
-    readContentImport: async ({ id }) => (await contentArchives()).readImport(id),
-    listContentImports: async () => (await contentArchives()).listImports(),
-    adoptContentImport: async ({ id }) => {
-      // Only a retained import identity enters this route, never a filesystem path
-      // or a browser assertion that a definition was already validated.
-      const record = await (await contentArchives()).readImport(id)
-      const prepared = await (await contentArchives()).revalidateImport(id)
-      if (!prepared.validation.valid) throw new Error(`Imported definition is invalid: ${prepared.validation.diagnostics.map(item => item.message).join('; ')}`)
-      if (!contentLibrary) throw new Error('Independent content installation is not configured.')
-      const adopted = await contentLibrary.adoptPrepared(prepared)
-      invalidateCatalog(); contentArchiveService = undefined
-      let draft
-      if (record.archive.kind === 'kit') {
-        const retained = await contentLibrary.store.loadRetainedKit(prepared.archive.pin)
-        const ports = await createStudioDraftPorts({ stateRoot, kitRoot: retained.sourceRoot, readInstalledKit: () => retained,
-          readInstalledBundle: pin => contentLibrary.store.resolveBundle(pin) }, 'kit')
-        draft = await new StudioKitDraftService(ports.repository, ports.sources).create({ kit: prepared.archive.pin })
+    readArchive: ({ source }) => readStudioContentArchive(source),
+    exportContentArchive: async input => {
+      if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Select one exact archive export target.')
+      const request = structuredClone(input)
+      const copy = Object.hasOwn(request, 'id') || Object.hasOwn(request, 'expectedRevision')
+      const required = copy ? ['id', 'expectedRevision'] : ['kind', 'pin']
+      if (required.some(key => !Object.hasOwn(request, key)) || Object.keys(request).some(key => ![...required, 'provenance', ...(copy ? ['dependencies'] : [])].includes(key))) {
+        throw new Error('Archive export accepts one installed target or one exact saved working copy, never a mixed target.')
       }
-      return { importId: id, ...adopted, ...(draft ? { draft } : {}), executionGranted: false, requiresTrustReview: prepared.requiresTrustReview }
+      const exact = value => value && typeof value === 'object' && !Array.isArray(value)
+        && Object.keys(value).length === 2 && ['name', 'version'].every(key => Object.hasOwn(value, key) && typeof value[key] === 'string' && value[key].length > 0)
+      const provenance = request.provenance
+      if (provenance !== undefined && (!provenance || typeof provenance !== 'object' || Array.isArray(provenance)
+        || Object.keys(provenance).some(key => !['source', 'license'].includes(key) || typeof provenance[key] !== 'string'))) throw new Error('Invalid archive provenance declarations.')
+      if (request.dependencies !== undefined && (!Array.isArray(request.dependencies) || !request.dependencies.every(exact))) throw new Error('Archive export dependencies require exact pins.')
+      if (copy) {
+        if (typeof request.id !== 'string' || !request.id || !Number.isSafeInteger(request.expectedRevision) || request.expectedRevision < 0) throw new Error('Archive export requires an exact working-copy id and revision.')
+        return (await instances()).exportArchive(request)
+      }
+      if (!['kit', 'bundle'].includes(request.kind) || !exact(request.pin)) throw new Error('Archive export requires an exact installed pin.')
+      const service = await instances()
+      const current = await service.editCurrent({ kind: request.kind, [request.kind]: request.pin })
+      return service.exportArchive({ id: current.id, expectedRevision: current.revision, provenance: request.provenance })
     },
   }
 }

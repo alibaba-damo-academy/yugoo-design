@@ -159,10 +159,6 @@ function genericPanelNode(components: unknown, context: AutoPanelContext): Panel
     // Otherwise an ignored leaf child can falsely satisfy the overview guard.
     if (node.component === 'stack' || node.component === 'tabs') {
       if (node.slots !== undefined) throw new Error('auto panel: generated layout has unrendered slots')
-    } else if (node.component === 'split') {
-      if (node.children !== undefined || Object.keys(node.slots ?? {}).some(key => key !== 'sidebar' && key !== 'main')) {
-        throw new Error('auto panel: generated split has unrendered branches')
-      }
     } else if (node.children !== undefined || node.slots !== undefined) {
       throw new Error('auto panel: generated leaf has unrendered branches')
     }
@@ -240,7 +236,7 @@ function genericPanelNode(components: unknown, context: AutoPanelContext): Panel
       }
     }
     for (const child of node.children ?? []) visit(child)
-    for (const child of Object.values(node.slots ?? {})) if (child !== undefined) visit(child)
+    for (const child of Object.values((node.slots ?? {}) as Record<string, ComponentNode | null | undefined>)) if (child != null) visit(child)
   }
   visit(manifest.ui)
   for (const [key, spec] of Object.entries(context.schema.properties ?? {})) {

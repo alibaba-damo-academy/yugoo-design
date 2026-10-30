@@ -1,9 +1,19 @@
 # Yugoo Design for DeepSeek Harness
 
-This package owns the internal DeepSeek Harness installation bundle for Yugoo
-Design. Users acquire the unified `yugoo-design` product, whose DSH adapter
-installs the exact aggregate and internal modules. The first stable product
-release, `0.1.0`, is published to npm; acquire the requested exact release.
+Yugoo Design turns your DeepSeek Harness conversation into an interactive
+workspace for ideation and design, with editable panels, structured knowledge
+and guided iteration.
+
+To install or update, give the [DSH installation guide](../companion/HOSTS.md#install-or-update-deepseek-harness)
+to the Agent in your existing DSH conversation. It acquires the unified
+`yugoo-design` product from npm and uses the product's release mapping to install
+this aggregate and its internal modules. Request an exact published version, or
+let the Agent resolve `latest` once and use that exact version for the operation.
+Existing projects and host model/search settings must be preserved.
+
+This README describes the DSH integration and its development references. The
+historical checks below retain their original versions; use the selected
+release's guide and manifest for a new installation.
 
 Official DSH is a read-only Host compatibility target. This package uses public
 Cordis, command, tool, Agent, interaction, subagent, Remote, and client-module
@@ -33,6 +43,23 @@ panel definition or locale content without rebuilding the Host; introducing a
 new shared runtime component or native UI surface requires a runtime release.
 Installed-package native-equivalence acceptance remains separate from this
 source declaration and is not established by the presence of 15 definitions.
+
+File Workers negotiate the installed Host's public capabilities. Legacy Hosts
+use their one-shot Subagent Runtime; RC3 uses the public Agent factory, as the
+attached Producer and read-only reviewers do. Each Worker retains its exact
+artifact grant, parent model route, depth limit and cancellation. Factory
+children have real native Sessions and tool logs; they do not claim the
+Subagent Runtime's manager catalog, events or capacity pool. A failed start is
+reported rather than retried through a different backend.
+
+Each configured Design Project owns one complete current definition tree at
+`design_kit/`, separate from its design data in `design_files/`. Methods,
+schemas, Panels, resources and scripts load from that project's Kit and mounted
+Bundles. The library supplies the initial copy for a new project. Later library
+edits do not replace existing project customizations; ask the Agent to compare
+and apply wanted changes through the ordinary edit/validate/save/Git path.
+Local content requires no release, version switch, upgrade wizard or remount.
+Design data publication, human handoff and npm versions remain distinct.
 
 ## Daily entry
 
@@ -67,9 +94,17 @@ unchanged.
 
 ## Installation target and current package composition
 
-The product name is **Yugoo Design**. Source package and Loader identifiers remain
-`dsh-design-*`; public npm exports use the `@yugoo-design` scope. The brand does
-not rename imports or Loader identities.
+The product name is **Yugoo Design**. The single installation aggregate uses
+`@yugoo-design/dsh-design-system-dsh` in both source and public npm metadata.
+The other nine source packages and Loader identities keep their existing names;
+their public npm exports use the `@yugoo-design` scope. Service and RPC identities
+remain unchanged.
+Linked source profiles that used the former unscoped aggregate name need an
+explicit update of that dependency and bundle reference. A source change does
+not migrate an existing profile; published scoped consumers keep their package
+identity. Source workspace dependencies still require the normal release
+assembly before registry installation.
+
 Official DSH is an external, separately installed host and is not one of the
 plugin's system packages. Its agents supply generative model execution, questions,
 subagents and search; installing this plugin must preserve the user's existing
@@ -78,20 +113,24 @@ Design Knowledge uses a separate local CPU embedding model; it does not require
 a GPU or replace the host's generative models.
 
 The source composition has six direct dependencies (Core, Knowledge, Panel,
-Web App provider, Web App content, and DSH Studio integration) and ten Loader
+Web App provider, Web App content, and DSH Studio integration) and eleven Loader
 rows. The complete Yugoo dependency closure contains the ten packages below;
 transitive dependencies remain owned by their consuming packages, not added as
 aggregate dependencies merely because they occur in a release inventory.
 The npm aggregate additionally supplies the two required Studio/Studio UI peers
 reached from this closure because DSH disables automatic peer installation.
 It does not install unrelated or optional peers from the release inventory.
+The Studio authoring row mounts the existing shared working-copy Service and
+Host conversation tool. The current conversation's Studio launcher supplies its
+exact Session locator for AI-assisted customization; Settings remains a
+session-free inspection entry. No model is invoked merely by activating the row.
 The selected release manifest fixes exact dependency versions.
 The directory column identifies the existing source package, not an end-user
 checkout or build requirement.
 
 | Package identifier | Source directory | Role |
 | --- | --- | --- |
-| `dsh-design-system-dsh` | `packages/dsh` | DSH installation bundle and Loader registration |
+| `@yugoo-design/dsh-design-system-dsh` | `packages/dsh` | DSH installation bundle and Loader registration |
 | `dsh-design-core` | `packages/core` | Design state, Bundle execution and validation |
 | `dsh-design-panel` | `packages/panel` | Shared Panel runtime and components |
 | `dsh-design-knowledge-ladybug` | `packages/knowledge-ladybug` | Design Knowledge provider |
@@ -292,7 +331,7 @@ Have your host agent perform these steps using recipient-owned absolute paths:
    existing model, search and credential configuration.
 2. Verify every archive against `PORTABLE-INPUTS.json`. Safely extract its
    compiled `package/` contents into the profile's `packages/<package-name>`
-   directory, using the unscoped name (for example,
+   directory, using the package basename as its directory label (for example,
    `profiles/yugoo-local/packages/dsh-design-core`). Reject absolute/traversing
    paths, links and special archive members;
    verify the unchanged extracted package name and version. Do not rewrite them.
@@ -411,9 +450,9 @@ and release.
 
 ### Candidate npm installer: DSH route and recovery limits
 
-The product CLI route is `install --host dsh`; the historical Companion
-`0.1.0-beta.3` was an earlier distribution of this adapter. The unified
-`yugoo-design@0.1.0` product is published. This is an installer adapter
+The product CLI route is `install --host dsh`. Acquire the selected exact
+published `yugoo-design` version using the shared installation guide; the older
+Companion package versions remain in the historical checks below. This is an installer adapter
 for the separately installed official DSH
 host, not a bundled DSH application or a desktop Companion runtime inside DSH.
 Yugoo Design has one product installation entry. For DSH, that entry installs
@@ -481,8 +520,16 @@ without replacing an installed Kit. Directory ordering is deterministic.
 New Kits and valid edits are watched by default. Invalid edits or deleted
 sources retain process-level last-good content, including the selection
 catalog, with a diagnostic; scripts/source inspection may be unavailable after
-deletion. Existing version pins remain resolvable until shutdown. Restarting
-loads current files only: it does not restore a removed Kit from hidden storage.
+deletion. Unaccepted development versions remain process-local; restarting loads
+their current source files. Before project selection, source migration or an
+explicit content upgrade accepts a file-backed Kit, DSH retains its complete
+exact Kit/Bundle closure through the existing immutable content store. A failed
+retention or same-pin content conflict leaves the project pin unchanged.
+Accepted closures remain resolvable after source upgrades, removal and restart.
+They use Core's `contentStateRoot`, which defaults to its existing `stateRoot`;
+the loader restores the same root automatically. An older explicit loader
+`contentStateRoot` remains readable, while new acceptances use the Core root.
+Native contributions still require their original trusted installed provider.
 Changing a Kit's identity in-place requires a restart. `watch: false` disables
 watching and the bounded configured-root existence checks.
 
@@ -538,7 +585,12 @@ The official DSH composition enables optional native delegation through the exec
 
 `pnpm run test:release:physical-distribution` at the repository root proves the isolated physical package closure: it packs this distribution and its internal packages, installs them in a consumer outside the source workspace, and rejects entry points that resolve back through the workspace. It does not install or boot an official DSH Host. The linked-profile composition gate against the pinned official DSH submodule is the official-Host compatibility check. Both gates are required before release because neither package closure nor Host compatibility implies the other.
 
-Planned Codex and Claude Code Host Providers will reuse the same Portable Kernel, projects, Kits, execution rules, and shared UI. Their first implementations discriminate the capabilities published by the installed CLI version and do not assume native programmatic questions, subagents, or panel APIs. When a CLI cannot embed the UI, its provider opens a session-bound browser companion and keeps the originating CLI as the primary Agent surface. Those providers are not implemented by this DSH package.
+Other supported hosts, including Codex and Claude Code, use the
+[Companion adapters](../companion/HOSTS.md), which reuse the shared Core,
+projects, Kits, execution rules and UI. The installed host's capabilities
+determine available questions, subagents and page presentation; a CLI can use a
+session-bound browser while retaining its original conversation as the primary
+Agent surface. Those adapters are not implemented by this DSH package.
 
 ## Historical release checks
 

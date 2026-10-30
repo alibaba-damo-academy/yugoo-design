@@ -6,7 +6,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { fixture, threadId } from './fixture.mjs'
 
-test('source MCP native binding schema explains host IDs, child paths and Codex-only launch references', async () => {
+test('source MCP schemas explain native binding identities and Knowledge query filters', async () => {
   const { InMemoryTransport } = await import('@modelcontextprotocol/sdk/inMemory.js')
   const { createDesignMcp } = await import('../src/mcp.mjs')
   const server = createDesignMcp()
@@ -15,6 +15,15 @@ test('source MCP native binding schema explains host IDs, child paths and Codex-
   try {
     await Promise.all([client.connect(clientTransport), server.connect(serverTransport)])
     const { tools } = await client.listTools()
+    const query = tools.find(tool => tool.name === 'design_query_knowledge')
+    assert.match(query.inputSchema.properties.text.description, /case-insensitive literal substring/)
+    assert.match(query.inputSchema.properties.text.description, /Spaces are literal/)
+    assert.match(query.inputSchema.properties.text.description, /not tokenized or vector search/)
+    assert.match(query.inputSchema.properties.sourceFiles.description, /exact provenance\.evidence\[\]\.source/)
+    assert.match(query.inputSchema.properties.sourceFiles.description, /do not add.*design_files\//)
+    assert.match(query.description, /Zero matches.*do not prove.*index.*embedding/)
+    assert.match(query.description, /sourceReadRequired.*source verification/)
+    assert.match(query.description, /design_knowledge_status/)
     const properties = tools.find(tool => tool.name === 'design_register_run').inputSchema.properties
     assert.match(properties.runId.description, /Actual native child ID/)
     assert.match(properties.runId.description, /WorkBuddy: agent-/)
@@ -49,7 +58,8 @@ test('packaged stdio MCP exposes explicit tools and preserves existing per-proje
   try {
     await client.connect(transport)
     const { tools } = await client.listTools()
-    assert.equal(tools.length, 41)
+    assert.equal(tools.length, 42)
+    assert.ok(tools.some(tool => tool.name === 'design_studio_customize'))
     const catalogTool = tools.find(tool => tool.name === 'design_list_panel_components')
     assert.ok(catalogTool)
     assert.equal(catalogTool.annotations.readOnlyHint, true)

@@ -29,6 +29,6 @@
   "hotspotLabel": "Source hotspot label",
   "members": "Pages in group",
   "map": "Page map",
-  "guidance": "Select a page to preview it or a connection to edit navigation. Map positions and groups organize the map only.",
+  "guidance": "Walk through the user task and check that page content, actions and navigation form a coherent path without gaps or dead ends. Map positions and groups only organize the view.",
   "shared": "Shared specification"
 }

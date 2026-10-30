@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "es2024",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "jsx": "react-jsx",
+    "paths": {
+      "dsh-design-core": ["../../core/src/index.ts"],
+      "dsh-design-core/dsl": ["../../core/src/panel-dsl.ts"],
+      "dsh-design-studio": ["../../studio/src/index.ts"]
+    }
+  },
+  "include": ["../src", "../../core/src", "../../studio/src"]
+}

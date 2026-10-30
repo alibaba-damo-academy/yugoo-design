@@ -587,14 +587,9 @@ export class DesignPanelRemote extends TypertRemoteService {
     agent: Agent,
     signal: AbortSignal,
   ): Promise<DesignPanelWorkspaceRead> {
+    await this.design.refreshProjectKit(agent)
     const workspace = await this.design.withWorkspaceRead(agent, signal, () => this.readWorkspaceSnapshot(agent, signal))
     return workspace
-  }
-
-  async observePanelDraft(agent: Agent, observation: import('./project-content-guard.ts').PanelDraftObservation, signal: AbortSignal): Promise<{ observed: true }> {
-    signal.throwIfAborted()
-    await this.design.observeProjectPanel(agent, observation)
-    return { observed: true }
   }
 
   async pollWorkspace(agent: Agent, knownRevision: string | null, signal: AbortSignal): Promise<WorkspacePollResult<DesignPanelWorkspaceRead>> {
@@ -632,7 +627,7 @@ export class DesignPanelRemote extends TypertRemoteService {
       ? await this.design.displayFilesForProject(agent, project, nodeFs)
       : await this.design.designFilesForProject(agent, project.projectId, nodeFs, signal)
     const pin = projectWorkspace.kit
-    const kit = pin === undefined ? undefined : this.design.resolveProjectKit(pin)
+    const kit = pin === undefined ? undefined : this.design.resolveProjectKit(pin, project)
     const worktreeKey = String(project.projectId)
     const kitDefinitionIdentity = kit === undefined
       ? 'unresolved'
@@ -785,9 +780,6 @@ export class DesignPanelRemote extends TypertRemoteService {
             mode: 'recovery',
             writable: false,
             kit: { name: pin.name, version: pin.version },
-            ...(this.design.latestKit(pin.name) === undefined
-              ? {}
-              : { upgradeCommand: `/yugoo kit ${pin.name}` }),
           }
         : {
             mode: 'writable',
@@ -987,12 +979,12 @@ export class DesignPanelRemote extends TypertRemoteService {
       const validate = typeof skillDef.metadata?.schemaYaml === 'string'
         ? validatorFromSchemaYaml(skillDef.metadata.schemaYaml)
         : undefined
-      // Source locators and explicitly declared graph integrity are mandatory
+      // Source locators, typed tables and declared graph integrity are mandatory
       // in Panel and Agent paths alike. Do not gate saves on completeness.
       if (typeof skillDef.metadata?.validationYaml === 'string') {
         const doc = parseValidationYaml(skillDef.metadata.validationYaml)
         const graphRules = new Set(panelGraphSaveRules(doc, skillDef.metadata?.panelManifest))
-        const rules = doc.rules.filter(rule => 'source_reference_map' in rule.check || graphRules.has(rule))
+        const rules = doc.rules.filter(rule => 'source_reference_map' in rule.check || 'data_table' in rule.check || graphRules.has(rule))
         if (rules.length) {
           const issues = await evaluateValidationRules({ ...doc, rules }, { skill, state: prepared.state }, 'state')
           if (issues.length) throw new Error(JSON.stringify(issues))
@@ -1323,10 +1315,6 @@ function orderOf(skill: { metadata?: Record<string, unknown> }): number {
 
 export default DesignPanelRemote
 
-Remote(DesignPanelRemote.prototype.observePanelDraft, {
-  kind: 'method', name: 'observePanelDraft', static: false, private: false,
-  addInitializer(initializer: (this: DesignPanelRemote) => void): void { initializer.call(Object.create(DesignPanelRemote.prototype) as DesignPanelRemote) },
-} as ClassMethodDecoratorContext<DesignPanelRemote, DesignPanelRemote['observePanelDraft']>)
 
 // The bundle must stay parseable by plain Node ESM (no decorator syntax), so
 // the Remote marker is applied here with the same effect as `@Remote`.

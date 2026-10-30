@@ -3,6 +3,10 @@
 For host-specific installation, startup and maintenance, start with the
 [host integration entry points](HOSTS.md).
 
+- Install or update: use the [shared host prompt](HOSTS.md#default-prompt-any-supported-host).
+- Inspect the released package: read the [maintained npm guide](#maintained-npm-package-guide).
+- Develop an adapter: use [build and verification](#build-and-verify-repository-checkout); source commands are not extra installation steps.
+
 The [Mac Codex Desktop guide](hosts/codex-desktop/README.md) starts with
 npm-backed plugin preparation and native activation, followed by the existing
 source development route. Both keep the original conversation and use a
@@ -18,8 +22,24 @@ server. Registry, selection, connection files and caches keep their existing
 locations. Previously registered projects remain at their exact roots; they are
 not moved, and opening them does not require the new Documents destination.
 
-The unified product package and CLI are `yugoo-design`, with first stable version
-`0.1.0` published to npm. Companion names the internal
+Each configured Design Project owns one editable definition tree at
+`design_kit/`: Kit files in `kit/` and complete mounted Bundle trees in
+`bundles/`, alongside its existing `design_files/`. Methods, schemas, Panels,
+resources, scripts and CLI validation all use those project files. A library
+edit initializes future projects; it does not change existing projects. Ask the
+Agent in the ordinary conversation to compare or apply library changes when
+wanted, preserving project customizations and design data through the existing
+edit, validation, save and Git paths. Saving requires no content release,
+version selection, upgrade wizard or remount.
+
+Old projects initialize this tree once from their actual retained closure.
+Missing or invalid existing project sources report their real error instead of
+falling back to library content. Subsequent reads refresh changed definitions;
+a concurrent edit during execution cannot silently substitute a different
+schema at settlement. Design Files publication, Git history, human handoff and
+npm package versions retain their separate responsibilities.
+
+The released npm product package and CLI are `yugoo-design`. Companion names the internal
 host integration and shared browser runtime, not a second product to install.
 The former `@yugoo-design/companion` package and its beta versions remain historical
 records; no compatibility package or beta default is provided for this release.
@@ -75,7 +95,7 @@ Bundle tabs start at its top edge. A "Current project" entry in the right sideba
 opens on hover/focus and pins on click, showing the shared U/S/T assessment,
 project name and full wrapping path. Score explanations remain keyboard accessible;
 Escape, the close button and outside click dismiss the information popover.
-This replaces the earlier compact single-row header at the user's request. This is an embedded-browser scene-specific choice, not the default
+This is an embedded-browser scene-specific layout, not the default
 for DSH, full Companion or Studio. Native/full header layout remains unchanged.
 
 Design suggestions use that same sidebar's lightbulb: the existing inbox opens
@@ -127,36 +147,18 @@ existing save/notification transport remain independent. This saves browser
 history requests/rendering, not every native transcript read needed for execution
 verification. Two visible full-view pages still each own a history subscription.
 
-WorkBuddy 0.3.17 automatically displays design view in a `present_files` preview;
-automatic opening in the required built-in browser tab remains unfinished.
-After a successful open-panel result, the Agent passes `nativePreview.arguments` unchanged to `present_files`
-once. This navigates to the actual local HTTP page, without an HTML wrapper or
-manual URL copying. The user reported successful native tool invocation with
-installed 0.3.17 on 2026-10-11. `present_files` must be invoked directly as the
-host's native tool, not through an MCP tool-call wrapper. A prior successful result for the request can be reused;
-navigation does not require another service startup. WorkBuddy 0.3.15 already
-successfully loaded the local Companion URL through
-`present_files`, but the user's screenshot shows a preview without an address
-bar and with unwanted top space. The required address-bar tab remains unverified
-for automatic navigation; manual URL entry there has been verified. Neither the
-word `previewed` nor a successful public URL test proves the local page's container.
-Installed WorkBuddy 5.7.7 source explains the difference: its preview toolbar
-hides the address input for `localhost` / `127.0.0.1` URLs without a native-browser
-binding, while public URLs such as Baidu retain it. The tool's current schema
-does not expose that binding. This is a host toolbar decision, independent of
-the Companion access fragment; `present_files` is not universally address-bar-free.
-See the [WorkBuddy diagnosis](hosts/workbuddy/README.md#host-side-design-view-automatic-opening-and-connection-control).
+WorkBuddy can open the returned local Panel URL through the native `present_files`
+tool. After a successful open-panel result, pass `nativePreview.arguments` unchanged
+to that native tool once; it is not an MCP wrapper call. The host controls the
+preview container and toolbar, so this route does not guarantee an address-bar
+browser tab. Reuse a successful navigation result and the same live project/service.
 
-The user explicitly rejected completion after the 0.3.17 report: automatic
-navigation still opened the wrong surface. The requirement is automatic opening
-in the actual built-in browser tab; it was never relaxed to generic preview
-success. The current adapter has not met that target. Investigate the supported
-native browser route rather than repeating the same preview call. If the native tool is
-unavailable or navigation fails, use the same live service through the widget's
-copy-address recovery and the host's "打开浏览器" tab. The browser-access URL may
-be passed unchanged to an authorized native navigation tool; the separate
-message-relay credential stays in host-only metadata. This is the existing CLI
-URL handoff, not a new authentication mechanism.
+If native navigation is unavailable, use the live Panel's browser-opening or
+copy-address action. The browser-access URL may be passed unchanged to an authorized
+native navigation tool; the separate message-relay credential remains in host-only
+metadata. A connected relay, page navigation, a durable save and consumption by the
+original Agent are separate outcomes. See the [WorkBuddy guide](hosts/workbuddy/README.md)
+for current setup and host-specific limits.
 
 The simplified widget uses "连接当前对话" / "已连接当前对话", with no view dropdown.
 Its connection lets "保存并继续" send saved results to the original conversation;
@@ -243,6 +245,75 @@ unsaved authoring changes retain the shared browser-unload guard. This aligns th
 page presentation with DSH's existing full-page launcher, not the hosts' optional
 authoring/trial capability availability.
 
+The main conversation exposes `design_studio_customize` over that same private
+connection and working-copy service. It discovers installed pins, copies or
+reopens Kit/Bundle content, reads source, prepares a diff/preview and saves
+authorized changes with the existing revision and digest checks. Use
+`prepareChanges` to inspect a candidate, then explicitly authorize `saveChanges`
+in draft or validated mode. These operations customize reusable authoring
+content; they do not edit a Design Project, publish a version or start a model.
+The shared editor's **Refresh working copy** action reads saved conversation-side
+changes.
+
+Studio catalogs and installed read-only content do not open or poll a conversation.
+Explicit **New** or **Edit** enters the object editor, with source files selected
+first and the same bound Host conversation inside the content area. Product
+navigation, the top bar, object name, Back action and full file tree remain
+available. The editor omits its descriptive information pane. Kits expose source
+and mounts; Panel preview belongs to Bundles. Existing draft recovery remains
+available. The conversation displays only records after this editing entry;
+content-only handoffs never probe the Host message channel or read conversation
+history.
+The user can read or edit source, submit a customization request, inspect its
+proposed diff and preview, and explicitly save through the existing working-copy
+service. Source edits must be saved or restored before a new request is sent.
+Switching files, opening review and cancelling Back preserve the conversation
+input. Confirmed exit discards that object's unsent input and stops its history
+polling; the next object starts a fresh display interval in the same native thread.
+Late responses cannot change the next object's notices, candidate or input.
+
+AI submission requires an available result from the existing bounded native
+connection check, plus usable conversation history. Binding metadata or readable
+logs alone do not establish message reachability. If the Host is unavailable,
+its state remains unconfirmed, or history cannot be read, Studio explains the
+limit and keeps manual source editing, saving, import and export available through
+their existing local services. These actions still require the local Companion
+service to be online and retain their revision and validation checks.
+
+Use **重新检查宿主连接** to check again after restoring the Host. This keeps unsent
+input and never submits a test message, starts a trial, or replays a previous
+request. A confirmed non-submission is distinguished from unknown delivery.
+When delivery is unknown, inspect the original Host conversation before any
+explicit retry; a later successful connection check does not clear that warning.
+
+Connection failures, unreadable proposals and component-example failures use the
+shared Studio error card. Recovery actions remain beside the explanation;
+technical details open only when requested. A failed handoff uses the same theme
+even before the workspace opens. Rechecking its connection never sends a message.
+Reloading a failed component example affects only that example. A component with
+no standalone example instead shows a neutral empty state and keeps its reference
+documentation available.
+
+Requests include the saved object's display name and may carry create/edit intent
+and the current source file. The bound service checks that file against the same
+working-copy revision. These hints do not change the candidate identity, edit
+permissions or save checks. Authoring reads the current source/methods and uses
+`design_list_panel_components` for actual component contracts, docs and examples
+when needed. The existing browser and `design_studio_customize` create operations
+produce a real blank working copy before authoring begins.
+A changed service, working-copy revision or selected preview Bundle cannot reuse
+an old request for another target; uncertain delivery is not retried automatically.
+Studio does not create a model, another conversation, or a source repository.
+
+Candidate review uses the original request ID plus the exact working-copy
+revision and preview pin. The Host prepares it with `design_studio_customize`'s
+top-level `authoringRequestId`; ordinary conversation-side preparation may omit
+that optional locator. The service retains only bounded, temporary correlation
+metadata and the original S2 receipt, not another source or execution history.
+Preparing never saves, and message acceptance is separate from Agent consumption
+and persistence. Unsupported Host submission remains visible; an emitted page or
+registered MCP tool alone does not establish actual native-host acceptance.
+
 Studio's optional `previewInstalled` authoring-client method reads exact installed
 Kit/Bundle pins into a bounded request-local memory snapshot and reuses the shared
 declarative Panel compiler. The default sample comes from the Bundle-owned
@@ -257,12 +328,11 @@ must match Kit/Bundle pins and the request revision before rendering with the
 existing sample-only `renderPreview` ports. This API is not Bundle execution or
 publication, and does not grant full-file editing, mount or instance management.
 
-Studio reuses the content library's compiled immutable exact-version catalog
-across Bundle detail and file reads instead of recompiling the whole installation
-for each file. Workspace refresh, content adoption and replacement of the host's
-selected Kit invalidate this read projection. Confined file reads and bounded
-request-local preview capture are unchanged; mutable directory-only authoring
-keeps fresh catalog reads.
+Studio browses the global library independently of the project's private
+sources. Installed source projections can be reused across detail reads;
+current library edits live in the existing S2 store and use its revision/CAS
+save path. Existing saved objects remain editable when an installation is
+missing. A new project's initial Kit reads the current library closure.
 
 - One explicitly selected existing Design Project and matching installed Kit.
 - One exact Codex thread UUID; never select a conversation by “latest” or name.
@@ -277,8 +347,10 @@ keeps fresh catalog reads.
   Companion builds the unchanged Core worker from source as the fixed sibling
   `scripts/git-native-worker.js`, bundling its JS imports and retaining the
   binding's original `git-native/index.cjs` and relative `native/` lookup.
-  Release payloads include the two SOURCE-pinned GNU Linux x64 and Windows MSVC
-  x64 addons, build sources and original notices; other platforms fail explicitly.
+  Release payloads include the three SOURCE-pinned native Git addons for GNU Linux
+  x64, Windows MSVC x64 and macOS arm64, together with build sources and original
+  notices. Other targets fail explicitly. Native Git availability does not establish
+  acceptance of every host on those platforms.
   New npm candidates declare this required Git runtime. `check-runtime` executes
   Core publication and immutable reads in an isolated project with no system
   Git on PATH, even with `--disable-embedding`. Both installer gates require its
@@ -303,6 +375,12 @@ keeps fresh catalog reads.
   execution/completion. The original TUI owns consumption, approvals and turns;
   Companion never resumes a thread or calls `thread/queue/start` to deliver a
   notification. An offline TUI may leave an accepted notification unconsumed.
+  The original host must expose a reachable app-server connection. Proxy,
+  handshake or initialization failure reports setup as unavailable and confirms
+  that no message was submitted. Check the original host connection settings;
+  Companion does not start a daemon or restart the host. Once queue insertion
+  has been attempted, a lost or invalid receipt remains unknown and is never
+  automatically retried.
 - A failed notification leaves the file save intact. The notification
   action can be used after checking the original conversation; it does not
   rewrite files. There are no automatic delivery retries.
@@ -344,12 +422,7 @@ keeps fresh catalog reads.
   **recent recorded event**, not process liveness. API disconnect shows unknown
   while retaining the last received rows; successful polling restores the view.
 
-The earlier browser smoke test used real native Panels, project files, validation
-and Git, but **mocked Codex transport**. It proves neither model execution nor the
-behavior of all Web App Panels. The installed CLI's queue interface was checked
-with `codex-cli 0.153.4`. The user separately confirmed that a real test Panel
-save reached their active Codex conversation. That does not verify every host
-version, automatic plugin discovery, or native message observation.
+Adapter tests must distinguish simulated transport from actual native conversation delivery. Verify the acquired host version, project binding, durable save and Agent consumption separately.
 
 ## Discover Bundles before execution
 
@@ -428,7 +501,7 @@ release or installed package. The assembler records the source and section hashe
 this guide does not grant publication approval or complete host acceptance.
 The guide below describes the maintained installation routes; the acquired
 version's bundled help determines its actual commands. The dated npm checkpoints
-and later local candidates are recorded in [preview status](../../docs/wiki/preview-status.md).
+and current installation boundaries are described in [release status](../../docs/wiki/preview-status.md).
 Published beta.1 retains the saved-plan Codex/DSH routes and standalone
 `prepare-desktop`; follow that acquired version's README and help.
 
@@ -725,8 +798,8 @@ records retain their original options; beta is no longer the current release mod
 
 Directory development packages and npm releases use different installation
 routes. Use the acquired release's README and help for native installation;
-[historical publication and download checks](../../docs/wiki/preview-status.md#historical-publication-and-candidate-records)
-record the earlier package sets and incomplete transfers.
+the [release and compatibility guide](../../docs/wiki/preview-status.md#current-release-and-use)
+explains version selection and host activation boundaries.
 
 yugoo-design uses one product CLI entry, with `--host` selecting its existing
 host adapter. Companion is the shared runtime within that distribution; users
@@ -767,25 +840,33 @@ or platform acceptance.
 
 Maintainers preparing a new npm release should use the
 [current preparation and publishing guide](../../CONTRIBUTING.md).
-The [beta.2 build record](../../docs/wiki/preview-status.md#historical-beta2-source-assembly)
-retains its original command and verification limits.
+Use the current release tooling and declared product version; historical beta build commands are not the default acquisition route.
 
 ### Registry acquisition by the host Agent
 
 Use the [shared prompt in the current host](HOSTS.md#default-prompt-any-supported-host).
 The Agent first checks the required exact `yugoo-design` version,
 records the exact release and integrity, then acquires it in a durable,
-version-specific directory. The first stable release, `0.1.0`, is published.
-This example pins that version; for an update, resolve the requested release
-once and substitute its exact version. Run inside a dedicated version directory;
-a missing version must stop acquisition.
-Metadata availability does not establish complete archive acquisition or native
-installation. A missing required version is a failed
-availability check, not permission to use another package:
+version-specific directory. The GitHub guide describes the procedure; the
+runtime is acquired from npm. With no version specified, resolve `latest` once
+to an exact published stable version and keep its integrity for the remaining
+steps. If the tag points to a prerelease, report the mismatch and stop rather
+than choosing another version. An explicit version request takes precedence;
+do not substitute a historical example version.
 
 ```sh
-yugoo_version=0.1.0
-npm view "yugoo-design@$yugoo_version" version dist.integrity --registry=https://registry.npmjs.org || exit
+yugoo_version=$(npm view yugoo-design@latest version --registry=https://registry.npmjs.org) || exit
+node -e 'if (!/^[0-9]+\.[0-9]+\.[0-9]+$/.test(process.argv[1])) { console.error("Expected an exact published stable npm version"); process.exit(1) }' "$yugoo_version" || exit
+npm view "yugoo-design@$yugoo_version" version dist.integrity engines.node --json --registry=https://registry.npmjs.org || exit
+```
+
+Record that metadata. Reuse a matching retained installation when its runtime
+and host receipt satisfy the request. Otherwise select a new durable directory
+for this exact version, outside the user's project, and run the following from
+that directory in the same shell. A missing release stops installation;
+metadata alone does not prove archive acquisition or native activation.
+
+```sh
 ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm install --ignore-scripts=false --save-exact "yugoo-design@$yugoo_version" --registry=https://registry.npmjs.org || exit
 npx --no-install yugoo-design --help
 ```
@@ -1123,7 +1204,7 @@ creates a new directory under `packages/companion/dist-plugin` and prints its
 exact path. `--qoder` or `--claude` before the output argument selects the
 corresponding overlay; the default is Codex.
 
-Before packaging, build or obtain both native addons matching
+Before packaging, build or obtain all three native addons matching
 `packages/git-native/SOURCE.json`; generated binaries are not public source.
 By default they are read from that package's `native/` directory. Pass
 `--native-git-artifacts /absolute/pinned-package-root` before the output argument
@@ -1282,11 +1363,22 @@ are reused; changed intent or corrected reasoning can produce another assessment
 on the same Design checkpoint. Missing or failed assessment does not block
 continuing authorized Design work.
 
+Choosing **Save and assess next step** requests U/S/T through that existing main
+Agent continuation before its next question, Bundle recommendation or closing
+reply. Multiple saved edits can share one report of the latest state; unchanged
+or replayed saves and an applicable current assessment need no duplicate score.
+Later user stop/cancellation takes priority. Unavailable or failed reporting is
+disclosed, without rolling back the saved Design or starting another model.
+
 Persistent assessment scores/reasons and GRA suggestions/dispositions live under
 `design_records/` in the project and are committed through the shared Core Git
 path. The project is their sole durable authority, including after copying or
-restoring Git history. Native requests, run handles, notifications, locks and
-rebuildable caches remain in machine runtime storage. Historical acceptance or
+restoring Git history. Assessment display and main-Agent context read the
+Git-published `design_records/clarity.json`. If a new report's publication fails,
+the previous committed assessment remains visible; without one, the project
+remains unassessed. The local replacement stays available for an explicit report
+retry, and reads never commit or repair it. Native requests, run handles,
+notifications, locks and rebuildable caches remain in machine runtime storage. Historical acceptance or
 execution records never replace current native binding and permission checks.
 There is no automatic migration or second read/write authority for old storage.
 Save notifications remain independent: saved, sent and consumed are separate
@@ -1390,10 +1482,7 @@ QwenWorkCN `1.3.2` disables native background Agents, while a reported WorkBuddy
 shared choice applies to both conditions, without treating either report as a
 permanent limit across hosts or versions.
 
-The shared implementation has passed focused source regressions. A user-confirmed
-foreground batch also completed in the QwenWork local beta.18 candidate; see the
-[exact native result and limitations](../../docs/wiki/hosts.md#后台能力与评审降级).
-WorkBuddy, background readiness and npm delivery remain separate. The inspected
+The inspected
 QwenWorkCN `1.3.2-26101704` desktop deliberately disables background Agent
 Sessions; an ordinary restart or `.env` change is not a supported repair. See
 the [version-specific assessment](hosts/qwenwork/README.md#qwenworkcn-132-background-agent-policy)
@@ -1425,11 +1514,13 @@ and [current fallback status](../../docs/wiki/hosts.md#后台能力与评审降�
   not complete host/version acceptance. There are no fabricated DSH tools or
   automatic external agent spawning APIs. Native agents use the documented
   local bridge.
-- Notification diffs are retained in memory until queue acceptance. After
-  restart, use the explicit notification action to request a read of current
-  files; this is not an exactly-once durable message queue. A timeout means
-  delivery is unknown: check the original thread before manually retrying.
-  Unknown delivery is never automatically resent or treated as a completed turn.
+- Save-event metadata, checkpoints and delivery receipts persist for the exact
+  project and native binding. Reopening that binding reads the saved state without
+  sending anything. **Recover notification only** is available only for a proven
+  not-submitted save; it rebuilds the note from the saved checkpoint without saving
+  again or rerunning a Bundle. Accepted or uncertain submissions are not replayed.
+  Check the original conversation when delivery is unknown; these receipts do not
+  establish exactly-once Agent execution.
 - Only the current worktree is served, not historical artifact browsing.
 - Public distribution and its full license/dependency inventory remain separate
   release work. Genuine native-host loading and this new conversation observer
@@ -1443,38 +1534,45 @@ were added for this companion change.
 
 ## Isolated Studio authoring services
 
-Studio keeps installed Kit/Bundle content read-only. Kit working copies retain an
-exact source snapshot and mounted Bundle pins, with edits currently limited to
-the Kit's `mindset.md` and optional `relations.yaml`. The authenticated
-`studioKitDraft*` methods support create, save/reopen, definition validation,
-declarative preview over isolated sample data, confirm/lock and another editable
-fork. Confirmation is not catalog publication or a model-driven Bundle trial.
+Complete local instances additionally expose `studioInstancePrepareChanges` and
+`studioInstanceSaveChanges` through the existing protected RPC. They delegate to
+the same instance service and source repository as single-file editing. Preparing
+a candidate returns a source-bound digest, exact file diff and same-revision real
+Core preview without saving. Batch save defaults to recoverable `draft`; an
+explicit `validated` save requires that digest and rechecks the exact source and
+sample under the existing atomic CAS lock. Invalid drafts remain recoverable,
+while a failed or stale validated request leaves the current revision intact.
+The operation changes one local working-copy record, not installed content,
+publication, user projects or Agent execution. The
+[Studio domain contract](../studio/README.md#edit-current-content)
+records file budgets, declarative-preview scope and process-interruption recovery.
 
-The authenticated `studioContentExport`, `studioContentImport`,
-`studioContentImportRead` and `studioContentImportList` methods expose bounded Kit
-and standalone Bundle content archives. Import stores an inert envelope and its
-validation receipt in a dedicated private directory under the host's `stateRoot`;
-it does not extract files into a Kit, install anything, execute scripts, grant
-provider trust or publish a version. A dependency-free standalone Bundle validates
-independently; explicitly declared dependencies require an immutable host-resolved
-Kit context with matching exact pins. License/provenance declarations remain
-declarations, not automatic redistribution approval.
+The shared `createStudioAuthoring` factory, also available through the compatible
+`src/studio-authoring.mjs` module, narrows those ports to one
+host-bound instance revision and an explicit set of source paths. Its `read`
+operation returns coherent source text and the actual shared component catalog;
+`prepare` returns the existing S1 diff, preview, digest and full replacements for
+the user's existing save path. Concurrent edits invalidate the binding. The
+adapter grants no save, deletion, publication or native dispatch capability.
+Hosts must authenticate the invocation and supply the binding themselves; this
+adapter alone does not connect a Studio UI or establish native Agent execution.
 
-`studioContentImportAdopt` rereads and revalidates a retained import before passing
-its prepared units to the shared `contentLibrary.adoptPrepared` adapter. The
-receipt includes the import ID, exact `{kind, pin}` content units,
-`executionGranted: false` and `requiresTrustReview`. A Kit receipt additionally
-includes a new unconfirmed Kit working copy; an independent Bundle receipt has
-no Kit draft. Adoption retains definitions in the local content library and
-refreshes the Studio catalog. Identical bytes at an existing pin are reused;
-different bytes at that pin are rejected. Existing installed source directories
-and active project pins remain unchanged. No execution, provider registration or
-version publication is performed. The archive UI opens the adopted Kit working
-copy or the exact independent Bundle source workspace.
+`studioInstanceEditCurrent` opens the same library identity for editing;
+explicit Copy creates a separate identity. Source imports enter that same
+editable instance service, including incomplete definitions that need repair.
+The old Kit/Panel draft confirmation, lock/fork and content-upgrade routes are
+removed. Bundle trials retain their existing native execution boundary; the
+internal repository can still read historical trial source records.
 
-The import store is limited to 32 records and 128 MiB total; it fails explicitly
-at capacity and never deletes drafts automatically. Existing state-directory
-permissions are not changed. The existing HTTP request cap stays 12 MiB including
+`studioContentExport` exports an installed source or an exact saved instance.
+`studioContentReadArchive` is a stateless format, path, byte and digest check
+for a previously exported archive, returning `StudioContentArchive`. It creates
+no import record, performs no full definition validation and grants no execution
+or native-provider trust. Its files enter `studioInstanceImportSources` for
+ordinary editing and saving. The old prepare/read/list/adopt import workflow
+and immutable content publication are no longer exposed.
+
+The existing HTTP request cap stays 12 MiB including
 the JSON request wrapper, even though offline archive functions support a larger
 envelope. Oversized HTTP requests return 413 rather than being truncated. These
 service endpoints do not by themselves establish complete browser authoring,

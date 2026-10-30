@@ -72,7 +72,7 @@ ui:
   guidance: "$t:guidance"
   sidebar_icon: blocks
   id: function-board
-  title: $t:applicationMindMap
+  title: $t:functions
   source: functions
   board:
     request_create:

@@ -10,6 +10,15 @@
  */
 import type { DesignFilesStore, DesignWriteEvent, DesignWriteOptions, SchemaValidator } from './design-files.ts'
 
+/** Shared main-conversation contract for the user's Save and assess action. */
+export const DESIGN_PANEL_SAVE_ASSESSMENT_GUIDANCE = [
+  'The user chose Save and assess next step. After a meaningful Panel save, you must assess the latest saved Design evidence against the agreed user scope and call report_design_clarity in this same main-conversation continuation before asking the next question, recommending another Bundle or ending your reply.',
+  'Use the current server-supplied project, saved checkpoint and Kit input. If those inputs have changed, read the current Design context before reporting; do not assess a superseded checkpoint as current. Explain known evidence and gaps without inventing facts or a zero score.',
+  'Several saves delivered together need one assessment of their latest relevant state. An unchanged or replayed save does not require another score; reuse an existing assessment only when its saved Design evidence, Kit content and reasoning still apply to the current agreed scope.',
+  'A later user stop, cancellation or instruction not to assess takes priority. If the reporting capability is unavailable or reporting fails, state that limitation and preserve the saved result; a missing score does not block independently authorized Design work.',
+  'No second evaluator is required. Do not start another model or Bundle, reopen a settled invocation, or rewrite saved Design Files just to assess them. Existing user-input handoffs and main-Agent permissions remain in force.',
+].join(' ')
+
 /** Decode bounded Panel attachment transport; store enforces path ownership. */
 export function parsePanelArtifacts(
   skill: string,
@@ -97,7 +106,8 @@ export function buildPanelSaveNote(skill: string, diff: string, clarityInput?: P
     '</git_diff>',
     `This is a change diff, not the complete "${skill}" state. Reuse it and the evidence already available; read the saved JSON or a referenced artifact only when needed context is absent or the diff is insufficient.`,
     ...(clarityInput === undefined ? [] : [
-      `Assess this saved checkpoint in the ordinary main conversation when useful. To persist an assessment, call report_design_clarity with input=${JSON.stringify(clarityInput)} and evidence-based U/S/T for the latest saved Design state and agreed user scope. No second evaluator is required for this save to count as completed.`,
+      DESIGN_PANEL_SAVE_ASSESSMENT_GUIDANCE,
+      `Call report_design_clarity with input=${JSON.stringify(clarityInput)} and evidence-based U/S/T for the latest saved Design state and agreed user scope. The Design save is already completed independently of this report.`,
       'The current assembly supplies design_clarity_input for project, saved commit and Kit content. Use current user intent to decide whether the saved reasoning needs reassessment; conversational scope is not an identity ticket.',
       'Several saved edits may be assessed together. Reuse a score only when its evidence and reasoning remain applicable; corrections and same-turn reassessment are allowed. Reporting failure does not undo the save or block authorized work, and old scores are not fresh evidence.',
     ]),

@@ -6,6 +6,7 @@ import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { verifyOutputModuleFiles } from './companion-output-module-map.mjs'
 import { projectDistributionCode } from './assemble-dsh-distribution.mjs'
 import { FIRST_PARTY_MATERIAL, readCurrentFirstPartyIdentity } from './dsh-distribution-materials.mjs'
+import { DSH_AGGREGATE_SOURCE } from './release-consumer-config.mjs'
 import { isDeclarationOutput } from './normal-build-module-evidence.mjs'
 
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
@@ -128,10 +129,10 @@ export async function observeDshBuild({ workspace, report, evidenceDirectory, so
     const packageRoot = join(workspace, item.directory), modulesByOutput = {}, normalBuildMaps = [], hashes = {}, normalHashes = {}, urls = {}
     const packageSnapshots = snapshots.filter(({ snapshot }) => resolve(snapshot.outputRoot) === join(packageRoot, 'lib'))
     // Content and aggregate have no compiler. Every package with lib has observed normal configs.
-    if (sourceName !== 'dsh-design-skills-web-app' && sourceName !== 'dsh-design-system-dsh') assert.ok(packageSnapshots.length, `Normal build receipt missing: ${sourceName}`)
+    if (sourceName !== 'dsh-design-skills-web-app' && sourceName !== DSH_AGGREGATE_SOURCE) assert.ok(packageSnapshots.length, `Normal build receipt missing: ${sourceName}`)
     const outputFiles = sourceName === 'dsh-design-skills-web-app'
       ? Object.keys(selection.observedOutputSha256)
-      : sourceName === 'dsh-design-system-dsh' ? [] : (await filesUnder(join(packageRoot, 'lib'))).map(path => 'lib/' + path)
+      : sourceName === DSH_AGGREGATE_SOURCE ? [] : (await filesUnder(join(packageRoot, 'lib'))).map(path => 'lib/' + path)
     for (const path of outputFiles) {
       assert.ok(safe(path))
       if (path.endsWith('.map') || isDeclarationOutput(path) || /pica-static-workers-(?:client|interpreter)\.json$/u.test(path)) continue

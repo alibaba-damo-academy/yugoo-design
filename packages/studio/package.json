@@ -8,7 +8,7 @@
   "version": "0.0.0",
   "license": "Apache-2.0",
   "type": "module",
-  "description": "Host-neutral read-only Design Studio domain: catalog workspace, exact Kit source workspaces, and real Bundle source inspection over injected ports. No Agent Host, Cordis, or filesystem coupling.",
+  "description": "Host-neutral Studio catalog and authoring domain with an optional Node storage and source-composition adapter.",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "exports": {
@@ -16,14 +16,22 @@
       "types": "./lib/index.d.ts",
       "default": "./lib/index.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./node": {
+      "types": "./lib/node.d.ts",
+      "default": "./lib/node.js"
+    }
   },
   "scripts": {
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
-    "test:kit-drafts": "tsx --tsconfig tests/source-tsconfig.json --test tests/kit-drafts.test.mjs",
     "test:content-archive": "tsx --tsconfig tests/source-tsconfig.json --test tests/content-archive.test.mjs",
-    "test": "node tests/studio.test.mjs && node tests/composition.test.mjs && node tests/management.test.mjs && node tests/kit-workspace.test.mjs && node tests/bundle-workspace.test.mjs && node tests/panel-preview.test.mjs && node --test tests/legacy-exact-version.test.mjs"
+    "test:instance-changes": "tsx --tsconfig tests/source-tsconfig.json --test tests/instance-changes.test.mjs",
+    "test:source-import": "tsx --tsconfig tests/source-tsconfig.json --test tests/source-import.test.mjs",
+    "test": "node tests/studio.test.mjs && node tests/composition.test.mjs && node tests/management.test.mjs && node tests/kit-workspace.test.mjs && node tests/bundle-workspace.test.mjs && node tests/panel-preview.test.mjs && node --test tests/legacy-exact-version.test.mjs && node --test tests/sample-artifacts.test.mjs && pnpm run test:instance-changes && pnpm run test:source-import && pnpm run test:current-sources && pnpm run test:source-storage",
+    "test:node": "tsx --tsconfig tests/source-tsconfig.json --test tests/node-entry.test.mjs && tsc --project tests/node-public-tsconfig.json",
+    "test:current-sources": "tsx --tsconfig tests/source-tsconfig.json --test tests/current-sources.test.mjs tests/current-mount-consistency.test.mjs",
+    "test:source-storage": "tsx --tsconfig tests/source-tsconfig.json --test tests/source-storage.test.mjs"
   },
   "peerDependencies": {
     "dsh-design-core": "0.0.0"
@@ -40,5 +48,9 @@
     "LICENSE",
     "NOTICE",
     "THIRD_PARTY_NOTICES.md"
-  ]
+  ],
+  "dependencies": {
+    "trash": "10.1.1",
+    "yaml": "^2.9.0"
+  }
 }

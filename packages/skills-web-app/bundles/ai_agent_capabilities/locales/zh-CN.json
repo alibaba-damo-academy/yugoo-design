@@ -5,7 +5,7 @@
   "newAgent": "新 Agent",
   "numberedAgent": "新 Agent {index}",
   "empty": "添加一个 Agent，按需引用技能和工具。",
-  "guidance": "先明确 Agent 要做什么，再配置技能和工具；资源可复用，保存设计不会安装或执行。",
+  "guidance": "核对 Agent 的目标、能力分工和工具是否匹配，有无缺失或不必要的能力；这里保存的是设计，不会安装或执行工具。",
   "name": "名称",
   "description": "职责与目标",
   "functionRefs": "关联功能",

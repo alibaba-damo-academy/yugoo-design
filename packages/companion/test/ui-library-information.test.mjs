@@ -8,7 +8,7 @@ test('UI library display versions come from the dependencies this browser build 
   for (const library of studioUiLibraries) {
     assert.ok(!names.has(library.packageName), `duplicate ${library.packageName}`)
     names.add(library.packageName)
-    const owner = library.packageName === 'react' || library.packageName === 'react-dom' ? 'panel' : 'provider-web-app'
+    const owner = ['react', 'react-dom', 'katex'].includes(library.packageName) ? 'panel' : 'provider-web-app'
     const metadata = JSON.parse(await readFile(new URL(`../../${owner}/node_modules/${library.packageName}/package.json`, import.meta.url), 'utf8'))
     assert.equal(library.packageName, metadata.name)
     assert.equal(library.version, metadata.version)

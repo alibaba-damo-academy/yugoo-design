@@ -1,5 +1,5 @@
 {
-  "guidance": "Describe the acceptance scenario and an observable passing result. Add a verification method only when unclear; test code is not required.",
+  "guidance": "Check whether each acceptance item has a clear situation and an observable passing result. Add a checking method only when it is unclear; test code is not required.",
   "bundleDescription": "- **Capability**: define the small set of observable requirements that tell users and the delivery team when established product behavior and material quality are good enough to accept.\n- **Resolves**: T gaps where an important function, rule, flow, page, or integration has no concrete passing result, or a material quality expectation remains vague.\n- **Candidate when**: the user asks for acceptance criteria, quality requirements, non-functional requirements, or a clear definition of done for product behavior.\n- **Do not infer**: business rules, missing product behavior, test code, release governance, project plans, risk registers, or a generic enterprise NFR checklist do not belong here.\n- **Output**: `quality_acceptance` panel — one editable ordered list of acceptance requirements.",
   "empty": "Add an acceptance requirement: describe the situation and the outcome that counts as success.",
   "requirements": "Acceptance requirements",

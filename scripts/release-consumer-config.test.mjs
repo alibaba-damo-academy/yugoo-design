@@ -6,11 +6,11 @@ import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { satisfies } from 'semver'
-import { RELEASE_PACKAGES, parsePhysicalGateOptions, candidateArchiveName, createReleaseConsumerConfig, assertRequiredPeers, assertCandidatePeerReport } from './release-consumer-config.mjs'
+import { DSH_AGGREGATE_SOURCE, RELEASE_PACKAGES, parsePhysicalGateOptions, candidateArchiveName, createReleaseConsumerConfig, assertRequiredPeers, assertCandidatePeerReport } from './release-consumer-config.mjs'
 import { assertWebAppContentManifest, assertNativeGitManifest } from './release-physical-distribution-gate.mjs'
 
 const candidates = () => Object.fromEntries(Object.keys(RELEASE_PACKAGES).map(name => {
-  const version = name.startsWith('@') ? '0.19.1-walfix.1' : '0.0.0'
+  const version = name === '@ladybugdb/wasm-core' ? '0.19.1-walfix.1' : '0.0.0'
   return [name, { version, archive: candidateArchiveName(name, version) }]
 }))
 
@@ -134,7 +134,7 @@ test('rendered consumer verifier has valid syntax without running pack, install 
   const end = source.indexOf("\n`)\n  run('verify'", start) + 2
   assert.ok(end > start)
   const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor
-  const render = new AsyncFunction('candidates', 'config', 'workspace', 'readFile', 'join', 'RELEASE_PACKAGES', 'selection', 'assertWebAppContentManifest', 'assertNativeGitManifest', 'return ' + source.slice(start, end))
+  const render = new AsyncFunction('candidates', 'config', 'workspace', 'readFile', 'join', 'RELEASE_PACKAGES', 'selection', 'assertWebAppContentManifest', 'assertNativeGitManifest', 'DSH_AGGREGATE_SOURCE', 'return ' + source.slice(start, end))
   const inputs = candidates()
   const workspace = fileURLToPath(new URL('../', import.meta.url))
   // Syntax fixtures model the legacy manifest without requiring its excluded
@@ -150,7 +150,7 @@ test('rendered consumer verifier has valid syntax without running pack, install 
       return Promise.resolve(JSON.stringify(vendorManifest))
     }
     return readFile(file, ...args)
-  }, join, RELEASE_PACKAGES, { ladybugSource: 'vendored' }, assertWebAppContentManifest, assertNativeGitManifest)
+  }, join, RELEASE_PACKAGES, { ladybugSource: 'vendored' }, assertWebAppContentManifest, assertNativeGitManifest, DSH_AGGREGATE_SOURCE)
   assert.equal(vendorReads, 1, 'Vendored template must retain its manifest identity check')
   assert.ok(script.includes(JSON.stringify(vendorManifest)))
   const directory = await mkdtemp(join(tmpdir(), 'release-verifier-syntax-'))
@@ -165,7 +165,7 @@ test('rendered consumer verifier has valid syntax without running pack, install 
     (file, ...args) => {
       assert.ok(!file.includes('vendor/ladybug'), 'Registry render must not read vendored manifest')
       return readFile(file, ...args)
-    }, join, RELEASE_PACKAGES, selection, assertWebAppContentManifest, assertNativeGitManifest)
+    }, join, RELEASE_PACKAGES, selection, assertWebAppContentManifest, assertNativeGitManifest, DSH_AGGREGATE_SOURCE)
   await writeFile(path, registryScript)
   assert.equal(spawnSync(process.execPath, ['--check', path], { encoding: 'utf8' }).status, 0)
   assert.ok(registryScript.includes('Official Ladybug registry integrity mismatch'))

@@ -1,5 +1,5 @@
 /** Trusted catalog adapter; fixed examples grant only navigation and fixture reads. */
-import { Component, useMemo, useState, type ReactElement, type ReactNode } from 'react'
+import { useMemo, useState, type ReactElement } from 'react'
 import { PANEL_COMPONENT_CATALOG, type ComponentKind } from '../../panel/src/dsl.ts'
 import { createPanelComponentExample, panelComponentCategory, panelComponentTitle } from '../../panel/src/component-examples.ts'
 import { DslPanel } from '../../panel/src/client/panels/dsl-panel.tsx'
@@ -7,20 +7,17 @@ import type { StudioComponentLibrary, StudioComponentDirectoryProps } from '../.
 import { PanelWorkspaceTreeGroup, PanelWorkspaceTreeItem } from '../../panel/src/panel-workspace.tsx'
 import componentSkill from '../plugin/design-system/skills/design-component/SKILL.md?raw'
 import { studioUiLibraries } from './ui-library-information.ts'
-
-class ExampleBoundary extends Component<{ children: ReactNode; locale: 'zh' | 'en' }, { failed: boolean }> {
-  state = { failed: false }
-  static getDerivedStateFromError() { return { failed: true } }
-  render() { return this.state.failed ? <p role="alert">{this.props.locale === 'zh' ? '该组件示例未能渲染，请查看声明与用法。' : 'This example could not render. Review its declaration and usage.'}</p> : this.props.children }
-}
+import { StudioExampleBoundary as ExampleBoundary } from './studio-feedback.tsx'
+import { StudioEmptyState } from '../../studio-ui/src/StudioEmptyState.tsx'
 
 function ComponentExample({ id, locale }: { id: string; locale: 'zh' | 'en' }): ReactElement {
   const example = useMemo(() => Object.hasOwn(PANEL_COMPONENT_CATALOG, id) ? createPanelComponentExample(id as ComponentKind, locale) : undefined, [id, locale])
-  if (!example) return <p>{locale === 'zh' ? '此组件暂未提供独立示例。' : 'No standalone example for this component.'}</p>
+  if (!example) return <StudioEmptyState tone="info" title={locale === 'zh' ? '此组件暂未提供独立示例' : 'No standalone example for this component'}
+    description={locale === 'zh' ? '可继续查看组件声明与用法。' : 'You can still read its declaration and usage.'} />
   const artifacts = example.artifacts
   // Documentation-only transcript; this adapter never consults a Host or project.
   const fixtureRun = 'component-example-static-transcript'
-  return <ExampleBoundary locale={locale}><DslPanel skill="component_example" panelYaml={example.panelYaml} draft={example.sample} originalState={example.sample}
+  return <ExampleBoundary key={id} exampleId={id} locale={locale}><DslPanel skill="component_example" panelYaml={example.panelYaml} draft={example.sample} originalState={example.sample}
     readOnly={true} onChange={() => { /* Documentation has no data-write port. */ }} allowAttachments={false} locale={locale}
     executionAttempts={example.logEntries ? [{ projectId: 'component-example', skill: 'component_example', invocationId: fixtureRun, artifactId: '', attemptId: fixtureRun, runId: fixtureRun, role: 'producer', phase: 'completed', sequence: 1, timestamp: 1791676802000 }] : undefined}
     readExecutionLog={example.logEntries ? async (runId, afterSeq) => ({ found: runId === fixtureRun, revision: 'static-example-1', reset: afterSeq === undefined,

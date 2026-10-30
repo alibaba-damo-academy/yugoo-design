@@ -8,7 +8,6 @@ import { collectGitStdout, GitVersioning, gitBackendSetting, type SpawnFn, type 
 import type { NativeGitInspection, NativeGitResult } from './git-native-contract.ts'
 import { executeNativeGitRequest } from './git-native-executor.ts'
 import { DesignBundleVersion, DesignKitVersion } from './types.ts'
-import { assertProjectContentSettled } from './project-content-transaction.ts'
 
 /** Current on-disk Design Project metadata format. */
 export const DESIGN_PROJECT_FORMAT_VERSION = 3 as const
@@ -425,7 +424,6 @@ export class DesignProjectManager {
   /** Display-only identity read. Does not authorize publication or execution. */
   async readMetadata(projectRoot: string): Promise<DesignProject> {
     const root = requireRoot(projectRoot)
-    await assertProjectContentSettled(root)
     await this.fs.requireDirectory(root)
     await this.fs.requireDirectory(join(root, DESIGN_FILES_DIRECTORY))
     await this.fs.readText(join(root, '.gitignore'))

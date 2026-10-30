@@ -59,13 +59,7 @@ export const DOCK_CSS = `
 .dsh-design-dock-panels{flex:1;min-height:0;position:relative}
 .dsh-design-dock-panel{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden}
 .dsh-design-dock-panel[data-hidden]{display:none}
-.dsh-design-dock-panel-body{flex:1;min-height:0;overflow-y:auto;padding:var(--ds-space-3) var(--ds-space-4)}
 .dsh-design-workspace-inset .dsh-design-dock-panel-body:not(.dsh-design-dock-panel-workspace){padding:0 var(--ds-space-4) 0 0}
-.dsh-design-dock-panel-body.dsh-design-dock-panel-workspace{height:100%;overflow:hidden;padding:0}
-.dsh-design-dock-panel-workspace>.dsh-design-panel,
-.dsh-design-dock-panel-workspace>.dsh-design-panel>.dsh-design-stack,
-.dsh-design-dock-panel-workspace .dsh-design-question-workspace{height:100%;min-height:0}
-.dsh-design-dock-empty{padding:var(--ds-space-5);color:var(--ds-text-tertiary);font-size:var(--ds-font-body-lv2)}
 .dsh-design-project-header{display:flex;min-width:0;
   min-height:var(--dsh-host-primary-header-height,76px);flex:0 0 auto;
   align-items:center;gap:12px;box-sizing:border-box;padding:4px var(--ds-space-4,16px);background:#fff;

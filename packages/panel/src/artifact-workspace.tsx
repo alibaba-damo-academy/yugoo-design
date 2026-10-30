@@ -39,6 +39,8 @@ export function confinedTextArtifact(value: unknown, owner?: string): string | u
 
 export interface ArtifactItem {
   id: string; title: string; file?: string; status: ProjectedArtifactStatus; runId?: string
+  /** Observed by the artifact workspace; trace-only callers may omit it. */
+  fileAvailable?: boolean
   logTarget?: import('./client/types.ts').DesignArtifactLogTarget
   points: string[]; links: string[]
 }
@@ -66,7 +68,8 @@ export function artifactGroups(data: DesignData, config: Config, owner: string |
       const stored = confinedTextArtifact(ref, owner)
       const file = stored ?? confinedTextArtifact(projectArtifactFile(key, source, kind, files, undefined, activities), owner)
       const execution = projectArtifactExecution(key, source, kind, file !== undefined && files[file] !== undefined, 'pending', file, activities)
-      return { id: key, title: title || key, file, status: execution.status, runId: execution.runId, logTarget: execution.logTarget, points, links }
+      return { id: key, title: title || key, file, fileAvailable: file !== undefined && files[file] !== undefined,
+        status: execution.status, runId: execution.runId, logTarget: execution.logTarget, points, links }
     }
     const children = orderedArtifactRecords(pathGet(value as DesignData, config.children.records_field), config.children.order_field ? pathGet(value as DesignData, config.children.order_field) : undefined).map(([childId, child]) => {
       const scopedId = config.children.scoped_ids ? `${id}/${childId}` : childId
@@ -146,7 +149,8 @@ export function ArtifactWorkspace({ node, data, options }: { node: ComponentNode
   const item = selected ?? group
   const [refresh, setRefresh] = useState(0)
   const content = useArtifactContent(item, options, refresh)
-  const status = (value: ArtifactItem) => t(`artifact_${value.status}`)
+  const status = (value: ArtifactItem) => value.fileAvailable && value.status === 'failed'
+    ? t('artifactAvailableWithFailedAttempt') : t(`artifact_${value.status}`)
   return <div className="dsh-artifact-workspace"><PanelWorkspace guidance={node.guidance} autoSaveId={`artifact:${node.id}`} sidebar={<PanelWorkspaceTree icon={sidebarIcon(node.sidebar_icon)} title={node.title ?? t('document')}>
     {groups.map(parent => <PanelWorkspaceTreeRecord key={parent.id} ariaLabel={parent.title} label={parent.title}
       trailing={<ArtifactStatusIcon status={parent.status} label={status(parent)} />}
@@ -161,7 +165,7 @@ export function ArtifactWorkspace({ node, data, options }: { node: ComponentNode
       <header className="dsh-document-toolbar"><strong>{item.title}</strong><div className="dsh-artifact-toolbar-actions"><span role="status">{status(item)}</span>
         <button type="button" disabled={!item.file || !options?.readArtifact || content.loading} onClick={() => setRefresh(value => value + 1)}>{content.loading ? t('refreshing') : t('refresh')}</button>
       </div></header>
-      {!selected && group?.file && group.children.some(child => child.status !== 'completed') ? <p role="status" className="dsh-artifact-warning">{t('partialArtifacts', { count: group.children.filter(child => child.status === 'completed').length, total: group.children.length })}</p> : null}
+      {!selected && group?.file && group.children.some(child => !child.fileAvailable) ? <p role="status" className="dsh-artifact-warning">{t('partialArtifacts', { count: group.children.filter(child => child.fileAvailable).length, total: group.children.length })}</p> : null}
       <div className="dsh-artifact-content">
         {selected || group?.file ? <>
           {item.points.length ? <ul>{item.points.map((point, index) => <li key={index}>{point}</li>)}</ul> : null}

@@ -77,3 +77,44 @@ test('legacy adoption reuses pre-existing Bundle provenance and rejects changed 
   assert.deepEqual(await readFile(join(after.resourceRoot,'reference/中文.md')),Buffer.from(f.bytes['skills/alpha/reference/中文.md']))
   assert.ok((await readdir(f.stateRoot)).every(name=>!name.startsWith('content-import-')))
 })
+
+test('legacy archive transport duplicates retain one exact independent Bundle closure', async t => {
+  const f = await fixture(t)
+  const owned = structuredClone(f.prepared.contents[0].files)
+  const duplicates = owned.filter(file => file.path.startsWith('skills/alpha/')).map(file => ({ ...file,
+    path: file.path.replace('skills/alpha/', 'bundles/alpha/1.0/') }))
+  f.prepared.archive.dependencies = [{ name: 'alpha', version: '1.0' }]
+  f.prepared.contents[0].files.push(...duplicates)
+  const original = structuredClone(f.prepared)
+  const result = await f.library.adoptPrepared(f.prepared)
+  assert.deepEqual(f.prepared, original, 'the retained archive is not rewritten')
+  assert.deepEqual(result.contents, [{ kind: 'kit', pin }, { kind: 'bundle', pin: { name: 'alpha', version: '1.0' } }])
+  const kit = await f.library.store.loadRetainedKit(pin)
+  const bundle = await f.library.store.resolveBundle({ name: 'alpha', version: '1.0' })
+  assert.equal((await readdir(kit.sourceRoot)).includes('bundles'), false, 'reserved transport copies do not become Kit resources')
+  for (const file of owned) {
+    const target = file.path.startsWith('skills/alpha/') ? join(bundle.resourceRoot, file.path.slice('skills/alpha/'.length)) : join(kit.sourceRoot, file.path)
+    assert.deepEqual(await readFile(target), Buffer.from(file.base64, 'base64'), file.path)
+  }
+  assert.deepEqual(await f.library.adoptPrepared(f.prepared), result)
+  assert.ok((await readdir(f.stateRoot)).every(name => !name.startsWith('content-import-')))
+})
+
+test('legacy transport conflicts, partial trees and undeclared files cannot be silently discarded', async t => {
+  const f = await fixture(t)
+  const duplicates = f.prepared.contents[0].files.filter(file => file.path.startsWith('skills/alpha/')).map(file => ({ ...file,
+    path: file.path.replace('skills/alpha/', 'bundles/alpha/1.0/') }))
+  for (const variant of ['changed', 'partial', 'unknown']) {
+    const prepared = structuredClone(f.prepared)
+    prepared.archive.dependencies = [{ name: 'alpha', version: '1.0' }]
+    const transport = structuredClone(duplicates)
+    if (variant === 'changed') transport[0].base64 = Buffer.from('Conflicting transport bytes').toString('base64')
+    if (variant === 'partial') transport.pop()
+    if (variant === 'unknown') transport.push({ path: 'bundles/not-a-mount/notes.md', base64: Buffer.from('User-owned unknown content').toString('base64') })
+    prepared.contents[0].files.push(...transport)
+    await assert.rejects(f.library.adoptPrepared(prepared), /transport.*(match|declared|conflict|complete)/i, variant)
+    assert.deepEqual(await f.library.store.listKits(), [])
+    assert.deepEqual(await f.library.store.listBundles(), [])
+    assert.ok((await readdir(f.stateRoot)).every(name => !name.startsWith('content-import-')))
+  }
+})

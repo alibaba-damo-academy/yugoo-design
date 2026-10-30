@@ -7,10 +7,11 @@ import { createYugooDesignMessage } from './dsh-message-source.ts'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { designSessionEvents } from './dsh-session-events.ts'
 import { designUnseededChildSessionMeta } from './dsh-child-session-meta.ts'
+import { dshSubagentBackend } from './dsh-subagent-backend.ts'
 import {
   appendDelegatedPolicyOverrides, applyChildComposition, captureDelegatedPolicyOverrides,
   finalAssistantOutput, resolveChildAgentOptions, resolveChildDepth,
-  snapshotSubagentDescriptor,
+  assertSubagentMaxDepth,
   type SubagentResult, type SubagentRun, type SubagentStopReason,
   type SubagentProvider, type ResolvedSubagentStartRequest, type SubagentDescriptorData,
 } from '@deepseek-ai/dsh-subagent'
@@ -43,8 +44,8 @@ export type DesignFileWorkerGrant = Pick<DesignFileWorkerRequest,
   'inheritedToolNames' | 'installWorkerTools' | 'maxTokens'>
 
 /**
- * Register once in the root Design plugin scope, not once per Producer/session.
- * The fixed provider name intentionally rejects duplicate registration.
+ * Bind once in the root Design plugin scope, not once per Producer/session.
+ * The legacy backend registers one fixed provider; RC3 uses the Agent factory.
  * This is a trusted capability API, never a model tool: integration must derive
  * the grant from a validated live assignment, not tool arguments or model text.
  */
@@ -52,8 +53,23 @@ export function registerDesignFileWorkerDispatcher(ctx: Context): {
   start(request: Omit<DesignFileWorkerRequest, 'descriptor'>): Promise<SubagentRun>
   dispose(): void
 } {
-  const pending = new Map<ContentBlock[], DesignFileWorkerRequest>()
   let disposed = false
+  const backend = dshSubagentBackend(ctx.subagents, 'design file worker')
+  if (backend === 'agent-factory') {
+    // RC3 cannot adopt an already-created native Agent as an external
+    // activation. Like the Producer and readonly reviewer, create the scoped
+    // child through the public factory. Frontier admission still owns capacity;
+    // no SubagentRuntime manager catalog or lifecycle events are claimed here.
+    return {
+      async start(request) {
+        if (disposed) throw new Error('design file worker: dispatcher is disposed')
+        return startDesignFileWorker({ ...request, prompt: [...request.prompt],
+          inheritedToolNames: [...request.inheritedToolNames] })
+      },
+      dispose() { disposed = true },
+    }
+  }
+  const pending = new Map<ContentBlock[], DesignFileWorkerRequest>()
   const provider = createDesignFileWorkerProvider(request => {
     const grant = pending.get(request.prompt)
     if (grant === undefined || grant.parent !== request.parent || grant.signal !== request.signal) return undefined
@@ -117,13 +133,19 @@ export function createDesignFileWorkerProvider(
   }
 }
 
-/** Not a replacement for arbitrary configured subagent providers. Not wired by default. */
+/** Create an assignment-scoped native child, independently of manager registration. */
 export async function startDesignFileWorker(request: DesignFileWorkerRequest): Promise<SubagentRun> {
   if (request.signal.aborted) throw new Error('design file worker: cancelled before creation')
   if (!request.label.trim()) throw new Error('design file worker: label is required')
+  assertSubagentMaxDepth(request.maxDepth)
   const names = [...new Set(request.inheritedToolNames)]
+  if (names.some(name => FORBIDDEN_INHERITED_TOOLS.has(name))) {
+    throw new Error('design file worker: forbidden inherited authority')
+  }
+  if (request.parent.ctx.agents.get(request.parent.id) !== request.parent) {
+    throw new Error('design file worker: exact live parent required')
+  }
   const tools = names.map(name => {
-    if (FORBIDDEN_INHERITED_TOOLS.has(name)) throw new Error('design file worker: forbidden inherited authority')
     const definition = request.parent.ctx.tools.get(name, request.parent)
     if (!definition) throw new Error('design file worker: inherited tool is unavailable')
     return definition
@@ -131,9 +153,10 @@ export async function startDesignFileWorker(request: DesignFileWorkerRequest): P
   const depth = resolveChildDepth(request.parent, request.maxDepth)
   const policy = captureDelegatedPolicyOverrides(request.parent)
   const id = SessionId(randomUUID())
-  const descriptor = request.descriptor ?? snapshotSubagentDescriptor({ mode: 'one-shot', provider: 'dsh-design-file-worker', label: request.label })
+  const descriptor = request.descriptor
   const handle = await request.parent.ctx.agents.create({
     sessionId: id,
+    parentAgent: request.parent,
     meta: designUnseededChildSessionMeta(request.parent, depth),
     agentOptions: resolveChildAgentOptions(request.parent,
       request.maxTokens === undefined ? undefined : { maxTokens: request.maxTokens }, depth),
@@ -144,12 +167,13 @@ export async function startDesignFileWorker(request: DesignFileWorkerRequest): P
       // Do not inherit an open-ended preset tool surface. Explicit local tools
       // are registered after composition, in the child's own unpublished scope.
       applyChildComposition(ctx, request.parent, { toolFilter: { allow: [] } })
+      ctx.tools.presentAs('native')
       for (const definition of tools) ctx.tools.register(definition)
       await request.installWorkerTools(ctx, worker)
       let recorded = false
       ctx.on('agent/pre-step', async (execution, next) => {
         const decision = await next()
-        if (execution.agent === worker && !recorded && decision.kind === 'enter') {
+        if (descriptor !== undefined && execution.agent === worker && !recorded && decision.kind === 'enter') {
           recorded = true
           worker.session.append('subagent/descriptor', descriptor)
         }

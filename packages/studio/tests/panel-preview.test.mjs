@@ -42,8 +42,8 @@ assert.equal(resourceReads.filter(path => path.endsWith('/business_rules/panel.y
   'only the base load reads the original resource; the candidate projects the current panel edit')
 
 for (const [overrides, code] of [
-  [{ kit: { name: 'web_app', version: '9.9' } }, 'preview.kit_pin'],
-  [{ bundle: { name: 'business_rules', version: '9.9' } }, 'preview.bundle_pin'],
+  [{ kit: { name: 'unknown_kit', version: '1.1' } }, 'preview.kit_pin'],
+  [{ bundle: { name: 'unknown_bundle', version: '1.0' } }, 'preview.bundle_pin'],
   [{ bundle: { name: '../business_rules', version: '1.0' } }, 'preview.request'],
   [{ revision: -1 }, 'preview.request'],
   [{ sampleSource: '{' }, 'preview.sample_json'],
@@ -52,6 +52,7 @@ for (const [overrides, code] of [
   [{ panelSource: 'version: [broken' }, 'preview.definition'],
   [{ panelSource: original.replace('field: condition', 'field: missing_field') }, 'preview.definition'],
   [{ panelSource: 'x'.repeat(1_048_577) }, 'preview.size'],
+  [{ sampleSource: JSON.stringify({ payload: 'x'.repeat(262_145) }) }, 'preview.size'],
 ]) {
   const result = await run(overrides)
   assert.equal(result.preview, undefined)

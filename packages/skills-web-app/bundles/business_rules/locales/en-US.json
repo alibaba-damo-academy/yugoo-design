@@ -1,5 +1,5 @@
 {
-  "guidance": "Select a rule and describe its conditions and deterministic outcome. Leave conditions empty when no restriction applies.",
+  "guidance": "Check which conditions lead to which result, looking for ambiguity, conflicts or omissions. Unconditional rules may leave the condition empty.",
   "bundleDescription": "- **Capability**: turn product decisions into independent rules that name relevant conditions or inputs and deterministic outcomes.\n- **Resolves**: S/T gaps where reasonable implementations could differ without a qualification, validation, calculation, threshold, automation, or exception.\n- **Candidate when**: an action, business thing, flow branch, price, limit, approval, or eligibility decision needs deterministic behavior.\n- **Do not infer**: ordinary step order, role permission, field definition, page layout, UI copy, and technical implementation are not automatically business rules.\n- **Output**: a native `business_rules` panel with an ordered list of editable rules.",
   "empty": "No business rules yet. Add one to explain when and how the product should respond.",
   "rules": "Business rules",

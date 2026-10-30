@@ -1,5 +1,9 @@
 # Declarative Design Bundle contract
 
+## Typed sample tables
+
+Typed sample tables use the shared `data_table: <field>` validation leaf, usually within `for_each_in_map`. The field declares the closed `columns` / `rows` shape in its Bundle schema; Core checks stable identities and typed cell values, and the existing Panel save path applies the same state rule. Empty draft fields remain optional unless the schema says otherwise. See [Data Table in the DSL](dsl-spec.md#可编辑数据表data-table) for the editor and data contract.
+
 This document defines the zero-code declarative Bundle profile. The common Bundle responsibilities and the separate native profile are owned by the [Design System architecture baseline](system-design-baseline.md).
 
 The governing ownership rule is: **Bundle-specific instructions, schemas, validation declarations, and presentation references belong to the Bundle; generic Core, Panel, and Studio code do not enumerate Bundle names.** Adding a declarative Bundle means adding content, while compiled native behavior remains in a separately installed trusted provider and is bound to the Bundle through stable contribution ids.
@@ -23,20 +27,41 @@ This profile keeps state, validation, panel, and model-summary definitions decla
 
 ### Isolated Studio preview sample
 
-A Bundle may include `reference/preview.json`: a small, representative JSON
-object matching its state schema, intended only to demonstrate its Panel in
-Studio. Official declarative Bundles should provide it so authors can open the
-preview without constructing JSON. It is not runtime initialization, a user's
-answer, or a generated Design File. Keep it within 256 KiB; do not include secrets
-or references requiring access to a real project. Artifact-dependent views must
-not imply that preview data executes or publishes the referenced artifacts.
+Every Bundle must ship representative example data as an authoring and maintenance
+requirement. For declarative Bundles, provide `reference/preview.json`: a small,
+nonempty JSON object matching the state schema, so authors can open its Panel in
+Studio without constructing JSON. Native or non-visual profiles retain examples
+appropriate to their existing renderer/output contract; this does not require a
+placeholder declarative Panel for those profiles.
+
+On creation and update, maintain examples with the methods, schema, validation,
+Panel bindings and language resources. Reuse a coherent domain fixture; examples
+shared with readable output contracts must stay consistent. Exercise meaningful
+records and the principal interaction, including relevant relationships or value
+states. An empty object that passes the schema is not a representative example.
+Validate with the actual loader/schema, then inspect affected rendering and
+interactions in Studio. Pure method edits still require checking example meaning;
+they do not require rerunning unrelated UI suites.
+
+Examples are synthetic or explicitly identified demonstrations, not runtime
+initialization, user answers or generated Design Files. Keep Studio sample JSON
+within 256 KiB; include no secrets or dependency on a real project. The current
+Studio sample preview receives only the selected Bundle's state and cannot load
+other Bundles' records or real project artifact files. An explicit bounded
+`reference/preview-artifacts.json` may register synthetic HTML/SVG resources from
+the same captured Bundle definition, as described below; it never grants project
+access. Record those limits and verify dependent
+views through the existing isolated project/Panel path; do not claim that a JSON
+sample proves a report, cross-Bundle selector, save/reopen or model run works.
 
 Installed previews select explicit isolated input first, then this file, then
 the existing `initial_values` if no preview file exists. Invalid sample data
 reports a diagnostic; it must not silently fall back. Preview uses the existing
 schema/compiler and runtime interpreter, without writing a project, creating a
 draft, invoking a model or executing validation drivers. This convention adds no
-required manifest field and never changes the Bundle's execution behavior.
+required manifest field or loader rejection for older content, and never changes
+the Bundle's execution behavior. This delivery requirement supersedes the former
+optional authoring guidance; runtime compatibility remains unchanged.
 
 ### Validation versus design review
 
@@ -231,7 +256,7 @@ Bundle display copy continues to use its existing locale/manifest contract below
 not this Kit-only field.
 
 The structured Kit binding declaration is the authoritative Bundle allowlist.
-Each binding must resolve to an exact published Bundle version; unknown and
+Each binding must resolve to the Bundle identity in the current source tree; unknown and
 duplicate members fail Kit loading. When the Mindset displays a
 `<design_skills>` catalog, it is generated from the binding declaration or is
 the co-located structured representation of that same authority. Bundle
@@ -291,13 +316,23 @@ Omitting `presentation` has the same no-panel meaning. `presentation.mode: auto`
 is reserved for the generated-Panel path and does not select this renderer or
 allow a renderer id; it is not a fallback for missing native/declarative files.
 
-## Version publication
+## Current content and project definitions
 
-A directory-backed source is a compatibility authoring adapter, not a separate version model. It compiles co-located files into independent Bundle and Mindset candidates, resolves the structured bindings, validates the complete dependency closure, and then publishes an immutable Kit version with exact pins. Invalid input leaves the last published versions unchanged.
+A library Kit or Bundle has a stable identity and one current saved state.
+Saving edits does not require a new version or publication. Copy is the explicit
+operation for creating an independent identity. An upstream version is retained
+as provenance where provided, not used as a local editing permission.
 
-A standalone Kit publication accepts published dependencies only. The Studio may explicitly stage several independently validated Bundle, Mindset, and Kit working copies and publish that listed set atomically. No publication follows an unlisted working copy or changes an existing Kit version. Active sessions keep their exact pins until an explicit validated upgrade.
+At project creation or first use, copy the complete Kit and mounted Bundle sources
+to `design_kit/kit/` and `design_kit/bundles/<identity>/`. Runtime methods, schemas,
+validation, Panels and resources use those project files. Later library changes
+do not replace them. An Agent can compare and update project definitions using
+normal file editing, validation and Git, preserving existing user data and custom
+methods; this needs no separate local release or migration workflow.
 
-Current watcher and multi-file source limitations are implementation status and remain in the [standalone roadmap](standalone-roadmap.md#1-host-conversation-binding-and-version-registry), not part of this declarative profile. Project pins preserve the exact published versions across restarts.
+Incomplete authoring can be saved. A loader or preview diagnoses the actual
+missing/invalid content when needed. Internal revisions and hashes retain atomic
+save, cache refresh and invocation consistency; they are not local product versions.
 
 ## SKILL.md frontmatter: the unified gap contract
 
@@ -337,6 +372,13 @@ The U/S/T clarity gauge is runtime state owned by `dsh-design-core`, not a Bundl
 
 ## skill.yaml template
 
+Isolated Studio demonstrations may provide `reference/preview.json` and the
+optional bounded `reference/preview-artifacts.json` mapping described in the
+[Studio README](../packages/studio/README.md#edit-current-content).
+Mapped HTML/SVG resources are fixed synthetic source bytes, read through the
+same readonly Panel sandbox without accessing a project. This does not add a
+required Bundle slot or replace real artifact existence/publication checks.
+
 [skill.template.yaml](../.agents/skills/design-bundle-creator/assets/skill.template.yaml)
 is a copyable manifest starting point, not a complete Bundle or a requirement
 that existing manifests share its field order and comments. Copy it to
@@ -345,11 +387,11 @@ then choose execution and presentation deliberately. The example uses main
 placement, must-edit handoff and declarative presentation; these are not a
 universal policy. The loader checks the actual fields and required profile
 slots. Keep only applicable optional fields, and author the remaining slots
-and readable output contract before trying to load or publish the Bundle.
+and readable output contract before trying to run the Bundle.
 
 | Field | Purpose | Affects routing? |
 |---|---|---|
-| `identity` | Independent catalog id. File-backed Bundle resolution uses a directory with this id; Kit mounts reference it through `name` and an exact `version`. Omission falls back to the runtime `name` for compatible existing content | No, not a runtime routing override |
+| `identity` | Independent catalog id. File-backed Bundle resolution uses a directory with this id; Kit mounts reference it through `name` ; a declared `version` is source metadata. Omission falls back to the runtime `name` for compatible existing content | No, not a runtime routing override |
 | `name` | Runtime skill id, matching `SKILL.md` frontmatter and `validation.yaml.skill`. Methods and canonical data paths use this id; it need not equal an independent catalog directory | Yes, as the explicit runtime skill id |
 | `title` / `label` | Bilingual frontend title and picker action copy | No |
 | `description` | Omit in new manifests. `SKILL.md` frontmatter owns routing/Studio descriptions. Optional translated picker copy belongs in the panel's existing `zh-CN` / `en-US` locale resources under `bundleDescription`; the loader projects it to the existing picker contract. Declaring both sources is rejected | No |

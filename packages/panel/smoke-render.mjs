@@ -7,7 +7,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { parsePanelManifest, renderManifest } from './lib/index.js'
 
-// record_tree grouped by an epic-style parent field (function_modules shape).
+// Record workspace grouped by an epic-style field (function_modules shape).
 const fmManifest = parsePanelManifest([
   'version: 1',
   'panel_kind: capability_map',
@@ -24,12 +24,11 @@ const fmManifest = parsePanelManifest([
   '      - { value: High, label: 高 }',
   '      - { value: Medium, label: 中 }',
   'ui:',
-  '  component: record_tree',
+  '  component: record_workspace',
   '  id: functions-view',
-  '  source: functions',
-  '  row_group:',
-  '    source: functions',
-  '    parent_field: function_epic',
+  '  sources: [functions]',
+  '  navigation_group_by: function_epic',
+  '  children: [{ component: record_inspector, id: details }]',
 ].join('\n'))
 const fmHtml = renderToStaticMarkup(renderManifest(fmManifest, {
   functions: {
@@ -37,10 +36,10 @@ const fmHtml = renderToStaticMarkup(renderManifest(fmManifest, {
     'F-002': { function_name: '账目浏览', function_epic: '账本管理', priority: 'Medium' },
   },
 }))
-if (!fmHtml.includes('记账录入')) throw new Error('record_tree missing record label')
-if (!fmHtml.includes('账本管理')) throw new Error('record_tree missing epic group')
-if (!fmHtml.includes('dsh-design-record-tree')) throw new Error('record_tree component not rendered')
-console.log('record_tree row grouping: OK')
+if (!fmHtml.includes('记账录入')) throw new Error('record workspace missing record label')
+if (!fmHtml.includes('账本管理')) throw new Error('record workspace missing epic group')
+if (!fmHtml.includes('dsh-record-workspace')) throw new Error('record workspace component not rendered')
+console.log('record workspace row grouping: OK')
 
 // question_rounds (dynamic rounds over a questions collection, smart_questions shape).
 const sqManifest = parsePanelManifest([
@@ -63,7 +62,7 @@ if (!sqHtml.includes('是否需要注册登录？')) throw new Error('question_r
 if (!sqHtml.includes('dsh-design-question-rounds')) throw new Error('question_rounds component not rendered')
 console.log('question_rounds: OK')
 
-// split(record_nav | record_form) over canonical processes (flow_design shape).
+// Record selection and details over canonical processes (flow_design shape).
 const fdManifest = parsePanelManifest([
   'version: 1',
   'panel_kind: process',
@@ -73,21 +72,20 @@ const fdManifest = parsePanelManifest([
   '  - { key: title, control: text, label: 名称, applies_to: [processes] }',
   '  - { key: description, control: textarea, label: 描述, applies_to: [processes] }',
   'ui:',
-  '  component: split',
+  '  component: record_workspace',
   '  id: root',
-  '  slots:',
-  '    sidebar: { component: record_nav, id: process-nav, source: processes }',
-  '    main: { component: record_form, id: process-form, source: processes }',
+  '  sources: [processes]',
+  '  children: [{ component: record_inspector, id: details }]',
 ].join('\n'))
 const fdHtml = renderToStaticMarkup(renderManifest(fdManifest, {
   processes: {
     'P-001': { title: '订单下单', description: '用户选择商品并完成支付。', tier: 'core' },
   },
 }))
-if (!fdHtml.includes('dsh-design-split')) throw new Error('split layout not rendered')
-if (!fdHtml.includes('dsh-design-record-nav')) throw new Error('process nav not rendered')
+if (!fdHtml.includes('dsh-record-workspace')) throw new Error('record workspace not rendered')
+if (!fdHtml.includes('dsh-panel-workspace-tree')) throw new Error('process nav not rendered')
 if (!fdHtml.includes('订单下单')) throw new Error('process title missing')
-console.log('split nav/form: OK')
+console.log('record selection/details: OK')
 
 // bpmn_canvas bidirectional editing stays covered via an inline manifest: the
 // migrated flow_design kit renders BPMN through the dedicated bpmn-js

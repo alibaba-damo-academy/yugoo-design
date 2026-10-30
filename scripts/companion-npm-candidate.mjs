@@ -11,6 +11,7 @@ import { OFFICIAL_DSH_JSON_AUTHORITY, readOfficialDshJsonInput } from './officia
 import { selectCandidateLadybug } from './companion-ladybug-dependency.mjs'
 import { prepareBundledJsLicenseMaterials, copyBundledJsLicenseMaterials, BUNDLED_JS_LICENSE_NOTICE, prepareBundledLicenseMaterials, copyBundledLicenseMaterials, prepareBrowserLicenseMaterials, copyBrowserLicenseMaterials, BROWSER_LICENSE_NOTICE, prepareLadybugLicenseMaterials, copyLadybugLicenseMaterials, LADYBUG_MATERIAL_DIRECTORY } from './companion-bundled-license.mjs'
 import { PANEL_AUTHORING_RESOURCE, preparePanelAuthoringMaterial, verifyPanelAuthoringMaterial } from './companion-authoring-material.mjs'
+import { STUDIO_AUTHORING_RESOURCE, prepareStudioAuthoringMaterial, verifyStudioAuthoringMaterial } from './studio-authoring-material.mjs'
 
 import { validateReleaseHosts } from '../packages/companion/src/npm-installer.mjs'
 import { stageDesktopPreparationMaterials } from '../packages/companion/npm-desktop-materials.mjs'
@@ -127,10 +128,14 @@ export async function buildCompanionCandidate({ payloadSource, destination, lice
   await verifyCompanionNativeGit(join(payloadSource, 'shared'))
   const required = ['shared/scripts/design.mjs', 'shared/web/index.html', 'shared/knowledge/runtime.mjs', 'shared/knowledge/embedding-worker.js', 'shared/knowledge/cli-lifecycle.mjs', 'shared/kits/web_app/kit.yaml']
   required.push(`shared/${PANEL_AUTHORING_RESOURCE}`)
+  required.push(`shared/${STUDIO_AUTHORING_RESOURCE}`)
   for (const host of Object.keys(HOSTS)) required.push(`overlays/${host}/${HOSTS[host]}/plugin.json`, `overlays/${host}/.mcp.json`)
   const portableFiles = new Set(payloadFiles.map(path => path.split(sep).join('/')))
   for (const path of required) assert.ok(portableFiles.has(path), `Missing candidate asset: ${path}`)
   await verifyPanelAuthoringMaterial(join(payloadSource, 'shared'), await preparePanelAuthoringMaterial(fileURLToPath(new URL('../', import.meta.url))))
+  const creatorMethods = await prepareStudioAuthoringMaterial(fileURLToPath(new URL('../', import.meta.url)))
+  await verifyStudioAuthoringMaterial(join(payloadSource, 'shared'), creatorMethods, { skills: false })
+  for (const host of Object.keys(HOSTS)) await verifyStudioAuthoringMaterial(join(payloadSource, 'overlays', host), creatorMethods)
   const officialInputs = await readOfficialDshJsonInput({ inputRoot: officialInputRoot })
   for (const name of OWN_LICENSE_FILES) await readFile(join(licenseRoot, name))
   const bundledLicenseEntries = await prepareBundledLicenseMaterials(licenseRoot)
@@ -230,7 +235,7 @@ export async function buildCompanionCandidate({ payloadSource, destination, lice
   await mkdir(join(target, 'bin'))
   // The installer imports these helpers independently of the payload Hooks.
   for(const name of ['windows-private-storage.mjs','windows-native-platform.mjs'])
-    await cp(new URL('../packages/companion/src/'+name,import.meta.url),join(target,'bin',name),{errorOnExist:true,force:false})
+    await cp(new URL('../packages/studio/src/node/'+name,import.meta.url),join(target,'bin',name),{errorOnExist:true,force:false})
   for(const [source,name] of [['npm-installer.mjs','installer.mjs'],['npm-agent-installation.mjs','npm-agent-installation.mjs'],['npm-desktop-preparation.mjs','npm-desktop-preparation.mjs'],['npm-installer-codex.mjs','npm-installer-codex.mjs'],['npm-installer-dsh.mjs','npm-installer-dsh.mjs'],['npm-installer-dsh-desktop.mjs','npm-installer-dsh-desktop.mjs'],['npm-installer-claude.mjs','npm-installer-claude.mjs'],['npm-installer-qoder.mjs','npm-installer-qoder.mjs'],['npm-runtime-check.mjs','npm-runtime-check.mjs'],['npm-embedding-preparation.mjs','npm-embedding-preparation.mjs'],['npm-installer-paths.mjs','npm-installer-paths.mjs'],['npm-node-runtime.mjs','npm-node-runtime.mjs'],['npm-node-registration.mjs','npm-node-registration.mjs']]) {
     await cp(new URL('../packages/companion/src/'+source,import.meta.url),join(target,'bin',name),{errorOnExist:true,force:false})
   }

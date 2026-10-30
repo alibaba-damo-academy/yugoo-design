@@ -1,5 +1,6 @@
 /** Browses a host-supplied real catalog. No registry, runtime or filesystem here. */
 import { useMemo, useState, type ReactElement } from 'react'
+import { StudioFeedback } from './StudioFeedback.tsx'
 
 export interface StudioComponentEntry {
   readonly id: string
@@ -108,7 +109,9 @@ export function ComponentLibrary({ library, locale }: { library: StudioComponent
             event.currentTarget.parentElement?.querySelector<HTMLButtonElement>(`#component-${next}`)?.focus()
           }}>{value === 'preview' ? (zh ? '组件预览' : 'Component Preview') : (zh ? '声明与用法' : 'Declaration and Usage')}</button>)}
         </div><div className="ygd-studio-component-actions">{entry.panelYaml && <button className="ygd-studio-btn-secondary" type="button" onClick={() => void copy(entry.panelYaml!)}>{zh ? '复制声明' : 'Copy declaration'}</button>}</div></div>
-        {(notice || error) && <p className="ygd-studio-component-feedback" role={error ? 'alert' : 'status'}>{error || notice}</p>}
+        {error && <StudioFeedback feedbackId={`clipboard:${error}`} tone="error" locale={locale} title={zh ? '未能复制内容' : 'Could not copy content'} message={error}
+          actions={[{ label: zh ? '查看声明' : 'View declaration', onClick: () => setTab('declaration') }]} />}
+        {notice && <StudioFeedback feedbackId={`clipboard:${notice}`} tone="success" locale={locale} title={notice} />}
         <section id="component-content" role="tabpanel" aria-labelledby={`component-${tab}`} className="ygd-studio-component-content">
           {tab === 'preview' && entry.panelYaml ? <>
             <div className={`ygd-studio-component-preview ygd-studio-component-preview-${entry.previewLayout ?? 'inline'}`} aria-label={zh ? '固定样例预览' : 'Fixed example preview'} key={`${entry.id}:${locale}`}><div className="ygd-studio-component-stage">{library.renderExample(entry.id, { locale })}</div></div>

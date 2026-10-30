@@ -117,8 +117,31 @@ For declarative Bundles, author optional summary rules in `skill.yaml.summary`,
 not a separate `renderer.md`. Summary absence must not gate execution or Panel
 save; explicit invalid rules still fail validation. Preserve summary semantics
 and useful comments when migrating existing declarations.
-Preserve source
-references, user-owned fields, exact version pins and explicit migration paths.
+Preserve source references, user-owned fields and project-owned definitions.
+Studio library content has one current saved state; projects use their own complete
+Kit and Bundle files. Library edits do not silently replace an existing project's
+definitions. Upstream version metadata is provenance, not a local release gate.
+
+## Apply Occam's razor
+
+Choose the smallest mechanism that solves the user's present task. Reuse existing
+file editing, save, validation, host adapters and native Agent capabilities before
+adding another workflow, state machine, permission layer or version system.
+Comparison, customization and updating project definitions can be ordinary Agent
+work; do not build an orchestration system merely to automate that judgment.
+
+New restrictions or confirmation steps must address a concrete failure or an
+explicit user requirement, not hypothetical future cases. Let people and Agents
+save unfinished authoring work and correct it in place. Report actual parsing or
+execution problems where they occur; do not require unrelated publication,
+version upgrades or remounting to make a saved local edit usable. Preserve atomic
+saves, user data and meaningful conflict/error detection.
+
+When simplifying, remove superseded implementations, states and UI together
+instead of layering another workaround over them. Keep internal consistency
+tokens and technical provenance out of ordinary user decisions. Apply this
+principle in the existing implementation and review process; it adds no new
+approval stage or separate checklist.
 
 ## Work safely and in parallel
 
@@ -140,19 +163,99 @@ read-only dependencies where safe; do not repeatedly copy node_modules or entire
 release trees. Keep bounded evidence and an explicit cleanup list. Stop only owned
 processes; never broadly delete evidence, profiles or workspaces to free space.
 
+Keep durable documentation at its maintained source and task receipts in
+task-scoped storage. Group temporary worktrees and extra generated copies by
+task, with an owner, consumers and cleanup conditions in the existing work
+record; avoid a general artifact directory becoming a second document home.
+Preserve referenced immutable inputs and meaningful failures. Task completion
+does not authorize deleting another task's dependencies or user state.
+Private workstation locations belong in internal maintainer guidance rather
+than exported product instructions.
+
 ## Verify the claimed result
 
 Use the Node/package-manager versions declared in `package.json` and the checked-in
 lockfile. Consult package scripts rather than guessing commands. Build dependencies
 before tests that consume `lib`; source-alias checks must be reported as such.
 Start with the smallest relevant regression/typecheck/build, then add integration
-or real UI/host checks when the change requires them. Do not repeat the full product
-suite for an unrelated documentation or local presentation change.
+or real UI/host checks when the change requires them. Do not repeat the full
+automated product suite for an unrelated documentation or local presentation
+change; the required Agentic E2E check below has its own completion rules.
 
 Report compilation, rendered interaction, durable save/reopen, native-agent
 consumption and installed-package validation separately. A fixture or probe proves
 only its tested boundary. Preserve meaningful negative tests; do not remove a
 guard simply to make tests pass. Document untested behavior and concrete failures.
+
+### Required UI and UX walkthrough
+
+For user-facing UI changes, operate the affected flow in a real browser before
+handoff, using the 9222 Chrome session when available. Confirm that it loads the
+current implementation. Check both functional correctness and whether the
+interface and interaction make sense: can users find the entry, understand each
+action, finish without unnecessary decisions or internal terminology, and see
+the result? Exercise relevant success, error, cancellation and retry states;
+check that navigation preserves user input. Inspect the rendered screen for
+missing styles, hierarchy, spacing, alignment, readable feedback and usable
+controls, using DOM/computed styles to diagnose defects. Code review, compilation,
+API tests and DOM assertions do not replace this hands-on visual walkthrough.
+UX skills can guide it but must respect the established shared UI foundation.
+For public Panel components, verify the catalog's actual example composition,
+including record selection and reaching the end of long content by scrolling.
+Registration, valid DSL and static markup alone do not establish a usable
+component. Remove superseded implementations and their authoring examples
+together; keep ordinary navigation and scrolling in the shared workspace.
+Follow the maintained [UIUX walkthrough loop](docs/testing/agentic-e2e.md#uiux-实际操作闭环)
+and record functional and UIUX results separately.
+Fix obvious visual or interaction defects and recheck the affected path before
+claiming completion. Record the actual path, findings and untested boundaries in
+the existing work record; if browser access is blocked, report that gap instead
+of claiming UI acceptance. Keep this scoped to the changed flow, without adding
+a user approval stage or repeating unrelated full-product tests.
+
+Before implementation, identify the existing interaction and shared component
+that owns the change. Preserve confirmed entry points, navigation, button order,
+feedback and draft retention; compare the affected view before and after an
+integration so an older implementation cannot silently replace them. Studio
+feedback follows the standard's [feedback mapping](docs/panel-uiux-standard.md#studio-信息反馈).
+Do not append bare diagnostics, native-looking controls or a new ad hoc modal
+to finish a feature. Missing shared behavior is fixed at its owner.
+
+The implementing agent owns basic usability acceptance. A missing style,
+inaccessible action, conflicting/duplicated status, unexplained disabled action,
+lost input or failure without a recovery path fails the affected UIUX checkpoint,
+even when its API passes. Human product feedback does not substitute for this
+check. On a repeated defect, record the root cause and why existing checks missed
+it; fix the shared cause, add an appropriate regression at that boundary and
+revisit the original visible path plus one affected shared use. Update the
+existing standard or playbook when the decision generalizes, replacing obsolete
+guidance instead of accumulating one-off rules. Mechanical checks catch specific
+regressions; they do not certify the whole experience.
+
+### Required Agentic E2E check
+
+Before every development handoff, complete the maintained
+[Agentic E2E playbook](docs/testing/agentic-e2e.md) and record the result of all
+three chains: a new design task covering QA, research, functions, flows,
+execution/handoffs, recommendations and UST/KAG/GRA; migration of the existing
+example followed by fresh UST/KAG/GRA; and Studio Kit/Bundle creation, editing,
+saved-content consumption, project-copy isolation and import/export. Use a real native Host Agent. Browser
+automation acts as the user, not as a replacement author of the Agent's files.
+Compilation, unit tests, fixture outputs and an opened page do not satisfy this
+check. Report failed, blocked and unrun checkpoints explicitly; do not close a
+broader acceptance claim with partial results or silently remove an unavailable
+capability. Evidence reuse must follow the playbook's unchanged-input rules.
+
+After each product release, verify both a clean installation from the actual npm
+registry and an upgrade from the previous stable npm version. In addition, rerun
+at least one complete playbook chain in a verified installed environment. Select
+the chain and environment before execution, prioritizing changed/high-risk paths;
+use recorded rotation or reproducible sampling when risks are equal. Keep these
+post-release results separate from candidate tests and publication success.
+
+Maintain the playbook in the same change whenever entry points, execution policy,
+handoffs, migration, authoring or installation behavior changes. Keep per-run
+evidence in the existing task record, not another maintained copy of the playbook.
 
 ## Reader-focused documentation
 

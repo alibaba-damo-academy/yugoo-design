@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { test } from 'node:test'
 import { resolve, relative } from 'node:path'
-import { exportStudioContentArchive, prepareStudioContentImport, readStudioContentArchive } from '../src/content-archive.ts'
+import { exportStudioContentArchive, exportStudioSourceArchive, prepareStudioContentImport, readStudioContentArchive } from '../src/content-archive.ts'
 
 const root = resolve('/fixture/archive_kit')
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
@@ -36,6 +36,62 @@ function source() {
 }
 const request = kind => ({ kind, pin: { name: kind === 'kit' ? 'archive_kit' : 'alpha', version: '1.0' },
   provenance: { source: 'fixture:synthetic-content', license: 'Apache-2.0' }, dependencies: kind === 'bundle' ? [{ name: 'beta', version: '1.0' }] : undefined })
+
+test('archive metadata is optional and supplied strings, original files and integrity remain intact', async () => {
+  const snapshot = source()
+  const original = readStudioContentArchive(await exportStudioContentArchive(snapshot, request('kit')))
+  for (const provenance of [undefined, {}, { source: '' }, { license: '' }, { source: 'raw source' }, { license: 'Original notice\nnot an SPDX identifier' }]) {
+    const input = { ...request('kit') }
+    if (provenance === undefined) delete input.provenance
+    else input.provenance = provenance
+    const json = await exportStudioContentArchive(snapshot, input)
+    const archive = readStudioContentArchive(json)
+    assert.deepEqual(archive.provenance, provenance)
+    assert.equal(Object.hasOwn(archive, 'provenance'), provenance !== undefined)
+    assert.deepEqual(archive.files, original.files)
+    assert.equal((await prepareStudioContentImport(json)).validation.valid, true)
+    const altered = JSON.parse(json)
+    altered.provenance = { source: 'changed metadata' }
+    assert.throws(() => readStudioContentArchive(JSON.stringify(altered)), /integrity/)
+  }
+})
+
+test('optional bilingual titles survive the envelope and are covered by its integrity hash', async () => {
+  const snapshot = source(), title = { en: 'Reading kit', zh: '阅读套件' }
+  const serialized = await exportStudioContentArchive(snapshot, { ...request('kit'), title })
+  const archive = readStudioContentArchive(serialized)
+  assert.deepEqual(archive.title, title)
+  assert.equal(readStudioContentArchive(await exportStudioContentArchive(snapshot, request('kit'))).title, undefined,
+    'existing archives without a display title keep their original canonical envelope')
+  const changed = JSON.parse(serialized); changed.title.zh = '另一个名称'
+  assert.throws(() => readStudioContentArchive(JSON.stringify(changed)), /integrity/)
+})
+
+test('source export preserves incomplete Bundle and Kit bytes without a definition-load requirement', async () => {
+  for (const kind of ['bundle', 'kit']) {
+    const snapshot = source()
+    snapshot.map.clear()
+    if (kind === 'bundle') {
+      snapshot.bundle = request(kind).pin
+      snapshot.map.set('SKILL.md', Buffer.from('# Unfinished method\r\n'))
+    } else {
+      snapshot.map.set('mindset.md', Buffer.from('# Unfinished mindset\r\n'))
+      snapshot.map.set('kit.yaml', Buffer.from('not: [finished'))
+    }
+    snapshot.map.set('assets/original.bin', Buffer.from([0, 255, 42]))
+    snapshot.map.set('NOTICE', Buffer.from('Preserve the original notice\n'))
+    const input = { kind, pin: request(kind).pin }
+    await assert.rejects(exportStudioContentArchive(snapshot, input))
+    const json = await exportStudioSourceArchive(snapshot, input)
+    const archive = readStudioContentArchive(json)
+    assert.equal(archive.provenance, undefined)
+    assert.deepEqual(archive.files.map(file => file.path), [...snapshot.map.keys()].sort())
+    for (const file of archive.files) assert.deepEqual(Buffer.from(file.base64, 'base64'), snapshot.map.get(file.path))
+    assert.equal((await prepareStudioContentImport(json)).validation.valid, false, 'raw export does not claim a complete definition')
+    snapshot.map.set('../outside', Buffer.from('unsafe'))
+    await assert.rejects(exportStudioSourceArchive(snapshot, input), /path/)
+  }
+})
 function seal(value) { const { sha256: _, ...data } = value; return JSON.stringify({ ...data, sha256: sha(JSON.stringify(data)) }) }
 function alteredFile(value, path, bytes) {
   const copy = structuredClone(value), file = copy.files.find(file => file.path === path)

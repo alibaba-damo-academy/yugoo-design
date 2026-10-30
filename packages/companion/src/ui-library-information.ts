@@ -1,6 +1,7 @@
 /** Same-build display metadata. Never a registration, upgrade or DSL authority. */
 import react from '../../panel/node_modules/react/package.json' with { type: 'json' }
 import reactDom from '../../panel/node_modules/react-dom/package.json' with { type: 'json' }
+import math from '../../panel/node_modules/katex/package.json' with { type: 'json' }
 import icons from '../../provider-web-app/node_modules/lucide-react/package.json' with { type: 'json' }
 import resizable from '../../provider-web-app/node_modules/react-resizable-panels/package.json' with { type: 'json' }
 import markdown from '../../provider-web-app/node_modules/react-markdown/package.json' with { type: 'json' }
@@ -31,4 +32,5 @@ export const studioUiLibraries: readonly StudioUiLibrary[] = [
   info(canvas, 'Excalidraw', 'visualization', '白板、自由绘制和批注。', 'Whiteboards, freeform drawing and annotations.'),
   info(bpmn, 'bpmn-js', 'visualization', '专业 BPMN 流程图的渲染与编辑。', 'Rendering and editing of professional BPMN diagrams.'),
   info(charts, 'Recharts', 'visualization', '已有原生功能说明里的统计图形。', 'Charts in existing native feature descriptions.'),
+  info(math, 'KaTeX', 'visualization', '将 LaTeX 公式排版为 MathML，与业务说明一起阅读。', 'Typesets LaTeX as MathML beside business explanations.'),
 ]

@@ -156,7 +156,7 @@ export class StudioWorkspaceController {
 
   /** Switch the top-level Studio section; the open workspace and in-flight reads are discarded. */
   setSection(section: StudioSection): void {
-    if (this.#state.section === section) return
+    if (this.#state.section === section && !this.#state.kitWorkspace && !this.#state.bundleWorkspace && this.#state.phase === 'ready') return
     this.#context += 1
     this.#set({
       ...this.#state,

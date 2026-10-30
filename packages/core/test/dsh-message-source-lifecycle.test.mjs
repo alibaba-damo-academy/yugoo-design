@@ -1,35 +1,40 @@
 /** Real isolated registry/binding/Kit checkpoints; injected Host failures stay distinct. */
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { AsyncLocalStorage } from 'node:async_hooks'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { Context } from '@deepseek-ai/cordis'
 import DesignService from '../src/design-service.ts'
-import { DesignProjectRegistry } from '../src/design-project-registry.ts'
-import { ConversationDesignBindingStore } from '../src/conversation-design-binding-store.ts'
-import { DesignJournalRegistry } from '../src/design-journal-registry.ts'
+import { nodeDesignProjectSpawn } from '../src/design-project.ts'
 
 async function fixture(t) {
   const root = await mkdtemp(join(tmpdir(), 'yugoo-source-lifecycle-'))
-  t.after(() => rm(root, { recursive: true, force: true }))
-  const service = Object.create(DesignService.prototype)
+  const previousGitBackend = process.env.YUGOO_GIT_BACKEND
+  // Exercise actual Git persistence without requiring the built worker for this source test.
+  process.env.YUGOO_GIT_BACKEND = 'cli'
+  const ctx = new Context()
+  t.after(async () => {
+    await ctx.fiber.dispose()
+    if (previousGitBackend === undefined) delete process.env.YUGOO_GIT_BACKEND
+    else process.env.YUGOO_GIT_BACKEND = previousGitBackend
+    await rm(root, { recursive: true, force: true })
+  })
+  ctx.provide('systemPrompt', { section() {}, context() {} })
+  ctx.provide('tools', { register() {} })
+  ctx.provide('subprocess', {})
+  const service = new DesignService(ctx, {
+    projectsRoot: join(root, 'projects'), stateRoot: join(root, 'runtime'), hostInstanceId: 'isolated',
+  })
   const kit = { name: 'fixture', version: '1.0', mindset: 'Preserve saved facts.', skills: [], resources: {} }
   let rejectNotice = false
   Object.assign(service, {
-    projects: new DesignProjectRegistry({ projectsRoot: join(root, 'projects'), stateRoot: join(root, 'runtime') }),
-    bindings: new ConversationDesignBindingStore({ root: join(root, 'bindings') }),
-    journals: new DesignJournalRegistry(state => join(state, 'journal')), hostInstanceId: 'isolated',
-    activeWorkspaces: new WeakMap(), contentRecoveryLocations: new WeakMap(),
-    workspaceContentEpochs: new WeakMap(), projectContentEpochs: new Map(),
-    selectedAgents: new Set(), selectedAgentRefs: new WeakMap(), conversationMutations: new WeakMap(),
-    projectMutations: new Map(), projectMutationScope: new AsyncLocalStorage(),
-    kits: new Map(), retainedKits: new Map([['fixture', new Map([['1.0', kit]])]]),
-    contributions: { assertKit() {} },
+    spawnAdapter: () => nodeDesignProjectSpawn,
     requireKnowledgeRuntime: () => ({ defaultProvider: 'fixture' }), advisoryRuntimeStatus: () => undefined,
     knowledgeLifecycleFor: () => ({ prepare: async () => ({ finalize: async () => ({}), abort: async () => {} }) }),
     notifyWorkspaceChange() { if (rejectNotice) throw new Error('simulated Host notification failure') },
   })
+  service.registerRetainedKit(kit)
   const agent = { id: 'original-session', session: { header: {} } }
   return { service, agent, signal: new AbortController().signal, reject() { rejectNotice = true }, allow() { rejectNotice = false } }
 }
@@ -62,7 +67,7 @@ test('mindset failure after notification preserves the committed Kit pin and Jou
   assert.deepEqual(after.kit, { name: 'fixture', version: '1.0' })
   assert.notEqual(after.lastCheckpoint, before.lastCheckpoint)
   assert.equal(after.gitClean, true)
-  const journal = await f.service.journals.read(after.stateRoot, String(f.agent.id))
+  const journal = await f.service.journals.read(after.root, String(after.projectId))
   assert.equal(journal.snapshot.latestKitSelection.kit, 'fixture')
   assert.equal(journal.snapshot.latestKitSelection.version, '1.0')
   assert.equal((await f.service.currentSelection(f.agent)).projectId, selection.projectId)

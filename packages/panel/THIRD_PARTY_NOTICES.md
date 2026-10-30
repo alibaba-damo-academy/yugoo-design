@@ -14,6 +14,7 @@ or a substitute for license texts, source provision, or other obligations.
 | DSH code and reused utilities | MIT; `deepseek-harness/LICENSE` | Retain original notices; distinguish external host from copied/bundled utilities. |
 | Pinned DSH JSON value utility (Core) | MIT; repository `packages/core/third-party/dsh-json/LICENSE`, Core package `third-party/dsh-json/LICENSE` | Preserve the original license and provenance README with the Core tarball; verify actual packed files. |
 | ELK / elkjs | EPL-2.0 | Include license and corresponding source availability information; verify actual bundled version and modifications. |
+| KaTeX `0.16.47` | MIT; `third-party/native/katex-0.16.47/LICENSE` and `SOURCE.md` | Mathematical rendering uses MathML output. Preserve the original license and exact input record in the Panel package; no KaTeX CSS/fonts are added by this feature. |
 | sharp | Apache-2.0 | Preserve applicable license and upstream notices. |
 | Prebuilt sharp/libvips dependency bundle | Local `@img/sharp-libvips-*` package declares LGPL-3.0-or-later; contains multiple licenses | Inventory all bundled libraries per platform; provide required corresponding source/build materials and verify replacement/relinking conditions. libvips upstream alone is LGPL-2.1-or-later; do not confuse that with the distributed bundle's terms. |
 | bpmn-js | bpmn.io License | Include original license/copyright; keep the required watermark visible and unchanged. |

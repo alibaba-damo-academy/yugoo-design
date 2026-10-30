@@ -7,7 +7,7 @@ import { createCodexTranscript, executionRowMessage } from './codex-transcript.m
 import { requireThreadId } from './codex-connection.mjs'
 import { bindNativeProject } from './native-project-binding.mjs'
 import { requireNativeId, nativeScope, nativeInvocationId } from './native-identity.mjs'
-import { DesignWriteSettlementError } from '../../core/lib/index.js'
+import { DesignWriteSettlementError, projectKitContentHash } from '../../core/lib/index.js'
 
 const digest = bytes => createHash('sha256').update(bytes).digest('hex')
 
@@ -91,6 +91,7 @@ export async function createNativeRuns({ project, stateRoot, threadId, nativeCwd
     if (!skill) throw new Error('Unknown Bundle in the pinned Kit.')
     return skill
   }
+  const definitionRevision = () => project.definitionRevision ?? projectKitContentHash(project.kit)
   const observer = binding => {
     if (!observers.has(binding.runId)) observers.set(binding.runId, createObserver({
       path: binding.transcriptPath, threadId: binding.runId, projectRoot: nativeCwd,
@@ -168,7 +169,7 @@ export async function createNativeRuns({ project, stateRoot, threadId, nativeCwd
           executionSequence: nextExecutionSequence(),
           projectId: project.project.metadata.id, mode: 'main',
           kit: project.kit.name, kitVersion: project.kit.version,
-          bundleVersion: skillFor(skill).version }
+          bundleVersion: skillFor(skill).version, definitionRevision: definitionRevision() }
         await persistMain([...mainInvocations, invocation])
         return { ...invocation }
       })
@@ -226,7 +227,7 @@ export async function createNativeRuns({ project, stateRoot, threadId, nativeCwd
           if (!log.available || !['completed', 'failed', 'interrupted'].includes(log.recordedStatus)) throw new Error('Main Bundle still has an active or unobservable Worker; wait or cancel it before settlement.')
         }
         let settlement
-        try { settlement = await project.settleBundle({ skill: invocation.skill, invocationId, scope, outcome }) }
+        try { settlement = await project.settleBundle({ skill: invocation.skill, invocationId, scope, outcome, definitionRevision: invocation.definitionRevision }) }
         catch (error) { return committedRecovery(error) }
         try {
           const closedFocus = await closeFocus(invocation)
@@ -260,13 +261,14 @@ export async function createNativeRuns({ project, stateRoot, threadId, nativeCwd
         if (role === 'worker' && (typeof artifactFile !== 'string' || !artifactFile.startsWith(`${skill}/`) || artifactFile === `${skill}/${skill}.json`)) throw new Error('Worker requires an exact Bundle-owned artifact path, not canonical JSON.')
         if (artifactFile) await project.store.readWorktreeBytes(artifactFile) // Core path confinement, even before creation.
         await verifyChild({ runId, parentRunId, transcriptPath, taskPath, projectRoot: nativeCwd })
+        const existing = bindings.find(item => item.runId === runId)
         const next = { runId, parentRunId, transcriptPath, role, skill, artifactId,
           ...(['qoder', 'qwenwork'].includes(host) ? { taskPath } : {}),
           ...(artifactKind ? { artifactKind } : {}), ...(artifactFile ? { artifactFile } : {}),
           invocationId: main?.invocationId ?? parent?.invocationId ?? nativeInvocationId(host, threadId, runId), attemptId: runId,
           projectId: project.project.metadata.id,
+          definitionRevision: existing?.definitionRevision ?? main?.definitionRevision ?? parent?.definitionRevision ?? definitionRevision(),
         }
-        const existing = bindings.find(item => item.runId === runId)
         if (existing) {
           for (const [key, value] of Object.entries(next)) if (existing[key] !== value) throw new Error('Native run cannot be rebound to another target.')
           return { registered: true, runId }
@@ -304,7 +306,7 @@ export async function createNativeRuns({ project, stateRoot, threadId, nativeCwd
           receipt = { path: binding.artifactFile, sha256: digest(bytes), bytes: bytes.length }
         }
         let settlement
-        try { settlement = binding.role === 'producer' ? await project.settleBundle({ skill: binding.skill, invocationId: binding.invocationId, scope, outcome }) : undefined }
+        try { settlement = binding.role === 'producer' ? await project.settleBundle({ skill: binding.skill, invocationId: binding.invocationId, scope, outcome, definitionRevision: binding.definitionRevision }) : undefined }
         catch (error) { return committedRecovery(error) }
         try {
           const closedFocus = await closeFocus(binding)

@@ -57,7 +57,7 @@ The starting guides above have English counterparts. Some deeper user and techni
 | Explore representations beyond software pages | [Non-Web examples](non-web-kit-demo.md), [community workshop delivery](../../examples/community-workshop-delivery/README.md), [field operations](../../examples/field-operations-shared/README.md) |
 | Inspect Mindsets, mounts and Bundles, and check previews in Studio | [Studio guide](usage.en.md#6-studio-inspect-customize-and-check-kits): edit current content and copy an independent identity when needed; distinguish source saves, sample previews and actual trials |
 | Author Kits, Mindsets, Bundles and Panels | [Minimal customization](custom-kit-tutorial.en.md), [extension guide](extending.en.md), [Panel DSL](../dsl-spec.md), [shared UIUX standard](../panel-uiux-standard.md) |
-| Share, load, update or restore content | [Kit sharing and recovery](kit-sharing.en.md), [project content maintenance](kit-sharing.en.md#update-and-restore-project-content): save current library content in place while existing projects retain their complete Kit files |
+| Share, load, update or restore content | [Kit sharing and recovery](kit-sharing.en.md), [project content maintenance](../project-content-upgrade.md): save current library content in place while existing projects retain their complete Kit files |
 
 ## Development and participation
 

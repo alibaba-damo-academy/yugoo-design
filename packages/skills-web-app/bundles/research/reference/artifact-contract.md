@@ -8,6 +8,37 @@ Canonical state: `research/research.json`. Findings: `research/{round_id}/{direc
 
 Use `artifact_kind: "research_direction"`, round-scoped `artifact_id: "{round_id}/{direction_id}"` and the exact findings file for delegation or serial focus. Conclusion focus uses `research_conclusion`, round ID and the exact conclusion file. Each author writes/repairs its artifact; the Producer reads findings for actual synthesis, updates the corresponding refs and sources, then validates and publishes the integrated round. A reference is accepted only after the file exists. There is no separate research script; use the ordinary Bundle validation.
 
+## User bounds and evidence acceptance
+
+For authorized research or revision, preserve explicit source limits, allowed
+source types, product scope and exclusions in the affected direction's existing
+`research_points`. They accompany the questions in every Worker brief and remain
+binding when the Producer takes over a failed Worker. Host runtime budgets do
+not relax those output constraints, and no source limit is implied when none was
+requested.
+
+A report-source cap counts distinct cited document URLs, including inline
+citations and the `信息来源` list; repeated use of one URL counts once, while two
+pages on one site count as two sources. The final source list and `source_urls`
+must match the report's used sources. A retrieved search-result list is not the
+report's accepted source set. If a figure uses a separate asset URL, retain its
+link to the cited source document rather than treating an unexplained asset as
+new evidence. An explicit limit on pages opened or tool calls applies to retrieval
+instead; follow the user's stated unit and scope.
+
+The Producer checks these bounds against the actual findings before acceptance
+and again before publication, for both delegated and serial output. Repair an
+excess by revising claims and links together; never hide extra evidence by only
+shortening the bibliography or JSON. A conclusion cites only sources retained in
+accepted findings. If the bounded evidence is insufficient, explain the gap
+without silently exceeding the cap. Report actual per-direction source counts
+and unmet constraints. The existing schema and declared rules do not infer a
+numeric limit from free text, so structural validation is not proof of compliance.
+
+Restoring existing research preserves its observed sources and provenance;
+report an apparent historical mismatch instead of deleting evidence to satisfy
+a newly requested limit without an authorized revision.
+
 ## Findings Markdown
 
 User-facing report, not a raw JSON payload:

@@ -2,7 +2,7 @@
 import { mkdir, readFile, writeFile, rename, rmdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
-import { DesignProjectRegistry, parseDesignCommand, runDesignProjectCommand } from '../../core/lib/index.js'
+import { DesignProjectRegistry, parseDesignCommand, runDesignProjectCommand, ensureProjectKit } from '../../core/lib/index.js'
 import { companionFs } from './project.mjs'
 import { assertCompanionKitContributions, createCompanionContentLibrary } from './content-library.mjs'
 
@@ -52,8 +52,10 @@ export async function runCompanionCommand({ input, host = 'codex', threadId, pro
     projects.migrate = async (reference, currentId) => {
       const basis = currentId ? await registry.open(currentId) : undefined
       if (!basis?.kit) throw new Error('Select a Kit before migration: create a project if needed, then kit <kit>.')
-      const exposed = await contentLibrary.resolveExactProject(basis.kit)
-      return registry.migrate(reference, { knowledge: basis.knowledge, kit: basis.kit }, exposed.skills.map(skill => skill.name))
+      const { kit: exposed } = await ensureProjectKit(basis.root, { loadSource: () => contentLibrary.resolveExactProject(basis.kit) })
+      const migrated = await registry.migrate(reference, { knowledge: basis.knowledge, kit: basis.kit }, exposed.skills.map(skill => skill.name))
+      await ensureProjectKit(migrated.root, { loadSource: async () => exposed })
+      return migrated
     }
     const result = await runDesignProjectCommand(invocation, { projects, conversation: {
       current: async () => selection?.projectId ? selection : undefined,
@@ -64,11 +66,13 @@ export async function runCompanionCommand({ input, host = 'codex', threadId, pro
         const exposed = available.find(kit => kit.name === name)
         if (!exposed) throw new Error(`Available Kits: ${available.map(kit => `${kit.name}@${kit.version}`).join(', ')}`)
         const previous = await registry.open(projectId)
-        if (previous.kit && previous.kit.name !== exposed.name) throw new Error('Changing an existing Kit requires migration; no implicit upgrade.')
+        if (previous.kit && previous.kit.name !== exposed.name) throw new Error('This project owns its Kit. Edit its project-local definitions or create another project with the selected Kit.')
         const pin = previous.kit ?? { name: exposed.name, version: exposed.version }
-        const effective = await contentLibrary.resolveProject(pin)
-        if (effective.name !== pin.name || effective.version !== pin.version) throw new Error('Restore the exact pinned Kit or explicitly migrate.')
-        if (!previous.kit) assertCompanionKitContributions(effective, await contentLibrary.loadInstalled())
+        const { kit: effective } = await ensureProjectKit(previous.root, { loadSource: async () => {
+          const selected = previous.kit ? await contentLibrary.resolveExactProject(pin) : await contentLibrary.loadCurrentKit(pin)
+          assertCompanionKitContributions(selected, await contentLibrary.loadInstalled())
+          return selected
+        } })
         await registry.setKitPin(projectId, pin)
         const saved = await persist({ projectId })
         return { kit: effective.name, version: effective.version, sourceRevision: saved.revision }

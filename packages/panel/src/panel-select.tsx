@@ -13,7 +13,7 @@ interface PanelSelectProps extends Omit<ComponentPropsWithoutRef<typeof Select.T
 
 /** Capture the trigger's actual theme before moving the menu outside clipped
  * workspaces. The popup owns its styles; it does not reset the host/body theme. */
-function menuTheme(trigger: HTMLElement): CSSProperties {
+export function panelPopupTheme(trigger: HTMLElement): CSSProperties {
   const computed = trigger.ownerDocument.defaultView!.getComputedStyle(trigger)
   const theme: Record<string, string> = {}
   for (let index = 0; index < computed.length; index += 1) {
@@ -39,7 +39,7 @@ export function PanelSelect({ value, options, onValueChange, className, disabled
   const encode = (item: string) => item === '' ? empty : item
   const selected = choices.find(option => option.value === value)
   return <Select.Root value={encode(value)} disabled={disabled} onOpenChange={open => {
-    if (open && trigger.current) setTheme(menuTheme(trigger.current))
+    if (open && trigger.current) setTheme(panelPopupTheme(trigger.current))
   }} onValueChange={next => {
     const decoded = next === empty ? '' : next
     if (!disabled && choices.some(option => option.value === decoded && !option.disabled)) onValueChange(decoded)

@@ -1,5 +1,8 @@
 /** Plugin-owned same-origin route serving the standalone Design Studio page. */
 import { readFile } from 'node:fs/promises'
+import type { IncomingMessage, ServerResponse } from 'node:http'
+import { fileURLToPath } from 'node:url'
+import { registerPackagedCssAssets } from '../../../scripts/css-asset-host.mjs'
 import { STUDIO_PAGE_BASE, STUDIO_PAGE_BUNDLE, STUDIO_PAGE_PATH } from './page-path.ts'
 
 export { STUDIO_PAGE_BASE, STUDIO_PAGE_PATH } from './page-path.ts'
@@ -10,20 +13,21 @@ export interface StudioPageWebServer {
   register(route: {
     readonly kind: 'exact' | 'prefix'
     readonly path: string
-    readonly handler: (req: StudioPageRequest, res: StudioPageResponse) => void | Promise<void>
+    readonly handler: (req: IncomingMessage, res: ServerResponse) => void | Promise<void>
   }): () => void
 }
 
 /** Incoming request slice read by the Studio route. */
 export interface StudioPageRequest {
   readonly url?: string
+  readonly method?: string
 }
 
 /** Server response slice written by the Studio route. */
 export interface StudioPageResponse {
   statusCode: number
   setHeader(name: string, value: string): void
-  getHeader?(name: string): string | number | undefined
+  getHeader?(name: string): string | number | readonly string[] | undefined
   end(body?: string | Uint8Array): void
 }
 
@@ -84,8 +88,12 @@ export interface StudioPageEffectContext {
 export function apply(ctx: unknown): void {
   const face = ctx as StudioPageEffectContext
   const bundleUrl = new URL(`./${STUDIO_PAGE_BUNDLE}`, import.meta.url)
-  const redirect = async (_req: StudioPageRequest, res: StudioPageResponse): Promise<void> => {
-    send(res, 308, 'text/plain; charset=utf-8', '', { Location: STUDIO_PAGE_BASE })
+  const redirect = async (req: StudioPageRequest, res: StudioPageResponse): Promise<void> => {
+    // Keep the explicit conversation locator through canonical slash routing.
+    // The destination path stays owned here; the page validates the locator.
+    const queryIndex = req.url?.indexOf('?') ?? -1
+    const query = queryIndex < 0 ? '' : req.url!.slice(queryIndex)
+    send(res, 308, 'text/plain; charset=utf-8', '', { Location: STUDIO_PAGE_BASE + query })
   }
   const handler = async (req: StudioPageRequest, res: StudioPageResponse): Promise<void> => {
     const path = requestPath(req)
@@ -112,6 +120,9 @@ export function apply(ctx: unknown): void {
   face.effect(() => {
     const acquired: Array<() => void> = []
     try {
+      acquired.push(registerPackagedCssAssets(face.webServer, fileURLToPath(new URL('.', import.meta.url)), [
+        '/design-system-assets/dsh-design-studio-page/',
+      ]))
       acquired.push(face.webServer.register({ kind: 'exact', path: STUDIO_PAGE_PATH, handler: redirect }))
       // A WebRoute prefix p matches only p and p/<anything>; the slash-less
       // path is required or subresources below the base fall through to the

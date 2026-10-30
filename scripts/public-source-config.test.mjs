@@ -208,13 +208,18 @@ test('current source inventory proposes official edges, not dogfood or host sour
   const baseline = JSON.parse(readFileSync(new URL('release/public-source-baseline.json', repo), 'utf8'))
   const { officialVersions, ladybugVersion, rootScripts, reviewedWorkspaceOverrides } = baseline
   const result = proposePublicSourceConfig({ root, workspace, packages, officialVersions, ladybugVersion, rootScripts, reviewedWorkspaceOverrides })
-  assert.equal(Object.keys(officialVersions).length, 28)
+  assert.equal(Object.keys(officialVersions).length, 30)
   const projectedCore = result.packages['packages/core/package.json']
   const scopeVersion = officialVersions['@deepseek-ai/dsh-scope']
   assert.ok(satisfies(scopeVersion, projectedCore.peerDependencies['@deepseek-ai/dsh-scope']))
   assert.equal(projectedCore.devDependencies['@deepseek-ai/dsh-scope'], scopeVersion)
   assert.equal(officialVersions['@deepseek-ai/dsh-subprocess-local'], '0.2.0-rc.2')
   assert.equal(projectedCore.devDependencies['@deepseek-ai/dsh-subprocess-local'], '0.2.0-rc.2')
+  const projectedStudio = result.packages['packages/studio-dsh/package.json']
+  for (const name of ['@deepseek-ai/dsh-home-paths', '@deepseek-ai/dsh-session-query']) {
+    assert.equal(officialVersions[name], '0.2.0-rc.2')
+    assert.equal(projectedStudio.devDependencies[name], '0.2.0-rc.2')
+  }
   assert.ok(!JSON.stringify(result.packages).includes('deepseek-harness'))
   assert.deepEqual(result.workspace.allowBuilds, workspace.allowBuilds)
   assert.equal(result.workspace.overrides.undici,
@@ -235,4 +240,7 @@ test('current source inventory proposes official edges, not dogfood or host sour
   assert.deepEqual(afterTests, beforeTests.filter(file => file !== 'scripts/public-env-template.test.mjs'))
   assert.equal(beforeTests.length - afterTests.length, 1)
   assert.equal(selected.root.scripts.build, root.scripts.build)
+  assert.equal(selected.root.scripts['test:canvas-worker-adapter'],
+    'node --import tsx --test scripts/pica-static-worker-adapter.test.mjs',
+    'The TS build adapter has its own explicit gate, preserving the flat public-contract file list')
 })

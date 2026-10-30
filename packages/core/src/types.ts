@@ -73,6 +73,9 @@ export interface DesignBilingualText {
  * and any presentation-specific metadata.
  */
 export interface DesignSkill {
+  /** Trusted loader provenance; source content cannot grant executable authority. */
+  readonly sourceId?: string
+  readonly sourceFs?: import('./kit-loader.ts').KitFsLike
   /** Independent catalog identity; omitted for existing identity == runtime name. */
   readonly catalogName?: string
   /** Exact installed Bundle version root; independent of every mounting Kit. */
@@ -101,6 +104,10 @@ export interface DesignSkill {
 
 /** A registered Design Kit: one Mindset plus the design skills it exposes. */
 export interface DesignKit {
+  /** Loader-owned source capture for project materialization, never a publication pin. */
+  readonly sourceId?: string
+  readonly sourceLocation?: import('./kit-loader.ts').DesignKitLocation
+  readonly sourceFs?: import('./kit-loader.ts').KitFsLike
   /** Absolute installed Kit root retained only for Host-confined resource execution. */
   readonly sourceRoot?: string
   /** Kit / mindset id, e.g. `example_kit`. Unique across installed kits. */
@@ -131,7 +138,7 @@ export interface DesignKitSelectedPayload {
   readonly version: DesignKitVersion
   readonly operation: 'activate' | 'upgrade'
   /** Audit/recovery evidence only; the committed project pin remains authoritative. */
-  readonly adoption?: import('./project-content-transaction.ts').ProjectContentAdoptionReceipt
+  readonly adoption?: { readonly operationId: string; readonly projectId: string; readonly sourceCheckpoint: string; readonly checkpoint: string; readonly contentHash: string }
 }
 
 /** One evidence-based U/S/T clarity assessment for an exact Kit version. */

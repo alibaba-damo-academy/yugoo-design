@@ -13,8 +13,6 @@ import { DESIGN_FILES_UNBORN_REVISION, requireDesignFileRelativePath, type Desig
 import { designText, latestDirectHumanText, resolveConversationLocale, type DesignLocale } from './design-locale.ts'
 import { reconstructionContractPrompt } from './reconstruction-prompt.ts'
 import { registerReconstructionKnowledgeTool } from './dsh-reconstruction-knowledge-tool.ts'
-import { registerContentUpgradeTool } from './dsh-content-upgrade.ts'
-export { runNativeContentMigration, registerContentUpgradeTool } from './dsh-content-upgrade.ts'
 import { KNOWLEDGE_AGENTIC_GUIDANCE } from './design-knowledge-query.ts'
 import { DESIGN_EXECUTOR_EVIDENCE_GUIDANCE, DESIGN_SKILL_RESOURCE_GUIDANCE, availableDesignKnowledgeTools } from './design-generation-guidance.ts'
 import {
@@ -602,9 +600,7 @@ async function bindProducerWorkspace(
   expectedRevision: string,
   skill: DesignSkill,
 ): Promise<BoundProducerWorkspace> {
-  if (project.revision !== expectedRevision) throw new Error('design producer: selected project revision changed before opening the working copy')
-  const workingCopy = await project.openWorkingCopy()
-  if (workingCopy.baseRevision !== expectedRevision) throw new Error('design producer: selected project revision changed while opening the working copy')
+  const workingCopy = await project.openWorkingCopy(expectedRevision)
   const prefix = `${skill.name}/`
   const canonicalPath = `${skill.name}/${skill.name}.json`
   const committedPaths = await project.list()
@@ -1410,7 +1406,7 @@ function createController(
         return { kind: 'invalid', summary: 'The selected Design Project changed before main Bundle execution; start again in the intended project.' }
       }
       const kit = host.design.requireKitForAgent(request.agent)
-      if (project.kit?.name !== kit.name || project.kit.version !== kit.version) {
+      if (project.kit?.name !== kit.name) {
         throw new Error('design execution: active Kit pin does not match the selected Design Project')
       }
       const skill = exactSkill(kit, request.name)
@@ -1473,7 +1469,12 @@ function createController(
         subprocess: host.subprocess,
       })
 
-      if (request.reconstruct !== true && request.action === undefined && skill.execution.handoff === 'must_edit' && currentState !== undefined) {
+      const humanInput = currentTurnHumanInput(request.agent)
+      const revising = request.brief !== undefined && request.brief.trim() !== '' && humanInput.hasHuman
+      // A current human revision starts new work, including over legacy saved
+      // answers. Only acknowledgement of the old save requires its exact gate
+      // disposition; revision must not invent or reconcile that old receipt.
+      if (!revising && request.reconstruct !== true && request.action === undefined && skill.execution.handoff === 'must_edit' && currentState !== undefined) {
         const currentChange = latestRelevantChange(journalRecords, kit, skill)
         if (currentChange?.data.origin === 'panel' && isDeepStrictEqual(currentChange.data.state, currentState)) {
           const panelStateRevision = latestMatchingDesignChangeCommit(journalRecords, kit, skill, currentState)
@@ -1494,7 +1495,7 @@ function createController(
             })
             if (!consumed) throw new Error('design execution: panel save did not consume its exact must-edit gate')
           }
-          if (!currentTurnHumanInput(request.agent).hasHuman) {
+          if (!humanInput.hasHuman) {
             const title = designText(skill.title, locale)
             return finish(Object.freeze({
               kind: 'completed',
@@ -1566,12 +1567,8 @@ function createController(
       }
 
       if (currentGate !== undefined && request.reconstruct !== true) {
-        const revising = request.brief !== undefined
-          && request.brief.trim() !== ''
-          && currentTurnHumanInput(request.agent).hasHuman
         if (!revising) return finish(transitionResult({ kind: 'await_user', gate: currentGate }, project.root, kit, locale), currentGate.pin)
       }
-      const humanInput = currentTurnHumanInput(request.agent)
       if (humanInput.hasTurn && !humanInput.hasHuman) {
         const title = designText(skill.title, locale)
         return Object.freeze({
@@ -1639,7 +1636,6 @@ export function apply(ctx: Context, config: Config): void {
   ctx.effect(() => () => { clarity.dispose(); unregisterClarity(); unregisterSelection() })
   const controller = createController(ctx, host, resolvedConfig, () => subagentStart, () => fileWorkerStart)
   registerRunDesignSkillTool(ctx, controller)
-  registerContentUpgradeTool(ctx, host.design, resolvedConfig)
   installDesignResumeRouting(ctx, async (agent, text, signal) => {
     if (host.design.kitForAgent(agent) === undefined || activeMainBundleWork(agent) !== undefined) return undefined
     const project = await host.design.projectForAgent(agent, signal)

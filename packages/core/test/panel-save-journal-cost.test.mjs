@@ -1,18 +1,16 @@
-/** Real DesignService methods and Journal files; no installed Host or model. */
+/** Built DesignService/worker and real Journal files; no installed Host or model. */
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { mkdtemp, readFile, writeFile, rename, symlink, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import DesignService from '../src/design-service.ts'
-import { DesignJournalRegistry } from '../src/design-journal-registry.ts'
-import { DesignProjectRegistry } from '../src/design-project-registry.ts'
-import { DesignProjectManager, nodeDesignProjectSpawn } from '../src/design-project.ts'
-import { DesignFilesStore, DesignWriteSettlementError } from '../src/design-files.ts'
-import { GitVersioning } from '../src/git.ts'
+import DesignService, { DesignJournalRegistry, DesignProjectRegistry, DesignProjectManager,
+  nodeDesignProjectSpawn, DesignFilesStore, DesignWriteSettlementError, GitVersioning,
+  DESIGN_PANEL_SAVE_ASSESSMENT_GUIDANCE, DESIGN_CORE_PROGRESSION_PROMPT,
+  renderDesignClarityUserContext } from '../lib/index.js'
 import { nodeFs } from '../src/service-tools.ts'
-import { DesignPanelRemote } from '../src/panel-remote.ts'
+import { DesignPanelRemote } from '../lib/panel-remote.js'
 import { LocalSubprocessRuntime } from '@deepseek-ai/dsh-subprocess-local'
 import { Duplex, PassThrough } from 'node:stream'
 import { readGitFrames, writeGitFrame } from '../src/dsh-git-protocol.ts'
@@ -188,7 +186,12 @@ test('meaningful save injects exact main-report input after settlement and befor
   const first = await save('A meaningful answer', 'main-turn-save')
   returned = true
   const note = agent.notices.at(-1).content[0].text
-  assert.match(note, /ordinary main conversation when useful/)
+  assert.ok(note.includes(DESIGN_PANEL_SAVE_ASSESSMENT_GUIDANCE))
+  assert.ok(DESIGN_CORE_PROGRESSION_PROMPT.includes(DESIGN_PANEL_SAVE_ASSESSMENT_GUIDANCE), 'the Core entry and the saved-event instruction share one assessment contract')
+  assert.match(note, /must assess.*call report_design_clarity.*before asking the next question/s)
+  assert.match(note, /later user stop, cancellation or instruction not to assess takes priority/)
+  assert.match(note, /reporting capability is unavailable or reporting fails/)
+  assert.doesNotMatch(note, /ordinary main conversation when useful/)
   assert.match(note, /No second evaluator is required/)
   const input = JSON.parse(note.match(/with input=(.*?) and evidence-based/)[1])
   assert.deepEqual(input, design.clarityInputForAgent(agent))
@@ -206,7 +209,7 @@ test('meaningful save injects exact main-report input after settlement and befor
     'a newly audited no-op does not require another score')
 }))
 
-for (const control of ['保存并继续设计', 'Save and continue designing']) test(`real save to main report uses the logged native control: ${control}`, async () => saveFixture(async ({ save, design, agent, project }) => {
+for (const control of ['保存并评估下一步', 'Save and assess next step', '保存并继续设计', 'Save and continue designing']) test(`real save to main report uses the logged native control: ${control}`, async () => saveFixture(async ({ save, design, agent, project }) => {
   const first = await save('A saved answer to assess', 'saved-main-report')
   const input = JSON.parse(agent.notices.at(-1).content[0].text.match(/with input=(.*?) and evidence-based/)[1])
   const events = agent.session.snapshotEvents()
@@ -238,6 +241,17 @@ for (const control of ['保存并继续设计', 'Save and continue designing']) 
   assert.equal(authority.report.scopeDigest, current.scopeDigest)
   assert.equal((await design.readDesignJournal(agent)).records.filter(row => row.type === 'design/clarity-reported').length, 2)
 }))
+
+test('current and legacy save controls retain the agreed business scope rather than becoming new intent', () => {
+  const human = text => ({ type: 'user/message', data: { source: { kind: 'user' }, content: [{ type: 'text', text }] } })
+  const intent = human('Design a private notebook for my own notes.')
+  const expected = renderDesignClarityUserContext([intent])
+  for (const control of ['保存并评估下一步', 'Save and assess next step', '保存并继续设计', 'Save and continue designing']) {
+    assert.equal(renderDesignClarityUserContext([intent, human(control)]), expected)
+  }
+  assert.notEqual(renderDesignClarityUserContext([intent, human('Stop now; do not assess this save.')]), expected,
+    'a real later stop instruction remains visible; it is not filtered as a save control')
+})
 
 /** Wait on an actual occupied project lane, not a guessed timeout. */
 async function rejectQueuedSave(context, change, expected, signal = new AbortController().signal) {

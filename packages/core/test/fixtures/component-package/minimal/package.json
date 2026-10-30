@@ -1,0 +1,14 @@
+{
+  "name": "@example/yugoo-native-notice",
+  "version": "1.0.0",
+  "type": "module",
+  "license": "Apache-2.0",
+  "exports": {
+    ".": "./server.mjs",
+    "./client": "./client.mjs"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}

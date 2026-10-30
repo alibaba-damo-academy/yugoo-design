@@ -177,60 +177,10 @@
     }
   ],
   "rules": [
-    {
-      "kind": "file",
-      "path": "docs/product-vision.en.md",
-      "action": "include",
-      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
-    },
-    {
-      "kind": "file",
-      "path": "docs/wiki/README.en.md",
-      "action": "include",
-      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
-    },
-    {
-      "kind": "file",
-      "path": "docs/wiki/custom-kit-tutorial.en.md",
-      "action": "include",
-      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
-    },
-    {
-      "kind": "file",
-      "path": "docs/wiki/extending.en.md",
-      "action": "include",
-      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
-    },
-    {
-      "kind": "file",
-      "path": "docs/wiki/getting-started.en.md",
-      "action": "include",
-      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
-    },
-    {
-      "kind": "file",
-      "path": "docs/wiki/hosts.en.md",
-      "action": "include",
-      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
-    },
-    {
-      "kind": "file",
-      "path": "docs/wiki/kit-sharing.en.md",
-      "action": "include",
-      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
-    },
-    {
-      "kind": "file",
-      "path": "docs/wiki/usage.en.md",
-      "action": "include",
-      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
-    },
-    {
-      "kind": "file",
-      "path": "docs/wiki/web-app-demo.en.md",
-      "action": "include",
-      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
-    },
+    {"kind": "file", "path": "packages/core/test/data-table.test.mjs", "action": "exclude", "reason": "At this fixed revision the test reads excluded internal Decision Kit files at module initialization; retain internally. Reclassify only after public synthetic fixtures are separated from Kit integration coverage."},
+    {"kind": "file", "path": "packages/core/test/math-document.test.mjs", "action": "exclude", "reason": "At this fixed revision the test reads excluded internal Decision Kit files at module initialization; retain internally. Reclassify only after public synthetic fixtures are separated from Kit integration coverage."},
+    {"kind": "file", "path": "packages/panel/test/data-table.test.mjs", "action": "exclude", "reason": "At this fixed revision the test reads excluded internal Decision Kit files at module initialization; retain internally. Reclassify only after public synthetic fixtures are separated from Kit integration coverage."},
+    {"kind": "file", "path": "packages/panel/test/math-document.test.mjs", "action": "exclude", "reason": "At this fixed revision the test reads excluded internal Decision Kit files at module initialization; retain internally. Reclassify only after public synthetic fixtures are separated from Kit integration coverage."},
     {"kind": "file", "path": "packages/companion/src/npm-embedding-preparation.mjs", "action": "include", "reason": "Product CLI preparation of the existing fixed local embedding model: offline resource inspection, explicit download using the shared owner and optional synthetic CPU inference; no host registration, project writes or model credential changes."},
     {"kind": "file", "path": "packages/companion/test/npm-embedding-preparation.test.mjs", "action": "include", "reason": "Isolated installation-readiness regressions distinguishing missing or invalid model resources, explicit preparation, CPU inference and project semantic readiness; no actual host acceptance claim."},
     {"kind": "file", "path": "packages/dsh/screenshots.json", "action": "include", "reason": "Single maintained screenshot index at the native plugin catalog entry; fixed public GitHub URLs reference three unchanged, already reviewed DSH workspace PNGs without copying images or claiming installation acceptance."},
@@ -283,6 +233,154 @@
     {"kind": "file", "path": "packages/companion/test/codex-desktop-capability.test.mjs", "action": "include", "reason": "Actual local HTTP and temporary project tests for desktop capability limits, private-lane browser isolation and save/reopen boundaries."},
     {"kind": "file", "path": "packages/companion/test/codex-desktop-connection.test.mjs", "action": "include", "reason": "Bounded transport framing, current endpoint identity, exact native thread and uncertain-receipt regressions with isolated mocks/sockets."},
     {"kind": "file", "path": "packages/companion/test/codex-desktop-relay.test.mjs", "action": "include", "reason": "Isolated notification-lane owner, claim, settlement and no-replay lifecycle regressions without model or real host invocation."},
+    {
+      "kind": "file",
+      "path": "docs/internal/work-materials.md",
+      "action": "exclude",
+      "reason": "Internal working-material convention or open-source operations proposal; contains development coordination and observations, not public product guidance."
+    },
+    {
+      "kind": "file",
+      "path": "docs/internal/operations/plan.md",
+      "action": "exclude",
+      "reason": "Internal working-material convention or open-source operations proposal; contains development coordination and observations, not public product guidance."
+    },
+    {
+      "kind": "file",
+      "path": "docs/internal/operations/host-promotion.md",
+      "action": "exclude",
+      "reason": "Internal working-material convention or open-source operations proposal; contains development coordination and observations, not public product guidance."
+    },
+    {
+      "kind": "file",
+      "path": "docs/internal/operations/internationalization.md",
+      "action": "exclude",
+      "reason": "Internal working-material convention or open-source operations proposal; contains development coordination and observations, not public product guidance."
+    },
+    {"kind": "file", "path": "packages/knowledge-ladybug/src/embedding-model-assets.ts", "action": "include", "reason": "Private fixed-revision local embedding resource preparation, integrity checks, atomic resumable downloads and existing macOS manual proxy adaptation; no model client, Design text transfer, new authority or changed inference budget."},
+    {"kind": "file", "path": "packages/knowledge-ladybug/test/embedding-model-assets.test.mjs", "action": "include", "reason": "Bounded local resource integrity, interrupted transfer, atomic promotion, offline, proxy projection and lock regression checks; no public model download or installed-host acceptance claim."},
+    {"kind": "file", "path": "packages/knowledge-ladybug/src/embedding-diagnostic.ts", "action": "include", "reason": "Private closed embedding failure diagnostics shared by the child and receiving boundary; no raw errors, credentials, design text, new state authority or model client. Bundled through existing Knowledge and portable entries."},
+    {"kind": "file", "path": "scripts/test-fixtures/native-donor-beta16-SOURCE.json", "action": "include", "reason": "Exact historical SOURCE metadata from the SRI-pinned public Companion beta.16 donor, retained solely for inheritance and rejection tests; not a current source authority or executable artifact."},
+    {"kind": "file", "path": "packages/panel/test/kag-prototype.config.ts", "action": "exclude", "reason": "Internal isolated browser prototype build entry; not a release or installed Host configuration."},
+    {"kind": "file", "path": "packages/panel/test/kag-prototype.tsx", "action": "exclude", "reason": "Internal formative KAG fixture wrapper; production graph semantics and components retain their source ownership."},
+    {"kind": "file", "path": "packages/panel/test/serve-kag-prototype.mjs", "action": "exclude", "reason": "Internal local prototype server over a fixed repository archive, with owned build outputs; not a live Host or packaging authority."},
+    {"kind": "file", "path": "packages/panel/src/client/graph-nebula.ts", "action": "include", "reason": "Specialist KAG canvas source-density shader and bounded no-WebGL fallback from the approved v5 visual, with per-instance resource ownership; no host chrome or design-data authority."},
+    {"kind": "file", "path": "packages/panel/src/client/graph-canvas-presentation.tsx", "action": "include", "reason": "Shared read-only KAG canvas source palettes and camera controls across 2D and 3D; retains specialist canvas ownership without host theme or canonical-data changes."},
+    {"kind": "file", "path": "packages/panel/src/client/graph-bundle-model.ts", "action": "include", "reason": "Host-neutral read-only Bundle display aggregation retaining original relation members, direction, provenance and lifecycle."},
+    {"kind": "file", "path": "packages/panel/src/client/graph-exploration.tsx", "action": "include", "reason": "Opt-in shared KAG display component for Bundle and free graph views; uses existing canonical graph and detail ports without knowledge writes."},
+    {"kind": "file", "path": "packages/panel/src/client/graph-exploration-styles.ts", "action": "include", "reason": "Specialist graph canvas visual resources, distinct from ordinary shared Panel controls and form foundations."},
+    {"kind": "file", "path": "packages/panel/src/client/graph-stress.d.mts", "action": "include", "reason": "Types for the existing source Stress layout implementation; no replacement layout or runtime authority."},
+    {"kind": "file", "path": "packages/panel/test/graph-bundle-model.test.mjs", "action": "include", "reason": "Portable original graph projection regression over public synthetic fixture data, preserving endpoints and relation evidence through display aggregation."},
+    {"kind": "file", "path": "docs/component-package-contract.md", "action": "include", "reason": "Public trusted native Provider package contract and concrete byte/closure example; separates descriptor admission from installation, executable trust and Host delivery."},
+    {"kind": "file", "path": "packages/core/src/component-package.ts", "action": "include", "reason": "Host-neutral bounded manifest, exact file-byte and dependency-closure validation through existing trusted contribution authority; no code loader or installation grant."},
+    {"kind": "file", "path": "packages/core/src/design-driver-id.ts", "action": "include", "reason": "Pure existing versioned contribution identity grammar retained from runtime-drivers with compatible re-exports; browser and Node strip-only safe."},
+    {"kind": "file", "path": "packages/core/test/component-package.test.mjs", "action": "include", "reason": "Synthetic byte-integrity, exact closure, existing authority and unsupported DSL/contribution regression for native package admission."},
+    {"kind": "file", "path": "packages/core/test/fixtures/component-package/fixture.mjs", "action": "include", "reason": "Bounded checked-in synthetic package reader and independent Node SHA-256 fixture helper; no arbitrary user filesystem or credentials."},
+    {"kind": "file", "path": "packages/core/test/fixtures/component-package/invalid-declarations.json", "action": "include", "reason": "Data-only invalid synthetic native package declarations with stable diagnostic expectations."},
+    {"kind": "file", "path": "packages/core/test/fixtures/component-package/minimal-pin.json", "action": "include", "reason": "External exact identity and byte pin of the checked-in minimal native Provider fixture; not executable trust or publication authority."},
+    {"kind": "file", "path": "packages/core/test/fixtures/component-package/minimal/LICENSE", "action": "include", "reason": "Complete Apache-2.0 license text retained with the project-authored minimal native Provider fixture."},
+    {"kind": "file", "path": "packages/core/test/fixtures/component-package/minimal/client.mjs", "action": "include", "reason": "Project-authored minimal trusted native notice renderer using caller-supplied Host React and the existing Panel registry; synthetic test/example only."},
+    {"kind": "file", "path": "packages/core/test/fixtures/component-package/minimal/component-package.json", "action": "include", "reason": "Complete exact-byte inventory and native Panel API 1 declaration for the synthetic minimal Provider example."},
+    {"kind": "file", "path": "packages/core/test/fixtures/component-package/minimal/package.json", "action": "include", "reason": "Synthetic exact Provider identity, entries, license and Host-only React peers for package-admission tests; no installation side effect."},
+    {"kind": "file", "path": "packages/core/test/fixtures/component-package/minimal/server.mjs", "action": "include", "reason": "Project-authored minimal trusted native presentation claim registered through the existing Bundle authority; synthetic test/example only."},
+    {"kind": "file", "path": "packages/panel/test/component-package-built.mjs", "action": "include", "reason": "Isolated owned-output minimal package compilation and built Core/Panel registry plus Node SSR probe; explicitly excludes browser or installed Host acceptance."},
+    {"kind": "file", "path": "packages/panel/test/component-package.test.mjs", "action": "include", "reason": "Synthetic native package entry, Host React identity, conflict and original effect-disposal regression over the existing shared registry."},
+    {"kind": "file", "path": ".github/ISSUE_TEMPLATE/bug_report.yml", "action": "include", "reason": "Static bilingual ordinary bug-report form covering version, environment, reproduction and expected/actual behavior; preserves the existing security-report route without uploads or automatic routing."},
+    {"kind": "file", "path": ".github/ISSUE_TEMPLATE/feature_request.yml", "action": "include", "reason": "Static bilingual feature-request form focused on use case, obstacle and desired outcome, with no forced bug reproduction or runtime capability."},
+    {"kind": "file", "path": ".github/ISSUE_TEMPLATE/config.yml", "action": "include", "reason": "Static Issue chooser configuration linking the maintained feedback and security guides; preserves blank Issues and grants no repository access or publication authority."},
+    {"kind": "file", "path": "packages/studio-dsh/src/authoring-agent.ts", "action": "include", "reason": "Bounded DSH native SDK authoring child over injected Studio read/prepare ports; retains native lifecycle evidence without model, storage or publication authority duplication."},
+    {"kind": "file", "path": "packages/companion/hosts/codex-desktop/README.md", "action": "include", "reason": "Version-bound macOS Codex desktop development preview guide with explicit native startup, shared Panel/save boundaries and separate installed-host verification."},
+    {"kind": "file", "path": "packages/companion/codex-desktop-package.mjs", "action": "include", "reason": "Normal same-plugin desktop package mapping pins an existing public Node and resolves runtime files from the native loaded plugin root; does not install or publish."},
+    {"kind": "file", "path": "packages/companion/plugin/design-system/skills/design-panel/codex-desktop.md", "action": "include", "reason": "Installed Mac desktop entry for the shared Panel and exact original-conversation bridge, preserving separate host startup and capability evidence."},
+    {"kind": "file", "path": "packages/companion/src/codex-desktop-marketplace.mjs", "action": "include", "reason": "Packaged local desktop catalog plan/apply entry with fixed-source receipts; native plugin installation and loading remain separate operations."},
+    {"kind": "file", "path": "packages/companion/src/npm-codex-desktop-source.mjs", "action": "include", "reason": "Small immutable desktop overlay bound to the acquired exact npm runtime, public Node and installed-runtime receipt; no runtime copying, native activation or credential access."},
+    {"kind": "file", "path": "packages/companion/src/npm-installer-codex-desktop.mjs", "action": "include", "reason": "Normal acquired-npm desktop preparation orchestration reusing owned marketplace plans and receipts; preserves separate native UI activation and loaded-version verification."},
+    {"kind": "file", "path": "packages/companion/test/npm-codex-desktop-source.test.mjs", "action": "include", "reason": "Optional explicit real acquired npm A/B source API regression with isolated user roots, exact saved plans, owned updates and negative ownership checks; no fake Host or native activation claim."},
+    {"kind": "file", "path": "packages/companion/test/codex-desktop-installation.test.mjs", "action": "include", "reason": "Isolated public Node mapping and personal-catalog preparation regressions preserve unrelated entries and native configuration without real profile or Host installation."},
+    {"kind": "file", "path": "packages/companion/src/codex-desktop-bridge.mjs", "action": "include", "reason": "Host-owned bounded save-notification lifecycle bridge over the existing private Companion connection; no model, source or publication authority."},
+    {"kind": "file", "path": "packages/companion/src/codex-desktop-connection.mjs", "action": "include", "reason": "Explicit installed Codex desktop transport with exact thread and current host endpoint binding, bounded frames and unknown-delivery handling."},
+    {"kind": "file", "path": "packages/companion/src/codex-desktop-relay.mjs", "action": "include", "reason": "Single-owner ephemeral save-notification lane using existing Companion connection authentication and lifecycle boundaries."},
+    {"kind": "file", "path": "packages/companion/test/codex-desktop-bridge.test.mjs", "action": "include", "reason": "Isolated bridge startup, exact-thread and private-error regressions without user profiles or actual native desktop requests."},
+    {"kind": "file", "path": "packages/companion/test/codex-desktop-capability.test.mjs", "action": "include", "reason": "Actual local HTTP and temporary project tests for desktop capability limits, private-lane browser isolation and save/reopen boundaries."},
+    {"kind": "file", "path": "packages/companion/test/codex-desktop-connection.test.mjs", "action": "include", "reason": "Bounded transport framing, current endpoint identity, exact native thread and uncertain-receipt regressions with isolated mocks/sockets."},
+    {"kind": "file", "path": "packages/companion/test/codex-desktop-relay.test.mjs", "action": "include", "reason": "Isolated notification-lane owner, claim, settlement and no-replay lifecycle regressions without model or real host invocation."},
+    {"kind": "file", "path": "packages/panel/src/sample-preview.tsx", "action": "include", "reason": "Shared browser sample wrapper over the existing declarative interpreter and unique shared CSS; sample-only ports without Studio, artifact, host or save capabilities."},
+    {"kind": "file", "path": "packages/panel/test/sample-preview-package.test.mjs", "action": "include", "reason": "Built sample export isolation and existing packaged CSS manifest and owned route lifecycle regressions using local fixtures."},
+    {"kind": "file", "path": "packages/panel/test/workspace-layout-browser.mjs", "action": "include", "reason": "Reproducible built shared Panel geometry and real browser scrolling regression across workspace compositions, document flow and viewport sizes; synthetic data only."},
+    {"kind": "file", "path": "packages/panel/test/sample-preview.test.mjs", "action": "include", "reason": "Actual React/interpreter sample reading and editing, Companion behavior and official cross-Kit examples in JSDOM without private profiles or user data."},
+    {"kind": "file", "path": "packages/studio-dsh/src/authoring-session.ts", "action": "include", "reason": "Optional trusted live-parent session bridge composes existing shared Studio read/prepare capabilities with the native authoring adapter; no parallel source, save or model authority."},
+    {"kind": "file", "path": "packages/studio-dsh/src/authoring-session.types.ts", "action": "include", "reason": "Typed session requests and canonical prepared-candidate projection over existing native references and Studio instance ports."},
+    {"kind": "file", "path": "packages/studio-dsh/src/authoring-reference-store.ts", "action": "include", "reason": "Optional host-private persistence of exact native authoring addresses and scope using explicit private storage; no model, execution-status, candidate or design-source authority."},
+    {"kind": "file", "path": "packages/studio-dsh/tests/authoring-private-directory.test.mjs", "action": "include", "reason": "Isolated private leaf preparation, no-repair and initialization-sync/replacement regressions reuse the native reference owner rules without profile, Host or model action."},
+    {"kind": "file", "path": "packages/studio-dsh/tests/authoring-reference-store.test.mjs", "action": "include", "reason": "Isolated filesystem integrity, parent isolation, no-clobber publication and initialization-sync recovery regressions without real Host, profile or native execution."},
+    {"kind": "file", "path": "packages/studio-dsh/src/authoring-sources.ts", "action": "include", "reason": "Optional trusted exact Core source and public DSH filesystem adapters into the existing shared Studio snapshot, composition and save authorities; no new model or storage authority."},
+    {"kind": "file", "path": "packages/studio-dsh/tests/authoring-sources.test.mjs", "action": "include", "reason": "Explicit filesystem-port and Core fixture regressions for exact source capture, byte retention, observed metadata conflicts and actual temporary Studio copy/reopen without installed Host or profile changes."},
+    {"kind": "file", "path": "packages/studio-dsh/src/authoring.remote-client.ts", "action": "include", "reason": "Strict optional exact-parent authoring JSON descriptors preserving shared Studio projections and the native Agent lookup contract; no service or execution activation."},
+    {"kind": "file", "path": "packages/studio-dsh/src/authoring.page-rpc.ts", "action": "include", "reason": "Optional native-parent client over the existing Studio same-origin carrier, retaining explicit saves, canonical reference locators and no automatic retry."},
+    {"kind": "file", "path": "packages/studio-dsh/tests/authoring-rpc.test.mjs", "action": "include", "reason": "Strict serialization and exact-parent wire regressions with actual temporary shared Studio copy/save/reopen and lost-response probes; native and HTTP values remain explicit fixtures."},
+    {"kind": "file", "path": "packages/core/test/dsh-asar-test-loader.test.mjs", "action": "include", "reason": "Project-authored synthetic ASAR integrity, CJS conditions and closure rollback regression with private owned staging; no official SDK bytes, profile or native-addon execution."},
+    {"kind": "file", "path": "packages/studio-dsh/src/authoring-workbench.tsx", "action": "include", "reason": "Optional browser-only intent and explicit candidate-review container over shared Studio UI, read-only public Panel samples and native scoped client; no new source, save or model authority."},
+    {"kind": "file", "path": "packages/studio-dsh/src/page-workspace.tsx", "action": "include", "reason": "Shared Studio workspace composition selects explicit parent-scoped authoring or session-free inspection without booting a second host client or creating a model authority."},
+    {"kind": "file", "path": "packages/studio-dsh/src/authoring-entry.ts", "action": "include", "reason": "Optional trusted native activation uses public Host home paths and Cordis lifecycle to prepare private roots and mount the existing authoring Service; no automatic platform activation."},
+    {"kind": "file", "path": "packages/studio-dsh/tests/authoring-entry.test.mjs", "action": "include", "reason": "Private temporary directory and actual Cordis/Service activation regressions cover early unload joins, captured roots and failure preservation without model or installed Host changes."},
+    {"kind": "file", "path": "packages/studio-dsh/src/authoring-launcher.tsx", "action": "include", "reason": "Public native session-header launcher revalidates the retained session binding and routes only an exact locator; no parent registry or native execution activation."},
+    {"kind": "file", "path": "packages/studio-dsh/tests/authoring-launcher.test.mjs", "action": "include", "reason": "React18 public-scope fixtures cover session changes, stale binding, click revalidation and disposal without an installed Host or profile mutation."},
+    {"kind": "file", "path": "packages/studio-dsh/tests/page-authoring.test.mjs", "action": "include", "reason": "Shared full-page reading and explicit candidate review/save paths use actual temporary Studio storage with native RPC fixtures; not installed Host acceptance."},
+    {"kind": "file", "path": "packages/studio-dsh/tests/page-loader.test.mjs", "action": "include", "reason": "Independent full compiled-page module-load gate retains strict external and loader-alias rejection after exact source-pinned framework and optional Node guard proofs; actual image Worker strings are checked separately."},
+    {"kind": "file", "path": "packages/studio-dsh/tests/page-workers.test.mjs", "action": "include", "reason": "Checks actual compiled-page image Worker string values against pinned original inputs independently of whole-page module loads and runtime dispatch."},
+    {"kind": "file", "path": "packages/studio-dsh/tests/client-boot.test.mjs", "action": "include", "reason": "Normal native CJS module-table registration checks both Studio launchers and their declared public services using explicit Host fixtures."},
+    {"kind": "file", "path": "packages/panel/test/browser-esm-peer.test.mjs", "action": "include", "reason": "Normal browser ESM regressions verify the actual React18 peer factory identity and guarded optional Node helpers without an installed Host claim."},
+    {"kind": "file", "path": "scripts/known-browser-lodash-proof.mjs", "action": "include", "reason": "Explicit source-pinned AST and lexical proof of the retained upstream optional Node guard; preserves strict default emitted-loader rejection and upstream notice."},
+    {"kind": "file", "path": "scripts/known-browser-lodash-proof.test.mjs", "action": "include", "reason": "Positive guard and meaningful malformed-guard, lexical injection, alias and stale-proof regressions for the explicit browser-only proof producer."},
+    {"kind": "file", "path": "scripts/known-flat-browser-loader-proof.mjs", "action": "include", "reason": "Explicit source-pinned lexical and alpha-equivalent proof of finite browser forwarding helpers and initialization barriers; retains strict default factory and Worker analysis."},
+    {"kind": "file", "path": "scripts/known-flat-browser-loader-proof.test.mjs", "action": "include", "reason": "Finite helper binding, initialization, eval, alias and source-drift negatives preserve rejection of unproved runtime and Worker paths."},
+    {"kind": "file", "path": "scripts/known-flat-embedded-loader-proof.mjs", "action": "include", "reason": "Explicit finite embedded Browserify framework proof verifies wrapper, fallback, initialization and literal mappings while retaining ordinary factory and Worker diagnostics."},
+    {"kind": "file", "path": "scripts/known-flat-embedded-loader-proof.test.mjs", "action": "include", "reason": "Embedded framework binding, prototype, source-drift and composition negatives preserve the strict module-loader boundary."},
+    {"kind": "file", "path": "scripts/pica-static-worker-compiler.mjs", "action": "include", "reason": "Build-time compiler retains the two pinned Pica factory graphs and notices in finite classic Worker scripts, with binding-aware emitted-script proof and the repository Node engine policy."},
+    {"kind": "file", "path": "scripts/pica-static-worker-compiler.test.mjs", "action": "include", "reason": "Static Worker source, binding, initialization, version and resource negatives plus independent math and transfer fixtures verify the finite compiler boundary."},
+    {"kind": "file", "path": "scripts/pica-static-worker-adapter.mjs", "action": "include", "reason": "Pinned browser-only Pica adapter replaces four verified source seams with finite Worker roles while preserving the remaining upstream source and stable provenance."},
+    {"kind": "file", "path": "scripts/pica-static-worker-adapter.test.mjs", "action": "include", "reason": "Worker role, source retention, constructor cleanup, auxiliary fallback and relocatable importer regressions verify the browser build adapter."},
+    {"kind": "file", "path": "packages/studio-dsh/tests/authoring-workbench.test.mjs", "action": "include", "reason": "React18/shared Panel and real temporary Studio storage regressions for intent, dirty state, uncertainty, explicit review/save and lifecycle with native RPC fixtures; not installed Host acceptance."},
+    {"kind": "file", "path": "packages/studio-dsh/src/authoring-service.ts", "action": "include", "reason": "Optional public-lifecycle DSH Service connects the existing canonical Host to actual agent-scoped Gateway calls with explicit private roots, shared save authority and no second model client."},
+    {"kind": "file", "path": "packages/studio-dsh/src/remote-method.ts", "action": "include", "reason": "Shared public SDK Remote marker preserves plain ESM inspection and optional native Service registration without runtime decorator syntax."},
+    {"kind": "file", "path": "packages/studio-dsh/tests/authoring-service-sdk.test.mjs", "action": "include", "reason": "Official SDK Registry/Gateway actual Agent lookup and Service lifecycle regressions with scripted native model, explicit connection/filesystem fixtures and real temporary shared save/reopen; not installed Host acceptance."},
+    {"kind": "file", "path": "packages/studio-dsh/src/authoring-host.ts", "action": "include", "reason": "Optional trusted Host composition of the existing shared instance store, private native address store and exact live-parent session adapter, using public lifecycle and no second source or execution authority."},
+    {"kind": "file", "path": "packages/studio-dsh/src/authoring-host.types.ts", "action": "include", "reason": "Typed exact-parent Host facade, canonical reference locators and existing Studio/native ports; no new persisted state or model interface."},
+    {"kind": "file", "path": "packages/studio-dsh/tests/authoring-host-sdk.test.mjs", "action": "include", "reason": "Scripted official SDK and actual temporary Studio/reference-store composition regressions for canonical retention, exact parents, explicit save, uncertainty and lifecycle cleanup; no installed Host acceptance."},
+    {"kind": "file", "path": "packages/studio-dsh/tests/authoring-session-sdk.test.mjs", "action": "include", "reason": "Official scripted SDK and temporary actual Studio storage regressions for explicit two-revision authoring, save/reopen, conflict and lifecycle boundaries."},
+    {"kind": "file", "path": "packages/studio-dsh/tests/fixtures/authoring-sdk.mjs", "action": "include", "reason": "Shared isolated official SDK fixture preserves existing native lifecycle regressions without user profiles, credentials or installation changes."},
+    {"kind": "file", "path": "packages/studio-dsh/src/authoring-material.ts", "action": "include", "reason": "Package-owned creator method and component reference reader through existing native Studio tools; no arbitrary file or write authority."},
+    {"kind": "file", "path": "packages/studio-dsh/tests/authoring-material.test.mjs", "action": "include", "reason": "Bounded packaged method selection, UTF-8 pagination and invalid-resource regression tests."},
+    {"kind": "file", "path": "packages/studio-dsh/src/authoring-agent.types.ts", "action": "include", "reason": "Public typed Studio authoring scope, native references and lifecycle ports for the DSH Host adapter."},
+    {"kind": "file", "path": "packages/studio-dsh/tests/authoring-agent-sdk.test.mjs", "action": "include", "reason": "Official RC2 SDK regression with scripted model and memory persistence fixtures, selected through an explicit external Host graph; no user data, credentials or installed-profile mutation."},
+    {"kind": "file", "path": "packages/studio/src/node.ts", "action": "include", "reason": "Optional shared Node adapter entry, separate from the host-neutral domain root."},
+    {"kind": "prefix", "path": "packages/studio/src/node/", "action": "include", "reason": "Shared snapshot, atomic working-copy, Core composition and scoped authoring implementations and concrete public port types; existing Companion modules forward here."},
+    {"kind": "file", "path": "packages/studio/tests/node-entry.test.mjs", "action": "include", "reason": "Compiled Node export and domain-root isolation regressions over temporary synthetic storage."},
+    {"kind": "file", "path": "packages/studio/tests/node-public-consumer.ts", "action": "include", "reason": "Strict consumer of the emitted optional Node entry types with meaningful negative type cases."},
+    {"kind": "file", "path": "packages/studio/tests/node-public-tsconfig.json", "action": "include", "reason": "Strict emitted-type consumer configuration for the public Node entry."},
+    {"kind": "file", "path": "packages/studio-ui/src/SourceCandidateReview.tsx", "action": "include", "reason": "Existing standalone candidate presentation over the shared exact source diff and revision-checked atomic save state; compatibility port grants no model or publication authority."},
+    {"kind": "file", "path": "packages/studio-ui/tests/source-candidate-review.test.mjs", "action": "include", "reason": "Rendered candidate review with real Core and temporary S1 save/reopen, concurrent human edit, late response and uncertain receipt regressions."},
+    {"kind": "file", "path": "packages/studio-ui/tests/source-tsconfig.json", "action": "include", "reason": "Explicit Core and Studio source aliases plus JSX source inclusion for the isolated candidate review regression; not installed-package evidence."},
+    { "kind": "file", "path": "packages/companion/src/studio-authoring.mjs", "action": "include", "reason": "Host-bound read and prepare adapter over the existing Studio source candidate service, with no save, publication or model authority." },
+    { "kind": "file", "path": "packages/companion/test/studio-authoring.test.mjs", "action": "include", "reason": "Synthetic temporary-storage and actual Core/component-catalog regression for scoped authoring reads, candidate preparation, revision races and denial boundaries; no native Host or user profile input." },
+    {"kind": "file", "path": "packages/studio/src/instance-changes.ts", "action": "include", "reason": "Host-neutral bounded Studio multi-file request, candidate, diff and receipt contracts over the existing working-copy authority; no model, filesystem or publication grant."},
+    {"kind": "file", "path": "packages/studio/tests/instance-changes.test.mjs", "action": "include", "reason": "Portable synthetic normalization and input-budget regression for Studio source changes; no profile or private project input."},
+    {"kind": "file", "path": "packages/companion/test/fixtures/studio-changes-child.mjs", "action": "include", "reason": "Disposable child-process fault injector for exact owned Studio snapshot/record writes; signals and filesystem changes stay inside synthetic test storage."},
+    {"kind": "file", "path": "packages/companion/test/fixtures/studio-changes-fixture.mjs", "action": "include", "reason": "Domain-neutral synthetic Bundle and real Core adapter used by Studio multi-file persistence/RPC regressions; no user source or model credentials."},
+    {"kind": "file", "path": "packages/companion/test/studio-instance-changes-http.test.mjs", "action": "include", "reason": "Isolated authenticated Companion RPC regression for exact source candidates, CAS conflicts and validation; no external service or installed profile."},
+    {"kind": "file", "path": "packages/companion/test/studio-instance-changes-recovery.test.mjs", "action": "include", "reason": "Owned temporary-storage and child-process interruption regression proving complete old/new working copies across atomic record replacement, without a power-loss claim."},
+    {"kind": "file", "path": "packages/companion/test/studio-instance-changes.test.mjs", "action": "include", "reason": "Real Core and temporary disk regression for full-source diff/preview/digest, draft recovery, revision conflict and bounded input protections."},
+    {"kind": "file", "path": "packages/studio-ui/tests/instance-presentation.test.mjs", "action": "include", "reason": "Shared optional instance presentation port regression with synthetic DOM and host callbacks, covering identity, dirty guard and standard fallback; no prototype fixture or private runtime input."},
+    {"kind": "file", "path": "packages/studio-ui/src/ConversationActivity.tsx", "action": "include", "reason": "Shared Companion and Studio presentation of public Host messages and tool activity; execution, transport and persistence remain with the Host."},
+    {"kind": "file", "path": "packages/studio-ui/src/BundleCard.tsx", "action": "include", "reason": "Single shared Bundle card and existing content glyph presentation reused by the Studio catalog and Kit mount selection; display-only metadata grants no source or save authority."},
+    {"kind": "file", "path": "packages/studio-ui/src/VersionPicker.tsx", "action": "include", "reason": "Shared themed exact-version control restored from the maintained Studio catalog baseline; preserves installed version pins and owner navigation guards."},
+    {"kind": "file", "path": "packages/companion/src/notification-delivery.d.mts", "action": "include", "reason": "Types for the existing safe notification delivery receipt allowlist used by Studio host fallback; preserves not-submitted versus unknown without exposing native payloads."},
+    {"kind": "file", "path": "packages/studio-ui/tests/version-picker.test.mjs", "action": "include", "reason": "Synthetic DOM regression for exact version selection, keyboard navigation, dismissal, viewport placement and declined owner changes; no native runtime claim."},
+    {"kind": "file", "path": "packages/studio-ui/tests/visual-authoring.test.mjs", "action": "exclude", "reason": "Internal formative Studio interaction-session regression using excluded source-alias prototype fixtures; not a public installed-package or durable save gate."},
+    {"kind": "prefix", "path": "packages/studio-ui/prototype-ux/", "action": "exclude", "reason": "Internal formative Studio interaction proposal using a bounded in-memory working copy and source-alias preview; not installed Studio, durable save or native Agent acceptance."},
+    {"kind": "prefix", "path": "packages/studio-ui/prototype/", "action": "exclude", "reason": "Internal formative authoring experiment with recorded candidates and in-memory snapshots; separate from installed Studio and native Agent acceptance."},
+    {"kind": "file", "path": "packages/studio-ui/src/authoring-prototype-controller.ts", "action": "exclude", "reason": "Controller used only by the internal authoring experiment, not a production persistence or publication authority."},
+    {"kind": "file", "path": "packages/studio-ui/tests/authoring-prototype.test.mjs", "action": "exclude", "reason": "Source-alias regression for the excluded internal authoring fixture, not an installed-package gate."},
     {
       "kind": "file",
       "path": "docs/internal/README.md",
@@ -1135,9 +1233,21 @@
     },
     {
       "kind": "file",
+      "path": "docs/wiki/custom-kit-tutorial.en.md",
+      "action": "include",
+      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
+    },
+    {
+      "kind": "file",
       "path": "docs/wiki/hosts.md",
       "action": "include",
       "reason": "Public host compatibility entry with explicit preview/installed-version boundaries; badges link here without general acceptance claims."
+    },
+    {
+      "kind": "file",
+      "path": "docs/wiki/hosts.en.md",
+      "action": "include",
+      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
     },
     {
       "kind": "file",
@@ -1162,6 +1272,12 @@
       "path": "docs/public-document-sync.md",
       "action": "include",
       "reason": "Portable maintainer single-source document contract over existing fixed-commit export, local link checks and target-conflict protection."
+    },
+    {
+      "kind": "file",
+      "path": "docs/testing/agentic-e2e.md",
+      "action": "include",
+      "reason": "Maintained native-Agent E2E playbook with synthetic new-design, example migration and Studio authoring cases, plus actual npm clean-install/upgrade checks; no private profiles, credentials or per-run evidence."
     },
     {
       "kind": "file",
@@ -1672,6 +1788,18 @@
       "path": "packages/companion/test/execution-log-ui.test.mjs",
       "action": "include",
       "reason": "Isolated authenticated RPC-to-component regression using synthetic native-format transcripts; no real user sessions or credentials and no claim of native model execution."
+    },
+    {
+      "kind": "file",
+      "path": "packages/core/src/dsh-project-content.ts",
+      "action": "include",
+      "reason": "DSH project acceptance restores and retains exact content through the existing content store; no user data or credentials. Source classification only, not release or installed-host acceptance."
+    },
+    {
+      "kind": "file",
+      "path": "packages/core/test/dsh-project-content-retention.test.mjs",
+      "action": "include",
+      "reason": "Isolated synthetic source, import, migration and restart regressions for exact project content retention; no user profiles or credentials. Source classification only, not release or installed-host acceptance."
     },
     {
       "kind": "file",
@@ -2515,6 +2643,12 @@
     },
     {
       "kind": "file",
+      "path": "docs/wiki/README.en.md",
+      "action": "include",
+      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
+    },
+    {
+      "kind": "file",
       "path": "docs/wiki/concepts.md",
       "action": "include",
       "reason": "Host-neutral public concepts aligned with owning contracts; no developer profile or obsolete universal Producer claim."
@@ -2527,6 +2661,12 @@
     },
     {
       "kind": "file",
+      "path": "docs/wiki/getting-started.en.md",
+      "action": "include",
+      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
+    },
+    {
+      "kind": "file",
       "path": "docs/wiki/troubleshooting.md",
       "action": "include",
       "reason": "Public troubleshooting structure over existing host authority; no private profile/gateway commands or credentials."
@@ -2536,6 +2676,12 @@
       "path": "docs/wiki/usage.md",
       "action": "include",
       "reason": "Public design/edit/save and existing reconstruction guidance; preserves domain/source protocols and host limitations."
+    },
+    {
+      "kind": "file",
+      "path": "docs/wiki/usage.en.md",
+      "action": "include",
+      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
     },
     {
       "kind": "file",
@@ -6655,6 +6801,18 @@
     },
     {
       "kind": "file",
+      "path": "scripts/studio-authoring-material.mjs",
+      "action": "include",
+      "reason": "Reviewed bounded build-time projection of existing creator methods, contracts and examples with retained source hashes and link mapping. Generates self-contained Host skills and the same read-only DSH material; no credentials, model client or runtime filesystem authority. Native execution acceptance is separate."
+    },
+    {
+      "kind": "file",
+      "path": "scripts/studio-authoring-material.test.mjs",
+      "action": "include",
+      "reason": "Reviewed synthetic temporary-directory coverage of relocated method/reference closure, source retention, exact overlay bytes, overwrite and tamper rejection, and missing/symlinked methods. Three focused tests passed; no user profiles or native Host acceptance claim."
+    },
+    {
+      "kind": "file",
       "path": "scripts/generate-panel-authoring-material.mjs",
       "action": "include",
       "reason": "Fully read short-lived build-time generator invoked by the selected authoring adapter with the local TypeScript loader; reuses the existing inspector and validates contract/docs/examples before and after bounded JSON serialization. Each invocation owns a fresh module graph; no model, network or installed runtime checkout fallback. Inclusion is not performance or whole-release acceptance"
@@ -6670,6 +6828,12 @@
       "path": "docs/wiki/kit-sharing.md",
       "action": "include",
       "reason": "Fully read portable Kit directory/ZIP, identity, pin/version, conflict and original-content recovery instructions; necessary discovery/selection source interfaces checked. Distinguishes DSH and Companion limits, process-only retention and content backup from project checkpoints; no private user paths or credentials, and no claim of full installed upgrade or cross-host acceptance"
+    },
+    {
+      "kind": "file",
+      "path": "docs/wiki/kit-sharing.en.md",
+      "action": "include",
+      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
     },
     {
       "kind": "file",
@@ -6781,6 +6945,12 @@
     },
     {
       "kind": "file",
+      "path": "docs/wiki/extending.en.md",
+      "action": "include",
+      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
+    },
+    {
+      "kind": "file",
       "path": "docs/dsl-spec.md",
       "action": "include",
       "reason": "Read complete declarative Panel grammar, schema bindings, shared catalog/renderer and generation-authority limits; links only repository-local contracts and public package sources, without host configuration or private paths. Inclusion does not establish runtime/platform acceptance or final linked-document closure"
@@ -6808,6 +6978,12 @@
       "path": "docs/wiki/web-app-demo.md",
       "action": "include",
       "reason": "Public synthetic activity-browsing demonstration with explicit real generation, feedback, validation and UI-loop boundaries; no private project paths, credentials, host setup or embedded unreviewed images. Screenshot assets require separate selection"
+    },
+    {
+      "kind": "file",
+      "path": "docs/wiki/web-app-demo.en.md",
+      "action": "include",
+      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
     },
     {
       "kind": "file",
@@ -7489,6 +7665,12 @@
     },
     {
       "kind": "file",
+      "path": "docs/product-vision.en.md",
+      "action": "include",
+      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
+    },
+    {
+      "kind": "file",
       "path": "docs/design-development-handoff.md",
       "action": "include",
       "reason": "Fully reviewed host-neutral, Kit-contract-based task handoff guide separates published source, KAG clues, assumptions and user authorization; explicitly marks fresh coding-agent implementation and feedback acceptance as pending. No private project, credentials or installer commands; linked architecture and actual product-loop acceptance require separate review"
@@ -7714,6 +7896,12 @@
       "path": ".agents/skills/design-bundle-creator/agents/openai.yaml",
       "action": "include",
       "reason": "Reviewed optional skill UI metadata, not host configuration"
+    },
+    {
+      "kind": "file",
+      "path": ".agents/skills/design-bundle-creator/references/validation-authoring.md",
+      "action": "include",
+      "reason": "Installed Studio authoring reference for the existing Core validation grammar, complete synthetic positive/negative states and byte-exact mature schema/rule examples. Reachable through packaged creator methods and the resource index; no new validation semantics, user data, filesystem or execution authority. Focused Core/resource checks are separate from actual native authoring acceptance."
     },
     {
       "kind": "file",
@@ -8082,6 +8270,12 @@
       "reason": "Source workspace definition; actual closure separately verified"
     },
     {
+      "kind": "file",
+      "path": "packages/dsh/screenshots.json",
+      "action": "include",
+      "reason": "Package-local storefront screenshot declaration reuses GitHub-hosted public README images; no private project data, runtime dependency or marketplace acceptance claim."
+    },
+    {
       "kind": "prefix",
       "path": "packages/",
       "action": "include",
@@ -8349,6 +8543,229 @@
     { "kind": "file", "path": "packages/core/test/design-knowledge-records.test.mjs", "action": "include", "reason": "Synthetic project archive, identity, path, Git-callback failure and disposable-cache restoration checks in owned temporary directories." },
     { "kind": "file", "path": "packages/knowledge-ladybug/test/project-archive-cache.test.mjs", "action": "include", "reason": "Real temporary Ladybug archive import, decision provenance, cache reset/reopen and Git-restored file regression; no user database or Host claim." },
     { "kind": "file", "path": "packages/companion/test/knowledge-project-records.test.mjs", "action": "include", "reason": "Isolated Companion project Files/Git and fresh provider-cache restoration check; no installed Host, credentials or model client." },
-    { "kind": "file", "path": "packages/companion/test/browser-continuation.mjs", "action": "include", "reason": "Built React 18 Companion client with isolated Runtime gates and mock native transport checks one shared continuation entry, editor/access guards, draft and dismissal preservation, and no automatic replay; no installed Host claim." }
+    { "kind": "file", "path": "packages/companion/test/browser-continuation.mjs", "action": "include", "reason": "Built React 18 Companion client with isolated Runtime gates and mock native transport checks one shared continuation entry, editor/access guards, draft and dismissal preservation, and no automatic replay; no installed Host claim." },
+    { "kind": "file", "path": "packages/studio-dsh/src/authoring-tools.ts", "action": "include", "reason": "Host conversation tools forward the actual calling Agent to the existing Studio Service and working-copy guards; no second source store, model client or publication authority." },
+    {
+      "kind": "file",
+      "path": "packages/companion/src/studio-conversation-requests.mjs",
+      "action": "include",
+      "reason": "Companion Studio reuses the bound host conversation and canonical Studio working-copy candidate/save contract without another model or persisted fact store."
+    },
+    {
+      "kind": "file",
+      "path": "packages/companion/src/studio-conversation.d.mts",
+      "action": "include",
+      "reason": "Companion Studio reuses the bound host conversation and canonical Studio working-copy candidate/save contract without another model or persisted fact store."
+    },
+    {
+      "kind": "file",
+      "path": "packages/companion/src/studio-conversation.mjs",
+      "action": "include",
+      "reason": "Companion Studio reuses the bound host conversation and canonical Studio working-copy candidate/save contract without another model or persisted fact store."
+    },
+    {
+      "kind": "file",
+      "path": "packages/companion/src/studio-conversation.tsx",
+      "action": "include",
+      "reason": "Companion Studio reuses the bound host conversation and canonical Studio working-copy candidate/save contract without another model or persisted fact store."
+    },
+    {
+      "kind": "file",
+      "path": "packages/companion/test/studio-conversation-browser-fixture.mjs",
+      "action": "include",
+      "reason": "Isolated regression or finite browser fixture for exact host binding, candidate correlation, explicit save and shared navigation; scripted transport is labelled and proves no installed or native-model acceptance."
+    },
+    {
+      "kind": "file",
+      "path": "packages/companion/test/studio-conversation-http.test.mjs",
+      "action": "include",
+      "reason": "Isolated regression or finite browser fixture for exact host binding, candidate correlation, explicit save and shared navigation; scripted transport is labelled and proves no installed or native-model acceptance."
+    },
+    {
+      "kind": "file",
+      "path": "packages/companion/test/studio-conversation-navigation.test.mjs",
+      "action": "include",
+      "reason": "Isolated regression or finite browser fixture for exact host binding, candidate correlation, explicit save and shared navigation; scripted transport is labelled and proves no installed or native-model acceptance."
+    },
+    {
+      "kind": "file",
+      "path": "packages/companion/test/studio-conversation-requests.test.mjs",
+      "action": "include",
+      "reason": "Isolated regression or finite browser fixture for exact host binding, candidate correlation, explicit save and shared navigation; scripted transport is labelled and proves no installed or native-model acceptance."
+    },
+    {
+      "kind": "file",
+      "path": "packages/companion/test/studio-conversation.test.mjs",
+      "action": "include",
+      "reason": "Isolated regression or finite browser fixture for exact host binding, candidate correlation, explicit save and shared navigation; scripted transport is labelled and proves no installed or native-model acceptance."
+    },
+    {
+      "kind": "file",
+      "path": "scripts/static-pica-emission-proof.mjs",
+      "action": "include",
+      "reason": "Build-time proof for normal standalone and embedded Pica static Worker source: exact upstream/compiler bytes, parent AST bindings and captured output associations; no browser, installed-host or release acceptance claim."
+    },
+    {
+      "kind": "file",
+      "path": "scripts/static-pica-emission-proof.test.mjs",
+      "action": "include",
+      "reason": "Bounded source-compiled and synthetic post-build regression coverage for static Worker proof and rejection behavior; not browser, native ABI or installed-package acceptance."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio/src/node/studio-content-archive.mjs",
+      "action": "include",
+      "reason": "Shared existing bounded archive, immutable adoption and native Host adapter; preserves original validation, byte/provenance and platform checks without user state or credentials."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio/src/node/studio-content-archive.d.mts",
+      "action": "include",
+      "reason": "Shared existing bounded archive, immutable adoption and native Host adapter; preserves original validation, byte/provenance and platform checks without user state or credentials."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio/src/node/studio-content-adoption.mjs",
+      "action": "include",
+      "reason": "Shared existing bounded archive, immutable adoption and native Host adapter; preserves original validation, byte/provenance and platform checks without user state or credentials."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio/src/node/studio-content-adoption.d.mts",
+      "action": "include",
+      "reason": "Shared existing bounded archive, immutable adoption and native Host adapter; preserves original validation, byte/provenance and platform checks without user state or credentials."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio/src/node/content-import-legacy.mjs",
+      "action": "include",
+      "reason": "Shared existing bounded archive, immutable adoption and native Host adapter; preserves original validation, byte/provenance and platform checks without user state or credentials."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio/src/node/windows-private-storage.mjs",
+      "action": "include",
+      "reason": "Shared existing bounded archive, immutable adoption and native Host adapter; preserves original validation, byte/provenance and platform checks without user state or credentials."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio/src/node/windows-native-platform.mjs",
+      "action": "include",
+      "reason": "Shared existing bounded archive, immutable adoption and native Host adapter; preserves original validation, byte/provenance and platform checks without user state or credentials."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio-dsh/src/authoring-content.ts",
+      "action": "include",
+      "reason": "Shared existing bounded archive, immutable adoption and native Host adapter; preserves original validation, byte/provenance and platform checks without user state or credentials."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio-ui/src/source-candidate-state.ts",
+      "action": "include",
+      "reason": "Shared exact-candidate lifecycle and revision-checked explicit save state, extracted for existing Studio presentations; no host/model/publication authority."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio-ui/src/SourceFileDiff.tsx",
+      "action": "include",
+      "reason": "Shared bounded complete source-line diff reused by existing standalone and in-place working-copy presentations."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio-ui/tests/instance-source-changes.test.mjs",
+      "action": "include",
+      "reason": "Isolated rendered working-copy and actual temporary S2 save/reopen regressions, including dirty edits, uncertain receipts and late save after copy selection changes."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio-ui/src/StudioFeedback.tsx",
+      "action": "include",
+      "reason": "Shared host-neutral feedback presentation and accessibility; no persistence authority."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio-ui/tests/studio-feedback.test.mjs",
+      "action": "include",
+      "reason": "Synthetic mounted React feedback lifecycle and authored-style checks."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio-ui/src/content-zip.ts",
+      "action": "include",
+      "reason": "Bounded browser ZIP transport over the existing content envelope and Core validation; no filesystem or execution authority."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio-ui/tests/content-zip.test.mjs",
+      "action": "include",
+      "reason": "Synthetic ZIP roundtrip, corruption, size-boundary and legacy import checks."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio-ui/tests/content-archive-fixture.mjs",
+      "action": "include",
+      "reason": "Synthetic byte fixtures and checksums for portable content tests."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio-ui/tests/read-mount-feedback.test.mjs",
+      "action": "include",
+      "reason": "Synthetic mounted read/mount feedback recovery, selection isolation and authored-control regression checks."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio-ui/src/draft-save-receipt.ts",
+      "action": "include",
+      "reason": "Shared UI admission of exact existing draft-save receipts; server retains CAS and storage authority."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio-ui/tests/draft-save-receipt.test.mjs",
+      "action": "include",
+      "reason": "Synthetic wrong-receipt and explicit rejection classification checks."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio-ui/tests/draft-recovery.test.mjs",
+      "action": "include",
+      "reason": "Synthetic mounted draft/trial input retention, read retry and uncertain save recovery checks."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio-ui/tests/mindset-inline-save.test.mjs",
+      "action": "include",
+      "reason": "Synthetic mounted retained-input and read-only verification checks for uncertain Mindset draft saves."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio-ui/src/mount-save-receipt.ts",
+      "action": "include",
+      "reason": "UI admission of exact existing S2 mount save receipts and read-only recovery; no new persistence authority."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio-ui/tests/mount-save.test.mjs",
+      "action": "include",
+      "reason": "Synthetic mounted exact-pin save, uncertain outcome and scope-isolation regression checks."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio-ui/src/content-source-import.ts",
+      "action": "include",
+      "reason": "Maintained browser source import adapter for Bundle and Kit files."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio-ui/tests/content-source-import.test.mjs",
+      "action": "include",
+      "reason": "Synthetic ordinary ZIP, folder and bare Skill import checks."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio/tests/source-import.test.mjs",
+      "action": "include",
+      "reason": "Synthetic incomplete source import, repair and saved-copy regression checks."
+    }
   ]
 }
