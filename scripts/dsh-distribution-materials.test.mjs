@@ -73,10 +73,11 @@ test('observed DSH Pica prebundle receives original embedded notices without wea
   await assert.rejects(copyDshDistributionMaterials({ source, target, sourceName: 'example', packageName: '@example/panel' }), /observation is stale/)
 })
 
-test('Studio source observations stay bound to registered outputs and repository-relative sources', async () => {
+test('retained Studio observations stay bound to recorded outputs and repository-relative source hashes', async () => {
   const manifest = JSON.parse(await readFile(new URL('../release/dsh-distribution-materials.json', import.meta.url)))
   for (const name of ['dsh-design-studio', 'dsh-design-studio-ui']) {
     const selection = manifest.packages[name]
+    assert.match(selection.normalSourceRevision, /^[a-f0-9]{40}$/u)
     assert.equal(selection.normalBuildMaps.length, 1)
     const map = selection.normalBuildMaps[0]
     assert.equal(map.packedOutputSha256, selection.observedOutputSha256[map.output])
@@ -85,9 +86,13 @@ test('Studio source observations stay bound to registered outputs and repository
     assert.equal(map.actualArchiveOutputBindingVerified, false, 'new archive association is recorded only after packing')
     assert.ok(selection.historicalObservation.normalBuildMaps.some(previous => previous.actualArchiveOutputBindingVerified === true), 'retain the prior archive observation as history')
     assert.equal(map.sourceContentsVerified, true)
+    assert.deepEqual(Object.keys(map.projectOwnedSourceSha256).sort(), [...map.projectOwnedSources].sort())
+    // This retained observation belongs to normalSourceRevision, not today's
+    // source tree. observeDshBuild owns current paths and input hashes; its
+    // regressions reject changed or missing current inputs independently.
     for (const path of map.projectOwnedSources) {
       assert.ok(path.startsWith('packages/') && !path.includes('..') && !path.includes('\\'))
-      assert.ok((await readFile(new URL('../' + path, import.meta.url))).length > 0)
+      assert.match(map.projectOwnedSourceSha256[path], /^[a-f0-9]{64}$/u)
     }
     assert.deepEqual(map.projectOwnedMaterials, ['LICENSE', 'NOTICE'])
   }

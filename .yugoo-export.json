@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "c9cdca799cb8c8fd3a697ea28837294d5eb5c1e9",
+  "revision": "0f331cd9cb4a670a6a1ba72d6d37df12a34bb162",
   "policySha256": "a993efb1ff118f0a3cbe4de3412b059ca985644539f50f7e756c9409d0a94b83",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -9180,7 +9180,7 @@
       "mode": "100644"
     },
     "scripts/dsh-distribution-materials.test.mjs": {
-      "sha256": "18aa34f321bd410efddc883b8abc40c79e13cb1689dd5782d93d31597bf6766d",
+      "sha256": "a70503bd1197956cdf285f1918cd52984b1a9428ddd20ccd22d8001845d13e5d",
       "mode": "100644"
     },
     "scripts/dsh-release-observations.mjs": {
