@@ -45,6 +45,35 @@ test('exact discarded upstream shim is inert but consuming it remains blocked',a
   }
 })
 
+test('a discarded shim does not make unrelated module exports into loader entries',async t=>{
+  const discarded="import {i as __require} from './runtime.js';"+EXCALIDRAW_REQUIRE_SHIM+';'
+  const root=await fixture(t,{
+    'client.js':discarded+'const math={renderToString:()=>"mathml"};export {math as kn}',
+    'consumer.js':"export const math=()=>import('./client.js').then(n=>n.kn)",
+  })
+  const records=await checkEmitted(root,new Set(),{knownBrowserShims:true})
+  assert.ok(records.find(row=>row.file==='consumer.js').loads.some(load=>load.kind==='dynamic-import'&&load.source==='./client.js'))
+  assert.ok(records.find(row=>row.file==='client.js').knownBrowserProofs.some(proof=>proof.discardedCarrier))
+  for(const code of [discarded+'export {__require as kn}',discarded+'const alias=__require;export {alias as kn}']){
+    await writeFile(join(root,'client.js'),code)
+    await assert.rejects(checkEmitted(root,new Set(),{knownBrowserShims:true}),/Discarded Excalidraw loader has another reference/)
+  }
+  await writeFile(join(root,'client.js'),discarded+'export const kn=1')
+  await writeFile(join(root,'consumer.js'),"const target='./client.js';export const math=()=>import(target)")
+  await assert.rejects(checkEmitted(root,new Set(),{knownBrowserShims:true}),/Unverified emitted loader/)
+})
+
+test('actual loader module entries remain rejected with file and location diagnostics',async t=>{
+  const root=await fixture(t,{'consumer.js':"import {W as f} from './client.js';function nodeOnly(){f(['fs'].join());f(['path'].join())}",
+    'extra.js':"\nimport('./runtime.js').then(m=>m.i('missing'))"})
+  await assert.rejects(checkEmitted(root,new Set(),{knownBrowserShims:true}),error=>{
+    assert.match(error.message,/Dynamic or non-static known-loader module entry is unverified/)
+    assert.ok(error.message.includes(join(root,'extra.js')+':2:1'))
+    assert.match(error.message,/ImportExpression, "\.\/runtime\.js"/)
+    return true
+  })
+})
+
 test('consumer reassignment, shadow binding, aliases and escapes fail closed',async t=>{
   for(const body of ["f=other", "const alias=f;alias(['fs'].join())", "sink(f)", "function nested(f){f(['fs'].join())}","export {f}", "f(['missing'].join())", "f(name)", "f(['fs','path'].join())", "f(['fs'].join());f(['fs'].join());f(['path'].join())"]){
     const root=await fixture(t,{'consumer.js':`import {W as f} from './client.js'; f(['fs'].join());f(['path'].join());${body}`})

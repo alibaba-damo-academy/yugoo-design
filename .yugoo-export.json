@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "3d56897a21960d5291eb79e23822b8c5903d8ff4",
+  "revision": "5e225a10df43ac72fc9b62744452c6055275507e",
   "policySha256": "a993efb1ff118f0a3cbe4de3412b059ca985644539f50f7e756c9409d0a94b83",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -9244,11 +9244,11 @@
       "mode": "100644"
     },
     "scripts/known-browser-loader-proof.mjs": {
-      "sha256": "f8c1d7da0c2b66587347fdfc6a5bb02c3e76873b35dda3ac85c58f38e50e5d10",
+      "sha256": "b4b391671e91446a63f1dd8f24a365398633bb3598dcfe4b101fe04fedee9ea1",
       "mode": "100644"
     },
     "scripts/known-browser-loader-proof.test.mjs": {
-      "sha256": "80bd82669202e7e83a164cee8bff27fb641d15180506bfa456a7e63cc1768dd8",
+      "sha256": "038ae3fecc8f134e724a45518318eb1e6fe4b981f07abb620221a9e72a8e6db9",
       "mode": "100644"
     },
     "scripts/known-browser-lodash-proof.mjs": {

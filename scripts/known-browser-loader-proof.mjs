@@ -50,8 +50,9 @@ export function proveKnownBrowserLoaders(files, { parse, shape, dispatcher }) {
   assert.equal(bases.length, 1, 'Missing or additional Rolldown loader source')
   const carrier = carriers[0], base = bases[0]
   assert.equal(base.node.id.name, '__require', 'Unexpected Rolldown loader binding')
+  const loaderModules = [base.module.path, ...(carrier.discarded ? [] : [carrier.module.path])]
   // A namespace obtained dynamically can expose the loader without a static
-  // import binding. Reject these entry paths instead of tracing its data flow.
+  // import binding. A proven discarded shim exposes no loader to such an entry.
   for (const module of modules.values()) for (const node of module.nodes) {
     let source
     if (node.type === 'ImportExpression') source = node.source?.value
@@ -62,8 +63,9 @@ export function proveKnownBrowserLoaders(files, { parse, shape, dispatcher }) {
       const created = callee.type === 'CallExpression' && callee.callee.type === 'Identifier' && /^createRequire(?:\$\d+)?$/u.test(callee.callee.name)
       if (direct || member || created) source = node.arguments[0]?.value
     }
-    if (typeof source === 'string' && [base.module.path, carrier.module.path].includes(resolve(dirname(module.path), source))) {
-      throw new Error('Dynamic or non-static known-loader module entry is unverified')
+    if (typeof source === 'string' && loaderModules.includes(resolve(dirname(module.path), source))) {
+      const prefix = module.code.slice(0, node.start)
+      throw new Error(`Dynamic or non-static known-loader module entry is unverified in ${module.path}:${prefix.split('\n').length}:${node.start - prefix.lastIndexOf('\n')} (${node.type}, ${JSON.stringify(source)})`)
     }
   }
   function references(module, name) {
@@ -93,7 +95,7 @@ export function proveKnownBrowserLoaders(files, { parse, shape, dispatcher }) {
   for (const module of modules.values()) for (const statement of module.program.body) {
     if (!['ImportDeclaration', 'ExportNamedDeclaration', 'ExportAllDeclaration'].includes(statement.type) || !statement.source) continue
     const target = resolve(dirname(module.path), statement.source.value)
-    if (![base.module.path, carrier.module.path].includes(target)) continue
+    if (!loaderModules.includes(target)) continue
     assert.notEqual(statement.type, 'ExportAllDeclaration', 'Loader export star is unverified')
     for (const specifier of statement.specifiers) {
       assert.equal(specifier.type, 'ImportSpecifier', 'Loader namespace/re-export is unverified')
