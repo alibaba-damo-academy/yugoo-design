@@ -1,5 +1,7 @@
 # 宿主兼容与安装入口
 
+[English](hosts.en.md) · 简体中文
+
 语构设计系统（Yugoo Design）以插件形式接入已有智能体（Agent）应用。宿主提供模型、凭据、工具和原生 Agent；共享设计运行时与 UI 负责设计项目和面板。安装前请核对当前版本在你的宿主中支持哪些功能。
 
 [开始使用](getting-started.md) · [预览状态](preview-status.md) · [故障排查](troubleshooting.md)
@@ -19,7 +21,7 @@
 - 呈现方式：宿主内嵌设计面板（Design Panel）；Studio 源码另有查看和创作入口，当前验收边界见[Studio 状态](preview-status.md#studio-source-capabilities-and-installed-acceptance)。其他桌面宿主的支持范围分别说明，不以桌面应用名称推断同等能力。
 - 安装入口：[DSH 专用提示词](../../packages/companion/HOSTS.md#install-or-update-deepseek-harness)与[DSH 安装指南](../../packages/dsh/README.md#candidate-npm-installer-dsh-route-and-recovery-limits)。本地工作区路线用于发布前预检。
 - 当前 DSH 指南的目标为官方 Web/Desktop `0.2.0-rc.2`；既有候选的实际安装、生成、保存与原 Agent 消费记录，仍按其精确宿主和制品范围阅读。早期 `0.1.2-rc.1` 路线保留为历史记录。
-- DSH 聚合包和内部模块使用所取得产品包的 `release-hosts.json` 精确映射，不从 registry 挑选最高版本。旧 Companion `0.1.0-beta.23` 固定聚合包 `0.1.0-beta.2` 的事实保留为历史映射，不能作为统一 `0.1.0` 的分发声明。
+- DSH 聚合包和内部模块使用所取得产品包的 `release-hosts.json` 精确映射，不从 registry 挑选最高版本。旧发行包的映射不代表当前产品的版本组合。
 - 模型、搜索和用户配置由 DSH 管理。插件通过公开扩展点接入。
 
 安装候选与具体功能的验证范围见 [DSH 指南](../../packages/dsh/README.md)和[预览状态](preview-status.md)。
@@ -29,8 +31,9 @@
 - 呈现方式：绑定原生会话的 Companion UI。
 - 安装入口：[Companion 指南](../../packages/companion/README.md)，按其中的 Codex 插件/注册路线选择。
 - 原生会话识别、执行和消息返回依赖实际 Codex 版本，不能套用其他宿主的注册命令。
+- 当前源码的持久安装器接纳 Linux x64 上的 `codex-cli 0.160.0` 和 `0.162.0`；其他版本或平台会停止并报告不支持。安装前按所取得版本的[注册事务说明](../../packages/companion/README.md#persistent-registration-transactions)核对准入，macOS arm64 的 Desktop 使用独立路线。
 - Codex Desktop 在 macOS arm64 上已有独立接入入口，采用随包插件准备和宿主原生启用流程，见 [Mac Codex Desktop 指南](../../packages/companion/hosts/codex-desktop/README.md)。
-- macOS arm64 的 Codex Desktop 切片已有本地构建、安装更新、Web App 生成、面板编辑保存、原 Agent 消费和重开的实机证据。旧 Companion `0.1.0-beta.23` 曾纳入该切片；统一新包仍需自己的安装验证。真实 npm registry 新包安装、Studio 原生创作增强和 KAG 当前视觉验收不在这些既有结果内。
+- macOS arm64 的 Codex Desktop 设计会话支持不等于所有 Studio 创作和 KAG 展示能力都已在同一安装版中验证。按所装版本分别核对生成、保存重开和原会话读取，不从源码截图推断可用性。
 
 安装后按[首次协作步骤](getting-started.md#3-创建设计项目)创建项目、请求结果并检查保存与继续；原生接线和执行限制以本候选的 [Companion 指南](../../packages/companion/README.md)为准。
 
@@ -56,7 +59,7 @@
 - 安装入口：[千问办公专用提示词](../../packages/companion/HOSTS.md#install-or-update-qwenwork)。从已获取的精确 npm 包准备专家套件，按[桌面准备指南](../../packages/companion/README.md#desktop-npm-package-preparation)在原生界面导入并启用。默认 ZIP 已含 MCP 连接器；独立 JSON 是组织策略允许时的替代入口，只启用一份 `design-system` 连接器。启用 Skill 不代表工具已连接。
 - 预览运行时与所需 Node 环境按随包指南准备。桌面输入依赖特定版本的宿主设置；普通 Hook 模式下可能需要回到原会话继续，不应将两种模式混用。
 - 历史验证范围：千问办公 `1.2.5` 系列、Yugoo Design 套件 `0.2.0` 的 Windows 本地预览；对应版本的首次会话身份、工具连接、系统浏览器打开及消息往返已有实际验证。
-- 历史边界：2026-10-11 的记录仍有发送确认与历史回显延迟，以及保存后继续、KAG 和完整设计执行待验收项；这些结果不能代替后续 `1.3.2` 的逐项验收。后续前台 GRA 的用户确认和本地 beta.18 细项记录见下方[评审降级](#后台能力与评审降级)。千问办公接入不使用 WorkBuddy 的内嵌面板路径。
+- 历史边界：2026-10-11 的记录仍有发送确认与历史回显延迟，以及保存后继续、KAG 和完整设计执行待验收项；这些结果不能代替后续 `1.3.2` 的逐项验收。当前前台 GRA 的使用条件见下方[评审降级](#后台能力与评审降级)。千问办公接入不使用 WorkBuddy 的内嵌面板路径。
 
 安装材料中的 `hosts/qwenwork/README.md` 记录具体准备步骤与版本限制。界面和回答保留“千问办公（QwenWork）”的宿主身份，插件名称为 **Yugoo Design**。
 
@@ -82,7 +85,7 @@ WorkBuddy `5.8.3` 的已测异步评审则会让普通消息排队，直到 GRA 
 
 未选择时不改策略、不启动评审。宿主能够在不占用主对话的情况下后台运行时，手动评审仍使用异步方式；否则，手动请求也需要先确认本次同步执行。
 
-2026-10-21，用户分别完成了千问办公和 WorkBuddy 的前台手动评审。具体版本与结果见[评审记录](preview-status.md#foreground-review-record-2026-10-21)；请按当前安装版的指南确认是否提供该入口。完成评审后，是否接受建议、是否修订设计仍由用户决定。
+千问办公和 WorkBuddy 的前台评审会占用主对话。请按[前台评审可用范围](preview-status.md#foreground-review-availability)和当前安装版指南确认入口。完成评审后，是否接受建议、是否修订设计仍由用户决定。
 
 U/S/T 清晰度评估由主 Agent 报告，KAG 通过自己的投影与维护流程管理；两者都不依赖 GRA 的后台能力，遇到问题时应分别检查。
 

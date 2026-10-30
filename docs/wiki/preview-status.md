@@ -6,11 +6,17 @@ Check the release and known host limits before installing. Setup steps are in
 
 ## Current release and use
 
+**Published release:** the unified package and CLI are `yugoo-design`;
+[`yugoo-design@0.1.2`](https://github.com/alibaba-damo-academy/yugoo-design/releases/tag/v0.1.2)
+is published. Follow the [installation guide](getting-started.en.md) for your host.
+
+
 Install the unified `yugoo-design` package using the
 [shared installation prompt](../../packages/companion/HOSTS.md#default-prompt-any-supported-host).
 For the latest stable release, the Agent resolves npm's `latest` once to an exact
 stable version and integrity, then uses that version throughout installation.
-An explicitly requested version takes precedence; stop when it is unavailable.
+If `latest` points to a prerelease, explain and stop instead of selecting another
+version. An explicitly requested version takes precedence; stop when it is unavailable.
 See the [published releases](https://github.com/alibaba-damo-academy/yugoo-design/releases)
 for release notes. The product CLI is `yugoo-design`.
 The old `@yugoo-design/companion` package and its `beta` channel are historical
@@ -116,6 +122,8 @@ package publication were separate operations. The current unified release route
 is maintained in the [product publishing guide](../../CONTRIBUTING.md).
 Later changes in main require another package release; they do not modify beta.19.
 Native suite numbers, Kit pins and the Companion npm version remain independent.
+
+## Foreground review availability
 
 ### Foreground review record, 2026-10-21
 
@@ -338,6 +346,12 @@ and notification behavior remains under observation.
 The authoring target is **copy → modify → validate → use → share**. One synthetic workshop-delivery Kit has completed native agent-assisted authoring, resource reading, generation, validation, panel editing, saving and reopening. Its ZIP recipient completed the same use/save/reopen path in a separate clean profile on the same installed package graph, without changing the author's Kit or project. This does not establish another-machine or cross-host compatibility, dependency-bearing Kit installation, or general version-conflict handling.
 
 ## Studio source capabilities and installed acceptance
+
+Current-content editing, source archive import and project-owned `design_kit`
+workflows require the corresponding unreleased development runtime; the current
+stable runtime does not supply this workflow. Use the bundled instructions and
+available controls for the acquired version.
+
 
 Current shared Studio UI and Companion source wire installed-file inspection,
 local Kit/Bundle copies, explicit mount management, declarative YAML/sample

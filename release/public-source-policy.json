@@ -177,6 +177,60 @@
     }
   ],
   "rules": [
+    {
+      "kind": "file",
+      "path": "docs/product-vision.en.md",
+      "action": "include",
+      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
+    },
+    {
+      "kind": "file",
+      "path": "docs/wiki/README.en.md",
+      "action": "include",
+      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
+    },
+    {
+      "kind": "file",
+      "path": "docs/wiki/custom-kit-tutorial.en.md",
+      "action": "include",
+      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
+    },
+    {
+      "kind": "file",
+      "path": "docs/wiki/extending.en.md",
+      "action": "include",
+      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
+    },
+    {
+      "kind": "file",
+      "path": "docs/wiki/getting-started.en.md",
+      "action": "include",
+      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
+    },
+    {
+      "kind": "file",
+      "path": "docs/wiki/hosts.en.md",
+      "action": "include",
+      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
+    },
+    {
+      "kind": "file",
+      "path": "docs/wiki/kit-sharing.en.md",
+      "action": "include",
+      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
+    },
+    {
+      "kind": "file",
+      "path": "docs/wiki/usage.en.md",
+      "action": "include",
+      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
+    },
+    {
+      "kind": "file",
+      "path": "docs/wiki/web-app-demo.en.md",
+      "action": "include",
+      "reason": "English counterpart of the canonical public guide; preserves source commands, examples, screenshot context and release boundaries, with language navigation. Maintained and exported at its formal path without a second public document authority."
+    },
     {"kind": "file", "path": "packages/companion/src/npm-embedding-preparation.mjs", "action": "include", "reason": "Product CLI preparation of the existing fixed local embedding model: offline resource inspection, explicit download using the shared owner and optional synthetic CPU inference; no host registration, project writes or model credential changes."},
     {"kind": "file", "path": "packages/companion/test/npm-embedding-preparation.test.mjs", "action": "include", "reason": "Isolated installation-readiness regressions distinguishing missing or invalid model resources, explicit preparation, CPU inference and project semantic readiness; no actual host acceptance claim."},
     {"kind": "file", "path": "packages/dsh/screenshots.json", "action": "include", "reason": "Single maintained screenshot index at the native plugin catalog entry; fixed public GitHub URLs reference three unchanged, already reviewed DSH workspace PNGs without copying images or claiming installation acceptance."},

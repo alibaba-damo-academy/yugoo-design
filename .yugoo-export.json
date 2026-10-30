@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": "9491269ced79015fd6ca21b1c923b7427776fe1b",
-  "policySha256": "4255690ab25e5707e6e37322b5104af9d79ddb645b400f5257c4cb75ba4b9091",
+  "revision": "b97d449c16c88efc83d4718f586eb15873b6e876",
+  "policySha256": "7930bbe871d6002573b3e188424c815f2f1bb58924f010d08c72236dae0a94a5",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
       "sha256": "9689903cd86839d8805125d1c199b38ea0eb828e5171da23ca178a5c3ec20866",
@@ -88,7 +88,7 @@
       "mode": "100644"
     },
     "CONTRIBUTING.md": {
-      "sha256": "c04a787aa5bc51b4788fd86a0aed4bd40b83bf32696a7aa1b72d3b7fe3c3522f",
+      "sha256": "3ca00ddadaf79793127ec89aa5cbc040b15247676e339f7fc0f641ffa3afbf88",
       "mode": "100644"
     },
     "LICENSE": {
@@ -100,11 +100,11 @@
       "mode": "100644"
     },
     "README.en.md": {
-      "sha256": "bcb305bacffca892b81d49fd2b6061827bec8439f83bdedbbcbd83b371d116da",
+      "sha256": "fa7e5b1ad8d548c9e1d170f6219ef6f5c040d5e9a1c4b8545c79d38fe53df645",
       "mode": "100644"
     },
     "README.md": {
-      "sha256": "873a3d887366b60cefb7f9a3029009747c9a1658149b2f8c8821513573a64217",
+      "sha256": "7bcd98de638ab4be6828fe6094f40fd5a55eb52aae3cecbd8a299fab09aa71a9",
       "mode": "100644"
     },
     "SECURITY.md": {
@@ -239,8 +239,12 @@
       "sha256": "cea77da5b7910bffaf3f9b34747c6709ff5b9496f8fa7b9d2ba4137605de5de3",
       "mode": "100644"
     },
+    "docs/product-vision.en.md": {
+      "sha256": "f68fb13fbd11d10e311c50d4762b7b0af4ebb8d85876100093c80fd76bc5d115",
+      "mode": "100644"
+    },
     "docs/product-vision.md": {
-      "sha256": "050407107062fd0fa30f61e372fa26616900bbed5a3196e0d0580d28d2882e28",
+      "sha256": "18d9364e230f05afe810c899507f80fc78727fcec11c63ff83c1c0f95cfab763",
       "mode": "100644"
     },
     "docs/project-content-upgrade.md": {
@@ -248,7 +252,7 @@
       "mode": "100644"
     },
     "docs/public-document-sync.md": {
-      "sha256": "b0fff936df78c5d5fe0a6fcb76b236b45ec607196993250267a75dae90c83d5b",
+      "sha256": "6c9c0d88d04504a251c1612aa1f39a0c19d4f7ee12afe9b55183a75718dad693",
       "mode": "100644"
     },
     "docs/standalone-roadmap.md": {
@@ -263,8 +267,12 @@
       "sha256": "be541290946be64ace83a093229d100f2e1bf019def14b2d472bf20142e66b83",
       "mode": "100644"
     },
+    "docs/wiki/README.en.md": {
+      "sha256": "1461c2d54406fd5230f11702d874e6171a78289e16d7c416a83785070a3602b2",
+      "mode": "100644"
+    },
     "docs/wiki/README.md": {
-      "sha256": "f90a790de940b2be13e849b976764dbbc2a89e8c92c5e482ea06ae540b9227c7",
+      "sha256": "fd31a706208bf7709599e7d6057962ad7e36daef76499fdc9b2e6069488e174c",
       "mode": "100644"
     },
     "docs/wiki/architecture.md": {
@@ -272,35 +280,55 @@
       "mode": "100644"
     },
     "docs/wiki/commands.md": {
-      "sha256": "56bbeffbdae53a1f95fc3833d6374e4fa8dd5a696540325b3fe0328757166362",
+      "sha256": "a64643d6b88e11bc8de597781b6625329a2225c9b7b9969b8e086e19b8b4dd38",
       "mode": "100644"
     },
     "docs/wiki/concepts.md": {
       "sha256": "006edda858257f8e1da16901262f9b1ca51f704ce63cb34123ae865b614ea395",
       "mode": "100644"
     },
+    "docs/wiki/custom-kit-tutorial.en.md": {
+      "sha256": "737dcdc36c7edf7ad07606df68eabf7748bacdc7edb51a5fce3d212e22a3209c",
+      "mode": "100644"
+    },
     "docs/wiki/custom-kit-tutorial.md": {
-      "sha256": "a638800f2e865442a527e6ce862673612848edcedb80dee908ba699d5a2ee89d",
+      "sha256": "b5383363cd0dabc15b160265b38b19b5c99709a825d7203ed3104905faa1a6a5",
       "mode": "100644"
     },
     "docs/wiki/development.md": {
       "sha256": "5341862569b2cde7a305f140fc08ce8ae3ab3bb53c433f5f99bc823cfcd85631",
       "mode": "100644"
     },
+    "docs/wiki/extending.en.md": {
+      "sha256": "4322237f6ec81f1778cbf3092683bf05075773253533aba5ab95fdd60ba77d3d",
+      "mode": "100644"
+    },
     "docs/wiki/extending.md": {
-      "sha256": "377ae8d07fb0b297e70ced4dee9e01e7c309e6742fdc3208db1c098e97d7cc50",
+      "sha256": "01740039e0b457bae9a77f0cb9f332cfdd6a873a201e7a0eb476a5eff8679204",
+      "mode": "100644"
+    },
+    "docs/wiki/getting-started.en.md": {
+      "sha256": "c4fc42ed0477ffcec5f7e37c1980f31c50ba8996729a6c1e85bce30d60c8b91e",
       "mode": "100644"
     },
     "docs/wiki/getting-started.md": {
-      "sha256": "6d16ea291740de260049715a4aa023cc3b7e428e1eec05644fcb987a31ebac72",
+      "sha256": "db0ef729d2ca7c070c13b6294aefad83d9557674392b6b97756f78b44dcd26d7",
+      "mode": "100644"
+    },
+    "docs/wiki/hosts.en.md": {
+      "sha256": "48679689061b0cbf0b6f8b756dd9a4be49913e109bcf4894fc74264817fb41a3",
       "mode": "100644"
     },
     "docs/wiki/hosts.md": {
-      "sha256": "51185ecba075d50276d65e48981796909d48addd13d41abca8bb88db4b56289f",
+      "sha256": "b2588489b49e7028d5f88cc054debfcf80bb34727bfcea119b376348d9c0a5e2",
+      "mode": "100644"
+    },
+    "docs/wiki/kit-sharing.en.md": {
+      "sha256": "031fa6a54836252f3fcc3cfd42e4de74e5cb3754b5c721054bb956d0e88fdae2",
       "mode": "100644"
     },
     "docs/wiki/kit-sharing.md": {
-      "sha256": "a28d2d0cfbb9777a218d41dd97c86ba8a8d494335d9ff11bbbe2c135f88cef83",
+      "sha256": "0611a97a06fd6dec879acdfa925efb46badd5df9b21afb58ab3580243e3e2708",
       "mode": "100644"
     },
     "docs/wiki/non-web-kit-demo.md": {
@@ -312,7 +340,7 @@
       "mode": "100644"
     },
     "docs/wiki/preview-status.md": {
-      "sha256": "c3f13f529bdb750cd3c7378c38fc0e6a6c0da606ca1c16fa48b7c93950464c3c",
+      "sha256": "4d8fcc1e5795301d9f691b0b59890c478f699a3ee5a30cfea09444808d1a22f6",
       "mode": "100644"
     },
     "docs/wiki/project-files.md": {
@@ -328,15 +356,23 @@
       "mode": "100644"
     },
     "docs/wiki/troubleshooting.md": {
-      "sha256": "1e682079520ca7887e8391983d377720f3305d52baad30d983f80cbe44f4c465",
+      "sha256": "114298f3e474f3c16d101cec8b201f209d921a2c4eb8be4767f96dbc80b298e3",
+      "mode": "100644"
+    },
+    "docs/wiki/usage.en.md": {
+      "sha256": "31a860c7adbfaed584cd94d5fc69dbbd737179615d0103288c313aaf9c646325",
       "mode": "100644"
     },
     "docs/wiki/usage.md": {
-      "sha256": "5d4b848927176c4b584fa7828d35092205c7991ffbd9a7493b3798ef29663806",
+      "sha256": "f81eee925dd6fd9dae561399c2e24adfc8a1abecdefcef56edf171b31e14d504",
+      "mode": "100644"
+    },
+    "docs/wiki/web-app-demo.en.md": {
+      "sha256": "390fc326c0ebcb2352554033ffe3b48c11a847fa24129778afd1e3e4b2909841",
       "mode": "100644"
     },
     "docs/wiki/web-app-demo.md": {
-      "sha256": "61bb6e1d6e8437b2f3fda3668fcf332736484e938dd1e05f966d5b939cd12103",
+      "sha256": "1f579b5d44fc700d9569168e50669dac56b2cf8b25f2ee19b859e41f9213e93d",
       "mode": "100644"
     },
     "examples/community-workshop-delivery/LICENSE": {
@@ -652,7 +688,7 @@
       "mode": "100644"
     },
     "packages/companion/HOSTS.md": {
-      "sha256": "151a6abbb329bf3a38bb565a20c230c071c5afc6ddd5da4d95505ab1392f1eb8",
+      "sha256": "ebfc25f21dbbd7c9f3d6069fabb53b3c695a6b9900ec0d288bfa7bdd04832beb",
       "mode": "100644"
     },
     "packages/companion/README.md": {
@@ -8568,7 +8604,7 @@
       "mode": "100644"
     },
     "release/public-source-policy.json": {
-      "sha256": "410a9ac38b04e6d04705ae6ffac5ec1d466ba6725c250a1c5be2e0ed4049c85f",
+      "sha256": "289a54c654f3c5f6c0680e8d207374a8e247ffe89e0ad6cddfebc94c84e5d13c",
       "mode": "100644"
     },
     "release/public-source-test-selection.json": {

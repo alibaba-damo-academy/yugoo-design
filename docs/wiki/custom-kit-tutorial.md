@@ -1,18 +1,24 @@
-# 最小定制教程：工作室的范围与变更规则
+# 最小定制教程：客户项目的范围与变更规则
+
+[English](custom-kit-tutorial.en.md)
 
 本教程为语构设计系统（Yugoo Design）创建一个只处理项目范围与修改请求的设计套件（Kit）。你会复用完整的业务规则设计技能包（Bundle），调整领域主提示词（Mindset）、面板文案与预览样例，再检查这个工具能否帮助用户作出判断。
 
-练习对应[工作室项目交付案例](web-app-demo.md)：客户说“再改一点”时，怎样记录请求、判断与原交付范围的关系，以及说明后续影响。完成后得到一个独立内容目录，原 Web App Kit 和已有设计项目保持原样。
+练习对应[客户项目交付案例](web-app-demo.md)：客户说“再改一点”时，怎样记录请求、判断与原交付范围的关系，以及说明后续影响。完成后得到一个独立内容目录，原 Web App Kit 和已有设计项目保持原样。
+
+原地保存当前内容、源码导入及项目内 `design_kit` 的流程需要相应开发运行时，目前正式运行时尚不提供这套流程。已安装正式版请按随包指南和实际控件操作；本页的方法与示例不会自动更新插件。
 
 ## 1. 先确定改什么
 
 | 本轮改动 | 希望看到的效果 |
 | --- | --- |
-| 新 Kit 的 Mindset | Agent 用工作室熟悉的语言帮助讨论范围与变更 |
+| 新 Kit 的 Mindset | Agent 用项目团队熟悉的语言帮助讨论范围与变更 |
 | 独立 Bundle 身份 | 可以单独维护这份副本，继续使用原有数据语义和专业方法 |
 | 面板语言资源与样例 | 打开时看到项目规则，知道该怎样阅读和修改 |
 
-本轮复用业务规则的专业方法、schema、validation、执行声明、摘要和面板布局，并在下文明确修正一条与当前系统评估原则不一致的旧表述。若要改变字段或其他专业方法，再按[扩展开发](extending.md)同步维护相关契约；一次标签修改不需要先改共享组件。
+本轮复用业务规则的专业方法、schema、validation、执行声明、摘要和面板布局。若要改变字段或专业方法，再按[扩展开发](extending.md)同步维护相关契约；只修改标签无需先改共享组件。
+
+这是基于源码的内容练习。下文所述 Studio 原地编辑和项目内 Kit 文件以包含对应运行时的版本为准，见[分享与项目维护](kit-sharing.md)；检查源码或样例不代表旧安装版已有这些能力。
 
 ## 2. 复制完整 Bundle 与原始声明
 
@@ -78,7 +84,7 @@ mounts:
 
 打开副本 `bundles/studio_scope_rules/skill.yaml`，**新增一行** `identity: studio_scope_rules`，保留原 `name: business_rules`、`version: "1.0"` 及其他全部内容。目录名和挂载的 `name` 使用新 catalog 身份；`bindingKey` 与原运行时名称一致，所以设计数据仍使用原业务规则字段与路径。
 
-`package.json` 的版本是本地分发容器版本，Mindset 与 Bundle 还有自己的版本。这里创建新身份的本地练习，不覆盖已发布的同一身份/版本。
+`package.json` 的版本属于分发容器；Mindset、Bundle 和挂载声明保留各自的来源版本。这份练习创建独立身份，不覆盖原内容。在当前 Studio 中，编辑按同一身份保存当前内容，无需为每次修改增加本地版本或重新挂载；目录示例中的版本字段仍保留。
 
 ## 4. 写一个范围清楚的 Mindset
 
@@ -88,10 +94,10 @@ mounts:
 ---
 name: studio_delivery
 version: "0.1"
-description: Help a small design studio clarify project scope and change rules.
+description: Help a small client delivery team clarify project scope and change rules.
 ---
 
-# 工作室的范围与变更规则
+# 客户项目的范围与变更规则
 
 你是一位专业、友好的项目交付顾问，帮助用户把实际工作约定表达为可讨论的规则。
 用户熟悉客户与团队，但未必事先想清楚怎样界定范围、修改与交期影响。
@@ -117,7 +123,8 @@ description: Help a small design studio clarify project scope and change rules.
 
 这段 Mindset 负责选择与解释；副本 `SKILL.md` 仍保留业务规则的完整专业方法，输出契约仍在 `reference/artifact-contract.md`。若将来修改 Bundle 方法，共有的关键约束需要从方法与输出契约两条入口都能到达，见[方法创作规范](../../.agents/skills/design-skill-creator/references/standards.md)。
 
-### 核对复用方法中的旧约定
+<details>
+<summary>兼容较旧的业务规则方法</summary>
 
 检查所复制的[业务规则方法](../../packages/skills-web-app/bundles/business_rules/SKILL.md)。部分版本在 Close-out evidence 中保留了历史表述 `A grounded set typically supports S +15..+25 and T +20..+30.`。[共享推进与评估原则](../system-design-baseline.md#foreground-design-loop)要求根据已保存设计、当前范围和实际证据判断清晰度；分数可能不变或下降，不能按完成一个 Bundle 固定加分。
 
@@ -128,6 +135,8 @@ Assess current clarity from the saved design and current scope; explain what is 
 ```
 
 保留该段关于可审阅成果、完成校验与证据说明的其余要求，以及全部规则推导、修订、稳定 ID 和交接方法。这里明确修正副本中的冲突，不更改官方原件，也不新增评分或执行机制。
+
+</details>
 
 ## 5. 让面板说明符合这个领域
 
@@ -190,7 +199,7 @@ Assess current clarity from the saved design and current scope; explain what is 
 
 ### 到 Studio 查看
 
-通过目标宿主已支持的完整内容包入口接入这份目录。Companion 使用[完整目录与同一状态入口](kit-sharing.md#使用完整内容包创建新项目)，DSH 使用其[发现与显式选择](kit-sharing.md#dsh发现冲突与显式版本切换)；不要把包目录直接当成 Studio 归档文件导入。
+通过目标宿主已支持的完整内容包入口接入这份目录。Companion 使用[完整目录与同一状态入口](kit-sharing.md#使用完整内容包创建新项目)，DSH 使用其[发现与显式选择](kit-sharing.md#dsh目录发现与显式选择)。这份练习将包根目录交给 loader 解析；若改用 Studio 的源码 ZIP 或文件夹导入，按[源码导入说明](kit-sharing.md#通过-studio-内容归档分享)保留 Kit 与挂载 Bundle 文件，并在后续使用导入结果的独立身份。
 
 确认 Studio 正在读取这个独立来源和身份，再打开 Bundle 的“面板预览”。应看到两条项目规则，标题为“项目范围与变更规则”。修改一条结果文字，确认视图和字段能正常工作；样例预览不向设计项目发布修改。若还显示原内容，按[来源与刷新排查](troubleshooting.md#修改了-bundlestudio-仍显示旧内容)核对。
 
@@ -198,7 +207,7 @@ Assess current clarity from the saved design and current scope; explain what is 
 
 ## 8. 在新项目中走一轮真正的协作
 
-通过宿主的 `yugoo` 入口为新项目选择 `studio_delivery`，确认精确版本，再提出：
+通过宿主的 `yugoo` 入口为新项目选择 `studio_delivery`，核对实际 Kit 身份和来源，再提出：
 
 ```text
 我们约定交付首页和案例页。客户今天要求修改首页布局，另外提出增加会员中心。
@@ -206,8 +215,8 @@ Assess current clarity from the saved design and current scope; explain what is 
 先给出面板，让我补充实际约定。
 ```
 
-检查 Agent 使用了新 Mindset，并读取副本的完整方法。得到面板后，补充“范围内的修改也可能影响已承诺节点”，保存、关闭并重开，确认修改保留；然后要求 Agent 基于这项反馈修订相关规则。
+检查 Agent 使用了新 Mindset，并读取副本的完整方法。支持当前契约的运行时会把 Kit 与挂载 Bundle 完整复制到新项目的 `design_kit`；核对实际项目文件，而不只查看内容库列表。得到面板后，补充“范围内的修改也可能影响已承诺节点”，保存、关闭并重开，确认修改保留；然后要求 Agent 基于这项反馈修订相关规则。
 
-这一步检验 Agent 能否生成结果、保留人的修改，并在保存后继续理解和修订。记录所用宿主、内容版本，以及实际完成的内容校验、预览和协作过程，供自己和接收者参考。
+这一步检验 Agent 能否生成结果、保留人的修改，并在保存后继续理解和修订。记录所用宿主、内容身份与已有来源版本，以及实际完成的内容校验、预览和协作过程，供自己和接收者参考。
 
-分享时交付整个内容包、原始声明、适用请求与实际验证范围。按[作者与接收者检查](kit-sharing.md#作者与接收者的最小验证)让另一位接收者检验；目录复制、内容采用、新版本发布和已有项目迁移分别处理。
+分享时交付整个内容包、原始声明、适用请求与实际验证范围。按[作者与接收者检查](kit-sharing.md#作者与接收者的最小验证)让另一位接收者检验。保存库内方法不改变已有项目；更新项目时请 Agent 对比项目文件与目标内容，保留定制并使用现有校验、保存和 Git 流程。内容导入、项目文件更新、npm 发布和 `migrate` 项目迁移各自承担不同任务，见[更新与恢复](kit-sharing.md#更新与恢复项目内容)。

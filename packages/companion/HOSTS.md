@@ -6,6 +6,13 @@ before installing; adapter contracts for maintainers follow the setup instructio
 
 ## Agent-led installation and updates
 
+The GitHub URL is the public installation guide; reading it does not require a
+GitHub account. Normal installation acquires the released **`yugoo-design` npm
+package**, then uses its host adapter. Do not clone this repository or build from
+source for a normal installation. If the GitHub page cannot be read, the
+[same guide as plain text](https://raw.githubusercontent.com/alibaba-damo-academy/yugoo-design/main/packages/companion/HOSTS.md)
+contains the same host sections; select the requested section by its heading.
+
 The default route is **one prompt in the current host → reuse a matching runtime
 or acquire an exact npm version → that host's installation adapter → normal host
 startup and functional checks**.
@@ -46,10 +53,10 @@ CPU policy does not eliminate the separate embedding-model download/cache step.
 GPU support and configurable or user-local model selection remain future work;
 the default product does not provision a GPU environment.
 
-**Current product release:** the npm package and CLI are both `yugoo-design`.
-The first stable version, `0.1.0`, is published to npm. Resolve the requested
-release to its exact version and integrity before acquisition; a missing release
-stops installation. For “latest stable”, follow the checklist below.
+**Product package:** the npm package and CLI are both `yugoo-design`.
+Resolve the requested release from npm to its exact version and integrity before
+acquisition; a missing release stops installation. For the default `latest` selection, follow
+the checklist below rather than copying a version from a historical example.
 The former `@yugoo-design/companion` package and beta channel remain historical
 records, not a compatibility package or the default installation entry.
 Publication does not update an already registered host. Current release and
@@ -62,7 +69,7 @@ refresh/import/reload steps below. A required new npm version still belongs in a
 new retained directory; preserve the previous one and its receipts.
 
 Earlier registry checks and incomplete downloads are recorded in the
-[publication history](../../docs/wiki/preview-status.md#historical-publication-and-candidate-records).
+[release and compatibility guidance](../../docs/wiki/preview-status.md#current-release-and-use).
 An already published version is immutable;
 subsequent changes need a new version. Native suite and Kit/Bundle versions stay
 separate. The Agent must check the required exact product
@@ -83,23 +90,28 @@ current host, or you want to target a different one. This is the shared prompt;
 the host-specific sections below are optional overrides and adapter details.
 
 ```text
-请按官方安装指南，在我当前的 Agent 宿主中安装或更新语构设计系统（Yugoo Design）的最新正式版：
+请从 npm 正式包 yugoo-design，在我当前的 Agent 宿主中安装或更新语构设计系统（Yugoo Design）。
+先读取官方安装指南，按当前宿主的步骤操作：
 https://github.com/alibaba-damo-academy/yugoo-design/blob/main/packages/companion/HOSTS.md#agent-led-installation-and-updates
-请完成环境检查、安装和验证，保留已有项目与配置。
-需要我授权、下载模型或启用插件时，给出最少且明确的操作。
-完成后告诉我已启用的版本、如何开始，以及尚未就绪的功能。
+优先使用我明确指定的版本。未指定版本时，将 npm 的 latest 解析为一个精确已发布的稳定版本；如果 latest 指向预发布版本，请说明情况并停止，不自行改选其他版本。核对完整性，复用匹配的已有安装；需要新版本时按指南获取。GitHub 链接只用于读取公开指南，无需登录、克隆仓库或源码构建。
+请完成环境检查、安装、宿主导入或启用及验证，保留已有项目、配置与安装回执。需要我授权、下载模型、启用插件或重启宿主时，给出必要操作，等我完成后继续核验。
+最后分别说明取得的包版本、宿主实际加载版本和未就绪能力，并给出当前宿主的 yugoo 入口，以及使用 Web App Kit 创建第一个设计项目的一条可复制请求。
 ```
 
 ```text
-Follow the official guide to install or update the latest stable Yugoo Design in my current Agent host:
+Install or update Yugoo Design in my current Agent host from the official npm package yugoo-design.
+First read the official guide and follow the steps for this host:
 https://github.com/alibaba-damo-academy/yugoo-design/blob/main/packages/companion/HOSTS.md#agent-led-installation-and-updates
-Check the environment, install and verify it, and preserve my existing projects and configuration.
-Give me the minimum clear steps when authorization, a model download or plugin activation needs my input.
-Tell me the activated version, how to start, and which capabilities are not ready yet.
+Use any version I explicitly request. Otherwise, resolve npm latest once to its exact published stable version; if latest points to a prerelease, report it and stop instead of choosing another version. Verify its integrity; reuse a matching installation or acquire the new version as instructed. The GitHub link is public documentation and requires no login, repository clone or source build.
+Check the environment, install, complete native import or activation, and verify it while preserving my projects, settings and installation receipts. Give me the necessary steps for authorization, model downloads, plugin activation or a host restart, then continue verification after I complete them.
+Finally report the acquired package version, the version actually loaded by the host and capabilities not ready. Give me this host's yugoo entry and one copyable request to create my first Design Project with the Web App Kit.
 ```
 
 For an explicit override, append “Target host: Codex CLI”, “Target host:
 DeepSeek Harness”, or the intended host below; append an exact version if needed.
+A website host selector should include that selected host explicitly in the copied
+prompt, not only change its guide URL. An explicit target takes precedence over
+the current conversation's host; confirm an ambiguous target before changing setup.
 The same prompt supports updates, but each adapter retains its own update and
 recovery limits. It does not authorize blanket uninstalls, a replacement host,
 automatic host restart or changing model credentials. An interrupted operation
@@ -114,8 +126,10 @@ must be inspected through its existing receipt before retrying.
    Prepare a missing prerequisite once; adapters do not each install Node.
    When available, use `resolve-node` and keep verification and startup on the
    selected executable. DSH Desktop retains its official Electron/Loader entry.
-2. For “latest stable”, resolve npm's `latest` once to a non-prerelease version
-   and integrity, then use that exact version throughout acquisition and setup.
+2. When no version is specified, resolve npm's `latest` once to its exact
+   published stable version and integrity. If the tag points to a prerelease,
+   report the mismatch and stop; do not silently choose another version.
+   Use that exact stable version throughout acquisition and setup.
    An explicit version request takes precedence. Apply the CPU acquisition policy
    above before npm starts. Reuse an existing matching retained installation;
    acquire a new version in a separate durable directory when needed.
@@ -137,6 +151,11 @@ must be inspected through its existing receipt before retrying.
    design usability separately, including the `yugoo` entry and tools. Also
    distinguish complete model files, tested CPU inference and the real project's
    semantic readiness; prepared materials alone are not an activated plugin.
+6. Once activated, give the user this host's actual `yugoo` entry and a first-project
+   request in their language. Follow [the first design cycle](../../docs/wiki/getting-started.md#3-创建设计项目):
+   create a small Web App Kit project, produce one useful result, edit and save in
+   its Panel, reopen it and continue in the original Agent conversation. Wait for
+   the user to choose this next task; installation does not authorize a full design.
 
 Historical beta.1 used saved-plan routes for Codex/DSH and a separate
 `prepare-desktop` command for desktop materials; beta.2 added
@@ -149,7 +168,7 @@ actual help rather than inventing flags.
 ### Install or update: Codex CLI
 
 > Install or update Yugoo Design in this Codex CLI environment. First resolve
-> the requested `yugoo-design` release to its exact stable version on `https://registry.npmjs.org`
+> the requested `yugoo-design` release to its exact published version on `https://registry.npmjs.org`
 > and reuse a matching retained runtime or acquire its resolved exact version into
 > a new durable version directory. Inspect the
 > installed `yugoo-design --help`, current Codex version and existing registration.
@@ -167,7 +186,7 @@ See [Codex registration and recovery](README.md#persistent-registration-transact
 ### Install or update: Codex Desktop on macOS arm64
 
 > Install or update Yugoo Design in this Mac Codex Desktop conversation. Resolve
-> the requested `yugoo-design` release to its exact stable version, retain its integrity, and acquire
+> the requested `yugoo-design` release to its exact published version, retain its integrity, and acquire
 > it in a durable version directory. Read that package's actual help and the
 > Desktop guide below. Reuse an existing compatible public Node. Use its
 > `install --host codex-desktop` route to prepare a new immutable source under
@@ -187,7 +206,7 @@ directory and its small prepared source at their recorded paths.
 ### Install or update: Claude Code CLI
 
 > Install or update Yugoo Design in this Claude Code CLI environment. Resolve
-> the requested `yugoo-design` release to its exact stable version on `https://registry.npmjs.org`,
+> the requested `yugoo-design` release to its exact published version on `https://registry.npmjs.org`,
 > then reuse a matching retained runtime or acquire its resolved exact version into
 > a new durable version directory. Inspect the
 > installed installer help, actual Claude executable and current user-scope
@@ -203,7 +222,7 @@ See [Claude Code persistent registration](README.md#claude-code-and-qoder-cli-pe
 ### Install or update: Qoder CLI
 
 > Install or update Yugoo Design in this Qoder CLI environment. Resolve
-> the requested `yugoo-design` release to its exact stable version on `https://registry.npmjs.org`.
+> the requested `yugoo-design` release to its exact published version on `https://registry.npmjs.org`.
 > Reuse a matching retained runtime or acquire that version
 > into a new durable version directory. Inspect
 > the installed installer help, actual Qoder executable/profile and existing
@@ -220,7 +239,7 @@ See [Qoder persistent registration](README.md#claude-code-and-qoder-cli-persiste
 ### Install or update: DeepSeek Harness
 
 > Install or update Yugoo Design in this existing official DeepSeek Harness.
-> Resolve the requested `yugoo-design` release to its exact stable version from
+> Resolve the requested `yugoo-design` release to its exact published version from
 > `https://registry.npmjs.org` as the product installer. Reuse a matching retained
 > runtime or acquire the exact version in a new durable directory. Check its
 > `release-hosts.json` for the exact DSH aggregate and verify its complete exact
@@ -240,7 +259,7 @@ See [DSH installer and recovery limits](../dsh/README.md#candidate-npm-installer
 ### Install or update: QwenWork
 
 > Install or update Yugoo Design in this QwenWork desktop environment. Verify
-> and resolve the requested `yugoo-design` release to its exact stable version from
+> and resolve the requested `yugoo-design` release to its exact published version from
 > `https://registry.npmjs.org`. Reuse a matching retained runtime or acquire the exact
 > version in a new durable directory. Use
 > the installed `install --host qwenwork` route, or its explicit
@@ -268,7 +287,7 @@ are separate from installation, desktop input and KAG acceptance.
 ### Install or update: WorkBuddy
 
 > Install or update Yugoo Design in this WorkBuddy desktop environment. Verify
-> and resolve the requested `yugoo-design` release to its exact stable version from
+> and resolve the requested `yugoo-design` release to its exact published version from
 > `https://registry.npmjs.org`. Reuse a matching retained runtime or acquire the exact
 > version in a new durable directory. Use
 > the installed `install --host workbuddy` route, or its explicit
@@ -347,6 +366,10 @@ The unified product's terminal installer is `yugoo-design`, with no
 `design-system` executable alias. Older installation receipts still belong to
 the exact old runtime that created them. New product naming does not establish
 native installed-host acceptance or migrate those registrations.
+
+## Adapter reference for maintainers
+
+The remaining sections describe adapter implementation and maintenance. For installation, updates or removal, use the user setup sections above. A `serve` command or source packaging entry is not an additional installation step.
 
 ## Product entry and configuration
 
@@ -507,7 +530,7 @@ validation and Git record path; this mode does not force a synchronous child
 or a native background run descriptor. Keep asynchronous manual review when the
 host can leave the main conversation available. For supported versions and observed foreground behavior, see
 [host compatibility](../../docs/wiki/hosts.md#后台能力与评审降级) and the
-[dated review record](../../docs/wiki/preview-status.md#foreground-review-record-2026-10-21).
+[foreground review availability](../../docs/wiki/preview-status.md#foreground-review-availability).
 
 Core owns project state, validation, publication, Git and handoff semantics.
 Panel owns shared UI, including saving and the composer. Companion's
