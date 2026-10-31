@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "dd5183b61ec0b3b9d12f4be6afe648c164e200ab",
+  "revision": "72649ef5c6937e18c40d2f5fdb857fc335fd2b8d",
   "policySha256": "a993efb1ff118f0a3cbe4de3412b059ca985644539f50f7e756c9409d0a94b83",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -284,7 +284,7 @@
       "mode": "100644"
     },
     "docs/testing/agentic-e2e.md": {
-      "sha256": "d9f06f27add9b4bd8f622c33de70c4083cb51e84a29267fe942881d6fcb29327",
+      "sha256": "63bf112bb982a943d1b5900c1011197c594707840533f9b41e94c698d470ecc2",
       "mode": "100644"
     },
     "docs/ust-score-explanations.md": {
