@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "04fc03e6cddf5f08b4cb62bbda60796fc8bb76a8",
+  "revision": "076d865a864b7b21880ddcfaffb72c2c241b6f89",
   "policySha256": "a993efb1ff118f0a3cbe4de3412b059ca985644539f50f7e756c9409d0a94b83",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -292,11 +292,11 @@
       "mode": "100644"
     },
     "docs/wiki/README.en.md": {
-      "sha256": "a567dba51ed9e999c9688e46bcf985fb556c83722edb3770d6c9e3e85b81a7b3",
+      "sha256": "9251077486bc5b750042fde9912cc876f5dab15a0085448e47deaf6be32edeba",
       "mode": "100644"
     },
     "docs/wiki/README.md": {
-      "sha256": "a4235f6e2592ee2c8074e7a185a1c6776bd0127fb1a80bb16d46e76ea5794baf",
+      "sha256": "c74deb9583991ae7f97f8ffe4e1a8ffd8965048eab7bcf584f54f2e1cea33167",
       "mode": "100644"
     },
     "docs/wiki/architecture.md": {
@@ -348,11 +348,11 @@
       "mode": "100644"
     },
     "docs/wiki/kit-sharing.en.md": {
-      "sha256": "c31dd70d46b0208ef3086d4f2ac9f600e3e4dc28dfaf8013e1e566b76723afa7",
+      "sha256": "3d491161466657c9221b0a6d6a166d8667bbe49af67cc899a164ac23290f2c72",
       "mode": "100644"
     },
     "docs/wiki/kit-sharing.md": {
-      "sha256": "a2e3d207bac67bae6769732e12b5e171e40836f37f88ed2c728b1544e3e794fd",
+      "sha256": "504850b03189b77fd8a2383a114ba586482ff7d4adae53c0be20218b9f179eb8",
       "mode": "100644"
     },
     "docs/wiki/non-web-kit-demo.md": {
@@ -364,7 +364,7 @@
       "mode": "100644"
     },
     "docs/wiki/preview-status.md": {
-      "sha256": "bcf51535ea9a391887e8aa7bc2f259a8a1ed8e6c03ad7583db19df607af911b6",
+      "sha256": "f2f97bf9bae655435acab9d6de3e4712088fae42e40246eeb3acfe197b5e29b2",
       "mode": "100644"
     },
     "docs/wiki/project-files.md": {
@@ -384,11 +384,11 @@
       "mode": "100644"
     },
     "docs/wiki/usage.en.md": {
-      "sha256": "197d8bd3145c25163bb224fd1cd3059f47391c2edc185231e49b7cfec4ed8ffc",
+      "sha256": "645bb47d856c0527b0e9c7746c6ed69d66194e89f1fb23ac95ec3039079598fe",
       "mode": "100644"
     },
     "docs/wiki/usage.md": {
-      "sha256": "210072ebba4cc2d870d6a45789381be6b089e7c4879898607d19c3df539b728b",
+      "sha256": "b9deeb1242d4c470e28da02682a3216937483abcce380c1c969a9c13c4e657d3",
       "mode": "100644"
     },
     "docs/wiki/web-app-demo.en.md": {
@@ -8368,7 +8368,7 @@
       "mode": "100644"
     },
     "packages/studio-dsh/README.md": {
-      "sha256": "073a1de13115a1c38b4b949f2f9493a3fb30bd7e0b320c39a222253cf2cdaebb",
+      "sha256": "c3453f130554fc739a05ddd44ba3eb0e0287c1fed632524c843b221ab6f64535",
       "mode": "100644"
     },
     "packages/studio-dsh/THIRD_PARTY_NOTICES.md": {
@@ -8424,7 +8424,7 @@
       "mode": "100644"
     },
     "packages/studio-dsh/src/authoring-tools.ts": {
-      "sha256": "0a3b768a386755d3c29374ef4a42ee9cdfeabc6a4402d97d7abb585e1a52a57e",
+      "sha256": "68719cc080272a0956e5cc511e6be672ccf60f37422948fdc17467f4f2ae77ed",
       "mode": "100644"
     },
     "packages/studio-dsh/src/authoring-workbench.tsx": {
@@ -8524,7 +8524,7 @@
       "mode": "100644"
     },
     "packages/studio-dsh/tests/authoring-service-sdk.test.mjs": {
-      "sha256": "d0c7bb5e54639b334b1b665d681d8d48a47cfa4c855c330f67e8b5ac31a206f2",
+      "sha256": "3239e57373ce847bc93a877c5f55c15ae5a6467a23b0820a24e9e3506b873b17",
       "mode": "100644"
     },
     "packages/studio-dsh/tests/authoring-session-sdk.test.mjs": {

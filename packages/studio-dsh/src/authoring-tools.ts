@@ -1,5 +1,6 @@
 /** Host conversation and Studio use the same guarded working-copy service. */
 import type { Context } from '@deepseek-ai/cordis'
+import type { WebServer } from '@deepseek-ai/dsh-host-webserver'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { DshStudioAuthoringService } from './authoring-service.ts'
 import { STUDIO_AUTHORING_RPC_SCHEMAS as schemas } from './authoring.remote-client.ts'
@@ -56,7 +57,14 @@ export function registerStudioCustomizationTool(ctx: Context, service: DshStudio
         default: throw new Error('Unknown Studio customization action')
       }
       const candidate = args.action === 'prepareChanges' ? schemas.prepareChanges.result.parse(result) : undefined
-      return { content: JSON.stringify({ result, studioUrl: candidate?.authoring?.url ?? `/design-studio/?agentId=${encodeURIComponent(String(agent.id))}` }) }
+      const studioPath = candidate?.authoring?.url ?? `/design-studio/?agentId=${encodeURIComponent(String(agent.id))}`
+      // Native Markdown treats relative URLs as file paths. The local Web Host
+      // exposes its actual listening port, including OS-assigned ports.
+      const webServer = ctx.get('webServer') as WebServer | undefined
+      const studioUrl = webServer
+        ? new URL(studioPath, `http://127.0.0.1:${webServer.port}`).href
+        : studioPath
+      return { content: JSON.stringify({ result, studioUrl }) }
     },
   }))
 }

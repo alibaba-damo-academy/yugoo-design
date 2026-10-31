@@ -264,6 +264,12 @@ and saving does not publish. No second model client or source repository is
 introduced. This tool is separate from the restricted read/prepare tools given
 to the page's authoring child.
 
+On the local Web Host, the tool returns an absolute HTTP `studioUrl` using the
+Host's listening port. Native conversation Markdown does not render relative
+Studio paths as web links. The address retains the calling Session and any
+prepared-candidate locator; page RPC paths remain relative to their current
+origin. Hosts without a Web server retain the existing route locator.
+
 Before editing, read the creator method index through `studio_customize` with
 `action: "read", request: { authoring: {} }`. Read each indexed resource with
 `request: { authoring: { resource, offset } }`, following every `nextOffset` until

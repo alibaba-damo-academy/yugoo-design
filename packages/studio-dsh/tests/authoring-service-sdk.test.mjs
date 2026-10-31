@@ -44,6 +44,10 @@ async function sources() {
 
 async function fixture(t, options = {}) {
   const sdk = await sdkFixture(t, { step: options.step ?? sequence }), source = await sources()
+  if (options.withWebServer) {
+    const { WebServer } = await import('@deepseek-ai/dsh-host-webserver')
+    await sdk.ctx.plugin(WebServer, { host: '127.0.0.1', port: 0 })
+  }
   for (const name of ['design', 'fs']) {
     class Source extends Service { constructor(ctx) { super(ctx, name); Object.assign(this, source[name]) } }
     await sdk.ctx.plugin(Source)
@@ -155,6 +159,9 @@ test('Host conversation reads packaged creator methods without widening source o
   }
   const response = await execute({ authoring: {} })
   assert.equal(response.isError, false)
+  assert.equal(JSON.parse(response.content.find(block => block.type === 'text').text).studioUrl,
+    `/design-studio/?agentId=${encodeURIComponent(String(f.parent.agent.id))}`,
+    'a Host without an HTTP server retains its route locator instead of inventing a port')
   const index = JSON.parse(response.content.find(block => block.type === 'text').text).result
   assert.equal(index.resource, 'index.md')
   assert.deepEqual(index.skills.map(skill => skill.name).sort(), ['design-bundle-creator', 'design-kit-creator', 'design-skill-creator'])
@@ -210,13 +217,18 @@ test('Host conversation reads packaged creator methods without widening source o
 })
 
 test('Host conversation tool and Studio RPC edit and reopen the same working-copy revisions', { timeout: 20000 }, async t => {
-  const f = await fixture(t, { withManagement: true })
+  const f = await fixture(t, { withManagement: true, withWebServer: true })
   const execute = (action, request, agent = f.parent.agent) => f.ctx.tools.execute({
     callId: llm.ToolCallId(randomUUID()), name: 'studio_customize', arguments: { action, request },
     agent, signal: new AbortController().signal,
   })
   assert.ok(f.ctx.tools.get('studio_customize', f.parent.agent))
   assert.ok(f.parent.agent.ctx.tools.schemas(f.parent.agent).some(tool => tool.name === 'studio_customize'))
+  const listing = await execute('list', {})
+  const studioUrl = new URL(JSON.parse(listing.content.find(block => block.type === 'text').text).studioUrl)
+  assert.equal(studioUrl.origin, `http://127.0.0.1:${f.ctx.webServer.port}`)
+  assert.equal(studioUrl.pathname, '/design-studio/')
+  assert.equal(studioUrl.searchParams.get('agentId'), String(f.parent.agent.id))
   const catalog = await execute('catalog', {})
   assert.equal(catalog.isError, false)
   assert.match(JSON.stringify(catalog), /observations/)
@@ -238,7 +250,9 @@ test('Host conversation tool and Studio RPC edit and reopen the same working-cop
   assert.ok(JSON.stringify(preparation).includes(prepared.digest), 'the Host renders the same candidate shown in Studio')
   const toolResult = JSON.parse(preparation.content.find(block => block.type === 'text').text)
   const { authoring } = toolResult.result
-  assert.equal(toolResult.studioUrl, authoring.url)
+  assert.equal(toolResult.studioUrl, new URL(authoring.url, studioUrl.origin).href)
+  assert.equal(new URL(toolResult.studioUrl).search, new URL(authoring.url, studioUrl.origin).search,
+    'the clickable conversation link retains the exact candidate and native parent')
   assert.deepEqual(authoring.studio, { id: record.id, expectedRevision: 0, bundle: record.bundle })
   assert.equal(prepared.authoring.requestId, authoring.requestId, 'the same exact parent/request/digest reuses its bounded receipt')
   const locator = { ...authoring.studio, requestId: authoring.requestId, digest: prepared.digest }

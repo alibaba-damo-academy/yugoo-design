@@ -132,7 +132,7 @@ A Design Project is independent of chat. Common DSH entry points are below. Comp
 
 New projects default to `YuGoo/Projects` under the current operating system's Documents directory. An explicitly configured path takes precedence; existing projects are not moved automatically. WSL uses the Linux user's directory rather than redirecting to Windows Documents. Project Git checkpoints record design changes and remain after a session closes.
 
-In the current development source, selecting a Kit for the first time copies the complete Kit and mounted Bundle files to the project's `design_kit/kit` and `design_kit/bundles`. The Agent, Panels and validation then read the project's own files. Library edits or removal do not change existing projects. To use newer methods from the library, ask the Agent to compare files, explain the differences and preserve project customizations, then use normal validation, saving and Git to record the changes. Installed releases support this layout only when they include the corresponding runtime.
+In release `0.2.3`, selecting a Kit for the first time copies the complete Kit and mounted Bundle files to the project's `design_kit/kit` and `design_kit/bundles`. The Agent, Panels and validation then read the project's own files. Library edits or removal do not change existing projects. To use newer methods from the library, ask the Agent to compare files, explain the differences and preserve project customizations, then use normal validation, saving and Git to record the changes. For older projects, follow the corresponding content-recovery instructions.
 
 The project operation `delete` removes the registration record while retaining actual project files; it does not delete files or empty a directory. If project content is missing, or an older project cannot locate its original Kit or Bundles, follow [updates and original-content recovery](kit-sharing.en.md#update-and-restore-project-content) rather than substituting newer library content as the original. See [project files and version management](project-files.md) for file layout, backups, moves and migration boundaries, and the [command reference](commands.md) for full parameters.
 
@@ -198,7 +198,7 @@ See the [command reference](commands.md) for full parameters and migration prere
 
 Studio manages the methods and panels used during design; the everyday Design Panel edits your design results. In Companion, open Studio from settings to reuse the current service connection in a separate browser page. DSH uses the Studio entry point provided by the host.
 
-**Version scope:** the in-place editing, source import and project-owned content steps below describe the current development source. Installed releases provide them only when they include the corresponding runtime. Check the [host guide](hosts.en.md) and [release status](preview-status.md) first; use the matching instructions for older entry points.
+**Version scope:** the in-place editing, source import and project-owned content described below correspond to release `0.2.3`. Complete Studio authoring checks are still in progress. Check the [host guide](hosts.en.md) and [release status](preview-status.md) for tested scope and known issues; use the matching instructions for older entry points.
 
 ### Inspect Kits and Bundles
 

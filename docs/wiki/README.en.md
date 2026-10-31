@@ -86,6 +86,6 @@ For problems with entry points, connections, generation, saving or continuing a 
 
 ## Documentation and versions
 
-Tutorial interfaces and operations can change with the host, plugin and Kit version. Current-content editing and project-owned `design_kit` files describe the development source; installed releases need the corresponding runtime, as explained in the [sharing guide](kit-sharing.en.md). Check [host compatibility](hosts.en.md) first. Examples state the versions and scope they demonstrate; see [release status](preview-status.md) for current releases.
+Tutorial interfaces and operations can change with the host, plugin and Kit version. Current-content editing and project-owned `design_kit` files described here correspond to release `0.2.3`; see the [sharing guide](kit-sharing.en.md) for the steps. Complete Studio authoring checks are still in progress. Check [host compatibility](hosts.en.md) first. Examples state the versions and scope they demonstrate; see [release status](preview-status.md) for current releases, tested scope and known issues.
 
 To improve documentation, translations or examples, read [Contributing](../../CONTRIBUTING.md) and [terminology](terminology.md). The [English README](../../README.en.md) introduces the project; use the [feedback guide](support.md) for questions and suggestions. Maintenance and public synchronization follow the [document sync contract](../public-document-sync.md).

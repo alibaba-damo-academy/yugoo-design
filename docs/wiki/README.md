@@ -84,6 +84,6 @@
 
 ## 文档与版本
 
-教程中的界面和操作可能随宿主、插件及套件版本变化。Studio 当前内容编辑与项目内 `design_kit` 文件说明面向开发源码；安装版只有包含对应运行时才支持，具体范围见[Kit 分享指南](kit-sharing.md)。开始前可查[宿主兼容](hosts.md)；示例附有拍摄或使用时的版本与范围，当前发行情况见[预览状态](preview-status.md)。
+教程中的界面和操作可能随宿主、插件及套件版本变化。Studio 当前内容编辑与项目内 `design_kit` 文件说明对应 `0.2.3` 发行版，具体步骤见[Kit 分享指南](kit-sharing.md)；Studio 完整创作流程的验证仍在进行。开始前可查[宿主兼容](hosts.md)；示例附有拍摄或使用时的版本与范围，当前发行、实测范围与已知问题见[预览状态](preview-status.md)。
 
 希望改进文档、翻译或例子，可阅读[贡献指南](../../CONTRIBUTING.md)与[命名规范](terminology.md)。[英文 README](../../README.en.md)提供对应的项目介绍；问题和建议见[反馈入口](support.md)，文档维护与公开同步规则见[公共文档同步](../public-document-sync.md)。

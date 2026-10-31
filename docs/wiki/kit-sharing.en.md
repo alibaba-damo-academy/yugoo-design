@@ -4,7 +4,7 @@ English · [简体中文](kit-sharing.md)
 
 Use this page to share and receive Yugoo Design Kits. You can copy the [community workshop example](../../examples/community-workshop-delivery/README.md) directly; see [extension development](extending.en.md) for authoring rules. Kit content and Design Projects are different materials: sharing a Kit does not include user projects, conversations, model credentials, or host installations.
 
-**Version scope:** The in-place Studio editing, direct source import, and project-owned `design_kit` files described below refer to the current development source. An installed release supports these steps only when it includes the corresponding runtime. Check [host support](hosts.en.md) and [release status](preview-status.md) before using them. The historical records below retain their original scope.
+**Version scope:** The in-place Studio editing, direct source import, and project-owned `design_kit` files described below correspond to release `0.2.3`. Complete Studio authoring checks are still in progress. Check [host support](hosts.en.md) and [release status](preview-status.md) for tested scope and known issues. The historical records below retain their original scope; follow the matching instructions for older entry points.
 
 Choose the delivery method supported by the target release: Studio receives files through source import, complete content directories use the host's loader, and npm packages use release and host-registration paths. On first receipt, verify in an independent project to avoid overwriting content already in use.
 

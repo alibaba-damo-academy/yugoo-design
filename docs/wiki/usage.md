@@ -130,7 +130,7 @@ Grounding、Reflection、Alignment 可以提出疑点、研究或澄清建议。
 
 新建项目默认位于当前操作系统 Documents 下的 `YuGoo/Projects`；显式配置的路径优先，已有项目不会自动搬迁。WSL 使用 Linux 用户目录，不自动转向 Windows 的 Documents。项目 Git checkpoint 记录设计变更，关闭会话不删除这些记录。
 
-当前开发源码在项目首次选择 Kit 时，将完整 Kit 与挂载的 Bundle 文件复制到项目的 `design_kit/kit` 和 `design_kit/bundles`。之后，Agent、面板和校验使用项目自己的文件；内容库中的修改或删除不会改变已有项目。要使用库中的新方法，请 Agent 对比文件、说明差异并保留项目定制，再通过既有校验、保存和 Git 记录修改。已安装版须包含相应运行时才支持这一布局。
+在 `0.2.3` 发行版中，项目首次选择 Kit 时，会将完整 Kit 与挂载的 Bundle 文件复制到项目的 `design_kit/kit` 和 `design_kit/bundles`。之后，Agent、面板和校验使用项目自己的文件；内容库中的修改或删除不会改变已有项目。要使用库中的新方法，请 Agent 对比文件、说明差异并保留项目定制，再通过既有校验、保存和 Git 记录修改。旧版项目按其对应的内容恢复说明处理。
 
 项目操作中的 `delete` 移除注册记录，保留实际项目文件；不要把它当作文件删除或清空目录。项目内容缺失，或旧格式项目无法找到原 Kit/Bundle 时，按[更新与原件恢复](kit-sharing.md#更新与恢复项目内容)处理，不把新版库内容冒充原件。文件布局、备份、移动和迁移边界见[项目文件与版本管理](project-files.md)，完整参数见[命令参考](commands.md)。
 
@@ -193,7 +193,7 @@ DSH 也可输入 `/yugoo reconstruct D:\Projects\studio-app`，再说明本轮�
 
 Studio 管理构思时使用的方法和面板，日常 Design Panel 编辑的是你的设计成果。Companion 可从设置打开 Studio，在独立浏览器页中沿用当前服务连接；DSH 使用宿主提供的 Studio 入口。
 
-**适用版本：** 以下原地编辑、源码导入和项目自带内容的步骤对应当前开发源码；安装版只有包含相应运行时才提供这些操作。使用前核对[宿主指南](hosts.md)和[发行状态](preview-status.md)，旧版入口按其对应说明操作。
+**适用版本：** 以下原地编辑、源码导入和项目自带内容的说明对应 `0.2.3` 发行版。Studio 完整创作流程的验证仍在进行；使用前核对[宿主指南](hosts.md)和[发行状态](preview-status.md)，了解实测范围与已知问题。旧版入口按其对应说明操作。
 
 ### 查看套件与技能包
 

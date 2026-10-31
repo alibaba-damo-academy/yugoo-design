@@ -4,7 +4,7 @@ Use this page to choose an installation route and understand the scope of availa
 
 ## Current release and use
 
-**Published release:** [`yugoo-design@0.1.2`](https://github.com/alibaba-damo-academy/yugoo-design/releases/tag/v0.1.2) is published. Use the [installation guide](getting-started.en.md) for your host.
+**Published release:** [`yugoo-design@0.2.3`](https://github.com/alibaba-damo-academy/yugoo-design/releases/tag/v0.2.3) is published. Use the [installation guide](getting-started.en.md) for your host.
 
 Install the released **`yugoo-design`** npm package using the [shared installation prompt](../../packages/companion/HOSTS.md#default-prompt-any-supported-host). The product CLI is also `yugoo-design`.
 
@@ -12,9 +12,23 @@ With no version specified, resolve npm's `latest` once to its exact published st
 
 The product and its ten native DSH components share one npm release version. The installer selects DSH's exact aggregate through `release-hosts.json`; you do not need to install its internal modules separately. Native desktop suite versions and Kit/Bundle source-version metadata have their own identities and must not be replaced with the product's npm version.
 
-**Web App Kit is included.** Select it for a new project through the installed host's `yugoo` entry. Existing projects keep their own Kit content. Current source stores a complete `design_kit` tree in the project; older releases retain their version-specific loading behavior, as described in the sharing guide. Other available content and independent Kit loading are described in the [Kit guide](kit-sharing.en.md#official-kits); historical packages do not establish current inclusion or support.
+**Web App Kit is included.** Select it for a new project through the installed host's `yugoo` entry. Existing projects keep their own Kit content. Release `0.2.3` stores a complete `design_kit` tree in the project; older releases retain their version-specific loading behavior, as described in the sharing guide. Other available content and independent Kit loading are described in the [Kit guide](kit-sharing.en.md#official-kits); historical packages do not establish current inclusion or support.
 
 **Installation is more than downloading.** Complete the host's native registration/import and activation, then check the version actually loaded. Preserve the previous runtime and installation receipts when updating. Normal design versioning uses the bundled Git runtime; no system Git executable is required. Follow the acquired package's help for supported platforms and commands.
+
+**Verified installation scope for `0.2.3`.** Fresh registration and an owned
+update were checked using the published npm installer with official DSH/Loader
+`0.2.1-rc.3`, Node `22.22.3` and pnpm `12.15.0`. Native registration,
+configuration readback, preservation of user settings, and the exact versions
+and integrity of ten native packages passed. The checks included explicit
+approval for the required native dependency build scripts. The update started
+from a `0.2.2` installation registered with the corrected adapter and a valid
+ownership receipt; it does not establish recovery of a failed `0.2.2`
+transaction. These installation checks do not establish Host startup, model
+execution or complete Design/Studio workflows. Functional checks are still in
+progress, and results do not extend to other hosts or versions. Follow the
+[DSH installation and repair guidance](../../packages/companion/HOSTS.md#install-or-update-deepseek-harness)
+for configuration, activation and retained failure records.
 
 **Local semantic search has separate dependencies.** Local embeddings use CPU. The installation guide sets `ONNXRUNTIME_NODE_INSTALL_CUDA=skip` for acquisition while retaining dependency lifecycle scripts; this skips the additional CUDA download, not the ONNX runtime or embedding model. Prepare the required model cache or allow its download as instructed. Conversation, design generation and reviews use the host's model configuration.
 
@@ -43,12 +57,14 @@ Studio provides tools for inspecting methods, editing current Kit/Bundle content
 
 Keep these operations distinct:
 
-- In the current development source, ordinary saves update the same library identity without a local publication or version-selection step. Projects with their own `design_kit` files remain independent of subsequent library edits.
+- In release `0.2.3`, ordinary saves update the same library identity without a local publication or version-selection step. Projects with their own `design_kit` files remain independent of subsequent library edits.
 - Sample preview uses sample data and does not invoke a model. A native trial runs in a separate test project; its demonstration save does not prove durable project saving or Agent continuation.
-- Current source imports ZIP files, folders or a Bundle's `SKILL.md` as editable source. Missing auxiliary definitions remain available for completion; loading and preview report their actual diagnostics. Import does not execute scripts, install models or Providers, or change existing projects. Source and license fields are optional; existing attribution remains intact.
+- Release `0.2.3` includes importing ZIP files, folders or a Bundle's `SKILL.md` as editable source. Missing auxiliary definitions remain available for completion; loading and preview report their actual diagnostics. Import does not execute scripts, install models or Providers, or change existing projects. Source and license fields are optional; existing attribution remains intact.
 - Exporting and sharing a copy does not publish it to a registry or establish compatibility with another host. Check the recipient's complete use/save/reopen path as described in [Kit sharing](kit-sharing.en.md).
 
-Current source capabilities and screenshots are not a promise that every published package or host contains the same authoring UI. Design-session support does not by itself verify Studio authoring, KAG visuals or every native trial route.
+Complete Studio authoring checks are still in progress. The interfaces above are included in `0.2.3`; this does not establish that every operation has passed on every host. Design-session support does not by itself verify Studio authoring, KAG visuals or every native trial route. Screenshots retain the scope described beside them.
+
+**Known issue in `0.2.3`:** a Studio link returned in a DSH Web conversation can be a relative path that is not clickable. The correction is in development source and is not included in this release. The host's existing Studio entry remains separate from that conversation link.
 
 ## Continue into development
 
