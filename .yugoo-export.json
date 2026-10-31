@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "076d865a864b7b21880ddcfaffb72c2c241b6f89",
+  "revision": "9333200ddf6a406ef8bf3eff7c1d40c3830367c4",
   "policySha256": "a993efb1ff118f0a3cbe4de3412b059ca985644539f50f7e756c9409d0a94b83",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -36,7 +36,7 @@
       "mode": "100644"
     },
     ".agents/skills/design-bundle-creator/scripts/inspect-panel-component.mjs": {
-      "sha256": "71ac2541e9388f86d6f0a58c87bcbfeb8948c34b476cd4291d37c2f2ac337265",
+      "sha256": "8e1879b91b3d9cef5bb4b356cfd97eb1c796d056f398156a26f0d11f19ff50cc",
       "mode": "100644"
     },
     ".agents/skills/design-bundle-creator/scripts/list-panel-components.mjs": {
@@ -100,7 +100,7 @@
       "mode": "100644"
     },
     "AGENTS.md": {
-      "sha256": "d6065436948f61ec9c0fe3bdcc855db96e9361aef0dcb372aaae2fb3c7d73271",
+      "sha256": "16ffa39bbf2966bba25d15b99c493563aae7887aa87c8f2d6a8addb8120e39e7",
       "mode": "100644"
     },
     "CONTRIBUTING.md": {
@@ -168,7 +168,7 @@
       "mode": "100644"
     },
     "docs/dsl-spec.md": {
-      "sha256": "d16ab170c01f81f1d09d3d6daeeee50578a43088ad4ca1fda4fb91a844c38c7b",
+      "sha256": "dda9a36ece5efea156dfee9b5afe78b3a016743f29a3079fee30b7afc887a84b",
       "mode": "100644"
     },
     "docs/images/README.md": {
@@ -284,7 +284,7 @@
       "mode": "100644"
     },
     "docs/testing/agentic-e2e.md": {
-      "sha256": "7000caa281839604b40d68bcb54fcb74e7a3ac0aa1834b14459a010636dfe7d0",
+      "sha256": "d9f06f27add9b4bd8f622c33de70c4083cb51e84a29267fe942881d6fcb29327",
       "mode": "100644"
     },
     "docs/ust-score-explanations.md": {
@@ -2392,7 +2392,7 @@
       "mode": "100644"
     },
     "packages/core/src/design-project-knowledge-lifecycle.ts": {
-      "sha256": "7b2038f1ee47431075d99d8210cb3f30b172ac59f86c519e3da5a05b70256570",
+      "sha256": "4dae93eabd181efc02c94365bf767d1fcc249a44e263a70aa19ec8d5048527bc",
       "mode": "100644"
     },
     "packages/core/src/design-project-paths.ts": {
@@ -2432,7 +2432,7 @@
       "mode": "100644"
     },
     "packages/core/src/design-service.ts": {
-      "sha256": "2af9bca060996fc1ae41af05266edf7266190762cdb8987f33fff95803884770",
+      "sha256": "9cd63288e26cb9d6fbee950aa188e5662c2c05c2e391bec58c8091ddae399559",
       "mode": "100644"
     },
     "packages/core/src/design-source-projection.ts": {
@@ -2716,7 +2716,7 @@
       "mode": "100644"
     },
     "packages/core/src/panel-remote.ts": {
-      "sha256": "f4bcdcfc4adc8abd838985767331da756c5a7221b59ecf29a5b3b46acd34b47d",
+      "sha256": "27fc3674c51c91206c7b080d17274500f9c5b875334a90682310c9fca2370ef3",
       "mode": "100644"
     },
     "packages/core/src/panel-save.ts": {
@@ -3016,7 +3016,7 @@
       "mode": "100644"
     },
     "packages/core/test/design-workspace-restore-event.test.mjs": {
-      "sha256": "016c8673950e966db015c4cbe8d4d3283da2f57806bb2e1e17b1d4df2587a5f7",
+      "sha256": "83809eed08fd27cc2c94275d3e36612e4dff656738d07bc4cdbb66a5fcdb2787",
       "mode": "100644"
     },
     "packages/core/test/diagram-inspector.test.mjs": {
@@ -3148,7 +3148,7 @@
       "mode": "100644"
     },
     "packages/core/test/experience-view.test.mjs": {
-      "sha256": "bcebde1d961101de568e9a54ddfbe5e2058d4604fe083513a686afa91083fc01",
+      "sha256": "6f7a4e09f43ff55f95f48973d3f06340599ba9b5b54b7331dbe488f6fe71ed11",
       "mode": "100644"
     },
     "packages/core/test/file-worker-delegation.test.mjs": {
@@ -3324,7 +3324,7 @@
       "mode": "100644"
     },
     "packages/core/test/knowledge-recovery-progress.test.mjs": {
-      "sha256": "a2c9ff49924d1889ad63b6645c2e32a146b752cebbc6abfa285532921fc2104d",
+      "sha256": "0bb4f8eb8539a633a427c962bb4672d6b93a14233658aaccab4cf42f3d9454de",
       "mode": "100644"
     },
     "packages/core/test/knowledge-schema-roles.test.mjs": {
@@ -3348,7 +3348,7 @@
       "mode": "100644"
     },
     "packages/core/test/panel-authoring-inspection.test.mjs": {
-      "sha256": "2253efdbe0cb3eb60ff4c7e5296882935e9a038f90d2fa2963b2bca64f0e7d17",
+      "sha256": "85376662dfc3e311428479365a56b5a3b609c76b92913b484f084f3ac590096b",
       "mode": "100644"
     },
     "packages/core/test/panel-component-catalog.test.mjs": {
@@ -3512,7 +3512,7 @@
       "mode": "100644"
     },
     "packages/core/test/workspace-refresh-cost.test.mjs": {
-      "sha256": "bc49978f37401a442b40cada346d96f7147e9f44fccdc598c1f39a3b9f77ea73",
+      "sha256": "d2f7defc5cf64dc26e8a738a743c98a2abb6f3e719912d44816043fc30c26686",
       "mode": "100644"
     },
     "packages/core/third-party/dsh-json/LICENSE": {
@@ -5212,7 +5212,7 @@
       "mode": "100644"
     },
     "packages/panel/src/client/workspace.tsx": {
-      "sha256": "c5f3e625c9ca8bf6c306a84a88c3c464278ebec96590750c63b8cdc78ab2a697",
+      "sha256": "6a288fd1d675c967354f6694bfea7f7d371aea9eca11d6a8ae4e90971886dbc5",
       "mode": "100644"
     },
     "packages/panel/src/color-control.tsx": {
@@ -8496,7 +8496,7 @@
       "mode": "100644"
     },
     "packages/studio-dsh/tests/authoring-agent-sdk.test.mjs": {
-      "sha256": "3ebc3c9944c1a2712d4416ff3cdcf9129acf311442951c52a3c08c0f1df0772c",
+      "sha256": "eb8dc1136baacc26987f6d40b3ef61107997ff516a578503ff263d925ead8192",
       "mode": "100644"
     },
     "packages/studio-dsh/tests/authoring-entry.test.mjs": {
@@ -8508,7 +8508,7 @@
       "mode": "100644"
     },
     "packages/studio-dsh/tests/authoring-material.test.mjs": {
-      "sha256": "22f63a7b1f40eb374c7ef5eb3f4d7950ef0d90bfabad82fa63eb034374e2201f",
+      "sha256": "299e413fddf96b158d557b843d5369563c71f958b6f14db55ac27bd6578961ba",
       "mode": "100644"
     },
     "packages/studio-dsh/tests/authoring-private-directory.test.mjs": {
@@ -9036,7 +9036,7 @@
       "mode": "100644"
     },
     "release/product.json": {
-      "sha256": "8ed19fef7872d6f0d40ffdec1f3426b48f38ff869e1947cc679b640c09d49a66",
+      "sha256": "232e74dd052c8a9ebcfacdd3d37c6ff935583ff3b94fa87a0d771927d962508f",
       "mode": "100644"
     },
     "release/public-source-baseline.json": {
@@ -9092,7 +9092,7 @@
       "mode": "100644"
     },
     "scripts/companion-authoring-material.test.mjs": {
-      "sha256": "eafea9b7d6c31525dfad2319ece46db7fba0393035cbd65ce460815961d4c260",
+      "sha256": "b10d6cb661d6cda9452f07800df473adc9fd9a5e82faabcb84a71fecf0d99577",
       "mode": "100644"
     },
     "scripts/companion-bundled-license.mjs": {

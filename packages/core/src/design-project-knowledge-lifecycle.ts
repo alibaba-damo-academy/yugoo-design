@@ -68,10 +68,12 @@ export class DesignProjectKnowledgeLifecycle implements DesignProjectSelectionLi
   ): Promise<DesignProjectSelectionPreparation> {
     if (this.#restoring) await this.#restoring.task
     if (this.#pending) throw new Error('design project knowledge: another selection is being prepared')
-    if (previousProjectId !== this.#selected) {
+    // A failed restore may leave a durable binding without a provider lease.
+    // Only an actually held different lease conflicts with the selection.
+    if (this.#selected !== null && previousProjectId !== this.#selected) {
       throw new Error('design project knowledge: durable selection and owned provider lease disagree')
     }
-    if (record.projectId === previousProjectId) {
+    if (record.projectId === this.#selected) {
       return Object.freeze({ abort: async () => {}, finalize: async () => ({}) })
     }
     this.#pending = true
@@ -110,6 +112,7 @@ export class DesignProjectKnowledgeLifecycle implements DesignProjectSelectionLi
   async close(projectId: DesignProjectId): Promise<void> {
     if (this.#restoring) await this.#restoring.task
     if (this.#pending) throw new Error('design project knowledge: cannot close during selection preparation')
+    if (this.#selected === null) return
     if (this.#selected !== projectId) throw new Error('design project knowledge: selected provider lease does not match close request')
     await this.#administration.releaseProject(projectId, this.#leaseId)
     this.#selected = null

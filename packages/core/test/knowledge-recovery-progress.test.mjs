@@ -4,6 +4,36 @@ const { register } = await import('tsx/esm/api'); register()
 const { KnowledgeReadProgress } = await import('../src/knowledge-read-progress.ts')
 const { DesignProjectKnowledgeLifecycle } = await import('../src/design-project-knowledge-lifecycle.ts')
 
+test('an actually held different provider lease still rejects mismatched selection and close', async () => {
+  let acquired = 0, released = 0
+  const lifecycle = new DesignProjectKnowledgeLifecycle({
+    administration: { acquireProject: async () => { acquired++ }, releaseProject: async () => { released++ } },
+    service: {}, leaseId: 'session:test', materialize: async () => {},
+  })
+  const record = { projectId: 'held', stateRoot: '/unused', knowledge: { provider: 'fixture' } }
+  await lifecycle.restore(record, {})
+  await assert.rejects(lifecycle.prepare('different', { ...record, projectId: 'target' }, {}), /durable selection and owned provider lease disagree/)
+  await assert.rejects(lifecycle.close('different'), /selected provider lease does not match close request/)
+  assert.equal(acquired, 1); assert.equal(released, 0)
+  await lifecycle.close(record.projectId)
+  assert.equal(released, 1)
+})
+
+test('reopening the same durable project after failed restore reacquires its provider instead of returning a false no-op', async () => {
+  let acquired = 0, materialized = 0, released = 0
+  const lifecycle = new DesignProjectKnowledgeLifecycle({
+    administration: { acquireProject: async () => { if (++acquired === 1) throw new Error('provider failed') }, releaseProject: async () => { released++ } },
+    service: {}, leaseId: 'session:test', materialize: async () => { materialized++ },
+  })
+  const record = { projectId: 'original', stateRoot: '/unused', knowledge: { provider: 'fixture' } }
+  await assert.rejects(lifecycle.restore(record, {}), /provider failed/)
+  const prepared = await lifecycle.prepare(record.projectId, record, {})
+  await prepared.finalize()
+  assert.equal(acquired, 2); assert.equal(materialized, 1); assert.equal(released, 0)
+  await lifecycle.close(record.projectId)
+  assert.equal(released, 1)
+})
+
 test('recovery progress is returned while one shared rebuild continues', async () => {
   const progress = new KnowledgeReadProgress()
   let complete, calls = 0

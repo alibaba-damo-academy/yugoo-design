@@ -13,6 +13,12 @@ const { DesignPanelRemote } = await import('../src/panel-remote.ts')
 const { TYPERT_REMOTE } = await import('../src/typert.remote-client.ts')
 const { DesignJournalRegistry } = await import('../src/design-journal-registry.ts')
 const { DesignBundleContributionRegistry } = await import('../src/runtime-drivers.ts')
+const { ConversationDesignBindingStore } = await import('../src/conversation-design-binding-store.ts')
+const { runDesignProjectCommand } = await import('../src/design-project-adapter.ts')
+const { loadDesignKit } = await import('../src/kit-loader.ts')
+const { contentNodeFs } = await import('../src/content-store.ts')
+const { nodeFs } = await import('../src/service-tools.ts')
+const { writeContentCatalog } = await import('./fixtures/content-catalog.mjs')
 
 async function fixture(run) {
   const root = await mkdtemp(join(tmpdir(), 'workspace-refresh-cost-'))
@@ -33,6 +39,96 @@ async function fixture(run) {
     await rm(root, { recursive: true, force: true })
   }
 }
+
+test('a selected project with unavailable Kit source replaces the previous Panel and cold-restores read-only', async () => fixture(async ({ root, registry, project, spawn }) => {
+  const signal = new AbortController().signal
+  const publish = async (target, title) => {
+    await mkdir(join(target.designFilesRoot, 'research'))
+    await writeFile(join(target.designFilesRoot, 'research/research.json'), JSON.stringify({ title }))
+    const result = await spawn({ argv: ['git', '-c', 'user.name=Test', '-c', 'user.email=test@local', 'add', 'design_files'], cwd: target.root })
+    assert.equal(result.exitCode, 0, result.stderr)
+    const commit = await spawn({ argv: ['git', '-c', 'user.name=Test', '-c', 'user.email=test@local', 'commit', '-qm', title], cwd: target.root })
+    assert.equal(commit.exitCode, 0, commit.stderr)
+  }
+  await publish(project, 'Previous project facts')
+  const created = await registry.create('missing-source', { provider: 'ladybug-wasm' })
+  await registry.setKitPin(created.projectId, { name: 'unavailable', version: '1.0' })
+  const missing = await registry.require(created.projectId)
+  await publish(missing, 'Preserved missing-source project facts')
+  const original = await readFile(join(missing.designFilesRoot, 'research/research.json'), 'utf8')
+  const agent = { id: 'source-recovery-conversation' }
+  const library = await writeContentCatalog(join(root, 'library'), { name: 'fixture', version: '1.0', bundles: [{ name: 'research', version: '1.0' }] })
+  const kit = await loadDesignKit(contentNodeFs, library.root, { sourceId: 'trusted:workspace-source-recovery' })
+  let libraryAvailable = true
+  const design = Object.create(DesignService.prototype)
+  Object.assign(design, {
+    projects: registry, hostInstanceId: 'source-recovery-test',
+    bindings: new ConversationDesignBindingStore({ root: join(root, 'bindings') }),
+    workspaceReadScope: new AsyncLocalStorage(), workspaceGitReaders: new Map(),
+    projectKits: new Map(), contributions: new DesignBundleContributionRegistry(),
+    activeWorkspaces: new WeakMap(), workspaceContentEpochs: new WeakMap(), projectContentEpochs: new Map(),
+    selectedAgents: new Set(), selectedAgentRefs: new WeakMap(), workspaceChangeListeners: new Set(),
+    conversationMutations: new WeakMap(), journalMutations: new Map(),
+    projectMutationScope: new AsyncLocalStorage(), projectMutations: new Map(),
+    journals: new DesignJournalRegistry(state => join(state, 'journal')),
+    resolveKit: pin => libraryAvailable && pin.kit === kit.name ? kit : undefined,
+    spawnAdapter: () => spawn, executionAttemptsFor: () => [], readClarityAuthority: async () => undefined,
+    knowledgeLifecycleFor: () => ({ prepare: async () => ({ finalize: async () => ({}), abort: async () => {} }) }),
+  })
+  const remote = Object.create(DesignPanelRemote.prototype)
+  Object.assign(remote, { design, worktreeProjections: new Map() })
+  const open = id => runDesignProjectCommand({ verb: 'open', argument: id }, { projects: registry, conversation: design.conversationPort(agent, signal) })
+  assert.equal((await open(project.projectId)).kind, 'success')
+  const previous = await remote.pollWorkspace(agent, null, signal)
+  assert.equal(previous.workspace.projectId, project.projectId)
+  assert.equal(previous.workspace.access.mode, 'writable')
+  const issuedStore = await design.designFilesForProject(agent, project.projectId, nodeFs, signal)
+  const sourceRoot = join(project.root, 'design_kit'), retainedSource = join(root, 'retained-project-source')
+  await rename(sourceRoot, retainedSource)
+  libraryAvailable = false
+  assert.equal((await remote.readWorkspace(agent, signal)).access.mode, 'recovery')
+  const unavailableEpoch = design.projectContentEpochs.get(project.projectId)
+  assert.equal((await remote.readWorkspace(agent, signal)).access.mode, 'recovery')
+  assert.equal(design.projectContentEpochs.get(project.projectId), unavailableEpoch, 'repeated missing-source polls do not create repeated invalidations')
+  const method = join(retainedSource, 'bundles/research/SKILL.md')
+  await writeFile(method, await readFile(method, 'utf8') + '\nRevised project-owned method after recovery.\n')
+  await rename(retainedSource, sourceRoot)
+  assert.equal((await remote.readWorkspace(agent, signal)).access.mode, 'writable')
+  await assert.rejects(issuedStore.read('research'), /scoped store belongs to the previous content version/)
+  await assert.rejects(issuedStore.writeWorktreeText('research/research.json', '{"title":"stale write"}'), /scoped store belongs to the previous content version/)
+  const currentStore = await design.designFilesForProject(agent, project.projectId, nodeFs, signal)
+  assert.equal((await currentStore.read('research')).title, 'Previous project facts')
+  const opened = await open(missing.projectId)
+  assert.equal(opened.kind, 'success')
+  assert.match(opened.text, /original Kit source unavailable/)
+  assert.equal((await design.bindings.read(design.bindingKey(agent))).projectId, missing.projectId)
+  design.projectKits.set(missing.root, {
+    kit: { ...kit, name: 'unavailable', sourceRoot: '/previously-readable-project-source' }, revision: 'previous',
+  })
+  const changed = await remote.pollWorkspace(agent, previous.revision, signal)
+  assert.equal(changed.unchanged, false)
+  assert.equal(design.projectKits.has(missing.root), false, 'unavailable current definitions cannot reuse a previously cached Kit')
+  for (const observed of [changed.workspace, await (async () => {
+    design.activeWorkspaces = new WeakMap()
+    return remote.readWorkspace(agent, signal)
+  })()]) {
+    assert.equal(observed.projectId, missing.projectId)
+    assert.equal(observed.projectPath, missing.root)
+    assert.equal(observed.access.mode, 'recovery')
+    assert.equal(observed.access.writable, false)
+    assert.match(observed.publicationError, /original Kit source unavailable/)
+    assert.equal(observed.design.research.state.title, 'Preserved missing-source project facts')
+    assert.deepEqual(observed.continuations, [])
+    assert.deepEqual(observed.mustEditHandoffs, [])
+    assert.equal(observed.design.research.skillManifest, undefined, 'no previous-project Kit metadata is substituted')
+  }
+  await assert.rejects(design.projectForAgent(agent, signal), /original Kit source unavailable/, 'ordinary authoritative access still requires the exact source')
+  assert.equal(await readFile(join(missing.designFilesRoot, 'research/research.json'), 'utf8'), original)
+  await assert.rejects(readFile(join(missing.root, 'design_kit/source.json')), /ENOENT/)
+  assert.equal((await open(project.projectId)).kind, 'success')
+  assert.equal((await remote.readWorkspace(agent, signal)).access.mode, 'writable')
+  design.journals.dispose()
+}))
 
 test('unchanged panel reads share one bounded HEAD probe; edits and external commits stay visible', async () => fixture(async ({ registry, project, spawn, calls }) => {
   const exec = async argv => { const result = await spawn({ argv: ['git', ...argv], cwd: project.root }); assert.equal(result.exitCode, 0, result.stderr); return result.stdout.trim() }

@@ -7,6 +7,34 @@ import { fixture, call, stop, deferred, llm, tools, createStudioAuthoringAgent }
 
 const sequence = n => [call('studio_authoring_read', {}), call('studio_authoring_prepare', { changes: [{ path: 'panel.yaml', content: 'candidate source' }] }), stop()][n % 3]
 
+test('native read tool follows PanelManifest to the packaged i18n contract', { timeout: 15000 }, async t => {
+  const receipts = []
+  const f = await fixture(t, { step(n) {
+    if (n === 0) return call('studio_authoring_read', {
+      components: { name: 'record_workspace', reference: 'contract', type: 'PanelManifest' },
+    })
+    if (n === 1) {
+      const reference = receipts[0].contract.references.find(item => item.name === 'PanelTranslations')
+      assert.ok(reference, 'the native author must discover the imported i18n contract')
+      return call('studio_authoring_read', { components: reference.read })
+    }
+    return stop()
+  } })
+  f.ctx.on('tools/result', (exec, result) => {
+    if (exec.name === 'studio_authoring_read' && !result.isError) {
+      receipts.push(JSON.parse(result.content.find(block => block.type === 'text').text))
+    }
+  })
+  const run = await f.adapter.start(f.request)
+  assert.equal((await run.result).status, 'completed')
+  assert.equal(f.toolResults.filter(result => result.isError).length, 0)
+  assert.equal(receipts.length, 2)
+  assert.equal(receipts[1].contract.file, 'packages/core/src/panel-i18n.ts')
+  assert.match(receipts[1].contract.declaration, /default_locale: string/)
+  assert.match(receipts[1].contract.declaration, /locales: Record<string, string>/)
+  assert.equal(run.readPrepared(), undefined)
+})
+
 test('restricted child reads the same creator index and rejects filesystem and mixed authority', { timeout: 15000 }, async t => {
   const receipts = [], prompts = [], descriptions = []
   const f = await fixture(t, { step(n, request) {

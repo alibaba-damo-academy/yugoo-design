@@ -92,7 +92,11 @@ test('npm archive includes fixed resource readable by plain Node after relocatio
   const extracted = join(root, 'relocated'); await mkdir(extracted)
   execFileSync('tar', ['-xzf', join(candidate, packed.filename), '-C', extracted])
   const read = execFileSync(process.execPath, [join(extracted, 'package/payload/shared/scripts/read.mjs')], { cwd: root, env, maxBuffer: 6_000_000, encoding: 'utf8' })
-  assert.deepEqual(JSON.parse(read), prepared.material)
+  const relocated = JSON.parse(read)
+  assert.deepEqual(relocated, prepared.material)
+  assert.ok(relocated.contracts.PanelManifest.references.some(item => item.name === 'PanelTranslations'))
+  assert.equal(relocated.contracts.PanelTranslations.file, 'packages/core/src/panel-i18n.ts')
+  assert.match(relocated.contracts.PanelTranslations.declaration, /locales: Record<string, string>/)
 })
 
 // The full current catalog plus shared UIUX text exceeds the former 4 MB

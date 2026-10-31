@@ -653,12 +653,12 @@ export function DesignWorkspace(props: {
         role='status'
       >
         {props.publicationError
-          ? (isZh ? `版本状态暂不可用，当前文件仅供只读查看：${props.publicationError}`
-            : `Publication state is unavailable. Current files are read-only: ${props.publicationError}`)
+          ? (isZh ? `当前项目内容暂时无法读取，已保存的设计数据仍会保留。请检查项目原始定义和文件后重新打开：${props.publicationError}`
+            : `The current project's content could not be read. Saved design data is preserved. Check the original project definitions and files, then reopen the project: ${props.publicationError}`)
           : access.mode === 'recovery'
           ? (isZh
-              ? `项目所需的设计套件 ${access.kit.name}@${access.kit.version} 不可用，当前仅供只读查看。请恢复该版本的完整套件内容，再重新打开项目；已保存的设计文件会保留。`
-              : `This project requires Design Kit ${access.kit.name}@${access.kit.version}, which is unavailable. The panel is read-only. Restore that Kit version with all its contents, then reopen the project. Your saved design files are preserved.`)
+              ? '当前项目的设计套件内容无法读取。请恢复项目原始定义后重新打开；已保存的设计数据仍会保留。'
+              : "This project's Design Kit content is unavailable. Restore its original project definitions, then reopen the project. Saved design data is preserved.")
           : (isZh
               ? '当前项目尚未选择 Kit；Design Panel 保持只读。请在对话中输入 /yugoo kit <kit>。'
               : 'This project has no selected Kit. The Design Panel is read-only until you run /yugoo kit <kit> in the conversation.')}

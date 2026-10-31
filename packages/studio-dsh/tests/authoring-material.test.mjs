@@ -103,3 +103,27 @@ test('large component references remain completely readable below the native spi
   }
   await assert.rejects(readStudioPanelComponents({ name: 'question_rounds', reference: 'docs', offset: -1 }), /offset/)
 })
+
+test('packaged component reads follow PanelManifest to the owning i18n declaration', async () => {
+  const { readStudioPanelComponents } = await import('../src/authoring-material.ts')
+  const { readFile } = await import('node:fs/promises')
+  async function all(selectors) {
+    let result = await readStudioPanelComponents(selectors), content = ''
+    if (result.format !== 'json') return result
+    do {
+      content += result.content
+      if (result.nextOffset === undefined) break
+      result = await readStudioPanelComponents({ ...selectors, offset: result.nextOffset })
+    } while (true)
+    return JSON.parse(content)
+  }
+  const manifest = await all({ name: 'record_workspace', reference: 'contract', type: 'PanelManifest' })
+  const reference = manifest.contract.references.find(item => item.name === 'PanelTranslations')
+  assert.ok(reference, 'the restricted author must be able to discover the i18n contract')
+  const translations = await all(reference.read)
+  assert.equal(translations.contract.file, 'packages/core/src/panel-i18n.ts')
+  const source = await readFile(new URL('../../core/src/panel-i18n.ts', import.meta.url), 'utf8')
+  assert.ok(source.includes(translations.contract.declaration))
+  assert.match(translations.contract.declaration, /locales: Record<string, string>/)
+  assert.deepEqual(translations.contract.references, [])
+})

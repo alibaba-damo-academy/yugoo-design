@@ -1,11 +1,157 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { AsyncLocalStorage } from 'node:async_hooks'
+import { mkdtemp, mkdir, readFile, writeFile, rename, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
 const { register } = await import('tsx/esm/api')
 register()
 const { default: DesignService } = await import('../src/design-service.ts')
 const { DesignProjectKnowledgeLifecycle } = await import('../src/design-project-knowledge-lifecycle.ts')
 const { DESIGN_KNOWLEDGE_PUBLICATION_KEY } = await import('../src/design-knowledge-refresh.ts')
+const { writeContentCatalog } = await import('./fixtures/content-catalog.mjs')
+const { loadDesignKit } = await import('../src/kit-loader.ts')
+const { contentNodeFs } = await import('../src/content-store.ts')
+const { nodeDesignProjectSpawn } = await import('../src/design-project.ts')
+
+/** Real Core constructor and public Host activation event before any Panel read.
+ * Source/CLI and finite provider ports; not a running native Host or model check. */
+async function activationFixture(t, { missing = false, runtime = true, acquireError, statusNotice = true } = {}) {
+  const { Context } = await import('@deepseek-ai/cordis')
+  const { default: AgentRegistry } = await import('@deepseek-ai/dsh-agent')
+  const { default: SystemPrompt } = await import('@deepseek-ai/dsh-system-prompt')
+  const root = await mkdtemp(join(tmpdir(), 'design-activation-'))
+  const previousBackend = process.env.YUGOO_GIT_BACKEND
+  process.env.YUGOO_GIT_BACKEND = 'cli'
+  const ctx = new Context()
+  let disposeRuntime
+  t.after(async () => {
+    try { await ctx.fiber.dispose(); await disposeRuntime?.() }
+    finally {
+      if (previousBackend === undefined) delete process.env.YUGOO_GIT_BACKEND
+      else process.env.YUGOO_GIT_BACKEND = previousBackend
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+  await ctx.plugin(AgentRegistry)
+  await ctx.plugin(SystemPrompt, { persona: 'Cold Design activation' })
+  ctx.provide('tools', { register() {}, get() {} })
+  ctx.provide('subprocess', {})
+  const service = new DesignService(ctx, { stateRoot: join(root, 'state'), projectsRoot: join(root, 'projects'), hostInstanceId: 'activation-test' })
+  service.spawnAdapter = () => nodeDesignProjectSpawn
+  if (!statusNotice) service.injectKnowledgeOrchestrationSnapshot = async () => {}
+  const agent = { id: 'original-cold-session', ctx, session: { id: 'original-cold-session', header: {} }, inject() {} }
+  const counts = { acquire: [], release: [] }
+  if (runtime) disposeRuntime = service.registerDesignKnowledgeRuntime({
+    defaultProvider: 'fixture', service: { revision: async () => 'rev:0' },
+    administration: {
+      async acquireProject(location) { counts.acquire.push(location.projectId); if (acquireError && counts.acquire.length === 1) throw acquireError },
+      async releaseProject(projectId) { counts.release.push(projectId) },
+    },
+  })
+  async function project(name) {
+    const catalog = await writeContentCatalog(join(root, name), { name, version: '1.0', bundles: [{ name: 'alpha', version: '1.0' }] })
+    const kit = await loadDesignKit(contentNodeFs, catalog.root, { sourceId: `trusted:activation-${name}` })
+    const created = await service.projects.create(name, { provider: 'fixture' })
+    await service.projects.setKitPin(created.projectId, { name: kit.name, version: kit.version })
+    const record = await service.projects.require(created.projectId)
+    await service.prepareProjectKit(record, kit)
+    return record
+  }
+  const selected = await project('selected')
+  const mindsetPath = join(selected.root, 'design_kit/kit/mindset.md')
+  await writeFile(mindsetPath, (await readFile(mindsetPath, 'utf8')) + '\nCurrent project-only cold method.\n')
+  const file = join(selected.designFilesRoot, 'alpha/alpha.json')
+  await mkdir(join(selected.designFilesRoot, 'alpha'), { recursive: true })
+  const saved = JSON.stringify({ summary: 'Preserve the original project facts.' })
+  await writeFile(file, saved)
+  for (const args of [['add', 'design_files'], ['-c', 'user.name=Test', '-c', 'user.email=test@localhost', 'commit', '-qm', 'Saved fixture facts']]) {
+    const result = await nodeDesignProjectSpawn({ argv: ['git', ...args], cwd: selected.root })
+    assert.equal(result.exitCode, 0, result.stderr)
+  }
+  const key = service.bindingKey(agent), binding = await service.bindings.read(key)
+  await service.bindings.bind(key, selected.projectId, binding.revision)
+  if (missing) await rename(join(selected.root, 'design_kit'), join(root, 'unavailable-original-source'))
+  service.projectKits.clear() // A cold process has not resolved this project's definitions.
+  const activate = () => ctx.agents.register(agent)
+  const prompt = async () => (await ctx.systemPrompt.assemble({ agent })).sections.find(section => section.name === 'design:mindset')?.text
+  return { service, ctx, agent, selected, counts, activate, prompt, project, file, saved }
+}
+
+test('native activation with a missing Kit preserves the session, Panel recovery and the original lease for switching and closing', async t => {
+  const f = await activationFixture(t, { missing: true })
+  await f.activate()
+  assert.equal(f.ctx.agents.get(f.agent.id), f.agent)
+  assert.equal((await f.service.currentSelection(f.agent)).projectId, f.selected.projectId)
+  assert.deepEqual(f.counts.acquire, [f.selected.projectId], 'Kit absence cannot prevent the original provider lease restoration')
+  assert.match(f.service.knowledgeRestoreFailures.get(f.agent).message, /original Kit source unavailable/)
+  assert.match(await f.prompt(), /design_kit_unavailable/)
+  const { DesignPanelRemote } = await import('../src/panel-remote.ts')
+  const remote = Object.create(DesignPanelRemote.prototype)
+  Object.assign(remote, { design: f.service, worktreeProjections: new Map() })
+  const signal = new AbortController().signal
+  const workspace = await remote.readWorkspace(f.agent, signal)
+  assert.equal(workspace.projectId, f.selected.projectId)
+  assert.equal(workspace.access.mode, 'recovery')
+  assert.equal(workspace.access.writable, false)
+  assert.equal(workspace.design.alpha.state.summary, JSON.parse(f.saved).summary)
+  await assert.rejects(f.service.projectForAgent(f.agent, signal), /original Kit source unavailable/)
+  const { nodeFs } = await import('../src/service-tools.ts')
+  await assert.rejects(f.service.designFilesForProject(f.agent, f.selected.projectId, nodeFs, signal), /restore the full exact pinned Kit/)
+  assert.equal(await readFile(f.file, 'utf8'), f.saved)
+  const healthy = await f.project('healthy')
+  const opened = await f.service.executeProjectCommand(f.agent, `open ${healthy.projectId}`, signal)
+  assert.equal(opened.kind, 'success', opened.text)
+  assert.deepEqual(f.counts.acquire, [f.selected.projectId, healthy.projectId])
+  assert.deepEqual(f.counts.release, [f.selected.projectId])
+  const closed = await f.service.executeProjectCommand(f.agent, 'close', signal)
+  assert.equal(closed.kind, 'success', closed.text)
+  assert.deepEqual(f.counts.release, [f.selected.projectId, healthy.projectId])
+  assert.equal(await f.service.currentSelection(f.agent), undefined)
+})
+
+for (const runtime of [true, false]) test(`healthy native activation prepares the current project Kit before prompt assembly (knowledge runtime: ${runtime})`, async t => {
+  const f = await activationFixture(t, { runtime })
+  await f.activate()
+  assert.match(await f.prompt(), /Current project-only cold method\./)
+  assert.match(await f.prompt(), /active_design_mindset/)
+  assert.deepEqual(f.counts.acquire, runtime ? [f.selected.projectId] : [])
+  assert.equal(f.service.knowledgeRestoreFailures.get(f.agent), undefined)
+})
+
+test('provider restoration failure remains visible without hiding an available project Kit or aborting native activation', async t => {
+  // An optional notice must not be responsible for loading the healthy Kit.
+  const f = await activationFixture(t, { acquireError: new Error('provider open failed'), statusNotice: false })
+  await f.activate()
+  assert.equal(f.ctx.agents.get(f.agent.id), f.agent)
+  assert.match(f.service.knowledgeRestoreFailures.get(f.agent).message, /provider open failed/)
+  assert.equal(f.service.projectKits.has(f.selected.root), true)
+  assert.match(await f.prompt(), /Current project-only cold method\./)
+  assert.equal(f.counts.acquire.length, 1)
+  assert.deepEqual(f.counts.release, [], 'an unsuccessful acquire must not invent a held lease')
+})
+
+for (const closeFirst of [false, true]) test(`a failed provider restore permits normal navigation without a fabricated lease (close first: ${closeFirst})`, async t => {
+  const f = await activationFixture(t, { acquireError: new Error('provider open failed'), statusNotice: false })
+  await f.activate()
+  const signal = new AbortController().signal
+  if (closeFirst) {
+    const closed = await f.service.executeProjectCommand(f.agent, 'close', signal)
+    assert.equal(closed.kind, 'success', closed.text)
+    assert.equal(await f.service.currentSelection(f.agent), undefined)
+    assert.deepEqual(f.counts.release, [], 'there is no failed provider lease to release')
+  }
+  const healthy = await f.project('healthy')
+  const opened = await f.service.executeProjectCommand(f.agent, `open ${healthy.projectId}`, signal)
+  assert.equal(opened.kind, 'success', opened.text)
+  assert.deepEqual(f.counts.acquire, [f.selected.projectId, healthy.projectId])
+  assert.deepEqual(f.counts.release, [], 'switching must not fabricate a release for the failed original acquire')
+  assert.equal((await f.service.currentSelection(f.agent)).projectId, healthy.projectId)
+  const closed = await f.service.executeProjectCommand(f.agent, 'close', signal)
+  assert.equal(closed.kind, 'success', closed.text)
+  assert.deepEqual(f.counts.release, [healthy.projectId], 'only the actually acquired healthy lease is released')
+})
 
 test('restoring an already-selected project emits a process-local event for derived Panels', async () => {
   const agent = { id: 'restored-agent' }
@@ -16,6 +162,7 @@ test('restoring an already-selected project emits a process-local event for deri
   service.bindings = { read: async () => ({ projectId: project.projectId, revision: 4 }) }
   service.projects = { contentRecoveryLocation: async () => project, require: async () => project, snapshot: async () => ({ checkpoint: 'saved', bundleStates: {} }) }
   service.activeWorkspaces = new Map()
+  service.workspaceReadScope = new AsyncLocalStorage()
   service.contentRecoveryLocations = new WeakMap()
   service.workspaceContentEpochs = new WeakMap()
   service.projectContentEpochs = new Map()
@@ -65,7 +212,7 @@ function existingAgentFixture({ bindingGate, acquireGate, acquireError, selected
     bindingKey: () => 'binding',
     bindings: { async read() { counts.selectedReads++; await bindingGate?.promise; return binding } },
     projects: { contentRecoveryLocation: async () => project, require: async () => project, snapshot: async () => ({ checkpoint: 'published', bundleStates: {} }), status: async () => ({ lastCheckpoint: 'published' }) },
-    activeWorkspaces: new WeakMap(), contentRecoveryLocations: new WeakMap(), workspaceContentEpochs: new WeakMap(), projectContentEpochs: new Map(),
+    activeWorkspaces: new WeakMap(), workspaceReadScope: new AsyncLocalStorage(), contentRecoveryLocations: new WeakMap(), workspaceContentEpochs: new WeakMap(), projectContentEpochs: new Map(),
     selectedAgents: new Set(), selectedAgentRefs: new WeakMap(), workspaceChangeListeners: new Set([event => events.push(event)]),
     conversationMutations: new WeakMap(), knowledgeLifecycles: new Map(), knowledgeRestorations: new Map(), knowledgeRestorationOwners: new WeakMap(), knowledgeRestoreFailures: new WeakMap(), disposedAgents: new WeakSet(),
     knowledgeIndexStates: new Map(), knowledgeIndexPhases: new Map(), knowledgeIndexAttempts: new Map(), knowledgeMaintenance: new Map(), knowledgeMaintenanceTargets: new Map(), knowledgeMutations: new Map(), knowledgeIndexFailures: new Map(),

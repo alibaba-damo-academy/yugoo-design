@@ -35,6 +35,34 @@ ui: {…}
 
 `evidence_workbook | capability_map | process | lifecycle | page_spec | document`
 
+### UI text and locale resources
+
+Declare the locale-to-file map at the manifest root, alongside `sections`,
+`fields` and `ui`. Paths are relative to this Bundle:
+
+```yaml
+i18n:
+  default_locale: zh-CN
+  locales:
+    zh-CN: locales/zh-CN.json
+    en-US: locales/en-US.json
+```
+
+For example, `ui.title: $t:workspaceTitle` reads `workspaceTitle` from these
+JSON objects: `locales/zh-CN.json` contains
+`{"workspaceTitle":"交付验收点"}`, and `locales/en-US.json` contains
+`{"workspaceTitle":"Delivery acceptance points"}`. The Kit loader reads the
+declared files and supplies the resolved `i18n.messages`; authors maintain the
+locale files rather than duplicating their messages in `panel.yaml`.
+
+Use whole `$t:key` tokens for display titles, labels, descriptions and other
+supported text properties. The default locale must cover every referenced key;
+missing keys in other locales fall back to it. Locale switching does not
+translate saved user text, IDs, field keys, enum values or canonical defaults.
+Shared component action copy stays in Panel's shared dictionaries. The owning
+type is `PanelTranslations` in `packages/core/src/panel-i18n.ts`; installed
+component contract reads expose it through `PanelManifest`'s returned reference.
+
 ## `sections`
 
 ```yaml

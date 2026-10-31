@@ -124,6 +124,12 @@ definitions. Upstream version metadata is provenance, not a local release gate.
 
 ## Apply Occam's razor
 
+The default deployment is a local, single-user plugin inside a native Agent Host,
+used on the user's own computer. Favor flexibility and convenient recovery for
+both the user and the Host Agent. Reuse the Host's tool permissions and existing
+user authorization rather than introducing a second general-purpose permission
+model, repeated approvals, or multi-user access controls for ordinary local work.
+
 Choose the smallest mechanism that solves the user's present task. Reuse existing
 file editing, save, validation, host adapters and native Agent capabilities before
 adding another workflow, state machine, permission layer or version system.
@@ -136,6 +142,15 @@ save unfinished authoring work and correct it in place. Report actual parsing or
 execution problems where they occur; do not require unrelated publication,
 version upgrades or remounting to make a saved local edit usable. Preserve atomic
 saves, user data and meaningful conflict/error detection.
+
+Keep a failure within the operation that actually needs the missing input or
+capability. Missing Kit definitions or unavailable derived knowledge must not
+prevent the native conversation from opening or restoring its project identity.
+Let unrelated browsing, manual authoring and repair remain available. Validate
+when the affected operation needs it, explain the specific problem there, and
+reuse ordinary file editing or Agent actions to repair it. A consistency check
+that prevents lost or mixed data is not a reason to add a user permission gate or
+block the whole application.
 
 When simplifying, remove superseded implementations, states and UI together
 instead of layering another workaround over them. Keep internal consistency
@@ -158,17 +173,33 @@ explicit scope/authorization. Existing authorization remains valid within its
 stated scope; do not repeatedly ask for the same permission. Native hosts own model access and credentials;
 do not introduce a second model client to simulate a successful host integration.
 
-Check disk capacity before large builds/copies. Reuse unchanged artifacts and
-read-only dependencies where safe; do not repeatedly copy node_modules or entire
-release trees. Keep bounded evidence and an explicit cleanup list. Stop only owned
-processes; never broadly delete evidence, profiles or workspaces to free space.
+Check actual disk capacity and the task's existing footprint before large
+installs, builds or copies; on WSL also check the Windows volume holding its
+virtual disk. Reuse the existing checkout, package-manager store and unchanged
+builds where safe. Isolate mutable project/profile state, not a fresh copy of
+all source, node_modules and release trees for every attempt. A clean-install
+or simultaneous-version check may need separate dependencies; retire the old
+environment when that specific comparison ends. Do not leave paused test
+processes generating logs, downloads or snapshots.
 
-Keep durable documentation at its maintained source and task receipts in
-task-scoped storage. Group temporary worktrees and extra generated copies by
-task, with an owner, consumers and cleanup conditions in the existing work
-record; avoid a general artifact directory becoming a second document home.
-Preserve referenced immutable inputs and meaningful failures. Task completion
-does not authorize deleting another task's dependencies or user state.
+Task evidence means a concise result, source/package identity, useful logs and
+representative screenshots, not an indefinitely retained runnable environment.
+Keep normal builds in their owning worktree and caches in the tool's existing
+store. Before handoff or starting a replacement run, stop owned temporary
+processes that are no longer needed and remove obsolete rebuildable installs,
+packs, outputs and source copies. Keep at most the current environment for each still-needed test path;
+any extra large retained input needs a concrete current consumer and removal
+condition in the existing task record. A historical link or a completed task's
+receipt alone is not a reason to retain its entire environment. Preserve a
+meaningful failure's diagnostic record and smallest necessary reproduction;
+retain the full failing input only when its exact bytes are still required.
+
+Keep durable documentation at its maintained source and small task receipts in
+task-scoped storage. Preserve Git references and uncommitted work; remove retired
+worktrees through Git after checking actual consumers. Never blanket-delete
+user projects, credentials, formal release inputs or shared stores. Cleanup does
+not require a second copy of the deleted tree or hashes of every dependency file;
+record paths, disposition and before/after size in the existing task record.
 Private workstation locations belong in internal maintainer guidance rather
 than exported product instructions.
 

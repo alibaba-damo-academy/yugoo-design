@@ -587,7 +587,6 @@ export class DesignPanelRemote extends TypertRemoteService {
     agent: Agent,
     signal: AbortSignal,
   ): Promise<DesignPanelWorkspaceRead> {
-    await this.design.refreshProjectKit(agent)
     const workspace = await this.design.withWorkspaceRead(agent, signal, () => this.readWorkspaceSnapshot(agent, signal))
     return workspace
   }

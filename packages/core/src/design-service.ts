@@ -421,7 +421,11 @@ export default class DesignService extends Service {
       this.journals.dispose()
     })
     ctx.on('agent/created', async ({ agent }) => {
-      await this.restoreAgentKnowledge(agent)
+      // Design recovery must remain available when its Kit/provider is missing;
+      // a derived integration failure must not roll back the native conversation.
+      await this.restoreAgentKnowledge(agent).catch(error => {
+        this.context.logger?.warn(`design: could not restore Design Knowledge: ${String(error).slice(0, 1000)}`)
+      })
       if (this.selectionForAgent(agent) === undefined) return
       // Agentic trigger model: activation only samples cheap durable state and
       // injects the compact KAG/GRA snapshot. The main Agent decides on its
@@ -668,7 +672,9 @@ export default class DesignService extends Service {
       return undefined
     }
     const project = await this.projects.require(binding.projectId)
-    await this.prepareProjectKit(project)
+    // The saved binding and values exist independently of Kit availability.
+    // Activation prepares the Kit after restoring the original provider lease;
+    // authoritative reads and execution still require its exact source.
     const snapshot = await this.projects.snapshot(project.projectId)
     const workspace = Object.freeze({
       binding,
@@ -725,8 +731,14 @@ export default class DesignService extends Service {
   }
 
   private invalidateProjectContent(projectId: string): void {
-    this.projectContentEpochs.set(projectId, (this.projectContentEpochs.get(projectId) ?? 0) + 1)
-    for (const agent of this.agentsForProject(projectId)) this.notifyWorkspaceChange({ kind: 'selection-changed', agent })
+    const epoch = (this.projectContentEpochs.get(projectId) ?? 0) + 1
+    this.projectContentEpochs.set(projectId, epoch)
+    for (const agent of this.agentsForProject(projectId)) {
+      // Current workspaces follow the current source; already-issued stores
+      // retain their captured epoch and cannot survive its replacement/loss.
+      this.workspaceContentEpochs.set(agent, epoch)
+      this.notifyWorkspaceChange({ kind: 'selection-changed', agent })
+    }
   }
 
   private assertCurrentContent(agent: Agent, project: RegisteredDesignProject): void {
@@ -934,11 +946,23 @@ export default class DesignService extends Service {
     const task = this.serializeConversationMutation(agent, async () => {
       if (!current()) return
       const workspace = await this.restoreWorkspace(agent)
-      if (!workspace || !registration || !current()) return
-      const snapshot = await this.projects.snapshot(workspace.project.projectId)
+      if (!workspace || !current()) return
+      const failures: unknown[] = []
+      if (registration) {
+        const snapshot = await this.projects.snapshot(workspace.project.projectId)
+        if (!current()) return
+        try { await this.knowledgeLifecycleFor(agent).restore(workspace.project, snapshot) }
+        catch (error) { failures.push(error) }
+        if (!current()) return
+      }
+      // Kit absence must not leave a real binding without its provider lease.
+      // Healthy sessions also need the current Kit before synchronous prompts,
+      // including hosts without a knowledge runtime or whose provider failed.
+      try { await this.prepareProjectKit(workspace.project) }
+      catch (error) { failures.push(error) }
       if (!current()) return
-      await this.knowledgeLifecycleFor(agent).restore(workspace.project, snapshot)
-      if (!current()) return
+      if (failures.length === 1) throw failures[0]
+      if (failures.length > 1) throw new AggregateError(failures, 'design: Design Knowledge and project Kit restoration both failed')
       this.knowledgeRestoreFailures.delete(agent)
       // The first restoration event exposes the binding. This settlement lets
       // existing derived views sample the now-open provider without polling.
@@ -2736,16 +2760,22 @@ export default class DesignService extends Service {
     const source = selected ?? this.projectKits.get(project.root)?.kit
     // In-memory provider fixtures have no file-backed authoring source.
     const fallback = existsSync(join(project.root, 'design_kit')) ? undefined : source ?? this.resolveProjectKit(project.kit)
-    const current = fallback && !fallback.sourceRoot
-      ? { kit: fallback, revision: projectKitContentHash(fallback) }
-      : await ensureProjectKit(project.root, { loadSource })
-    this.assertKitInstallable(current.kit)
+    let current: ProjectKitSource
+    try {
+      current = fallback && !fallback.sourceRoot
+        ? { kit: fallback, revision: projectKitContentHash(fallback) }
+        : await ensureProjectKit(project.root, { loadSource })
+      this.assertKitInstallable(current.kit)
+    } catch (error) {
+      // A previously readable definition is not authority for unreadable current
+      // project source. Keep the pin/data; do not render or execute the old Kit.
+      if (this.projectKits.delete(project.root)) this.invalidateProjectContent(project.projectId)
+      throw error
+    }
     const previous = this.projectKits.get(project.root)
     this.projectKits.set(project.root, current)
     if (previous && previous.revision !== current.revision) {
       this.invalidateProjectContent(project.projectId)
-      // Existing workspaces follow current sources; only already-issued stores retain a stale epoch.
-      for (const agent of this.agentsForProject(project.projectId)) this.workspaceContentEpochs.set(agent, this.projectContentEpochs.get(project.projectId) ?? 0)
     }
     return current.kit
   }
@@ -2829,7 +2859,7 @@ export default class DesignService extends Service {
     if (selection === undefined) return undefined
     const project = await this.projects.require(selection.projectId, signal)
     this.assertProjectSelection(agent, selection.projectId)
-    await this.prepareProjectKit(project)
+    if (!this.workspaceReadScope.getStore()?.active) await this.prepareProjectKit(project)
     return project
   }
 
@@ -2877,6 +2907,10 @@ export default class DesignService extends Service {
     this.assertProjectSelection(agent, projectId)
     const before = await this.projects.require(projectId, signal)
     this.assertProjectSelection(agent, projectId)
+    // Prepare inside the caller's publication-error boundary, before Git reads.
+    // This also clears any stale Kit cache when the project's source is missing.
+    const kit = await this.prepareProjectKit(before)
+    this.assertProjectSelection(agent, projectId)
     const snapshot = await this.projects.snapshot(projectId, signal)
     this.assertProjectSelection(agent, projectId)
     const project = await this.projects.require(projectId, signal)
@@ -2884,7 +2918,6 @@ export default class DesignService extends Service {
     if (!sameProjectKitPin(before.kit, project.kit)) {
       throw new Error('design: project Kit pin changed while reading the workspace checkpoint')
     }
-    const kit = await this.prepareProjectKit(project)
     const skills = new Map(kit?.skills.map(skill => [skill.name, skill]) ?? [])
     const design = Object.freeze(Object.fromEntries(Object.entries(snapshot.bundleStates).map(([skillName, state]) => {
       const skill = skills.get(skillName)

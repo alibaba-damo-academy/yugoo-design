@@ -19,7 +19,12 @@ async function inspectionContext(repo) {
   const contractPath = 'packages/core/src/panel-dsl.ts'
   const source = ts.createSourceFile(contractPath,
     await readFile(join(repo, contractPath), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
-  const declarations = new Map(source.statements
+  // These trusted local contract sources are parsed as data, never executed or
+  // resolved through arbitrary imports. PanelManifest imports its i18n shape.
+  const i18nPath = 'packages/core/src/panel-i18n.ts'
+  const i18nSource = ts.createSourceFile(i18nPath,
+    await readFile(join(repo, i18nPath), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
+  const declarations = new Map([...source.statements, ...i18nSource.statements]
     .filter(node => ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node))
     .map(node => [node.name.text, node]))
   const constants = new Map(source.statements
@@ -35,7 +40,7 @@ async function inspectionContext(repo) {
     function visit(node) {
       if (ts.isTypeQueryNode(node)) {
         if (!ts.isIdentifier(node.exprName)) {
-          throw new Error(`Unsupported local typeof contract reference: ${node.exprName.getText(source)}`)
+          throw new Error(`Unsupported local typeof contract reference: ${node.exprName.getText(node.getSourceFile())}`)
         }
         const name = node.exprName.text
         const constant = constants.get(name)
@@ -61,7 +66,7 @@ export async function inspectPanelComponent(repo, name, typeName, options = {}) 
 }
 
 async function inspectWithContext(context, name, typeName, options = {}) {
-  const { repo, ts, PANEL_COMPONENT_CATALOG, GENERATED_COMPONENT_KINDS, contractPath, source, declarations } = context
+  const { repo, ts, PANEL_COMPONENT_CATALOG, GENERATED_COMPONENT_KINDS, contractPath, declarations } = context
   if (!Object.hasOwn(PANEL_COMPONENT_CATALOG, name)) throw new Error(`Unknown component: ${name}`)
   function contract(name) {
     const [root, ...properties] = name.split('.')
@@ -88,8 +93,9 @@ async function inspectWithContext(context, name, typeName, options = {}) {
       ts.forEachChild(child, visit)
     }
     visit(node)
+    const source = node.getSourceFile()
     return {
-      name, file: contractPath,
+      name, file: source.fileName,
       line: source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1,
       declaration: node.getText(source),
       references: [...references].sort().map(name => ({ name, read: `--type ${name}` })),

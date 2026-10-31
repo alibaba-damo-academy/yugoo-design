@@ -120,6 +120,30 @@ test('on-demand type information comes directly from current source', async () =
   assert.equal(result.examples, undefined)
 })
 
+test('PanelManifest i18n references its real translation declaration and focused properties', async () => {
+  const material = JSON.parse(JSON.stringify(await exportPanelAuthoringReference(repo)))
+  const manifest = queryPanelAuthoringReference(material, 'record_workspace', 'contract', 'PanelManifest').contract
+  assert.match(manifest.declaration, /i18n\?: PanelTranslations/)
+  const reference = manifest.references.find(item => item.name === 'PanelTranslations')
+  assert.ok(reference, 'PanelManifest must expose its imported i18n contract')
+  const { read } = reference
+  const { contract } = queryPanelAuthoringReference(material, read.name, read.reference, read.type)
+  const source = await readFile(join(repo, 'packages/core/src/panel-i18n.ts'), 'utf8')
+  assert.equal(contract.file, 'packages/core/src/panel-i18n.ts')
+  assert.ok(source.includes(contract.declaration), 'preserve the owning declaration verbatim')
+  assert.equal(contract.line, source.slice(0, source.indexOf(contract.declaration)).split('\n').length)
+  for (const [property, declaration] of [
+    ['default_locale', 'default_locale: string'],
+    ['locales', 'locales: Record<string, string>'],
+    ['messages', 'messages?: Record<string, Record<string, string>>'],
+  ]) {
+    assert.equal(queryPanelAuthoringReference(material, read.name, read.reference,
+      `${read.type}.${property}`).contract.declaration, declaration)
+  }
+  assert.throws(() => queryPanelAuthoringReference(material, read.name, read.reference, 'TEXT_KEYS'), /Unknown/)
+  assert.throws(() => queryPanelAuthoringReference(material, read.name, read.reference, 'validatePanelTranslations'), /Unknown/)
+})
+
 test('unknown and prototype component/type names fail explicitly', async () => {
   for (const name of ['UnknownButton', '__proto__', 'constructor']) {
     await assert.rejects(inspectPanelComponent(repo, name), /Unknown component/)
@@ -147,6 +171,8 @@ async function contractFixture(t, source) {
   await mkdir(join(root, 'packages/core/src'), { recursive: true })
   await symlink(join(repo, 'packages/core/src/panel-component-catalog.ts'),
     join(root, 'packages/core/src/panel-component-catalog.ts'))
+  await symlink(join(repo, 'packages/core/src/panel-i18n.ts'),
+    join(root, 'packages/core/src/panel-i18n.ts'))
   await writeFile(join(root, 'packages/core/src/panel-dsl.ts'), source)
   return type => inspectPanelComponent(root, 'record_workspace', type)
 }

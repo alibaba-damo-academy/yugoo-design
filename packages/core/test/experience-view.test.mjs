@@ -9,6 +9,7 @@ import { createHash } from 'node:crypto'
 const { register } = await import('tsx/esm/api'); register()
 const { DesignFilesStore } = await import('../src/design-files.ts')
 const { GitVersioning } = await import('../src/git.ts')
+const { projectKitContentHash } = await import('../src/project-content.ts')
 const { nodeFs } = await import('../src/service-tools.ts')
 const { operateExperience } = await import('../src/experience-service.ts')
 const { readExperienceView, experienceFreshness, experienceFeedback, experienceResource } = await import('../src/experience-view.ts')
@@ -87,7 +88,7 @@ test('product tree identity excludes only root experiences, preserving path/type
   await exec('git', ['-C',root,'add','intent/link'])
   await exec('git', ['-C',root,'-c','user.name=Test','-c','user.email=test@localhost','commit','-m','type'])
   assert.equal(await store.sameDesignEvidenceAt(modeBase,await store.head()), false)
-  const foreign = new GitVersioning(async () => ({ exitCode:0, stdout:'100644 blob abc\tintent/../unsafe\0',stderr:'' }),root)
+  const foreign = new GitVersioning(async () => ({ exitCode:0, stdout:'100644 blob abc\tintent/../unsafe\0',stderr:'' }),root,undefined,false,'cli')
   await assert.rejects(foreign.designEvidenceRevisionAt(base), /unsafe path/)
 }))
 test('DSH published inventory survives worktree deletion; derived commit preserves clarity', async () => fixture(async ({ root, store, ready, publish }) => {
@@ -95,7 +96,7 @@ test('DSH published inventory survives worktree deletion; derived commit preserv
   const agent = {}, project = { projectId: 'fixture', name: 'Fixture', root: store.rootDir }
   const kit = { name: 'fixture', version: '1.0', skills: [] }
   const assessedCheckpoint = await store.head()
-  const authority = { assessedCheckpoint, report: { kit: kit.name, version: kit.version, u: { score: 60 }, s: { score: 40 }, t: { score: 20 } } }
+  const authority = { assessedCheckpoint, report: { kit: kit.name, version: kit.version, kitContentHash: projectKitContentHash(kit), u: { score: 60 }, s: { score: 40 }, t: { score: 20 } } }
   const remote = Object.create(DesignPanelRemote.prototype)
   Object.defineProperty(remote, 'worktreeProjections', { value: new Map() })
   Object.defineProperty(remote, 'design', { value: {
@@ -107,6 +108,7 @@ test('DSH published inventory survives worktree deletion; derived commit preserv
     expectProjectPanelObservation() {},
     readDesignJournal: async () => ({ revision: 0, records: [], snapshot: {} }),
     readClarityAuthority: async () => authority,
+    advisoryRuntimeStatus: () => ({ available: false, profiles: [], phase: 'idle' }),
     assertProjectSelection() {}, executionAttemptsFor: () => [],
   } })
   const read = () => remote.readWorkspace(agent, new AbortController().signal)
@@ -126,10 +128,12 @@ test('DSH published inventory survives worktree deletion; derived commit preserv
 }))
 async function fixture(fn) {
   const root = await mkdtemp(join(tmpdir(), 'system-experience-test-'))
+  // These source fixtures inject CLI behavior, including malformed output.
+  // The built-worker regression independently covers the native backend.
   const git = new GitVersioning(async ({ argv, cwd, env, signal }) => {
     try { const r = await exec(argv[0], argv.slice(1), { cwd, signal, env: { ...process.env, ...env, GIT_AUTHOR_NAME: 'Test', GIT_AUTHOR_EMAIL: 'test@localhost', GIT_COMMITTER_NAME: 'Test', GIT_COMMITTER_EMAIL: 'test@localhost' } }); return { exitCode: 0, ...r } }
     catch (e) { return { exitCode: e.code, stdout: e.stdout ?? '', stderr: e.stderr ?? '' } }
-  }, root)
+  }, root, undefined, false, 'cli')
   await git.ensureRepo()
   const store = new DesignFilesStore(nodeFs, git, root)
   await store.write('intent', { goal: '理解并保留阅读批注' }, { origin: 'agent', settleEvent: async () => {} })
