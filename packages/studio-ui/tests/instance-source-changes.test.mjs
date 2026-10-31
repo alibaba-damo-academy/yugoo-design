@@ -154,6 +154,36 @@ async function editFile(path, transform) {
   return text
 }
 
+test('failed preparation retries the unchanged draft and saves only after an explicit Save', async t => {
+  const f = await fixture(t), requests = []
+  let offline = true
+  f.client.prepareChanges = request => {
+    requests.push(structuredClone(request))
+    return offline ? Promise.reject(Error('Failed to fetch')) : f.service.prepareChanges(request)
+  }
+  const workbench = document.querySelector('.ygd-studio-instance')
+  const text = await editFile('SKILL.md', value => value + '\nRetain this offline edit.\n')
+  await until(() => requests.length === 1 && !button('Save').disabled)
+  await click('Save')
+  assert.match(document.querySelector('dialog[open]').textContent, /Changes could not be read/)
+  await click('Retry reading')
+  await until(() => requests.length === 2 && !button('Save').disabled)
+  assert.equal(document.querySelector('dialog[open]'), null, 'a failed background retry does not reopen the modal')
+  await click('Save')
+  offline = false
+  await click('Retry reading')
+  await until(() => requests.length === 3 && !button('Save').disabled)
+  assert.equal(document.querySelector('.ygd-studio-instance'), workbench)
+  assert.equal(document.querySelector('textarea[aria-label="SKILL.md"]').value, text)
+  assert.deepEqual(requests[1], requests[0]); assert.deepEqual(requests[2], requests[0])
+  assert.equal(f.manualSaves.length, 0, 'retry only prepares; it never resubmits a write')
+  await click('Save'); await until(() => f.saved.length === 1)
+  assert.equal(f.manualSaves.length, 1)
+  const reopened = await createStudioInstances(f.serviceOptions)
+  assert.equal((await reopened.read({ id: f.record.id })).revision, 1)
+  assert.equal((await reopened.readFile({ id: f.record.id, path: 'SKILL.md' })).content, text)
+})
+
 test('manual source, diff and live preview share unsaved files and the same global Save/Revert controls', async t => {
   const f = await fixture(t), saveButton = button('Save'), revertButton = button('Revert')
   assert.ok(saveButton.closest('.ygd-studio-content-header'))

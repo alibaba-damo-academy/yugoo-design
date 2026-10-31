@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "72649ef5c6937e18c40d2f5fdb857fc335fd2b8d",
+  "revision": "832cf8f37655daeebeaa1573090e079f06993210",
   "policySha256": "a993efb1ff118f0a3cbe4de3412b059ca985644539f50f7e756c9409d0a94b83",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -252,7 +252,7 @@
       "mode": "100644"
     },
     "docs/panel-uiux-standard.md": {
-      "sha256": "b73c23372db72d6f29efc6bcd08de9bd211e5a74f8c151dadc4cbfd93c606827",
+      "sha256": "3bc75a6d141405cd5bfe24726e2cf3a7a42b3771c97403b0e0ee8d93b4904d62",
       "mode": "100644"
     },
     "docs/panel-unread.md": {
@@ -284,7 +284,7 @@
       "mode": "100644"
     },
     "docs/testing/agentic-e2e.md": {
-      "sha256": "63bf112bb982a943d1b5900c1011197c594707840533f9b41e94c698d470ecc2",
+      "sha256": "1be891507703912fb26b6ebc556ddb6130e15dfe9b8cce68dc8975588fbf9b17",
       "mode": "100644"
     },
     "docs/ust-score-explanations.md": {
@@ -4656,7 +4656,7 @@
       "mode": "100644"
     },
     "packages/panel/README.md": {
-      "sha256": "90abe2e0e409d9bcfe5ffb84dc6811f59a7ca20abd354850f03316bfb14f948b",
+      "sha256": "4a2f18aa804281063160a4aee43d1726b88e9773d840103000c6cce87281708e",
       "mode": "100644"
     },
     "packages/panel/THIRD_PARTY_NOTICES.md": {
@@ -5472,7 +5472,7 @@
       "mode": "100644"
     },
     "packages/panel/src/sample-preview.tsx": {
-      "sha256": "e7c55b06cba8fa495a7cded5631a9dbcd53097a1d0d3a0abc7891791aa1a193f",
+      "sha256": "387062f47985bec285c5fb2add9e1dd3478be755095e16a71ecc4f8b932d47cf",
       "mode": "100644"
     },
     "packages/panel/src/scene-font-broker.d.mts": {
@@ -6220,7 +6220,7 @@
       "mode": "100644"
     },
     "packages/panel/test/sample-preview.test.mjs": {
-      "sha256": "1bc6e827320fe3fd0ec0704b3b02ff2db4a22b38456929205fbf5acee3f1b565",
+      "sha256": "b48d99ba27c719b93eb70d1deafbbacff4a10f57159a169062704c06bde41afa",
       "mode": "100644"
     },
     "packages/panel/test/select-interaction.mjs": {
@@ -6428,7 +6428,7 @@
       "mode": "100644"
     },
     "packages/panel/tsdown.config.ts": {
-      "sha256": "9164b4547361ad67fcc2266e5c7f8325cae229d05ee9a2f2effcdc0066f2c912",
+      "sha256": "908309df248994bfe056bbb3c359afd9e6a6feaa4ddb87fb8199462fbfc540e0",
       "mode": "100644"
     },
     "packages/provider-web-app/LICENSE": {
@@ -8604,7 +8604,7 @@
       "mode": "100644"
     },
     "packages/studio-ui/README.md": {
-      "sha256": "dd375ca5d9f1d9d115a9f4e9a9a2f87435c8f6a237856c1ae22901df7ae0afe5",
+      "sha256": "42a840ebbd79e8f1339d4c26910484adec4e73009d429b8f2a3c415b3c2ad312",
       "mode": "100644"
     },
     "packages/studio-ui/THIRD_PARTY_NOTICES.md": {
@@ -8640,7 +8640,7 @@
       "mode": "100644"
     },
     "packages/studio-ui/src/InstanceWorkbench.tsx": {
-      "sha256": "fa18ff09d7f79942ab250ff4e207915456af3d5bc6a416ab6469f97024f9dd12",
+      "sha256": "bd7f96cdb1c3d6c2725e9c9e61b3359c73e898889363fe619a8c0e67858b9f07",
       "mode": "100644"
     },
     "packages/studio-ui/src/KitFiles.tsx": {
@@ -8776,7 +8776,7 @@
       "mode": "100644"
     },
     "packages/studio-ui/tests/instance-source-changes.test.mjs": {
-      "sha256": "4e485f51dc794848b3bc8d1b626fd1671d304a42c402abf13231646ec1b3d2ba",
+      "sha256": "07813d5a64ccd84adec65e420253dc8b4275bf9e9c86c9f4ab7fb6f4dacbc0bc",
       "mode": "100644"
     },
     "packages/studio-ui/tests/mount-save.test.mjs": {

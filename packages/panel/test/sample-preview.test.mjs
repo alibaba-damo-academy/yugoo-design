@@ -14,11 +14,14 @@ const hooks = registerHooks({
   resolve(specifier, context, next) {
     // Companion's real browser config resolves these same Panel-owned peers.
     if (/^react(?:-dom)?(?:\/|$)/u.test(specifier)) return { url: pathToFileURL(panelRequire.resolve(specifier)).href, shortCircuit: true }
+    if (!built && specifier === '@xyflow/react/dist/style.css?inline') return {
+      url: pathToFileURL(panelRequire.resolve('@xyflow/react/dist/style.css')).href + '?inline', shortCircuit: true,
+    }
     if (specifier === 'dsh-design-panel/sample-preview') return { url: entry.href, shortCircuit: true }
     return next(specifier, context)
   },
   load(url, context, next) {
-    if (url.endsWith('.css?inline')) return { format: 'module', shortCircuit: true,
+    if (!built && url.endsWith('.css?inline')) return { format: 'module', shortCircuit: true,
       source: `export default ${JSON.stringify(readFileSync(new URL(url.slice(0, -7)), 'utf8'))}` }
     return next(url, context)
   },
@@ -28,6 +31,11 @@ consolePort.on('jsdomError', error => { if (error.type !== 'css parsing') throw 
 const dom = new JSDOM('<div id="root"></div><div id="toolbar"></div>', { url: 'https://sample.test/', virtualConsole: consolePort })
 for (const key of ['window', 'document', 'HTMLElement', 'Element', 'Node']) globalThis[key] = dom.window[key]
 globalThis.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} }
+globalThis.getComputedStyle = dom.window.getComputedStyle
+globalThis.requestAnimationFrame = callback => setTimeout(callback, 0)
+globalThis.cancelAnimationFrame = clearTimeout
+dom.window.requestAnimationFrame = globalThis.requestAnimationFrame
+dom.window.cancelAnimationFrame = globalThis.cancelAnimationFrame
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 const React = await import('react'); globalThis.React = React
 const { createRoot } = await import('react-dom/client')
@@ -78,11 +86,27 @@ test('sample surface uses real readonly navigation and the unique shared styles'
   assert.equal(document.querySelector('.dsh-design-record').dataset.record, 'b')
   assert.deepEqual(source, before)
   const css = document.querySelector('.dsh-panel-sample-preview > style').textContent
-  assert.equal(css, readFileSync(new URL('../src/visual-components.css', import.meta.url), 'utf8') + '\n'
+  assert.equal(css, readFileSync(panelRequire.resolve('@xyflow/react/dist/style.css'), 'utf8') + '\n'
+    + readFileSync(new URL('../src/visual-components.css', import.meta.url), 'utf8') + '\n'
     + readFileSync(new URL('../src/panel-content-state.css', import.meta.url), 'utf8'))
   const shell = readFileSync(new URL('../src/client/styles.ts', import.meta.url), 'utf8')
   assert.ok(!shell.includes('.dsh-design-dock-panel-body{'))
   assert.ok(shell.includes('.dsh-design-workspace-inset .dsh-design-dock-panel-body'))
+})
+
+test('standalone graph preview carries positioning and usable control styles without a Host stylesheet', async t => {
+  const show = await mounted(t), source = sample(), before = structuredClone(source)
+  const manifest = JSON.parse(panelYaml)
+  manifest.ui = { component: 'record_board', id: 'people-board', source: 'people', board: { label: 'name', description: 'name' } }
+  await show(h(PanelSamplePreview, { ...props(source), panelYaml: JSON.stringify(manifest) }))
+  const control = document.querySelector('.react-flow__controls-button')
+  assert.ok(control, 'the real sample interpreter renders graph controls: ' + document.getElementById('root').textContent)
+  const style = window.getComputedStyle(control)
+  assert.equal(style.display, 'flex', 'controls must not fall back to native button geometry')
+  assert.equal(style.width, '26px')
+  assert.equal(window.getComputedStyle(control.querySelector('svg')).maxWidth, '12px', 'icons retain a nonzero bounded size')
+  assert.equal(window.getComputedStyle(document.querySelector('.react-flow__viewport')).position, 'absolute')
+  assert.deepEqual(source, before, 'loading graph presentation does not rewrite sample data')
 })
 
 test('controlled sample editing emits canonical data without changing input or the original baseline', async t => {

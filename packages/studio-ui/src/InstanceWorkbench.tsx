@@ -99,6 +99,7 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
   const [preparedDraft, setPreparedDraft] = useState<{ key: string; prepared: StudioPreparedSourceChanges }>()
   const [saveIssuesOpen, setSaveIssuesOpen] = useState(false)
   const [preparingDraft, setPreparingDraft] = useState(false), [draftError, setDraftError] = useState('')
+  const [prepareRetry, setPrepareRetry] = useState(0)
   const [mountActions, setMountActions] = useState<MountEditorActions>()
   const [loaded, setLoaded] = useState(false), [sourceBusy, setBusy] = useState(false), [error, setError] = useState('')
   const [opening, setOpening] = useState(true)
@@ -172,7 +173,7 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
         .finally(() => { if (scope === generation.current && current === prepareRequest.current) setPreparingDraft(false) })
     }, 200)
     return () => { clearTimeout(timer); ++prepareRequest.current }
-  }, [draftKey, client, draftClient])
+  }, [draftKey, client, draftClient, prepareRetry])
 
   useEffect(() => {
     if (!candidateKey) { displayedProposal.current = undefined; return }
@@ -433,8 +434,13 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
     </div></header>
     <StudioErrorDialog open={saveIssuesOpen} onClose={() => setSaveIssuesOpen(false)} locale={locale}
       title={saveBlocker || (zh ? '暂不能保存这次修改' : 'These changes cannot be saved yet')}
-      message={zh ? '修改和输入已保留。请继续编辑或在原对话中请求修复，然后重新保存。' : 'Your changes and input are retained. Continue editing or request a repair in the existing conversation, then save again.'}
-      details={saveDetails} actions={[{ label: zh ? '继续编辑' : 'Continue editing', primary: true, onClick: () => { setTab('files'); setTimeout(() => sourceEditor.current?.focus(), 0) } }]} />
+      message={draftError
+        ? (zh ? '修改和输入已保留。连接恢复后可重试读取，成功后再保存。' : 'Your changes and input are retained. Retry reading when the connection recovers, then save.')
+        : (zh ? '修改和输入已保留。请继续编辑或在原对话中请求修复，然后重新保存。' : 'Your changes and input are retained. Continue editing or request a repair in the existing conversation, then save again.')}
+      details={saveDetails} actions={[
+        ...(draftError && !sourceLocked ? [{ label: zh ? '重试读取' : 'Retry reading', primary: true, onClick: () => setPrepareRetry(value => value + 1) }] : []),
+        { label: zh ? '继续编辑' : 'Continue editing', primary: !draftError, onClick: () => { setTab('files'); setTimeout(() => sourceEditor.current?.focus(), 0) } },
+      ]} />
     {!readOnly && renderSupplement?.({ record, dirty: dirty || titleDirty || candidatePending, busy: busy || candidateBusy, previewBundle, currentFile: (tab === 'files' || (tab === 'preview' && path === 'panel.yaml')) && path ? path : undefined, intent: authoringIntent, proposalReplacement })}
     {record && (record.kind === 'bundle' || !readOnly) && <div className="ygd-studio-workplane-bar" aria-label={record.kind === 'kit' ? 'Kit content' : 'Bundle content'}>
       <button type="button" className="ygd-studio-workplane-tab" aria-pressed={tab === 'files'} disabled={busy || candidateBusy || mountActions?.isSaveSubmitted()} onClick={() => changeTab('files')}>{zh ? '原始文件' : 'Source Files'}</button>

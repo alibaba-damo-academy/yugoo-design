@@ -92,7 +92,9 @@ export default withNormalBuildEvidence('dsh-release-panel', defineConfig([
     fixedExtension: false,
     dts: true,
     clean: false,
-    noExternal: ['react', 'elkjs', '@excalidraw/excalidraw', '@excalidraw/excalidraw/index.css', 'bpmn-js'],
+    // Keep the stylesheet subpath in this graph so the existing inline-CSS
+    // loader embeds it instead of leaving a browser-unresolvable package import.
+    noExternal: ['react', 'elkjs', '@excalidraw/excalidraw', '@excalidraw/excalidraw/index.css', 'bpmn-js', '@xyflow/react/dist/style.css?inline'],
     plugins: [esmExternalRequirePlugin({ external: ['react'] }), canvasBrowserDependencies(import.meta.url), samplePreviewAssets.plugin,
       dshClientStyles(ID, import.meta.url, { preprocessCss: samplePreviewAssets.preprocessCss, resources: cssResourceBuildOptions('dsh-design-panel-sample-preview') })],
   },

@@ -79,8 +79,9 @@ submits prompts, saves or publishes. Callers own any explicit adoption of edits.
 Hosts may supply already confined, bounded synthetic `artifacts` from the same
 definition snapshot. The sample reads only those supplied bytes through its
 existing sandbox; it has no project or filesystem fallback.
-Its component lifetime includes the existing shared presentation and content-state
-styles. Source consumers use their existing CSS build pipeline; the standalone
+Its component lifetime includes the shared presentation, content-state and graph
+foundation styles; it does not rely on a Host having loaded them first.
+Source consumers use their existing CSS build pipeline; the standalone
 browser entry emits resources through the Panel's ordinary CSS asset routes.
 
 Artifact readers keep refresh in the current record's top toolbar. Shared

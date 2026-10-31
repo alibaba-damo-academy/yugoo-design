@@ -1,6 +1,7 @@
 /** The real declarative Panel, confined to an in-memory sample. */
 import { useEffect, useMemo, useState } from 'react'
 import { DslPanel } from './client/panels/dsl-panel.tsx'
+import FLOW_CSS from '@xyflow/react/dist/style.css?inline'
 import VISUAL_CSS from './visual-components.css?inline'
 import CONTENT_STATE_CSS from './panel-content-state.css?inline'
 
@@ -34,7 +35,7 @@ export function PanelSamplePreview({ skill, panelYaml, sample, artifacts, value,
     }
   }, [artifacts])
   return <div className="dsh-panel-sample-preview">
-    <style>{VISUAL_CSS + '\n' + CONTENT_STATE_CSS}</style>
+    <style>{FLOW_CSS + '\n' + VISUAL_CSS + '\n' + CONTENT_STATE_CSS}</style>
     <DslPanel key={skill} skill={skill} panelYaml={panelYaml} draft={draft} originalState={sample}
       artifactFiles={files.artifactFiles} readArtifact={files.readArtifact} readBinaryArtifact={noBinary} allowAttachments={false} readOnly={readOnly} locale={locale}
       onChange={next => {

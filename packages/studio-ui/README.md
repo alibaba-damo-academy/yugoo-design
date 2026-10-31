@@ -75,6 +75,10 @@ the current files through the existing preparation service, including unsaved
 Editing an AI proposal prepares a new digest for the exact files being saved.
 Human and AI edits share ordinary source-save semantics; stale or
 uncertain saves remain blocked until the existing read/reopen path verifies them.
+If preparing source changes fails, the existing save-error dialog offers **Retry
+reading / 重试读取**. It prepares the retained draft again without changing its
+bytes or saving it; the user then saves explicitly. A failed retry keeps the
+draft and does not reopen the dialog automatically.
 The file workspace fills its content area using ordinary column dividers,
 without another bordered card, rounded frame or exterior gutter.
 
