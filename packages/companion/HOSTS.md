@@ -256,6 +256,113 @@ See [Qoder persistent registration](README.md#claude-code-and-qoder-cli-persiste
 
 See [DSH installer and recovery limits](../dsh/README.md#candidate-npm-installer-dsh-route-and-recovery-limits).
 
+DSH's own package manager may separately ask to approve dependency build scripts,
+for example with `ERR_PNPM_IGNORED_BUILDS`. Show the user the packages and action
+requested by the host, then obtain approval only for those dependencies through
+its native approval flow, such as the suggested `pnpm approve-builds` command.
+A current release may request `onnxruntime-node`,
+`protobufjs` and `sharp`; follow the actual error rather than treating this as a
+permanent allowlist. Keep the CPU acquisition policy above when following the
+host's repair instructions; do not suppress all scripts or approve future builds
+indiscriminately. Retain the initial failed result and logs. Native repair is a
+separate action: do not rerun the failed installation plan or turn its receipt
+into a successful owned installation. If dependencies are installed but the
+Yugoo plugin is disabled, open DSH's Plugins page and enable the installed
+`@yugoo-design/dsh-design-system-dsh` entry. A restart is not a substitute for
+native registration or activation; do not delete installed dependencies just to
+reinstall them. After repair, activation and any normal restart, check the
+version actually loaded and report the original failure and repair separately.
+
+#### DSH configuration file and receipts
+
+The Agent prepares `--dsh-config` from the **existing official DSH installation**;
+the user does not need to guess its fields. Save an absolute JSON file with the
+following eight required keys. Replace every example path, version and hash
+with values read from that installation:
+
+```json
+{
+  "dshHome": "/absolute/existing/dsh-home",
+  "node": {
+    "path": "/absolute/official-runtime/node",
+    "sha256": "<sha256-of-runtime-executable>"
+  },
+  "cli": {
+    "path": "/absolute/official-dsh/<bin.dsh-entry>",
+    "sha256": "<sha256-of-cli-file>"
+  },
+  "hostManifest": {
+    "path": "/absolute/official-dsh/package.json",
+    "sha256": "<sha256-of-host-package-json>"
+  },
+  "loader": {
+    "path": "/absolute/official-dsh-app-boot/<main-entry>",
+    "sha256": "<sha256-of-loader-file>"
+  },
+  "loaderManifest": {
+    "path": "/absolute/official-dsh-app-boot/package.json",
+    "sha256": "<sha256-of-loader-package-json>"
+  },
+  "hostVersion": "<hostManifest.version>",
+  "loaderVersion": "<loaderManifest.version>"
+}
+```
+
+Use absolute file paths and each file's actual SHA-256: 64 lowercase hexadecimal
+characters, computed from its resolved bytes. Each file pin accepts only `path`
+and `sha256`. Locate the installed packages through the host's existing entry
+point or native installation information; do not use a source checkout, a shell
+shim or a separately downloaded replacement.
+
+| Field | Value to read from the installed host |
+| --- | --- |
+| `dshHome` | The existing DSH configuration root for the intended host, resolved to its real directory. It contains `profiles/`; it is not the profile directory itself. |
+| `node` | For Web, the compatible Node executable used to run the official CLI. For Desktop, the official Electron executable, as described below. |
+| `hostManifest` | `package.json` for `@deepseek-ai/dsh`; check its package name and read `version` into `hostVersion`. |
+| `cli` | For Web, resolve `hostManifest`'s `bin.dsh` relative to that package directory. Desktop has a different entry below. |
+| `loaderManifest` | `package.json` for the installed `@deepseek-ai/dsh-app-boot`; read `version` into `loaderVersion`. |
+| `loader` | Resolve `loaderManifest`'s `main` relative to its package directory. |
+
+These version strings identify DSH and its Loader, not the Yugoo npm product.
+
+For **Desktop**, also add `desktopHostManifest` as a `{ "path": "...", "sha256": "..." }`
+pin for the installed `@deepseek-ai/dsh-desktop-host/package.json`. Its version,
+`hostVersion` and `loaderVersion` must match. Set `cli` to that Desktop package's
+`lib/cli.js`, with the DSH and Loader packages from the same installed tree.
+Set `node` to the official Electron executable; the installer uses its existing
+Electron Node bridge to read ASAR resources and run the official CLI. Keep the
+installed tree intact rather than extracting it or substituting ordinary Node.
+Read and hash any files inside ASAR through Electron's filesystem; the archive
+location depends on the actual installation. Use the existing `desktop` profile.
+
+Pass the existing profile's **name** separately with `--profile`; the installer
+does not create a profile. Do not add `nodeExecutable`, `cliExecutable`, `scope`
+or runner overrides to the JSON. DSH does not accept `--node-executable`,
+`--disable-embedding` or Codex's `--runtime-receipt`; model settings remain owned
+by the host.
+
+Choose an absolute, private `--receipt-dir` outside the retained product package,
+DSH home, every pinned input directory and any previous product installation.
+It must not contain or overlap those roots or the config file. Keep the config
+file outside the receipt directory. For example, use separate user-owned
+`install-config/` and `install-receipts/` directories outside those roots, with
+a new receipt directory for this operation. On Windows, an existing receipt
+directory must already have the required private permissions; the installer
+does not repair unsafe shared directories.
+
+Use these inputs with the acquired `yugoo-design install --host dsh` route.
+An explicit `--dry-run` writes `<planSha256>.dsh-plan.json` in the receipt
+directory and returns its `planFile`; `--apply --plan <absolute-planFile>` consumes
+that saved file with the same config and profile. The direct route without
+either flag orchestrates these stages and uses a fresh receipt subdirectory.
+Use the returned `planFile`, not a copy of the CLI's display object. For an owned
+update, retain the previous successful receipt and supply `--previous-receipt`
+to both stages. Keep the returned plan and result paths. Before native apply,
+the installer retains `<id>.dsh-prepared.json`; a completed result is stored as
+`<id>.dsh-result.json`, with command logs alongside it. A prepared record or
+failed result does not establish a successful installation. Follow the linked
+recovery limits before retrying a partial operation.
+
 ### Install or update: QwenWork
 
 > Install or update Yugoo Design in this QwenWork desktop environment. Verify

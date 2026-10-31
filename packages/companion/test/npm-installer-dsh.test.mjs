@@ -466,19 +466,27 @@ test('product discovers the aggregate in its retained npm installation without a
   assert.equal(f.calls.length, 0)
 })
 
-async function updateFixture(t, registry) {
+async function updateFixture(t, registry, versions) {
   const f = await productFixture(t)
+  if (versions) {
+    f.mapping.hosts.dsh.aggregateVersion = versions.from
+    await f.put(f.mappingPath, json(f.mapping))
+    const manifest = JSON.parse(await readFile(join(f.context.npmRoot, 'package.json')))
+    manifest.version = versions.from
+    await f.put(join(f.context.npmRoot, 'package.json'), json(manifest))
+    f.setAction(() => f.install(versions.from))
+  }
   if (registry) f.args.push('--registry', registry)
   const first = await installerMain(f.args, f.context)
   const npmRoot = join(f.root, 'product B')
   const manifest = JSON.parse(await readFile(join(f.context.npmRoot, 'package.json'), 'utf8'))
-  manifest.version = '0.1.0-beta.2'
+  manifest.version = versions?.to ?? '0.1.0-beta.2'
   await f.put(join(npmRoot, 'package.json'), json(manifest))
-  await f.put(join(npmRoot, 'release-hosts.json'), json({ ...f.mapping, hosts: { dsh: { ...f.mapping.hosts.dsh, aggregateVersion: '1.2.4' } } }))
+  await f.put(join(npmRoot, 'release-hosts.json'), json({ ...f.mapping, hosts: { dsh: { ...f.mapping.hosts.dsh, aggregateVersion: versions?.to ?? '1.2.4' } } }))
   for (const file of ['yugoo-design.mjs', 'installer.mjs', 'npm-installer-dsh.mjs', 'npm-agent-installation.mjs'])
     await f.put(join(npmRoot, 'bin', file), await readFile(join(f.context.npmRoot, 'bin', file)))
   f.setAction(async () => {
-    await f.install('1.2.4')
+    await f.install(versions?.to ?? '1.2.4')
     await f.put(join(f.profileDir, 'node_modules/@release/design-system-dsh/patch.json'), json([{ id: 'design B' }]))
   })
   return { ...f, first, nextRoot: npmRoot, nextContext: { ...f.context, npmRoot },
@@ -1029,6 +1037,78 @@ test('official release-age additions are limited to the exact installed dependen
     assert.equal(result.execution.state, 'completed')
     if (updating) assert.equal(result.ownershipEstablished, true)
     assert.equal(await readFile(workspace, 'utf8'), baseline + additions.map(value => `  - '${value}'\n`).join(''))
+  })
+})
+
+test('release-age preserves exact 0.2.0 exclusions when pnpm merges a 0.2.2 owned update', async t => {
+  for (const regrouped of [false, true]) await t.test(regrouped ? 'existing exact union regrouped' : 'real pnpm merged form', async child => {
+    const f = await updateFixture(child, undefined, { from: '0.2.0', to: '0.2.2' })
+    const workspace = join(f.profileDir, 'pnpm-workspace.yaml')
+    const packages = ['@release/design-system-dsh', '@release/core', 'native-helper']
+    const baseline = 'nodeLinker: hoisted\nautoInstallPeers: false\nallowBuilds:\n  sharp: true\nminimumReleaseAgeExclude:\n  - retained-user-rule\n  - legacy-user@^1.0.0\n'
+    await f.put(workspace, baseline + packages.map(name => `  - '${name}@${regrouped ? '0.1.2 || 0.2.0' : '0.2.0'}'\n`).join(''))
+    const merged = baseline + packages.map(name => `  - '${name}@${regrouped ? '0.2.2 || 0.2.0 || 0.1.2' : '0.2.0 || 0.2.2'}'\n`).join('')
+    f.setAction(async () => {
+      await f.install('0.2.2')
+      const aggregate = join(f.profileDir, 'node_modules/@release/design-system-dsh/package.json')
+      const value = JSON.parse(await readFile(aggregate))
+      value.dependencies = { '@release/core': '0.2.2' }
+      await f.put(aggregate, json(value))
+      await f.put(join(f.profileDir, 'node_modules/@release/core/package.json'), json({
+        name: '@release/core', version: '0.2.2', optionalDependencies: { 'native-helper': '0.2.2' } }))
+      await f.put(join(f.profileDir, 'node_modules/native-helper/package.json'), json({ name: 'native-helper', version: '0.2.2' }))
+      await f.put(workspace, merged)
+    })
+    const result = await installerMain(f.nextArgs, f.nextContext)
+    assert.equal(result.status, 'registered-config-parsed')
+    assert.equal(result.operation, 'update'); assert.equal(result.ownershipEstablished, true)
+    assert.equal(result.planSnapshot.before.installed.version, '0.2.0')
+    assert.equal(result.source.observed.installed.version, '0.2.2')
+    assert.equal(result.userConfigurationPreserved, true)
+    assert.deepEqual(result.configurationChanges.releaseAgeExclusionsAdded, packages.map(name => `${name}@0.2.2`))
+    assert.equal(await readFile(workspace, 'utf8'), merged)
+  })
+})
+
+test('release-age exact unions cannot widen policies, lose old rules or disguise native failures', async t => {
+  for (const mode of ['range', 'wildcard', 'partial', 'missing-old', 'third-version', 'empty-arm',
+    'duplicate-new', 'duplicate-old', 'duplicate-group', 'opaque-change', 'setting-change', 'ranged-dependency',
+    'native-failure', 'disabled-bundle']) await t.test(mode, async child => {
+    const f = await updateFixture(child, undefined, { from: '0.2.0', to: '0.2.2' })
+    const workspace = join(f.profileDir, 'pnpm-workspace.yaml')
+    const baseline = "allowBuilds:\n  sharp: true\nminimumReleaseAgeExclude:\n  - legacy-user@^1.0.0\n  - '@release/core@0.2.0'\n"
+    await f.put(workspace, baseline)
+    f.setAction(async () => {
+      await f.install('0.2.2')
+      const aggregate = join(f.profileDir, 'node_modules/@release/design-system-dsh/package.json')
+      const value = JSON.parse(await readFile(aggregate))
+      value.dependencies = { '@release/core': mode === 'ranged-dependency' ? '^0.2.2' : '0.2.2' }
+      await f.put(aggregate, json(value))
+      await f.put(join(f.profileDir, 'node_modules/@release/core/package.json'), json({ name: '@release/core', version: '0.2.2' }))
+      const forms = { range: '0.2.0 || ^0.2.2', wildcard: '0.2.0 || *', partial: '0.2.0 || 0.2',
+        'missing-old': '0.2.2', 'third-version': '0.2.0 || 0.2.2 || 9.9.9', 'empty-arm': '0.2.0 ||',
+        'duplicate-new': '0.2.0 || 0.2.2 || 0.2.2', 'duplicate-old': '0.2.0 || 0.2.0 || 0.2.2' }
+      let after = baseline.replace('@release/core@0.2.0', '@release/core@' + (forms[mode] ?? '0.2.0 || 0.2.2'))
+      if (mode === 'duplicate-group') after += "  - '@release/core@0.2.2'\n"
+      if (mode === 'opaque-change') after = after.replace('legacy-user@^1.0.0', 'legacy-user@*')
+      if (mode === 'setting-change') after = after.replace('sharp: true', 'sharp: false')
+      await f.put(workspace, after)
+      if (mode === 'native-failure') throw Object.assign(Error('native failure'), { code: 7 })
+      if (mode === 'disabled-bundle') {
+        const manifest = JSON.parse(await readFile(f.manifestPath))
+        manifest.dsh.profile.bundles = manifest.dsh.profile.bundles.filter(name => name !== '@release/design-system-dsh')
+        await f.put(f.manifestPath, json(manifest))
+      }
+    })
+    const result = await installerMain(f.nextArgs, f.nextContext)
+    assert.equal(result.status, 'failed-partial-state-retained')
+    assert.equal(result.ownershipEstablished, false); assert.equal(result.failure.automaticRetry, false)
+    const policyPreserved = ['native-failure', 'disabled-bundle'].includes(mode)
+    assert.equal(result.configurationChanges.preserved, policyPreserved)
+    // Removing a previously registered bundle also changes retained profile state.
+    assert.equal(result.userConfigurationPreserved, mode === 'native-failure')
+    assert.ok(result.failure.reasons.includes(policyPreserved
+      ? mode === 'native-failure' ? 'native-command-failed' : 'bundle-not-registered' : 'user-configuration-changed'))
   })
 })
 

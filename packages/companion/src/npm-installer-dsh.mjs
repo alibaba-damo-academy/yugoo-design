@@ -462,6 +462,22 @@ async function workspaceSettings(bytes) {
   return { settings, exclusions: minimumReleaseAgeExclude }
 }
 
+// pnpm can merge pkg@old and pkg@new into pkg@old || new. Expand
+// only exact versions; keep user ranges and other rules opaque and unchanged.
+function releaseAgeSelectors(exclusions) {
+  const counts = new Map(), opaque = []
+  for (const value of exclusions) {
+    const match = /^(?<name>(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*)@(?<versions>.+)$/u.exec(value)
+    const versions = match?.groups.versions.split(/\s*\|\|\s*/u)
+    if (!versions?.every(version => exactVersion.test(version))) { opaque.push(value); continue }
+    for (const version of versions) {
+      const selector = `${match.groups.name}@${version}`
+      counts.set(selector, (counts.get(selector) ?? 0) + 1)
+    }
+  }
+  return { counts, opaque }
+}
+
 // Follow only exact runtime declarations in the selected installed aggregate.
 // Reading package metadata must not execute code or depend on package.json exports.
 async function installedExactSelectors(installed) {
@@ -503,10 +519,13 @@ async function preservedConfigPins(before, after, workspaceBefore) {
     const old = await workspaceSettings(workspaceBefore), current = await workspaceSettings(bytes)
     if (!old || !current) return { ...result, reason: 'workspace-policy-unverified' }
     if (!isDeepStrictEqual(old.settings, current.settings)) return { ...result, reason: 'workspace-settings-changed' }
-    if (!isDeepStrictEqual(old.exclusions, current.exclusions.slice(0, old.exclusions.length)))
+    const retained = releaseAgeSelectors(old.exclusions), observed = releaseAgeSelectors(current.exclusions)
+    if (!isDeepStrictEqual(retained.opaque, observed.opaque)
+      || [...retained.counts.keys()].some(selector => !observed.counts.has(selector)))
       return { ...result, reason: 'existing-release-age-exclusions-changed' }
-    const added = current.exclusions.slice(old.exclusions.length)
-    if (!added.length || new Set(added).size !== added.length || added.some(value => old.exclusions.includes(value))) return result
+    if ([...observed.counts].some(([selector, count]) => count > Math.max(1, retained.counts.get(selector) ?? 0))) return result
+    const added = [...observed.counts.keys()].filter(selector => !retained.counts.has(selector))
+    if (!added.length) return result
     const exact = await installedExactSelectors(after.installed)
     if (added.some(value => !exact.has(value))) return { ...result, reason: 'release-age-exclusion-outside-exact-dependencies' }
     return { ...result, preserved: true, releaseAgeExclusionsAdded: added, reason: 'exact-dependency-release-age-exclusions-added' }

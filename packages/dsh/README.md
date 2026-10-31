@@ -484,11 +484,13 @@ outside the package, host home and pinned input directories, without replacing
 existing files. Codex-specific runtime and receipt flags do not apply here.
 
 During a native package operation, pnpm may append `minimumReleaseAgeExclude`
-entries for newly published dependencies. The adapter accepts only exact
-`name@version` additions reachable through the selected installed aggregate's
-exact runtime dependency declarations. Existing exclusions and all other
-workspace settings must remain unchanged; ranges, wildcards, unrelated packages,
-removed exclusions and other configuration changes still fail preservation.
+entries or merge exact versions of the same package into an OR expression, such
+as `example-package@1.0.0 || 1.0.1`. The adapter preserves the versions covered by
+existing exact selectors across either form and accepts only new `name@version`
+selectors reachable through the selected installed aggregate's exact runtime
+dependency declarations. Existing range or wildcard entries and all other workspace settings
+must remain unchanged. New ranges or wildcards, unrelated selectors, loss of an
+existing selector and other configuration changes still fail preservation.
 The receipt's `configurationChanges` records accepted additions and changed
 configuration paths without replacing the original before/after hashes.
 

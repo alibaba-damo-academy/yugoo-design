@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "99e329227f50daad1d46947db75ea30729a14591",
+  "revision": "04fc03e6cddf5f08b4cb62bbda60796fc8bb76a8",
   "policySha256": "a993efb1ff118f0a3cbe4de3412b059ca985644539f50f7e756c9409d0a94b83",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -712,7 +712,7 @@
       "mode": "100644"
     },
     "packages/companion/HOSTS.md": {
-      "sha256": "d15c4e505bda7210b105636f6f4d8c7a4b7f575b5b48d760fc9acac162dac3c2",
+      "sha256": "dba1a7ea94fee87f7b70253d96a64e01caaa8e08be57dc2d0d2726815a592b8a",
       "mode": "100644"
     },
     "packages/companion/README.md": {
@@ -1132,7 +1132,7 @@
       "mode": "100644"
     },
     "packages/companion/src/npm-installer-dsh.mjs": {
-      "sha256": "271c0c93ee5f8f19168ee096944c0cbc2bbdc2c747219d0c720b9230bb4f46e9",
+      "sha256": "8f61c237d3f5dd154feae38a3b083ad79ce76e82292e7e75f38cee18d6331d6b",
       "mode": "100644"
     },
     "packages/companion/src/npm-installer-paths.mjs": {
@@ -1720,7 +1720,7 @@
       "mode": "100644"
     },
     "packages/companion/test/npm-installer-dsh.test.mjs": {
-      "sha256": "b1dcec406ce4f32c65e03b46a35680161aad6dcd683a7443d0362d9b8b4f0815",
+      "sha256": "695fceeccc71b18d72d7051c12d9593ba648810822d8e3d40d9ec0f7a2637ad7",
       "mode": "100644"
     },
     "packages/companion/test/npm-installer-paths.test.mjs": {
@@ -3684,7 +3684,7 @@
       "mode": "100644"
     },
     "packages/dsh/README.md": {
-      "sha256": "d051653031cfd245775407bd075f0a478aecb9b6e06709ca8a1a362b6a3c9d28",
+      "sha256": "2f6322d38dafce8dd19c76cbbfd9b1c763566790c47e4301495f69dc5e7d7508",
       "mode": "100644"
     },
     "packages/dsh/THIRD_PARTY_NOTICES.md": {
@@ -9036,7 +9036,7 @@
       "mode": "100644"
     },
     "release/product.json": {
-      "sha256": "fa938ea0cc1a0101aab2121d501f0b10ec75bc61226beb7a9626280203349d5a",
+      "sha256": "8ed19fef7872d6f0d40ffdec1f3426b48f38ff869e1947cc679b640c09d49a66",
       "mode": "100644"
     },
     "release/public-source-baseline.json": {
