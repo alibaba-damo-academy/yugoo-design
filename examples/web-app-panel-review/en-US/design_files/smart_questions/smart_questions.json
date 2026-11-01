@@ -1,0 +1,185 @@
+{
+  "rounds": {
+    "0": {
+      "title": "Delivery scope and roles",
+      "description": "Understand the team’s decisions around feedback, small changes and lead commitments."
+    },
+    "1": {
+      "title": "Exceptions and AI collaboration",
+      "description": "Explore returned requests, concurrency, failed notifications and AI draft boundaries."
+    }
+  },
+  "questions": {
+    "const_auth_mode": {
+      "prompt": "Is registration and sign-in required?",
+      "kind": "single",
+      "choices": [
+        {
+          "value": "anonymous",
+          "label": "No, use it directly",
+          "recommended": false
+        },
+        {
+          "value": "auth_required",
+          "label": "Yes, with registration and sign-in",
+          "recommended": true
+        }
+      ],
+      "answer": "auth_required",
+      "detail": "This synthetic scenario requires customer isolation and cross-device collaboration."
+    },
+    "const_storage_mode": {
+      "prompt": "How should application data be stored?",
+      "kind": "single",
+      "choices": [
+        {
+          "value": "browser_temp",
+          "label": "Only temporarily in this browser",
+          "recommended": false
+        },
+        {
+          "value": "database_persistent",
+          "label": "Persistently, across devices",
+          "recommended": true
+        }
+      ],
+      "answer": "database_persistent",
+      "detail": "This synthetic scenario requires customer isolation and cross-device collaboration."
+    },
+    "Q-001": {
+      "prompt": "Who first notices that feedback needs lead confirmation?",
+      "kind": "text",
+      "answer": "The designer compares the request with the delivery scope and identifies additional scope or milestone impact.",
+      "detail": "",
+      "round": 0,
+      "rejected": false
+    },
+    "Q-002": {
+      "prompt": "Where does customer feedback arrive?",
+      "kind": "text",
+      "answer": "It currently arrives through email, chat and review meetings. The platform retains the words and source location without automatically gaining access to a whole mailbox.",
+      "detail": "",
+      "round": 0,
+      "rejected": false,
+      "multimodal_answer": [
+        {
+          "type": "file",
+          "file_md5": "e364d6e259c60cd0f42b8257f1953df5bb3877af2a1b6aa22f4f550cdf30c578",
+          "filename": "feedback-brief.md",
+          "mime_type": "text/markdown",
+          "size_bytes": 478,
+          "artifact_file": "smart_questions/attachments/e364d6e259c60cd0f42b8257f1953df5bb3877af2a1b6aa22f4f550cdf30c578.md"
+        }
+      ]
+    },
+    "Q-003": {
+      "prompt": "What qualifies as a small change with no schedule impact?",
+      "kind": "text",
+      "answer": "Apply BR-002 only when scope, cost and committed milestones remain unchanged and the designer records the basis.",
+      "detail": "",
+      "round": 0,
+      "rejected": false
+    },
+    "Q-004": {
+      "prompt": "How do we proceed when customer information is incomplete?",
+      "kind": "text",
+      "answer": "Retain the explanation and attachments, ask a concrete question, and resubmit the same request after the answer.",
+      "detail": "",
+      "round": 0,
+      "rejected": false
+    },
+    "Q-005": {
+      "prompt": "Who can confirm additional scope?",
+      "kind": "text",
+      "answer": "Only a project lead explicitly assigned R-LEAD. An assistant may organize evidence but cannot make the commitment.",
+      "detail": "",
+      "round": 0,
+      "rejected": false
+    },
+    "Q-006": {
+      "prompt": "What does a customer see when the lead defers a request?",
+      "kind": "text",
+      "answer": "Show the deferral, outstanding decision and follow-up condition, without displaying a decline or inventing a committed date.",
+      "detail": "",
+      "round": 1,
+      "rejected": false
+    },
+    "Q-007": {
+      "prompt": "Does a notification failure cancel a decision?",
+      "kind": "text",
+      "answer": "No. BR-006 separates saving the decision from delivery. Failed delivery can be retried while the detail view retains the valid saved decision.",
+      "detail": "",
+      "round": 1,
+      "rejected": false
+    },
+    "Q-008": {
+      "prompt": "Which material may AI read?",
+      "kind": "text",
+      "answer": "Only authorized feedback, delivery scope and saved decisions for the current customer. Other customers are excluded and inaccessible attachments must be reported.",
+      "detail": "",
+      "round": 1,
+      "rejected": false
+    },
+    "Q-009": {
+      "prompt": "Can retrying create duplicate notifications?",
+      "kind": "text",
+      "answer": "A stable identity covers each decision and recipient. Confirmed deliveries are not sent again; an uncertain provider receipt must be checked first.",
+      "detail": "",
+      "round": 1,
+      "rejected": false
+    },
+    "Q-010": {
+      "prompt": "Who confirms the maximum retry window?",
+      "kind": "text",
+      "answer": "",
+      "detail": "Synthetic review material; the pending retry window is not a confirmed SLA.",
+      "round": 1,
+      "rejected": false
+    },
+    "Q-011": {
+      "prompt": "Which collaboration approach should this round review first?",
+      "kind": "single",
+      "choices": [
+        {
+          "value": "lead_review",
+          "label": "Lead confirms new commitments",
+          "recommended": true
+        },
+        {
+          "value": "auto_commit",
+          "label": "Automatically commit every change",
+          "recommended": false
+        }
+      ],
+      "answer": "lead_review",
+      "detail": "The automatic commitment proposal is rejected; see F-008.",
+      "round": 1,
+      "rejected": false
+    },
+    "Q-012": {
+      "prompt": "Which facts must be checked before retrying?",
+      "kind": "multiple",
+      "choices": [
+        {
+          "value": "saved_decision",
+          "label": "The decision is saved",
+          "recommended": true
+        },
+        {
+          "value": "recipient",
+          "label": "The recipient and channel are correct",
+          "recommended": true
+        },
+        {
+          "value": "delivery_receipt",
+          "label": "Existing receipts for the same delivery",
+          "recommended": true
+        }
+      ],
+      "answer": "saved_decision,recipient,delivery_receipt",
+      "detail": "These checks support BR-006 and P-002; no automatic retry window is defined.",
+      "round": 1,
+      "rejected": false
+    }
+  }
+}

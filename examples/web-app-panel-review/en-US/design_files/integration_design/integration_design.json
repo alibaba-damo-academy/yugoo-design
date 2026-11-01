@@ -1,0 +1,64 @@
+{
+  "schema_version": 8,
+  "integrations": {
+    "I-001": {
+      "id": "I-001",
+      "title": "Feedback attachment storage",
+      "description": "Store authorized customer attachments with content types and access expiry.",
+      "url": "https://attachments.example.invalid",
+      "secrets": {
+        "I-001-SECRET": {
+          "id": "I-001-SECRET",
+          "name": "Access-token reference",
+          "description": "Declares the secret’s purpose only; no secret value or actual connection is provided."
+        }
+      },
+      "secret_order": [
+        "I-001-SECRET"
+      ],
+      "prompt_content": "Use only capabilities authorized for the current studio. No interface is selected; example.invalid is a reserved invalid domain and must not be called from this example.",
+      "business_rules": "Follow BR-006: record business and connection outcomes separately. Retain input and references on failure, verify the customer scope of responses, and exclude credentials from logs."
+    },
+    "I-002": {
+      "id": "I-002",
+      "title": "Customer notification delivery",
+      "description": "Deliver a saved decision to specified recipients without turning it into a contact broadcast.",
+      "url": "https://notifications.example.invalid",
+      "secrets": {
+        "I-002-SECRET": {
+          "id": "I-002-SECRET",
+          "name": "Access-token reference",
+          "description": "Declares the secret’s purpose only; no secret value or actual connection is provided."
+        }
+      },
+      "secret_order": [
+        "I-002-SECRET"
+      ],
+      "prompt_content": "Use only capabilities authorized for the current studio. No interface is selected; example.invalid is a reserved invalid domain and must not be called from this example.",
+      "business_rules": "Follow BR-006: record business and connection outcomes separately. Retain input and references on failure, verify the customer scope of responses, and exclude credentials from logs."
+    },
+    "I-003": {
+      "id": "I-003",
+      "title": "Studio identity connection",
+      "description": "Read studio membership and assigned roles without inferring permissions from an email domain.",
+      "url": "https://identity.example.invalid",
+      "secrets": {
+        "I-003-SECRET": {
+          "id": "I-003-SECRET",
+          "name": "Access-token reference",
+          "description": "Declares the secret’s purpose only; no secret value or actual connection is provided."
+        }
+      },
+      "secret_order": [
+        "I-003-SECRET"
+      ],
+      "prompt_content": "Use only capabilities authorized for the current studio. No interface is selected; example.invalid is a reserved invalid domain and must not be called from this example.",
+      "business_rules": "Follow BR-006: record business and connection outcomes separately. Retain input and references on failure, verify the customer scope of responses, and exclude credentials from logs."
+    }
+  },
+  "integration_order": [
+    "I-001",
+    "I-002",
+    "I-003"
+  ]
+}

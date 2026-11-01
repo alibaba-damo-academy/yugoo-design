@@ -1,0 +1,107 @@
+{
+  "rounds": {
+    "R-001": {
+      "round_id": "R-001",
+      "topic": "反馈收集与范围判断",
+      "stage": "confirmed",
+      "directions": {
+        "D-001": {
+          "direction_id": "D-001",
+          "title": "原始信息与追溯",
+          "source": "user",
+          "research_points": [
+            "检查用户判断、上下文保留与失败后的下一步。"
+          ],
+          "findings_file": "research/R-001/D-001.md",
+          "findings_sha256": "69ab66379453a73180f0d2330d46f61b45d944d0b356290e042f6081fd77c2ae",
+          "source_urls": []
+        },
+        "D-002": {
+          "direction_id": "D-002",
+          "title": "判断与授权分离",
+          "source": "user",
+          "research_points": [
+            "检查用户判断、上下文保留与失败后的下一步。"
+          ],
+          "findings_file": "research/R-001/D-002.md",
+          "findings_sha256": "67399215682bdad207573ffe2561fb991b521c0b72d022c41241215b844bb334",
+          "source_urls": []
+        },
+        "D-003": {
+          "direction_id": "D-003",
+          "title": "资料缺失时的交互",
+          "source": "user",
+          "research_points": [
+            "检查用户判断、上下文保留与失败后的下一步。"
+          ],
+          "findings_file": "research/R-001/D-003.md",
+          "findings_sha256": "a27cbfca6d4ed784e33f3110af66a0439881acae5453273b67bd118c9edf6dcd",
+          "source_urls": []
+        }
+      },
+      "direction_order": [
+        "D-001",
+        "D-002",
+        "D-003"
+      ],
+      "conclusion_file": "research/R-001/conclusion.html",
+      "conclusion_sha256": "f12c01a2a8664ac0a0c6579d642b76276900ecb7cfaa0c6838d17a2a88c6ce9b",
+      "created_at": 1793491201,
+      "updated_at": 1793491201
+    },
+    "R-002": {
+      "round_id": "R-002",
+      "topic": "承诺、通知与异常恢复",
+      "stage": "confirmed",
+      "directions": {
+        "D-004": {
+          "direction_id": "D-004",
+          "title": "明确承诺与暂缓",
+          "source": "user",
+          "research_points": [
+            "检查用户判断、上下文保留与失败后的下一步。"
+          ],
+          "findings_file": "research/R-002/D-004.md",
+          "findings_sha256": "37f01379c0a67dd34d735aa1202040d78349cfd53e0f9e994d86f24b3ae10ee6",
+          "source_urls": []
+        },
+        "D-005": {
+          "direction_id": "D-005",
+          "title": "通知失败与重试",
+          "source": "user",
+          "research_points": [
+            "检查用户判断、上下文保留与失败后的下一步。"
+          ],
+          "findings_file": "research/R-002/D-005.md",
+          "findings_sha256": "09a5cdfbf28638aa66ae73d857588bfa1d080999d938c441e10707121a3278f3",
+          "source_urls": []
+        },
+        "D-006": {
+          "direction_id": "D-006",
+          "title": "AI 草稿的采用边界",
+          "source": "user",
+          "research_points": [
+            "检查用户判断、上下文保留与失败后的下一步。"
+          ],
+          "findings_file": "research/R-002/D-006.md",
+          "findings_sha256": "74f5f6e9100dfbc836b6a081c271c6a31bf0b82ebfdb342e2bef9bb01f2b6e49",
+          "source_urls": []
+        }
+      },
+      "direction_order": [
+        "D-004",
+        "D-005",
+        "D-006"
+      ],
+      "conclusion_file": "research/R-002/conclusion.html",
+      "conclusion_sha256": "1be91882ad96941a369d5c675b7d4f58f4318ab52644469256852774a0106224",
+      "created_at": 1793491202,
+      "updated_at": 1793491202
+    }
+  },
+  "round_order": [
+    "R-001",
+    "R-002"
+  ],
+  "current_round_id": "R-002"
+}

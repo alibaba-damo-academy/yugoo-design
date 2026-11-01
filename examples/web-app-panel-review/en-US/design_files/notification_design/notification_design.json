@@ -1,0 +1,95 @@
+{
+  "schema_version": 3,
+  "notifications": {
+    "N-001": {
+      "id": "N-001",
+      "title": "New feedback received",
+      "trigger": "After a customer submits complete feedback",
+      "recipients": [
+        "R-DESIGNER"
+      ],
+      "channels": [
+        "in_app"
+      ],
+      "message": "Review the words and attachments against the delivery item before assessing impact.",
+      "action_target": "PG-002 feedback detail; use PG-003 when confirmation is needed."
+    },
+    "N-002": {
+      "id": "N-002",
+      "title": "Lead confirmation required",
+      "trigger": "After F-002 identifies scope or schedule impact",
+      "recipients": [
+        "R-LEAD"
+      ],
+      "channels": [
+        "in_app",
+        "email"
+      ],
+      "message": "No additional arrangement is committed yet. Review the impact and confirm, return or defer.",
+      "action_target": "PG-002 feedback detail; use PG-003 when confirmation is needed."
+    },
+    "N-003": {
+      "id": "N-003",
+      "title": "More information needed",
+      "trigger": "After the lead returns a request for more information",
+      "recipients": [
+        "R-DESIGNER",
+        "R-CLIENT"
+      ],
+      "channels": [
+        "in_app"
+      ],
+      "message": "Supply the delivery item and desired change. Existing input and attachments are retained for resubmission.",
+      "action_target": "PG-002 feedback detail; use PG-003 when confirmation is needed."
+    },
+    "N-004": {
+      "id": "N-004",
+      "title": "Arrangement confirmed",
+      "trigger": "After the lead’s decision is saved",
+      "recipients": [
+        "R-CLIENT",
+        "R-DESIGNER"
+      ],
+      "channels": [
+        "in_app",
+        "email"
+      ],
+      "message": "Read the decision and agreed date; email delivery time is not the decision time.",
+      "action_target": "PG-002 feedback detail; use PG-003 when confirmation is needed."
+    },
+    "N-005": {
+      "id": "N-005",
+      "title": "Notification needs a retry",
+      "trigger": "After unconfirmed delivery is checked",
+      "recipients": [
+        "R-LEAD"
+      ],
+      "channels": [
+        "in_app"
+      ],
+      "message": "The decision remains valid. Retry only this delivery without duplicating feedback or decisions.",
+      "action_target": "PG-002 feedback detail; use PG-003 when confirmation is needed."
+    },
+    "N-006": {
+      "id": "N-006",
+      "title": "Deferred item needs follow-up",
+      "trigger": "When the follow-up condition in BR-005 is met",
+      "recipients": [
+        "R-LEAD"
+      ],
+      "channels": [
+        "in_app"
+      ],
+      "message": "Review the pending question and current evidence before making an explicit decision.",
+      "action_target": "PG-002 feedback detail; use PG-003 when confirmation is needed."
+    }
+  },
+  "notification_order": [
+    "N-001",
+    "N-002",
+    "N-003",
+    "N-004",
+    "N-005",
+    "N-006"
+  ]
+}

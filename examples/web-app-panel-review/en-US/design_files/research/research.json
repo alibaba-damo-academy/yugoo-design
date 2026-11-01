@@ -1,0 +1,107 @@
+{
+  "rounds": {
+    "R-001": {
+      "round_id": "R-001",
+      "topic": "Feedback intake and scope assessment",
+      "stage": "confirmed",
+      "directions": {
+        "D-001": {
+          "direction_id": "D-001",
+          "title": "Original information and traceability",
+          "source": "user",
+          "research_points": [
+            "Review judgment, context retention and recovery actions."
+          ],
+          "findings_file": "research/R-001/D-001.md",
+          "findings_sha256": "46c9d8529f2abcbc4f0c0c4d9233d65e41d5e6192eb6b2e72938778b513d8bd2",
+          "source_urls": []
+        },
+        "D-002": {
+          "direction_id": "D-002",
+          "title": "Separate assessment and authorization",
+          "source": "user",
+          "research_points": [
+            "Review judgment, context retention and recovery actions."
+          ],
+          "findings_file": "research/R-001/D-002.md",
+          "findings_sha256": "491ce8d92c19b59174d2b92b9503a31e8db4304e62af2c51cb3d579f7e235181",
+          "source_urls": []
+        },
+        "D-003": {
+          "direction_id": "D-003",
+          "title": "Interaction when evidence is missing",
+          "source": "user",
+          "research_points": [
+            "Review judgment, context retention and recovery actions."
+          ],
+          "findings_file": "research/R-001/D-003.md",
+          "findings_sha256": "39414c30904f09baabc48c22a09d47898b20e2de775e59cb622fb682b49cd154",
+          "source_urls": []
+        }
+      },
+      "direction_order": [
+        "D-001",
+        "D-002",
+        "D-003"
+      ],
+      "conclusion_file": "research/R-001/conclusion.html",
+      "conclusion_sha256": "8d75f284099387e69f6602312c33cd2faea93f6226022ba813fda685cec4f8fd",
+      "created_at": 1793491201,
+      "updated_at": 1793491201
+    },
+    "R-002": {
+      "round_id": "R-002",
+      "topic": "Commitments, notification and recovery",
+      "stage": "confirmed",
+      "directions": {
+        "D-004": {
+          "direction_id": "D-004",
+          "title": "Explicit commitment and deferral",
+          "source": "user",
+          "research_points": [
+            "Review judgment, context retention and recovery actions."
+          ],
+          "findings_file": "research/R-002/D-004.md",
+          "findings_sha256": "96887d6499b73d657dd58ac093443bdbc75066114be86f064ccbc7957abde074",
+          "source_urls": []
+        },
+        "D-005": {
+          "direction_id": "D-005",
+          "title": "Notification failure and retry",
+          "source": "user",
+          "research_points": [
+            "Review judgment, context retention and recovery actions."
+          ],
+          "findings_file": "research/R-002/D-005.md",
+          "findings_sha256": "430e25b6e873b04d430990e2e557112b40e0e8816859dc3fe46b24c9c08c3b0e",
+          "source_urls": []
+        },
+        "D-006": {
+          "direction_id": "D-006",
+          "title": "Adoption boundaries for AI drafts",
+          "source": "user",
+          "research_points": [
+            "Review judgment, context retention and recovery actions."
+          ],
+          "findings_file": "research/R-002/D-006.md",
+          "findings_sha256": "ae597855a1c9f4cfe1094db9468d824e645e30a80911e73f5be9856ca68387d7",
+          "source_urls": []
+        }
+      },
+      "direction_order": [
+        "D-004",
+        "D-005",
+        "D-006"
+      ],
+      "conclusion_file": "research/R-002/conclusion.html",
+      "conclusion_sha256": "3226ea6787ef1504d38a374e7b80482c01408eb4cc2b665653970c5b45a5ec4f",
+      "created_at": 1793491202,
+      "updated_at": 1793491202
+    }
+  },
+  "round_order": [
+    "R-001",
+    "R-002"
+  ],
+  "current_round_id": "R-002"
+}

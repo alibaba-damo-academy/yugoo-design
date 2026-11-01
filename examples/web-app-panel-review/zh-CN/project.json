@@ -1,0 +1,14 @@
+{
+  "kind": "dsh-design-project",
+  "formatVersion": 3,
+  "id": "a34ee885-2d1b-5b54-ad01-f7fa1575483d",
+  "name": "回环交付 · 全面板审阅",
+  "createdAt": "2026-11-01T00:00:00.000Z",
+  "knowledge": {
+    "provider": "ladybug-wasm"
+  },
+  "kit": {
+    "name": "web_app",
+    "version": "1.0"
+  }
+}

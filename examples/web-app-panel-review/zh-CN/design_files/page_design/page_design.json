@@ -1,0 +1,370 @@
+{
+  "schema_version": 7,
+  "stage": "completed",
+  "pages": {
+    "PG-001": {
+      "id": "PG-001",
+      "name": "反馈收件箱",
+      "purpose": "让对应角色对照原始依据完成当前任务，不把草稿或投递状态误作正式承诺。",
+      "parent_id": null,
+      "page_type": "list",
+      "audience": [
+        "R-DESIGNER",
+        "R-LEAD"
+      ],
+      "key_content": [
+        "当前记录、来源、状态与下一步。",
+        "原输入、长说明与失败后的恢复入口。"
+      ],
+      "key_actions": [
+        "查看依据、核对修改、明确保存或取消。"
+      ],
+      "function_refs": [
+        "F-001",
+        "F-006"
+      ],
+      "evidence_refs": [
+        "business_rules:BR-003",
+        "business_rules:BR-006"
+      ],
+      "style_pattern_refs": [
+        "feedback-row",
+        "impact-note",
+        "decision-form"
+      ],
+      "canvas_position": {
+        "x": 0,
+        "y": 0
+      },
+      "artifact_file": "page_design/pages/PG-001.html"
+    },
+    "PG-002": {
+      "id": "PG-002",
+      "name": "反馈与影响详情",
+      "purpose": "让对应角色对照原始依据完成当前任务，不把草稿或投递状态误作正式承诺。",
+      "parent_id": "PG-001",
+      "page_type": "detail",
+      "audience": [
+        "R-DESIGNER",
+        "R-LEAD"
+      ],
+      "key_content": [
+        "当前记录、来源、状态与下一步。",
+        "原输入、长说明与失败后的恢复入口。"
+      ],
+      "key_actions": [
+        "查看依据、核对修改、明确保存或取消。"
+      ],
+      "function_refs": [
+        "F-002",
+        "F-003",
+        "F-007"
+      ],
+      "evidence_refs": [
+        "business_rules:BR-003",
+        "business_rules:BR-006"
+      ],
+      "style_pattern_refs": [
+        "feedback-row",
+        "impact-note",
+        "decision-form"
+      ],
+      "canvas_position": {
+        "x": 340,
+        "y": 0
+      },
+      "artifact_file": "page_design/pages/PG-002.html"
+    },
+    "PG-003": {
+      "id": "PG-003",
+      "name": "负责人确认安排",
+      "purpose": "让对应角色对照原始依据完成当前任务，不把草稿或投递状态误作正式承诺。",
+      "parent_id": "PG-002",
+      "page_type": "form",
+      "audience": [
+        "R-DESIGNER",
+        "R-LEAD"
+      ],
+      "key_content": [
+        "当前记录、来源、状态与下一步。",
+        "原输入、长说明与失败后的恢复入口。"
+      ],
+      "key_actions": [
+        "查看依据、核对修改、明确保存或取消。"
+      ],
+      "function_refs": [
+        "F-004"
+      ],
+      "evidence_refs": [
+        "business_rules:BR-003",
+        "business_rules:BR-006"
+      ],
+      "style_pattern_refs": [
+        "feedback-row",
+        "impact-note",
+        "decision-form"
+      ],
+      "canvas_position": {
+        "x": 680,
+        "y": 0
+      },
+      "artifact_file": "page_design/pages/PG-003.html"
+    },
+    "PG-004": {
+      "id": "PG-004",
+      "name": "决定与通知记录",
+      "purpose": "让对应角色对照原始依据完成当前任务，不把草稿或投递状态误作正式承诺。",
+      "parent_id": null,
+      "page_type": "list",
+      "audience": [
+        "R-DESIGNER",
+        "R-LEAD"
+      ],
+      "key_content": [
+        "当前记录、来源、状态与下一步。",
+        "原输入、长说明与失败后的恢复入口。"
+      ],
+      "key_actions": [
+        "查看依据、核对修改、明确保存或取消。"
+      ],
+      "function_refs": [
+        "F-005",
+        "F-006"
+      ],
+      "evidence_refs": [
+        "business_rules:BR-003",
+        "business_rules:BR-006"
+      ],
+      "style_pattern_refs": [
+        "feedback-row",
+        "impact-note",
+        "decision-form"
+      ],
+      "canvas_position": {
+        "x": 1020,
+        "y": 340
+      },
+      "artifact_file": "page_design/pages/PG-004.html"
+    },
+    "PG-005": {
+      "id": "PG-005",
+      "name": "成员与连接设置",
+      "purpose": "让对应角色对照原始依据完成当前任务，不把草稿或投递状态误作正式承诺。",
+      "parent_id": null,
+      "page_type": "workspace",
+      "audience": [
+        "R-ADMIN"
+      ],
+      "key_content": [
+        "当前记录、来源、状态与下一步。",
+        "原输入、长说明与失败后的恢复入口。"
+      ],
+      "key_actions": [
+        "查看依据、核对修改、明确保存或取消。"
+      ],
+      "function_refs": [
+        "F-006"
+      ],
+      "evidence_refs": [
+        "business_rules:BR-003",
+        "business_rules:BR-006"
+      ],
+      "style_pattern_refs": [
+        "feedback-row",
+        "impact-note",
+        "decision-form"
+      ],
+      "canvas_position": {
+        "x": 1360,
+        "y": 340
+      },
+      "artifact_file": "page_design/pages/PG-005.html"
+    }
+  },
+  "page_order": [
+    "PG-001",
+    "PG-002",
+    "PG-003",
+    "PG-004",
+    "PG-005"
+  ],
+  "entry_page_ids": [
+    "PG-001"
+  ],
+  "connections": {
+    "NAV-PG-001-PG-004": {
+      "id": "NAV-PG-001-PG-004",
+      "source_page_id": "PG-001",
+      "target_page_id": "PG-004",
+      "label": "历史记录",
+      "source_element_id": "nav-PG-004",
+      "source_element_label": "历史记录"
+    },
+    "NAV-PG-001-PG-005": {
+      "id": "NAV-PG-001-PG-005",
+      "source_page_id": "PG-001",
+      "target_page_id": "PG-005",
+      "label": "设置",
+      "source_element_id": "nav-PG-005",
+      "source_element_label": "设置"
+    },
+    "NAV-PG-002-PG-001": {
+      "id": "NAV-PG-002-PG-001",
+      "source_page_id": "PG-002",
+      "target_page_id": "PG-001",
+      "label": "反馈",
+      "source_element_id": "nav-PG-001",
+      "source_element_label": "反馈"
+    },
+    "NAV-PG-002-PG-004": {
+      "id": "NAV-PG-002-PG-004",
+      "source_page_id": "PG-002",
+      "target_page_id": "PG-004",
+      "label": "历史记录",
+      "source_element_id": "nav-PG-004",
+      "source_element_label": "历史记录"
+    },
+    "NAV-PG-002-PG-005": {
+      "id": "NAV-PG-002-PG-005",
+      "source_page_id": "PG-002",
+      "target_page_id": "PG-005",
+      "label": "设置",
+      "source_element_id": "nav-PG-005",
+      "source_element_label": "设置"
+    },
+    "NAV-PG-003-PG-001": {
+      "id": "NAV-PG-003-PG-001",
+      "source_page_id": "PG-003",
+      "target_page_id": "PG-001",
+      "label": "反馈",
+      "source_element_id": "nav-PG-001",
+      "source_element_label": "反馈"
+    },
+    "NAV-PG-003-PG-004": {
+      "id": "NAV-PG-003-PG-004",
+      "source_page_id": "PG-003",
+      "target_page_id": "PG-004",
+      "label": "历史记录",
+      "source_element_id": "nav-PG-004",
+      "source_element_label": "历史记录"
+    },
+    "NAV-PG-003-PG-005": {
+      "id": "NAV-PG-003-PG-005",
+      "source_page_id": "PG-003",
+      "target_page_id": "PG-005",
+      "label": "设置",
+      "source_element_id": "nav-PG-005",
+      "source_element_label": "设置"
+    },
+    "NAV-PG-004-PG-001": {
+      "id": "NAV-PG-004-PG-001",
+      "source_page_id": "PG-004",
+      "target_page_id": "PG-001",
+      "label": "反馈",
+      "source_element_id": "nav-PG-001",
+      "source_element_label": "反馈"
+    },
+    "NAV-PG-004-PG-005": {
+      "id": "NAV-PG-004-PG-005",
+      "source_page_id": "PG-004",
+      "target_page_id": "PG-005",
+      "label": "设置",
+      "source_element_id": "nav-PG-005",
+      "source_element_label": "设置"
+    },
+    "NAV-PG-005-PG-001": {
+      "id": "NAV-PG-005-PG-001",
+      "source_page_id": "PG-005",
+      "target_page_id": "PG-001",
+      "label": "反馈",
+      "source_element_id": "nav-PG-001",
+      "source_element_label": "反馈"
+    },
+    "NAV-PG-005-PG-004": {
+      "id": "NAV-PG-005-PG-004",
+      "source_page_id": "PG-005",
+      "target_page_id": "PG-004",
+      "label": "历史记录",
+      "source_element_id": "nav-PG-004",
+      "source_element_label": "历史记录"
+    },
+    "LINK-PG-001-PG-002": {
+      "id": "LINK-PG-001-PG-002",
+      "source_page_id": "PG-001",
+      "target_page_id": "PG-002",
+      "label": "打开反馈",
+      "source_element_id": "open-feedback",
+      "source_element_label": "打开反馈"
+    },
+    "LINK-PG-002-PG-003": {
+      "id": "LINK-PG-002-PG-003",
+      "source_page_id": "PG-002",
+      "target_page_id": "PG-003",
+      "label": "确认安排",
+      "source_element_id": "review-arrangement",
+      "source_element_label": "确认安排"
+    },
+    "LINK-PG-003-PG-002": {
+      "id": "LINK-PG-003-PG-002",
+      "source_page_id": "PG-003",
+      "target_page_id": "PG-002",
+      "label": "返回反馈",
+      "source_element_id": "back-detail",
+      "source_element_label": "返回反馈"
+    }
+  },
+  "connection_order": [
+    "NAV-PG-001-PG-004",
+    "NAV-PG-001-PG-005",
+    "NAV-PG-002-PG-001",
+    "NAV-PG-002-PG-004",
+    "NAV-PG-002-PG-005",
+    "NAV-PG-003-PG-001",
+    "NAV-PG-003-PG-004",
+    "NAV-PG-003-PG-005",
+    "NAV-PG-004-PG-001",
+    "NAV-PG-004-PG-005",
+    "NAV-PG-005-PG-001",
+    "NAV-PG-005-PG-004",
+    "LINK-PG-001-PG-002",
+    "LINK-PG-002-PG-003",
+    "LINK-PG-003-PG-002"
+  ],
+  "common_spec": {
+    "layout": "左侧导航与内容区；窄屏按内容自然重排。",
+    "logo": {
+      "name": "回环交付",
+      "description": "文字标识与简洁勾线。"
+    },
+    "navigation": [
+      {
+        "id": "feedback",
+        "label": "反馈",
+        "target_page_id": "PG-001",
+        "icon_ref": "inbox"
+      },
+      {
+        "id": "history",
+        "label": "历史",
+        "target_page_id": "PG-004",
+        "icon_ref": "decision"
+      },
+      {
+        "id": "settings",
+        "label": "设置",
+        "target_page_id": "PG-005"
+      }
+    ],
+    "shared_components": [
+      "状态标签、长文本说明、错误恢复与确认表单"
+    ],
+    "visual_pattern_refs": [
+      "feedback-row",
+      "impact-note",
+      "decision-form"
+    ],
+    "source": "design_style"
+  },
+  "style_theme": "清晰的交付判断",
+  "style_epoch": 0
+}

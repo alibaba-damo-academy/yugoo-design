@@ -1,0 +1,18 @@
+{
+  "boards": {
+    "WB-001": {
+      "id": "WB-001",
+      "title": "Boundaries of feedback, assessment and commitment",
+      "artifact_file": "whiteboard/boards/WB-001.json"
+    },
+    "WB-002": {
+      "id": "WB-002",
+      "title": "How an AI suggestion reaches a person",
+      "artifact_file": "whiteboard/boards/WB-002.json"
+    }
+  },
+  "board_order": [
+    "WB-001",
+    "WB-002"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "boards": {
+    "WB-001": {
+      "id": "WB-001",
+      "title": "反馈、判断与承诺的边界",
+      "artifact_file": "whiteboard/boards/WB-001.json"
+    },
+    "WB-002": {
+      "id": "WB-002",
+      "title": "AI 建议怎样交给人",
+      "artifact_file": "whiteboard/boards/WB-002.json"
+    }
+  },
+  "board_order": [
+    "WB-001",
+    "WB-002"
+  ]
+}

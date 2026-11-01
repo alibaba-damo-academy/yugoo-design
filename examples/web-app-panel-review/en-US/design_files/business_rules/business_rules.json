@@ -1,0 +1,71 @@
+{
+  "schema_version": 4,
+  "rules": {
+    "BR-001": {
+      "id": "BR-001",
+      "title": "Request missing information first",
+      "condition": "The feedback cannot be linked to a delivery item or does not describe the desired change.",
+      "outcome": "Retain feedback and attachments, identify a concrete gap, and do not infer effort.",
+      "notes": ""
+    },
+    "BR-002": {
+      "id": "BR-002",
+      "title": "Keep evidence for small changes",
+      "condition": "The change adds no scope and changes no delivery milestone, and the designer has recorded the basis.",
+      "outcome": "The designer may handle it directly, retaining the assessment and outcome for the lead.",
+      "notes": ""
+    },
+    "BR-003": {
+      "id": "BR-003",
+      "title": "A lead confirms new commitments",
+      "condition": "The request adds scope or cost, or affects a delivery milestone.",
+      "outcome": "Request lead confirmation; do not communicate a committed date until an explicit decision is saved.",
+      "notes": "Aligned with F-002 / F-004 and the decision branches in P-001; this is a synthetic review decision."
+    },
+    "BR-004": {
+      "id": "BR-004",
+      "title": "Return is different from decline",
+      "condition": "The lead needs more evidence before deciding.",
+      "outcome": "Retain the request, explain what is missing, and allow revision and resubmission.",
+      "notes": "Aligned with F-002 / F-004 and the decision branches in P-001; this is a synthetic review decision."
+    },
+    "BR-005": {
+      "id": "BR-005",
+      "title": "Explain what a deferral awaits",
+      "condition": "The lead chooses to defer the request.",
+      "outcome": "State the outstanding business decision and follow-up condition; do not present a deferral as a decline.",
+      "notes": "Aligned with F-002 / F-004 and the decision branches in P-001; this is a synthetic review decision."
+    },
+    "BR-006": {
+      "id": "BR-006",
+      "title": "Separate saving from delivery",
+      "condition": "A decision is saved but the external notification service has not confirmed delivery.",
+      "outcome": "Keep the decision valid, show failed delivery and allow retry without duplicating the decision.",
+      "notes": ""
+    },
+    "BR-007": {
+      "id": "BR-007",
+      "title": "Explicitly adopt an AI draft",
+      "condition": "The assistant returns an impact explanation that has not been adopted.",
+      "outcome": "Show an editable draft only; do not overwrite human explanations or change the decision status.",
+      "notes": ""
+    },
+    "BR-008": {
+      "id": "BR-008",
+      "title": "Review concurrent updates",
+      "condition": "Another member saves a newer version of the same decision during review.",
+      "outcome": "Retain current input, show the conflict and latest content, and allow retry after review.",
+      "notes": ""
+    }
+  },
+  "rule_order": [
+    "BR-001",
+    "BR-002",
+    "BR-003",
+    "BR-004",
+    "BR-005",
+    "BR-006",
+    "BR-007",
+    "BR-008"
+  ]
+}

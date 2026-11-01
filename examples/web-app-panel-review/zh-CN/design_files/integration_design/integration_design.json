@@ -1,0 +1,64 @@
+{
+  "schema_version": 8,
+  "integrations": {
+    "I-001": {
+      "id": "I-001",
+      "title": "反馈附件存储",
+      "description": "保存当前客户授权附件，保留内容类型与访问期限。",
+      "url": "https://attachments.example.invalid",
+      "secrets": {
+        "I-001-SECRET": {
+          "id": "I-001-SECRET",
+          "name": "访问令牌引用",
+          "description": "仅声明密钥用途；此处没有密钥值，不存在实际连接。"
+        }
+      },
+      "secret_order": [
+        "I-001-SECRET"
+      ],
+      "prompt_content": "只调用当前工作室明确授权的能力。接口未选型，example.invalid 是保留的无效域名；不得根据示例发起实际访问。",
+      "business_rules": "遵循 BR-006：业务结果与连接结果分别记录。失败保留输入和引用；返回结果需验证所属客户；日志不包含凭据。"
+    },
+    "I-002": {
+      "id": "I-002",
+      "title": "客户通知投递",
+      "description": "根据已保存决定向指定接收人投递，不扩大为联系人群发。",
+      "url": "https://notifications.example.invalid",
+      "secrets": {
+        "I-002-SECRET": {
+          "id": "I-002-SECRET",
+          "name": "访问令牌引用",
+          "description": "仅声明密钥用途；此处没有密钥值，不存在实际连接。"
+        }
+      },
+      "secret_order": [
+        "I-002-SECRET"
+      ],
+      "prompt_content": "只调用当前工作室明确授权的能力。接口未选型，example.invalid 是保留的无效域名；不得根据示例发起实际访问。",
+      "business_rules": "遵循 BR-006：业务结果与连接结果分别记录。失败保留输入和引用；返回结果需验证所属客户；日志不包含凭据。"
+    },
+    "I-003": {
+      "id": "I-003",
+      "title": "工作室身份连接",
+      "description": "读取工作室成员与已授予角色，不从邮箱域名猜测权限。",
+      "url": "https://identity.example.invalid",
+      "secrets": {
+        "I-003-SECRET": {
+          "id": "I-003-SECRET",
+          "name": "访问令牌引用",
+          "description": "仅声明密钥用途；此处没有密钥值，不存在实际连接。"
+        }
+      },
+      "secret_order": [
+        "I-003-SECRET"
+      ],
+      "prompt_content": "只调用当前工作室明确授权的能力。接口未选型，example.invalid 是保留的无效域名；不得根据示例发起实际访问。",
+      "business_rules": "遵循 BR-006：业务结果与连接结果分别记录。失败保留输入和引用；返回结果需验证所属客户；日志不包含凭据。"
+    }
+  },
+  "integration_order": [
+    "I-001",
+    "I-002",
+    "I-003"
+  ]
+}

@@ -1,0 +1,837 @@
+{
+  "schema_version": 3,
+  "objects": {
+    "O-001": {
+      "id": "O-001",
+      "name": "客户",
+      "description": "用于隔离资料和决定的客户空间。",
+      "fields": {
+        "id": {
+          "id": "id",
+          "name": "记录编号",
+          "meaning": "用于在讨论、记录和关系中指认这一个客户；名称变化时编号不变。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "C-014"
+        },
+        "title": {
+          "id": "title",
+          "name": "名称",
+          "meaning": "负责成员确认的客户名称或简述，便于列表辨认；不替代稳定编号。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "晨光"
+        },
+        "description": {
+          "id": "description",
+          "name": "说明",
+          "meaning": "负责成员补充这项客户的业务背景与尚缺事项，帮助后续协作理解上下文。",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "example": "客户联络与资料边界；约定尚未确定的保留期限。"
+        },
+        "owner": {
+          "id": "owner",
+          "name": "负责成员",
+          "meaning": "负责这项客户跟进的成员；由项目明确安排，不表示取得其他客户权限。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "项目负责人"
+        },
+        "created_at": {
+          "id": "created_at",
+          "name": "创建时间",
+          "meaning": "系统记录这项客户首次保存的时间，供历史顺序核对；不要求用户重复填写。",
+          "value_type": "date_time",
+          "requirement": "always",
+          "example": "2026-11-02T09:00:00+08:00"
+        },
+        "contact": {
+          "id": "contact",
+          "name": "联系人",
+          "meaning": "由负责人确认的客户联络人，用于澄清反馈，不从邮箱域名推断权限。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "客户代表"
+        },
+        "retention": {
+          "id": "retention",
+          "name": "资料保留约定",
+          "meaning": "负责人同客户确认附件和意见的保留约定；未约定时保留待确认说明。",
+          "value_type": "long_text",
+          "requirement": "conditional",
+          "example": "待双方确认，未预设保留天数。",
+          "required_when": "客户或团队需要约定附件与意见的保留期限时。"
+        }
+      },
+      "field_order": [
+        "id",
+        "title",
+        "description",
+        "owner",
+        "created_at",
+        "contact",
+        "retention"
+      ],
+      "states": {},
+      "state_order": []
+    },
+    "O-002": {
+      "id": "O-002",
+      "name": "交付项",
+      "description": "原约定的交付内容、节点与范围。",
+      "fields": {
+        "id": {
+          "id": "id",
+          "name": "记录编号",
+          "meaning": "用于在讨论、记录和关系中指认这一个交付项；名称变化时编号不变。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "DL-042"
+        },
+        "title": {
+          "id": "title",
+          "name": "名称",
+          "meaning": "负责成员确认的交付项名称或简述，便于列表辨认；不替代稳定编号。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "品牌网站首轮设计交付"
+        },
+        "description": {
+          "id": "description",
+          "name": "说明",
+          "meaning": "负责成员补充这项交付项的业务背景与尚缺事项，帮助后续协作理解上下文。",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "example": "原定交付含主页面文字与布局；新增导出布局需重新判断。"
+        },
+        "owner": {
+          "id": "owner",
+          "name": "负责成员",
+          "meaning": "负责这项交付项跟进的成员；由项目明确安排，不表示取得其他客户权限。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "项目负责人"
+        },
+        "created_at": {
+          "id": "created_at",
+          "name": "创建时间",
+          "meaning": "系统记录这项交付项首次保存的时间，供历史顺序核对；不要求用户重复填写。",
+          "value_type": "date_time",
+          "requirement": "always",
+          "example": "2026-11-02T09:00:00+08:00"
+        },
+        "scope": {
+          "id": "scope",
+          "name": "原交付范围",
+          "meaning": "负责人维护已同客户约定的交付边界，设计师据此判断是否新增范围。",
+          "value_type": "long_text",
+          "requirement": "always",
+          "example": "主页面文字与布局，不含新增导出尺寸与布局。"
+        },
+        "milestone": {
+          "id": "milestone",
+          "name": "已承诺节点",
+          "meaning": "客户与负责人已确认的交付节点；客户期望和助手草稿不能替代它。",
+          "value_type": "date",
+          "requirement": "always",
+          "example": "2026-11-06"
+        },
+        "customer": {
+          "id": "customer",
+          "name": "客户编号",
+          "meaning": "资料所属客户，用于关联交付项和隔离反馈；由创建者选择已有客户。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "C-014"
+        }
+      },
+      "field_order": [
+        "id",
+        "title",
+        "description",
+        "owner",
+        "created_at",
+        "scope",
+        "milestone",
+        "customer"
+      ],
+      "states": {},
+      "state_order": []
+    },
+    "O-003": {
+      "id": "O-003",
+      "name": "客户反馈",
+      "description": "原始意见、来源、附件与当前处理状态。",
+      "fields": {
+        "id": {
+          "id": "id",
+          "name": "记录编号",
+          "meaning": "用于在讨论、记录和关系中指认这一个客户反馈；名称变化时编号不变。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "FB-042"
+        },
+        "title": {
+          "id": "title",
+          "name": "名称",
+          "meaning": "负责成员确认的客户反馈名称或简述，便于列表辨认；不替代稳定编号。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "新增导出布局"
+        },
+        "description": {
+          "id": "description",
+          "name": "说明",
+          "meaning": "负责成员补充这项客户反馈的业务背景与尚缺事项，帮助后续协作理解上下文。",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "example": "客户希望在周五交付前增加导出布局；原话与影响判断分别保留。"
+        },
+        "owner": {
+          "id": "owner",
+          "name": "负责成员",
+          "meaning": "负责这项客户反馈跟进的成员；由项目明确安排，不表示取得其他客户权限。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "当前项目设计师"
+        },
+        "created_at": {
+          "id": "created_at",
+          "name": "创建时间",
+          "meaning": "系统记录这项客户反馈首次保存的时间，供历史顺序核对；不要求用户重复填写。",
+          "value_type": "date_time",
+          "requirement": "always",
+          "example": "2026-11-02T09:00:00+08:00"
+        },
+        "customer": {
+          "id": "customer",
+          "name": "客户编号",
+          "meaning": "资料所属客户，用于关联交付项和隔离反馈；由创建者选择已有客户。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "C-014"
+        },
+        "delivery": {
+          "id": "delivery",
+          "name": "交付项编号",
+          "meaning": "客户反馈所针对的原交付项，由设计师核对；无法定位时先补充。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "DL-042"
+        },
+        "original_words": {
+          "id": "original_words",
+          "name": "客户原话",
+          "meaning": "客户提供的原话，保留措辞和来源，不用影响判断覆盖。",
+          "value_type": "long_text",
+          "requirement": "always",
+          "example": "能否在周五前再增加一套导出布局？"
+        },
+        "attachments": {
+          "id": "attachments",
+          "name": "原始附件",
+          "meaning": "客户或设计师附上的本次反馈材料；不可读时保留引用并请求补充。",
+          "value_type": "file",
+          "requirement": "optional",
+          "example": "Q-002 的合成反馈说明附件。"
+        },
+        "source": {
+          "id": "source",
+          "name": "意见来源",
+          "meaning": "设计师确认原始意见来自何种渠道，便于回到邮件、聊天或评审记录。",
+          "value_type": "single_choice",
+          "requirement": "always",
+          "example": "邮件",
+          "options": [
+            "邮件",
+            "评审会议",
+            "聊天"
+          ]
+        },
+        "expected_change": {
+          "id": "expected_change",
+          "name": "期望变化",
+          "meaning": "客户希望发生的变化，设计师确认其含义；同原话和已约定范围分开。",
+          "value_type": "long_text",
+          "requirement": "always",
+          "example": "新增导出尺寸与布局；第二份参考附件和成本依据待补充。"
+        },
+        "expected_date": {
+          "id": "expected_date",
+          "name": "期望日期",
+          "meaning": "客户提出的期望时间，只支持影响判断，不表示负责人已承诺。",
+          "value_type": "date",
+          "requirement": "optional",
+          "example": "2026-11-06"
+        },
+        "needs_lead": {
+          "id": "needs_lead",
+          "name": "需要负责人确认",
+          "meaning": "设计师依据范围、费用和节点影响判断是否交负责人，遵循 BR-002/003。",
+          "value_type": "yes_no",
+          "requirement": "always",
+          "example": "是：新增导出布局超出原交付范围。"
+        },
+        "return_reason": {
+          "id": "return_reason",
+          "name": "退回原因",
+          "meaning": "负责人退回时指出缺少什么，使设计师能在同一反馈继续补充。",
+          "value_type": "long_text",
+          "requirement": "conditional",
+          "example": "请补充第二份参考附件和成本估算。",
+          "required_when": "负责人退回补充时。"
+        }
+      },
+      "field_order": [
+        "id",
+        "title",
+        "description",
+        "owner",
+        "created_at",
+        "customer",
+        "delivery",
+        "original_words",
+        "attachments",
+        "source",
+        "expected_change",
+        "expected_date",
+        "needs_lead",
+        "return_reason"
+      ],
+      "states": {
+        "draft": {
+          "id": "draft",
+          "name": "待补充",
+          "meaning": "缺少交付项或期望变化，等待补充同一反馈。"
+        },
+        "review": {
+          "id": "review",
+          "name": "待负责人确认",
+          "meaning": "设计师已提交影响判断，等待获授负责人明确决定。"
+        },
+        "confirmed": {
+          "id": "confirmed",
+          "name": "已确认",
+          "meaning": "相应业务判断已明确保存，不从通知送达或 AI 草稿推断。"
+        },
+        "deferred": {
+          "id": "deferred",
+          "name": "暂缓",
+          "meaning": "负责人保存了暂缓决定和继续条件，未承诺新日期。"
+        }
+      },
+      "state_order": [
+        "draft",
+        "review",
+        "confirmed",
+        "deferred"
+      ]
+    },
+    "O-004": {
+      "id": "O-004",
+      "name": "影响判断",
+      "description": "设计师对范围、成本和交期的判断依据。",
+      "fields": {
+        "id": {
+          "id": "id",
+          "name": "记录编号",
+          "meaning": "用于在讨论、记录和关系中指认这一个影响判断；名称变化时编号不变。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "IA-042"
+        },
+        "title": {
+          "id": "title",
+          "name": "名称",
+          "meaning": "负责成员确认的影响判断名称或简述，便于列表辨认；不替代稳定编号。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "导出布局的范围与节点影响"
+        },
+        "description": {
+          "id": "description",
+          "name": "说明",
+          "meaning": "负责成员补充这项影响判断的业务背景与尚缺事项，帮助后续协作理解上下文。",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "example": "新增导出尺寸需要设计、检查与客户确认，不能直接归为不影响交期的小改。"
+        },
+        "owner": {
+          "id": "owner",
+          "name": "负责成员",
+          "meaning": "负责这项影响判断跟进的成员；由项目明确安排，不表示取得其他客户权限。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "当前项目设计师"
+        },
+        "created_at": {
+          "id": "created_at",
+          "name": "创建时间",
+          "meaning": "系统记录这项影响判断首次保存的时间，供历史顺序核对；不要求用户重复填写。",
+          "value_type": "date_time",
+          "requirement": "always",
+          "example": "2026-11-02T09:00:00+08:00"
+        },
+        "scope_change": {
+          "id": "scope_change",
+          "name": "范围变化",
+          "meaning": "设计师比较原约定和客户请求，明确新增与未变内容供负责人判断。",
+          "value_type": "long_text",
+          "requirement": "always",
+          "example": "新增导出布局；原主页面的文字与布局保持不变。"
+        },
+        "schedule_impact": {
+          "id": "schedule_impact",
+          "name": "节点影响",
+          "meaning": "设计师说明新增工作对已承诺节点的影响与缺口，负责人据此作决定。",
+          "value_type": "long_text",
+          "requirement": "always",
+          "example": "须补充附件与成本依据后评估；尚不能确认原周五节点仍适用。"
+        },
+        "missing": {
+          "id": "missing",
+          "name": "缺少的依据",
+          "meaning": "指出本次判断缺少的具体材料，避免把未知工作量当作已确认事实。",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "example": "第二份参考附件与新增布局的成本估算。"
+        }
+      },
+      "field_order": [
+        "id",
+        "title",
+        "description",
+        "owner",
+        "created_at",
+        "scope_change",
+        "schedule_impact",
+        "missing"
+      ],
+      "states": {},
+      "state_order": []
+    },
+    "O-005": {
+      "id": "O-005",
+      "name": "负责人决定",
+      "description": "采纳、拒绝、退回或暂缓的明确决定。",
+      "fields": {
+        "id": {
+          "id": "id",
+          "name": "记录编号",
+          "meaning": "用于在讨论、记录和关系中指认这一个负责人决定；名称变化时编号不变。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "DEC-042"
+        },
+        "title": {
+          "id": "title",
+          "name": "名称",
+          "meaning": "负责成员确认的负责人决定名称或简述，便于列表辨认；不替代稳定编号。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "导出布局请求暂缓决定"
+        },
+        "description": {
+          "id": "description",
+          "name": "说明",
+          "meaning": "负责成员补充这项负责人决定的业务背景与尚缺事项，帮助后续协作理解上下文。",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "example": "等待补充第二份参考附件与成本估算，再由负责人核对工作量和安排。"
+        },
+        "owner": {
+          "id": "owner",
+          "name": "负责成员",
+          "meaning": "负责这项负责人决定跟进的成员；由项目明确安排，不表示取得其他客户权限。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "明确获授 R-LEAD 的负责人"
+        },
+        "created_at": {
+          "id": "created_at",
+          "name": "创建时间",
+          "meaning": "系统记录这项负责人决定首次保存的时间，供历史顺序核对；不要求用户重复填写。",
+          "value_type": "date_time",
+          "requirement": "always",
+          "example": "2026-11-02T09:00:00+08:00"
+        },
+        "outcome": {
+          "id": "outcome",
+          "name": "决定",
+          "meaning": "负责人明确选择确认、拒绝、退回或暂缓；保存后才成为决定事实。",
+          "value_type": "single_choice",
+          "requirement": "always",
+          "example": "暂缓",
+          "options": [
+            "待确认",
+            "已确认",
+            "暂缓"
+          ]
+        },
+        "agreed_date": {
+          "id": "agreed_date",
+          "name": "确认的交期",
+          "meaning": "负责人确认新增承诺时同客户约定的新节点；暂缓时不填写虚构日期。",
+          "value_type": "date",
+          "requirement": "conditional",
+          "example": "确认新增承诺后填写；当前暂缓示例无新日期。",
+          "required_when": "负责人确认新增范围并形成新的交付节点承诺时。"
+        },
+        "reason": {
+          "id": "reason",
+          "name": "决定依据",
+          "meaning": "负责人说明作出本次决定的业务依据，使客户和设计师能理解并继续。",
+          "value_type": "long_text",
+          "requirement": "always",
+          "example": "参考附件与成本依据不完整，尚不能判断新增布局的工作量与交期。"
+        },
+        "follow_up": {
+          "id": "follow_up",
+          "name": "跟进条件",
+          "meaning": "退回或暂缓时说明重新进入判断的条件，不另建脱离原反馈的请求。",
+          "value_type": "long_text",
+          "requirement": "conditional",
+          "example": "补齐附件与成本依据后，在 FB-042 中重新提交判断。",
+          "required_when": "决定为退回或暂缓时。"
+        }
+      },
+      "field_order": [
+        "id",
+        "title",
+        "description",
+        "owner",
+        "created_at",
+        "outcome",
+        "agreed_date",
+        "reason",
+        "follow_up"
+      ],
+      "states": {
+        "confirmed": {
+          "id": "confirmed",
+          "name": "确认",
+          "meaning": "负责人已保存同意新增承诺的决定及适用条件。"
+        },
+        "declined": {
+          "id": "declined",
+          "name": "拒绝",
+          "meaning": "负责人已保存不接受本次新增范围的决定与依据。"
+        },
+        "returned": {
+          "id": "returned",
+          "name": "退回补充",
+          "meaning": "负责人指出具体缺口，设计师继续补充原反馈。"
+        },
+        "deferred": {
+          "id": "deferred",
+          "name": "暂缓",
+          "meaning": "等待明确条件满足后再判断，不填写虚构的承诺日期。"
+        }
+      },
+      "state_order": [
+        "confirmed",
+        "declined",
+        "returned",
+        "deferred"
+      ]
+    },
+    "O-006": {
+      "id": "O-006",
+      "name": "通知投递",
+      "description": "某项决定对指定接收人的独立投递结果。",
+      "fields": {
+        "id": {
+          "id": "id",
+          "name": "记录编号",
+          "meaning": "用于在讨论、记录和关系中指认这一个通知投递；名称变化时编号不变。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "ND-042"
+        },
+        "title": {
+          "id": "title",
+          "name": "名称",
+          "meaning": "负责成员确认的通知投递名称或简述，便于列表辨认；不替代稳定编号。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "暂缓决定的客户通知"
+        },
+        "description": {
+          "id": "description",
+          "name": "说明",
+          "meaning": "负责成员补充这项通知投递的业务背景与尚缺事项，帮助后续协作理解上下文。",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "example": "决定已保存，但邮件服务未返回明确回执，需要核对后再重试。"
+        },
+        "owner": {
+          "id": "owner",
+          "name": "负责成员",
+          "meaning": "负责这项通知投递跟进的成员；由项目明确安排，不表示取得其他客户权限。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "负责核对投递的项目负责人"
+        },
+        "created_at": {
+          "id": "created_at",
+          "name": "创建时间",
+          "meaning": "系统记录这项通知投递首次保存的时间，供历史顺序核对；不要求用户重复填写。",
+          "value_type": "date_time",
+          "requirement": "always",
+          "example": "2026-11-02T09:00:00+08:00"
+        },
+        "recipient": {
+          "id": "recipient",
+          "name": "接收人",
+          "meaning": "本次决定需要告知的明确接收人；同一接收人的送达结果单独跟进。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "C-014 的授权客户代表"
+        },
+        "channel": {
+          "id": "channel",
+          "name": "投递渠道",
+          "meaning": "本次通知选择的渠道，供负责人判断失败影响与恢复入口。",
+          "value_type": "single_choice",
+          "requirement": "always",
+          "example": "邮件",
+          "options": [
+            "待确认",
+            "已确认",
+            "暂缓"
+          ]
+        },
+        "delivery_key": {
+          "id": "delivery_key",
+          "name": "防重复投递标识",
+          "meaning": "同一决定与接收人的投递标识，由系统生成供核对和去重，用户不手填。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "DEC-042 / C-014 客户代表 / 邮件"
+        },
+        "attempts": {
+          "id": "attempts",
+          "name": "重试次数",
+          "meaning": "系统记录实际投递次数，负责人核对重试是否重复；不代表已确认重试上限。",
+          "value_type": "number",
+          "requirement": "always",
+          "example": "1"
+        },
+        "failure": {
+          "id": "failure",
+          "name": "失败说明",
+          "meaning": "记录服务返回的具体失败或回执未知，帮助人核对后恢复，不撤销决定。",
+          "value_type": "long_text",
+          "requirement": "conditional",
+          "example": "服务回执未明确，先核对同一投递记录。",
+          "required_when": "投递失败或服务回执不能确定时。"
+        }
+      },
+      "field_order": [
+        "id",
+        "title",
+        "description",
+        "owner",
+        "created_at",
+        "recipient",
+        "channel",
+        "delivery_key",
+        "attempts",
+        "failure"
+      ],
+      "states": {
+        "pending": {
+          "id": "pending",
+          "name": "待投递",
+          "meaning": "决定已保存，尚未得到明确送达结果。"
+        },
+        "delivered": {
+          "id": "delivered",
+          "name": "已送达",
+          "meaning": "已取得该接收人明确送达回执，不再次投递同一记录。"
+        },
+        "failed": {
+          "id": "failed",
+          "name": "失败待核对",
+          "meaning": "失败或回执未知需要核对，保留决定和原投递身份。"
+        }
+      },
+      "state_order": [
+        "pending",
+        "delivered",
+        "failed"
+      ]
+    },
+    "O-007": {
+      "id": "O-007",
+      "name": "项目成员",
+      "description": "成员身份、所属项目和明确授予的角色。",
+      "fields": {
+        "id": {
+          "id": "id",
+          "name": "记录编号",
+          "meaning": "用于在讨论、记录和关系中指认这一个项目成员；名称变化时编号不变。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "MEM-006"
+        },
+        "title": {
+          "id": "title",
+          "name": "名称",
+          "meaning": "负责成员确认的项目成员名称或简述，便于列表辨认；不替代稳定编号。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "周宁"
+        },
+        "description": {
+          "id": "description",
+          "name": "说明",
+          "meaning": "负责成员补充这项项目成员的业务背景与尚缺事项，帮助后续协作理解上下文。",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "example": "合成工作室成员；只在获授项目内承担负责人职责。"
+        },
+        "created_at": {
+          "id": "created_at",
+          "name": "创建时间",
+          "meaning": "系统记录这项项目成员首次保存的时间，供历史顺序核对；不要求用户重复填写。",
+          "value_type": "date_time",
+          "requirement": "always",
+          "example": "2026-11-02T09:00:00+08:00"
+        },
+        "project": {
+          "id": "project",
+          "name": "项目编号",
+          "meaning": "管理员明确授予成员可参与的项目；不因同属工作室取得其他项目权限。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "PRJ-014"
+        },
+        "role": {
+          "id": "role",
+          "name": "授予角色",
+          "meaning": "管理员或负责人明确授予的业务角色，供权限策略判断，不由 AI 猜测。",
+          "value_type": "single_choice",
+          "requirement": "always",
+          "example": "项目负责人",
+          "options": [
+            "待确认",
+            "已确认",
+            "暂缓"
+          ]
+        },
+        "granted_by": {
+          "id": "granted_by",
+          "name": "授权人",
+          "meaning": "记录谁作出成员授权，以便核对来源；与成员本人、业务决定责任人不同。",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "授权管理员"
+        }
+      },
+      "field_order": [
+        "id",
+        "title",
+        "description",
+        "created_at",
+        "project",
+        "role",
+        "granted_by"
+      ],
+      "states": {},
+      "state_order": []
+    }
+  },
+  "object_order": [
+    "O-001",
+    "O-002",
+    "O-003",
+    "O-004",
+    "O-005",
+    "O-006",
+    "O-007"
+  ],
+  "relations": {
+    "REL-001": {
+      "id": "REL-001",
+      "kind": "association",
+      "name": "约定交付",
+      "source": "O-001",
+      "target": "O-002",
+      "source_count": "1",
+      "target_count": "0..*",
+      "description": "记录稳定身份关系；删除或失效引用需要明确核对，不静默猜测归属。"
+    },
+    "REL-002": {
+      "id": "REL-002",
+      "kind": "association",
+      "name": "提交反馈",
+      "source": "O-001",
+      "target": "O-003",
+      "source_count": "1",
+      "target_count": "0..*",
+      "description": "记录稳定身份关系；删除或失效引用需要明确核对，不静默猜测归属。"
+    },
+    "REL-003": {
+      "id": "REL-003",
+      "kind": "association",
+      "name": "收到相关意见",
+      "source": "O-002",
+      "target": "O-003",
+      "source_count": "1",
+      "target_count": "0..*",
+      "description": "记录稳定身份关系；删除或失效引用需要明确核对，不静默猜测归属。"
+    },
+    "REL-004": {
+      "id": "REL-004",
+      "kind": "association",
+      "name": "形成影响判断",
+      "source": "O-003",
+      "target": "O-004",
+      "source_count": "1",
+      "target_count": "0..*",
+      "description": "记录稳定身份关系；删除或失效引用需要明确核对，不静默猜测归属。"
+    },
+    "REL-005": {
+      "id": "REL-005",
+      "kind": "association",
+      "name": "支持负责人决定",
+      "source": "O-004",
+      "target": "O-005",
+      "source_count": "1",
+      "target_count": "0..*",
+      "description": "记录稳定身份关系；删除或失效引用需要明确核对，不静默猜测归属。"
+    },
+    "REL-006": {
+      "id": "REL-006",
+      "kind": "association",
+      "name": "产生投递记录",
+      "source": "O-005",
+      "target": "O-006",
+      "source_count": "1",
+      "target_count": "0..*",
+      "description": "记录稳定身份关系；删除或失效引用需要明确核对，不静默猜测归属。"
+    },
+    "REL-007": {
+      "id": "REL-007",
+      "kind": "association",
+      "name": "维护判断依据",
+      "source": "O-007",
+      "target": "O-004",
+      "source_count": "1",
+      "target_count": "0..*",
+      "description": "记录稳定身份关系；删除或失效引用需要明确核对，不静默猜测归属。"
+    },
+    "REL-008": {
+      "id": "REL-008",
+      "kind": "association",
+      "name": "作出明确决定",
+      "source": "O-007",
+      "target": "O-005",
+      "source_count": "1",
+      "target_count": "0..*",
+      "description": "记录稳定身份关系；删除或失效引用需要明确核对，不静默猜测归属。"
+    }
+  }
+}

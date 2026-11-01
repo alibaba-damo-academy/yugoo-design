@@ -1,0 +1,185 @@
+{
+  "rounds": {
+    "0": {
+      "title": "交付范围与角色",
+      "description": "围绕客户反馈、日常小改和负责人承诺理解团队的真实判断任务。"
+    },
+    "1": {
+      "title": "异常与 AI 协作",
+      "description": "补充退回、并发、通知失败与 AI 草稿的边界。"
+    }
+  },
+  "questions": {
+    "const_auth_mode": {
+      "prompt": "是否需要注册登录？",
+      "kind": "single",
+      "choices": [
+        {
+          "value": "anonymous",
+          "label": "不需要，直接使用",
+          "recommended": false
+        },
+        {
+          "value": "auth_required",
+          "label": "需要，支持注册登录",
+          "recommended": true
+        }
+      ],
+      "answer": "auth_required",
+      "detail": "本合成场景包含客户隔离和跨设备协作。"
+    },
+    "const_storage_mode": {
+      "prompt": "应用数据如何保存？",
+      "kind": "single",
+      "choices": [
+        {
+          "value": "browser_temp",
+          "label": "仅当前浏览器临时保存",
+          "recommended": false
+        },
+        {
+          "value": "database_persistent",
+          "label": "持久保存，可跨设备继续使用",
+          "recommended": true
+        }
+      ],
+      "answer": "database_persistent",
+      "detail": "本合成场景包含客户隔离和跨设备协作。"
+    },
+    "Q-001": {
+      "prompt": "谁最先发现反馈需要负责人确认？",
+      "kind": "text",
+      "answer": "设计师在对照原交付范围时判断是否增加范围或影响节点。",
+      "detail": "",
+      "round": 0,
+      "rejected": false
+    },
+    "Q-002": {
+      "prompt": "客户反馈从哪里来？",
+      "kind": "text",
+      "answer": "当前从邮件、聊天和评审会议收集；平台保存原话与来源定位，不自动取得整个邮箱权限。",
+      "detail": "",
+      "round": 0,
+      "rejected": false,
+      "multimodal_answer": [
+        {
+          "type": "file",
+          "file_md5": "c107e633d0dcead8d459b5895ee2bb1ff85ddb1d0fc52960bd918701bd7384b9",
+          "filename": "客户反馈说明.md",
+          "mime_type": "text/markdown",
+          "size_bytes": 403,
+          "artifact_file": "smart_questions/attachments/c107e633d0dcead8d459b5895ee2bb1ff85ddb1d0fc52960bd918701bd7384b9.md"
+        }
+      ]
+    },
+    "Q-003": {
+      "prompt": "什么算不影响交期的小改？",
+      "kind": "text",
+      "answer": "只有范围、费用和已承诺节点都不改变，并且设计师写出判断依据，才按 BR-002 直接处理。",
+      "detail": "",
+      "round": 0,
+      "rejected": false
+    },
+    "Q-004": {
+      "prompt": "客户信息不完整时怎样继续？",
+      "kind": "text",
+      "answer": "保留已有说明与附件，提出一个具体问题；补充后沿同一请求重新提交。",
+      "detail": "",
+      "round": 0,
+      "rejected": false
+    },
+    "Q-005": {
+      "prompt": "谁可以确认新增范围？",
+      "kind": "text",
+      "answer": "只有被明确授予 R-LEAD 的项目负责人；助手可以整理依据，不能替代承诺。",
+      "detail": "",
+      "round": 0,
+      "rejected": false
+    },
+    "Q-006": {
+      "prompt": "负责人暂缓时客户看到什么？",
+      "kind": "text",
+      "answer": "显示暂缓、具体待定事项和跟进条件，不显示拒绝或虚构已承诺日期。",
+      "detail": "",
+      "round": 1,
+      "rejected": false
+    },
+    "Q-007": {
+      "prompt": "通知失败会撤销决定吗？",
+      "kind": "text",
+      "answer": "不会。BR-006 把决定保存与送达分开；失败记录可重试，客户详情仍显示有效的已保存决定。",
+      "detail": "",
+      "round": 1,
+      "rejected": false
+    },
+    "Q-008": {
+      "prompt": "AI 可以读取什么资料？",
+      "kind": "text",
+      "answer": "仅当前客户授权的反馈、交付范围和已保存决定。不可读取其他客户，无法访问的附件要明确说明。",
+      "detail": "",
+      "round": 1,
+      "rejected": false
+    },
+    "Q-009": {
+      "prompt": "重试是否会重复通知？",
+      "kind": "text",
+      "answer": "同一决定和接收人的投递使用稳定标识；已确认送达的记录不再次投递。尚待确认的服务回执需先核对。",
+      "detail": "",
+      "round": 1,
+      "rejected": false
+    },
+    "Q-010": {
+      "prompt": "通知重试的最长等待时间由谁确认？",
+      "kind": "text",
+      "answer": "",
+      "detail": "合成审阅资料；待定的重试窗口不构成已确认 SLA。",
+      "round": 1,
+      "rejected": false
+    },
+    "Q-011": {
+      "prompt": "本轮先审阅哪种协作方式？",
+      "kind": "single",
+      "choices": [
+        {
+          "value": "lead_review",
+          "label": "负责人确认新增承诺",
+          "recommended": true
+        },
+        {
+          "value": "auto_commit",
+          "label": "自动承诺全部修改",
+          "recommended": false
+        }
+      ],
+      "answer": "lead_review",
+      "detail": "自动承诺方案被否决，见 F-008。",
+      "round": 1,
+      "rejected": false
+    },
+    "Q-012": {
+      "prompt": "重试前要核对哪些事实？",
+      "kind": "multiple",
+      "choices": [
+        {
+          "value": "saved_decision",
+          "label": "决定已保存",
+          "recommended": true
+        },
+        {
+          "value": "recipient",
+          "label": "接收人与渠道正确",
+          "recommended": true
+        },
+        {
+          "value": "delivery_receipt",
+          "label": "同一投递的已有回执",
+          "recommended": true
+        }
+      ],
+      "answer": "saved_decision,recipient,delivery_receipt",
+      "detail": "这些核对支持 BR-006 和 P-002；未定义自动重试窗口。",
+      "round": 1,
+      "rejected": false
+    }
+  }
+}

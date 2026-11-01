@@ -1,0 +1,141 @@
+{
+  "schema_version": 5,
+  "title": "工作室与客户的授权边界",
+  "summary": "成员、负责人和客户分别取得明确授权；继承只复用权限规则，不自动取得项目归属。",
+  "roles": {
+    "R-CLIENT": {
+      "id": "R-CLIENT",
+      "title": "客户",
+      "assignment_rule": "由项目负责人邀请并绑定到指定客户空间。"
+    },
+    "R-DESIGNER": {
+      "id": "R-DESIGNER",
+      "title": "设计师",
+      "assignment_rule": "由工作室管理员授予项目成员身份。"
+    },
+    "R-LEAD": {
+      "id": "R-LEAD",
+      "title": "项目负责人",
+      "assignment_rule": "明确授予指定项目的负责人身份，不由 AI 推断。"
+    },
+    "R-ADMIN": {
+      "id": "R-ADMIN",
+      "title": "工作室管理员",
+      "assignment_rule": "工作室所有者授权，涉及成员与连接配置。"
+    }
+  },
+  "role_order": [
+    "R-CLIENT",
+    "R-DESIGNER",
+    "R-LEAD",
+    "R-ADMIN"
+  ],
+  "policies": {
+    "AP-001": {
+      "id": "AP-001",
+      "title": "提交本人反馈",
+      "role_ref": "R-CLIENT",
+      "capability": "提交本人反馈",
+      "effect": "allow",
+      "applies_when": "仅限本客户空间。",
+      "requirements": [],
+      "custom_requirement": ""
+    },
+    "AP-002": {
+      "id": "AP-002",
+      "title": "查看其他客户反馈",
+      "role_ref": "R-CLIENT",
+      "capability": "查看其他客户反馈",
+      "effect": "deny",
+      "applies_when": "客户空间不相同。",
+      "requirements": [],
+      "custom_requirement": ""
+    },
+    "AP-003": {
+      "id": "AP-003",
+      "title": "核对交付影响",
+      "role_ref": "R-DESIGNER",
+      "capability": "核对交付影响",
+      "effect": "allow",
+      "applies_when": "已加入当前项目。",
+      "requirements": [],
+      "custom_requirement": ""
+    },
+    "AP-004": {
+      "id": "AP-004",
+      "title": "承诺新增交期",
+      "role_ref": "R-DESIGNER",
+      "capability": "承诺新增交期",
+      "effect": "deny",
+      "applies_when": "当前成员没有本项目明确授予的 R-LEAD 身份。",
+      "requirements": [],
+      "custom_requirement": ""
+    },
+    "AP-005": {
+      "id": "AP-005",
+      "title": "确认范围安排",
+      "role_ref": "R-LEAD",
+      "capability": "确认范围安排",
+      "effect": "allow",
+      "applies_when": "负责当前项目且依据充分。",
+      "requirements": [
+        "confirm"
+      ],
+      "custom_requirement": ""
+    },
+    "AP-006": {
+      "id": "AP-006",
+      "title": "退回补充",
+      "role_ref": "R-LEAD",
+      "capability": "退回补充",
+      "effect": "allow",
+      "applies_when": "说明具体缺少内容，保留原请求。",
+      "requirements": [],
+      "custom_requirement": ""
+    },
+    "AP-007": {
+      "id": "AP-007",
+      "title": "配置连接",
+      "role_ref": "R-ADMIN",
+      "capability": "配置连接",
+      "effect": "allow",
+      "applies_when": "已核对连接所属工作室。",
+      "requirements": [
+        "confirm"
+      ],
+      "custom_requirement": ""
+    },
+    "AP-008": {
+      "id": "AP-008",
+      "title": "导出决定记录",
+      "role_ref": "R-ADMIN",
+      "capability": "导出决定记录",
+      "effect": "allow",
+      "applies_when": "限定在授权工作室范围，排除 Secret 值。",
+      "requirements": [
+        "confirm"
+      ],
+      "custom_requirement": ""
+    }
+  },
+  "policy_order": [
+    "AP-001",
+    "AP-002",
+    "AP-003",
+    "AP-004",
+    "AP-005",
+    "AP-006",
+    "AP-007",
+    "AP-008"
+  ],
+  "inheritances": {
+    "RI-LEAD-DESIGNER": {
+      "id": "RI-LEAD-DESIGNER",
+      "title": "负责人保留成员能力",
+      "kind": "inherits",
+      "source": "R-LEAD",
+      "target": "R-DESIGNER",
+      "description": "不扩大到其他项目；继承的禁止项仍需按政策核对。"
+    }
+  }
+}

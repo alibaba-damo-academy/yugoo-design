@@ -1,9 +1,9 @@
-import { useEffect, useId, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { sidebarIcon } from './sidebar-icon.tsx'
 import remarkGfm from 'remark-gfm'
 import { ChevronRight, Pencil, CircleMinus } from 'lucide-react'
-import { ReactFlow, Background, Controls, ConnectionMode, type Node, type NodeProps, type ReactFlowInstance } from '@xyflow/react'
+import { ReactFlow, Background, Controls, ConnectionMode, applyNodeChanges, type Node, type NodeChange, type NodeProps, type ReactFlowInstance } from '@xyflow/react'
 import type { ComponentNode, PanelManifest } from './dsl.ts'
 import { fieldsForSection, fieldValuesOf, recordsAtPath, sectionBindingOf, type DesignData } from './record-state.ts'
 import type { RenderOptions } from './interpreter.ts'
@@ -71,7 +71,21 @@ function BoardRecordId({ record, binding, manifest, section }: { record: Record<
 function BoardMap({ groups, binding, onSelect, label, manifest, section }: { groups: Map<string, [string, Record<string, unknown>][]>
   binding: NonNullable<ComponentNode['board']>; onSelect: (id: string) => void; label: string; manifest: PanelManifest; section: string }) {
   const { t } = usePanelI18n()
-  const { nodes, edges } = useMemo(() => boardMapProjection(groups, binding, label), [groups, binding, label])
+  const { nodes: projectedNodes, edges } = useMemo(() => boardMapProjection(groups, binding, label), [groups, binding, label])
+  const [nodes, setNodes] = useState<Node[]>(projectedNodes)
+  const nodeSignature = JSON.stringify(projectedNodes)
+  useEffect(() => {
+    setNodes(current => {
+      const previous = new Map(current.map(node => [node.id, node]))
+      return projectedNodes.map(node => ({ ...previous.get(node.id), ...node }))
+    })
+  }, [nodeSignature])
+  const onNodesChange = useCallback((changes: NodeChange[]) => {
+    // Like the relation/navigation canvases, retain React Flow's transient
+    // measurements. Replacing controlled nodes loses same-size hidden mounts
+    // and their ports without another ResizeObserver delivery on reveal.
+    setNodes(current => applyNodeChanges(changes, current))
+  }, [])
   const marker = `board-${useId().replaceAll(':', '')}`
   const [hovered, setHovered] = useState<string>()
   const [flow, setFlow] = useState<ReactFlowInstance>()
@@ -83,7 +97,7 @@ function BoardMap({ groups, binding, onSelect, label, manifest, section }: { gro
       {[false, true].map(active => <marker key={String(active)} id={`${marker}-${active ? 'active' : 'normal'}`} markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><circle cx="5" cy="5" r="3" fill="white" stroke={active ? 'var(--ds-brand-bg-default, #663ae8)' : 'var(--ds-line-4, #b8b8c2)'} strokeOpacity={active ? .6 : 1} strokeWidth="1" /></marker>)}
       <linearGradient id={`${marker}-gradient`} x1="100%" y1="50%" x2="0%" y2="50%"><stop offset="0%" stopColor="var(--ds-brand-bg-default, #663ae8)" stopOpacity=".4" /><stop offset="100%" stopColor="var(--ds-brand-bg-default, #663ae8)" stopOpacity=".6" /></linearGradient>
     </defs></svg>
-    <ReactFlow<Node> onInit={setFlow} nodes={nodes.map(node => ({ ...node, data: { ...node.data,
+    <ReactFlow<Node> onInit={setFlow} onNodesChange={onNodesChange} nodes={nodes.map(node => ({ ...node, data: { ...node.data,
     badgeLabel: node.data.rejected ? t('rejectedRecords') : badge?.options?.find(option => option.value === node.data.badge)?.label ?? node.data.badge,
   } }))} edges={edges.map(edge => ({ ...edge, sourceHandle: 'right', targetHandle: 'left', style: { strokeWidth: 1, stroke: edge.source === hovered ? `url(#${marker}-gradient)` : 'var(--ds-line-4, #b8b8c2)', markerStart: `url(#${marker}-${edge.source === hovered ? 'active' : 'normal'})` } }))} nodeTypes={boardNodeTypes} connectionMode={ConnectionMode.Loose} fitView fitViewOptions={RELATION_GRAPH_AUTO_FIT} minZoom={0.15} maxZoom={2.5}
     defaultEdgeOptions={{ style: { stroke: 'var(--ds-line-4, #b8b8c2)', strokeWidth: 1 } }}

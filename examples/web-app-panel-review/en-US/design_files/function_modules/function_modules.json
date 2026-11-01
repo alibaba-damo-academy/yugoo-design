@@ -1,0 +1,264 @@
+{
+  "functions": {
+    "F-001": {
+      "function_id": "F-001",
+      "function_name": "Capture and link feedback",
+      "function_description": "Keep the customer’s words, attachments and delivery item together without turning an unclear request into a new commitment.",
+      "function_epic": "Intake",
+      "priority": "High",
+      "source": "user",
+      "rejected": false,
+      "reason": "A manually prepared synthetic review proposal, not a fact from a user project. Related: P-001, BR-003 and PG-003.",
+      "details": {
+        "situation": "Before a Friday delivery, a customer asks to revise an agreed design. The six-person studio must retain the customer’s words and distinguish a small change, additional scope and missing information. The lead’s decision affects pricing and scheduling; a designer cannot make a commitment merely because a change sounds quick.",
+        "behaviors": {
+          "B-001": {
+            "description": "Keep the customer’s words, attachments and delivery item together without turning an unclear request into a new commitment."
+          },
+          "B-002": {
+            "description": "Read the saved delivery agreement and identify what is unchanged; keep the human explanation editable."
+          }
+        },
+        "inputs": {
+          "IN-001": {
+            "description": "Customer feedback FB-042, delivery item O-002, the scope agreement and attachments."
+          }
+        },
+        "outputs": {
+          "OUT-001": {
+            "description": "A traceable explanation on the same feedback record; hand commitments to R-LEAD."
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "Do not change pricing automatically, access another customer’s records, or treat successful notification delivery as lead approval."
+          }
+        },
+        "exceptions": {
+          "E-001": {
+            "condition": "An attachment cannot be read or its link has expired.",
+            "response": "Retain the reference and input, identify the missing material, and allow retry after it is supplied."
+          },
+          "E-002": {
+            "condition": "Another member has updated the explanation.",
+            "response": "Retain the draft and request review rather than overwriting silently."
+          }
+        }
+      }
+    },
+    "F-002": {
+      "function_id": "F-002",
+      "function_name": "Assess scope and schedule impact",
+      "function_description": "A designer compares the request with the agreed scope, states what changes and what stays, and identifies dependencies and missing information.",
+      "function_epic": "Scope decisions",
+      "priority": "High",
+      "source": "user",
+      "rejected": false,
+      "reason": "A manually prepared synthetic review proposal, not a fact from a user project. Related: P-001, BR-003 and PG-003.",
+      "details": {
+        "situation": "Before a Friday delivery, a customer asks to revise an agreed design. The six-person studio must retain the customer’s words and distinguish a small change, additional scope and missing information. The lead’s decision affects pricing and scheduling; a designer cannot make a commitment merely because a change sounds quick.",
+        "behaviors": {
+          "B-001": {
+            "description": "A designer compares the request with the agreed scope, states what changes and what stays, and identifies dependencies and missing information."
+          },
+          "B-002": {
+            "description": "Read the saved delivery agreement and identify what is unchanged; keep the human explanation editable."
+          }
+        },
+        "inputs": {
+          "IN-001": {
+            "description": "Customer feedback FB-042, delivery item O-002, the scope agreement and attachments."
+          }
+        },
+        "outputs": {
+          "OUT-001": {
+            "description": "A traceable explanation on the same feedback record; hand commitments to R-LEAD."
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "Do not change pricing automatically, access another customer’s records, or treat successful notification delivery as lead approval."
+          }
+        },
+        "exceptions": {
+          "E-001": {
+            "condition": "An attachment cannot be read or its link has expired.",
+            "response": "Retain the reference and input, identify the missing material, and allow retry after it is supplied."
+          },
+          "E-002": {
+            "condition": "Another member has updated the explanation.",
+            "response": "Retain the draft and request review rather than overwriting silently."
+          }
+        }
+      }
+    },
+    "F-003": {
+      "function_id": "F-003",
+      "function_name": "Revise and resubmit a returned request",
+      "function_description": "The customer or designer supplies missing evidence while retaining the original record, return reason and earlier human edits.",
+      "function_epic": "Scope decisions",
+      "priority": "High",
+      "source": "user",
+      "rejected": false,
+      "reason": "A manually prepared synthetic review proposal, not a fact from a user project. Related: P-001, BR-003 and PG-003.",
+      "details": {
+        "situation": "Before a Friday delivery, a customer asks to revise an agreed design. The six-person studio must retain the customer’s words and distinguish a small change, additional scope and missing information. The lead’s decision affects pricing and scheduling; a designer cannot make a commitment merely because a change sounds quick.",
+        "behaviors": {
+          "B-001": {
+            "description": "The customer or designer supplies missing evidence while retaining the original record, return reason and earlier human edits."
+          },
+          "B-002": {
+            "description": "Read the saved delivery agreement and identify what is unchanged; keep the human explanation editable."
+          }
+        },
+        "inputs": {
+          "IN-001": {
+            "description": "Customer feedback FB-042, delivery item O-002, the scope agreement and attachments."
+          }
+        },
+        "outputs": {
+          "OUT-001": {
+            "description": "A traceable explanation on the same feedback record; hand commitments to R-LEAD."
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "Do not change pricing automatically, access another customer’s records, or treat successful notification delivery as lead approval."
+          }
+        },
+        "exceptions": {
+          "E-001": {
+            "condition": "An attachment cannot be read or its link has expired.",
+            "response": "Retain the reference and input, identify the missing material, and allow retry after it is supplied."
+          },
+          "E-002": {
+            "condition": "Another member has updated the explanation.",
+            "response": "Retain the draft and request review rather than overwriting silently."
+          }
+        }
+      }
+    },
+    "F-004": {
+      "function_id": "F-004",
+      "function_name": "Confirm scope and delivery commitments",
+      "function_description": "The lead explicitly accepts, declines or defers the request and records the agreed arrangement; AI cannot make the commitment.",
+      "function_epic": "Delivery commitments",
+      "priority": "High",
+      "source": "user",
+      "rejected": false,
+      "reason": "A manually prepared synthetic review proposal, not a fact from a user project. Related: P-001, BR-003 and PG-003.",
+      "details": {
+        "situation": "Before a Friday delivery, a customer asks to revise an agreed design. The six-person studio must retain the customer’s words and distinguish a small change, additional scope and missing information. The lead’s decision affects pricing and scheduling; a designer cannot make a commitment merely because a change sounds quick.",
+        "behaviors": {
+          "B-001": {
+            "description": "The lead explicitly accepts, declines or defers the request and records the agreed arrangement; AI cannot make the commitment."
+          },
+          "B-002": {
+            "description": "Read the saved delivery agreement and identify what is unchanged; keep the human explanation editable."
+          }
+        },
+        "inputs": {
+          "IN-001": {
+            "description": "Customer feedback FB-042, delivery item O-002, the scope agreement and attachments."
+          }
+        },
+        "outputs": {
+          "OUT-001": {
+            "description": "A traceable explanation on the same feedback record; hand commitments to R-LEAD."
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "Do not change pricing automatically, access another customer’s records, or treat successful notification delivery as lead approval."
+          }
+        },
+        "exceptions": {
+          "E-001": {
+            "condition": "An attachment cannot be read or its link has expired.",
+            "response": "Retain the reference and input, identify the missing material, and allow retry after it is supplied."
+          },
+          "E-002": {
+            "condition": "Another member has updated the explanation.",
+            "response": "Retain the draft and request review rather than overwriting silently."
+          }
+        }
+      }
+    },
+    "F-005": {
+      "function_id": "F-005",
+      "function_name": "Review notification delivery",
+      "function_description": "Record the business decision separately from notification delivery; a delivery failure does not reverse a saved decision.",
+      "function_epic": "Delivery follow-up",
+      "priority": "Medium",
+      "source": "user",
+      "rejected": false,
+      "reason": "A manually prepared synthetic review proposal, not a fact from a user project. Related: P-001, BR-003 and PG-003."
+    },
+    "F-006": {
+      "function_id": "F-006",
+      "function_name": "Find decisions and their evidence",
+      "function_description": "Find records by delivery item, customer and decision status, and inspect who made each commitment and when.",
+      "function_epic": "Delivery follow-up",
+      "priority": "Medium",
+      "source": "user",
+      "rejected": false,
+      "reason": "A manually prepared synthetic review proposal, not a fact from a user project. Related: P-001, BR-003 and PG-003."
+    },
+    "F-007": {
+      "function_id": "F-007",
+      "function_name": "Draft an impact explanation",
+      "function_description": "The assistant proposes an editable draft from authorized feedback and scope, explicitly marking facts that are missing.",
+      "function_epic": "AI collaboration",
+      "priority": "Medium",
+      "source": "user",
+      "rejected": false,
+      "reason": "A manually prepared synthetic review proposal, not a fact from a user project. Related: P-001, BR-003 and PG-003.",
+      "details": {
+        "situation": "Before a Friday delivery, a customer asks to revise an agreed design. The six-person studio must retain the customer’s words and distinguish a small change, additional scope and missing information. The lead’s decision affects pricing and scheduling; a designer cannot make a commitment merely because a change sounds quick.",
+        "behaviors": {
+          "B-001": {
+            "description": "The assistant proposes an editable draft from authorized feedback and scope, explicitly marking facts that are missing."
+          },
+          "B-002": {
+            "description": "Read the saved delivery agreement and identify what is unchanged; keep the human explanation editable."
+          }
+        },
+        "inputs": {
+          "IN-001": {
+            "description": "Customer feedback FB-042, delivery item O-002, the scope agreement and attachments."
+          }
+        },
+        "outputs": {
+          "OUT-001": {
+            "description": "A traceable explanation on the same feedback record; hand commitments to R-LEAD."
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "Do not change pricing automatically, access another customer’s records, or treat successful notification delivery as lead approval."
+          }
+        },
+        "exceptions": {
+          "E-001": {
+            "condition": "An attachment cannot be read or its link has expired.",
+            "response": "Retain the reference and input, identify the missing material, and allow retry after it is supplied."
+          },
+          "E-002": {
+            "condition": "Another member has updated the explanation.",
+            "response": "Retain the draft and request review rather than overwriting silently."
+          }
+        }
+      }
+    },
+    "F-008": {
+      "function_id": "F-008",
+      "function_name": "Automatically commit every requested change",
+      "function_description": "Retain this rejected idea so reviewers can distinguish a suggestion, authorization and a real delivery commitment.",
+      "function_epic": "Not adopted",
+      "priority": "Low",
+      "source": "user",
+      "rejected": true,
+      "reason": "A manually prepared synthetic review proposal, not a fact from a user project. Related: P-001, BR-003 and PG-003."
+    }
+  }
+}

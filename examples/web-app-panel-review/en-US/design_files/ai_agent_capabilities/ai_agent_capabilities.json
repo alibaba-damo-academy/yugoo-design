@@ -1,0 +1,236 @@
+{
+  "schema_version": 1,
+  "agents": {
+    "A-001": {
+      "id": "A-001",
+      "name": "Feedback assistant",
+      "description": "Help the studio organize judgment against original feedback and the delivery agreement.",
+      "result": "An editable draft with record references, not a confirmed commitment.",
+      "boundary": "Do not change customer material, costs, delivery dates or lead decisions.",
+      "function_refs": [
+        "F-001",
+        "F-002",
+        "F-007"
+      ],
+      "entries": {
+        "detail-action": {
+          "name": "Organize this feedback",
+          "trigger": "action",
+          "location": "The assistance action in PG-002 feedback detail.",
+          "auto_context": "Current FB-042, the O-002 scope and authorized attachments.",
+          "input_modes": [
+            "text",
+            "files"
+          ],
+          "feedback": "Show the read scope, editable draft and inaccessible items while retaining the original explanation."
+        }
+      },
+      "system_prompt": "Confirm the current question, then read authorized material. Distinguish evidence, interpretation and unknowns; cite stable record IDs. Explain both changes and preserved scope without making commitments. Retain context and explain recovery when attachments are inaccessible, records change concurrently or access is unauthorized.",
+      "context": "Saved feedback, scope, rules and decisions for the current customer and project.",
+      "model_access": "inherit",
+      "model_source_ref": "MODEL-APP",
+      "model_connection": "runtime",
+      "skill_refs": [
+        "SK-001",
+        "SK-002"
+      ],
+      "tool_refs": [
+        "TOOL-001",
+        "TOOL-002",
+        "TOOL-003"
+      ],
+      "knowledge_resource_refs": [
+        "KR-SCOPE",
+        "KR-PREFERENCES"
+      ],
+      "delegate_refs": [
+        "A-002"
+      ],
+      "collaborations": {
+        "review": {
+          "agent_ref": "A-002",
+          "condition": "The user requests review of a scope change.",
+          "handoff": "Pass the draft, source IDs and missing facts, never secret values.",
+          "result": "Return risk notes to the same draft; the lead retains the decision."
+        }
+      },
+      "actions": {
+        "draft": {
+          "action": "Draft an impact explanation.",
+          "condition": "The user requests it and project material is readable.",
+          "result": "Show an editable draft awaiting human adoption."
+        }
+      },
+      "result_adoption": "The user reviews, edits and explicitly adopts it in the original explanation; no formal decision is written before adoption.",
+      "failure_handling": "Retain the source and draft, identify gaps and allow retry after they are supplied.",
+      "test_cases": {
+        "missing-attachment": {
+          "input": "A feedback attachment is inaccessible.",
+          "expected": "Identify the missing attachment, retain readable information and do not infer its content."
+        }
+      },
+      "notes": "Describes AI collaboration in a proposed product; no real Agent or model execution is claimed."
+    },
+    "A-002": {
+      "id": "A-002",
+      "name": "Delivery risk reviewer",
+      "description": "Help the studio organize judgment against original feedback and the delivery agreement.",
+      "result": "An editable draft with record references, not a confirmed commitment.",
+      "boundary": "Do not change customer material, costs, delivery dates or lead decisions.",
+      "function_refs": [
+        "F-004",
+        "F-006"
+      ],
+      "entries": {
+        "detail-action": {
+          "name": "Organize this feedback",
+          "trigger": "action",
+          "location": "The assistance action in PG-002 feedback detail.",
+          "auto_context": "Current FB-042, the O-002 scope and authorized attachments.",
+          "input_modes": [
+            "text",
+            "files"
+          ],
+          "feedback": "Show the read scope, editable draft and inaccessible items while retaining the original explanation."
+        }
+      },
+      "system_prompt": "Confirm the current question, then read authorized material. Distinguish evidence, interpretation and unknowns; cite stable record IDs. Explain both changes and preserved scope without making commitments. Retain context and explain recovery when attachments are inaccessible, records change concurrently or access is unauthorized.",
+      "context": "Saved feedback, scope, rules and decisions for the current customer and project.",
+      "model_access": "inherit",
+      "model_source_ref": "MODEL-APP",
+      "model_connection": "runtime",
+      "skill_refs": [
+        "SK-001",
+        "SK-003"
+      ],
+      "tool_refs": [
+        "TOOL-001",
+        "TOOL-002",
+        "TOOL-003"
+      ],
+      "knowledge_resource_refs": [
+        "KR-SCOPE",
+        "KR-PREFERENCES"
+      ],
+      "delegate_refs": [],
+      "collaborations": {},
+      "actions": {
+        "draft": {
+          "action": "Draft an impact explanation.",
+          "condition": "The user requests it and project material is readable.",
+          "result": "Show an editable draft awaiting human adoption."
+        }
+      },
+      "result_adoption": "The user reviews, edits and explicitly adopts it in the original explanation; no formal decision is written before adoption.",
+      "failure_handling": "Retain the source and draft, identify gaps and allow retry after they are supplied.",
+      "test_cases": {
+        "missing-attachment": {
+          "input": "A feedback attachment is inaccessible.",
+          "expected": "Identify the missing attachment, retain readable information and do not infer its content."
+        }
+      },
+      "notes": "Describes AI collaboration in a proposed product; no real Agent or model execution is claimed."
+    }
+  },
+  "skills": {
+    "SK-001": {
+      "id": "SK-001",
+      "name": "Evidence review",
+      "purpose": "Distinguish the customer’s words, team judgment and missing facts.",
+      "activation": "When a user requests help in the current feedback detail.",
+      "body": "# Evidence review\n\n1. Read authorized feedback and the delivery agreement for the current customer.\n2. Distinguish the customer’s words, team judgment and missing facts.\n3. Cite record IDs and source locations for each judgment.\n4. Retain inaccessible, conflicting and unknown information explicitly.\n5. Return a draft for a person to edit and adopt; do not make commitments or overwrite evidence.",
+      "resources": [
+        "business_rules/business_rules.json",
+        "function_modules/function_modules.json"
+      ],
+      "notes": "This is example method text in the product design; it has not been installed or executed."
+    },
+    "SK-002": {
+      "id": "SK-002",
+      "name": "Impact drafting",
+      "purpose": "Organize scope, cost and milestone impact into a draft people can edit.",
+      "activation": "When a user requests help in the current feedback detail.",
+      "body": "# Impact drafting\n\n1. Read authorized feedback and the delivery agreement for the current customer.\n2. Organize scope, cost and milestone impact into a draft people can edit.\n3. Cite record IDs and source locations for each judgment.\n4. Retain inaccessible, conflicting and unknown information explicitly.\n5. Return a draft for a person to edit and adopt; do not make commitments or overwrite evidence.",
+      "resources": [
+        "business_rules/business_rules.json",
+        "function_modules/function_modules.json"
+      ],
+      "notes": "This is example method text in the product design; it has not been installed or executed."
+    },
+    "SK-003": {
+      "id": "SK-003",
+      "name": "Pre-decision risk review",
+      "purpose": "Review additional commitments, missing authorization and unresolved dependencies.",
+      "activation": "When a user requests help in the current feedback detail.",
+      "body": "# Pre-decision risk review\n\n1. Read authorized feedback and the delivery agreement for the current customer.\n2. Review additional commitments, missing authorization and unresolved dependencies.\n3. Cite record IDs and source locations for each judgment.\n4. Retain inaccessible, conflicting and unknown information explicitly.\n5. Return a draft for a person to edit and adopt; do not make commitments or overwrite evidence.",
+      "resources": [
+        "business_rules/business_rules.json",
+        "function_modules/function_modules.json"
+      ],
+      "notes": "This is example method text in the product design; it has not been installed or executed."
+    }
+  },
+  "tools": {
+    "TOOL-001": {
+      "id": "TOOL-001",
+      "name": "Read current feedback",
+      "tool_kind": "function",
+      "purpose": "Read O-003, attachments and its delivery item.",
+      "scope": "Only customers and projects readable by the current member.",
+      "approval": "Use the application’s existing authorization and deny access without project membership.",
+      "failure": "Retain input and references, identify inaccessible material and do not invent a result.",
+      "interface": "read_feedback({ feedback_id, project_id })",
+      "notes": "An interface design example; not implemented or called."
+    },
+    "TOOL-002": {
+      "id": "TOOL-002",
+      "name": "Read saved scope",
+      "tool_kind": "function",
+      "purpose": "Read the original agreement and confirmed decisions for O-002.",
+      "scope": "Only customers and projects readable by the current member.",
+      "approval": "Use the application’s existing authorization and deny access without project membership.",
+      "failure": "Retain input and references, identify inaccessible material and do not invent a result.",
+      "interface": "read_scope({ feedback_id, project_id })",
+      "notes": "An interface design example; not implemented or called."
+    },
+    "TOOL-003": {
+      "id": "TOOL-003",
+      "name": "Preview an impact draft",
+      "tool_kind": "function",
+      "purpose": "Return an editable explanation without directly writing an O-005 decision.",
+      "scope": "Only customers and projects readable by the current member.",
+      "approval": "Use the application’s existing authorization and deny access without project membership.",
+      "failure": "Retain input and references, identify inaccessible material and do not invent a result.",
+      "interface": "preview_impact({ feedback_id, project_id })",
+      "notes": "An interface design example; not implemented or called."
+    }
+  },
+  "knowledge_resources": {
+    "KR-SCOPE": {
+      "id": "KR-SCOPE",
+      "name": "Project scope and decision material",
+      "kind": "knowledge_base",
+      "description": "The delivery agreement and saved decisions used to review commitment boundaries.",
+      "source_and_maintenance": "The lead maintains authorized material for the current project.",
+      "access_scope": "Filtered by customer and project membership."
+    },
+    "KR-PREFERENCES": {
+      "id": "KR-PREFERENCES",
+      "name": "Explicitly retained writing preferences",
+      "kind": "long_term_memory",
+      "description": "Retain only writing preferences explicitly requested by the user, never treating one suggestion as permanent policy.",
+      "formation_and_update": "Save after user confirmation; allow inspection, revision and deletion.",
+      "user_management": "Managed by the user in personal settings.",
+      "access_scope": "Only the current user; do not merge facts across customers."
+    }
+  },
+  "model_sources": {
+    "MODEL-APP": {
+      "id": "MODEL-APP",
+      "name": "Existing application model service",
+      "description": "Provided by the proposed application runtime; this example connects to no model.",
+      "model_connection": "runtime",
+      "notes": "No service address, credentials or availability claim."
+    }
+  }
+}

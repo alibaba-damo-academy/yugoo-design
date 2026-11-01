@@ -1,0 +1,89 @@
+{
+  "topic": "Customer feedback and delivery commitments",
+  "roles": [
+    {
+      "id": "Client",
+      "name": "Customer"
+    },
+    {
+      "id": "Designer",
+      "name": "Designer"
+    },
+    {
+      "id": "Lead",
+      "name": "Project lead"
+    },
+    {
+      "id": "System",
+      "name": "系统"
+    }
+  ],
+  "processes": {
+    "P-001": {
+      "process_id": "P-001",
+      "title": "Customer change and arrangement confirmation",
+      "description": "After customer feedback, a designer assesses scope. A lead confirms additional commitments and returned requests continue in the same record.",
+      "tier": "core",
+      "process_type": "approval",
+      "stakeholders": [
+        "Customer",
+        "Designer",
+        "Project lead",
+        "系统"
+      ],
+      "system_responsibilities": [
+        "Save original evidence, decisions and delivery results; distinguish their failures."
+      ],
+      "key_features": [
+        "Retain original input, make explicit decisions and recover from exceptions."
+      ],
+      "business_rules": [
+        "BR-003",
+        "BR-004",
+        "BR-006"
+      ],
+      "exception_handling": [
+        {
+          "scenario": "The notification service is unavailable.",
+          "handling": "Retain the decision and show failed delivery with a reviewed retry."
+        }
+      ],
+      "bpmn_file": "flow_design/P-001.bpmn",
+      "deleted": false
+    },
+    "P-002": {
+      "process_id": "P-002",
+      "title": "Notification failure review",
+      "description": "Deliver after a saved decision. On failure retain that decision and ask the lead to review before explicitly retrying the same delivery.",
+      "tier": "auxiliary",
+      "process_type": "linear",
+      "stakeholders": [
+        "系统",
+        "Project lead"
+      ],
+      "system_responsibilities": [
+        "Save original evidence, decisions and delivery results; distinguish their failures."
+      ],
+      "key_features": [
+        "Retain original input, make explicit decisions and recover from exceptions."
+      ],
+      "business_rules": [
+        "BR-003",
+        "BR-004",
+        "BR-006"
+      ],
+      "exception_handling": [
+        {
+          "scenario": "The notification service is unavailable.",
+          "handling": "Retain the decision and show failed delivery with a reviewed retry."
+        }
+      ],
+      "bpmn_file": "flow_design/P-002.bpmn",
+      "deleted": false
+    }
+  },
+  "process_order": [
+    "P-001",
+    "P-002"
+  ]
+}

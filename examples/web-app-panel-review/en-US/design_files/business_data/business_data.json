@@ -1,0 +1,837 @@
+{
+  "schema_version": 3,
+  "objects": {
+    "O-001": {
+      "id": "O-001",
+      "name": "Customer",
+      "description": "A customer space that isolates material and decisions.",
+      "fields": {
+        "id": {
+          "id": "id",
+          "name": "Record ID",
+          "meaning": "Identifies this customer in discussion, records and relationships; renaming does not change the reference.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "C-014"
+        },
+        "title": {
+          "id": "title",
+          "name": "Name",
+          "meaning": "A member-confirmed name or short summary for this customer in lists; it does not replace the stable reference.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "Morninglight"
+        },
+        "description": {
+          "id": "description",
+          "name": "Description",
+          "meaning": "Optional business context and open points for this customer, maintained by the responsible member for continued collaboration.",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "example": "Customer contacts and material boundaries; retention remains to be agreed."
+        },
+        "owner": {
+          "id": "owner",
+          "name": "Responsible member",
+          "meaning": "The member responsible for following up this customer, explicitly assigned within the project without granting other customer access.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "Project lead"
+        },
+        "created_at": {
+          "id": "created_at",
+          "name": "Created at",
+          "meaning": "The first saved time of this customer, recorded by the system for historical ordering rather than re-entered by the user.",
+          "value_type": "date_time",
+          "requirement": "always",
+          "example": "2026-11-02T09:00:00+08:00"
+        },
+        "contact": {
+          "id": "contact",
+          "name": "Contact",
+          "meaning": "A lead-confirmed customer contact for clarifying feedback; the email domain grants no permission.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "Customer representative"
+        },
+        "retention": {
+          "id": "retention",
+          "name": "Material retention agreement",
+          "meaning": "The lead agrees material retention with the customer; retain an explicit open note until agreed.",
+          "value_type": "long_text",
+          "requirement": "conditional",
+          "example": "To be agreed; no retention period is assumed.",
+          "required_when": "When the customer or studio needs a material-retention agreement."
+        }
+      },
+      "field_order": [
+        "id",
+        "title",
+        "description",
+        "owner",
+        "created_at",
+        "contact",
+        "retention"
+      ],
+      "states": {},
+      "state_order": []
+    },
+    "O-002": {
+      "id": "O-002",
+      "name": "Delivery item",
+      "description": "The agreed deliverable, milestones and scope.",
+      "fields": {
+        "id": {
+          "id": "id",
+          "name": "Record ID",
+          "meaning": "Identifies this delivery item in discussion, records and relationships; renaming does not change the reference.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "DL-042"
+        },
+        "title": {
+          "id": "title",
+          "name": "Name",
+          "meaning": "A member-confirmed name or short summary for this delivery item in lists; it does not replace the stable reference.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "First brand-site design delivery"
+        },
+        "description": {
+          "id": "description",
+          "name": "Description",
+          "meaning": "Optional business context and open points for this delivery item, maintained by the responsible member for continued collaboration.",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "example": "The agreement covers the main-page text and layout; another export layout needs a new assessment."
+        },
+        "owner": {
+          "id": "owner",
+          "name": "Responsible member",
+          "meaning": "The member responsible for following up this delivery item, explicitly assigned within the project without granting other customer access.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "Project lead"
+        },
+        "created_at": {
+          "id": "created_at",
+          "name": "Created at",
+          "meaning": "The first saved time of this delivery item, recorded by the system for historical ordering rather than re-entered by the user.",
+          "value_type": "date_time",
+          "requirement": "always",
+          "example": "2026-11-02T09:00:00+08:00"
+        },
+        "scope": {
+          "id": "scope",
+          "name": "Agreed scope",
+          "meaning": "The lead maintains the agreed boundary so designers can identify additional scope.",
+          "value_type": "long_text",
+          "requirement": "always",
+          "example": "Main-page text and layout; no additional export size or layout."
+        },
+        "milestone": {
+          "id": "milestone",
+          "name": "Committed milestone",
+          "meaning": "A customer-and-lead commitment; a request or AI draft cannot replace it.",
+          "value_type": "date",
+          "requirement": "always",
+          "example": "2026-11-06"
+        },
+        "customer": {
+          "id": "customer",
+          "name": "Customer ID",
+          "meaning": "The owning customer selected at creation, used to link delivery items and isolate feedback.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "C-014"
+        }
+      },
+      "field_order": [
+        "id",
+        "title",
+        "description",
+        "owner",
+        "created_at",
+        "scope",
+        "milestone",
+        "customer"
+      ],
+      "states": {},
+      "state_order": []
+    },
+    "O-003": {
+      "id": "O-003",
+      "name": "Customer feedback",
+      "description": "Original words, source, attachments and current handling status.",
+      "fields": {
+        "id": {
+          "id": "id",
+          "name": "Record ID",
+          "meaning": "Identifies this customer feedback in discussion, records and relationships; renaming does not change the reference.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "FB-042"
+        },
+        "title": {
+          "id": "title",
+          "name": "Name",
+          "meaning": "A member-confirmed name or short summary for this customer feedback in lists; it does not replace the stable reference.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "Add another export layout"
+        },
+        "description": {
+          "id": "description",
+          "name": "Description",
+          "meaning": "Optional business context and open points for this customer feedback, maintained by the responsible member for continued collaboration.",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "example": "The customer requests another export layout before Friday delivery; retain the words separately from the assessment."
+        },
+        "owner": {
+          "id": "owner",
+          "name": "Responsible member",
+          "meaning": "The member responsible for following up this customer feedback, explicitly assigned within the project without granting other customer access.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "Current project designer"
+        },
+        "created_at": {
+          "id": "created_at",
+          "name": "Created at",
+          "meaning": "The first saved time of this customer feedback, recorded by the system for historical ordering rather than re-entered by the user.",
+          "value_type": "date_time",
+          "requirement": "always",
+          "example": "2026-11-02T09:00:00+08:00"
+        },
+        "customer": {
+          "id": "customer",
+          "name": "Customer ID",
+          "meaning": "The owning customer selected at creation, used to link delivery items and isolate feedback.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "C-014"
+        },
+        "delivery": {
+          "id": "delivery",
+          "name": "Delivery item ID",
+          "meaning": "The agreed item addressed by the feedback, checked by the designer; request information if unresolved.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "DL-042"
+        },
+        "original_words": {
+          "id": "original_words",
+          "name": "Customer’s words",
+          "meaning": "Words supplied by the customer, retained with their source rather than overwritten by an assessment.",
+          "value_type": "long_text",
+          "requirement": "always",
+          "example": "Could we add another export layout before Friday?"
+        },
+        "attachments": {
+          "id": "attachments",
+          "name": "Original attachments",
+          "meaning": "Material attached by the customer or designer; retain unreadable references and ask for a replacement.",
+          "value_type": "file",
+          "requirement": "optional",
+          "example": "The synthetic feedback brief attached to Q-002."
+        },
+        "source": {
+          "id": "source",
+          "name": "Feedback source",
+          "meaning": "The designer confirms the channel so people can return to the original email, chat or review note.",
+          "value_type": "single_choice",
+          "requirement": "always",
+          "example": "Email",
+          "options": [
+            "Email",
+            "Review meeting",
+            "Chat"
+          ]
+        },
+        "expected_change": {
+          "id": "expected_change",
+          "name": "Desired change",
+          "meaning": "The change requested by the customer and clarified by the designer, separate from the quote and agreed scope.",
+          "value_type": "long_text",
+          "requirement": "always",
+          "example": "Add another export size and layout; the second reference attachment and cost evidence remain to be supplied."
+        },
+        "expected_date": {
+          "id": "expected_date",
+          "name": "Requested date",
+          "meaning": "A date requested by the customer for assessment, not a lead commitment.",
+          "value_type": "date",
+          "requirement": "optional",
+          "example": "2026-11-06"
+        },
+        "needs_lead": {
+          "id": "needs_lead",
+          "name": "Needs lead confirmation",
+          "meaning": "The designer uses scope, cost and milestone impact to route the request under BR-002/003.",
+          "value_type": "yes_no",
+          "requirement": "always",
+          "example": "Yes: another export layout exceeds the agreement."
+        },
+        "return_reason": {
+          "id": "return_reason",
+          "name": "Return reason",
+          "meaning": "On return, the lead identifies missing information so the designer can continue in the same feedback.",
+          "value_type": "long_text",
+          "requirement": "conditional",
+          "example": "Please supply the second reference attachment and cost estimate.",
+          "required_when": "When the lead returns the feedback for more information."
+        }
+      },
+      "field_order": [
+        "id",
+        "title",
+        "description",
+        "owner",
+        "created_at",
+        "customer",
+        "delivery",
+        "original_words",
+        "attachments",
+        "source",
+        "expected_change",
+        "expected_date",
+        "needs_lead",
+        "return_reason"
+      ],
+      "states": {
+        "draft": {
+          "id": "draft",
+          "name": "Needs information",
+          "meaning": "The delivery item or desired change is missing; continue in the same feedback."
+        },
+        "review": {
+          "id": "review",
+          "name": "Awaiting lead",
+          "meaning": "The designer submitted an assessment and awaits the authorized lead’s decision."
+        },
+        "confirmed": {
+          "id": "confirmed",
+          "name": "Confirmed",
+          "meaning": "The relevant business decision is saved; delivery and AI drafts do not imply it."
+        },
+        "deferred": {
+          "id": "deferred",
+          "name": "Deferred",
+          "meaning": "The lead saved a deferral with a follow-up condition and no new date."
+        }
+      },
+      "state_order": [
+        "draft",
+        "review",
+        "confirmed",
+        "deferred"
+      ]
+    },
+    "O-004": {
+      "id": "O-004",
+      "name": "Impact assessment",
+      "description": "The designer’s evidence about scope, cost and schedule impact.",
+      "fields": {
+        "id": {
+          "id": "id",
+          "name": "Record ID",
+          "meaning": "Identifies this impact assessment in discussion, records and relationships; renaming does not change the reference.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "IA-042"
+        },
+        "title": {
+          "id": "title",
+          "name": "Name",
+          "meaning": "A member-confirmed name or short summary for this impact assessment in lists; it does not replace the stable reference.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "Scope and milestone impact of another export layout"
+        },
+        "description": {
+          "id": "description",
+          "name": "Description",
+          "meaning": "Optional business context and open points for this impact assessment, maintained by the responsible member for continued collaboration.",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "example": "Another export size needs design, layout checks and customer confirmation and cannot be assumed to be a small change without schedule impact."
+        },
+        "owner": {
+          "id": "owner",
+          "name": "Responsible member",
+          "meaning": "The member responsible for following up this impact assessment, explicitly assigned within the project without granting other customer access.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "Current project designer"
+        },
+        "created_at": {
+          "id": "created_at",
+          "name": "Created at",
+          "meaning": "The first saved time of this impact assessment, recorded by the system for historical ordering rather than re-entered by the user.",
+          "value_type": "date_time",
+          "requirement": "always",
+          "example": "2026-11-02T09:00:00+08:00"
+        },
+        "scope_change": {
+          "id": "scope_change",
+          "name": "Scope change",
+          "meaning": "The designer compares the agreement and request, showing both additions and unchanged scope to the lead.",
+          "value_type": "long_text",
+          "requirement": "always",
+          "example": "Add another export layout; the agreed main-page text and layout remain unchanged."
+        },
+        "schedule_impact": {
+          "id": "schedule_impact",
+          "name": "Milestone impact",
+          "meaning": "The designer explains milestone impact and gaps so the lead can decide.",
+          "value_type": "long_text",
+          "requirement": "always",
+          "example": "Assess after receiving the attachment and cost evidence; the original Friday commitment is not yet confirmed for the addition."
+        },
+        "missing": {
+          "id": "missing",
+          "name": "Missing evidence",
+          "meaning": "Name material missing from this assessment rather than treating unknown effort as fact.",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "example": "The second reference attachment and cost estimate for the additional layout."
+        }
+      },
+      "field_order": [
+        "id",
+        "title",
+        "description",
+        "owner",
+        "created_at",
+        "scope_change",
+        "schedule_impact",
+        "missing"
+      ],
+      "states": {},
+      "state_order": []
+    },
+    "O-005": {
+      "id": "O-005",
+      "name": "Lead decision",
+      "description": "An explicit acceptance, decline, return or deferral.",
+      "fields": {
+        "id": {
+          "id": "id",
+          "name": "Record ID",
+          "meaning": "Identifies this lead decision in discussion, records and relationships; renaming does not change the reference.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "DEC-042"
+        },
+        "title": {
+          "id": "title",
+          "name": "Name",
+          "meaning": "A member-confirmed name or short summary for this lead decision in lists; it does not replace the stable reference.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "Decision to defer the additional export layout"
+        },
+        "description": {
+          "id": "description",
+          "name": "Description",
+          "meaning": "Optional business context and open points for this lead decision, maintained by the responsible member for continued collaboration.",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "example": "Wait for the second reference attachment and cost estimate, then ask the lead to review effort and scheduling."
+        },
+        "owner": {
+          "id": "owner",
+          "name": "Responsible member",
+          "meaning": "The member responsible for following up this lead decision, explicitly assigned within the project without granting other customer access.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "A lead explicitly granted R-LEAD"
+        },
+        "created_at": {
+          "id": "created_at",
+          "name": "Created at",
+          "meaning": "The first saved time of this lead decision, recorded by the system for historical ordering rather than re-entered by the user.",
+          "value_type": "date_time",
+          "requirement": "always",
+          "example": "2026-11-02T09:00:00+08:00"
+        },
+        "outcome": {
+          "id": "outcome",
+          "name": "Decision",
+          "meaning": "The lead explicitly confirms, declines, returns or defers; it becomes a decision only after saving.",
+          "value_type": "single_choice",
+          "requirement": "always",
+          "example": "Defer",
+          "options": [
+            "Pending",
+            "Confirmed",
+            "Deferred"
+          ]
+        },
+        "agreed_date": {
+          "id": "agreed_date",
+          "name": "Agreed date",
+          "meaning": "A new date agreed with the customer when a lead confirms an addition; do not invent one for deferral.",
+          "value_type": "date",
+          "requirement": "conditional",
+          "example": "Set after confirmation; this deferral has no new date.",
+          "required_when": "When the lead confirms added scope with a new milestone commitment."
+        },
+        "reason": {
+          "id": "reason",
+          "name": "Decision basis",
+          "meaning": "The lead explains the business basis so the customer and designer can understand and continue.",
+          "value_type": "long_text",
+          "requirement": "always",
+          "example": "Reference material and cost evidence are incomplete, so effort and schedule impact cannot yet be assessed."
+        },
+        "follow_up": {
+          "id": "follow_up",
+          "name": "Follow-up condition",
+          "meaning": "For a return or deferral, explain when to reassess without creating a separate request.",
+          "value_type": "long_text",
+          "requirement": "conditional",
+          "example": "Reassess in FB-042 after the attachment and cost evidence are supplied.",
+          "required_when": "When the decision returns or defers the request."
+        }
+      },
+      "field_order": [
+        "id",
+        "title",
+        "description",
+        "owner",
+        "created_at",
+        "outcome",
+        "agreed_date",
+        "reason",
+        "follow_up"
+      ],
+      "states": {
+        "confirmed": {
+          "id": "confirmed",
+          "name": "Confirmed",
+          "meaning": "The lead saved an acceptance and its conditions."
+        },
+        "declined": {
+          "id": "declined",
+          "name": "Declined",
+          "meaning": "The lead saved a decline and its basis."
+        },
+        "returned": {
+          "id": "returned",
+          "name": "Returned for information",
+          "meaning": "The lead identified a gap; the designer continues in the original feedback."
+        },
+        "deferred": {
+          "id": "deferred",
+          "name": "Deferred",
+          "meaning": "Reassess when a stated condition is met, without inventing a commitment date."
+        }
+      },
+      "state_order": [
+        "confirmed",
+        "declined",
+        "returned",
+        "deferred"
+      ]
+    },
+    "O-006": {
+      "id": "O-006",
+      "name": "Notification delivery",
+      "description": "A delivery outcome for a decision and a specific recipient.",
+      "fields": {
+        "id": {
+          "id": "id",
+          "name": "Record ID",
+          "meaning": "Identifies this notification delivery in discussion, records and relationships; renaming does not change the reference.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "ND-042"
+        },
+        "title": {
+          "id": "title",
+          "name": "Name",
+          "meaning": "A member-confirmed name or short summary for this notification delivery in lists; it does not replace the stable reference.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "Customer notification of the deferral"
+        },
+        "description": {
+          "id": "description",
+          "name": "Description",
+          "meaning": "Optional business context and open points for this notification delivery, maintained by the responsible member for continued collaboration.",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "example": "The decision is saved, but the mail service returned no definite receipt; review it before retrying."
+        },
+        "owner": {
+          "id": "owner",
+          "name": "Responsible member",
+          "meaning": "The member responsible for following up this notification delivery, explicitly assigned within the project without granting other customer access.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "The lead reviewing delivery"
+        },
+        "created_at": {
+          "id": "created_at",
+          "name": "Created at",
+          "meaning": "The first saved time of this notification delivery, recorded by the system for historical ordering rather than re-entered by the user.",
+          "value_type": "date_time",
+          "requirement": "always",
+          "example": "2026-11-02T09:00:00+08:00"
+        },
+        "recipient": {
+          "id": "recipient",
+          "name": "Recipient",
+          "meaning": "The specific person to inform; track that recipient’s delivery outcome separately.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "The authorized customer representative for C-014"
+        },
+        "channel": {
+          "id": "channel",
+          "name": "Channel",
+          "meaning": "The delivery channel, used by the lead to assess a failure and choose recovery.",
+          "value_type": "single_choice",
+          "requirement": "always",
+          "example": "Email",
+          "options": [
+            "Pending",
+            "Confirmed",
+            "Deferred"
+          ]
+        },
+        "delivery_key": {
+          "id": "delivery_key",
+          "name": "Delivery deduplication key",
+          "meaning": "A system-generated identity for a decision and recipient, used for review and deduplication rather than manual entry.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "DEC-042 / C-014 customer representative / email"
+        },
+        "attempts": {
+          "id": "attempts",
+          "name": "Retry count",
+          "meaning": "The system records actual attempts for review; this does not define an agreed retry limit.",
+          "value_type": "number",
+          "requirement": "always",
+          "example": "1"
+        },
+        "failure": {
+          "id": "failure",
+          "name": "Failure explanation",
+          "meaning": "Record the specific failure or unknown receipt to guide recovery without cancelling the decision.",
+          "value_type": "long_text",
+          "requirement": "conditional",
+          "example": "The receipt is unclear; check the same delivery record first.",
+          "required_when": "When delivery fails or the receipt cannot be confirmed."
+        }
+      },
+      "field_order": [
+        "id",
+        "title",
+        "description",
+        "owner",
+        "created_at",
+        "recipient",
+        "channel",
+        "delivery_key",
+        "attempts",
+        "failure"
+      ],
+      "states": {
+        "pending": {
+          "id": "pending",
+          "name": "Pending",
+          "meaning": "The decision is saved, but no definite delivery result is available."
+        },
+        "delivered": {
+          "id": "delivered",
+          "name": "Delivered",
+          "meaning": "A definite receipt is available for this recipient; do not resend the same record."
+        },
+        "failed": {
+          "id": "failed",
+          "name": "Failed, needs review",
+          "meaning": "Review the failure or unknown receipt, retaining the decision and delivery identity."
+        }
+      },
+      "state_order": [
+        "pending",
+        "delivered",
+        "failed"
+      ]
+    },
+    "O-007": {
+      "id": "O-007",
+      "name": "Project member",
+      "description": "Membership, project scope and explicitly assigned roles.",
+      "fields": {
+        "id": {
+          "id": "id",
+          "name": "Record ID",
+          "meaning": "Identifies this project member in discussion, records and relationships; renaming does not change the reference.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "MEM-006"
+        },
+        "title": {
+          "id": "title",
+          "name": "Name",
+          "meaning": "A member-confirmed name or short summary for this project member in lists; it does not replace the stable reference.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "Zhou Ning"
+        },
+        "description": {
+          "id": "description",
+          "name": "Description",
+          "meaning": "Optional business context and open points for this project member, maintained by the responsible member for continued collaboration.",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "example": "A synthetic studio member with lead duties only in the explicitly granted project."
+        },
+        "created_at": {
+          "id": "created_at",
+          "name": "Created at",
+          "meaning": "The first saved time of this project member, recorded by the system for historical ordering rather than re-entered by the user.",
+          "value_type": "date_time",
+          "requirement": "always",
+          "example": "2026-11-02T09:00:00+08:00"
+        },
+        "project": {
+          "id": "project",
+          "name": "Project ID",
+          "meaning": "The project explicitly granted by an administrator; studio membership does not grant other projects.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "PRJ-014"
+        },
+        "role": {
+          "id": "role",
+          "name": "Assigned role",
+          "meaning": "An explicitly assigned business role used by access policies, never guessed by AI.",
+          "value_type": "single_choice",
+          "requirement": "always",
+          "example": "Project lead",
+          "options": [
+            "Pending",
+            "Confirmed",
+            "Deferred"
+          ]
+        },
+        "granted_by": {
+          "id": "granted_by",
+          "name": "Granted by",
+          "meaning": "Who granted membership, used to review its source rather than identify the member or business decision maker.",
+          "value_type": "text",
+          "requirement": "always",
+          "example": "Membership administrator"
+        }
+      },
+      "field_order": [
+        "id",
+        "title",
+        "description",
+        "created_at",
+        "project",
+        "role",
+        "granted_by"
+      ],
+      "states": {},
+      "state_order": []
+    }
+  },
+  "object_order": [
+    "O-001",
+    "O-002",
+    "O-003",
+    "O-004",
+    "O-005",
+    "O-006",
+    "O-007"
+  ],
+  "relations": {
+    "REL-001": {
+      "id": "REL-001",
+      "kind": "association",
+      "name": "Agrees delivery",
+      "source": "O-001",
+      "target": "O-002",
+      "source_count": "1",
+      "target_count": "0..*",
+      "description": "Link stable identities; review deleted or invalid references explicitly rather than silently inferring ownership."
+    },
+    "REL-002": {
+      "id": "REL-002",
+      "kind": "association",
+      "name": "Submits feedback",
+      "source": "O-001",
+      "target": "O-003",
+      "source_count": "1",
+      "target_count": "0..*",
+      "description": "Link stable identities; review deleted or invalid references explicitly rather than silently inferring ownership."
+    },
+    "REL-003": {
+      "id": "REL-003",
+      "kind": "association",
+      "name": "Receives related feedback",
+      "source": "O-002",
+      "target": "O-003",
+      "source_count": "1",
+      "target_count": "0..*",
+      "description": "Link stable identities; review deleted or invalid references explicitly rather than silently inferring ownership."
+    },
+    "REL-004": {
+      "id": "REL-004",
+      "kind": "association",
+      "name": "Has impact assessments",
+      "source": "O-003",
+      "target": "O-004",
+      "source_count": "1",
+      "target_count": "0..*",
+      "description": "Link stable identities; review deleted or invalid references explicitly rather than silently inferring ownership."
+    },
+    "REL-005": {
+      "id": "REL-005",
+      "kind": "association",
+      "name": "Supports a lead decision",
+      "source": "O-004",
+      "target": "O-005",
+      "source_count": "1",
+      "target_count": "0..*",
+      "description": "Link stable identities; review deleted or invalid references explicitly rather than silently inferring ownership."
+    },
+    "REL-006": {
+      "id": "REL-006",
+      "kind": "association",
+      "name": "Produces delivery records",
+      "source": "O-005",
+      "target": "O-006",
+      "source_count": "1",
+      "target_count": "0..*",
+      "description": "Link stable identities; review deleted or invalid references explicitly rather than silently inferring ownership."
+    },
+    "REL-007": {
+      "id": "REL-007",
+      "kind": "association",
+      "name": "Maintains assessment evidence",
+      "source": "O-007",
+      "target": "O-004",
+      "source_count": "1",
+      "target_count": "0..*",
+      "description": "Link stable identities; review deleted or invalid references explicitly rather than silently inferring ownership."
+    },
+    "REL-008": {
+      "id": "REL-008",
+      "kind": "association",
+      "name": "Makes explicit decisions",
+      "source": "O-007",
+      "target": "O-005",
+      "source_count": "1",
+      "target_count": "0..*",
+      "description": "Link stable identities; review deleted or invalid references explicitly rather than silently inferring ownership."
+    }
+  }
+}

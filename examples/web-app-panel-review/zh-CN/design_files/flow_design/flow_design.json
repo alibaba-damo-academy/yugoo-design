@@ -1,0 +1,89 @@
+{
+  "topic": "客户反馈与交付承诺",
+  "roles": [
+    {
+      "id": "Client",
+      "name": "客户"
+    },
+    {
+      "id": "Designer",
+      "name": "设计师"
+    },
+    {
+      "id": "Lead",
+      "name": "项目负责人"
+    },
+    {
+      "id": "System",
+      "name": "系统"
+    }
+  ],
+  "processes": {
+    "P-001": {
+      "process_id": "P-001",
+      "title": "客户修改与安排确认",
+      "description": "客户提出修改后，设计师核对范围；新增承诺交负责人确认，退回后沿同一反馈补充。",
+      "tier": "core",
+      "process_type": "approval",
+      "stakeholders": [
+        "客户",
+        "设计师",
+        "项目负责人",
+        "系统"
+      ],
+      "system_responsibilities": [
+        "保存原始依据、决定与投递结果；分别反馈失败。"
+      ],
+      "key_features": [
+        "保留原输入，显式决定，异常可恢复。"
+      ],
+      "business_rules": [
+        "BR-003",
+        "BR-004",
+        "BR-006"
+      ],
+      "exception_handling": [
+        {
+          "scenario": "通知服务不可用。",
+          "handling": "保留决定，显示投递失败并核对后重试。"
+        }
+      ],
+      "bpmn_file": "flow_design/P-001.bpmn",
+      "deleted": false
+    },
+    "P-002": {
+      "process_id": "P-002",
+      "title": "通知失败核对",
+      "description": "决定保存后投递；失败时保留业务决定，由负责人核对后明确选择重试同一投递。",
+      "tier": "auxiliary",
+      "process_type": "linear",
+      "stakeholders": [
+        "系统",
+        "项目负责人"
+      ],
+      "system_responsibilities": [
+        "保存原始依据、决定与投递结果；分别反馈失败。"
+      ],
+      "key_features": [
+        "保留原输入，显式决定，异常可恢复。"
+      ],
+      "business_rules": [
+        "BR-003",
+        "BR-004",
+        "BR-006"
+      ],
+      "exception_handling": [
+        {
+          "scenario": "通知服务不可用。",
+          "handling": "保留决定，显示投递失败并核对后重试。"
+        }
+      ],
+      "bpmn_file": "flow_design/P-002.bpmn",
+      "deleted": false
+    }
+  },
+  "process_order": [
+    "P-001",
+    "P-002"
+  ]
+}

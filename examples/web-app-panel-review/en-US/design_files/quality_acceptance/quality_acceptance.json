@@ -1,0 +1,97 @@
+{
+  "schema_version": 4,
+  "requirements": {
+    "AC-001": {
+      "id": "AC-001",
+      "title": "Request missing information first",
+      "group": "Exceptions and recovery",
+      "condition": "The feedback cannot be linked to a delivery item or does not describe the desired change.",
+      "pass_criteria": "Retain feedback and attachments, identify a concrete gap, and do not infer effort.",
+      "verification": "Inspect the page and saved result for BR-001 and compare records before and after the action. This is a synthetic acceptance criterion, not an executed test result."
+    },
+    "AC-002": {
+      "id": "AC-002",
+      "title": "Keep evidence for small changes",
+      "group": "Business decisions",
+      "condition": "The change adds no scope and changes no delivery milestone, and the designer has recorded the basis.",
+      "pass_criteria": "The designer may handle it directly, retaining the assessment and outcome for the lead.",
+      "verification": "Inspect the page and saved result for BR-002 and compare records before and after the action. This is a synthetic acceptance criterion, not an executed test result."
+    },
+    "AC-003": {
+      "id": "AC-003",
+      "title": "A lead confirms new commitments",
+      "group": "Business decisions",
+      "condition": "The request adds scope or cost, or affects a delivery milestone.",
+      "pass_criteria": "Request lead confirmation; do not communicate a committed date until an explicit decision is saved.",
+      "verification": "Inspect the page and saved result for BR-003 and compare records before and after the action. This is a synthetic acceptance criterion, not an executed test result."
+    },
+    "AC-004": {
+      "id": "AC-004",
+      "title": "Return is different from decline",
+      "group": "Exceptions and recovery",
+      "condition": "The lead needs more evidence before deciding.",
+      "pass_criteria": "Retain the request, explain what is missing, and allow revision and resubmission.",
+      "verification": "Inspect the page and saved result for BR-004 and compare records before and after the action. This is a synthetic acceptance criterion, not an executed test result."
+    },
+    "AC-005": {
+      "id": "AC-005",
+      "title": "Explain what a deferral awaits",
+      "group": "Business decisions",
+      "condition": "The lead chooses to defer the request.",
+      "pass_criteria": "State the outstanding business decision and follow-up condition; do not present a deferral as a decline.",
+      "verification": "Inspect the page and saved result for BR-005 and compare records before and after the action. This is a synthetic acceptance criterion, not an executed test result."
+    },
+    "AC-006": {
+      "id": "AC-006",
+      "title": "Separate saving from delivery",
+      "group": "Exceptions and recovery",
+      "condition": "A decision is saved but the external notification service has not confirmed delivery.",
+      "pass_criteria": "Keep the decision valid, show failed delivery and allow retry without duplicating the decision.",
+      "verification": "Inspect the page and saved result for BR-006 and compare records before and after the action. This is a synthetic acceptance criterion, not an executed test result."
+    },
+    "AC-007": {
+      "id": "AC-007",
+      "title": "Explicitly adopt an AI draft",
+      "group": "Business decisions",
+      "condition": "The assistant returns an impact explanation that has not been adopted.",
+      "pass_criteria": "Show an editable draft only; do not overwrite human explanations or change the decision status.",
+      "verification": "Inspect the page and saved result for BR-007 and compare records before and after the action. This is a synthetic acceptance criterion, not an executed test result."
+    },
+    "AC-008": {
+      "id": "AC-008",
+      "title": "Review concurrent updates",
+      "group": "Exceptions and recovery",
+      "condition": "Another member saves a newer version of the same decision during review.",
+      "pass_criteria": "Retain current input, show the conflict and latest content, and allow retry after review.",
+      "verification": "Inspect the page and saved result for BR-008 and compare records before and after the action. This is a synthetic acceptance criterion, not an executed test result."
+    },
+    "AC-009": {
+      "id": "AC-009",
+      "title": "Keep submission reachable on narrow screens",
+      "group": "Usability and authorization",
+      "condition": "Enter a long explanation in a narrow window.",
+      "pass_criteria": "The explanation scrolls, actions do not cover text, and cancellation has a clear return path.",
+      "verification": "A manual check for the implemented product; not yet executed."
+    },
+    "AC-010": {
+      "id": "AC-010",
+      "title": "Do not leak another customer’s material",
+      "group": "Usability and authorization",
+      "condition": "The user requests another customer’s attachment.",
+      "pass_criteria": "Deny access without displaying the content and retain the current request context.",
+      "verification": "A manual check for the implemented product; not yet executed."
+    }
+  },
+  "requirement_order": [
+    "AC-001",
+    "AC-002",
+    "AC-003",
+    "AC-004",
+    "AC-005",
+    "AC-006",
+    "AC-007",
+    "AC-008",
+    "AC-009",
+    "AC-010"
+  ]
+}

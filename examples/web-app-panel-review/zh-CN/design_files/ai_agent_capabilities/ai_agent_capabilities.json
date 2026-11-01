@@ -1,0 +1,236 @@
+{
+  "schema_version": 1,
+  "agents": {
+    "A-001": {
+      "id": "A-001",
+      "name": "反馈整理助手",
+      "description": "帮助工作室对照原始反馈和交付约定整理判断依据。",
+      "result": "带记录引用的可编辑草稿，不是已确认承诺。",
+      "boundary": "不改变客户资料、费用、交付日期或负责人决定。",
+      "function_refs": [
+        "F-001",
+        "F-002",
+        "F-007"
+      ],
+      "entries": {
+        "detail-action": {
+          "name": "整理这条反馈",
+          "trigger": "action",
+          "location": "PG-002 反馈详情的协助入口。",
+          "auto_context": "当前 FB-042、O-002 范围和授权附件。",
+          "input_modes": [
+            "text",
+            "files"
+          ],
+          "feedback": "显示读取范围、可编辑草稿和不可读项，原说明继续保留。"
+        }
+      },
+      "system_prompt": "先确认用户当前问题，再读取授权资料。区分证据、解释与未知；引用稳定记录 ID。提出范围变化时写明未变内容和影响，不替负责人承诺。遇到不可读附件、并发变化或越权请求，保留上下文并说明恢复方式。",
+      "context": "当前客户和项目的已保存反馈、范围、规则与决定。",
+      "model_access": "inherit",
+      "model_source_ref": "MODEL-APP",
+      "model_connection": "runtime",
+      "skill_refs": [
+        "SK-001",
+        "SK-002"
+      ],
+      "tool_refs": [
+        "TOOL-001",
+        "TOOL-002",
+        "TOOL-003"
+      ],
+      "knowledge_resource_refs": [
+        "KR-SCOPE",
+        "KR-PREFERENCES"
+      ],
+      "delegate_refs": [
+        "A-002"
+      ],
+      "collaborations": {
+        "review": {
+          "agent_ref": "A-002",
+          "condition": "用户请求核对范围变化。",
+          "handoff": "交付当前草稿、来源 ID 与尚缺事实，不交密钥。",
+          "result": "风险说明返回同一草稿，负责人继续作决定。"
+        }
+      },
+      "actions": {
+        "draft": {
+          "action": "整理影响说明草稿。",
+          "condition": "用户请求，且本项目资料可读取。",
+          "result": "显示可编辑草稿，等待人工采用。"
+        }
+      },
+      "result_adoption": "用户在原说明中核对、修改并明确采用；采用前不写正式决定。",
+      "failure_handling": "保留原文与草稿，指出缺项并允许补充后重试。",
+      "test_cases": {
+        "missing-attachment": {
+          "input": "反馈附件不可读。",
+          "expected": "指出缺少附件，保留已读信息，不推测附件内容。"
+        }
+      },
+      "notes": "描述待实现产品中的 AI 协作，不表示真实 Agent/模型已经执行。"
+    },
+    "A-002": {
+      "id": "A-002",
+      "name": "交付风险核对助手",
+      "description": "帮助工作室对照原始反馈和交付约定整理判断依据。",
+      "result": "带记录引用的可编辑草稿，不是已确认承诺。",
+      "boundary": "不改变客户资料、费用、交付日期或负责人决定。",
+      "function_refs": [
+        "F-004",
+        "F-006"
+      ],
+      "entries": {
+        "detail-action": {
+          "name": "整理这条反馈",
+          "trigger": "action",
+          "location": "PG-002 反馈详情的协助入口。",
+          "auto_context": "当前 FB-042、O-002 范围和授权附件。",
+          "input_modes": [
+            "text",
+            "files"
+          ],
+          "feedback": "显示读取范围、可编辑草稿和不可读项，原说明继续保留。"
+        }
+      },
+      "system_prompt": "先确认用户当前问题，再读取授权资料。区分证据、解释与未知；引用稳定记录 ID。提出范围变化时写明未变内容和影响，不替负责人承诺。遇到不可读附件、并发变化或越权请求，保留上下文并说明恢复方式。",
+      "context": "当前客户和项目的已保存反馈、范围、规则与决定。",
+      "model_access": "inherit",
+      "model_source_ref": "MODEL-APP",
+      "model_connection": "runtime",
+      "skill_refs": [
+        "SK-001",
+        "SK-003"
+      ],
+      "tool_refs": [
+        "TOOL-001",
+        "TOOL-002",
+        "TOOL-003"
+      ],
+      "knowledge_resource_refs": [
+        "KR-SCOPE",
+        "KR-PREFERENCES"
+      ],
+      "delegate_refs": [],
+      "collaborations": {},
+      "actions": {
+        "draft": {
+          "action": "整理影响说明草稿。",
+          "condition": "用户请求，且本项目资料可读取。",
+          "result": "显示可编辑草稿，等待人工采用。"
+        }
+      },
+      "result_adoption": "用户在原说明中核对、修改并明确采用；采用前不写正式决定。",
+      "failure_handling": "保留原文与草稿，指出缺项并允许补充后重试。",
+      "test_cases": {
+        "missing-attachment": {
+          "input": "反馈附件不可读。",
+          "expected": "指出缺少附件，保留已读信息，不推测附件内容。"
+        }
+      },
+      "notes": "描述待实现产品中的 AI 协作，不表示真实 Agent/模型已经执行。"
+    }
+  },
+  "skills": {
+    "SK-001": {
+      "id": "SK-001",
+      "name": "原始依据核对",
+      "purpose": "区分客户原话、团队判断与尚缺事实。",
+      "activation": "用户在当前反馈详情主动请求协助时。",
+      "body": "# 原始依据核对\n\n1. 读取当前客户授权的反馈和交付约定。\n2. 区分客户原话、团队判断与尚缺事实。\n3. 对每个判断给出记录 ID 与原文定位。\n4. 不可读、冲突和未知保留为待确认说明。\n5. 返回草稿，由用户修改后明确采用；不替负责人承诺，不覆盖原文。",
+      "resources": [
+        "business_rules/business_rules.json",
+        "function_modules/function_modules.json"
+      ],
+      "notes": "这是产品设计中的示例方法正文，未安装或执行。"
+    },
+    "SK-002": {
+      "id": "SK-002",
+      "name": "影响说明起草",
+      "purpose": "把范围、成本和节点影响整理为人工可改的草稿。",
+      "activation": "用户在当前反馈详情主动请求协助时。",
+      "body": "# 影响说明起草\n\n1. 读取当前客户授权的反馈和交付约定。\n2. 把范围、成本和节点影响整理为人工可改的草稿。\n3. 对每个判断给出记录 ID 与原文定位。\n4. 不可读、冲突和未知保留为待确认说明。\n5. 返回草稿，由用户修改后明确采用；不替负责人承诺，不覆盖原文。",
+      "resources": [
+        "business_rules/business_rules.json",
+        "function_modules/function_modules.json"
+      ],
+      "notes": "这是产品设计中的示例方法正文，未安装或执行。"
+    },
+    "SK-003": {
+      "id": "SK-003",
+      "name": "决定前风险核对",
+      "purpose": "检查新增承诺、缺少授权和未解决的依赖。",
+      "activation": "用户在当前反馈详情主动请求协助时。",
+      "body": "# 决定前风险核对\n\n1. 读取当前客户授权的反馈和交付约定。\n2. 检查新增承诺、缺少授权和未解决的依赖。\n3. 对每个判断给出记录 ID 与原文定位。\n4. 不可读、冲突和未知保留为待确认说明。\n5. 返回草稿，由用户修改后明确采用；不替负责人承诺，不覆盖原文。",
+      "resources": [
+        "business_rules/business_rules.json",
+        "function_modules/function_modules.json"
+      ],
+      "notes": "这是产品设计中的示例方法正文，未安装或执行。"
+    }
+  },
+  "tools": {
+    "TOOL-001": {
+      "id": "TOOL-001",
+      "name": "读取当前反馈",
+      "tool_kind": "function",
+      "purpose": "读取 O-003、附件和对应交付项。",
+      "scope": "仅当前成员有权读取的客户与项目。",
+      "approval": "沿应用现有授权；没有项目成员身份时拒绝。",
+      "failure": "保留输入与引用，报告具体不可读项，不生成猜测结果。",
+      "interface": "read_feedback({ feedback_id, project_id })",
+      "notes": "接口意图示例，尚未实现或调用。"
+    },
+    "TOOL-002": {
+      "id": "TOOL-002",
+      "name": "读取已保存范围",
+      "tool_kind": "function",
+      "purpose": "读取 O-002 的原约定与已确认决定。",
+      "scope": "仅当前成员有权读取的客户与项目。",
+      "approval": "沿应用现有授权；没有项目成员身份时拒绝。",
+      "failure": "保留输入与引用，报告具体不可读项，不生成猜测结果。",
+      "interface": "read_scope({ feedback_id, project_id })",
+      "notes": "接口意图示例，尚未实现或调用。"
+    },
+    "TOOL-003": {
+      "id": "TOOL-003",
+      "name": "预览影响草稿",
+      "tool_kind": "function",
+      "purpose": "返回可编辑说明，不直接写 O-005 决定。",
+      "scope": "仅当前成员有权读取的客户与项目。",
+      "approval": "沿应用现有授权；没有项目成员身份时拒绝。",
+      "failure": "保留输入与引用，报告具体不可读项，不生成猜测结果。",
+      "interface": "preview_impact({ feedback_id, project_id })",
+      "notes": "接口意图示例，尚未实现或调用。"
+    }
+  },
+  "knowledge_resources": {
+    "KR-SCOPE": {
+      "id": "KR-SCOPE",
+      "name": "项目范围与决定资料",
+      "kind": "knowledge_base",
+      "description": "原交付约定和已保存决定，供核对承诺边界。",
+      "source_and_maintenance": "负责人维护当前项目的授权资料。",
+      "access_scope": "随客户和项目成员权限过滤。"
+    },
+    "KR-PREFERENCES": {
+      "id": "KR-PREFERENCES",
+      "name": "用户明确保留的表达偏好",
+      "kind": "long_term_memory",
+      "description": "仅保存用户明确要求保留的表达偏好，不把一次建议当作永久政策。",
+      "formation_and_update": "用户确认后保存；可查看、修改和删除。",
+      "user_management": "用户在个人设置中管理。",
+      "access_scope": "仅当前用户，不跨客户合并事实。"
+    }
+  },
+  "model_sources": {
+    "MODEL-APP": {
+      "id": "MODEL-APP",
+      "name": "应用既有模型服务",
+      "description": "由待实现应用的运行环境提供；本样例未连接任何模型。",
+      "model_connection": "runtime",
+      "notes": "没有服务地址、凭据或实际可用性声明。"
+    }
+  }
+}

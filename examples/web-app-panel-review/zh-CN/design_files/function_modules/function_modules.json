@@ -1,0 +1,264 @@
+{
+  "functions": {
+    "F-001": {
+      "function_id": "F-001",
+      "function_name": "收集并关联反馈",
+      "function_description": "把客户原话、附件与交付项保存在一起，不把模糊意见直接当作新增承诺。",
+      "function_epic": "反馈接收",
+      "priority": "High",
+      "source": "user",
+      "rejected": false,
+      "reason": "手工合成的审阅方案，不是用户项目事实。关联：P-001、BR-003 和 PG-003。",
+      "details": {
+        "situation": "周五交付前，客户希望调整已经确认的设计。六人工作室需要保留客户原话，区分小改、新增范围和需要补充的信息。负责人的决定会影响报价与交付安排，设计师不能因为一句“应该很快”就作出承诺。",
+        "behaviors": {
+          "B-001": {
+            "description": "把客户原话、附件与交付项保存在一起，不把模糊意见直接当作新增承诺。"
+          },
+          "B-002": {
+            "description": "查看当前保存的交付约定，指出未变更的内容；人工说明始终可继续修改。"
+          }
+        },
+        "inputs": {
+          "IN-001": {
+            "description": "FB-042 客户反馈、O-002 交付项、原范围说明及附件。"
+          }
+        },
+        "outputs": {
+          "OUT-001": {
+            "description": "同一反馈记录上的可追溯说明；需要承诺时交给 R-LEAD。"
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "不自动改报价、不访问其他客户资料、不把通知成功当作负责人确认。"
+          }
+        },
+        "exceptions": {
+          "E-001": {
+            "condition": "附件不可读或链接失效。",
+            "response": "保留原引用和输入，说明缺少哪份材料，允许补充后重试。"
+          },
+          "E-002": {
+            "condition": "当前说明已被另一成员更新。",
+            "response": "保留草稿并提示核对，不静默覆盖。"
+          }
+        }
+      }
+    },
+    "F-002": {
+      "function_id": "F-002",
+      "function_name": "核对范围和时间影响",
+      "function_description": "设计师对照原约定说明哪些内容改变、哪些保持不变，并指出依赖和缺口。",
+      "function_epic": "范围判断",
+      "priority": "High",
+      "source": "user",
+      "rejected": false,
+      "reason": "手工合成的审阅方案，不是用户项目事实。关联：P-001、BR-003 和 PG-003。",
+      "details": {
+        "situation": "周五交付前，客户希望调整已经确认的设计。六人工作室需要保留客户原话，区分小改、新增范围和需要补充的信息。负责人的决定会影响报价与交付安排，设计师不能因为一句“应该很快”就作出承诺。",
+        "behaviors": {
+          "B-001": {
+            "description": "设计师对照原约定说明哪些内容改变、哪些保持不变，并指出依赖和缺口。"
+          },
+          "B-002": {
+            "description": "查看当前保存的交付约定，指出未变更的内容；人工说明始终可继续修改。"
+          }
+        },
+        "inputs": {
+          "IN-001": {
+            "description": "FB-042 客户反馈、O-002 交付项、原范围说明及附件。"
+          }
+        },
+        "outputs": {
+          "OUT-001": {
+            "description": "同一反馈记录上的可追溯说明；需要承诺时交给 R-LEAD。"
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "不自动改报价、不访问其他客户资料、不把通知成功当作负责人确认。"
+          }
+        },
+        "exceptions": {
+          "E-001": {
+            "condition": "附件不可读或链接失效。",
+            "response": "保留原引用和输入，说明缺少哪份材料，允许补充后重试。"
+          },
+          "E-002": {
+            "condition": "当前说明已被另一成员更新。",
+            "response": "保留草稿并提示核对，不静默覆盖。"
+          }
+        }
+      }
+    },
+    "F-003": {
+      "function_id": "F-003",
+      "function_name": "退回补充后重新提交",
+      "function_description": "客户或设计师补充缺少的依据，保留原记录、退回原因和先前人工修改。",
+      "function_epic": "范围判断",
+      "priority": "High",
+      "source": "user",
+      "rejected": false,
+      "reason": "手工合成的审阅方案，不是用户项目事实。关联：P-001、BR-003 和 PG-003。",
+      "details": {
+        "situation": "周五交付前，客户希望调整已经确认的设计。六人工作室需要保留客户原话，区分小改、新增范围和需要补充的信息。负责人的决定会影响报价与交付安排，设计师不能因为一句“应该很快”就作出承诺。",
+        "behaviors": {
+          "B-001": {
+            "description": "客户或设计师补充缺少的依据，保留原记录、退回原因和先前人工修改。"
+          },
+          "B-002": {
+            "description": "查看当前保存的交付约定，指出未变更的内容；人工说明始终可继续修改。"
+          }
+        },
+        "inputs": {
+          "IN-001": {
+            "description": "FB-042 客户反馈、O-002 交付项、原范围说明及附件。"
+          }
+        },
+        "outputs": {
+          "OUT-001": {
+            "description": "同一反馈记录上的可追溯说明；需要承诺时交给 R-LEAD。"
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "不自动改报价、不访问其他客户资料、不把通知成功当作负责人确认。"
+          }
+        },
+        "exceptions": {
+          "E-001": {
+            "condition": "附件不可读或链接失效。",
+            "response": "保留原引用和输入，说明缺少哪份材料，允许补充后重试。"
+          },
+          "E-002": {
+            "condition": "当前说明已被另一成员更新。",
+            "response": "保留草稿并提示核对，不静默覆盖。"
+          }
+        }
+      }
+    },
+    "F-004": {
+      "function_id": "F-004",
+      "function_name": "确认范围和交期承诺",
+      "function_description": "负责人明确采纳、拒绝或暂缓，并记录确定的安排；AI 不能代替负责人承诺。",
+      "function_epic": "交付承诺",
+      "priority": "High",
+      "source": "user",
+      "rejected": false,
+      "reason": "手工合成的审阅方案，不是用户项目事实。关联：P-001、BR-003 和 PG-003。",
+      "details": {
+        "situation": "周五交付前，客户希望调整已经确认的设计。六人工作室需要保留客户原话，区分小改、新增范围和需要补充的信息。负责人的决定会影响报价与交付安排，设计师不能因为一句“应该很快”就作出承诺。",
+        "behaviors": {
+          "B-001": {
+            "description": "负责人明确采纳、拒绝或暂缓，并记录确定的安排；AI 不能代替负责人承诺。"
+          },
+          "B-002": {
+            "description": "查看当前保存的交付约定，指出未变更的内容；人工说明始终可继续修改。"
+          }
+        },
+        "inputs": {
+          "IN-001": {
+            "description": "FB-042 客户反馈、O-002 交付项、原范围说明及附件。"
+          }
+        },
+        "outputs": {
+          "OUT-001": {
+            "description": "同一反馈记录上的可追溯说明；需要承诺时交给 R-LEAD。"
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "不自动改报价、不访问其他客户资料、不把通知成功当作负责人确认。"
+          }
+        },
+        "exceptions": {
+          "E-001": {
+            "condition": "附件不可读或链接失效。",
+            "response": "保留原引用和输入，说明缺少哪份材料，允许补充后重试。"
+          },
+          "E-002": {
+            "condition": "当前说明已被另一成员更新。",
+            "response": "保留草稿并提示核对，不静默覆盖。"
+          }
+        }
+      }
+    },
+    "F-005": {
+      "function_id": "F-005",
+      "function_name": "核对通知送达",
+      "function_description": "业务决定和通知投递分别记录，发送失败不撤销已经保存的决定。",
+      "function_epic": "交付跟进",
+      "priority": "Medium",
+      "source": "user",
+      "rejected": false,
+      "reason": "手工合成的审阅方案，不是用户项目事实。关联：P-001、BR-003 和 PG-003。"
+    },
+    "F-006": {
+      "function_id": "F-006",
+      "function_name": "查找决定与原始依据",
+      "function_description": "按交付项、客户和决定状态查找记录，查看谁在何时作出何种承诺。",
+      "function_epic": "交付跟进",
+      "priority": "Medium",
+      "source": "user",
+      "rejected": false,
+      "reason": "手工合成的审阅方案，不是用户项目事实。关联：P-001、BR-003 和 PG-003。"
+    },
+    "F-007": {
+      "function_id": "F-007",
+      "function_name": "整理影响说明草稿",
+      "function_description": "助手只从已授权反馈与交付范围提出可编辑草稿，明确缺少的事实。",
+      "function_epic": "AI 协作",
+      "priority": "Medium",
+      "source": "user",
+      "rejected": false,
+      "reason": "手工合成的审阅方案，不是用户项目事实。关联：P-001、BR-003 和 PG-003。",
+      "details": {
+        "situation": "周五交付前，客户希望调整已经确认的设计。六人工作室需要保留客户原话，区分小改、新增范围和需要补充的信息。负责人的决定会影响报价与交付安排，设计师不能因为一句“应该很快”就作出承诺。",
+        "behaviors": {
+          "B-001": {
+            "description": "助手只从已授权反馈与交付范围提出可编辑草稿，明确缺少的事实。"
+          },
+          "B-002": {
+            "description": "查看当前保存的交付约定，指出未变更的内容；人工说明始终可继续修改。"
+          }
+        },
+        "inputs": {
+          "IN-001": {
+            "description": "FB-042 客户反馈、O-002 交付项、原范围说明及附件。"
+          }
+        },
+        "outputs": {
+          "OUT-001": {
+            "description": "同一反馈记录上的可追溯说明；需要承诺时交给 R-LEAD。"
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "不自动改报价、不访问其他客户资料、不把通知成功当作负责人确认。"
+          }
+        },
+        "exceptions": {
+          "E-001": {
+            "condition": "附件不可读或链接失效。",
+            "response": "保留原引用和输入，说明缺少哪份材料，允许补充后重试。"
+          },
+          "E-002": {
+            "condition": "当前说明已被另一成员更新。",
+            "response": "保留草稿并提示核对，不静默覆盖。"
+          }
+        }
+      }
+    },
+    "F-008": {
+      "function_id": "F-008",
+      "function_name": "自动承诺所有客户修改",
+      "function_description": "保留这项被否决的想法，帮助审阅者区分建议、授权与真实交付承诺。",
+      "function_epic": "暂不采用",
+      "priority": "Low",
+      "source": "user",
+      "rejected": true,
+      "reason": "手工合成的审阅方案，不是用户项目事实。关联：P-001、BR-003 和 PG-003。"
+    }
+  }
+}

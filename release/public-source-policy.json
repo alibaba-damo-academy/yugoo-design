@@ -8766,6 +8766,522 @@
       "path": "packages/studio/tests/source-import.test.mjs",
       "action": "include",
       "reason": "Synthetic incomplete source import, repair and saved-copy regression checks."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/README.en.md",
+      "action": "include",
+      "reason": "Maintained bilingual full-Panel review example guide: coherent synthetic scenario, all 15 Bundle locations, ordinary migrate/open instructions and explicit localization/acceptance limits."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/README.md",
+      "action": "include",
+      "reason": "Maintained bilingual full-Panel review example guide: coherent synthetic scenario, all 15 Bundle locations, ordinary migrate/open instructions and explicit localization/acceptance limits."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/.gitignore",
+      "action": "include",
+      "reason": "Portable synthetic review-source ignore rules; no Git history or host state is exported."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/LICENSE",
+      "action": "include",
+      "reason": "Exact Apache-2.0 project license retained with each portable synthetic review source."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/NOTICE",
+      "action": "include",
+      "reason": "Attribution for the original synthetic Loopline content and reused delivery-example P-001 process structure."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/README.md",
+      "action": "include",
+      "reason": "Maintained bilingual full-Panel review example guide: coherent synthetic scenario, all 15 Bundle locations, ordinary migrate/open instructions and explicit localization/acceptance limits."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/ai_agent_capabilities/ai_agent_capabilities.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/business_data/business_data.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/business_rules/business_rules.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/design_style/DESIGN.md",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/design_style/design_style.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/design_style/preview.html",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/design_style/tokens.css",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/flow_design/P-001.bpmn",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/flow_design/P-002.bpmn",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/flow_design/flow_design.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/function_modules/function_modules.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/integration_design/integration_design.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/notification_design/notification_design.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/page_design/page_design.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/page_design/pages/PG-001.html",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/page_design/pages/PG-002.html",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/page_design/pages/PG-003.html",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/page_design/pages/PG-004.html",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/page_design/pages/PG-005.html",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/quality_acceptance/quality_acceptance.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/research/R-001/D-001.md",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/research/R-001/D-002.md",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/research/R-001/D-003.md",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/research/R-001/conclusion.html",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/research/R-002/D-004.md",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/research/R-002/D-005.md",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/research/R-002/D-006.md",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/research/R-002/conclusion.html",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/research/research.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/role_access/role_access.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/smart_questions/attachments/e364d6e259c60cd0f42b8257f1953df5bb3877af2a1b6aa22f4f550cdf30c578.md",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/smart_questions/smart_questions.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/web_app_prd_assembly/prd.html",
+      "action": "include",
+      "reason": "Synthetic PRD assembled from the corresponding independent design files and exact owner-generated diagrams, BPMN SVGs and offline page/style PNG projections; no runtime or business-test result."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/web_app_prd_assembly/web_app_prd_assembly.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/whiteboard/boards/WB-001.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/whiteboard/boards/WB-002.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/design_files/whiteboard/whiteboard.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/en-US/project.json",
+      "action": "include",
+      "reason": "Independent format-3 synthetic migration-source identity and Kit metadata; no registered project or execution result is claimed."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/.gitignore",
+      "action": "include",
+      "reason": "Portable synthetic review-source ignore rules; no Git history or host state is exported."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/LICENSE",
+      "action": "include",
+      "reason": "Exact Apache-2.0 project license retained with each portable synthetic review source."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/NOTICE",
+      "action": "include",
+      "reason": "Attribution for the original synthetic Loopline content and reused delivery-example P-001 process structure."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/README.md",
+      "action": "include",
+      "reason": "Maintained bilingual full-Panel review example guide: coherent synthetic scenario, all 15 Bundle locations, ordinary migrate/open instructions and explicit localization/acceptance limits."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/ai_agent_capabilities/ai_agent_capabilities.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/business_data/business_data.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/business_rules/business_rules.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/design_style/DESIGN.md",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/design_style/design_style.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/design_style/preview.html",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/design_style/tokens.css",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/flow_design/P-001.bpmn",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/flow_design/P-002.bpmn",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/flow_design/flow_design.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/function_modules/function_modules.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/integration_design/integration_design.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/notification_design/notification_design.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/page_design/page_design.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/page_design/pages/PG-001.html",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/page_design/pages/PG-002.html",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/page_design/pages/PG-003.html",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/page_design/pages/PG-004.html",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/page_design/pages/PG-005.html",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/quality_acceptance/quality_acceptance.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/research/R-001/D-001.md",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/research/R-001/D-002.md",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/research/R-001/D-003.md",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/research/R-001/conclusion.html",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/research/R-002/D-004.md",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/research/R-002/D-005.md",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/research/R-002/D-006.md",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/research/R-002/conclusion.html",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/research/research.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/role_access/role_access.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/smart_questions/attachments/c107e633d0dcead8d459b5895ee2bb1ff85ddb1d0fc52960bd918701bd7384b9.md",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/smart_questions/smart_questions.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/web_app_prd_assembly/prd.html",
+      "action": "include",
+      "reason": "Synthetic PRD assembled from the corresponding independent design files and exact owner-generated diagrams, BPMN SVGs and offline page/style PNG projections; no runtime or business-test result."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/web_app_prd_assembly/web_app_prd_assembly.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/whiteboard/boards/WB-001.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/whiteboard/boards/WB-002.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/design_files/whiteboard/whiteboard.json",
+      "action": "include",
+      "reason": "Corresponding Chinese/English manually prepared synthetic Web App Panel review data or actual local artifact; stable business references, no credentials, user data or fabricated model/assessment records."
+    },
+    {
+      "kind": "file",
+      "path": "examples/web-app-panel-review/zh-CN/project.json",
+      "action": "include",
+      "reason": "Independent format-3 synthetic migration-source identity and Kit metadata; no registered project or execution result is claimed."
     }
   ]
 }

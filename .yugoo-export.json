@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": "08754d7ea28284bbbbddfed19906047314bb55da",
-  "policySha256": "a993efb1ff118f0a3cbe4de3412b059ca985644539f50f7e756c9409d0a94b83",
+  "revision": "5d5f7274700e82413c3018651038d40b8966fae2",
+  "policySha256": "fcc943e3d2b336f8f961516388f32975c210e59b273ecbb307f2fbf3f5d9b14e",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
       "sha256": "99c0ddca35a9a65ca9b097ee9072994a1ca2a4848ef6fe3ca07f5f29956806ed",
@@ -284,7 +284,7 @@
       "mode": "100644"
     },
     "docs/testing/agentic-e2e.md": {
-      "sha256": "0c6f31c20dd0a70ca79a3467d1e29d6ec8d05c502ab7fc973569b890b775ee5d",
+      "sha256": "c63baeeefc72ca097daaa868b1138521db65b33b7bef19d043fd82b3002cadea",
       "mode": "100644"
     },
     "docs/ust-score-explanations.md": {
@@ -689,6 +689,350 @@
     },
     "examples/field-operations-shared/skills/hazard_register/validation.yaml": {
       "sha256": "6f66c013c2ce5534efdf796f6d4a1c3935b36df003c3fb071905aff475cbd4c9",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/README.en.md": {
+      "sha256": "03d4ef650008f01ed9c1f9bc5d6bf55b03621cfc6694c6cb03891eb4d22f253c",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/README.md": {
+      "sha256": "c59c3888e86384035b2e140d943365aac451285873be20158b97e18471242a68",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/.gitignore": {
+      "sha256": "2bdfdb216230559f36faf46907142b8afd478401150f810e1ddaf9a4fdcc656c",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/LICENSE": {
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/NOTICE": {
+      "sha256": "cb45fb727dc3275aaad76b5aa1df50b9c4809b900ba209aae44aa52daa1370cc",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/README.md": {
+      "sha256": "358e36f6b5eb563b419cd11b33e194aea4a2bf4e7e0860464987ae79b2f8179f",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/ai_agent_capabilities/ai_agent_capabilities.json": {
+      "sha256": "97ee696bcb1ed690f546230fc66a51a89c488e0f555918bd2087ad39ec93a2cb",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/business_data/business_data.json": {
+      "sha256": "8e63ad7a0f5c9343dca23303ef65af809e6846bceeea5f0e76cd6b2523db8105",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/business_rules/business_rules.json": {
+      "sha256": "582b8dd649ca7539530c95c87a1891b04f9a5d2c488006c8cb31023698c6d01c",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/design_style/DESIGN.md": {
+      "sha256": "af829300ae83ef688d1d050c0811c6509b1140aada3ec7a5b9a9b486207bd21b",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/design_style/design_style.json": {
+      "sha256": "b638f37ab11248266db59dfbb8e971323cd5aeaa5ad8315b3ed17f8a91fec852",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/design_style/preview.html": {
+      "sha256": "03cbc49dfdf8a684293dd44d07c5f65e4d00ae25bf49b17a30d48468fc1adc03",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/design_style/tokens.css": {
+      "sha256": "ddd5c28c8138ad58ee6d405ba25c5fa7af02600b95a0b77d9b31ae09b892fc14",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/flow_design/P-001.bpmn": {
+      "sha256": "6eac28b9b2fe45b26c4491dbda7b60dcef752c1b98cb0601f03b31ac2a1e73f9",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/flow_design/P-002.bpmn": {
+      "sha256": "629d6b6d2e61aa7dab77648781aad281b7616e51d837041ccde35c6f66ce7a05",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/flow_design/flow_design.json": {
+      "sha256": "c54932cc475b95264fdfbc8677bd53798b61210554e65da63ec6c289ebd5dd02",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/function_modules/function_modules.json": {
+      "sha256": "06d3a58b19cc1adac3be1b4ba9ecf5f473149edcda97d9e4f85c0000185ada43",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/integration_design/integration_design.json": {
+      "sha256": "82ca7ccb909e0dcc0d14d75fd65d6e6140b0d9b86233d8f5e5196e099d3bd6ed",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/notification_design/notification_design.json": {
+      "sha256": "89e2c502ff495258ed70e95181da52dd3c7e0128e1c66de29309d54d763a0e01",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/page_design/page_design.json": {
+      "sha256": "fb27424c7a0dc5faca5b95a9d704fc0a216a325492f6f2794b85b8be69534d52",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/page_design/pages/PG-001.html": {
+      "sha256": "b597df950fcb8f75d9fa7944f68275c42039d84097cd99bc2fa52c67d79d33af",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/page_design/pages/PG-002.html": {
+      "sha256": "665596fb7eb14aa200e8fa5250caa1d2de9296a19f70d87eea7678e1e699cc33",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/page_design/pages/PG-003.html": {
+      "sha256": "cc133fcca05a9f97a52527d8afc3804cff2400439c6d0a34ed3b24f1cf99a116",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/page_design/pages/PG-004.html": {
+      "sha256": "0f9e1c0ff04595d9c22832c0494509d4eee28d4e82b4e9699e52d9ed72f71636",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/page_design/pages/PG-005.html": {
+      "sha256": "bfff021a280d4c3ad04af7253c06409c0805e6da2868e8e11642cbdf46a1c83a",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/quality_acceptance/quality_acceptance.json": {
+      "sha256": "1ccf88be64459cacf327ae51551b92f1e7bf666879b57538c03af379ac5f91d2",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/research/R-001/D-001.md": {
+      "sha256": "46c9d8529f2abcbc4f0c0c4d9233d65e41d5e6192eb6b2e72938778b513d8bd2",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/research/R-001/D-002.md": {
+      "sha256": "491ce8d92c19b59174d2b92b9503a31e8db4304e62af2c51cb3d579f7e235181",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/research/R-001/D-003.md": {
+      "sha256": "39414c30904f09baabc48c22a09d47898b20e2de775e59cb622fb682b49cd154",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/research/R-001/conclusion.html": {
+      "sha256": "8d75f284099387e69f6602312c33cd2faea93f6226022ba813fda685cec4f8fd",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/research/R-002/D-004.md": {
+      "sha256": "96887d6499b73d657dd58ac093443bdbc75066114be86f064ccbc7957abde074",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/research/R-002/D-005.md": {
+      "sha256": "430e25b6e873b04d430990e2e557112b40e0e8816859dc3fe46b24c9c08c3b0e",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/research/R-002/D-006.md": {
+      "sha256": "ae597855a1c9f4cfe1094db9468d824e645e30a80911e73f5be9856ca68387d7",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/research/R-002/conclusion.html": {
+      "sha256": "3226ea6787ef1504d38a374e7b80482c01408eb4cc2b665653970c5b45a5ec4f",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/research/research.json": {
+      "sha256": "9f615b602aff65e747212d8043d193783bfa5476f3c900c11bee95f2a1d75045",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/role_access/role_access.json": {
+      "sha256": "e7b1807b77c549d2a917e0d5557cb1736ce365d24b41086ee3f0c62957d9498a",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/smart_questions/attachments/e364d6e259c60cd0f42b8257f1953df5bb3877af2a1b6aa22f4f550cdf30c578.md": {
+      "sha256": "e364d6e259c60cd0f42b8257f1953df5bb3877af2a1b6aa22f4f550cdf30c578",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/smart_questions/smart_questions.json": {
+      "sha256": "16ca5e3072f7ad014182b38205a2d84ae9488e3a308e3137fe26945d00bbc3b8",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/web_app_prd_assembly/prd.html": {
+      "sha256": "389ba3749a7dd52e2772b1fe1cbeb3545d3619da4233354e7013f495b013ad31",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/web_app_prd_assembly/web_app_prd_assembly.json": {
+      "sha256": "c02a043d1a390676330ea891254ea1d499722d23863124ab3a8fca9761badf89",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/whiteboard/boards/WB-001.json": {
+      "sha256": "aada23fdb1af896a469fc207ed456c5f77f2a8954301ba46d53d59cb4e28d50a",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/whiteboard/boards/WB-002.json": {
+      "sha256": "f5b8c3eaa32cc9b4b76ab163c6de58e97ed9ecc01be03fe07f492746ec272300",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/design_files/whiteboard/whiteboard.json": {
+      "sha256": "a02dcebf055b79674656a4b552c96239b335d723dd04c2d4c2a485936ea6426c",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/en-US/project.json": {
+      "sha256": "b410a0d0ba40c2c5a20680ede751db50fbd76e4bdae562626f7aebaf296e336a",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/.gitignore": {
+      "sha256": "2bdfdb216230559f36faf46907142b8afd478401150f810e1ddaf9a4fdcc656c",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/LICENSE": {
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/NOTICE": {
+      "sha256": "29b20cbd8eb36799daef5988e942f6c37ad6e7c2e207a3b07486169e6800280f",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/README.md": {
+      "sha256": "8c32d4e7088bfb01b5017aecc341413ef13782ab8ae04083fd665efd090702ca",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/ai_agent_capabilities/ai_agent_capabilities.json": {
+      "sha256": "e0510c76a6c52d23a7dd0efb0e984582f896285bf7771b277151b7ba05fc76f5",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/business_data/business_data.json": {
+      "sha256": "d44181b85e21027896890f389ac49da60674251ad59d39eb254c0cc29854660a",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/business_rules/business_rules.json": {
+      "sha256": "12e3ad5462520355c32be72b57043daf83649d1513c00a73f3d27799b48cf95c",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/design_style/DESIGN.md": {
+      "sha256": "441aaae800524ac15cfd625bda8002af9b1a96fdd054adc32f0ea06249bd0fc3",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/design_style/design_style.json": {
+      "sha256": "0887cf3d1006c42fa9e72eed0571a1ce852921d52d690fe2b4f0fcc8036285e3",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/design_style/preview.html": {
+      "sha256": "c7caedea33213aeb7c95307aa7b20411db3cdca6659c73ad70e7a32d626eaa5a",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/design_style/tokens.css": {
+      "sha256": "ddd5c28c8138ad58ee6d405ba25c5fa7af02600b95a0b77d9b31ae09b892fc14",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/flow_design/P-001.bpmn": {
+      "sha256": "edbc00cc045f5d6e07d783ad0a302f3312c5b80c527ac89cdd9c05732428c8ab",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/flow_design/P-002.bpmn": {
+      "sha256": "6fb2a2efd842dcf48c3308af62c92e2feecdb3d63c46e2a5b774677b10cfa0f1",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/flow_design/flow_design.json": {
+      "sha256": "683409d3ae3e3d918fd22ee339d439ebe2ebc9a52dbc16778fc53388b913b258",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/function_modules/function_modules.json": {
+      "sha256": "7ba350e475c58835df357884f6b09c75b16a249c2e3d4af8e0a2e9896a41a2e9",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/integration_design/integration_design.json": {
+      "sha256": "1f43641a3edeac60e87b90e268351141b5e524728163b0c280365297e1c98f70",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/notification_design/notification_design.json": {
+      "sha256": "105315197f38a95e5f77c98992502be74cad294901a06b6c3f638fc6e8013f4e",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/page_design/page_design.json": {
+      "sha256": "295b7e6fe1aba3f06cd5ec9742ec36f729a3c76af18fa591d13131d32d4594ee",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/page_design/pages/PG-001.html": {
+      "sha256": "75f3403489ac3fcbdba1cd8995850adbe8b84ca341e70d24d3181733266ad1a4",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/page_design/pages/PG-002.html": {
+      "sha256": "18b024aaf349f5fe312178b2a57d61bf95f1d39d31193c9d27e0a48959d330ab",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/page_design/pages/PG-003.html": {
+      "sha256": "1a6c4aca05d7f259b4d7f4da7f69a9e0964cead8fac51fc957a64ecb7b6b3fd1",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/page_design/pages/PG-004.html": {
+      "sha256": "f7e43b0cf2d5b1f7978c0aa7dccb491e746a145a9c4ebb134d4d2d27f6b897d9",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/page_design/pages/PG-005.html": {
+      "sha256": "8de270bf07f55e6de33c71158f679dc498e692f427029dfce5cf098d5820069d",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/quality_acceptance/quality_acceptance.json": {
+      "sha256": "f60524c27dd5a13ebad28623f2a61f3dc4302704d15eada47d86e9a22f369e81",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/research/R-001/D-001.md": {
+      "sha256": "69ab66379453a73180f0d2330d46f61b45d944d0b356290e042f6081fd77c2ae",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/research/R-001/D-002.md": {
+      "sha256": "67399215682bdad207573ffe2561fb991b521c0b72d022c41241215b844bb334",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/research/R-001/D-003.md": {
+      "sha256": "a27cbfca6d4ed784e33f3110af66a0439881acae5453273b67bd118c9edf6dcd",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/research/R-001/conclusion.html": {
+      "sha256": "f12c01a2a8664ac0a0c6579d642b76276900ecb7cfaa0c6838d17a2a88c6ce9b",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/research/R-002/D-004.md": {
+      "sha256": "37f01379c0a67dd34d735aa1202040d78349cfd53e0f9e994d86f24b3ae10ee6",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/research/R-002/D-005.md": {
+      "sha256": "09a5cdfbf28638aa66ae73d857588bfa1d080999d938c441e10707121a3278f3",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/research/R-002/D-006.md": {
+      "sha256": "74f5f6e9100dfbc836b6a081c271c6a31bf0b82ebfdb342e2bef9bb01f2b6e49",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/research/R-002/conclusion.html": {
+      "sha256": "1be91882ad96941a369d5c675b7d4f58f4318ab52644469256852774a0106224",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/research/research.json": {
+      "sha256": "091203a5238e01d3f2d274c2a75b79b2c739f286a5fca8b5a1a1071afa73471d",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/role_access/role_access.json": {
+      "sha256": "c2e7835802fff2e049879a14c12e7cbe1adb99802d55705786768502c5cd0354",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/smart_questions/attachments/c107e633d0dcead8d459b5895ee2bb1ff85ddb1d0fc52960bd918701bd7384b9.md": {
+      "sha256": "c107e633d0dcead8d459b5895ee2bb1ff85ddb1d0fc52960bd918701bd7384b9",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/smart_questions/smart_questions.json": {
+      "sha256": "e1b39964bea43b57c1862530e1bbc7ef921224e7d6eba4daedbe9b451a115738",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/web_app_prd_assembly/prd.html": {
+      "sha256": "09f09b1ba441cfd03457ce376aaeb38f64be22a97a875aeba67c444bc37bd6dc",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/web_app_prd_assembly/web_app_prd_assembly.json": {
+      "sha256": "bf230908c65ae53f3e183e1af314dd20cc9cf6b12be74a54ec04b2b933824a91",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/whiteboard/boards/WB-001.json": {
+      "sha256": "0c41286a5dbc3334dfe584b1f9ba6214b284a0f071b9dcb0d1f73dd303c85831",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/whiteboard/boards/WB-002.json": {
+      "sha256": "2f865463ea8e1753ed295d31c17bd3cc1e29f861a1c6a510fe432b326dcb7a35",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/design_files/whiteboard/whiteboard.json": {
+      "sha256": "3d498a54e24685b5ea27b3d4a629d770e15f61868533c6722de6cdc3b9ee5a30",
+      "mode": "100644"
+    },
+    "examples/web-app-panel-review/zh-CN/project.json": {
+      "sha256": "a6de32b2a35802ab2fbd2243fd6973708c2e01c584b93c6d7c03725c7bff75cc",
       "mode": "100644"
     },
     "packages/companion-dev/src/cli.mjs": {
@@ -5404,7 +5748,7 @@
       "mode": "100644"
     },
     "packages/panel/src/record-board.tsx": {
-      "sha256": "8f5cba3252cecfdd53bc9029f9e01d050e787b9ede857634defef16348e153c6",
+      "sha256": "bc5ede6fd4273214df58f6d5541799606f187c5b6b25f5894a4142fbc1e2f5ba",
       "mode": "100644"
     },
     "packages/panel/src/record-card-drafts.tsx": {
@@ -6092,7 +6436,7 @@
       "mode": "100644"
     },
     "packages/panel/test/record-board-interaction.test.mjs": {
-      "sha256": "4eb90e512f8801e213bd9d105a95786d8ce5d7667c570d9a531d0948f0ed1132",
+      "sha256": "24d06f99a3237981177f952c0f942539f04f80413be87342ce833cd2656b45e6",
       "mode": "100644"
     },
     "packages/panel/test/record-create-focus.test.mjs": {
@@ -9036,7 +9380,7 @@
       "mode": "100644"
     },
     "release/product.json": {
-      "sha256": "6a2c4b681e242e5fb5b9e2b1699f0c38a9d2dd6f0b7107aac019181778da41d3",
+      "sha256": "0b06bc66637f8f556bab0f1b57cc28ee2875838f07a5176e3a80f49c2e44dea7",
       "mode": "100644"
     },
     "release/public-source-baseline.json": {
@@ -9044,7 +9388,7 @@
       "mode": "100644"
     },
     "release/public-source-policy.json": {
-      "sha256": "07a84c2a12819f56ee7dd5ea6862e93bb1f6be3bdc1e561d8d7426f7eea7dbaa",
+      "sha256": "c7154c367966060f87b4391de1de30af395ff3a277aa74a32616a09c6ec892d9",
       "mode": "100644"
     },
     "release/public-source-test-selection.json": {

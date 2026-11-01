@@ -793,3 +793,105 @@ test('ungrouped boards show records directly, edit canonically, and omit artific
     assert.ok(!Object.hasOwn(data.items.b, 'group'))
   } finally { await React.act(async () => root.unmount()) }
 })
+
+// Use real React Flow and its controlled-node store. DOM sizes are synthetic;
+// installed-browser save/reopen and visual checks remain separate.
+test('record board retains measured nodes through hidden mount, reveal and reopen', async () => {
+  const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost' })
+  const keys = ['window', 'document', 'HTMLElement', 'Element', 'getComputedStyle', 'ResizeObserver',
+    'requestAnimationFrame', 'cancelAnimationFrame', 'IS_REACT_ACT_ENVIRONMENT', 'React']
+  const previous = new Map(keys.map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]))
+  const observers = new Set(), frames = new Map()
+  let frameId = 0, nodeHeight = 42
+  Object.assign(globalThis, { window: dom.window, document: dom.window.document,
+    HTMLElement: dom.window.HTMLElement, Element: dom.window.Element,
+    getComputedStyle: dom.window.getComputedStyle, IS_REACT_ACT_ENVIRONMENT: true,
+    requestAnimationFrame: callback => { frames.set(++frameId, callback); return frameId },
+    cancelAnimationFrame: id => frames.delete(id),
+    ResizeObserver: class {
+      elements = new Set()
+      constructor(callback) { this.callback = callback; observers.add(this) }
+      observe(element) { this.elements.add(element) }
+      unobserve(element) { this.elements.delete(element) }
+      disconnect() { this.elements.clear(); observers.delete(this) }
+    },
+  })
+  dom.window.DOMMatrixReadOnly = class { m22 = 1 }
+  dom.window.HTMLElement.prototype.scrollIntoView = function () {}
+  Object.defineProperties(dom.window.HTMLElement.prototype, {
+    offsetWidth: { get() { return this.classList.contains('react-flow__handle') ? 10 : 200 } },
+    offsetHeight: { get() { return this.classList.contains('react-flow__handle') ? 10 : nodeHeight } },
+  })
+  dom.window.HTMLElement.prototype.getBoundingClientRect = function () {
+    return new dom.window.DOMRect(0, 0, this.offsetWidth, this.offsetHeight)
+  }
+  const { default: React, act } = await import('react'); globalThis.React = React
+  const { createRoot } = await import('react-dom/client')
+  const { ReactFlowProvider, useStoreApi } = await import('@xyflow/react')
+  const { RecordBoard } = await import('../src/record-board.tsx')
+  const { PanelLocaleContext } = await import('../src/panel-i18n.tsx')
+  const manifest = { version: 1, panel_kind: 'evidence_workbook',
+    sections: [{ id: 'items', title: 'Items', add_mode: 'none' }],
+    fields: [{ key: 'title', label: 'Title', control: 'text', applies_to: ['items'] },
+      { key: 'description', label: 'Description', control: 'textarea', applies_to: ['items'] }] }
+  const node = { component: 'record_board', id: 'board', title: 'Items', source: 'items',
+    board: { label: 'title', description: 'description' } }
+  let data = { items: { a: { title: 'Alpha', description: 'First' }, b: { title: 'Beta', description: 'Second' } } }
+  let locale = 'en-US', instance = 0, store
+  function ObserveStore() { store = useStoreApi(); return null }
+  const root = createRoot(document.getElementById('root'))
+  const render = () => root.render(React.createElement(ReactFlowProvider, { key: instance },
+    React.createElement(ObserveStore), React.createElement(PanelLocaleContext.Provider, { value: locale },
+      React.createElement(RecordBoard, { node, manifest, data,
+        options: { editable: false, onPanelUpdate: () => assert.fail('measurement must not write facts') },
+        render: () => React.createElement('div') }))))
+  const measure = () => act(async () => {
+    for (const observer of observers) {
+      const elements = [...observer.elements].filter(element => element.classList.contains('react-flow__node'))
+      if (elements.length) observer.callback(elements.map(target => ({ target, contentRect: target.getBoundingClientRect() })))
+    }
+  })
+  const click = selector => act(async () => document.querySelector(selector).click())
+  const assertMeasured = label => {
+    for (const node of store.getState().nodes) {
+      const internal = store.getState().nodeLookup.get(node.id)
+      assert.equal(internal.measured?.width, 200, `${label}: ${node.id} width retained`)
+      assert.equal(internal.measured?.height, nodeHeight, `${label}: ${node.id} height retained`)
+      assert.equal(document.querySelector(`[data-id='${node.id}']`).style.visibility, 'visible', `${label}: node not stuck hidden`)
+      assert.equal(internal.internals.handleBounds?.source.length, 4, `${label}: measured ports retained`)
+    }
+    assert.equal(document.querySelectorAll('.react-flow__edge').length, Object.keys(data.items).length, `${label}: actual edges rendered`)
+  }
+  try {
+    await act(async () => render())
+    assert.equal(document.querySelector('.dsh-workspace-cover-surface').style.visibility, 'hidden')
+    await measure(); assertMeasured('measured while mounted behind cards')
+    await click('.dsh-record-board-map-toggle'); assertMeasured('first reveal without another observer delivery')
+    const retainedNode = document.querySelector('.react-flow__node')
+    await click('.dsh-workspace-cover-return')
+    await click('.dsh-record-board-map-toggle'); assertMeasured('same-size re-entry')
+    assert.equal(document.querySelector('.react-flow__node'), retainedNode, 'ordinary navigation retains the canvas')
+    await act(async () => render()); assertMeasured('new parent/options identities')
+    data = { ...data, items: { ...data.items, a: { ...data.items.a, title: 'Renamed' } } }
+    await act(async () => render()); assertMeasured('updated record projection')
+    assert.match(document.querySelector('[data-id="record:a"]').textContent, /Renamed/)
+    nodeHeight = 54
+    await measure(); assertMeasured('resized nodes')
+    locale = 'zh-CN'; await act(async () => render()); assertMeasured('locale change')
+    data = { items: { a: data.items.a } }
+    await act(async () => render()); assertMeasured('removed record')
+    assert.equal(store.getState().nodeLookup.has('record:b'), false, 'removed record leaves no ghost node')
+    const saved = structuredClone(data)
+    instance++; await act(async () => render())
+    await measure(); assertMeasured('new readonly instance after reopen')
+    await click('.dsh-record-board-map-toggle'); assertMeasured('reopened graph reveal')
+    assert.deepEqual(data, saved, 'measurement and view switches do not change canonical data')
+  } finally {
+    await act(async () => root.unmount())
+    frames.clear(); dom.window.close()
+    for (const [key, descriptor] of previous) {
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor)
+      else delete globalThis[key]
+    }
+  }
+})

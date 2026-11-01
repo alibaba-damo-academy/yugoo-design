@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:autoagent="https://autoagent.ai/bpmn/layout" id="Definitions_P-002" targetNamespace="http://bpmn.io/schema/bpmn" autoagent:layoutRevision="13" autoagent:layoutDirection="DOWN" autoagent:laneHeaderHeight="42">
+  <bpmn:process id="Process_P-002" name="通知失败核对" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_P-002">
+      <bpmn:lane id="Lane_P-002_1" name="系统">
+        <bpmn:flowNodeRef>StartEvent_P-002_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>SendTask_P-002_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ExclusiveGateway_P-002_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ServiceTask_P-002_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ServiceTask_P-002_2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_P-002_1</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_P-002_2" name="项目负责人">
+        <bpmn:flowNodeRef>UserTask_P-002_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ExclusiveGateway_P-002_2</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="StartEvent_P-002_1" name="决定已保存" />
+    <bpmn:sendTask id="SendTask_P-002_1" name="投递通知" />
+    <bpmn:exclusiveGateway id="ExclusiveGateway_P-002_1" name="确认送达？" />
+    <bpmn:serviceTask id="ServiceTask_P-002_1" name="记录送达" />
+    <bpmn:serviceTask id="ServiceTask_P-002_2" name="记录失败" />
+    <bpmn:userTask id="UserTask_P-002_1" name="负责人核对失败" />
+    <bpmn:exclusiveGateway id="ExclusiveGateway_P-002_2" name="重试当前投递？" />
+    <bpmn:endEvent id="EndEvent_P-002_1" name="本次处理结束" />
+    <bpmn:sequenceFlow id="SequenceFlow_P-002_1" sourceRef="StartEvent_P-002_1" targetRef="SendTask_P-002_1" />
+    <bpmn:sequenceFlow id="SequenceFlow_P-002_2" sourceRef="SendTask_P-002_1" targetRef="ExclusiveGateway_P-002_1" />
+    <bpmn:sequenceFlow id="SequenceFlow_P-002_3" name="是" sourceRef="ExclusiveGateway_P-002_1" targetRef="ServiceTask_P-002_1" />
+    <bpmn:sequenceFlow id="SequenceFlow_P-002_4" sourceRef="ServiceTask_P-002_1" targetRef="EndEvent_P-002_1" />
+    <bpmn:sequenceFlow id="SequenceFlow_P-002_5" name="否" sourceRef="ExclusiveGateway_P-002_1" targetRef="ServiceTask_P-002_2" />
+    <bpmn:sequenceFlow id="SequenceFlow_P-002_6" sourceRef="ServiceTask_P-002_2" targetRef="UserTask_P-002_1" />
+    <bpmn:sequenceFlow id="SequenceFlow_P-002_7" sourceRef="UserTask_P-002_1" targetRef="ExclusiveGateway_P-002_2" />
+    <bpmn:sequenceFlow id="SequenceFlow_P-002_8" name="重试" sourceRef="ExclusiveGateway_P-002_2" targetRef="SendTask_P-002_1" />
+    <bpmn:sequenceFlow id="SequenceFlow_P-002_9" name="保留失败并稍后跟进" sourceRef="ExclusiveGateway_P-002_2" targetRef="EndEvent_P-002_1" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Process_P-002">
+    <bpmndi:BPMNPlane id="BPMNPlane_Process_P-002" bpmnElement="Process_P-002">
+      <bpmndi:BPMNShape id="Lane_P-002_1_di" bpmnElement="Lane_P-002_1" isHorizontal="false">
+        <dc:Bounds x="0" y="30" width="330" height="850" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_P-002_2_di" bpmnElement="Lane_P-002_2" isHorizontal="false">
+        <dc:Bounds x="330" y="30" width="160" height="850" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_P-002_1_di" bpmnElement="EndEvent_P-002_1">
+        <dc:Bounds x="102" y="814" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="144" y="838" width="120" height="36" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ExclusiveGateway_P-002_1_di" bpmnElement="ExclusiveGateway_P-002_1" isMarkerVisible="true">
+        <dc:Bounds x="95" y="330" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="151" y="313" width="120" height="36" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ExclusiveGateway_P-002_2_di" bpmnElement="ExclusiveGateway_P-002_2" isMarkerVisible="true">
+        <dc:Bounds x="385" y="708" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="259" y="739" width="120" height="36" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SendTask_P-002_1_di" bpmnElement="SendTask_P-002_1">
+        <dc:Bounds x="70" y="194" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_P-002_1_di" bpmnElement="ServiceTask_P-002_1">
+        <dc:Bounds x="200" y="436" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_P-002_2_di" bpmnElement="ServiceTask_P-002_2">
+        <dc:Bounds x="70" y="436" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_P-002_1_di" bpmnElement="StartEvent_P-002_1">
+        <dc:Bounds x="102" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="144" y="102" width="120" height="36" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_P-002_1_di" bpmnElement="UserTask_P-002_1">
+        <dc:Bounds x="360" y="572" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_P-002_1_di" bpmnElement="SequenceFlow_P-002_1">
+        <di:waypoint x="120" y="138" />
+        <di:waypoint x="120" y="194" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_P-002_2_di" bpmnElement="SequenceFlow_P-002_2">
+        <di:waypoint x="120" y="274" />
+        <di:waypoint x="120" y="330" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_P-002_3_di" bpmnElement="SequenceFlow_P-002_3">
+        <di:waypoint x="145" y="355" />
+        <di:waypoint x="250" y="355" />
+        <di:waypoint x="250" y="436" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="169.5" y="361" width="56" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_P-002_4_di" bpmnElement="SequenceFlow_P-002_4">
+        <di:waypoint x="250" y="516" />
+        <di:waypoint x="250" y="794" />
+        <di:waypoint x="120" y="794" />
+        <di:waypoint x="120" y="814" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_P-002_5_di" bpmnElement="SequenceFlow_P-002_5">
+        <di:waypoint x="120" y="380" />
+        <di:waypoint x="120" y="436" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="126" y="398" width="56" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_P-002_6_di" bpmnElement="SequenceFlow_P-002_6">
+        <di:waypoint x="120" y="516" />
+        <di:waypoint x="120" y="612" />
+        <di:waypoint x="360" y="612" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_P-002_7_di" bpmnElement="SequenceFlow_P-002_7">
+        <di:waypoint x="410" y="652" />
+        <di:waypoint x="410" y="708" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_P-002_8_di" bpmnElement="SequenceFlow_P-002_8">
+        <di:waypoint x="385" y="733" />
+        <di:waypoint x="312" y="733" />
+        <di:waypoint x="312" y="234" />
+        <di:waypoint x="170" y="234" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="320.5" y="707" width="56" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_P-002_9_di" bpmnElement="SequenceFlow_P-002_9">
+        <di:waypoint x="410" y="758" />
+        <di:waypoint x="410" y="832" />
+        <di:waypoint x="138" y="832" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="287" y="785" width="117" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

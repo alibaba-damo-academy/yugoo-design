@@ -1,0 +1,370 @@
+{
+  "schema_version": 7,
+  "stage": "completed",
+  "pages": {
+    "PG-001": {
+      "id": "PG-001",
+      "name": "Feedback inbox",
+      "purpose": "Let the relevant role complete the task against original evidence without confusing drafts or delivery status with a commitment.",
+      "parent_id": null,
+      "page_type": "list",
+      "audience": [
+        "R-DESIGNER",
+        "R-LEAD"
+      ],
+      "key_content": [
+        "Current record, source, status and next action.",
+        "Original input, long explanations and recovery actions."
+      ],
+      "key_actions": [
+        "Read evidence, review changes, and explicitly save or cancel."
+      ],
+      "function_refs": [
+        "F-001",
+        "F-006"
+      ],
+      "evidence_refs": [
+        "business_rules:BR-003",
+        "business_rules:BR-006"
+      ],
+      "style_pattern_refs": [
+        "feedback-row",
+        "impact-note",
+        "decision-form"
+      ],
+      "canvas_position": {
+        "x": 0,
+        "y": 0
+      },
+      "artifact_file": "page_design/pages/PG-001.html"
+    },
+    "PG-002": {
+      "id": "PG-002",
+      "name": "Feedback and impact detail",
+      "purpose": "Let the relevant role complete the task against original evidence without confusing drafts or delivery status with a commitment.",
+      "parent_id": "PG-001",
+      "page_type": "detail",
+      "audience": [
+        "R-DESIGNER",
+        "R-LEAD"
+      ],
+      "key_content": [
+        "Current record, source, status and next action.",
+        "Original input, long explanations and recovery actions."
+      ],
+      "key_actions": [
+        "Read evidence, review changes, and explicitly save or cancel."
+      ],
+      "function_refs": [
+        "F-002",
+        "F-003",
+        "F-007"
+      ],
+      "evidence_refs": [
+        "business_rules:BR-003",
+        "business_rules:BR-006"
+      ],
+      "style_pattern_refs": [
+        "feedback-row",
+        "impact-note",
+        "decision-form"
+      ],
+      "canvas_position": {
+        "x": 340,
+        "y": 0
+      },
+      "artifact_file": "page_design/pages/PG-002.html"
+    },
+    "PG-003": {
+      "id": "PG-003",
+      "name": "Lead arrangement review",
+      "purpose": "Let the relevant role complete the task against original evidence without confusing drafts or delivery status with a commitment.",
+      "parent_id": "PG-002",
+      "page_type": "form",
+      "audience": [
+        "R-DESIGNER",
+        "R-LEAD"
+      ],
+      "key_content": [
+        "Current record, source, status and next action.",
+        "Original input, long explanations and recovery actions."
+      ],
+      "key_actions": [
+        "Read evidence, review changes, and explicitly save or cancel."
+      ],
+      "function_refs": [
+        "F-004"
+      ],
+      "evidence_refs": [
+        "business_rules:BR-003",
+        "business_rules:BR-006"
+      ],
+      "style_pattern_refs": [
+        "feedback-row",
+        "impact-note",
+        "decision-form"
+      ],
+      "canvas_position": {
+        "x": 680,
+        "y": 0
+      },
+      "artifact_file": "page_design/pages/PG-003.html"
+    },
+    "PG-004": {
+      "id": "PG-004",
+      "name": "Decisions and delivery history",
+      "purpose": "Let the relevant role complete the task against original evidence without confusing drafts or delivery status with a commitment.",
+      "parent_id": null,
+      "page_type": "list",
+      "audience": [
+        "R-DESIGNER",
+        "R-LEAD"
+      ],
+      "key_content": [
+        "Current record, source, status and next action.",
+        "Original input, long explanations and recovery actions."
+      ],
+      "key_actions": [
+        "Read evidence, review changes, and explicitly save or cancel."
+      ],
+      "function_refs": [
+        "F-005",
+        "F-006"
+      ],
+      "evidence_refs": [
+        "business_rules:BR-003",
+        "business_rules:BR-006"
+      ],
+      "style_pattern_refs": [
+        "feedback-row",
+        "impact-note",
+        "decision-form"
+      ],
+      "canvas_position": {
+        "x": 1020,
+        "y": 340
+      },
+      "artifact_file": "page_design/pages/PG-004.html"
+    },
+    "PG-005": {
+      "id": "PG-005",
+      "name": "Members and connections",
+      "purpose": "Let the relevant role complete the task against original evidence without confusing drafts or delivery status with a commitment.",
+      "parent_id": null,
+      "page_type": "workspace",
+      "audience": [
+        "R-ADMIN"
+      ],
+      "key_content": [
+        "Current record, source, status and next action.",
+        "Original input, long explanations and recovery actions."
+      ],
+      "key_actions": [
+        "Read evidence, review changes, and explicitly save or cancel."
+      ],
+      "function_refs": [
+        "F-006"
+      ],
+      "evidence_refs": [
+        "business_rules:BR-003",
+        "business_rules:BR-006"
+      ],
+      "style_pattern_refs": [
+        "feedback-row",
+        "impact-note",
+        "decision-form"
+      ],
+      "canvas_position": {
+        "x": 1360,
+        "y": 340
+      },
+      "artifact_file": "page_design/pages/PG-005.html"
+    }
+  },
+  "page_order": [
+    "PG-001",
+    "PG-002",
+    "PG-003",
+    "PG-004",
+    "PG-005"
+  ],
+  "entry_page_ids": [
+    "PG-001"
+  ],
+  "connections": {
+    "NAV-PG-001-PG-004": {
+      "id": "NAV-PG-001-PG-004",
+      "source_page_id": "PG-001",
+      "target_page_id": "PG-004",
+      "label": "History",
+      "source_element_id": "nav-PG-004",
+      "source_element_label": "History"
+    },
+    "NAV-PG-001-PG-005": {
+      "id": "NAV-PG-001-PG-005",
+      "source_page_id": "PG-001",
+      "target_page_id": "PG-005",
+      "label": "Settings",
+      "source_element_id": "nav-PG-005",
+      "source_element_label": "Settings"
+    },
+    "NAV-PG-002-PG-001": {
+      "id": "NAV-PG-002-PG-001",
+      "source_page_id": "PG-002",
+      "target_page_id": "PG-001",
+      "label": "Feedback",
+      "source_element_id": "nav-PG-001",
+      "source_element_label": "Feedback"
+    },
+    "NAV-PG-002-PG-004": {
+      "id": "NAV-PG-002-PG-004",
+      "source_page_id": "PG-002",
+      "target_page_id": "PG-004",
+      "label": "History",
+      "source_element_id": "nav-PG-004",
+      "source_element_label": "History"
+    },
+    "NAV-PG-002-PG-005": {
+      "id": "NAV-PG-002-PG-005",
+      "source_page_id": "PG-002",
+      "target_page_id": "PG-005",
+      "label": "Settings",
+      "source_element_id": "nav-PG-005",
+      "source_element_label": "Settings"
+    },
+    "NAV-PG-003-PG-001": {
+      "id": "NAV-PG-003-PG-001",
+      "source_page_id": "PG-003",
+      "target_page_id": "PG-001",
+      "label": "Feedback",
+      "source_element_id": "nav-PG-001",
+      "source_element_label": "Feedback"
+    },
+    "NAV-PG-003-PG-004": {
+      "id": "NAV-PG-003-PG-004",
+      "source_page_id": "PG-003",
+      "target_page_id": "PG-004",
+      "label": "History",
+      "source_element_id": "nav-PG-004",
+      "source_element_label": "History"
+    },
+    "NAV-PG-003-PG-005": {
+      "id": "NAV-PG-003-PG-005",
+      "source_page_id": "PG-003",
+      "target_page_id": "PG-005",
+      "label": "Settings",
+      "source_element_id": "nav-PG-005",
+      "source_element_label": "Settings"
+    },
+    "NAV-PG-004-PG-001": {
+      "id": "NAV-PG-004-PG-001",
+      "source_page_id": "PG-004",
+      "target_page_id": "PG-001",
+      "label": "Feedback",
+      "source_element_id": "nav-PG-001",
+      "source_element_label": "Feedback"
+    },
+    "NAV-PG-004-PG-005": {
+      "id": "NAV-PG-004-PG-005",
+      "source_page_id": "PG-004",
+      "target_page_id": "PG-005",
+      "label": "Settings",
+      "source_element_id": "nav-PG-005",
+      "source_element_label": "Settings"
+    },
+    "NAV-PG-005-PG-001": {
+      "id": "NAV-PG-005-PG-001",
+      "source_page_id": "PG-005",
+      "target_page_id": "PG-001",
+      "label": "Feedback",
+      "source_element_id": "nav-PG-001",
+      "source_element_label": "Feedback"
+    },
+    "NAV-PG-005-PG-004": {
+      "id": "NAV-PG-005-PG-004",
+      "source_page_id": "PG-005",
+      "target_page_id": "PG-004",
+      "label": "History",
+      "source_element_id": "nav-PG-004",
+      "source_element_label": "History"
+    },
+    "LINK-PG-001-PG-002": {
+      "id": "LINK-PG-001-PG-002",
+      "source_page_id": "PG-001",
+      "target_page_id": "PG-002",
+      "label": "Open feedback",
+      "source_element_id": "open-feedback",
+      "source_element_label": "Open feedback"
+    },
+    "LINK-PG-002-PG-003": {
+      "id": "LINK-PG-002-PG-003",
+      "source_page_id": "PG-002",
+      "target_page_id": "PG-003",
+      "label": "Review arrangement",
+      "source_element_id": "review-arrangement",
+      "source_element_label": "Review arrangement"
+    },
+    "LINK-PG-003-PG-002": {
+      "id": "LINK-PG-003-PG-002",
+      "source_page_id": "PG-003",
+      "target_page_id": "PG-002",
+      "label": "Return to feedback",
+      "source_element_id": "back-detail",
+      "source_element_label": "Return to feedback"
+    }
+  },
+  "connection_order": [
+    "NAV-PG-001-PG-004",
+    "NAV-PG-001-PG-005",
+    "NAV-PG-002-PG-001",
+    "NAV-PG-002-PG-004",
+    "NAV-PG-002-PG-005",
+    "NAV-PG-003-PG-001",
+    "NAV-PG-003-PG-004",
+    "NAV-PG-003-PG-005",
+    "NAV-PG-004-PG-001",
+    "NAV-PG-004-PG-005",
+    "NAV-PG-005-PG-001",
+    "NAV-PG-005-PG-004",
+    "LINK-PG-001-PG-002",
+    "LINK-PG-002-PG-003",
+    "LINK-PG-003-PG-002"
+  ],
+  "common_spec": {
+    "layout": "Sidebar navigation and content; reflow naturally on narrow screens.",
+    "logo": {
+      "name": "Loopline Delivery",
+      "description": "A wordmark and a simple check line."
+    },
+    "navigation": [
+      {
+        "id": "feedback",
+        "label": "Feedback",
+        "target_page_id": "PG-001",
+        "icon_ref": "inbox"
+      },
+      {
+        "id": "history",
+        "label": "History",
+        "target_page_id": "PG-004",
+        "icon_ref": "decision"
+      },
+      {
+        "id": "settings",
+        "label": "Settings",
+        "target_page_id": "PG-005"
+      }
+    ],
+    "shared_components": [
+      "Status labels, long explanations, error recovery and confirmation forms"
+    ],
+    "visual_pattern_refs": [
+      "feedback-row",
+      "impact-note",
+      "decision-form"
+    ],
+    "source": "design_style"
+  },
+  "style_theme": "Clear delivery decisions",
+  "style_epoch": 0
+}

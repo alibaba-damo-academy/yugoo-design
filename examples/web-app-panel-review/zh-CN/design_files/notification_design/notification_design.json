@@ -1,0 +1,95 @@
+{
+  "schema_version": 3,
+  "notifications": {
+    "N-001": {
+      "id": "N-001",
+      "title": "收到新反馈",
+      "trigger": "客户提交完整反馈后",
+      "recipients": [
+        "R-DESIGNER"
+      ],
+      "channels": [
+        "in_app"
+      ],
+      "message": "请对照交付项查看原话和附件，先补足判断依据。",
+      "action_target": "PG-002 反馈详情；需要确认时进入 PG-003。"
+    },
+    "N-002": {
+      "id": "N-002",
+      "title": "需要负责人确认",
+      "trigger": "F-002 判断影响范围或交期后",
+      "recipients": [
+        "R-LEAD"
+      ],
+      "channels": [
+        "in_app",
+        "email"
+      ],
+      "message": "新增安排尚未承诺，请检查影响说明后确认、退回或暂缓。",
+      "action_target": "PG-002 反馈详情；需要确认时进入 PG-003。"
+    },
+    "N-003": {
+      "id": "N-003",
+      "title": "需要补充说明",
+      "trigger": "负责人明确退回补充后",
+      "recipients": [
+        "R-DESIGNER",
+        "R-CLIENT"
+      ],
+      "channels": [
+        "in_app"
+      ],
+      "message": "请补充交付项与期望变化；已有输入和附件保留，补充后重新提交。",
+      "action_target": "PG-002 反馈详情；需要确认时进入 PG-003。"
+    },
+    "N-004": {
+      "id": "N-004",
+      "title": "安排已确认",
+      "trigger": "负责人决定成功保存后",
+      "recipients": [
+        "R-CLIENT",
+        "R-DESIGNER"
+      ],
+      "channels": [
+        "in_app",
+        "email"
+      ],
+      "message": "请查看决定与已确认日期，不把邮件送达时间当作决定时间。",
+      "action_target": "PG-002 反馈详情；需要确认时进入 PG-003。"
+    },
+    "N-005": {
+      "id": "N-005",
+      "title": "通知需要重试",
+      "trigger": "外部服务未确认投递且状态已核对后",
+      "recipients": [
+        "R-LEAD"
+      ],
+      "channels": [
+        "in_app"
+      ],
+      "message": "决定仍有效；仅重试同一投递，不复制客户反馈或业务决定。",
+      "action_target": "PG-002 反馈详情；需要确认时进入 PG-003。"
+    },
+    "N-006": {
+      "id": "N-006",
+      "title": "暂缓事项待跟进",
+      "trigger": "满足 BR-005 记录的跟进条件后",
+      "recipients": [
+        "R-LEAD"
+      ],
+      "channels": [
+        "in_app"
+      ],
+      "message": "重新查看待定事项和最新依据，再作明确决定。",
+      "action_target": "PG-002 反馈详情；需要确认时进入 PG-003。"
+    }
+  },
+  "notification_order": [
+    "N-001",
+    "N-002",
+    "N-003",
+    "N-004",
+    "N-005",
+    "N-006"
+  ]
+}

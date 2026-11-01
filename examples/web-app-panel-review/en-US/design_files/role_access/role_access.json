@@ -1,0 +1,141 @@
+{
+  "schema_version": 5,
+  "title": "Studio and customer authorization",
+  "summary": "Members, leads and customers receive explicit authorization. Inheritance reuses permission rules without granting project ownership.",
+  "roles": {
+    "R-CLIENT": {
+      "id": "R-CLIENT",
+      "title": "Customer",
+      "assignment_rule": "Invited by the lead and assigned to a specific customer space."
+    },
+    "R-DESIGNER": {
+      "id": "R-DESIGNER",
+      "title": "Designer",
+      "assignment_rule": "Granted project membership by the studio administrator."
+    },
+    "R-LEAD": {
+      "id": "R-LEAD",
+      "title": "Project lead",
+      "assignment_rule": "Explicitly assigned as lead for a particular project, never inferred by AI."
+    },
+    "R-ADMIN": {
+      "id": "R-ADMIN",
+      "title": "Studio administrator",
+      "assignment_rule": "Authorized by the studio owner to manage membership and connections."
+    }
+  },
+  "role_order": [
+    "R-CLIENT",
+    "R-DESIGNER",
+    "R-LEAD",
+    "R-ADMIN"
+  ],
+  "policies": {
+    "AP-001": {
+      "id": "AP-001",
+      "title": "Submit own feedback",
+      "role_ref": "R-CLIENT",
+      "capability": "Submit own feedback",
+      "effect": "allow",
+      "applies_when": "Only in the customer’s own space.",
+      "requirements": [],
+      "custom_requirement": ""
+    },
+    "AP-002": {
+      "id": "AP-002",
+      "title": "Read another customer’s feedback",
+      "role_ref": "R-CLIENT",
+      "capability": "Read another customer’s feedback",
+      "effect": "deny",
+      "applies_when": "The customer spaces differ.",
+      "requirements": [],
+      "custom_requirement": ""
+    },
+    "AP-003": {
+      "id": "AP-003",
+      "title": "Assess delivery impact",
+      "role_ref": "R-DESIGNER",
+      "capability": "Assess delivery impact",
+      "effect": "allow",
+      "applies_when": "The designer belongs to the current project.",
+      "requirements": [],
+      "custom_requirement": ""
+    },
+    "AP-004": {
+      "id": "AP-004",
+      "title": "Commit an additional delivery date",
+      "role_ref": "R-DESIGNER",
+      "capability": "Commit an additional delivery date",
+      "effect": "deny",
+      "applies_when": "The member has not been explicitly granted R-LEAD for this project.",
+      "requirements": [],
+      "custom_requirement": ""
+    },
+    "AP-005": {
+      "id": "AP-005",
+      "title": "Confirm a scope arrangement",
+      "role_ref": "R-LEAD",
+      "capability": "Confirm a scope arrangement",
+      "effect": "allow",
+      "applies_when": "The lead owns the project and has sufficient evidence.",
+      "requirements": [
+        "confirm"
+      ],
+      "custom_requirement": ""
+    },
+    "AP-006": {
+      "id": "AP-006",
+      "title": "Return for more information",
+      "role_ref": "R-LEAD",
+      "capability": "Return for more information",
+      "effect": "allow",
+      "applies_when": "Identify the missing information and retain the request.",
+      "requirements": [],
+      "custom_requirement": ""
+    },
+    "AP-007": {
+      "id": "AP-007",
+      "title": "Configure a connection",
+      "role_ref": "R-ADMIN",
+      "capability": "Configure a connection",
+      "effect": "allow",
+      "applies_when": "The connection belongs to the studio.",
+      "requirements": [
+        "confirm"
+      ],
+      "custom_requirement": ""
+    },
+    "AP-008": {
+      "id": "AP-008",
+      "title": "Export decision records",
+      "role_ref": "R-ADMIN",
+      "capability": "Export decision records",
+      "effect": "allow",
+      "applies_when": "Restrict the export to the authorized studio and exclude secret values.",
+      "requirements": [
+        "confirm"
+      ],
+      "custom_requirement": ""
+    }
+  },
+  "policy_order": [
+    "AP-001",
+    "AP-002",
+    "AP-003",
+    "AP-004",
+    "AP-005",
+    "AP-006",
+    "AP-007",
+    "AP-008"
+  ],
+  "inheritances": {
+    "RI-LEAD-DESIGNER": {
+      "id": "RI-LEAD-DESIGNER",
+      "title": "Lead retains member capabilities",
+      "kind": "inherits",
+      "source": "R-LEAD",
+      "target": "R-DESIGNER",
+      "description": "Do not extend access to other projects; inherited deny policies still require review."
+    }
+  }
+}

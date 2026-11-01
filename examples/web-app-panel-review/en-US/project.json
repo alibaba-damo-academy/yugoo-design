@@ -1,0 +1,14 @@
+{
+  "kind": "dsh-design-project",
+  "formatVersion": 3,
+  "id": "83b021b8-e043-5485-b232-e920aaf8be31",
+  "name": "Loopline Delivery · All-Panel Review",
+  "createdAt": "2026-11-01T00:00:00.000Z",
+  "knowledge": {
+    "provider": "ladybug-wasm"
+  },
+  "kit": {
+    "name": "web_app",
+    "version": "1.0"
+  }
+}
