@@ -56,7 +56,7 @@
 ## 千问办公 QwenWork
 
 - 呈现方式：在系统浏览器中打开完整 Companion，连接千问办公的原生会话。
-- 安装入口：[千问办公专用提示词](../../packages/companion/HOSTS.md#install-or-update-qwenwork)。从已获取的精确 npm 包准备专家套件，按[桌面准备指南](../../packages/companion/README.md#desktop-npm-package-preparation)在原生界面导入并启用。默认 ZIP 已含 MCP 连接器；独立 JSON 是组织策略允许时的替代入口，只启用一份 `design-system` 连接器。启用 Skill 不代表工具已连接。
+- 安装入口：[千问办公操作指引](../../packages/companion/HOSTS.md#install-or-update-qwenwork)。Agent 从精确 npm 包准备专家套件，并提供导入所需的文件和操作位置。导入套件后检查 `design-system` 连接器；未连接时，先让宿主 Agent 发现并使用本机可用的原生连接器操作。需要人工导入时，在“扩展 → 连接器 → 添加 → 粘贴 JSON 配置”中使用生成的 `design-system-mcp.json`，只保留一个工作连接器。实际调用工具确认可用；若当前任务未获得工具，按宿主提示新建任务后核验。启用 Skill 不代表 MCP 已连接。
 - 预览运行时与所需 Node 环境按随包指南准备。桌面输入依赖特定版本的宿主设置；普通 Hook 模式下可能需要回到原会话继续，不应将两种模式混用。
 - 历史验证范围：千问办公 `1.2.5` 系列、Yugoo Design 套件 `0.2.0` 的 Windows 本地预览；对应版本的首次会话身份、工具连接、系统浏览器打开及消息往返已有实际验证。
 - 历史边界：2026-10-11 的记录仍有发送确认与历史回显延迟，以及保存后继续、KAG 和完整设计执行待验收项；这些结果不能代替后续 `1.3.2` 的逐项验收。当前前台 GRA 的使用条件见下方[评审降级](#后台能力与评审降级)。千问办公接入不使用 WorkBuddy 的内嵌面板路径。

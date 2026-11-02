@@ -19,7 +19,11 @@ test('shared packaging retains native execution methods and refuses conflicting 
     const target = join(root, host), path = await copyNativeExecutionReference(target, { host })
     const method = await readFile(path, 'utf8')
     if (host === 'claude-code') assert.equal(method, shared)
-    else assert.ok(method.endsWith(shared.replaceAll('Codex', host === 'qoder' ? 'Qoder CLI' : 'QwenWork').replace('`codex exec`', host === 'qoder' ? '`qodercli -p`' : 'a native QwenWork agent')))
+    else if (host === 'qwenwork') {
+      assert.ok(method.endsWith(shared), 'Keep shared host qualifiers and complete native methods')
+      assert.match(method, /Codex-only launch references are not QwenWork parameters/)
+      assert.match(method, /main-conversation GRA follows the shared manual foreground path/)
+    } else assert.ok(method.endsWith(shared.replaceAll('Codex', 'Qoder CLI').replace('`codex exec`', '`qodercli -p`')))
     await copyNativeExecutionReference(target, { host })
     assert.equal(await readFile(path, 'utf8'), method)
     await writeFile(path, 'foreign method retained')

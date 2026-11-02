@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { realpath } from 'node:fs/promises'
+import { dirname } from 'node:path'
 import { assertNodeVersion, assertNodeExecutablePath, inspectNodeRuntime, nodeRuntimeCandidates,
-  resolveNodeRuntime, verifyNodeRuntime } from '../src/npm-node-runtime.mjs'
+  resolveNodeRuntime, verifyNodeRuntime, resolveDesktopNodeRuntime } from '../src/npm-node-runtime.mjs'
 
 test('the engine minimum accepts odd and future majors without a new upper bound', () => {
   for (const version of ['22.19.0', 'v22.22.3', '23.11.1', '24.22.1', '26.0.0']) assert.ok(assertNodeVersion(version))
@@ -72,4 +73,18 @@ test('real standalone Node is observed and hashed; changed receipt pins are reje
   assert.equal(selected.version, process.versions.node); assert.equal(selected.verified, true)
   await verifyNodeRuntime(selected)
   await assert.rejects(verifyNodeRuntime({ ...selected, sha256: '0'.repeat(64) }), /sha256 changed/)
+})
+
+test('native POSIX desktop preparation verifies the same public Node instead of a Windows locator', { skip: process.platform === 'win32' }, async () => {
+  const current = await resolveDesktopNodeRuntime(process.execPath, { targetPlatform: process.platform })
+  assert.equal(current.platform, process.platform); assert.equal(current.verified, true)
+  assert.equal(current.executable, await realpath(process.execPath))
+  const discovered = await resolveDesktopNodeRuntime(undefined, { targetPlatform: process.platform, environment: { ...process.env, PATH: dirname(current.executable) } })
+  assert.equal(discovered.source, 'path'); assert.equal(discovered.executable, current.executable)
+  const cross = await resolveDesktopNodeRuntime('C:\\Public Node\\node.exe')
+  assert.equal(cross.platform, 'win32'); assert.equal(cross.verified, false)
+  await assert.rejects(resolveDesktopNodeRuntime(), /target Windows/)
+  const candidates = nodeRuntimeCandidates({ platform: 'darwin', environment: { PATH: '/opt/homebrew/bin:/usr/local/bin:/opt/homebrew/bin:relative' } })
+  assert.deepEqual(candidates.map(x => x.executable), ['/opt/homebrew/bin/node', '/usr/local/bin/node'])
+  await assert.rejects(resolveNodeRuntime({ platform: 'darwin', arch: 'arm64', environment: {}, inspect: async () => { throw Error('must not inspect private apps') } }), { code: 'YUGOO_NODE_REQUIRED' })
 })

@@ -94,17 +94,17 @@ the host-specific sections below are optional overrides and adapter details.
 先读取官方安装指南，按当前宿主的步骤操作：
 https://github.com/alibaba-damo-academy/yugoo-design/blob/main/packages/companion/HOSTS.md#agent-led-installation-and-updates
 优先使用我明确指定的版本。未指定版本时，将 npm 的 latest 解析为一个精确已发布的稳定版本；如果 latest 指向预发布版本，请说明情况并停止，不自行改选其他版本。核对完整性，复用匹配的已有安装；需要新版本时按指南获取。GitHub 链接只用于读取公开指南，无需登录、克隆仓库或源码构建。
-请完成环境检查、安装、宿主导入或启用及验证，保留已有项目、配置与安装回执。需要我授权、下载模型、启用插件或重启宿主时，给出必要操作，等我完成后继续核验。
+请读取当前宿主对应章节及其中链接的专用指南，根据实际系统、架构和可用工具选择路径与命令。缺少 Node 等依赖时先帮我准备，再继续安装。完成安装、宿主导入或启用及验证，保留已有项目、配置与回执。需要我操作原生界面（如导入套件、添加 MCP 连接器）、授权或重启时，给出准确位置和本次生成的文件或配置，等我完成后继续核验；不要只生成安装材料就结束。
 最后分别说明取得的包版本、宿主实际加载版本和未就绪能力，并给出当前宿主的 yugoo 入口，以及使用 Web App Kit 创建第一个设计项目的一条可复制请求。
 ```
 
 ```text
 Install or update Yugoo Design in my current Agent host using the official npm package yugoo-design.
-Follow the public guide for this host (no login, clone or source build):
+Read this host's section and linked guide (no login, clone or source build):
 https://github.com/alibaba-damo-academy/yugoo-design/blob/main/packages/companion/HOSTS.md#agent-led-installation-and-updates
-Use the version I request; otherwise resolve npm latest once to an exact published stable version. If latest is a prerelease, report and stop; do not choose another version. Verify integrity; reuse a matching install or acquire that version.
-Check the environment, install, complete native import/activation and verify. Preserve projects, settings and receipts. Give steps and wait if I must authorize, download a model, activate a plugin or restart the host; resume verification after I finish.
-Report acquired and actually loaded versions separately, plus capabilities not ready. Give the host's yugoo entry point and a copyable request to create my first Design Project with Web App Kit.
+Use my requested version or resolve npm latest once to an exact stable release; if it is a prerelease, report and stop. Verify integrity and reuse a matching install. Adapt commands to the actual system, architecture and tools; prepare missing prerequisites such as Node, then continue.
+Preserve projects, settings and receipts. Complete installation and activation. For manual suite/MCP import, authorization or restart, give the exact UI location and generated file/configuration; wait, then verify. Preparing files alone is not completion.
+Report acquired and loaded versions, remaining limits, the host's yugoo entry and a copyable first-project request using Web App Kit.
 ```
 
 For an explicit override, append “Target host: Codex CLI”, “Target host:
@@ -123,7 +123,14 @@ must be inspected through its existing receipt before retrying.
 1. Identify the current host from the session. Reuse a compatible public Node.js
    `>=22.19.0` selected by the user, system or version manager. Do not borrow a
    Preview, application-private or plugin-bundled Node, or change global PATH.
-   Prepare a missing prerequisite once; adapters do not each install Node.
+   Prepare a missing prerequisite once through the existing system/version manager
+   or an appropriate official [Node.js download](https://nodejs.org/en/download),
+   then continue installation. Select the actual operating system and architecture,
+   verify `node --version`, `npm --version` and the resolved executable, and retain
+   that absolute Node path for host startup. Do not treat missing Node as a final
+   refusal or require Yugoo's CLI to install its own prerequisite. If an installer
+   needs user interaction, give the specific step and continue after it finishes.
+   Adapters do not each install Node.
    When available, use `resolve-node` and keep verification and startup on the
    selected executable. DSH Desktop retains its official Electron/Loader entry.
 2. When no version is specified, resolve npm's `latest` once to its exact
@@ -145,9 +152,13 @@ must be inspected through its existing receipt before retrying.
    under the actual runtime user and OS. A WSL cache does not prepare Windows.
    Respect an explicit choice to disable embedding and preserve a DSH custom
    provider. An unavailable embedding model does not prevent basic design work.
-5. Complete the native registration/import and give the user only the required
-   authorization, activation or new-session action. Continue checks after that
-   action. Report acquisition, native registration, loaded version and actual
+5. Complete the native registration/import. If a native UI action is necessary,
+   give its exact navigation, the generated file or configuration, and the next
+   action; do not leave the user to find a separate host guide. A suite import
+   and an MCP connection are separate checks. Reuse a working connector; otherwise
+   follow the host's connector step and confirm its tools are available. Ask for
+   activation or a new session only when the host needs it, and continue checks
+   there. Report acquisition, native registration, loaded version and actual
    design usability separately, including the `yugoo` entry and tools. Also
    distinguish complete model files, tested CPU inference and the real project's
    semantic readiness; prepared materials alone are not an activated plugin.
@@ -183,9 +194,11 @@ actual help rather than inventing flags.
 
 See [Codex registration and recovery](README.md#persistent-registration-transactions).
 
-### Install or update: Codex Desktop on macOS arm64
+<a id="install-or-update-codex-desktop-on-macos-arm64"></a>
 
-> Install or update Yugoo Design in this Mac Codex Desktop conversation. Resolve
+### Install or update: Codex Desktop
+
+> Install or update Yugoo Design in this Codex Desktop conversation. Resolve
 > the requested `yugoo-design` release to its exact published version, retain its integrity, and acquire
 > it in a durable version directory. Read that package's actual help and the
 > Desktop guide below. Reuse an existing compatible public Node. Use its
@@ -370,21 +383,60 @@ recovery limits before retrying a partial operation.
 > `https://registry.npmjs.org`. Reuse a matching retained runtime or acquire the exact
 > version in a new durable directory. Use
 > the installed `install --host qwenwork` route, or its explicit
-> `prepare-desktop --target qwenwork` route, with actual Windows
+> `prepare-desktop --target qwenwork` route, with the actual machine's
 > Node/runtime paths, verified executable/worker pins, and an external output
 > directory. Keep the npm version separate from the numeric native suite version;
 > an update requires the previous preparation receipt and a greater suite version.
 > Prepare the suite ZIP and connector configuration. The default ZIP contains
-> its MCP connector; the separate JSON is an alternative for a permitted
-> separate-connector arrangement. Enable only one `design-system` connector,
+> its MCP connector. Check whether the host enabled it; when a separate connector
+> is needed, use the generated JSON and the native steps below. Enable only one `design-system` connector,
 > using `--separate-mcp` when a connector-free suite is required. Use the host's
 > supported importer, requesting only the necessary native GUI confirmation;
-> preserve the organization's connector policy. After normal restart, confirm the
+> preserve the organization's connector policy. Give the user the exact UI location
+> and generated file/configuration for each required manual step. After activation, confirm the
 > actually loaded `yugoo` version, MCP tools, original conversation, Panel
 > save/reopen and saved-edit consumption. Preparation alone is not installation.
 
 See [desktop preparation](README.md#desktop-npm-package-preparation) and
 [QwenWork's owning guide](hosts/qwenwork/README.md).
+
+**Native import and MCP activation:**
+
+First use the installation capabilities advertised by the current QwenWork
+conversation. Its bundled `qwenwork-guidance/guide-mcp.md` describes discovering
+the actual settings keys with `qw_query({key: "qwenwork"})`. When the returned
+plugin entry advertises `install_from_path`, follow its schema with the prepared
+suite. When the connector entry advertises `add`, use the generated
+`design-system-mcp.json` connector's `command`, `args` and `env` as its `config`.
+Reuse an existing working connector. Query the returned detail key to confirm
+connection and tools, then make a real tool call. These are native Host actions,
+not another Yugoo CLI or desktop-control endpoint.
+
+If the Agent cannot complete a required action through those native tools, give
+the user these UI steps and the corresponding generated files/configuration:
+
+1. Open **Extensions → Expert Kits → Add → Upload suite**, select the generated
+   `yugoo-design.zip`, install it and enable the suite.
+2. Check its `design-system` connector. If tools are not connected and no working
+   connector already exists, open **Extensions → Connectors → Add → Paste JSON
+   configuration**. Paste the contents of the generated `design-system-mcp.json`,
+   import it and enable it. With `--separate-mcp`, this separate step is required.
+   Keep one active connector rather than importing it twice.
+3. After adding/enabling the connector, start a new QwenWork task so the tools
+   load, select the `yugoo` skill and continue verification there. Verify a real
+   tool call; a ZIP or successful Skill import alone does not establish readiness.
+
+Native connector actions can reload the tool pool. If the current conversation
+already exposes and successfully calls the new tools, continue there; otherwise
+use the host's new-task activation step above. A connected pool alone does not
+prove that this Agent can call its tools.
+
+These native UI steps follow QwenWork's [suite import guide](https://docs.qwenwork.cn/desktop/expert-kits)
+and [connector guide](https://docs.qwenwork.cn/features/connectors).
+The Agent adapts prerequisites, paths and shell commands to the actual environment;
+historical test-machine details below are not additional installation requirements.
+An acquired adapter's concrete unsupported-platform error still needs a product
+fix; do not manufacture another machine's paths or claim success from preparation.
 
 The inspected QwenWorkCN `1.3.2-26101704` desktop disables background Agent
 Sessions. A restart needed to load the suite does not restore that capability.
@@ -496,7 +548,7 @@ If setup requires restarting the host, explain it and let the user restart norma
 | Codex Desktop on macOS arm64 | [Owning guide](hosts/codex-desktop/README.md), [npm installer](src/npm-installer-codex-desktop.mjs) | Installed desktop entry: `design.mjs serve --host codex --codex-desktop` | [Host-launched bridge](src/codex-desktop-bridge.mjs); original-Agent consumption requires its own receipt |
 | Claude Code | [Claude Skill](plugin-claude/design-system/skills/yugoo/SKILL.md), [installer](src/npm-installer-claude.mjs) | `design.mjs serve --host claude-code` | [Native Hook adapter](src/claude-hook-transport.mjs); verify native consumption separately |
 | Qoder CLI | [Qoder Skill](plugin-qoder/design-system/skills/yugoo/SKILL.md), [installer](src/npm-installer-qoder.mjs) | `design.mjs serve --host qoder` | [Native Hook adapter](src/qoder-hook-transport.mjs); native approval and delivery policy still apply |
-| QwenWork Windows preview | [QwenWork Skill](plugin-qwenwork/design-system/skills/yugoo/SKILL.md), [suite packaging](qwenwork-package.mjs), [setup and evidence](hosts/qwenwork/README.md) | `design.mjs serve --host qwenwork` defaults to verified desktop user input; `--qwenwork-events-only` explicitly selects limited events | [Desktop user input](src/qwenwork-desktop-input.mjs) and separate [Hook events](src/qwenwork-hook-transport.mjs) |
+| QwenWork | [QwenWork Skill](plugin-qwenwork/design-system/skills/yugoo/SKILL.md), [suite packaging](qwenwork-package.mjs), [setup and evidence](hosts/qwenwork/README.md) | `design.mjs serve --host qwenwork` defaults to verified desktop user input; `--qwenwork-events-only` explicitly selects limited events | [Desktop user input](src/qwenwork-desktop-input.mjs) and separate [Hook events](src/qwenwork-hook-transport.mjs) |
 | WorkBuddy Windows preview | [Owning guide](hosts/workbuddy/README.md), [Design Skill](hosts/workbuddy/design-SKILL.md), [suite packaging](workbuddy-package.mjs) | `design_command` + `yugoo_workbuddy_open_panel` in the current host; shared Companion service | Real input/save, history and Windows KAG verified separately; serial foreground native Producer publication verified through 0.3.8. Workers and detached GRA remain unavailable. Persistent preview path migration is a separate installation check. |
 
 All `serve` entries also require the exact project, native conversation and other

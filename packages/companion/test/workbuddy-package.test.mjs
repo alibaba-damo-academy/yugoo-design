@@ -57,6 +57,26 @@ test('WorkBuddy panel metadata preserves conditional GRA and never grants backgr
   }
 })
 
+test('WorkBuddy POSIX package keeps native paths and rejects mixed target paths', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'workbuddy-posix-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const options = { nodeExecutable: "/opt/Jeff's tools/node", runtimeRoot: '/Users/设计/shared runtime' }
+  const target = join(root, 'native')
+  await packageWorkBuddyProbe(target, options)
+  const mcp = JSON.parse(await readFile(join(target, '.mcp.json'), 'utf8'))
+  assert.deepEqual(mcp.mcpServers['design-system-workbuddy-probe'], {
+    command: options.nodeExecutable, args: ['/Users/设计/shared runtime/scripts/design.mjs', 'mcp'],
+  })
+  const hooks = JSON.parse(await readFile(join(target, 'hooks/hooks.json'), 'utf8'))
+  for (const groups of Object.values(hooks.hooks)) {
+    assert.equal(groups[0].hooks[0].command, "'/opt/Jeff'\\''s tools/node' \"${CODEBUDDY_PLUGIN_ROOT}/scripts/workbuddy-context-probe.mjs\"")
+  }
+  for (const invalid of [{ ...options, runtimeRoot: 'C:\\runtime' }, { ...options, nodeExecutable: 'C:\\node.exe' }]) {
+    await assert.rejects(packageWorkBuddyProbe(join(root, 'invalid'), invalid), /same target/)
+    await assert.rejects(readdir(join(root, 'invalid')), { code: 'ENOENT' })
+  }
+})
+
 test('WorkBuddy probe stages native manifest/MCP/Bash hooks without Qwen protocol or host launcher', async t => {
   const root = await mkdtemp(join(tmpdir(), 'workbuddy-package-'))
   t.after(() => rm(root, { recursive: true, force: true }))

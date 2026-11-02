@@ -56,16 +56,16 @@ test('prerelease peers are explicit; a broad stable range must not silently admi
   assert.throws(() => assertPeer('dsh-agent', '0.1.3-rc.1', `${range} || 0.1.2-rc.1`), /does not satisfy/)
 })
 
-test('current DSH peer admission requires released RC2 and rejects unqualified Host versions', () => {
-  const current = '0.2.0-rc.2'
+test('current DSH peer admission preserves rc2 and uses the compatible rc3 API range', () => {
+  const current = '0.2.0-rc.2 || ^0.2.1-rc.3'
   let changed = 0
   for (const packageName of ['core', 'panel', 'provider-web-app', 'studio-dsh']) {
     const value = JSON.parse(readFileSync(new URL(`../../${packageName}/package.json`, import.meta.url), 'utf8'))
     for (const [name, range] of Object.entries(value.peerDependencies).filter(([name]) => name.startsWith('@deepseek-ai/dsh-'))) {
-      assert.equal(range, current, `${packageName}/${name}: the current public API requires exact RC2`)
+      assert.equal(range, current, `${packageName}/${name}: one checked Host API range`)
       changed++
-      assertPeer(name, current, range)
-      for (const unknown of ['0.1.0-rc.5', '0.1.1-rc.2', '0.1.2-alpha.1', '0.1.2-rc.1', '0.1.3-rc.1', '0.2.0-rc.1', '0.2.0-rc.3', '0.2.0', '0.2.1', '0.3.0-rc.1']) {
+      for (const version of ['0.2.0-rc.2', '0.2.1-rc.3', '0.2.1-rc.4', '0.2.1-rc.5', '0.2.1-rc.6', '0.2.1', '0.2.2']) assertPeer(name, version, range)
+      for (const unknown of ['0.1.0-rc.5', '0.1.1-rc.2', '0.1.2-alpha.1', '0.1.2-rc.1', '0.1.3-rc.1', '0.2.0-rc.1', '0.2.0-rc.3', '0.2.0', '0.2.1-rc.2', '0.2.2-rc.1', '0.3.0-rc.1', '0.3.0', '1.0.0']) {
         assert.throws(() => assertPeer(name, unknown, range), /does not satisfy/, `${packageName}/${name}: unknown ${unknown}`)
       }
     }
@@ -76,7 +76,7 @@ test('current DSH peer admission requires released RC2 and rejects unqualified H
       assert.throws(() => assertPeer('react', '19.0.0', value.peerDependencies.react), /does not satisfy/)
     }
   }
-  assert.equal(changed, 29, 'all DSH peers share the qualified current API boundary')
+  assert.equal(changed, 40, 'all DSH peers share the qualified current API boundary')
   assert.equal(manifest.peerDependencies['@deepseek-ai/cordis'], '^4.0.2')
   assert.equal(manifest.peerDependencies['@deepseek-ai/schemastery'], '^3.18.1')
 })

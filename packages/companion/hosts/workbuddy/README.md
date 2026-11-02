@@ -30,7 +30,7 @@ The [shared package guide](../../README.md#npm-candidate-and-native-installation
 covers Node selection, CPU dependency installation and model preparation.
 
 1. Prepare materials from that acquired package with its
-   `yugoo-design install --host workbuddy` entry. Supply the verified Windows public
+   `yugoo-design install --host workbuddy` entry. The Agent selects the verified native public
    Node path, an external persistent preparation destination and an explicit numeric
    native suite version, using the actual options in the package's help.
 2. Import the returned `nativeImport.market` directory through WorkBuddy's
@@ -51,7 +51,7 @@ The acquired manifest selects the Node range; current packages use Node.js
 independent. Select a native version for the acquired package; an owned update
 must exceed the previous preparation receipt's suite version. Historical test
 suite numbers are not version recommendations for a new installation.
-Preparation from WSL or another OS must use the explicit Windows path mappings
+Preparation for a separate Windows target from another OS uses explicit Windows path mappings
 in the [desktop preparation guide](../../README.md#desktop-npm-package-preparation);
 preparation there does not verify the target Windows runtime.
 

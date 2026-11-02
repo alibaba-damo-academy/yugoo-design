@@ -99,7 +99,7 @@ test('explicit plan is read-only; official argv preserves foreign config; readba
   const f = await fixture(t), before = await readFile(f.manifestPath)
   const plan = await planDshInstallation(f.options)
   assert.equal(f.calls.length, 0); assert.deepEqual(await readFile(f.manifestPath), before)
-  assert.deepEqual(plan.args, [f.paths.cli, 'plugin', '--profile', 'chosen', 'add', '--workspace-root', '--save-exact', '@release/design-system-dsh@1.2.3', '--registry', 'https://registry.npmjs.org/'])
+  assert.deepEqual(plan.args, [f.paths.cli, 'plugin', '--profile', 'chosen', 'add', '--workspace-root', '--save-exact', '@release/design-system-dsh@1.2.3', '--registry=https://registry.npmjs.org/'])
   const result = await applyDshInstallation(plan, f.options)
   assert.equal(result.status, 'registered-config-parsed'); assert.equal(result.userConfigurationPreserved, true)
   assert.equal(result.scope, 'isolated-test-contract'); assert.equal(result.runtimeMounted, false)
@@ -326,7 +326,7 @@ test('direct Agent entry composes owning DSH plan/apply and repeats without re-e
 test('product DSH mapping supplies exact official command; overrides and saved-plan drift cannot execute',async t=>{
   const f=await productFixture(t)
   const plan=await installerMain([...f.args,'--dry-run'],f.context)
-  assert.deepEqual(plan.args,[f.paths.cli,'plugin','--profile','chosen','add','--workspace-root','--save-exact','@release/design-system-dsh@1.2.3','--registry','https://registry.npmjs.org/'])
+  assert.deepEqual(plan.args,[f.paths.cli,'plugin','--profile','chosen','add','--workspace-root','--save-exact','@release/design-system-dsh@1.2.3','--registry=https://registry.npmjs.org/'])
   assert.equal(f.calls.length,0)
   await assert.rejects(installerMain([...f.args,'--apply','--plan',plan.planFile,'--aggregate-selector','@release/design-system-dsh@1.2.4'],f.context),/override differs/)
   assert.equal(f.factories(),1)
@@ -347,7 +347,9 @@ test('explicit mirror is pinned separately from release origin through plan, app
   assert.equal(plan.registry, registry)
   assert.equal(plan.product.releaseSelection.registry, f.mapping.hosts.dsh.registry)
   assert.equal(plan.aggregateSelector, f.options.aggregateSelector)
-  assert.deepEqual(plan.args.slice(-3), [f.options.aggregateSelector, '--registry', registry])
+  assert.deepEqual(plan.args.slice(-2), [f.options.aggregateSelector, `--registry=${registry}`])
+  // The official Host extracts only this form for its pre-install manifest lookup.
+  assert.deepEqual(plan.args.filter(argument => argument.startsWith('--registry=')), [`--registry=${registry}`])
   for (const changed of [f.args, [...f.args, '--registry', 'https://different.example/']])
     await assert.rejects(installerMain([...changed, '--apply', '--plan', plan.planFile], f.context), /Saved registry mismatch/)
   assert.equal(f.calls.length, 0)
@@ -367,7 +369,7 @@ test('direct mirror install forwards transport and never retries a failed mirror
   assert.equal(result.status, 'failed-partial-state-retained')
   assert.equal(result.planSnapshot.registry, registry)
   assert.equal(result.planSnapshot.product.releaseSelection.registry, f.mapping.hosts.dsh.registry)
-  assert.equal(f.calls.length, 1); assert.equal(f.calls[0].args.at(-1), registry)
+  assert.equal(f.calls.length, 1); assert.equal(f.calls[0].args.at(-1), `--registry=${registry}`)
 })
 
 test('mirrors still reject unsafe URLs, wrong versions and malformed release mapping', async t => {

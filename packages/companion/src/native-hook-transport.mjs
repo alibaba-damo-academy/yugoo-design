@@ -6,6 +6,26 @@ import { homedir } from 'node:os'
 import { dirname, join, isAbsolute, resolve } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 
+const windowsStorage = process.platform === 'win32' ? import('./windows-private-storage.mjs') : undefined
+async function assertPrivate(path, stat) {
+  if (windowsStorage) {
+    const checked = await (await windowsStorage).assertWindowsPrivate(path)
+    if (checked.dev !== stat.dev || checked.ino !== stat.ino) throw new Error('Private notification path changed during inspection.')
+  }
+  else if ((stat.mode & 0o077) || (process.getuid && stat.uid !== process.getuid())) throw new Error('Invalid private notification.')
+}
+
+/** The same bounded, no-follow native private-file read serves Hooks and desktop control. */
+export async function readNativePrivateFile(path) {
+  const file = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK)
+  try {
+    const stat = await file.stat()
+    if (!stat.isFile() || stat.size > 262144) throw new Error('Invalid private notification.')
+    await assertPrivate(path, stat)
+    return await file.readFile('utf8')
+  } finally { await file.close() }
+}
+
 export function createNativeHookTransport({ host, label, noticeFile, inspectProcess, nativeHookProcess, registrationEvents = ['SessionStart'], requireTranscript = false, resumeEvents = [] }) {
   const prefixes = { qoder: 'qoder', 'claude-code': 'claude', qwenwork: 'qwenwork' }
   const prefix = prefixes[host]
@@ -14,14 +34,6 @@ export function createNativeHookTransport({ host, label, noticeFile, inspectProc
   const resumeRetentionMs = 24 * 60 * 60 * 1000
   const marker = `design-system-${prefix}-hook:`
   const defaultRoot = () => join(homedir(), '.local/state/design-system', `${prefix}-hooks`)
-  const windowsStorage = process.platform === 'win32' ? import('./windows-private-storage.mjs') : undefined
-  async function assertPrivate(path, stat) {
-    if (windowsStorage) {
-      const checked = await (await windowsStorage).assertWindowsPrivate(path)
-      if (checked.dev !== stat.dev || checked.ino !== stat.ino) throw new Error('Private notification path changed during inspection.')
-    }
-    else if ((stat.mode & 0o077) || (process.getuid && stat.uid !== process.getuid())) throw new Error('Invalid private notification.')
-  }
   async function privateDirectory(path) {
     if (windowsStorage) await (await windowsStorage).ensureWindowsPrivateDirectory(path)
     else await mkdir(path, { recursive: true, mode: 0o700 })
@@ -36,13 +48,7 @@ export function createNativeHookTransport({ host, label, noticeFile, inspectProc
     return { directory: join(hookRoot, sessionId) }
   }
   async function privateJson(path) {
-    const file = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK)
-    try {
-      const stat = await file.stat()
-      if (!stat.isFile() || stat.size > 262144) throw new Error('Invalid private notification.')
-      await assertPrivate(path, stat)
-      return JSON.parse(await file.readFile('utf8'))
-    } finally { await file.close() }
+    return JSON.parse(await readNativePrivateFile(path))
   }
 
   async function createConnection(options) {

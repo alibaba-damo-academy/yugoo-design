@@ -1,11 +1,12 @@
 /** Experimental, explicitly enabled desktop user-input transport. No model client. */
-import { readFile, realpath } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { realpath } from 'node:fs/promises'
+import { join, win32, posix } from 'node:path'
 import { homedir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { qwenworkProcess } from './qwenwork-connection.mjs'
 import { createWindowsProcessInspector } from './windows-native-platform.mjs'
 import { createQwenWorkHookConnection } from './qwenwork-hook-transport.mjs'
+import { readNativePrivateFile } from './native-hook-transport.mjs'
 
 /** Browser user actions need a user-input transport, not an event receipt. */
 export function resolveQwenWorkInputMode({ host = 'codex', qwenworkDesktop, qwenworkEventsOnly } = {}) {
@@ -66,29 +67,41 @@ export async function createDesktopInputConnection({ sessionId, nativeCwd, reque
   } }
 }
 
-export async function createQwenWorkDesktopInput(options) {
-  if (process.platform !== 'win32' || !process.env.APPDATA) throw Error('Native Windows QwenWork desktop input required.')
-  const { assertWindowsPrivate } = await import('./windows-private-storage.mjs')
-  const root = join(process.env.APPDATA, 'QwenWorkCN')
+export function qwenWorkUserDataRoot({ platform=process.platform, environment=process.env, home=homedir() }={}) {
+  if (platform === 'win32' && typeof environment.APPDATA === 'string' && win32.isAbsolute(environment.APPDATA)) return win32.join(environment.APPDATA, 'QwenWorkCN')
+  if (platform === 'darwin' && typeof home === 'string' && posix.isAbsolute(home)) return posix.join(home, 'Library/Application Support/QwenWorkCN')
+  throw Error('Native Windows or macOS QwenWork user-data path required.')
+}
+
+export async function createQwenWorkDesktopInput(options, {
+  platform=process.platform, environment=process.env, home=homedir(), canonical=realpath,
+  readPrivate=readNativePrivateFile, inspectProcess=qwenworkProcess,
+  createInspector=createWindowsProcessInspector, fetchRequest=fetch,
+  openDatabase=async path=>{ const {DatabaseSync}=await import('node:sqlite'); return new DatabaseSync(path,{readOnly:true}) },
+}={}) {
+  const root = qwenWorkUserDataRoot({platform,environment,home})
+  if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(options.sessionId ?? '')) throw Error('Exact QwenWork session UUID required.')
   const endpointFile = join(root, 'cli-control/endpoint.json')
-  await assertWindowsPrivate(endpointFile)
-  const endpoint = JSON.parse(await readFile(endpointFile, 'utf8'))
+  let endpoint
+  try { endpoint = JSON.parse(await readPrivate(endpointFile)) }
+  catch (error) {
+    if (error.code === 'ENOENT') throw Error('QwenWork desktop control endpoint is unavailable; enable only through authorized host setup, or explicitly select --qwenwork-events-only.',{cause:error})
+    throw error
+  }
   if (endpoint.protocol !== 'qwenwork.desktop.v1' || !/^[a-f0-9]{32}$/.test(endpoint.instance_id) || !Number.isInteger(endpoint.port) || endpoint.port < 1 || endpoint.port > 65535) throw Error('Invalid QwenWork desktop endpoint.')
   const tokenFile = join(root, 'cli-control', endpoint.instance_id, 'token')
-  await assertWindowsPrivate(tokenFile)
-  const token = await readFile(tokenFile, 'utf8')
+  const token = await readPrivate(tokenFile)
   if (!/^[a-f0-9]{64}$/.test(token)) throw Error('Invalid QwenWork desktop credential.')
-  const nativeCwd = await realpath(options.nativeCwd)
-  const transcriptPath = await realpath(options.transcriptPath)
-  const bindingFile = join(homedir(), '.local/state/design-system/qwenwork-hooks', options.sessionId, 'binding.json')
-  await assertWindowsPrivate(bindingFile)
-  const original = JSON.parse(await readFile(bindingFile, 'utf8'))
-  const { DatabaseSync } = await import('node:sqlite')
-  const inspector = createWindowsProcessInspector()
+  const nativeCwd = await canonical(options.nativeCwd)
+  const transcriptPath = await canonical(options.transcriptPath)
+  const bindingFile = join(home, '.local/state/design-system/qwenwork-hooks', options.sessionId, 'binding.json')
+  const original = JSON.parse(await readPrivate(bindingFile))
+  const inspector = platform === 'win32' ? createInspector() : {close(){}}
   const verifyBinding = async () => {
-    const processInfo = await qwenworkProcess(original.pid, { snapshot: inspector.snapshot })
-    if (!processInfo.supported || processInfo.procStart !== original.procStart || original.cwd !== nativeCwd || original.transcriptPath !== transcriptPath) throw Error('QwenWork native identity changed; reopen the Panel.')
-    const db = new DatabaseSync(join(root, 'data/agents.db'), { readOnly: true })
+    const current = JSON.parse(await readPrivate(bindingFile))
+    const processInfo = await inspectProcess(original.pid, {platform,...(inspector.snapshot?{snapshot:inspector.snapshot}:{})})
+    if (!processInfo.supported || processInfo.procStart !== original.procStart || current.pid !== original.pid || current.procStart !== original.procStart || current.cwd !== nativeCwd || current.transcriptPath !== transcriptPath || original.cwd !== nativeCwd || original.transcriptPath !== transcriptPath) throw Error('QwenWork native identity changed; reopen the Panel.')
+    const db = await openDatabase(join(root, 'data/agents.db'))
     try {
       db.exec('PRAGMA query_only=ON')
       const rows = db.prepare('SELECT id FROM sub_chats WHERE session_id=?').all(options.sessionId)
@@ -97,9 +110,9 @@ export async function createQwenWorkDesktopInput(options) {
     } finally { db.close() }
   }
   const request = async (method, params) => {
-    const current = JSON.parse(await readFile(endpointFile, 'utf8'))
-    if (current.instance_id !== endpoint.instance_id || current.port !== endpoint.port) throw Error('QwenWork desktop instance changed; reopen the Panel.')
-    const response = await fetch(`http://127.0.0.1:${endpoint.port}/v1/control`, { method: 'POST', redirect: 'error',
+    const current = JSON.parse(await readPrivate(endpointFile))
+    if (current.protocol !== endpoint.protocol || current.instance_id !== endpoint.instance_id || current.port !== endpoint.port || await readPrivate(tokenFile) !== token) throw Error('QwenWork desktop instance changed; reopen the Panel.')
+    const response = await fetchRequest(`http://127.0.0.1:${endpoint.port}/v1/control`, { method: 'POST', redirect: 'error',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ schema_version: 'qwenwork.desktop-request.v1', method, params }), signal: AbortSignal.timeout(20000) })
     if (response.headers.get('x-qwenwork-instance') !== endpoint.instance_id) throw Error('QwenWork desktop response instance mismatch.')

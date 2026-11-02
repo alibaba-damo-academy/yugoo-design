@@ -30,6 +30,8 @@ function pending(host, status, missing, message) {
     installation: { host: host ?? null, acquisition: 'unverified', registration: 'not-performed',
       activation: 'not-performed', usability: 'unverified', nextActions: [{ action: 'supply-inputs', automatic: false, message }] } }
 }
+const qwenConnectorInstructions = 'Reuse an already working design-system connector instead of adding a duplicate. Discover the current host\'s native entries with qw_query({key:"qwenwork"}), then query its advertised qwenwork.settings.connector.custom entry. If add is advertised and needed, the host Agent can use qw_action({key:"qwenwork.settings.connector.custom",action:"add",params:{name:"design-system",config:CONFIG}}), where CONFIG is the unchanged mcpServers["design-system"] entry in this generated design-system-mcp.json (command, args and any env). Query the exact detail key returned by the host and confirm connected status and tools. These are native Host tools, not Yugoo CLI or MCP-wrapper calls; a documented action alone does not prove it ran. If the host cannot perform this action or requires user interaction, open Extensions → Connectors → Add → Paste JSON configuration, paste the contents of this generated design-system-mcp.json, import and enable it. Keep one active connector and follow the organization\'s connector policy.'
+
 function activationActions(host, result, disableEmbedding) {
   const embedding = disableEmbedding ? [] : [{ action: 'prepare-local-embedding', automatic: true,
     command: ['prepare-embedding'],
@@ -40,10 +42,14 @@ function activationActions(host, result, disableEmbedding) {
     { action: 'activate-native-plugin', automatic: false, path: result.marketplacePath,
       message: 'Install or update this exact prepared local Yugoo Design source through Codex Desktop. If a normal restart is required, keep and return to the current conversation. Retain the exact npm version and previous owned source until the loaded version is verified.' }, ...embedding, verify]
   if (host === 'qwenwork') return [
-    { action: 'import-expert-suite', automatic: false, path: result.nativeImport?.archive,
-      message: 'Import this exact expert-suite ZIP through QwenWork. If bundled MCP is disabled by organization policy, use the emitted connector configuration and retain exactly one Yugoo Design connector.' },
+    { action: 'import-expert-suite', automatic: false, path: result.nativeImport?.archive, suitePath: result.nativeImport?.suite,
+      message: 'First use the current QwenWork host\'s advertised native tools: discover its actual entries with qw_query({key:"qwenwork"}), then inspect qwenwork.settings.plugins. Use install_from_path only if that entry advertises it, and follow its returned schema: supply the prepared suite directory at suitePath or archive at path only in the form that action actually accepts; do not assume a ZIP is accepted. If native tools cannot perform the required action, open Extensions → Expert Kits → Add → Upload suite, select the generated ZIP at path, install and enable it. Preparing files is not native installation.' },
+    { action: 'connect-mcp', automatic: false, path: result.nativeImport?.connector,
+      message: result.nativeImport?.includeMcp === false
+        ? 'This suite has no bundled connector. ' + qwenConnectorInstructions
+        : 'Check the suite\'s design-system connector and its tools first. ' + qwenConnectorInstructions },
     { action: 'activate-native-suite', automatic: false,
-      message: 'Enable the imported suite; start a new native conversation if QwenWork requires it. Retain the acquired npm runtime and confirm the actually loaded suite version.' }, ...embedding, verify]
+      message: 'After activation, select the yugoo skill and make a real tool call in the current native conversation if its tools are already available. If the host requires a new QwenWork task to expose the tools, give that exact activation step and continue verification there; a connected tool pool alone is not evidence that this Agent can call its tools. Confirm the actually loaded suite version and a real MCP tool call. Retain the acquired npm runtime; preparing files or importing the Skill alone is not completion.' }, ...embedding, verify]
   if (host === 'workbuddy') return [
     { action: 'import-or-update-market', automatic: false, path: result.nativeImport?.market,
       message: 'Import this stable marketplace through WorkBuddy, or refresh the same market and update its existing Yugoo Design plugin. Preparation has not registered or activated it.' },
@@ -96,14 +102,15 @@ export async function agentInstallation(values, { npmRoot, invoke, desktopPrepar
   const allowed = desktop ? ['host', ...DESKTOP_INSTALL_OPTIONS] : nativeOptions[host]
   for (const key of Object.keys(values)) assert.ok(allowed.includes(key), `${host} install accepts only ${allowed.map(k => '--' + k).join(', ')}; unsupported option --${key}`)
   const required = desktop ? ['destination', 'suite-version'] : ['receipt-dir']
-  if (desktop && platform !== 'win32') required.push('node-executable')
+  const windowsTarget = Object.hasOwn(values, 'npm-root-windows') || Object.hasOwn(values, 'destination-windows')
+  if (desktop && windowsTarget && platform !== 'win32') required.push('node-executable')
   if (host === 'dsh') required.push('dsh-config', 'profile')
   if (host === 'codex' && !admittedCodexAdapter) required.push('codex-executable')
   if (host === 'claude-code') required.push('claude-executable')
   if (host === 'qwenwork') required.push('qwenwork-runtime')
   if (host === 'workbuddy') for (const key of ['qwenwork-runtime', 'separate-mcp'])
     assert.ok(!Object.hasOwn(values, key), `WorkBuddy install does not accept --${key}`)
-  if (desktop && platform !== 'win32') required.push('npm-root-windows', 'destination-windows')
+  if (desktop && windowsTarget && platform !== 'win32') required.push('npm-root-windows', 'destination-windows')
   const missing = required.filter(key => typeof values[key] !== 'string' || !values[key])
   if (missing.length) return pending(host, 'inputs-required', missing,
     `The current Agent should obtain verified values for ${missing.map(key => '--' + key).join(', ')}. Ask only for information or host actions it cannot obtain through supported native inspection. No installation was attempted.`)

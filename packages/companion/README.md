@@ -7,7 +7,7 @@ For host-specific installation, startup and maintenance, start with the
 - Inspect the released package: read the [maintained npm guide](#maintained-npm-package-guide).
 - Develop an adapter: use [build and verification](#build-and-verify-repository-checkout); source commands are not extra installation steps.
 
-The [Mac Codex Desktop guide](hosts/codex-desktop/README.md) starts with
+The [Codex Desktop guide](hosts/codex-desktop/README.md) starts with
 npm-backed plugin preparation and native activation, followed by the existing
 source development route. Both keep the original conversation and use a
 host-launched notification bridge. Runtime checks, native loading and actual
@@ -940,8 +940,9 @@ First acquire the reviewed exact release in a durable dedicated npm directory
 using the package's declared Node engine and the
 [existing npm acquisition route](#registry-acquisition-by-the-host-agent).
 Set the supported CPU environment before acquisition and keep dependency
-lifecycle scripts enabled. A received verified tarball is the preflight
-alternative. Do not select an unreviewed `latest`. From that installed package:
+lifecycle scripts enabled. Resolve `latest` once for ordinary installation and
+retain the acquired exact version and integrity. A received verified tarball is
+the preflight alternative. From that installed package:
 
 ```sh
 npx --no-install yugoo-design prepare-desktop --help
@@ -953,17 +954,18 @@ That JSON contains only `executable`, `worker`, `nodeExecutable`,
 `executableSha256` and `workerSha256`, from the intended native installation.
 By default the expert ZIP already contains its MCP configuration; the emitted
 `design-system-mcp.json` describes the same connector. Enable only one
-`design-system` connector. Import the separate JSON only when that entry is
-permitted and the suite's connector cannot be enabled. `--separate-mcp` prepares
+`design-system` connector. If it is not connected, use the generated JSON through
+the [native connector steps](HOSTS.md#install-or-update-qwenwork), preserving any
+applicable organization policy. `--separate-mcp` prepares
 a suite without its connector for an organization requiring that arrangement;
 it does not alter the organization's policy or acquire another runtime.
 
-On native Windows, npm and destination paths must match their actual roots.
-Cross-platform preparation additionally requires `--npm-root-windows` and
-`--destination-windows` as explicit target mappings; those target paths and
-native byte pins remain unverified until tested there. No drive mapping is
-guessed. Preparation rejects native-profile destinations and package/resource
-drift, and leaves the acquired npm package unchanged.
+Native desktop preparation uses the current platform's absolute runtime, Node
+and destination paths. On Windows, they must match their actual roots. Explicit
+preparation for a separate Windows target uses `--npm-root-windows` and
+`--destination-windows`; those mappings and native byte pins remain unverified
+until tested there. No drive mapping is guessed. Preparation rejects native-profile
+destinations and package/resource drift, and leaves the acquired npm package unchanged.
 
 QwenWork keeps machine-specific pins outside the npm runtime. Its generated
 connector loads a preparation-owned bootstrap file URL through Node `--import`; the
@@ -1680,7 +1682,14 @@ running host. KAG indexing is outside this focused check. Current native ports d
 not expose verified interruption, so Stop reports that limitation and retains
 the trial instead of pretending it stopped. A service restart retains trial
 records but cannot assume ownership of the previous runtime server.
-## QwenWork Windows preview
+<a id="qwenwork-windows-preview"></a>
+
+## QwenWork adapter maintenance
+
+For ordinary installation, use the [QwenWork entry](HOSTS.md#install-or-update-qwenwork).
+The implementation details and version-specific evidence below describe the
+existing adapter; they are not additional user setup steps or proof of another
+platform's support.
 
 The [QwenWork owning guide](hosts/qwenwork/README.md#qwenworkcn-132-background-agent-policy)
 records the inspected `1.3.2` background Agent restriction and the shared
@@ -1692,15 +1701,18 @@ QwenWork has a separate `qwenwork` host identity. Its expert suite contains the
 entry Skill, native Hooks and MCP connector configuration. The full Companion
 runtime stays outside the suite because QwenWork 1.2.5 limits local ZIP imports
 to 50 MiB. `packageQwenWorkExpertKit` in `qwenwork-package.mjs` creates this thin
-suite from an already assembled runtime and an explicit Windows runtime path.
+suite from an already assembled runtime and its absolute native runtime path.
 Node.js `>=22.19.0` is an external prerequisite; do not borrow a DSH installation.
 
 Build the normal runtime with `build-plugin.mjs --qwenwork --runtime-config PATH`.
-The JSON config requires `executable`, `worker`, `nodeExecutable` (absolute Windows
+The JSON config requires `executable`, `worker`, `nodeExecutable` (absolute native
 paths) and `executableSha256`, `workerSha256` from the selected trusted QwenWork
 installation. These are local installation settings, not credentials. The adapter
 checks the desktop main process, because WorkerTransport uses `worker_threads`,
-not a standalone CLI worker. Restarted processes, changed bytes, mismatched
+not a standalone CLI worker. The macOS implementation identifies the actual GUI
+main process and its AppKit launch time; a browser native-messaging helper using
+the same executable is not that process. These source checks do not establish
+installed Mac model, Hook or saved-edit acceptance. Restarted processes, changed bytes, mismatched
 workspace/transcript and missing Hooks fail closed. An update requires refreshed
 verified pins and a reloaded suite; it does not change Bundle semantics.
 

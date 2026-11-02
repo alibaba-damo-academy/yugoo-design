@@ -1,14 +1,33 @@
-# QwenWork Windows integration
+# QwenWork integration
 
-## Installation and current verification scope
+## Installation
 
 Use the [QwenWork installation prompt](../../HOSTS.md#install-or-update-qwenwork)
 from the existing desktop conversation. Reuse a retained runtime when it matches
 the selected exact release and required adapter; otherwise acquire the new npm
 version in a separate durable directory. Prepare/import the suite, enable one
-permitted MCP connector, then reload through the normal host entry and verify
+working MCP connector, then activate through the normal host entry and verify
 the loaded Skill, tools, original project and saved-edit consumption. There is
 no separate Companion runtime to download after this preparation.
+
+Use the actual machine's Node, paths and shell rather than copying a previous
+test machine's values. If Node is missing, prepare the compatible prerequisite
+as described in the [shared installation checklist](../../HOSTS.md#installation-checklist-for-the-agent),
+then continue. Version-specific test observations below are not extra user steps.
+Concrete restrictions in the acquired adapter still need to be reported and
+fixed; environment adaptation must not invent a supported runtime.
+
+For the native steps, follow [suite import and MCP activation](../../HOSTS.md#install-or-update-qwenwork).
+Use the current Host's advertised plugin/connector actions first, following its
+bundled `qwenwork-guidance/guide-mcp.md`; manual import is needed only when the
+Agent cannot complete that action. Then give the user the generated
+`yugoo-design.zip` or the contents of `design-system-mcp.json` together with the
+exact host UI location. Verify connection, tool discovery and a real tool call;
+if the current conversation cannot see the newly loaded tools, continue in the
+new task required by the host. Enabling the Skill or preparing a ZIP alone does
+not finish installation.
+
+## Adapter maintenance and recorded verification
 
 On 2026-10-21 the user confirmed manual foreground GRA; the detailed local
 beta.18 / suite 0.1.5 result on QwenWorkCN `1.3.2-26101704` is recorded in the
@@ -29,8 +48,8 @@ that the MCP tools connect; enabling the Skill alone does not connect them.
 
 The normal desktop installer emits a ZIP containing its MCP configuration and a
 separate `design-system-mcp.json` with the same connector. Import the separate JSON
-only when the organization permits that entry but prevents enabling the suite's
-connector; keep one enabled `design-system` connector. Both point to the same
+when the suite's connector is not available; reuse it if already connected and
+keep one enabled `design-system` connector. Both point to the same
 retained Companion runtime. The installer prepares these machine-specific paths
 from the acquired npm package, rather than downloading another runtime.
 
@@ -108,7 +127,7 @@ that no other supported entry exists.
 - [Suite packaging](../../qwenwork-package.mjs) and [native Skill](../../plugin-qwenwork/design-system/skills/yugoo/SKILL.md).
 - [Native process identity](../../src/qwenwork-connection.mjs), [recorded conversation](../../src/qwenwork-transcript.mjs), [Hook events](../../src/qwenwork-hook-transport.mjs).
 - [Experimental desktop input](../../src/qwenwork-desktop-input.mjs). User input and background events remain distinct.
-- Shared runtime: [server](../../src/server.mjs), [knowledge](../../src/knowledge.mjs), [Windows file durability](../../../knowledge-ladybug/src/durability.ts).
+- Shared runtime: [server](../../src/server.mjs), [knowledge](../../src/knowledge.mjs), [file durability](../../../knowledge-ladybug/src/durability.ts).
 
 KAG code and database assets are included in the existing Windows test runtime.
 The historical test project's status on 2026-10-07 reported recovery failure with

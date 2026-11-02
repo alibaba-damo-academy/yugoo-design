@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
 import { createHash } from 'node:crypto'
 import { stageDesktopPreparationMaterials } from '../npm-desktop-materials.mjs'
-import { prepareDesktopPackage } from '../src/npm-desktop-preparation.mjs'
+import { prepareDesktopPackage, desktopPreparationReuseMain } from '../src/npm-desktop-preparation.mjs'
 import { installerMain, INSTALL_HOSTS } from '../src/npm-installer.mjs'
 import { readQwenWorkRuntimePins, inspectQwenWorkProcess } from '../src/qwenwork-connection.mjs'
 const hash = b => createHash('sha256').update(b).digest('hex')
@@ -61,6 +61,43 @@ async function fixture(t, version = '1.2.3', { legacyMarket = false } = {}) {
   return { root, npmRoot, destination, runtime, options }
 }
 
+test('native POSIX Qwen preparation and reuse retain exact paths, pins and an encoded bootstrap', { skip: process.platform === 'win32' }, async t => {
+  const f = await fixture(t), executable = join(f.root, 'Qwen App # 中文'), worker = join(f.root, 'worker.mjs')
+  await writeFile(executable, 'native executable fixture'); await writeFile(worker, 'native worker fixture')
+  const pins = { executable, worker, nodeExecutable: process.execPath, executableSha256: hash(await readFile(executable)), workerSha256: hash(await readFile(worker)) }
+  const options = { ...f.options, target: 'qwenwork', destination: join(f.root, "prepared # 作者's files"), nodeExecutable: process.execPath, npmRootWindows: undefined, destinationWindows: undefined, qwenworkRuntime: pins }
+  const before = await readFile(join(f.npmRoot, 'package.json')), result = await prepareDesktopPackage(options)
+  assert.equal(result.windows, undefined); assert.equal(result.native.platform, process.platform)
+  assert.equal(result.native.nodeRuntime.verified, true); assert.equal(result.native.targetPathsVerified, true)
+  assert.equal(result.native.runtimeRoot, f.runtime); assert.equal(result.nativeRegistered, false); assert.equal(result.runtimeAdmissionVerified, false)
+  const location = await json(join(result.nativeImport.suite, 'scripts/runtime-location.json'))
+  assert.equal(location.runtimeRoot, f.runtime); assert.ok(location.runtimeBootstrap.includes('%23')); assert.ok(location.runtimeBootstrap.includes('%20'))
+  const boot = spawnSync(process.execPath, ['--import', location.runtimeBootstrap, '-e', 'process.stdout.write(process.env.YUGOO_QWENWORK_RUNTIME_CONFIG)'], { encoding: 'utf8' })
+  assert.equal(boot.status, 0, boot.stderr)
+  assert.equal(boot.stdout, join(options.destination, 'releases', '1.2.3_0.3.22', 'runtime-pins.json'))
+  const mcp = await json(result.nativeImport.connector)
+  assert.deepEqual(mcp.mcpServers['design-system'].args, ['--import', location.runtimeBootstrap, join(f.runtime, 'scripts/design.mjs'), 'mcp'])
+  const storedPins = await json(join(options.destination, 'releases', '1.2.3_0.3.22', 'runtime-pins.json'))
+  assert.equal(storedPins.executable, pins.executable); assert.equal(storedPins.workerSha256, pins.workerSha256)
+  const nativePinsFile = join(f.root, 'native-pins.json'); await writeFile(nativePinsFile, JSON.stringify(pins))
+  const reuse = ['--target', 'qwenwork', '--package-name', 'yugoo-design', '--package-version', '1.2.3', '--destination', options.destination,
+    '--suite-version', '0.3.22', '--node-executable', process.execPath, '--qwenwork-runtime', nativePinsFile, '--previous-receipt', result.receiptFile]
+  const receiptBefore = await readFile(result.receiptFile), again = await desktopPreparationReuseMain(reuse, { npmRoot: f.npmRoot })
+  assert.equal(again.idempotent, true); assert.deepEqual(await readFile(result.receiptFile), receiptBefore)
+  assert.deepEqual(await readFile(join(f.npmRoot, 'package.json')), before)
+  await writeFile(worker, 'changed native worker')
+  await assert.rejects(desktopPreparationReuseMain(reuse, { npmRoot: f.npmRoot }), /native bytes/)
+  assert.deepEqual(await readFile(result.receiptFile), receiptBefore)
+  await writeFile(worker, 'native worker fixture')
+  const newer = join(f.root, 'new native npm'); await cp(f.npmRoot, newer, { recursive: true })
+  const manifest = await json(join(newer, 'package.json')); manifest.version = '1.2.4'
+  await writeFile(join(newer, 'package.json'), JSON.stringify(manifest))
+  const updated = await prepareDesktopPackage({ ...options, npmRoot: newer, packageVersion: '1.2.4', suiteVersion: '0.3.23', previousReceiptFile: result.receiptFile })
+  assert.equal(updated.native.platform, process.platform); assert.equal(updated.native.npmRoot, newer)
+  assert.equal(updated.priorReceiptSha256, result.receiptSha256); assert.deepEqual(await readFile(result.receiptFile), receiptBefore)
+  assert.equal(updated.nativeRegistered, false); assert.equal(updated.loadedVersionVerified, false)
+})
+
 test('WorkBuddy stages from exact acquired package, retaining native protocol and a preparation-only receipt', async t => {
   const f = await fixture(t), before = await readFile(join(f.npmRoot, 'package.json'))
   const result = await prepareDesktopPackage(f.options)
@@ -92,6 +129,29 @@ test('WorkBuddy stages from exact acquired package, retaining native protocol an
   }
   assert.equal(result.windows.nodeRuntime.ownership, 'external')
   assert.equal(result.windows.nodeRuntime.installed, false)
+})
+
+test('native POSIX WorkBuddy preparation uses verified Node and native marketplace paths', { skip: process.platform === 'win32' }, async t => {
+  const f = await fixture(t), before = await readFile(join(f.npmRoot, 'package.json'))
+  const { npmRootWindows, destinationWindows, ...options } = f.options
+  const result = await prepareDesktopPackage({ ...options, nodeExecutable: process.execPath })
+  assert.equal(result.windows, undefined)
+  assert.equal(result.native.platform, process.platform)
+  assert.equal(result.native.targetPathsVerified, true)
+  assert.equal(result.native.nodeRuntime.verified, true)
+  const market = await json(join(result.nativeImport.market, '.codebuddy-plugin/marketplace.json'))
+  const suite = join(result.nativeImport.market, market.plugins[0].source)
+  const mcp = await json(join(suite, '.mcp.json'))
+  const shared = mcp.mcpServers['design-system-workbuddy-probe']
+  assert.equal(shared.command, result.native.nodeRuntime.executable)
+  assert.deepEqual(shared.args, [join(f.runtime, 'scripts/design.mjs'), 'mcp'])
+  assert.equal(result.nativeRegistered, false, 'Material preparation is not native Host activation')
+  assert.deepEqual(await readFile(join(f.npmRoot, 'package.json')), before)
+  const reused = await desktopPreparationReuseMain(['--target', 'workbuddy', '--package-name', 'yugoo-design', '--package-version', '1.2.3',
+    '--destination', f.destination, '--suite-version', options.suiteVersion, '--node-executable', process.execPath,
+    '--previous-receipt', result.receiptFile], { npmRoot: f.npmRoot })
+  assert.equal(reused.idempotent, true)
+  assert.equal(reused.package.npmRoot, f.npmRoot)
 })
 
 test('Preview Node is rejected before desktop import files or ownership are created', async t => {
@@ -199,7 +259,7 @@ test('external Qwen configuration is an explicit locator, never native process a
   await assert.rejects(readQwenWorkRuntimePins({ platform: 'win32', environment: {}, read: async () => { const e = Error('missing'); e.code = 'ENOENT'; throw e } }), { code: 'ENOENT' })
   await assert.rejects(readQwenWorkRuntimePins({ platform: 'win32', environment: {}, read: async () => 'invalid json' }), SyntaxError)
   const native = { executable: pins.executable, commandLine: '"C:\\Qwen\\app.exe"', procStart: '1', parent: 1 }
-  const options = { snapshot: async () => native, canonical: async p => p, bytes: async () => Buffer.from('changed') }
+  const options = { platform: 'win32', snapshot: async () => native, canonical: async p => p, bytes: async () => Buffer.from('changed') }
   await assert.rejects(inspectQwenWorkProcess(42, pins, options), /bytes changed/)
   assert.equal((await inspectQwenWorkProcess(42, pins, { ...options, snapshot: async () => ({ ...native, executable: 'C:\\foreign.exe' }) })).supported, false)
 })

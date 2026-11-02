@@ -6,11 +6,74 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { registerQwenWorkHook, createQwenWorkHookConnection, receiveQwenWorkHook, QWENWORK_NOTICE_FILE } from '../src/qwenwork-hook-transport.mjs'
-import { matchesQwenWorkMain, inspectQwenWorkProcess, findQwenWorkAncestor } from '../src/qwenwork-connection.mjs'
+import { matchesQwenWorkMain, inspectQwenWorkProcess, findQwenWorkAncestor, readQwenWorkRuntimePins, qwenWorkDarwinProcess } from '../src/qwenwork-connection.mjs'
 import { nativeScope } from '../src/native-identity.mjs'
 import { createQwenWorkTranscript } from '../src/qwenwork-transcript.mjs'
 import { createQoderTranscript } from '../src/qoder-transcript.mjs'
 import { partitionReviewConversation } from '../src/background-reviews.mjs'
+
+test('Mac runtime locator accepts only local POSIX absolute configuration',async()=>{
+ const pins={executable:'/Applications/QwenWorkCN.app/Contents/MacOS/QwenWorkCN'}
+ let observed
+ assert.deepEqual(await readQwenWorkRuntimePins({platform:'darwin',environment:{YUGOO_QWENWORK_RUNTIME_CONFIG:'/Users/设计/pins.json'},read:async path=>{observed=path;return JSON.stringify(pins)}}),pins)
+ assert.equal(observed,'/Users/设计/pins.json')
+ for(const path of ['C:\\Qwen\\pins.json','relative.json','/bad\npath'])await assert.rejects(readQwenWorkRuntimePins({platform:'darwin',environment:{YUGOO_QWENWORK_RUNTIME_CONFIG:path}}),/absolute/)
+ await assert.rejects(readQwenWorkRuntimePins({platform:'linux'}),/Windows or macOS/)
+})
+
+function macProcessFixture(){
+ const executable='/Applications/QwenWorkCN.app/Contents/MacOS/QwenWorkCN'
+ const state={parent:48517,uid:501,executable,args:executable,start:1793179778.392114,terminated:false,psCalls:0,changeParent:false},calls=[]
+ const run=async(tool,args,options)=>{
+  calls.push({tool,args,options})
+  if(tool==='/usr/bin/osascript'){
+   if(state.invisible)throw Error('AppKit returned nil in this sandbox')
+   return {stdout:JSON.stringify({pid:69392,executable:state.executable,start:state.start,terminated:state.terminated})}
+  }
+  if(args.at(-1)==='args=')return {stdout:state.args+'\n'}
+  state.psCalls++
+  return {stdout:`69392 ${state.changeParent&&state.psCalls>1?1:state.parent} ${state.uid} Wed Oct 28 10:29:38 2026 ${state.executable}\n`}
+ }
+ return {state,calls,executable,read:()=>qwenWorkDarwinProcess(69392,{executable,uid:501,run})}
+}
+
+test('Mac snapshots retain actual parent and AppKit generation using bounded system tools',async()=>{
+ const f=macProcessFixture(),snapshot=await f.read()
+ assert.equal(snapshot.parent,48517);assert.equal(snapshot.procStart,'appkit:1793179778.392114')
+ assert.equal(snapshot.commandLine,f.executable)
+ assert.equal(f.calls.length,4)
+ assert.ok(f.calls.every(c=>c.options.timeout===15000&&c.options.maxBuffer===262144&&c.options.env.LC_ALL==='C'))
+ assert.ok(f.calls.every(c=>!c.args.includes('rawstart=')&&!c.args.includes('-axo')))
+ const child=macProcessFixture();child.state.executable='/bin/zsh'
+ assert.equal((await child.read()).procStart,undefined)
+ assert.equal(child.calls.length,1,'non-application ancestors carry no accepted generation')
+ const messaging=macProcessFixture();messaging.state.args+=' /Applications/QwenWorkCN.app/Contents/Resources/native-messaging-host/host.js'
+ assert.equal((await messaging.read()).procStart,undefined)
+ assert.equal(messaging.calls.length,2,'Chrome native messaging must be excluded before AppKit lookup')
+})
+
+test('Mac process evidence rejects foreign owner, missing launch identity and changed process',async()=>{
+ const owner=macProcessFixture();owner.state.uid=502;await assert.rejects(owner.read(),/identity/)
+ for(const start of [null,0,'1793179778',-1]){const f=macProcessFixture();f.state.start=start;await assert.rejects(f.read(),/identity/)}
+ const ended=macProcessFixture();ended.state.terminated=true;await assert.rejects(ended.read(),/identity/)
+ const invisible=macProcessFixture();invisible.state.invisible=true
+ await assert.rejects(invisible.read(),/identity is unobservable.*generation could not be verified/)
+ const changed=macProcessFixture();changed.state.changeParent=true;await assert.rejects(changed.read(),/changed during/)
+ await assert.rejects(qwenWorkDarwinProcess(0),/PID/)
+})
+
+test('Mac admission pins executable and worker bytes, rejects helper, symlink target and PID reuse',async()=>{
+ const f=macProcessFixture(),snapshot=await f.read(),hash=createHash('sha256').update('fixed').digest('hex')
+ const pins={executable:f.executable,worker:'/Applications/QwenWorkCN.app/Contents/Resources/app.asar.unpacked/worker.mjs',executableSha256:hash,workerSha256:hash}
+ const deps={platform:'darwin',snapshot:async()=>snapshot,canonical:async p=>p,bytes:async()=>Buffer.from('fixed')}
+ assert.equal((await inspectQwenWorkProcess(69392,pins,deps)).supported,true)
+ assert.equal(matchesQwenWorkMain({...snapshot,commandLine:snapshot.commandLine+' --type=renderer'},pins,{platform:'darwin'}),false)
+ assert.equal(matchesQwenWorkMain({...snapshot,procStart:snapshot.observedStart},pins,{platform:'darwin'}),false)
+ await assert.rejects(inspectQwenWorkProcess(69392,pins,{...deps,bytes:async()=>Buffer.from('replaced')}),/bytes changed/)
+ await assert.rejects(inspectQwenWorkProcess(69392,pins,{...deps,canonical:async()=>'/foreign'}),/outside its pins/)
+ let n=0;await assert.rejects(inspectQwenWorkProcess(69392,pins,{...deps,snapshot:async()=>({...snapshot,procStart:`appkit:1793179778.${++n}`})}),/changed during/)
+ await assert.rejects(inspectQwenWorkProcess(69392,{...pins,worker:'C:\\worker.mjs'},deps),/worker path/)
+})
 
 test('Qwen internal notification descendants stay in background until an actual human turn',async t=>{
  const root=await mkdtemp(join(tmpdir(),'qwen-visibility-'));t.after(()=>rm(root,{recursive:true,force:true}))
@@ -75,9 +138,9 @@ test('desktop identity rejects renderer/helpers, replaced bytes and PID reuse',a
  const hash=createHash('sha256').update('fixed').digest('hex')
  const pins={executable:'C:/Qwen/QwenWorkCN.exe',worker:'C:/Qwen/worker.mjs',executableSha256:hash,workerSha256:hash}
  const native={pid:42,parent:1,procStart:'1',executable:pins.executable,commandLine:'"C:/Qwen/QwenWorkCN.exe"'}
- assert.equal(matchesQwenWorkMain(native,pins),true)
- assert.equal(matchesQwenWorkMain({...native,commandLine:native.commandLine+' --type=renderer'},pins),false)
- const deps={snapshot:async()=>native,canonical:async p=>p,bytes:async()=>Buffer.from('fixed')}
+ assert.equal(matchesQwenWorkMain(native,pins,{platform:'win32'}),true)
+ assert.equal(matchesQwenWorkMain({...native,commandLine:native.commandLine+' --type=renderer'},pins,{platform:'win32'}),false)
+ const deps={platform:'win32',snapshot:async()=>native,canonical:async p=>p,bytes:async()=>Buffer.from('fixed')}
  assert.equal((await inspectQwenWorkProcess(42,pins,deps)).supported,true)
  await assert.rejects(inspectQwenWorkProcess(42,pins,{...deps,bytes:async()=>Buffer.from('changed')}),/bytes changed/)
  let n=0;await assert.rejects(inspectQwenWorkProcess(42,pins,{...deps,snapshot:async()=>({...native,procStart:String(++n)})}),/changed during/)
@@ -90,7 +153,7 @@ test('ancestor inspection reuses the observed snapshot and still rechecks the ve
  const root={pid:42,parent:1,procStart:'1',executable:pins.executable,commandLine:'"C:/Qwen/QwenWorkCN.exe"'}
  const child={pid:43,parent:42,procStart:'2',executable:'C:/Node/node.exe',commandLine:'node script.mjs'}
  const calls=[];const snapshot=async pid=>{calls.push(pid);return pid===42?root:child}
- const inspect=(pid,initial)=>inspectQwenWorkProcess(pid,pins,{initial,snapshot,canonical:async p=>p,bytes:async()=>Buffer.from('fixed')})
+ const inspect=(pid,initial)=>inspectQwenWorkProcess(pid,pins,{platform:'win32',initial,snapshot,canonical:async p=>p,bytes:async()=>Buffer.from('fixed')})
  assert.deepEqual(await findQwenWorkAncestor(43,inspect,snapshot),{pid:42,procStart:'1'})
  assert.deepEqual(calls,[43,42,42])
 })

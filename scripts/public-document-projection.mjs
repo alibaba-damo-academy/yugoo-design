@@ -79,6 +79,8 @@ function outsideFences(text) {
 function headingAnchors(text) {
   const anchors = new Set(), counts = new Map()
   for (const line of outsideFences(text).split('\n')) {
+    // Public guides retain explicit anchors when a reader-facing heading changes.
+    for (const match of line.matchAll(/<a\s+(?:id|name)\s*=\s*(["'])([^"'<>\s]+)\1\s*>/giu)) anchors.add(match[2])
     const heading = /^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$/u.exec(line)
     if (!heading) continue
     const base = heading[1].replace(/<[^>]*>/gu, '')

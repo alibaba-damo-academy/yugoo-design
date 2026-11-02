@@ -1,9 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtemp, cp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, cp, readFile, rm, writeFile, symlink, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { runInNewContext } from 'node:vm'
+import { spawnSync } from 'node:child_process'
 import { configureQwenWorkPackage, validateQwenWorkRuntime, packageQwenWorkExpertKit, qwenWorkConnectorConfiguration, qwenWorkNativeExecutionReference } from '../qwenwork-package.mjs'
 test('Qwen reference preserves shared Host qualifiers instead of renaming another Host protocol', async () => {
  const shared=await readFile(new URL('../plugin/design-system/skills/design-panel/native-execution.md',import.meta.url),'utf8')
@@ -95,6 +96,23 @@ test('Qwen package uses exact external Node and portable manifest without shell 
  assert.equal(JSON.parse(await readFile(join(root,'.claude-plugin/plugin.json'),'utf8')).name,'yugoo-design')
  assert.throws(()=>validateQwenWorkRuntime({...pins,nodeExecutable:'node'}),/explicit Windows/)
  assert.throws(()=>validateQwenWorkRuntime({...pins,workerSha256:''}),/hashes/)
+})
+
+test('POSIX Qwen Hooks execute paths with quotes and Unicode through the native shell', { skip: process.platform === 'win32' }, async t => {
+ const root=await mkdtemp(join(tmpdir(),"qwen POSIX # 作者's "));t.after(()=>rm(root,{recursive:true,force:true}))
+ const suite=join(root,'suite'),node=join(root,"Node's executable")
+ await cp(new URL('../plugin-qwenwork/design-system/',import.meta.url),suite,{recursive:true});await symlink(process.execPath,node)
+ const pins={executable:'/Applications/QwenWorkCN.app/Contents/MacOS/QwenWorkCN',worker:'/Applications/QwenWorkCN.app/Contents/Resources/worker.mjs',nodeExecutable:node,executableSha256:'a'.repeat(64),workerSha256:'b'.repeat(64)}
+ await configureQwenWorkPackage(suite,pins)
+ const hooks=JSON.parse(await readFile(join(suite,'hooks/hooks.json'),'utf8')),hook=hooks.hooks.PostToolUse[0].hooks[0]
+ assert.equal(hook.shell,process.env.SHELL||'/bin/zsh');assert.doesNotMatch(hook.command,/powershell|\$\{env:/)
+ await mkdir(join(suite,'scripts'),{recursive:true});await writeFile(join(suite,'scripts/qwenwork-context.mjs'),'console.log(JSON.stringify({root:process.env.CLAUDE_PLUGIN_ROOT}))')
+ const run=spawnSync(hook.shell,['-c',hook.command],{env:{...process.env,CLAUDE_PLUGIN_ROOT:suite},encoding:'utf8'})
+ assert.equal(run.status,0,run.stderr);assert.equal(JSON.parse(run.stdout).root,suite)
+ assert.deepEqual(qwenWorkConnectorConfiguration('/Users/作者/runtime #1',pins).mcpServers['design-system'].args,['/Users/作者/runtime #1/scripts/design.mjs','mcp'])
+ assert.throws(()=>validateQwenWorkRuntime({...pins,worker:'C:\\App\\worker.mjs'}),/same target/)
+ assert.throws(()=>qwenWorkConnectorConfiguration('C:\\runtime',pins),/same target/)
+ assert.throws(()=>qwenWorkConnectorConfiguration('/Users/runtime',{...pins,executable:'C:\\App\\app.exe',worker:'C:\\App\\worker.mjs',nodeExecutable:'C:\\Node\\node.exe'}),/same target/)
 })
 
 test('thin expert suite points to the exact shared runtime instead of copying heavy dependencies',async t=>{

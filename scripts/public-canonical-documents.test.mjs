@@ -101,6 +101,14 @@ test('canonical links resolve directories to selected READMEs, Unicode/duplicate
   }
 })
 
+test('renamed installation headings retain explicit legacy anchors without accepting fenced aliases', () => {
+  const guide = '<a id="old-install-entry"></a>\n### New installation entry\n```html\n<a id="not-an-anchor"></a>\n```\n'
+  const documents = { 'README.md': '[Old](guide.md#old-install-entry) [New](guide.md#new-installation-entry)', 'guide.md': guide }
+  assert.equal(validateCanonicalDocumentLinks({ documents, includedPaths: Object.keys(documents) }).localFileLinksClosed, true)
+  documents['README.md'] = '[Missing](guide.md#not-an-anchor)'
+  assert.equal(validateCanonicalDocumentLinks({ documents, includedPaths: Object.keys(documents) }).localFileLinksClosed, false)
+})
+
 test('complete historical draft selection remains readable while partial draft selection cannot change document authority', async t => {
   const f = await fixture(t, {
     'release/README.public.md': '# Previous public\n[Contribute](CONTRIBUTING.public.md)\n',

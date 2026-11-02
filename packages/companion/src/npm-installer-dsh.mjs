@@ -408,7 +408,8 @@ export async function planDshInstallation(options) {
     ...(previous ? { previousReceipt: options.previousReceipt, previousInputSha256: previous.inputSha256, previous: previous.reference } : {}),
     protocol: structuredClone(state.identity), before, command: state.pins.node.path,
     // Official profiles contain pnpm-workspace.yaml; explicitly target their root.
-    args: [...state.pins.desktopHostManifest ? ['--expose-internals'] : [], state.pins.cli.path, 'plugin', '--profile', input.profile, 'add', '--workspace-root', '--save-exact', input.aggregateDirectory ? 'link:' + input.aggregateDirectory : input.aggregateSelector, '--registry', input.registry],
+    // The official CLI forwards this form to both its manifest lookup and pnpm add.
+    args: [...state.pins.desktopHostManifest ? ['--expose-internals'] : [], state.pins.cli.path, 'plugin', '--profile', input.profile, 'add', '--workspace-root', '--save-exact', input.aggregateDirectory ? 'link:' + input.aggregateDirectory : input.aggregateSelector, `--registry=${input.registry}`],
     action: previous && previous.input.package.version !== input.package.version ? 'update'
       : before.installed && before.registered ? 'already-registered' : 'install',
     runtimeMounted: false, bundleCycleVerified: false, releaseValidated: false }

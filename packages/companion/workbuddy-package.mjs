@@ -1,6 +1,6 @@
 /** WorkBuddy bounded preview suite; not a final distributable installer. */
 import { mkdir, writeFile, copyFile } from 'node:fs/promises'
-import { join, win32 } from 'node:path'
+import { join, posix, win32 } from 'node:path'
 import { resolveBrowserAccess } from './src/browser-access.mjs'
 
 export const WORKBUDDY_TEST_VERSION = '0.3.30'
@@ -11,15 +11,19 @@ function validateMarketName(name) {
   if (typeof name !== 'string' || !/^[a-z0-9][a-z0-9._-]{0,127}$/.test(name)) throw Error('Exact WorkBuddy market name required.')
 }
 
-function validateWindowsPaths(...paths) {
-  for (const value of paths) {
-    if (typeof value !== 'string' || !win32.isAbsolute(value) || /[\r\n\0]/.test(value)) throw Error('Exact Windows Node and shared runtime paths required.')
+const windowsAbsolute = value => typeof value === 'string' && /^(?:[a-z]:[\\/]|\\\\[^\\]+\\[^\\]+)/i.test(value)
+function workBuddyTargetPaths(nodeExecutable, runtimeRoot) {
+  const paths = windowsAbsolute(nodeExecutable) ? win32 : posix
+  for (const value of [nodeExecutable, runtimeRoot]) {
+    if (typeof value !== 'string' || !paths.isAbsolute(value) || /[\r\n\0]/.test(value)
+      || windowsAbsolute(value) !== (paths === win32)) throw Error('Absolute Node and shared runtime paths on the same target required.')
   }
+  return paths
 }
 function workBuddyMcp({ nodeExecutable, runtimeRoot }) {
-  validateWindowsPaths(nodeExecutable, runtimeRoot)
+  const paths = workBuddyTargetPaths(nodeExecutable, runtimeRoot)
   return { mcpServers: { 'design-system-workbuddy-probe': {
-    command: nodeExecutable, args: [win32.join(runtimeRoot, 'scripts/design.mjs'), 'mcp'],
+    command: nodeExecutable, args: [paths.join(runtimeRoot, 'scripts/design.mjs'), 'mcp'],
   } } }
 }
 
@@ -68,10 +72,11 @@ export async function packageWorkBuddyProbe(target, { nodeExecutable, runtimeRoo
     skills: './skills/', mcpServers: './.mcp.json', hooks: './hooks/hooks.json' })
   await json('.mcp.json', mcp)
   await json('scripts/workbuddy-package-runtime.json', { runtimeRoot, browserAccess })
-  // WorkBuddy's CodeBuddy-based Hook documentation specifies Git Bash on Windows.
+  // Native POSIX shells and Windows Git Bash use the same quoting contract.
   // Do not copy QwenWork's PowerShell command or its asyncRewake extension.
   const quote = value => "'" + value.replaceAll("'", "'\\''") + "'"
-  const command = `${quote(nodeExecutable.replaceAll('\\', '/'))} "\${CODEBUDDY_PLUGIN_ROOT}/scripts/workbuddy-context-probe.mjs"`
+  const hookNode = workBuddyTargetPaths(nodeExecutable, runtimeRoot) === win32 ? nodeExecutable.replaceAll('\\', '/') : nodeExecutable
+  const command = `${quote(hookNode)} "\${CODEBUDDY_PLUGIN_ROOT}/scripts/workbuddy-context-probe.mjs"`
   await json('hooks/hooks.json', { hooks: Object.fromEntries(['SessionStart', 'PostToolUse'].map(event => [event,
     [{ ...(event === 'PostToolUse' ? { matcher: '*' } : {}), hooks: [{ type: 'command', command, timeout: 10 }] }],
   ])) })

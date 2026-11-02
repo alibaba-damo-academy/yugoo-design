@@ -137,9 +137,10 @@ export async function verifyNodeRuntime(selection, options = {}) {
   return selection
 }
 
-/** Cross-platform archive preparation can retain an explicit locator, not verify it. */
-export async function resolveDesktopNodeRuntime(nodeExecutable, { environment = process.env } = {}) {
-  if (process.platform === 'win32') return resolveNodeRuntime({ nodeExecutable, environment })
+/** Verify a native target; cross-platform Windows archives retain only an explicit locator. */
+export async function resolveDesktopNodeRuntime(nodeExecutable, { environment = process.env, targetPlatform = 'win32' } = {}) {
+  if (targetPlatform === process.platform) return resolveNodeRuntime({ nodeExecutable, environment })
+  assert.equal(targetPlatform, 'win32', 'Only an explicit Windows target can be prepared on another operating system')
   assert.ok(nodeExecutable, 'Cross-platform preparation requires --node-executable for the target Windows installation')
   return { executable: assertNodeExecutablePath(nodeExecutable, { platform: 'win32', environment }), source: 'explicit-cross-platform',
     verified: false, ownership: 'external', version: null, sha256: null, platform: 'win32', arch: null,

@@ -46,9 +46,9 @@ test('supported hosts report only their missing prerequisites, without an automa
 test('native Windows desktop discovery does not request a separate Node for each adapter', async () => {
   const native = await agentInstallation({ host: 'workbuddy' }, { platform: 'win32', invoke: noOperation, desktopPrepare: noOperation })
   assert.ok(!native.missing.includes('node-executable'))
-  const cross = await agentInstallation({ host: 'workbuddy' }, { platform: 'linux', invoke: noOperation, desktopPrepare: noOperation })
+  const cross = await agentInstallation({ host: 'workbuddy', 'npm-root-windows': 'D:\\runtime' }, { platform: 'linux', invoke: noOperation, desktopPrepare: noOperation })
   assert.ok(cross.missing.includes('node-executable'))
-  assert.ok(cross.missing.includes('npm-root-windows'))
+  assert.ok(!cross.missing.includes('npm-root-windows'), 'The explicitly supplied Windows root is retained')
   assert.ok(cross.missing.includes('destination-windows'))
 })
 
@@ -139,6 +139,44 @@ test('Claude and Qoder keep their owning direct registration and session activat
     const misleading = installationResult(host, { status: 'prepared', package: identity, hostRegistered: true, registryAcquisitionVerified: true })
     assert.equal(misleading.installation.registration, 'not-performed')
     assert.equal(misleading.installation.registryAcquisitionVerified, false); assert.equal(misleading.usable, false)
+  }
+})
+
+test('QwenWork prefers advertised native tools and hands off GUI only when needed', () => {
+  for (const includeMcp of [true, false]) {
+    const nativeImport = { suite: '/prepared/suite', archive: '/prepared/yugoo-design.zip', connector: '/prepared/design-system-mcp.json', includeMcp }
+    const result = installationResult('qwenwork', { status: 'prepared', package: identity, nativeImport })
+    const steps = result.installation.nextActions
+    assert.equal(steps[0].action, 'import-expert-suite')
+    assert.equal(steps[0].path, nativeImport.archive)
+    assert.equal(steps[0].suitePath, nativeImport.suite)
+    assert.match(steps[0].message, /follow its returned schema/)
+    assert.match(steps[0].message, /do not assume a ZIP is accepted/)
+    assert.match(steps[0].message, /Extensions → Expert Kits → Add → Upload suite/)
+    assert.equal(steps[1].action, 'connect-mcp')
+    assert.equal(steps[1].path, nativeImport.connector)
+    assert.equal(steps[1].automatic, false)
+    assert.match(steps[1].message, /Extensions → Connectors → Add → Paste JSON configuration/)
+    assert.match(steps[1].message, /contents of this generated design-system-mcp\.json/)
+    assert.match(steps[1].message, /qw_query\(\{key:"qwenwork"\}\)/)
+    assert.match(steps[1].message, /qwenwork\.settings\.connector\.custom/)
+    assert.match(steps[1].message, /exact detail key returned by the host/)
+    assert.match(steps[1].message, /If the host cannot perform this action/)
+    assert.match(steps[1].message, includeMcp ? /Check the suite's/ : /no bundled connector/)
+    assert.match(steps[2].message, /new QwenWork task/)
+    assert.match(steps[2].message, /current native conversation if its tools are already available/)
+    assert.match(steps[2].message, /real MCP tool call/)
+    assert.equal(result.installation.registration, 'not-performed')
+    assert.equal(result.installation.usability, 'unverified')
+  }
+})
+
+test('native POSIX desktop discovery does not request Windows mappings or a separate Node', async () => {
+  for (const host of ['qwenwork', 'workbuddy']) {
+    const native = await agentInstallation({ host }, { platform: 'darwin', invoke: noOperation, desktopPrepare: noOperation })
+    assert.deepEqual(native.missing, ['destination', 'suite-version', ...(host === 'qwenwork' ? ['qwenwork-runtime'] : [])])
+    const cross = await agentInstallation({ host, 'npm-root-windows': 'D:\\runtime' }, { platform: 'darwin', invoke: noOperation, desktopPrepare: noOperation })
+    assert.ok(cross.missing.includes('destination-windows')); assert.ok(cross.missing.includes('node-executable'))
   }
 })
 

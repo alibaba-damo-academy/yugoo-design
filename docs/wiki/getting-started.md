@@ -6,7 +6,7 @@
 
 安装需要 **Node.js `>=22.19.0`**。获取旧版时，仍以该精确版本的 `engines.node` 为准。插件使用宿主已有的对话模型、搜索和工具，所需服务由用户配置。宿主范围见[兼容指南](hosts.md)，首次本地模型准备见本页后面的[环境与安装细节](#环境与安装细节)。默认随主插件提供 Web App Kit。
 
-Node 优先复用系统或版本管理器中已有的合规安装；新增宿主适配器无需另装一份。不要将开发预览、其他应用私有目录或临时测试目录里的 Node 作为长期依赖。缺少合规版本时先统一准备 Node，再继续安装；所选版本的[安装指南](../../packages/companion/README.md#npm-candidate-and-native-installation-boundary)说明如何检查并指定路径。移除插件注册与清理运行时是不同操作，Yugoo 不删除复用的外部 Node。
+Node 优先复用系统或版本管理器中已有的合规安装；缺少时，让 Agent 按实际系统和架构通过现有版本管理器或 [Node 官方下载](https://nodejs.org/en/download)准备一次，核对版本与路径后继续安装。新增宿主适配器无需另装一份。不要将开发预览、其他应用私有目录或临时测试目录里的 Node 作为长期依赖；[共享安装检查](../../packages/companion/HOSTS.md#installation-checklist-for-the-agent)说明具体步骤。移除插件注册与清理运行时是不同操作，Yugoo 不删除复用的外部 Node。
 
 统一产品包为 `yugoo-design`，CLI 为 `yugoo-design`，首个正式版本 `0.1.0` 已发布到 npm；以下为正常安装步骤。明确交付的发布前候选仍按[候选预检](#发布前候选预检)验证。旧 `@yugoo-design/companion` 和 `beta` 渠道保留为历史记录，不作为新安装的默认入口。
 
@@ -22,7 +22,7 @@ GitHub 链接用于读取公开安装指南，无需登录或克隆仓库。实�
 | --- | --- | --- |
 | DeepSeek Harness | [操作指引](../../packages/companion/HOSTS.md#install-or-update-deepseek-harness) | 官方 DSH profile 中的对话与设计面板；Studio 范围另见状态页 |
 | Codex CLI | [操作指引](../../packages/companion/HOSTS.md#install-or-update-codex-cli) | CLI 对话，浏览器中的设计面板 |
-| Codex Desktop（macOS arm64） | [操作指引](../../packages/companion/HOSTS.md#install-or-update-codex-desktop-on-macos-arm64) | 原生对话，连接同一会话的共享设计面板 |
+| Codex Desktop | [操作指引](../../packages/companion/HOSTS.md#install-or-update-codex-desktop) | 原生对话，连接同一会话的共享设计面板 |
 | Claude Code CLI | [操作指引](../../packages/companion/HOSTS.md#install-or-update-claude-code-cli) | CLI 对话，浏览器中的设计面板 |
 | Qoder CLI | [操作指引](../../packages/companion/HOSTS.md#install-or-update-qoder-cli) | CLI 对话，浏览器中的设计面板 |
 | 千问办公（QwenWork） | [操作指引](../../packages/companion/HOSTS.md#install-or-update-qwenwork) | 在宿主中导入专家套件及连接器后使用 |

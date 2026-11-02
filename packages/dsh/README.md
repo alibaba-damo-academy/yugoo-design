@@ -199,14 +199,19 @@ path; Companion hosts use their own adapters rather than this DSH bundle.
 
 ### Current DSH host admission
 
-Official DSH Web and Desktop **`0.2.0-rc.2`** are the current release target. The affected
-host peers and development SDK pins require exact `0.2.0-rc.2`. The current
-Agent setup and lifecycle APIs differ from earlier releases, so older versions
-are no longer declared compatible; unknown RCs, `0.2.0` stable and React 19 are
-not admitted. Historical local results below
-retain their original versions and are not current-host acceptance evidence.
-Loader compatibility uses its own prerelease policy and is not a substitute for
-the package manager's strict peer resolution.
+The DSH Host peer range is `0.2.0-rc.2 || ^0.2.1-rc.3`;
+development SDK dependencies remain pinned to `0.2.0-rc.2`. This preserves the
+previous release's rc2 support and follows normal semver compatibility from
+the rc3 public APIs, rather than requiring a new allowance for every Host patch.
+The rc3/rc5 published API comparison supports this declaration; future versions
+are not separately claimed as tested. The installer still binds Desktop, CLI and
+Loader to the same selected installation. Neither this range nor static API
+comparison establishes a new installed-host acceptance result. Historical
+results below retain their exact Host and product versions.
+Versions outside the declared range and React 19 are not compatible. Check both the package
+manager's peer resolution and the actual Host's Loader compatibility policy;
+the latter can include prereleases. User installation defaults resolve
+`yugoo-design@latest`; Host peer ranges describe API compatibility separately.
 
 Run Core's `test:dependency-baseline` and `test:consumer-dependency-baseline`
 after building the workspace dependencies to check exact SDK pins, strict

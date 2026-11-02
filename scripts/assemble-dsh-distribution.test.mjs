@@ -32,7 +32,7 @@ test('scoped package stages create safe parents and exclusively create their lea
   await assert.rejects(assembly.createDshPackageStage(join(linked, '@yugoo-design'), name), /Nonregular package stage root/)
 })
 
-test('controlled rc3 trial admits only the exact Host version while retaining rc2 development SDK pins', async () => {
+test('DSH distribution uses a compatible Host range without changing development SDK pins', async () => {
   const source = fileURLToPath(new URL('../', import.meta.url))
   const report = await readNpmCandidates(source, { scope: '@yugoo-design', version: '0.1.0-r2mac.3', ladybugVersion: '0.21.1', ladybugSource: 'registry' })
   for (const directory of ['core', 'panel', 'provider-web-app', 'studio-dsh']) {
@@ -41,13 +41,18 @@ test('controlled rc3 trial admits only the exact Host version while retaining rc
     const peers = Object.fromEntries(Object.entries(packed.peerDependencies).filter(([name]) => name.startsWith('@deepseek-ai/dsh-')))
     assert.ok(Object.keys(peers).length > 0)
     for (const [name, range] of Object.entries(peers)) {
-      assert.equal(range, '0.2.1-rc.3')
+      assert.equal(range, '0.2.0-rc.2 || ^0.2.1-rc.3')
       assert.equal(original.devDependencies[name], '0.2.0-rc.2', 'trial metadata does not replace the development SDK')
     }
     const hostContract = { name: packed.name, peerDependencies: peers }
-    await assertRequiredPeers(hostContract, () => '0.2.1-rc.3', satisfies)
-    for (const wrongVersion of ['0.2.0-rc.2', '0.2.1-rc.2', '0.2.1-rc.4', '0.2.1']) {
-      await assert.rejects(assertRequiredPeers(hostContract, () => wrongVersion, satisfies), /incompatible peer/)
+    for (const version of ['0.2.0-rc.2', '0.2.1-rc.3', '0.2.1-rc.4', '0.2.1-rc.5', '0.2.1-rc.6', '0.2.1', '0.2.2']) {
+      await assertRequiredPeers(hostContract, () => version, satisfies)
+      await assertRequiredPeers(hostContract, () => version, (v, r) => satisfies(v, r, { includePrerelease: true }))
+    }
+    for (const wrongVersion of ['0.2.0-rc.1', '0.2.0-rc.3', '0.2.1-rc.2', '0.3.0', '1.0.0']) {
+      for (const check of [satisfies, (v, r) => satisfies(v, r, { includePrerelease: true })]) {
+        await assert.rejects(assertRequiredPeers(hostContract, () => wrongVersion, check), /incompatible peer/)
+      }
     }
     if (original.peerDependencies.react) assert.equal(packed.peerDependencies.react, '^18.2.0')
     assert.equal(packed.peerDependencies['@deepseek-ai/cordis'], original.peerDependencies['@deepseek-ai/cordis'])
