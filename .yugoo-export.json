@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "820a57c3f3b491759d5a18484beaa6adf2cb6dc3",
+  "revision": "2dd6aff1f95aac7988828fb0a6f69bbe230ea821",
   "policySha256": "fcc943e3d2b336f8f961516388f32975c210e59b273ecbb307f2fbf3f5d9b14e",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -252,7 +252,7 @@
       "mode": "100644"
     },
     "docs/panel-uiux-standard.md": {
-      "sha256": "e013b3eb67c1cb76d587d2126a7995dfcede8bab4248915017624d9cbb72b320",
+      "sha256": "f9601ab3e9b1dec0c7af969e6aeef33de4b2781e22bd9eebbedf3b1b435efafd",
       "mode": "100644"
     },
     "docs/panel-unread.md": {
@@ -284,7 +284,7 @@
       "mode": "100644"
     },
     "docs/testing/agentic-e2e.md": {
-      "sha256": "0e34dc2cd4ed1f78d76622c76e7ae6fdec89f3c2efe02dbc44d2c408df3f72f2",
+      "sha256": "f966f6f1eafa6e4da1f4ab7e0c383cc819ab25f9234d3c0844e1f5b5068f935b",
       "mode": "100644"
     },
     "docs/ust-score-explanations.md": {
@@ -5540,7 +5540,7 @@
       "mode": "100644"
     },
     "packages/panel/src/client/styles.ts": {
-      "sha256": "201c22fd16675859242bfbc654fa5ff26006fce8d6a5cffcd9d5f6cefcc88426",
+      "sha256": "099044e043fcdde3ece2ad5cd9bd5eb302dc06a8f7a6e05ca4078fb26e0e4427",
       "mode": "100644"
     },
     "packages/panel/src/client/types.ts": {
@@ -6232,7 +6232,7 @@
       "mode": "100644"
     },
     "packages/panel/test/host-theme-browser.test.mjs": {
-      "sha256": "4639f50d148a403c7fcd69cd0b2030d680ea87e7b8e9bed288086c452ae2ddee",
+      "sha256": "49bf042a645417dd380ad9db029f197fd9700c2235c35b0863157e7d8ffcb6d8",
       "mode": "100644"
     },
     "packages/panel/test/layout-comparison-engines.mjs": {
@@ -8776,7 +8776,7 @@
       "mode": "100644"
     },
     "packages/studio-dsh/src/authoring-tools.ts": {
-      "sha256": "68719cc080272a0956e5cc511e6be672ccf60f37422948fdc17467f4f2ae77ed",
+      "sha256": "2a7f22f9451e0e2a150aa8d768dc3ba8a740a40f5cc7815eba3393f53dadce47",
       "mode": "100644"
     },
     "packages/studio-dsh/src/authoring-workbench.tsx": {
@@ -8876,7 +8876,7 @@
       "mode": "100644"
     },
     "packages/studio-dsh/tests/authoring-service-sdk.test.mjs": {
-      "sha256": "3239e57373ce847bc93a877c5f55c15ae5a6467a23b0820a24e9e3506b873b17",
+      "sha256": "048ab3d1963d91c4be8939d4f528ed903462b7df56d412795da1ed0759cfc4c2",
       "mode": "100644"
     },
     "packages/studio-dsh/tests/authoring-session-sdk.test.mjs": {

@@ -28,7 +28,12 @@ export function registerStudioCustomizationTool(ctx: Context, service: DshStudio
         description: 'Action-specific Studio input. Before authoring, read with {authoring:{}} for creator methods; read a listed resource with {authoring:{resource,offset}} and follow nextOffset. Source read: {id}; readFile: {id,path}. catalog: {query?}; list: {}; copy: {kind:"bundle",bundle:{name:"exact-name",version:"exact-version"}} (or kind:"kit",kit:{name,version}). rename: {id,expectedRevision,title:{zh,en}}. prepareChanges: {id,expectedRevision,changes:[{path,content}],bundle?}; saveChanges also sends mode (validated or draft) and the same candidate digest. preview: {id,expectedRevision,bundle?}. Use the current read receipt for expectedRevision; never guess or omit it on writes.' },
     },
     output: { schema: { type: 'object', additionalProperties: false, properties: { content: { type: 'string', required: true } } },
-      render: (_args, result) => [{ type: 'text', text: result.content }] },
+      render: (_args, result) => [
+        { type: 'text', text: result.content },
+        { type: 'text', text: 'studioUrl opens Design Studio for reusable Kit/Bundle definitions and Panel previews. '
+          + 'To view or edit saved results in the current Design Project, use “Yugoo设计” / “Yugoo Design” in the conversation toolbar to open its Design Panel, then select the relevant design. '
+          + 'Keep the Studio authoring URL labelled Design Studio; do not present it as a project result link.' },
+      ] },
     async execute(args, exec) {
       const agent = exec.agent
       if (!agent) throw new Error('Studio customization requires the actual calling Agent')

@@ -216,6 +216,30 @@ test('Host conversation reads packaged creator methods without widening source o
   assert.equal(invalidRename.isError, true, 'request examples never relax revision guards')
 })
 
+for (const withWebServer of [false, true]) test(`Host conversation tool distinguishes authoring navigation from saved project results (HTTP server: ${withWebServer})`, { timeout: 20000 }, async t => {
+  const f = await fixture(t, { withManagement: true, withWebServer })
+  for (const action of ['catalog', 'list']) {
+    const response = await f.ctx.tools.execute({
+      callId: llm.ToolCallId(randomUUID()), name: 'studio_customize', arguments: { action, request: {} },
+      agent: f.parent.agent, signal: new AbortController().signal,
+    })
+    assert.equal(response.isError, false, JSON.stringify(response))
+    const text = response.content.filter(block => block.type === 'text')
+    const payload = JSON.parse(text[0].text)
+    assert.deepEqual(Object.keys(payload).sort(), ['result', 'studioUrl'], 'existing structured results remain intact')
+    assert.deepEqual(payload.result, await f.ctx.get('studioAuthoring')[action](f.parent.agent, {}))
+    const path = `/design-studio/?agentId=${encodeURIComponent(String(f.parent.agent.id))}`
+    assert.equal(payload.studioUrl, withWebServer ? new URL(path, `http://127.0.0.1:${f.ctx.webServer.port}`).href : path)
+    const navigation = text.slice(1).map(block => block.text).join('\n')
+    assert.match(navigation, /studioUrl.*Design Studio.*Kit\/Bundle/s, 'the model receives the authoring purpose beside the real URL')
+    assert.match(navigation, /current Design Project.*Yugoo设计.*Yugoo Design/s, 'saved results point to the actual native Panel control')
+    assert.match(navigation, /conversation toolbar/)
+    assert.doesNotMatch(navigation, /https?:\/\//, 'navigation must not invent a separate project Panel URL')
+  }
+  assert.equal(f.calls(), 0, 'navigation reads invoke no model')
+  assert.equal(f.childIds.length, 0)
+})
+
 test('Host conversation tool and Studio RPC edit and reopen the same working-copy revisions', { timeout: 20000 }, async t => {
   const f = await fixture(t, { withManagement: true, withWebServer: true })
   const execute = (action, request, agent = f.parent.agent) => f.ctx.tools.execute({

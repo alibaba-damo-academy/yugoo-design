@@ -41,15 +41,29 @@ test('Host scheme and semantic overrides reach shared surfaces, form controls an
       document.body.style.setProperty('--dsw-alias-bg-base', '#12171c')
       document.body.style.setProperty('--dsw-alias-label-primary', '#edf3fa')
       document.body.style.setProperty('--dsw-alias-bg-layer-1', '#20282f')
+      // A retained legacy alias can be defined without following Host theme.
+      // Its mere presence must not hide the current semantic layer.
+      document.body.style.setProperty('--dsw-alias-bg-secondary', '#fff')
     })
     const dark = await colors()
     for (const name of ['dock', 'header', 'footer', 'input', 'studioHeader', 'card', 'graphToolbar']) assert.equal(dark[name].bg, 'rgb(18, 23, 28)', `${name} follows the Host surface`)
     assert.equal(dark.dock.color, 'rgb(237, 243, 250)')
     assert.equal(dark.toggle.bg, 'rgb(32, 40, 47)', 'boot toggle outside the dock uses the current Host layer token')
+    await page.locator('.dsh-design-toggle-active').hover()
+    assert.equal((await colors()).toggle.bg, dark.toggle.bg, 'hover also prefers the current layer over the conflicting legacy alias')
     assert.equal(dark.graphRefresh.color, 'rgb(187, 165, 255)', 'refresh uses the dark-readable graph accent')
     assert.equal(dark.graphSection.border, 'rgb(70, 70, 78)', 'settings use the same graph border')
     assert.notEqual(dark.selected.bg, light.selected.bg, 'selected navigation does not keep a light-only fill')
     assert.equal(dark.selected.color, dark.dock.color)
+    await page.evaluate(() => {
+      document.body.style.removeProperty('--dsw-alias-bg-layer-1')
+      document.body.style.setProperty('--dsw-alias-bg-secondary', '#263445')
+    })
+    assert.equal((await colors()).toggle.bg, 'rgb(38, 52, 69)', 'an older Host without the current layer retains its legacy fallback')
+    await page.evaluate(() => {
+      document.body.style.setProperty('--dsw-alias-bg-layer-1', '#20282f')
+      document.body.style.setProperty('--dsw-alias-bg-secondary', '#fff')
+    })
     // Exercise the production Portal token-capture function outside the surface.
     const popup = await page.evaluate(`(() => {
       const style = (${panelPopupTheme.toString()})(document.querySelector('#trigger'));

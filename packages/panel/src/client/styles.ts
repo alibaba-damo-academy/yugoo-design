@@ -356,9 +356,9 @@ export const TOGGLE_CSS = `
 .dsh-design-toggle{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:30px;flex:0 0 auto;
   color:var(--dsw-alias-label-secondary,#64748b);cursor:pointer;background:transparent;border:0;border-radius:6px;
   padding:4px 8px;font:inherit;font-size:13px;line-height:20px;white-space:nowrap;-webkit-app-region:no-drag}
-.dsh-design-toggle:hover{background:var(--dsw-alias-bg-secondary,var(--dsw-alias-bg-layer-1,light-dark(#f1f5f9,#232326)))}
+.dsh-design-toggle:hover{background:var(--dsw-alias-bg-layer-1,var(--dsw-alias-bg-secondary,light-dark(#f1f5f9,#232326)))}
 .dsh-design-toggle:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary,#3b82f6);outline-offset:2px}
-.dsh-design-toggle-active{color:var(--dsw-alias-state-business-primary,#3b82f6);background:var(--dsw-alias-bg-secondary,var(--dsw-alias-bg-layer-1,light-dark(#f1f5f9,#232326)))}
+.dsh-design-toggle-active{color:var(--dsw-alias-state-business-primary,#3b82f6);background:var(--dsw-alias-bg-layer-1,var(--dsw-alias-bg-secondary,light-dark(#f1f5f9,#232326)))}
 .dsh-design-toast{position:fixed;left:50%;bottom:32px;transform:translateX(-50%);max-width:520px;pointer-events:none;
   padding:10px 16px;border-radius:8px;background:rgba(39,39,39,0.92);color:#fff;font-size:13px;line-height:1.6;
   z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.2);white-space:pre-wrap;animation:dsh-design-toast-in .2s ease-out}
