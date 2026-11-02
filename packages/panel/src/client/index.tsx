@@ -49,7 +49,6 @@ import { submitDesignPanelPrompt, type PanelPromptSession } from './panel-prompt
 // (scoped to .dsh-design-root; the host shell's styles stay untouched).
 import DESIGN_TW_CSS from './generated/design.tw.css?inline'
 import ICON_GLYPH_CSS from './ported/iconfont.css?inline'
-import RECORD_VISUAL_CSS from '../visual-components.css?inline'
 import RECORD_FLOW_CSS from '@xyflow/react/dist/style.css?inline'
 import { latestActiveFileExecution, producerExecutionForCall } from './design-activity.ts'
 import { workspacePollAdmission } from './workspace-poll-policy.ts'
@@ -65,6 +64,7 @@ import {
   setDockWidthClamp,
   setRailWidth,
   setSessionDockOpen,
+  setNativeRightbarExpanded,
   type DockTransient,
 } from './dock-session-state.ts'
 import {
@@ -105,7 +105,7 @@ function applyFrameInset(): void {
   if (frame === null) return
   const snapshot = rail.getSnapshot()
   document.documentElement.style.setProperty('--dsh-design-dock-w', `${snapshot.width}px`)
-  frame.classList.toggle('dsh-design-frame-inset', snapshot.open)
+  frame.classList.toggle('dsh-design-frame-inset', snapshot.visible)
 }
 
 function clampDockWidth(width: number): number {
@@ -287,9 +287,10 @@ function workspaceSource(sessionId: string | undefined): {
   }
 }
 
-function usePanelWorkspace(sessionId: string | undefined): DesignPanelWorkspaceRead | undefined {
+function usePanelWorkspace(sessionId: string | undefined, enabled = true): DesignPanelWorkspaceRead | undefined {
   const source = useMemo(() => workspaceSource(sessionId), [sessionId])
-  return useSyncExternalStore(source.subscribe, source.getSnapshot)
+  const subscribe = useCallback((listener: () => void) => enabled ? source.subscribe(listener) : () => {}, [source, enabled])
+  return useSyncExternalStore(subscribe, source.getSnapshot)
 }
 
 function workspaceFailureSource(sessionId: string | undefined): {
@@ -321,9 +322,10 @@ function workspaceFailureSource(sessionId: string | undefined): {
   }
 }
 
-function usePanelWorkspaceFailure(sessionId: string | undefined): string | undefined {
+function usePanelWorkspaceFailure(sessionId: string | undefined, enabled = true): string | undefined {
   const source = useMemo(() => workspaceFailureSource(sessionId), [sessionId])
-  return useSyncExternalStore(source.subscribe, source.getSnapshot)
+  const subscribe = useCallback((listener: () => void) => enabled ? source.subscribe(listener) : () => {}, [source, enabled])
+  return useSyncExternalStore(subscribe, source.getSnapshot)
 }
 
 function designSkillName(block: ToolCallViewProps['block']): string {
@@ -390,6 +392,19 @@ function disposeWorkspaceChannels(): void {
 
 let layout: { toggleSidebar(): void } | undefined
 
+/** Public navigation face; the Host owns tab state and draft retention. */
+interface NativeRightSidebar {
+  isExpanded(): boolean
+  toggleExpanded(): void
+}
+let nativeRightSidebar: NativeRightSidebar | undefined
+
+function syncNativeSidebarVisibility(): void {
+  let expanded = false
+  try { expanded = nativeRightSidebar?.isExpanded() ?? false } catch { /* No on-screen Host Session yet. */ }
+  setNativeRightbarExpanded(expanded)
+}
+
 interface SidebarCollapseLease {
   readonly frame: HTMLElement
   readonly observer: MutationObserver
@@ -451,10 +466,13 @@ function prepareDesignLayout(): number {
 }
 
 /** Open Design through one layout path for manual and activity-driven entry. */
-function openDesignDock(sessionId: string | undefined, patch: DockTransient = {}): void {
+function openDesignDock(sessionId: string | undefined, patch: DockTransient = {}, explicit = false): void {
   if (sessionId === undefined || sessionId !== currentDockSession()) return
-  if (!rail.getSnapshot().open) setRailWidth(prepareDesignLayout())
+  if (explicit && nativeRightSidebar?.isExpanded()) nativeRightSidebar.toggleExpanded()
+  syncNativeSidebarVisibility()
+  const firstOpen = !rail.getSnapshot().open
   setSessionDockOpen(sessionId, true, patch)
+  if (firstOpen && rail.getSnapshot().visible) setRailWidth(prepareDesignLayout())
 }
 
 /** Close Design and restore navigation only when this opening collapsed it. */
@@ -475,6 +493,18 @@ export function apply(ctx: Context): void {
     scope.effect(() => bindDesignHostLocale(source), 'design panel: host locale')
   })
   ctx.plugin(NativePanelRegistry)
+  // Optional public capability: ordinary Panel loading never waits for a sidebar plugin.
+  ctx.inject(['sidebarRight'], (scope: Context) => {
+    const sidebar = (scope as unknown as { sidebarRight: NativeRightSidebar }).sidebarRight
+    scope.effect(() => {
+      nativeRightSidebar = sidebar
+      syncNativeSidebarVisibility()
+      return () => {
+        if (nativeRightSidebar === sidebar) nativeRightSidebar = undefined
+        syncNativeSidebarVisibility()
+      }
+    }, 'design panel: native right Sidebar')
+  })
   ctx.inject(
     ['slots', 'sessions', 'remote', 'remote.session', 'remote.commands', 'remote.designPanel', 'layout', 'uiSession', 'designNativePanels'],
     (scope: Context) => { mountPanelShell(scope) },
@@ -643,6 +673,7 @@ function mountPanelShell(ctx: Context): void {
     const source = panelSession.source
     const activate = (): void => {
       activateDesignDockSession((source.getSnapshot() as ProvideInfo).sessionId)
+      syncNativeSidebarVisibility()
     }
     activate()
     const disposeActivation = source.subscribe(activate)
@@ -658,6 +689,7 @@ function mountPanelShell(ctx: Context): void {
     let animationFrame: number | undefined
     const reconcileDockWidth = (): void => {
       animationFrame = undefined
+      syncNativeSidebarVisibility()
       const nextFrame = frameElement()
       const nextNavigation = nextFrame?.firstElementChild ?? null
       if (nextFrame !== frame || nextNavigation !== navigation) {
@@ -667,7 +699,7 @@ function mountPanelShell(ctx: Context): void {
         if (navigation !== null) resizeObserver.observe(navigation)
       }
       const snapshot = rail.getSnapshot()
-      if (!snapshot.open) return
+      if (!snapshot.visible) return
       // Opening owns the initial Design-first layout. Later Host changes,
       // including manually expanded navigation, only constrain its width.
       const width = clampDockWidth(snapshot.width)
@@ -681,10 +713,10 @@ function mountPanelShell(ctx: Context): void {
     window.addEventListener('resize', scheduleReconcile)
     const resizeObserver = new ResizeObserver(scheduleReconcile)
     const hasOverlay = (node: Node): boolean => node instanceof Element
-      && (node.matches('[data-shell-overlay]') || node.querySelector('[data-shell-overlay]') !== null)
+      && (node.matches('[data-shell-overlay], [data-sidebar-right-session]') || node.querySelector('[data-shell-overlay], [data-sidebar-right-session]') !== null)
     const sidebarObserver = new MutationObserver(records => {
       if (records.some(record => record.type === 'attributes'
-        ? record.target === frame
+        ? record.target === frame || record.attributeName === 'data-sidebar-right-open'
         : record.target === frame || Array.from(record.addedNodes).some(hasOverlay)
           || Array.from(record.removedNodes).some(hasOverlay))) scheduleReconcile()
     })
@@ -692,7 +724,7 @@ function mountPanelShell(ctx: Context): void {
     // Only those anchors and the current frame's sidebar attribute matter;
     // ordinary conversation streaming must not schedule layout work.
     sidebarObserver?.observe(document.body, { childList: true, subtree: true,
-      attributes: true, attributeFilter: ['data-sidebar-collapsed'] })
+      attributes: true, attributeFilter: ['data-sidebar-collapsed', 'data-sidebar-right-open'] })
     // The per-session open flags and the page width survive session switches
     // and hot client remounts. Fit a restored open dock to the current Host
     // layout without reapplying its one-time opening policy.
@@ -901,9 +933,9 @@ function DesignToggle(): ReactElement | null {
     <button
       type='button'
       data-testid='design-toolbar-toggle'
-      className={`dsh-design-toggle${snap.open ? ' dsh-design-toggle-active' : ''}`}
-      aria-pressed={snap.open}
-      onClick={() => { snap.open ? closeDesignDock(info.sessionId) : openDesignDock(info.sessionId) }}
+      className={`dsh-design-toggle${snap.visible ? ' dsh-design-toggle-active' : ''}`}
+      aria-pressed={snap.visible}
+      onClick={() => { snap.visible ? closeDesignDock(info.sessionId) : openDesignDock(info.sessionId, {}, true) }}
     >
       {isZh ? 'Yugoo设计' : 'Yugoo Design'}
     </button>
@@ -1084,8 +1116,13 @@ function DesignSidebarActionsHost({ wide }: { readonly wide: boolean }): ReactEl
 /** The right dock: chrome + plugin-owned workspace for the current session. */
 function DesignDock(): ReactElement | null {
   const snap = useSyncExternalStore(rail.subscribe, rail.getSnapshot)
-  if (!snap.open || runtime === undefined) return null
-  return <DockContent />
+  const sessionId = currentDockSession()
+  const visited = useRef<string>()
+  if (snap.open) visited.current = sessionId
+  if (runtime === undefined || sessionId === undefined || visited.current !== sessionId) return null
+  return <div style={{ display: snap.visible ? 'contents' : 'none' }} aria-hidden={!snap.visible || undefined}>
+    <DockContent key={sessionId} visible={snap.visible} />
+  </div>
 }
 
 /** Pointer event subset the resize handle consumes. */
@@ -1118,12 +1155,12 @@ function DockResizeHandle(): ReactElement {
 }
 
 /** Dock body bound to the current session's provide bundle. */
-function DockContent(): ReactElement | null {
+function DockContent({ visible }: { readonly visible: boolean }): ReactElement | null {
   useCurrentLanguage()
   const info = useObservable(runtime?.sessions.currentProvideInfo ?? ABSENT) as ProvideInfo
   const geometry = useHostDockGeometry(info.sessionId)
-  const workspace = usePanelWorkspace(info.sessionId)
-  const workspaceFailure = usePanelWorkspaceFailure(info.sessionId)
+  const workspace = usePanelWorkspace(info.sessionId, visible)
+  const workspaceFailure = usePanelWorkspaceFailure(info.sessionId, visible)
   if (runtime === undefined) return null
   const dockStyle = {
     '--dsh-design-dock-top': `${geometry.top}px`,
@@ -1155,7 +1192,6 @@ function DockContent(): ReactElement | null {
           so DOCK_CSS must come later to win the cascade tie. */}
       <style>{DESIGN_TW_CSS}</style>
       <style>{RECORD_FLOW_CSS}</style>
-      <style>{RECORD_VISUAL_CSS}</style>
       <style>{DOCK_CSS}</style>
       <style>{ICON_GLYPH_CSS}</style>
       <div className='flex min-h-0 flex-1 flex-col'>
@@ -1181,7 +1217,7 @@ function DockContent(): ReactElement | null {
             projectPath={workspace?.projectPath}
             sessionId={info.sessionId}
             runtime={runtime}
-            dockOpen
+            dockOpen={visible}
             focus={rail.getSnapshot().focus}
             onClose={() => { closeDesignDock(info.sessionId) }}
           />

@@ -12,6 +12,8 @@
 /** Dock state: open flag + rendered width, consumed by toggle, dock, and drag. */
 export interface RailState {
   open: boolean
+  /** Actual visibility yields to the Host right Sidebar without clearing open intent. */
+  visible: boolean
   width: number
   focus?: { readonly skill: string; readonly nonce: number }
   activity?: { readonly sessionId: string; readonly seq: number }
@@ -28,6 +30,7 @@ const DEFAULT_DOCK_WIDTH = 420
 /** Persistent open flag per session; absence means closed. */
 const sessionDockOpen = new Map<string, boolean>()
 let activeSessionId: string | undefined
+let nativeRightbarExpanded = false
 let railWidth = DEFAULT_DOCK_WIDTH
 let railFocus: DockTransient['focus']
 let railActivity: DockTransient['activity']
@@ -38,6 +41,7 @@ const railListeners = new Set<() => void>()
 function composeRailState(): RailState {
   return {
     open: activeSessionId !== undefined && sessionDockOpen.get(activeSessionId) === true,
+    visible: activeSessionId !== undefined && sessionDockOpen.get(activeSessionId) === true && !nativeRightbarExpanded,
     width: railWidth,
     ...(railFocus === undefined ? {} : { focus: railFocus }),
     ...(railActivity === undefined ? {} : { activity: railActivity }),
@@ -134,5 +138,12 @@ export function setRailWidth(width: number): void {
   const clamped = clampWidth(width)
   if (clamped === railWidth) return
   railWidth = clamped
+  publishRail()
+}
+
+/** Re-read Host expansion; this is a projection, never a saved layout choice. */
+export function setNativeRightbarExpanded(expanded: boolean): void {
+  if (nativeRightbarExpanded === expanded) return
+  nativeRightbarExpanded = expanded
   publishRail()
 }

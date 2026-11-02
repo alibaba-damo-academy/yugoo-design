@@ -106,6 +106,12 @@ try {
 
   await page.goto(url)
   await settle2D()
+  // Native Host preference wins over OS preference and remains live until the
+  // user explicitly chooses a canvas theme. No graph remount or data rewrite.
+  await page.evaluate(() => { document.documentElement.style.colorScheme = 'dark' })
+  await page.waitForFunction(() => document.querySelector('.graph-planar-canvas')?.dataset.canvasTheme === 'dark')
+  await page.evaluate(() => { document.documentElement.style.colorScheme = 'light' })
+  await page.waitForFunction(() => document.querySelector('.graph-planar-canvas')?.dataset.canvasTheme === 'light')
   assert.equal(await page.getByLabel('邻域深度').count(), 0)
   assert.equal(await page.locator('svg g[role=button]').count(), 2)
   assert.match(await page.locator('svg [data-label="a"]').textContent(), /活动安排 · 2项/)
@@ -170,6 +176,9 @@ try {
   const lightStops = await page.locator('linearGradient stop').evaluateAll(stops => stops.map(s => s.getAttribute('stop-color')))
   await page.getByRole('button', { name: '画布切换到深色' }).click()
   assert.equal(await page.locator('.graph-planar-canvas').getAttribute('data-canvas-theme'), 'dark')
+  await page.evaluate(() => { document.documentElement.style.colorScheme = 'dark' })
+  await page.evaluate(() => { document.documentElement.style.colorScheme = 'light' })
+  assert.equal(await page.locator('.graph-planar-canvas').getAttribute('data-canvas-theme'), 'dark', 'explicit canvas choice survives Host preference changes')
   assert.notDeepEqual(await page.locator('.graph-node-dot').evaluateAll(nodes => nodes.map(n => n.getAttribute('fill'))), lightDots, 'dark canvas changes node foregrounds, not only its background')
   assert.notDeepEqual(await page.locator('linearGradient stop').evaluateAll(stops => stops.map(s => s.getAttribute('stop-color'))), lightStops, 'existing edge gradients follow the canvas theme')
   assert.equal(await page.locator('svg [data-graph-world]').getAttribute('transform'), graphBefore)

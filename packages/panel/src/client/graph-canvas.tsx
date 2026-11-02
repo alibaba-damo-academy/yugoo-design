@@ -9,15 +9,19 @@ import { SpatialGraphCanvas } from './graph-spatial.js'
 import { intersects, graphLabelRanks, shortGraphLabel, type LabelBox } from './graph-labels.js'
 import { createGraphNebula } from './graph-nebula.js'
 import { GraphCameraTools, graphAmbientColors, graphSourceColors, graphDarkSourceColors, type GraphCanvasTheme } from './graph-canvas-presentation.js'
+import { useColorScheme } from '../use-color-scheme.js'
 export { graphSourceColors } from './graph-canvas-presentation.js'
 
 interface Particle extends SimulationNodeDatum { id: string; node: GraphNode; degree: number; record: string }
 export interface GraphCanvasProps { graph: GraphScope; layoutEdges?: GraphEdge[]; reach: Map<string, number>; contentCounts?: ReadonlyMap<string, number>; sizeMode?: 'uniform' | 'reach'; selected: string; selectedEdge: string; matches: Set<string> | null; layout?: string; sourceLabels?: Record<string, string>; viewMode?: 'graph' | 'ring'; onNode: (id: string) => void; onEdge: (id: string) => void; onClear: () => void }
 export function GraphCanvas(props: GraphCanvasProps) {
   const mode = props.viewMode === 'ring' ? 'ring' : props.layout ?? 'stress2-original'
-  const [dark, setDark] = useState(false)
-  const theme = { dark, onToggleDark: () => setDark(value => !value) }
-  return <div className='graph-canvas' style={{ position: 'relative', flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+  const surface = useRef<HTMLDivElement>(null)
+  const hostScheme = useColorScheme(surface)
+  const [override, setOverride] = useState<boolean | null>(null)
+  const dark = override ?? hostScheme === 'dark'
+  const theme = { dark, onToggleDark: () => setOverride(!dark) }
+  return <div ref={surface} className='graph-canvas' style={{ position: 'relative', flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
     {mode.startsWith('stress3') ? <SpatialGraphCanvas {...props} {...theme} engine={mode} /> : <PlanarGraphCanvas {...props} {...theme} engine={mode} />}
   </div>
 }

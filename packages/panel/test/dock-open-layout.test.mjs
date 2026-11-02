@@ -31,7 +31,8 @@ const code = ts.transpileModule([
   ...modules.map(text => text.replace(/^export /gm, '')),
   clientFunction('frameElement'), clientFunction('clampDockWidth'), source.slice(layoutStart, layoutEnd),
   `({ rail, activateDesignDockSession, currentDockSession, setRailWidth, openDesignDock, closeDesignDock,
-    installLayout(value) { layout = value }, installClamp() { setDockWidthClamp(clampDockWidth) },
+    installLayout(value) { layout = value },
+    installNativeSidebar(value) { nativeRightSidebar = value; syncNativeSidebarVisibility() }, installClamp() { setDockWidthClamp(clampDockWidth) },
     mountReflow: ${reflow} })`,
 ].join('\n'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText
 
@@ -304,4 +305,98 @@ test('Host frame/navigation replacement rebinds observations; streaming and disp
     assert.equal(f.frames.size, 0)
     assert.ok(f.observers.every(observer => observer.observed.size === 0))
   } finally { f.dispose() }
+})
+
+
+test('native right Sidebar temporarily takes the right side; explicit Design entry reveals without resetting width', () => {
+  const f = fixture()
+  let expanded = false, nativeToggles = 0
+  const sidebar = { isExpanded: () => expanded, toggleExpanded() { expanded = !expanded; nativeToggles++ } }
+  f.installNativeSidebar(sidebar)
+  f.openDesignDock('a')
+  f.setRailWidth(640)
+  expanded = true
+  f.installNativeSidebar(sidebar)
+  assert.equal(f.rail.getSnapshot().open, true, 'retain the existing open intent')
+  assert.equal(f.rail.getSnapshot().visible, false, 'Host right Sidebar owns the right side')
+  f.openDesignDock('a', { focus: { skill: 'research', nonce: 2 } })
+  assert.equal(nativeToggles, 0, 'ordinary Design activity must never steal the native view')
+  assert.equal(f.rail.getSnapshot().visible, false)
+  f.openDesignDock('a', {}, true)
+  assert.equal(nativeToggles, 1)
+  assert.equal(expanded, false)
+  assert.equal(f.rail.getSnapshot().visible, true)
+  assert.equal(f.rail.getSnapshot().width, 640, 'switching views preserves the dragged width')
+  expanded = true; f.installNativeSidebar(sidebar)
+  expanded = false; f.installNativeSidebar(sidebar)
+  assert.equal(f.rail.getSnapshot().visible, true, 'collapsing the Host sidebar reveals existing Design intent')
+  f.closeDesignDock('a')
+  expanded = true; f.installNativeSidebar(sidebar)
+  expanded = false; f.installNativeSidebar(sidebar)
+  assert.equal(f.rail.getSnapshot().visible, false, 'a closed Design dock is not a restore request')
+  f.release()
+})
+
+test('hiding and reopening the actual React dock retains unsaved editor DOM and mounted content', async () => {
+  const React = await import('react')
+  const { createRoot } = await import('react-dom/client')
+  const { act } = React
+  const dom = new JSDOM('<div id="mount"></div>')
+  const previous = { window: globalThis.window, document: globalThis.document, act: globalThis.IS_REACT_ACT_ENVIRONMENT }
+  globalThis.window = dom.window
+  globalThis.document = dom.window.document
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true
+  const f = fixture()
+  let mounts = 0, unmounts = 0
+  function Editor() {
+    React.useEffect(() => { mounts++; return () => { unmounts++ } }, [])
+    return React.createElement('textarea', { defaultValue: 'saved rule' })
+  }
+  const dock = ts.transpileModule(clientFunction('DesignDock') + '\nDesignDock', {
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None, jsx: ts.JsxEmit.React },
+  }).outputText
+  const DesignDock = runInNewContext(dock, { React, useRef: React.useRef, useSyncExternalStore: React.useSyncExternalStore,
+    rail: f.rail, currentDockSession: f.currentDockSession, runtime: {}, DockContent: Editor })
+  const root = createRoot(dom.window.document.querySelector('#mount'))
+  try {
+    await act(async () => { f.openDesignDock('a'); root.render(React.createElement(DesignDock)) })
+    const input = dom.window.document.querySelector('textarea')
+    input.value = 'unsaved 500 yuan condition'
+    let expanded = true
+    const sidebar = { isExpanded: () => expanded, toggleExpanded() { expanded = !expanded } }
+    await act(async () => { f.installNativeSidebar(sidebar) })
+    assert.equal(input.isConnected, true)
+    assert.equal(input.parentElement.style.display, 'none')
+    await act(async () => { f.openDesignDock('a', {}, true) })
+    assert.equal(dom.window.document.querySelector('textarea'), input)
+    assert.equal(input.value, 'unsaved 500 yuan condition')
+    await act(async () => { f.closeDesignDock('a'); f.openDesignDock('a', {}, true) })
+    assert.equal(dom.window.document.querySelector('textarea'), input)
+    assert.equal(input.value, 'unsaved 500 yuan condition')
+    assert.equal(mounts, 1)
+    assert.equal(unmounts, 0)
+  } finally {
+    await act(async () => { root.unmount() })
+    f.release()
+    globalThis.window = previous.window
+    globalThis.document = previous.document
+    globalThis.IS_REACT_ACT_ENVIRONMENT = previous.act
+    dom.window.close()
+  }
+})
+
+
+test('first background Design activity under an open native Sidebar leaves left navigation untouched', () => {
+  const f = fixture()
+  f.installNativeSidebar({ isExpanded: () => true, toggleExpanded() { throw new Error('background activity must not toggle') } })
+  const width = f.rail.getSnapshot().width
+  f.openDesignDock('a', { focus: { skill: 'research', nonce: 1 } })
+  f.flush()
+  assert.equal(f.rail.getSnapshot().open, true)
+  assert.equal(f.rail.getSnapshot().visible, false)
+  assert.equal(f.rail.getSnapshot().width, width)
+  assert.equal(f.state.toggles, 0)
+  f.closeDesignDock('a')
+  assert.equal(f.state.toggles, 0, 'hidden work acquired no navigation-collapse lease')
+  f.release()
 })

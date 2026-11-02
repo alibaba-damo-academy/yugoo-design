@@ -7,44 +7,25 @@
  * Token naming convention:
  *   --ds-{category}-{name}
  *   category: brand, text, fill, line, icon, success, notice, warning, error, help, link, other
+ * Scheme-aware UI colors are maintained in ../../visual-components.css.
+ * The remaining native constants and geometry are confined to the Panel root.
  */
 
-:root {
+.dsh-design-root {
   /* ==========================================================================
      1. Base Tokens - Brand Colors (brand-1 ~ brand-10)
      ========================================================================== */
-  --ds-brand-1: #f7f4fe;
-  --ds-brand-2: #eae5ff;
-  --ds-brand-3: #ddd3ff;
   --ds-brand-4: #b49fff;
-  --ds-brand-5: #947af4;
-  --ds-brand-6: #7c5af6; /* Primary brand color */
-  --ds-brand-7: #6849d8;
-  --ds-brand-8: #5032bc;
   --ds-brand-9: #31198c;
   --ds-brand-10: #230f6d;
 
   /* ==========================================================================
      2. Base Tokens - Text Colors (text-1 ~ text-10)
      ========================================================================== */
-  --ds-text-1: #e8e8e8;
-  --ds-text-2: #d3d3d3;
-  --ds-text-3: #c2c2c2;
-  --ds-text-4: #b5b5b5;
-  --ds-text-5: #a2a2a2;
-  --ds-text-6: #929292;
-  --ds-text-7: #6d6d6d;
-  --ds-text-8: #4c4c4c;
-  --ds-text-9: #272727;
-  --ds-text-10: #0c0c0c;
 
   /* ==========================================================================
      3. Base Tokens - Line & Icon Colors (line-1 ~ line-10)
      ========================================================================== */
-  --ds-line-1: #e8e8e8;
-  --ds-line-2: #dfdfdf;
-  --ds-line-3: #cbcbcb;
-  --ds-line-4: #b9b9b9;
   --ds-line-5: #a2a2a2;
   --ds-line-6: #929292;
   --ds-line-7: #6d6d6d;
@@ -55,12 +36,6 @@
   /* ==========================================================================
      4. Base Tokens - Fill Colors (fill-1 ~ fill-10)
      ========================================================================== */
-  --ds-fill-1: #fbfbfb;
-  --ds-fill-2: #f7f7f7;
-  --ds-fill-3: #f3f3f3;
-  --ds-fill-4: #f1f1f1;
-  --ds-fill-5: #ebebeb;
-  --ds-fill-6: #e8e8e8;
   --ds-fill-7: #e1e1e1;
   --ds-fill-8: #dcdcdc;
   --ds-fill-9: #d8d8d8;
@@ -69,13 +44,10 @@
   /* ==========================================================================
      5. Base Tokens - Success Colors (success-1 ~ success-10)
      ========================================================================== */
-  --ds-success-1: #f5fff9;
   --ds-success-2: #f0f9f4;
   --ds-success-3: #bee5cf;
   --ds-success-4: #83d5a7;
   --ds-success-5: #2db768;
-  --ds-success-6: #199b51;
-  --ds-success-7: #0a793a;
   --ds-success-8: #064d1b;
   --ds-success-9: #014116;
   --ds-success-10: #002d0c;
@@ -83,13 +55,9 @@
   /* ==========================================================================
      6. Base Tokens - Notice Colors (notice-1 ~ notice-10)
      ========================================================================== */
-  --ds-notice-1: #f8f9ff;
   --ds-notice-2: #eaf1ff;
-  --ds-notice-3: #d2e4ff;
   --ds-notice-4: #6caff8;
   --ds-notice-5: #4b96e0;
-  --ds-notice-6: #367abd;
-  --ds-notice-7: #2365a7;
   --ds-notice-8: #004e85;
   --ds-notice-9: #013a65;
   --ds-notice-10: #002747;
@@ -97,13 +65,10 @@
   /* ==========================================================================
      7. Base Tokens - Warning Colors (warning-1 ~ warning-10)
      ========================================================================== */
-  --ds-warning-1: #fff9f5;
   --ds-warning-2: #fcf1e3;
   --ds-warning-3: #ffe4c8;
   --ds-warning-4: #f29555;
   --ds-warning-5: #e17725;
-  --ds-warning-6: #d46300;
-  --ds-warning-7: #b95600;
   --ds-warning-8: #8c4100;
   --ds-warning-9: #5b2700;
   --ds-warning-10: #421b00;
@@ -111,13 +76,10 @@
   /* ==========================================================================
      8. Base Tokens - Error Colors (error-1 ~ error-10)
      ========================================================================== */
-  --ds-error-1: #fff5f4;
   --ds-error-2: #ffebeb;
   --ds-error-3: #ffd9d9;
   --ds-error-4: #fe9187;
   --ds-error-5: #ed6f67;
-  --ds-error-6: #d65350;
-  --ds-error-7: #b02d2f;
   --ds-error-8: #8c2723;
   --ds-error-9: #6d1a16;
   --ds-error-10: #4f1111;
@@ -238,47 +200,21 @@
      14. Semantic Tokens - Text
      四个不同层级的文本/图标颜色，依次代表产品界面中最主要、次主要、稍次要和最次要的内容
      ========================================================================== */
-  --ds-text-primary: #272727; /* text-9 | 主要文字色 */
-  --ds-text-secondary: #4c4c4c; /* text-8 | 次要文字色 */
-  --ds-text-tertiary: #6d6d6d; /* text-7 | 辅助文案 */
-  --ds-text-disabled: #b5b5b5; /* text-4 | 禁用文字色 */
 
   /* ==========================================================================
      15. Semantic Tokens - Fill / Background
      应用中各级背景色，包括容器、菜单、导航栏等
      ========================================================================== */
-  --ds-bg-white-hover: #f7f7f7; /* fill-2 | 白底悬浮态 */
-  --ds-bg-white-active: #f1f1f1; /* fill-4 | 白底按下态 */
-  --ds-bg-white-disable: #f7f7f7; /* fill-2 | 白底禁用态 */
-  --ds-bg-gary-default: #f7f7f7; /* fill-2 | 灰底默认态 */
-  --ds-bg-gary-hover: #f1f1f1; /* fill-4 | 灰底悬浮态 */
-  --ds-bg-gary-active: #e8e8e8; /* fill-6 | 灰底按下态 */
-  --ds-bg-component: #f3f3f3; /* fill-3 | 组件背景 */
-  --ds-bg-page: #f1f1f1; /* fill-4 | 页面背景 */
 
   /* ==========================================================================
      16. Semantic Tokens - Line & Icon
      界面中带有描边属性的颜色
      ========================================================================== */
-  --ds-divider-default: #e8e8e8; /* line-1 | 分割线 */
-  --ds-border-default: #dfdfdf; /* line-2 | 默认边框 */
-  --ds-icon-outline-muted: #a2a2a2; /* line-5 | 弱化线框图标 */
-  --ds-icon-fill-default: #929292; /* line-6 | 实心图标默认 */
-  --ds-icon-outline-default: #6d6d6d; /* line-7 | 线框图标默认 */
 
   /* ==========================================================================
      17. Semantic Tokens - Brand / Primary
      用户界面主强调色及各交互态颜色，通常用于主操作按钮等
      ========================================================================== */
-  --ds-brand-bg-default: #7c5af6; /* brand-6 | 品牌色背景默认 */
-  --ds-brand-bg-hover: #6849d8; /* brand-7 | 品牌色背景悬浮 */
-  --ds-brand-bg-active: #5032bc; /* brand-8 | 品牌色背景按下 */
-  --ds-brand-bg-disabled: #ddd3ff; /* brand-3 | 品牌色背景禁用 */
-  --ds-brand-light-bg-default: #f7f4fe; /* brand-1 | 品牌浅色背景默认 */
-  --ds-brand-light-bg-hover: #eae5ff; /* brand-2 | 品牌浅色背景悬浮 */
-  --ds-brand-light-bg-active: #ddd3ff; /* brand-3 | 品牌浅色背景按下 */
-  --ds-brand-light-border: #ddd3ff; /* brand-3 | 品牌浅色边框 */
-  --ds-brand-text-primary: #6849d8; /* brand-7 | 品牌色文字 */
   --ds-brand-text-placeholder: #b49fff; /* brand-4 | 品牌色占位符 */
 
   /* ==========================================================================
@@ -289,11 +225,9 @@
   --ds-success-bg-hover: #0a793a; /* success-7 | 成功色背景悬浮 */
   --ds-success-bg-active: #064d1b; /* success-8 | 成功色背景按下 */
   --ds-success-bg-disabled: #bee5cf; /* success-3 | 成功色背景禁用 */
-  --ds-success-light-bg-default: #f5fff9; /* success-1 | 成功浅色背景默认 */
   --ds-success-light-bg-hover: #f0f9f4; /* success-2 | 成功浅色背景悬浮 */
   --ds-success-light-bg-active: #bee5cf; /* success-3 | 成功浅色背景按下 */
   --ds-success-light-border: #bee5cf; /* success-3 | 成功浅色边框 */
-  --ds-success-text-primary: #0a793a; /* success-7 | 成功色文字 */
   --ds-success-text-placeholder: #83d5a7; /* success-4 | 成功色占位符 */
 
   /* ==========================================================================
@@ -304,11 +238,9 @@
   --ds-notice-bg-hover: #2365a7; /* notice-7 | 提示色背景悬浮 */
   --ds-notice-bg-active: #004e85; /* notice-8 | 提示色背景按下 */
   --ds-notice-bg-disabled: #d2e4ff; /* notice-3 | 提示色背景禁用 */
-  --ds-notice-light-bg-default: #f8f9ff; /* notice-1 | 提示浅色背景默认 */
   --ds-notice-light-bg-hover: #eaf1ff; /* notice-2 | 提示浅色背景悬浮 */
   --ds-notice-light-bg-active: #d2e4ff; /* notice-3 | 提示浅色背景按下 */
   --ds-notice-light-border: #d2e4ff; /* notice-3 | 提示浅色边框 */
-  --ds-notice-text-primary: #2365a7; /* notice-7 | 提示色文字 */
   --ds-notice-text-placeholder: #6caff8; /* notice-4 | 提示色占位符 */
 
   /* ==========================================================================
@@ -319,11 +251,9 @@
   --ds-warning-bg-hover: #a45300; /* warning-7 | 警告色背景悬浮 */
   --ds-warning-bg-active: #733501; /* warning-8 | 警告色背景按下 */
   --ds-warning-bg-disabled: #ffe4c8; /* warning-3 | 警告色背景禁用 */
-  --ds-warning-light-bg-default: #fff9f5; /* warning-1 | 警告浅色背景默认 */
   --ds-warning-light-bg-hover: #fcf1e3; /* warning-2 | 警告浅色背景悬浮 */
   --ds-warning-light-bg-active: #ffe4c8; /* warning-3 | 警告浅色背景按下 */
   --ds-warning-light-border: #ffe4c8; /* warning-3 | 警告浅色边框 */
-  --ds-warning-text-primary: #a45300; /* warning-7 | 警告色文字 */
   --ds-warning-text-placeholder: #f29555; /* warning-4 | 警告色占位符 */
 
   /* ==========================================================================
@@ -342,11 +272,9 @@
   --ds-error-bg-hover: #b02d2f; /* error-7 | 错误色背景悬浮 */
   --ds-error-bg-active: #8c2723; /* error-8 | 错误色背景按下 */
   --ds-error-bg-disabled: #ffd9d9; /* error-3 | 错误色背景禁用 */
-  --ds-error-light-bg-default: #fff5f4; /* error-1 | 错误浅色背景默认 */
   --ds-error-light-bg-hover: #ffebeb; /* error-2 | 错误浅色背景悬浮 */
   --ds-error-light-bg-active: #ffd9d9; /* error-3 | 错误浅色背景按下 */
   --ds-error-light-border: #ffd9d9; /* error-3 | 错误浅色边框 */
-  --ds-error-text-primary: #b02d2f; /* error-7 | 错误色文字 */
   --ds-error-text-placeholder: #fe9187; /* error-4 | 错误色占位符 */
 
   /* ==========================================================================
@@ -367,8 +295,6 @@
      23. Semantic Tokens - Link
      用于产品中超链接的文本
      ========================================================================== */
-  --ds-link: #367abd; /* notice-6 | 链接默认色 */
-  --ds-link-hover: #2365a7; /* notice-7 | 链接悬浮色 */
   --ds-link-active: #004e85; /* notice-8 | 链接按下色 */
   --ds-link-disabled: #9abcde; /* link-4 | 链接禁用色 */
 

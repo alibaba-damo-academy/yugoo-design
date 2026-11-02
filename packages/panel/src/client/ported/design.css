@@ -6,8 +6,8 @@
  *
  * Isolation contract with the dsh host page:
  * - CSS custom properties live on `.dsh-design-root` (never `:root`), so the
- *   host theme is untouched. Radix portals must render inside a
- *   `.dsh-design-root` wrapper to inherit them.
+ *   host theme is untouched. Portalled controls copy their trigger
+ *   tokens and resolved color-scheme through the shared PanelSelect adapter.
  * - Preflight is disabled in tailwind.config.cjs; the minimal box/border base
  *   the shadcn components rely on is re-declared scoped below.
  * - Utility classes are global (the host styles are hashed CSS modules, so
@@ -15,6 +15,7 @@
  */
 
 @import './token.css';
+@import '../../visual-components.css';
 /* Preflight is disabled in tailwind.config.cjs, so this emits no global
    reset; it only opens the base layer for the scoped variables below. */
 @tailwind base;
@@ -23,53 +24,52 @@
 
 @layer base {
   .dsh-design-root {
-    /* Light theme variables, ported verbatim from extend-design-skill
-       src/styles/index.css @layer base `:root`. */
+    /* Keep the ported HSL utility contract, using the shared Host palette. */
     --font-main: var(--ds-font-main);
     --font-code: var(--ds-font-code);
     --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
 
-    --background: 0 0% 100%; /* --ds-static-white #FFFFFF */
-    --foreground: 0 0% 15.3%; /* --ds-text-primary #272727 */
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 15.3%;
-    --primary: 253.1 89.7% 65.9%; /* --ds-brand-6 #7C5AF6 */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 96.9%; /* --ds-bg-gary-default #F7F7F7 */
-    --secondary-foreground: 0 0% 15.3%;
-    --muted: 0 0% 95.3%; /* --ds-bg-component #F3F3F3 */
-    --muted-foreground: 0 0% 42.7%; /* --ds-text-tertiary #6D6D6D */
-    --accent: 0 0% 96.9%;
-    --accent-foreground: 0 0% 15.3%;
-    --destructive: 1 62% 57.6%; /* --ds-error-bg-default #D65350 */
-    --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 87.5%; /* --ds-border-default #DFDFDF */
+    --background: from var(--ds-bg-white) h s l;
+    --foreground: from var(--ds-text-primary) h s l;
+    --card: from var(--ds-bg-white) h s l;
+    --card-foreground: from var(--ds-text-primary) h s l;
+    --primary: from var(--ds-brand-bg-default) h s l;
+    --primary-foreground: from var(--ds-brand-foreground) h s l;
+    --secondary: from var(--ds-fill-2) h s l;
+    --secondary-foreground: from var(--ds-text-primary) h s l;
+    --muted: from var(--ds-bg-component) h s l;
+    --muted-foreground: from var(--ds-text-tertiary) h s l;
+    --accent: from var(--ds-fill-2) h s l;
+    --accent-foreground: from var(--ds-text-primary) h s l;
+    --destructive: from var(--ds-error-6) h s l;
+    --destructive-foreground: from var(--ds-brand-foreground) h s l;
+    --border: from var(--ds-border-default) h s l;
 
-    --success: 145.8 72.2% 35.3%;
-    --success-bg: 144 100% 98%;
-    --warning: 28 96.1% 40%;
-    --warning-bg: 24 100% 98%;
-    --warning-border: 31 100% 89.2%;
-    --warning-text: 30 100% 32.2%;
-    --warning-accent: 28 96.1% 40%;
-    --error: 1 62% 57.6%;
-    --error-bg: 5 100% 97.8%;
-    --error-border: 0 100% 92.5%;
-    --info: 210 55.6% 47.6%;
-    --input: 0 0% 100%;
-    --ring: 253.1 89.7% 65.9%;
-    --disabled: 0 0% 91%;
-    --disabled-foreground: 0 0% 71%;
+    --success: from var(--ds-success-6) h s l;
+    --success-bg: from var(--ds-success-1) h s l;
+    --warning: from var(--ds-warning-6) h s l;
+    --warning-bg: from var(--ds-warning-1) h s l;
+    --warning-border: from var(--ds-warning-6) h s l;
+    --warning-text: from var(--ds-warning-7) h s l;
+    --warning-accent: from var(--ds-warning-6) h s l;
+    --error: from var(--ds-error-6) h s l;
+    --error-bg: from var(--ds-error-1) h s l;
+    --error-border: from var(--ds-error-6) h s l;
+    --info: from var(--ds-notice-6) h s l;
+    --input: from var(--ds-bg-white) h s l;
+    --ring: from var(--ds-brand-6) h s l;
+    --disabled: from var(--ds-fill-6) h s l;
+    --disabled-foreground: from var(--ds-text-disabled) h s l;
 
-    --hover: 0 0% 96.9%;
-    --focus: 253.1 89.7% 65.9%;
-    --active: 0 0% 94.5%;
-    --selection: 251.5 100% 94.9%;
+    --hover: from var(--ds-bg-white-hover) h s l;
+    --focus: from var(--ds-brand-6) h s l;
+    --active: from var(--ds-bg-white-active) h s l;
+    --selection: from var(--ds-brand-2) h s l;
     --overlay: 0 0% 0% / 0.5;
-    --skeleton: 0 0% 91%;
-    --primary-bg-hover: 251.5 100% 94.9%;
-    --primary-bg-light: 258 83.3% 97.6%;
-    --surface-hover: 0 0% 96.9%;
+    --skeleton: from var(--ds-fill-6) h s l;
+    --primary-bg-hover: from var(--ds-brand-2) h s l;
+    --primary-bg-light: from var(--ds-brand-1) h s l;
+    --surface-hover: from var(--ds-bg-white-hover) h s l;
 
     --radius: var(--ds-radius-4);
     --button-radius: var(--ds-radius-4);
@@ -78,14 +78,14 @@
     --shadow-md: var(--ds-shadow-2-center);
     --shadow-lg: var(--ds-shadow-3-center);
 
-    --text-primary: 0 0% 15.3%;
-    --text-secondary: 0 0% 29.8%;
-    --text-muted: 0 0% 42.7%;
-    --text-link: 210 55.6% 47.6%;
+    --text-primary: from var(--ds-text-primary) h s l;
+    --text-secondary: from var(--ds-text-secondary) h s l;
+    --text-muted: from var(--ds-text-tertiary) h s l;
+    --text-link: from var(--ds-link) h s l;
 
-    --surface: 0 0% 94.5%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 15.3%;
+    --surface: from var(--ds-fill-4) h s l;
+    --popover: from var(--ds-bg-white) h s l;
+    --popover-foreground: from var(--ds-text-primary) h s l;
     --tooltip: 0 0% 20%;
     --tooltip-foreground: 0 0% 100%;
     --chart-primary: 253.1 89.7% 65.9%;

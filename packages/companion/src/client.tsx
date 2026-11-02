@@ -40,7 +40,6 @@ import { bindDesignHostLocale, useCurrentLanguage } from '../../panel/src/client
 import { createCompanionLocale, companionChromeText, companionDocumentLanguage, type CompanionChromeKey, type CompanionLanguage } from './locale.ts'
 import { AdvisoryReviewCard, selectPendingAdvisories, type AdvisoryReviewEntry, type AdvisoryAcceptanceAuthority } from '../../panel/src/client/ported/design/AdvisoryReviewCard.tsx'
 import '../../panel/src/client/owned-styles.ts'
-import '../../panel/src/visual-components.css'
 import '../../panel/src/client/generated/design.tw.css'
 import '../../panel/src/client/ported/iconfont.css'
 import '../../provider-web-app/src/client/generated/design.tw.css'

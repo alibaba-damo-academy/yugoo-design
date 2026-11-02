@@ -42,6 +42,13 @@ test('user-input guidance names actual controls without inventing completion or 
   assert.match(DESIGN_UNDERSTANDING_HANDOFF_GUIDANCE, /do not reopen the Bundle or request another model turn/)
 })
 
+test('project review stays in the Design Panel while Studio links retain their authoring purpose', () => {
+  assert.match(DESIGN_UNDERSTANDING_HANDOFF_GUIDANCE, /Project design results are viewed and edited in the current Design Panel/)
+  assert.match(DESIGN_UNDERSTANDING_HANDOFF_GUIDANCE, /real Host Panel control or a returned project Panel URL/)
+  assert.match(DESIGN_UNDERSTANDING_HANDOFF_GUIDANCE, /Design Studio manages reusable Kit\/Bundle definitions and Panel previews/)
+  assert.match(DESIGN_UNDERSTANDING_HANDOFF_GUIDANCE, /never relabel or reuse a Studio URL for project review/)
+})
+
 test('all official reviews receive readable explanation guidance without schema/action changes', () => {
   for (const profile of Object.values(OFFICIAL_ADVISORY_PROFILES)) {
     assert.match(profile.prompt, /concrete user situation/)

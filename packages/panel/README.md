@@ -34,7 +34,12 @@ dependencies. The broad `client-api` retains compatible re-exports but is not a
 control-only bundle entry. `PANEL_SELECT_MENU_CSS` is
 the same popup stylesheet used by the control's open Portal, so standalone pages
 can include it in their own DOM lifetime. Trigger geometry stays with the owning
-scene stylesheet. The popup inherits the trigger's actual theme and remains
+scene stylesheet. Shared surfaces inherit the Host's resolved `color-scheme`
+and semantic colors, with scoped light/dark defaults in `visual-components.css`.
+The ported utility stylesheet includes this same foundation, including load-error
+surfaces; it must not add another fixed-light palette in dock chrome. Canvas
+theme controls retain explicit user choices; their initial default follows Host.
+The popup inherits the trigger's actual theme and remains
 inside the nearest open native dialog when present; other menus use the owning
 document body.
 
