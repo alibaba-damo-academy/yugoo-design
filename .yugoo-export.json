@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "5d5f7274700e82413c3018651038d40b8966fae2",
+  "revision": "4becd8b04d96f114ae914747630c81b4d5aa47f8",
   "policySha256": "fcc943e3d2b336f8f961516388f32975c210e59b273ecbb307f2fbf3f5d9b14e",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -116,11 +116,11 @@
       "mode": "100644"
     },
     "README.en.md": {
-      "sha256": "6bc40347da4d50e5739865056721009a62cf1514174f71880a519ab24f4b1ce8",
+      "sha256": "d6de1a84f3a83139746b2b11ec9d9d69486192a54d841a3e3684b35f027b808e",
       "mode": "100644"
     },
     "README.md": {
-      "sha256": "df2ed320bb17df87c2328e971f2992a862bce7d37291d25a588f3aa6b08e63d9",
+      "sha256": "bbf4a0b1322e00260a42c06bc910c78afae43b34abe33e1293f9e32b725ae67c",
       "mode": "100644"
     },
     "SECURITY.md": {
@@ -8984,7 +8984,7 @@
       "mode": "100644"
     },
     "packages/studio-ui/src/InstanceWorkbench.tsx": {
-      "sha256": "bd7f96cdb1c3d6c2725e9c9e61b3359c73e898889363fe619a8c0e67858b9f07",
+      "sha256": "7a6226ece2f7366ae4afe628d20f44441c6903e1856bdcd29c020b262db20d20",
       "mode": "100644"
     },
     "packages/studio-ui/src/KitFiles.tsx": {
@@ -9088,7 +9088,7 @@
       "mode": "100644"
     },
     "packages/studio-ui/tests/content-archive-workspace.test.mjs": {
-      "sha256": "de28f109f739c35dc909b913e8bd5dad80d223b5dcce5c3f4d867d1d27884e9a",
+      "sha256": "38ce2e53c2525ae909cf0fda5b7612f9fe0cf1ac2f05c1d8505ffd62103f8c9e",
       "mode": "100644"
     },
     "packages/studio-ui/tests/content-source-import.test.mjs": {

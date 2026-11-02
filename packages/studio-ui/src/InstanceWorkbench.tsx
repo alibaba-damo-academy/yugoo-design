@@ -343,6 +343,13 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
   const sourceStatus = candidateState?.saveUnverified ? (zh ? '保存结果待确认' : 'Save needs verification')
     : sourcePending ? (zh ? `${draftRequest?.changes.length ?? proposal?.request.changes.length ?? 1} 个文件未保存` : `${draftRequest?.changes.length ?? proposal?.request.changes.length ?? 1} unsaved files`)
       : (zh ? '已保存' : 'Saved')
+  const exportDisabledReason = !exportDisabled ? undefined
+    : !record || record.id !== id ? (zh ? '正在打开内容，请稍后再导出。' : 'Wait for the content to open before exporting.')
+      : candidateState?.saveUnverified || mountActions?.saveUnverified ? (zh ? '请先核对保存结果，再导出。' : 'Verify the save result before exporting.')
+        : busy || candidateBusy || mountActions?.isSaveSubmitted() ? (zh ? '请等待当前操作完成，再导出。' : 'Wait for the current operation to finish before exporting.')
+          : renaming ? (zh ? '请先完成名称修改，再导出。' : 'Finish renaming before exporting.')
+            : dirty || candidatePending ? (zh ? '请先保存或还原修改，再导出。' : 'Save or revert changes before exporting.')
+              : (zh ? '正在准备预览，请稍后再导出。' : 'Wait for the preview to finish before exporting.')
   const editSource = (text: string) => {
     if (sourceLocked || !loaded || readOnly || text === content) return
     ++prepareRequest.current
@@ -425,7 +432,7 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
             <button type="button" className="ygd-studio-btn-primary" disabled={sourceLocked || !canSave} onClick={saveCurrent}>{saveLabel}</button>
           </div></div>}
           <InstanceActionsMenu locale={locale}>
-            {onExport && <button type="button" disabled={exportDisabled} onClick={exportSaved}>{zh ? '导出' : 'Export'}</button>}
+            {onExport && <button type="button" disabled={exportDisabled} title={exportDisabledReason} aria-description={exportDisabledReason} onClick={exportSaved}>{zh ? '导出' : 'Export'}</button>}
             <button type="button" disabled={busy || candidateBusy || (candidatePending && !candidateState?.saveUnverified)} onClick={refresh}>{zh ? '刷新内容' : 'Refresh content'}</button>
             <InstanceTrashAction locale={locale} disabled={sourceLocked || candidatePending} onClick={remove} />
           </InstanceActionsMenu>

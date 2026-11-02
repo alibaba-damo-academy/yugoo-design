@@ -151,21 +151,37 @@ test('installed direct export preserves kind/pin and suppresses duplicate reques
   assert.equal(f.downloads[0], 'imported_kit.zip')
 })
 
-test('source edits, rename and pending save still prevent export until the new revision is saved', async t => {
-  let record = copy(), release
+for (const [kind, locale] of [['bundle', 'en'], ['kit', 'zh']]) test(`source edits, rename and pending save explain blocked export for ${kind}/${locale}`, async t => {
+  let record = copy(kind), release
+  const zh = locale === 'zh', exportLabel = zh ? '导出' : 'Export', sourcePath = record.files[0].path
+  const explanation = zh ? '请先保存或还原修改，再导出。' : 'Save or revert changes before exporting.'
   const exported = [], root = createRoot(document.getElementById('root'))
   const client = { read: async () => record, readFile: async ({ id, path }) => ({ id, path, revision: record.revision, content: '# Saved source' }), saveFile: async () => { await new Promise(resolve => { release = resolve }); record = { ...record, revision: 5 }; return record } }
   t.after(async () => React.act(async () => root.unmount()))
-  await React.act(async () => root.render(React.createElement(InstanceWorkbench, { client, id: record.id, locale: 'en', onBack() {}, onChanged() {}, onExport: value => exported.push(value) })))
-  await until(() => document.querySelector('textarea[aria-label="SKILL.md"]'))
-  assert.equal(button('Export').disabled, false)
-  await edit(document.querySelector('textarea[aria-label="SKILL.md"]'), '# New source')
-  assert.equal(button('Export').disabled, true); await click('Save'); assert.equal(button('Export').disabled, true)
-  await React.act(async () => release()); await until(() => !button('Export').disabled)
-  await click('Export'); assert.equal(exported[0].revision, 5)
-  await click('Rename'); assert.equal(button('Export').disabled, true)
-  await edit(document.querySelector('input[aria-label="Name"]'), 'New copy title')
-  assert.equal(button('Export').disabled, true); assert.equal(exported.length, 1)
+  await React.act(async () => root.render(React.createElement(InstanceWorkbench, { client, id: record.id, locale, onBack() {}, onChanged() {}, onExport: value => exported.push(value) })))
+  const editor = () => document.querySelector(`textarea[aria-label="${sourcePath}"]`)
+  await until(editor)
+  assert.equal(button(exportLabel).disabled, false)
+  assert.equal(button(exportLabel).getAttribute('title'), null)
+  await edit(editor(), '# New source')
+  assert.equal(button(exportLabel).disabled, true)
+  assert.equal(button(exportLabel).title, explanation)
+  assert.equal(button(exportLabel).getAttribute('aria-description'), explanation)
+  const confirm = window.confirm; window.confirm = () => true; t.after(() => { window.confirm = confirm })
+  await click(zh ? '还原' : 'Revert')
+  assert.equal(button(exportLabel).disabled, false)
+  assert.equal(button(exportLabel).getAttribute('aria-description'), null)
+  await edit(editor(), '# New source')
+  await click(zh ? '保存' : 'Save'); assert.equal(button(exportLabel).disabled, true)
+  assert.equal(button(exportLabel).title, zh ? '请等待当前操作完成，再导出。' : 'Wait for the current operation to finish before exporting.')
+  await React.act(async () => release()); await until(() => !button(exportLabel).disabled)
+  assert.equal(button(exportLabel).getAttribute('title'), null)
+  assert.equal(button(exportLabel).getAttribute('aria-description'), null)
+  await click(exportLabel); assert.equal(exported[0].revision, 5)
+  await click(zh ? '重命名' : 'Rename'); assert.equal(button(exportLabel).disabled, true)
+  assert.equal(button(exportLabel).title, zh ? '请先完成名称修改，再导出。' : 'Finish renaming before exporting.')
+  await edit(document.querySelector(`input[aria-label="${zh ? '名称' : 'Name'}"]`), 'New copy title')
+  assert.equal(button(exportLabel).disabled, true); assert.equal(exported.length, 1)
 })
 
 test('toolbar refresh catches copy-list failure and offers a successful retry', async t => {

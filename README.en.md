@@ -3,23 +3,30 @@
 [简体中文](README.md) · English
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
-[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek_Harness-3964FE)](docs/wiki/hosts.md#deepseek-harness)
-[![Codex CLI](https://img.shields.io/badge/Codex_CLI-0D0D0D)](docs/wiki/hosts.md#codex-cli)
-[![Claude Code CLI](https://img.shields.io/badge/Claude_Code_CLI-D97757)](docs/wiki/hosts.md#claude-code-cli)
-[![Qoder CLI](https://img.shields.io/badge/Qoder_CLI-6AD86C)](docs/wiki/hosts.md#qoder-cli)
-[![千问办公 QwenWork](https://img.shields.io/badge/%E5%8D%83%E9%97%AE%E5%8A%9E%E5%85%AC_QwenWork-39D377)](docs/wiki/hosts.md#千问办公-qwenwork)
-[![WorkBuddy](https://img.shields.io/badge/WorkBuddy-00C29A)](docs/wiki/hosts.md#workbuddy)
+[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek_Harness-3964FE)](docs/wiki/hosts.en.md#deepseek-harness)
+[![Codex Desktop](https://img.shields.io/badge/Codex_Desktop-0D0D0D)](packages/companion/hosts/codex-desktop/README.md)
+[![Codex CLI](https://img.shields.io/badge/Codex_CLI-0D0D0D)](docs/wiki/hosts.en.md#codex-cli)
+[![Claude Code CLI](https://img.shields.io/badge/Claude_Code_CLI-D97757)](docs/wiki/hosts.en.md#claude-code-cli)
+[![Qoder CLI](https://img.shields.io/badge/Qoder_CLI-6AD86C)](docs/wiki/hosts.en.md#qoder-cli)
+[![千问办公 QwenWork](https://img.shields.io/badge/%E5%8D%83%E9%97%AE%E5%8A%9E%E5%85%AC_QwenWork-39D377)](docs/wiki/hosts.en.md#qwenwork-千问办公)
+[![WorkBuddy](https://img.shields.io/badge/WorkBuddy-00C29A)](docs/wiki/hosts.en.md#workbuddy)
 [![npm publish](https://img.shields.io/badge/npm_publish-2088FF?logo=githubactions&logoColor=white)](https://github.com/alibaba-damo-academy/yugoo-design/actions/workflows/publish-product.yml)
 
 **See your ideas. Shape the details.**
 
 Yugoo Design (语构设计系统) is an open-source plugin that turns your AI agent app into an interactive ideation and design workbench.
 
-Built on a general-purpose ideation and design framework, it adds interactive Design Panels to professional skills. AI helps develop a proposal; you examine details, make changes, and express your judgment through diagrams, tables, cards, and prototypes. Saved designs give you and AI a shared basis for the next discussion and revision.
+It pairs Agent Skills with interactive Design Panels. Discuss a proposal with AI while examining diagrams, tables, cards and prototypes. Compare options, edit the details and express your judgment directly.
+
+AI works with you like a consultant, drawing on your goals, existing work and feedback to clarify questions, suggest next steps and spot gaps as the parts come together into a complete solution.
+
+Your designs, supporting material and outputs stay in their own project folder. When your ideas change or you want to explore further, return to the project, make changes, compare versions and build on the work you have already done.
 
 ![Yugoo Design concept: turn scattered ideas into coherent designs through interactive Panels, gap-driven collaboration, and KAG/GRA integration, with ongoing feedback and revision](docs/images/yugoo-design-concept.webp)
 
-Start with the **Web App Kit**, included with the plugin by default, to design a complete software application, or customize Kits and panels for tasks such as developing game rules or designing a scheduling optimization model. See the [Kit list and installation guide](docs/wiki/kit-sharing.en.md#official-kits) for available Kits and how to load an independent Kit.
+The included **Web App Kit** demonstrates this way of working through application design before vibe coding. Start with your needs and work through features, flows, rules and interfaces. Adapt this Kit or create new Kits and panels for event planning, game rules, scheduling optimization and other tasks. See the [Kit list and installation guide](docs/wiki/kit-sharing.en.md#official-kits) for current availability and how to get started.
+
+[Website](https://yugoo.org/) · [FAQ](https://yugoo.org/faq/)
 
 [Quick start](#quick-start) · [Why use it](#why-use-it) · [Core capabilities](#core-capabilities) · [Walkthrough](#a-complete-collaboration) · [Extend it](#start-with-software-design-then-extend-it) · [Wiki](docs/wiki/README.en.md) · [Contributing and feedback](#contributing-and-feedback)
 
@@ -40,7 +47,7 @@ The released npm product package and CLI are both `yugoo-design`. Check the [rel
    Finally report the acquired package version, the version actually loaded by the host and capabilities not ready. Give me this host's yugoo entry and one copyable request to create my first Design Project with the Web App Kit.
    ```
 
-   Choose the host you actually use. DSH places conversation and Design Panels in one workspace; Codex Desktop uses its native plugin entry on macOS arm64. Installation steps and capabilities differ across Codex CLI, Claude Code CLI, Qoder CLI, QwenWork and WorkBuddy; see the [host guide](docs/wiki/hosts.en.md).
+   Choose the host you actually use. DSH places conversation and Design Panels in one workspace; Codex Desktop uses its native plugin entry on macOS arm64. Installation steps, panel presentation and background review support differ across Codex CLI, Claude Code CLI, Qoder CLI, QwenWork and WorkBuddy; see the [host guide](docs/wiki/hosts.en.md).
 
 2. **Create a Design Project.** Invoke the installed `yugoo` entry and ask:
 
@@ -62,59 +69,61 @@ The released npm product package and CLI are both `yugoo-design`. Check the [rel
 
 4. **Express your judgment in the Panel, then continue.** AI opens questions or design panels as needed. Edit and save, then ask: “Continue from the handling rules I just saved and explain which parts of the design they affect.” You can also request changes in conversation. Follow the [walkthrough](docs/wiki/web-app-demo.en.md) or consult the [usage guide](docs/wiki/usage.en.md).
 
-## Why use it
-
-Vibe Coding makes it increasingly easy to turn ideas into software. At the same time, understanding what you actually need, bringing individual features together into a complete system, and keeping that system consistent through later iterations become even more important. **Implementing features does not mean you have built the product you actually need.**
-
-For example, suppose you want to build an internal expense reimbursement tool for your team. What information an expense report requires, whether it can be edited after submission, and how approvers are chosen must all follow your team's rules. If the approval process changes later, the existing forms, permissions, and workflows need to change with it. AI can propose solutions, but your input and judgment are needed to explain these realities and weigh the trade-offs.
-
-Yugoo Design helps you work through these questions with AI: use design panels to understand proposals and refine details, then bring separate designs together into a consistent whole. As requirements change, you can keep discussing, checking, and revising the design together, so it remains a shared foundation for development, iteration, and maintenance.
-
-Software application design is a starting point. The framework aims to support and explore broader **human–AI interaction and collaboration (Human-in-the-loop, HITL)**: **helping people understand problems, think through choices, express their needs, and keep AI aligned with their intent.** With methods and panels for different domains, this approach can also extend to event planning, game mechanics, and operations research modeling. See the [product principles](docs/product-vision.en.md) for more background.
-
-## Core capabilities
-
-### Interactive design artifacts: from Skill to Bundle
-
-Yugoo Design extends an Agent Skill into a **Bundle**, adding interactive panels (supporting declarative panel definitions and A2UI), structured data validation, and execution controls to professional methods. Each Bundle focuses on one part of a design, such as an application's features, processes, rules, data, or pages, turning skill outputs into artifacts you can inspect, discuss, and edit.
-
-Inspect relationships in a diagram, edit properties in a form, or explore pages through a prototype. The Panel and agent work with the same design data; validated, saved changes become the basis for further design. A Bundle can also declare whether to run in the main agent or a subagent, and when to hand control back to the user for input, edits, or confirmation, so its methods can take the appropriate role in the collaboration.
-
-### Gap-driven Agent Loop
-
-AI considers your goals, existing designs, and feedback to identify what is missing: do you need to understand how things work in practice, explore a proposal, or make a trade-off? These gaps lead to concrete actions—opening a Smart Questions panel, suggesting further research, or opening the relevant design panel. As information is added, proposals are revised, and people provide feedback, AI reassesses what to do next, taking the design further.
-
-A **Kit** brings a set of Bundles together with a **domain prompt (Mindset)**, providing this loop with professional methods, criteria for judgment, and available tools. You can choose where to explore first, or let AI move ahead independently where the goals are clear. The process adapts as the design takes shape, without requiring a fixed workflow.
-
-**Clarity assessment (U/S/T)** offers evidence-based signals for Understanding, Structure, and Testability, helping explain what still needs attention. Interpret these signals against the evidence and the current scope: they support discussion of the next step rather than serving as an objective completion rate, a workflow gate, or a ranking across Kits. See the [usage guide](docs/wiki/usage.en.md) and [assessment explanation (中文)](docs/ust-score-explanations.md).
-
-### From details to a coherent whole: KAG and GRA
-
-A process change can affect permissions, notifications, and pages. The **knowledge graph (KAG)** updates with design files, connecting their content and supporting evidence. **Proactive review (GRA)** examines the design from three perspectives and offers suggestions:
-
-- **Grounding:** Check for contradictions or missed agreements across the design.
-- **Reflection:** Identify uncertainties that need research or verification.
-- **Alignment:** Raise questions that need your context or judgment.
-
-Automatic GRA needs background execution that leaves the main conversation available. When background execution is unavailable or review would occupy the conversation, you can disable automatic GRA or explicitly choose a synchronous review for this occasion. Manual review remains available with automatic GRA disabled. See the [host guide](docs/wiki/hosts.en.md#background-capabilities-and-review-fallback) for current support and limitations; U/S/T assessment and KAG operate independently.
-
-Explore processes, rules, and prototypes in concrete scenarios to assess how the decisions work together. When it is time to hand off the work, assemble the separate designs into a **Product Requirements Document (PRD)** or other deliverable, retaining the original design sources.
-
-### Projects you can return to
-
-A **Design Project** keeps design files, related artifacts, and version history. Reopen it after a discussion to continue from existing work with AI. Ask, for example, “Show the latest changes and explain what changed in the process and rules.” Git history traces how the proposal took shape. The plugin includes its version-control runtime, so normal Design operations require no separate Git installation. See the [usage guide](docs/wiki/usage.en.md#4-manage-and-recover-projects) for history, migration of existing projects, and reconstruction from materials. The shared design can accumulate over time instead of living only in one conversation.
-
 ### Reconstruct design from an existing code repository
 
 When taking over an application, filling gaps in its design documentation, or planning changes, start from the existing implementation. Give the installed `yugoo` entry the repository's absolute path and ask AI to reconstruct its current design. The agent examines actual entry points and relevant implementation within your scope, then organizes supported features, processes, rules, data, and interfaces into a new Design Project for you to inspect, edit, and develop further in Panels.
 
 Understanding how the application works gives you a basis for deciding what to change. The source repository stays read-only; reconstruction does not execute or modify product code. Unexamined areas, behavior that source alone cannot establish, and inferences remain explicit. The result is not an exhaustive scan or proof of runtime behavior. See the [reconstruction guide](docs/wiki/usage.en.md#5-reconstruct-a-design-from-existing-materials) for entry points, examples, and result checks. Use migration for existing Yugoo Design Files.
 
-### Custom Kits and panels: tools that fit your field
+## Why use it
 
-Reuse, combine, or customize Kits and Bundles to adapt professional methods, output structures, and interactions to your field. Panels can be configured with **declarative UI** or, in supported hosts, generated by AI through **A2UI** using the component catalog. Both approaches share components and rendering capabilities. Extend the UI components or integrate a specialist editor when you need a different form of expression.
+Vibe coding and vibe working can produce results quickly. **How can people participate effectively as a solution takes shape, so AI's output better reflects what they actually need?**
 
-**Design Studio** provides entry points to inspect, manage and customize Kits and panels. Available operations depend on the installed version and host; see [capability and version scope](docs/wiki/preview-status.md#studio-source-capabilities-and-installed-acceptance) and [Kit extension](#start-with-software-design-then-extend-it) to get started.
+Thinking through a design means working through the details while also seeing the whole: organizing information and understanding how the parts fit together. We need methods and expert guidance, alongside room to express our own ideas, add context and exercise judgment.
+
+Conversation can clarify a great deal. But when several flows, interdependent rules or competing options are involved, text alone can make relationships, omissions and trade-offs hard to see. Some needs only become clear once you see the result, leading to round after round of revisions. Decisions are scattered across chats, making the whole solution difficult to revisit and maintain as requirements change.
+
+Suppose you are building an expense reimbursement app for your team. Its fields, rules for editing a submission and choice of approver all need to fit how your team works. A flow diagram alongside the rules makes it easier to say, “You can edit before approval; a change after approval needs to be resubmitted.” When the approval process changes, you can check whether forms, permissions and notifications need to change with it. **Even when features are quick to build, your judgment is still needed to make the solution fit your team's work.**
+
+Yugoo explores a more tangible form of **human–AI interaction and collaboration (Human-in-the-loop, HITL)**. We use suitable interactions to help people understand, think and express themselves. The agent draws on professional methods to guide next steps, using automatic linking and review to help coordinate and improve the different parts. Projects keep the results organized and available to revisit. The framework can be adapted with methods and panels from different fields. Software design is a starting point; event planning, game mechanics and operations research modeling can use the same approach. See the [product principles](docs/product-vision.en.md) for more background.
+
+## Core capabilities
+
+### Interactive Skill Bundles: the right form for the information
+
+A process can become a diagram, rules can go into a table, options can sit side by side on cards, and a prototype can make an interface tangible. We aim to give each kind of information a suitable form and interaction, helping you understand the details, consider how they relate and express your judgment.
+
+Yugoo pairs an **Agent Skill** with panels suited to its content, extending it into a **Bundle**. Each Bundle focuses on a task or one part of a design, bringing together professional methods, structured outputs, data validation and execution declarations. Panels can be defined with **declarative UI** or, in supported hosts, generated by AI through **A2UI** using the component catalog.
+
+The Panel and agent use the same design data. Discuss what you see or edit it directly; validated, saved changes become the basis for the agent's next work.
+
+### Proactive guidance: let goals and gaps guide the next step
+
+A good consultant understands your goals, what you have already done and what remains unresolved, then **proactively recommends** methods that help you make progress.
+
+Yugoo uses the Gap-driven Agent Loop to support this consultative way of working. It draws on existing results and feedback to propose purposeful next steps. After clarifying the context through questions, for example, it can recommend external research or explore part of the design in more detail. As you add context, revise a proposal or make a choice, the agent adjusts its suggestions.
+
+A **Kit** brings related Bundles together with a **domain prompt (Mindset)**, providing AI with professional methods, criteria for judgment and tools. Choose where to explore first, or let AI move ahead independently where the goal is clear. The methods provide guidance while leaving you free to add context, introduce an idea or change direction. The Kit's methods, your current goal and your feedback shape how the work develops.
+
+### Information linking and automatic review: KAG and GRA
+
+Parts that seem reasonable on their own can still leave gaps or conflict when put together—a common challenge in complex design work. A process change may also affect permissions, notifications and pages, and AI may not make every related change needed to keep the whole solution consistent.
+
+Yugoo builds a **knowledge graph (KAG)** for the project that updates with design files, linking their content and supporting evidence so both you and AI can trace what needs attention. GRA reviews the design from three perspectives, offering suggestions to help you find what needs to be checked and adjusted together:
+
+- **Grounding:** Check for contradictions or missed agreements across the design.
+- **Reflection:** Identify uncertainties that need research or verification.
+- **Alignment:** Raise questions that need your context or judgment.
+
+Request a review when you need one, or enable automatic review in a host that supports background execution.
+
+Explore processes, rules, and prototypes in concrete scenarios to assess how the decisions work together. When it is time to hand off the work, assemble the separate designs into a **Product Requirements Document (PRD)** or other deliverable, retaining the original design sources.
+
+### Turn ideas into lasting projects: organized work and traceable changes
+
+Each **Design Project** has its own folder containing design files, supporting material, outputs and its own Kit and Bundle definitions. Organize the work in the project and use Git to record versions and changes, preserving how the solution develops.
+
+When you return to the discussion, open the same project and continue from the saved results. Ask, for example, “Show the latest changes and explain what changed in the process and rules.” Compare versions and trace how the proposal took shape. The plugin includes its version-control runtime, so normal Design operations require no separate Git installation. See the [usage guide](docs/wiki/usage.en.md#4-manage-and-recover-projects) for history, migration and reconstruction from materials.
 
 ## A complete collaboration
 
@@ -182,11 +191,19 @@ See the [tutorial](docs/wiki/web-app-demo.en.md) for the full walkthrough and da
 
 ## Start with software design, then extend it
 
-The official **Web App Kit** covers requirements clarification, research, feature planning, and the design of business processes, rules, data, permissions, pages, and acceptance criteria. It also helps plan an application's **AI capabilities**: the AI's responsibilities, how it interacts with people, and the prompts, Skills, and tools it needs. Explore the [Mindset](packages/skills-web-app/kits/web_app/mindset.md) and [Bundle mount list](packages/skills-web-app/kits/web_app/kit.yaml) for the methods and scope.
+The included **Web App Kit** helps you think through an application before vibe coding and provides an example you can adapt and extend. It covers requirements clarification, research, feature planning, and the design of business processes, rules, data, permissions, pages, and acceptance criteria. It also helps plan an application's **AI capabilities**: the AI's responsibilities, how it interacts with people, and the prompts, Skills, and tools it needs. Explore the [Mindset](packages/skills-web-app/kits/web_app/mindset.md) and [Bundle mount list](packages/skills-web-app/kits/web_app/kit.yaml) for the methods and scope.
 
 The shared framework's panels, feedback, and design integration capabilities can be extended with methods for other domains: developing a game's actions, resources, and win conditions, or turning staffing needs, night-shift limits, and fairness trade-offs into an operations research model for scheduling. These are possible customizations, not Kits included by default. See the [official Kit list](docs/wiki/kit-sharing.en.md#official-kits) for current availability and installation options.
 
-Start by reusing a professional method you know, define its structured output and interactive panel, and try it on a small example. Combine it with related Bundles and a domain Mindset to form a Kit. Panels can use question cards, tables, diagrams, prototypes, or whiteboards; extensions can also integrate specialist editors and UI components. Use **Studio** to inspect methods and source files, edit the current content or copy it to an independent identity, then preview it with sample data. Follow the [sharing guide](docs/wiki/kit-sharing.en.md#minimum-checks-for-author-and-recipient) to check and deliver the Kit. These current-content steps are implemented in the current source; use the capabilities supplied by your installed version. See the [Studio walkthrough](docs/wiki/usage.en.md#6-studio-inspect-customize-and-check-kits) for instructions and host support.
+Skills you already use can contribute too. Import and adapt an existing skill, keeping its professional methods and adding an appropriate output structure, validation and interactive panels to form a Bundle. Use a small example to check whether the methods and panels fit your work, then combine the Bundle with related Bundles and a domain Mindset to create a Kit.
+
+### Custom Kits and panels: tools that fit your field
+
+**Design Studio** provides entry points to inspect, manage and customize Kits and Bundles. Explore a Mindset, methods and source files, edit them directly or make a copy to customize separately, and preview the result with sample data. Changes saved in the library can be used by new projects; existing projects keep their own complete definitions, which you and your agent can adapt as needed.
+
+Panels can use question cards, tables, diagrams, prototypes or whiteboards. Declarative UI and A2UI share components and rendering capabilities; extend UI components or integrate a specialist editor when you need another form of expression.
+
+Follow the [sharing guide](docs/wiki/kit-sharing.en.md#minimum-checks-for-author-and-recipient) to check and deliver a Kit. Available operations depend on the installed version and host; see [capability and version scope](docs/wiki/preview-status.md#studio-source-capabilities-and-installed-acceptance) and the [Studio walkthrough](docs/wiki/usage.en.md#6-studio-inspect-customize-and-check-kits) for instructions and host support.
 
 ![Read the Web App Mindset and browse mounted Bundles in the complete Studio page](docs/images/readme-studio.gif)
 
@@ -212,7 +229,7 @@ Before changing the project, read [AGENTS.md](AGENTS.md) and the [contribution g
 
 ## Contributing and feedback
 
-Contributions of code, professional methods, Kits, documentation, translations, and examples are welcome. We would also like to hear about design tasks in your field. See the [contribution guide](CONTRIBUTING.md).
+Help connect another agent app, contribute code or professional methods, create Kits and Bundles, or improve documentation, translations and examples. We would also like to hear about design tasks in your field. See the [contribution guide](CONTRIBUTING.md).
 
 See the [feedback guide (中文)](docs/wiki/support.md) for contact options and reporting outlines. You can email [yangjianfeng.yjf@alibaba-inc.com](mailto:yangjianfeng.yjf@alibaba-inc.com) or use [GitHub Issues](https://github.com/alibaba-damo-academy/yugoo-design/issues) to submit feedback and follow the discussion. For bugs, include the version, reproduction steps, and expected and actual results; for feature requests, describe the use case, obstacle, and desired outcome. Follow the [security reporting policy](SECURITY.md) for sensitive information or security issues.
 
