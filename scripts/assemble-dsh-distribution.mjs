@@ -20,7 +20,7 @@ export function mapOwnSpecifier(value, mapping) {
   }
   return value
 }
-/** Rewrite package resolution, browser registration and Typert ownership; never RPC/plugin/service IDs. */
+/** Rewrite package resolution, browser registration and CSS/Typert ownership; never RPC/plugin/service IDs. */
 export function projectDistributionCode(code, mapping, file) {
   const ast = ts.createSourceFile(file, code, ts.ScriptTarget.Latest, true)
   const edits = []
@@ -34,6 +34,12 @@ export function projectDistributionCode(code, mapping, file) {
       const loadId = ts.isPropertyAssignment(parent) && parent.name.getText(ast) === 'id'
         && ts.isObjectLiteralExpression(parent.parent) && ts.isCallExpression(parent.parent.parent)
         && parent.parent.parent.expression.getText(ast) === 'window.__ModuleLoader__.load'
+      // data-plugin is the stylesheet's package owner used by Host cleanup,
+      // not the stable Cordis plugin name or its stylesheet deduplication key.
+      const cssOwner = ts.isBinaryExpression(parent) && parent.right === node
+        && parent.operatorToken.kind === ts.SyntaxKind.EqualsToken
+        && ts.isPropertyAccessExpression(parent.left) && parent.left.name.text === 'plugin'
+        && ts.isPropertyAccessExpression(parent.left.expression) && parent.left.expression.name.text === 'dataset'
       // The official loader requires TYPERT.package to equal the exporting
       // npm package. This is ownership metadata, not the stable wire IDs in
       // descriptors/typeSymbol. Recognize the contribution shape rather than
@@ -48,7 +54,7 @@ export function projectDistributionCode(code, mapping, file) {
         && ts.isTypeLiteralNode(declaration.parent)
         && declaration.parent.members.some(member => ts.isPropertySignature(member)
           && ['descriptors', 'invocations'].includes(member.name.getText(ast).replace(/^['"]|['"]$/g, '')))
-      if (importRef || importType || resolver || loadId || typertOwner || typertOwnerType) {
+      if (importRef || importType || resolver || loadId || cssOwner || typertOwner || typertOwnerType) {
         const value = mapOwnSpecifier(node.text, mapping)
         if (value !== node.text) edits.push({ start: node.getStart(ast), end: node.end, value: JSON.stringify(value) })
       }

@@ -228,6 +228,26 @@ test('scoped Typert ownership changes without changing the Host/browser wire con
   assert.equal(projectDistributionCode(projected.code, mapping, 'client.js').replacements, 0)
 })
 
+test('scoped CSS ownership follows the package without rewriting stable plugin IDs or stylesheet keys', () => {
+  const cssMapping = { 'dsh-design-panel': { name: '@yugoo-design/dsh-design-panel' } }
+  const source = `const tag = { dataset: {} };
+    tag.dataset.plugin = 'dsh-design-panel';
+    tag.dataset.pluginCss = 'dsh-design-panel/shell.css';
+    const external = { dataset: {} }; external.dataset.plugin = '@deepseek-ai/other';
+    const standalone = { dataset: {} }; standalone.dataset.plugin = 'design-companion';
+    const stable = { name: 'dsh-design-panel', id: 'dsh-design-panel' };
+    return { tag, external, standalone, stable };`
+  const projected = projectDistributionCode(source, cssMapping, 'client.js')
+  const { tag, external, standalone, stable } = Function(projected.code)()
+  assert.equal(tag.dataset.plugin, '@yugoo-design/dsh-design-panel')
+  assert.equal(tag.dataset.pluginCss, 'dsh-design-panel/shell.css')
+  assert.equal(external.dataset.plugin, '@deepseek-ai/other')
+  assert.equal(standalone.dataset.plugin, 'design-companion')
+  assert.deepEqual(stable, { name: 'dsh-design-panel', id: 'dsh-design-panel' })
+  assert.equal(projected.replacements, 1)
+  assert.equal(projectDistributionCode(projected.code, cssMapping, 'client.js').replacements, 0)
+})
+
 test('quoted/minified Host ownership is mapped, external package ownership is untouched', () => {
   const projected = projectDistributionCode(`return [
     { "package": "dsh-design-core", "invocations": [] },

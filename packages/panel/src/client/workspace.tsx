@@ -750,11 +750,10 @@ export function DesignWorkspace(props: {
       </div>}
       {accessNotice}
       <div
-        className='ai dsh-design-workspace-inset relative h-0 min-h-0 flex-1 overflow-hidden'
-        style={{ padding: panelOnly ? 0 : 'var(--ds-space-4) 0 var(--ds-space-4) var(--ds-space-4)' }}
+        className='ai relative h-0 min-h-0 flex-1 overflow-hidden'
       >
         {/* 「+ 新面板」选择器：覆盖整个工作区（原始：页签条保持可见，白遮罩
-            盖住内容区，选择器用与其它面板相同的圆角卡片外框）。 */}
+            盖住内容区；选择器保留自身的目录分组外框）。 */}
         {pickerOpen && !panelOnly
           ? (
             <div className='absolute inset-0 z-40 overflow-hidden bg-white px-4 pb-4'>

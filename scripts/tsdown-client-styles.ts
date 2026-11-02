@@ -12,10 +12,11 @@ const VIRTUAL_SUFFIX = '.mjs'
 
 /**
  * Build a client stylesheet loader that follows dsh's plugin-owned style lifecycle.
- * Plain CSS imports install one tagged stylesheet when the plugin factory is
+ * Plain CSS imports reconcile one tagged stylesheet when the plugin factory is
  * materialized. `?inline` imports return text for components that deliberately
  * render a stylesheet inside their own DOM lifetime.
- * @param pluginId - Client plugin id used by dsh HMR to remove owned styles.
+ * @param pluginId - Stylesheet package owner used by dsh HMR; the distribution
+ * scopes own package IDs while independent browser entry owners remain explicit.
  * @param configUrl - Import URL of the calling tsdown config for bare resolution.
  * @returns A tsdown-compatible loader plugin.
  */
@@ -86,12 +87,12 @@ export function dshClientStyles(pluginId: string, configUrl: string, options: {
         code: [
           `const css = ${JSON.stringify(css)};`,
           `const tagId = ${JSON.stringify(tagId)};`,
-          'if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {',
-          '  const tag = document.createElement("style");',
+          'if (typeof document !== "undefined") {',
+          '  const tag = document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") ?? document.createElement("style");',
           `  tag.dataset.plugin = ${JSON.stringify(pluginId)};`,
           '  tag.dataset.pluginCss = tagId;',
           '  tag.textContent = css;',
-          '  document.head.appendChild(tag);',
+          '  if (!tag.isConnected) document.head.appendChild(tag);',
           '}',
           'export {};',
         ].join('\n'),

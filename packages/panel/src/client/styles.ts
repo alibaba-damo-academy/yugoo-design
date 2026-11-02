@@ -62,7 +62,6 @@ export const DOCK_CSS = `
 .dsh-design-dock-panels{flex:1;min-height:0;position:relative}
 .dsh-design-dock-panel{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden}
 .dsh-design-dock-panel[data-hidden]{display:none}
-.dsh-design-workspace-inset .dsh-design-dock-panel-body:not(.dsh-design-dock-panel-workspace){padding:0 var(--ds-space-4) 0 0}
 .dsh-design-project-header{display:flex;min-width:0;
   min-height:var(--dsh-host-primary-header-height,76px);flex:0 0 auto;
   align-items:center;gap:12px;box-sizing:border-box;padding:4px var(--ds-space-4,16px);background:var(--ds-bg-white,light-dark(#fff,#19191c));

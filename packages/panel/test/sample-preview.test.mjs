@@ -91,7 +91,7 @@ test('sample surface uses real readonly navigation and the unique shared styles'
     + readFileSync(new URL('../src/panel-content-state.css', import.meta.url), 'utf8'))
   const shell = readFileSync(new URL('../src/client/styles.ts', import.meta.url), 'utf8')
   assert.ok(!shell.includes('.dsh-design-dock-panel-body{'))
-  assert.ok(shell.includes('.dsh-design-workspace-inset .dsh-design-dock-panel-body'))
+  assert.ok(!shell.includes('.dsh-design-workspace-inset'), 'the shell adds no second gutter to the shared preview content')
 })
 
 test('standalone graph preview carries positioning and usable control styles without a Host stylesheet', async t => {

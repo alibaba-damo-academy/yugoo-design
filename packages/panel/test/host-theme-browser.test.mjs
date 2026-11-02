@@ -1,7 +1,10 @@
 /** Shared CSS/Portal boundary in Chromium; no installed-Host or save claim. */
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import ts from 'typescript'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { chromium } from 'playwright'
@@ -10,6 +13,8 @@ import { panelPopupTheme } from '../src/panel-select.tsx'
 import { graphStyles } from '../src/client/graph-styles.ts'
 import { DOCK_CSS, PANEL_SELECT_MENU_CSS, TOGGLE_CSS } from '../src/client/styles.ts'
 import { STUDIO_WORKSPACE_CSS } from '../../studio-ui/src/styles.ts'
+import { projectDistributionCode } from '../../../scripts/assemble-dsh-distribution.mjs'
+import { dshClientStyles } from '../../../scripts/tsdown-client-styles.ts'
 
 test('Host scheme and semantic overrides reach shared surfaces, form controls and portalled choices', async () => {
   const browser = await chromium.launch({ headless: true })
@@ -77,4 +82,61 @@ test('Host scheme and semantic overrides reach shared surfaces, form controls an
     await page.evaluate(() => { document.body.removeAttribute('style'); document.documentElement.style.colorScheme = 'light' })
     assert.deepEqual(await colors(), light, 'switching back restores shared colors without remounting')
   } finally { await browser.close() }
+})
+
+test('scoped reload refreshes retained shell and shared styles, then Host cleanup removes their actual owner', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'panel-style-reload-'))
+  const browser = await chromium.launch({ headless: true })
+  try {
+    const mapping = Object.fromEntries(['dsh-design-panel', 'dsh-design-provider-web-app'].map(name => [name, { name: `@yugoo-design/${name}` }]))
+    const shell = await readFile(new URL('../src/client/owned-styles.ts', import.meta.url), 'utf8')
+    const commonjs = code => ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText
+    const shellCode = projectDistributionCode(commonjs(shell), mapping, 'client.js').code
+    const file = join(directory, 'shared.css')
+    await writeFile(file, '.provider-probe{background:var(--dsw-alias-bg-layer-1)}')
+    const loader = dshClientStyles('dsh-design-provider-web-app', new URL('../tsdown.config.ts', import.meta.url).href)
+    const id = loader.resolveId(file)
+    const emitted = loader.load.call({ addWatchFile() {} }, id).code
+    const sharedCode = projectDistributionCode(commonjs(emitted), mapping, 'client.js').code
+    const sharedKey = JSON.parse(emitted.match(/const tagId = ("[^"\n]+");/)[1])
+    const page = await browser.newPage({ colorScheme: 'dark' })
+    await page.setContent(`<style>:root{color-scheme:dark}body{--dsw-alias-bg-layer-1:#232324}</style>
+      <button class="dsh-design-toggle dsh-design-toggle-active">Yugoo Design</button><div class="provider-probe">Provider</div>`)
+    const values = { DOCK_CSS, TOGGLE_CSS, CLARITY_DOCK_CSS: '', ADVISORY_CSS: '', CONTINUATION_CSS: '' }
+    for (const [key, owner, code, selector] of [
+      ['dsh-design-panel/shell.css', 'dsh-design-panel', shellCode, '.dsh-design-toggle-active'],
+      [sharedKey, 'dsh-design-provider-web-app', sharedCode, '.provider-probe'],
+    ]) {
+      const packageId = mapping[owner].name
+      // A prior scoped build incorrectly tagged its CSS with the unscoped ID.
+      // The Host removes styles by its package ID, so this old tag survives.
+      await page.evaluate(({ key, owner, packageId, selector }) => {
+        const old = document.createElement('style')
+        old.dataset.plugin = owner; old.dataset.pluginCss = key
+        old.textContent = `${selector}{background:#f1f5f9}`
+        document.head.append(old)
+        for (const tag of document.querySelectorAll('style[data-plugin]')) {
+          if (tag.getAttribute('data-plugin') === packageId) tag.remove()
+        }
+      }, { key, owner, packageId, selector })
+      const run = () => page.evaluate(({ code, values }) => { Function('require', 'exports', code)(() => values, {}) }, { code, values })
+      const inspect = () => page.evaluate(({ key, selector }) => ({
+        owners: [...document.querySelectorAll('style[data-plugin-css]')].filter(tag => tag.dataset.pluginCss === key).map(tag => tag.dataset.plugin),
+        background: getComputedStyle(document.querySelector(selector)).backgroundColor,
+      }), { key, selector })
+      assert.equal((await inspect()).background, 'rgb(241, 245, 249)', 'the retained old sheet reproduces the failure')
+      await run()
+      assert.deepEqual(await inspect(), { owners: [packageId], background: 'rgb(35, 35, 36)' })
+      await run()
+      assert.deepEqual(await inspect(), { owners: [packageId], background: 'rgb(35, 35, 36)' }, 'repeated materialization keeps one current stylesheet')
+      await page.evaluate(packageId => {
+        for (const tag of document.querySelectorAll('style[data-plugin]')) {
+          if (tag.getAttribute('data-plugin') === packageId) tag.remove()
+        }
+      }, packageId)
+      assert.deepEqual((await inspect()).owners, [], 'Host cleanup finds the same package owner as its client module')
+      await run()
+      assert.deepEqual(await inspect(), { owners: [packageId], background: 'rgb(35, 35, 36)' }, 'reopening restores the stylesheet after cleanup')
+    }
+  } finally { await browser.close(); await rm(directory, { recursive: true, force: true }) }
 })

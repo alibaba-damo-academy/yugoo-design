@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises'
 const read = async (path) => readFile(new URL(path, import.meta.url), 'utf8')
 
 const workspace = await read('./src/client/workspace.tsx')
+const surface = await read('./src/client/design-panel-surface.tsx')
 
 assert.equal(
   workspace.match(/<DesignPanelSurface>/g)?.length,
@@ -18,7 +19,7 @@ assert.match(
 )
 assert.match(
   workspace,
-  /PANEL_SAVE_VISIBLE_MESSAGE = \{ zh: '保存并继续设计', en: 'Save and continue designing' \}/,
+  /PANEL_SAVE_VISIBLE_MESSAGE = \{ zh: '保存并评估下一步', en: 'Save and assess next step' \}/,
   'panel save must send only a concise localized visible message',
 )
 assert.doesNotMatch(
@@ -31,11 +32,8 @@ assert.doesNotMatch(
   /props\.skill\s*(?:===|!==)|switch\s*\(props\.skill\)/,
   'the shared Surface must not branch on panel names',
 )
-assert.match(
-  workspace,
-  /className='ai relative h-0 min-h-0 flex-1 overflow-hidden'[\s\S]*?style=\{\{ padding: 'var\(--ds-space-4\) 0 var\(--ds-space-4\) var\(--ds-space-4\)' \}\}/,
-  'the workspace must preserve the top, left, and bottom frame inset while its panel surface reaches the dock right edge',
-)
+assert.doesNotMatch(workspace, /dsh-design-workspace-inset|padding: panelOnly/, 'the selected viewport must not add another page gutter')
+assert.doesNotMatch(surface, /className='[^']*\b(?:rounded-\S+|border\b)/, 'the complete viewport is not a decorative card')
 assert.match(
   workspace,
   /data-testid='dsh-design-workspace-readonly'/,
@@ -43,7 +41,7 @@ assert.match(
 )
 assert.match(
   workspace,
-  /if \(!writable \|\| sessionId === undefined \|\| store\.saving\) return/g,
+  /if \(!writable \|\| sessionId === undefined \|\| store\.saving(?: \|\| saveAdmission\.busy)?\) return/g,
   'panel save and driver actions must both reject browser-side recovery writes',
 )
 assert.match(
