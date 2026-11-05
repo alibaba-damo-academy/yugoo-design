@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "f6321c51a75f41ea117e0b20a43ce0977ebfe2b1",
+  "revision": "b5b2092e9290d4d5375812d888b16eb2ebee05e5",
   "policySha256": "1bb46e36a53a7ed6eae195a9676f67f4d08569d0c9c51c3585c551d5a049b899",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -36,7 +36,7 @@
       "mode": "100644"
     },
     ".agents/skills/design-bundle-creator/scripts/inspect-panel-component.mjs": {
-      "sha256": "ae652ad6cb976fb0bfb1651002818ef89558369c5c2b2e7092b71b07353d9be9",
+      "sha256": "45553ab9e20245e24b815633d702005dc628e8baebf72985221b85d7d3ac8ec5",
       "mode": "100644"
     },
     ".agents/skills/design-bundle-creator/scripts/list-panel-components.mjs": {
@@ -9496,11 +9496,11 @@
       "mode": "100644"
     },
     "scripts/companion-authoring-material.mjs": {
-      "sha256": "0521a70d29ab002b5378943b17f41b31771614a0fa118d189150a4f95d087427",
+      "sha256": "40f428d24378cf84f5f01c04f19c652e78a6f3a169197e5d05a554ef4786a8a8",
       "mode": "100644"
     },
     "scripts/companion-authoring-material.test.mjs": {
-      "sha256": "dba08417266b57ea0b42a352a4aacd9a2bb08a5eb85e10655f5f7f56bfc3f4ae",
+      "sha256": "5d8a88ff39b749fdc98130500a889d4cd7eca595ce00e8b469787ed1cfdd3b70",
       "mode": "100644"
     },
     "scripts/companion-bundled-license.mjs": {

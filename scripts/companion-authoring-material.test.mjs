@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -55,6 +55,46 @@ test('authoring inputs discover a self-contained non-Web Kit', async t => {
   const inputs = await panelAuthoringInputPaths(root)
   assert.ok(inputs.includes('packages/skills-fixture-domain/package.json'))
   assert.ok(inputs.includes('packages/skills-fixture-domain/panels/overview/panel.yaml'))
+})
+
+test('source examples and hashed inputs ignore missing or stale normal-build output across non-Web Kits', async t => {
+  for (const state of ['no-lib', 'stale-lib', 'missing-source-with-stale-lib']) {
+    const root = await fixture(t), packageRoot = join(root, 'packages/skills-fixture-domain')
+    await writeFile(join(root, 'package.json'), '{"type":"module"}\n')
+    await symlink(join(workspace, 'node_modules'), join(root, 'node_modules'), 'dir')
+    await mkdir(join(root, 'packages'))
+    for (const name of ['core', 'panel']) await symlink(join(workspace, 'packages', name), join(root, 'packages', name), 'dir')
+    await symlink(join(workspace, 'docs'), join(root, 'docs'), 'dir')
+    for (const path of ['scripts/companion-authoring-material.mjs', 'scripts/generate-panel-authoring-material.mjs',
+      '.agents/skills/design-bundle-creator/scripts/inspect-panel-component.mjs']) {
+      await mkdir(join(root, path, '..'), { recursive: true })
+      await symlink(join(workspace, path), join(root, path))
+    }
+    await mkdir(packageRoot)
+    await writeFile(join(packageRoot, 'package.json'), JSON.stringify({
+      name: 'synthetic-authoring-kit', version: '1.0.0',
+      designSystem: { kit: { bundles: './lib/panels' } },
+    }))
+    const current = 'packages/skills-fixture-domain/panels/overview/panel.yaml'
+    const old = 'packages/skills-fixture-domain/lib/panels/overview/panel.yaml'
+    const example = await readFile(new URL('../packages/skills-web-app/bundles/function_modules/panel.yaml', import.meta.url))
+    if (state !== 'missing-source-with-stale-lib') {
+      await mkdir(join(root, current, '..'), { recursive: true })
+      await writeFile(join(root, current), example)
+    }
+    if (state !== 'no-lib') {
+      await mkdir(join(root, old, '..'), { recursive: true })
+      await writeFile(join(root, old), example)
+    }
+    const inputs = await panelAuthoringInputPaths(root)
+    assert.equal(inputs.includes(current), state !== 'missing-source-with-stale-lib', state)
+    assert.ok(!inputs.includes(old), 'stale build output must not become a source hash input')
+    const prepared = await preparePanelAuthoringMaterial(root)
+    const examples = Object.values(prepared.material.components).flatMap(component => component.examples)
+    assert.equal(examples.some(item => item.file === current), state !== 'missing-source-with-stale-lib', state)
+    assert.ok(!examples.some(item => item.file === old), 'inspector must not fill missing source from stale lib')
+    for (const item of examples) assert.ok(inputs.includes(item.file), 'inspector and source hash inputs share discovery')
+  }
 })
 
 test('missing, stale documentation and incomplete component coverage reject', async t => {

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /** Source-derived authoring reference, not another schema or runtime validator. */
-import { readFile, readdir } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
-import { resolve, relative, join } from 'node:path'
+import { resolve, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 // The complete trusted shared guide has a separate budget from each focused
@@ -161,34 +161,23 @@ async function inspectWithContext(context, name, typeName, options = {}) {
   const { parsePanelManifest } = await import(pathToFileURL(join(repo, contractPath)).href)
   const examples = []
   const invalidExamples = []
-  const packages = join(repo, 'packages')
-  const packageEntries = (await readdir(packages, { withFileTypes: true }))
-    .filter(entry => entry.isDirectory() && entry.name.startsWith('skills-'))
-    .sort((a, b) => a.name.localeCompare(b.name))
-  for (const entry of packageEntries) {
-    const packageRoot = join(packages, entry.name)
-    const manifest = JSON.parse(await readFile(join(packageRoot, 'package.json'), 'utf8'))
-    const skills = join(packageRoot, manifest.designSystem?.kit?.bundles ?? manifest.designSystem?.kit?.skills ?? './skills')
-    let bundles
-    try { bundles = await readdir(skills, { withFileTypes: true }) }
-    catch (error) { if (error.code === 'ENOENT') continue; throw error }
-    for (const bundle of bundles.filter(item => item.isDirectory()).sort((a, b) => a.name.localeCompare(b.name))) {
-      const path = join(skills, bundle.name, 'panel.yaml')
-      let text
-      try { text = await readFile(path, 'utf8') }
-      catch (error) { if (error.code === 'ENOENT') continue; throw error }
-      let manifest
-      try { manifest = parsePanelManifest(text) }
-      catch (error) { invalidExamples.push({ file: relative(repo, path), error: error.message }); continue }
-      function visit(node, pointer) {
-        if (node.component === name) examples.push({
-          file: relative(repo, path), pointer, node, validation: 'panel-structure-only',
-        })
-        for (const [index, child] of (node.children ?? []).entries()) visit(child, `${pointer}/children/${index}`)
-        for (const [slot, child] of Object.entries(node.slots ?? {})) if (child) visit(child, `${pointer}/slots/${slot}`)
-      }
-      visit(manifest.ui, '/ui')
+  // Share the exact build-time source paths used by input hashing. Runtime
+  // package declarations can point to lib/, but source examples never read it.
+  const { panelAuthoringInputPaths } = await import(pathToFileURL(join(repo, 'scripts/companion-authoring-material.mjs')).href)
+  for (const file of (await panelAuthoringInputPaths(repo)).filter(path => path.endsWith('/panel.yaml'))) {
+    const path = join(repo, file)
+    const text = await readFile(path, 'utf8')
+    let manifest
+    try { manifest = parsePanelManifest(text) }
+    catch (error) { invalidExamples.push({ file, error: error.message }); continue }
+    function visit(node, pointer) {
+      if (node.component === name) examples.push({
+        file, pointer, node, validation: 'panel-structure-only',
+      })
+      for (const [index, child] of (node.children ?? []).entries()) visit(child, `${pointer}/children/${index}`)
+      for (const [slot, child] of Object.entries(node.slots ?? {})) if (child) visit(child, `${pointer}/slots/${slot}`)
     }
+    visit(manifest.ui, '/ui')
   }
   return {
     ...base,

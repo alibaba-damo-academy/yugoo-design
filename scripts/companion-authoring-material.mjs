@@ -20,7 +20,11 @@ export async function panelAuthoringInputPaths(workspace) {
     const packageRoot = join(workspace, 'packages', entry.name)
     const manifest = JSON.parse(await readFile(join(packageRoot, 'package.json'), 'utf8'))
     paths.push(`packages/${entry.name}/package.json`)
-    const contentPath = manifest.designSystem?.kit?.bundles ?? manifest.designSystem?.kit?.skills ?? './skills'
+    const runtimePath = manifest.designSystem?.kit?.bundles ?? manifest.designSystem?.kit?.skills ?? './skills'
+    // This repository's normal content build copies the original relative tree
+    // under lib/. Authoring always reads that source tree, even if stale output
+    // exists. This is not a runtime resolver or an existence-based fallback.
+    const contentPath = runtimePath.replace(/^(?:\.\/)?lib\//u, '')
     const root = join(packageRoot, contentPath)
     let bundles
     try { bundles = await readdir(root, { withFileTypes: true }) }
