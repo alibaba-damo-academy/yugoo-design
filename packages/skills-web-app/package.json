@@ -11,17 +11,19 @@
   "description": "Self-contained web_app Design Kit: Mindset, Bundle manifests, references, and ordinary Agent-facing scripts.",
   "designSystem": {
     "kit": {
-      "root": "./kits/web_app",
-      "mindset": "./kits/web_app/mindset.md",
-      "manifest": "./kits/web_app/kit.yaml",
-      "bundles": "./bundles"
+      "root": "./lib/kits/web_app",
+      "mindset": "./lib/kits/web_app/mindset.md",
+      "manifest": "./lib/kits/web_app/kit.yaml",
+      "bundles": "./lib/bundles"
     }
   },
   "scripts": {
     "test": "node --test test/test-reading-order.mjs test/test-channel-spacing.mjs test/test-layout-policy.mjs test/smoke-bundle-localization.mjs && node test/smoke-page-design-script.mjs && node test/test-page-file-contract.mjs && node test/smoke-flow-design-script.mjs && node test/smoke-bpmn-routing.mjs && node test/smoke-design-style-script.mjs && node test/smoke-prd-script.mjs",
     "test:localization": "node --test test/smoke-bundle-localization.mjs",
     "test:layout-production": "node test/smoke-layout-production.mjs",
-    "test:page-file-contract": "node test/test-page-file-contract.mjs"
+    "test:page-file-contract": "node test/test-page-file-contract.mjs",
+    "build": "node build.mjs",
+    "test:distribution": "node --test test/portable-distribution.mjs"
   },
   "dependencies": {
     "bpmn-js": "^18.24.0",
@@ -31,8 +33,7 @@
   },
   "files": [
     "README.md",
-    "kits",
-    "bundles",
+    "lib",
     "LICENSE",
     "NOTICE",
     "THIRD_PARTY_NOTICES.md"

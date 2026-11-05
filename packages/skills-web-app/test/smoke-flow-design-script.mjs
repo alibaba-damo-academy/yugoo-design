@@ -146,9 +146,9 @@ assert.deepEqual(JSON.parse(fileFinal.stdout), { valid: true, diagnostics: [] })
 // bare-package resolution guards left behind after imports are bundled.
 const packagedScratch = mkdtempSync(join(tmpdir(), 'flow-normal-emitted-'))
 try {
-  const { packageFlowLayout } = await import('../../companion/build-plugin.mjs')
+  const { buildWebAppContent } = await import('../build.mjs')
   const target = join(packagedScratch, 'yugoo-design')
-  await packageFlowLayout(target)
+  await buildWebAppContent(target)
   const entry = pathToFileURL(join(target, 'bundles/flow_design/scripts/layout.mjs'))
   const isolated = { cwd: packagedScratch, env: { ...process.env, NODE_PATH: '', NODE_OPTIONS: '' } }
   const dependencyProbe = spawnSync(process.execPath, ['--input-type=module', '-e',
@@ -164,16 +164,18 @@ try {
   const accepted = run(validateScript, ['validate-final-bpmn-file'], `${JSON.stringify({ process_id: 'P-001', process: processRecord })}\n${emitted.stdout}`, isolated)
   assert.equal(accepted.status, 0, accepted.stdout || accepted.stderr)
   assert.deepEqual(JSON.parse(accepted.stdout), { valid: true, diagnostics: [] })
-  const dependency = [...readFileSync(entry, 'utf8').matchAll(/import\(["'](\.\/[^"']+\.mjs)["']\)/gu)][0]?.[1]
-  assert.ok(dependency, 'normal emitted entry must retain its actual bundled dependency')
-  const dependencyFile = new URL(dependency, entry)
-  renameSync(dependencyFile, new URL(dependency + '.hidden', entry))
-  const missingChunk = run(entry, [], xml, isolated)
+  // Layout is now one independent artifact. Search intentionally retains one
+  // real sibling; losing it must still expose the original module error.
+  const dependencyFile = join(target, 'bundles/flow_design/scripts/layout-metrics.mjs')
+  renameSync(dependencyFile, dependencyFile + '.hidden')
+  const input = join(packagedScratch, 'input.bpmn'); writeFileSync(input, emitted.stdout)
+  const searchEntry = pathToFileURL(join(target, 'bundles/flow_design/scripts/layout-search.mjs'))
+  const missingChunk = run(searchEntry, [input, join(packagedScratch, 'output.bpmn'), '--passes', '1'], '', isolated)
   assert.notEqual(missingChunk.status, 0)
-  assert.equal(missingChunk.stdout, '', 'missing emitted chunk must not produce fallback geometry')
+  assert.equal(missingChunk.stdout, '', 'missing emitted sibling must not produce fallback geometry')
   assert.match(missingChunk.stderr, /ERR_MODULE_NOT_FOUND/)
   assert.doesNotMatch(missingChunk.stderr, /\[flow_design:dependency\]/)
-  console.log('Flow normal emitted closure OK outside repo; missing emitted chunk retains original error')
+  console.log('Flow normal emitted closure OK outside repo; missing metrics sibling retains original error')
 } finally {
   rmSync(packagedScratch, { recursive: true, force: true })
 }

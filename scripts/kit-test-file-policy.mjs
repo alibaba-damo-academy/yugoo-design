@@ -5,9 +5,9 @@ import assert from 'node:assert/strict'
 const testFiles = new Set([
   'test-reading-order.mjs', 'test-channel-spacing.mjs', 'test-layout-policy.mjs', 'test-page-file-contract.mjs',
   'smoke-page-design-script.mjs', 'smoke-flow-design-script.mjs', 'smoke-bpmn-routing.mjs',
-  'smoke-design-style-script.mjs', 'smoke-prd-script.mjs', 'smoke-layout-production.mjs',
+  'smoke-bundle-localization.mjs', 'portable-distribution.mjs', 'smoke-design-style-script.mjs', 'smoke-prd-script.mjs', 'smoke-layout-production.mjs',
 ].map(name => `test/${name}`))
-const toolFiles = new Set(['scripts/compare-reading-layout.mjs', 'scripts/preview-reading-layout.mjs'])
+const toolFiles = new Set(['build.mjs', 'scripts/compare-reading-layout.mjs', 'scripts/preview-reading-layout.mjs'])
 
 export function isKitRootDevelopmentFile(path) {
   return testFiles.has(path) || toolFiles.has(path)
@@ -18,6 +18,10 @@ export function assertKitTestScripts(scripts) {
   assert.ok(Object.hasOwn(scripts, 'test'), 'Kit must retain a test command')
   const referenced = new Set()
   for (const [name, command] of Object.entries(scripts)) {
+    if (name === 'build') {
+      assert.equal(command, 'node build.mjs', 'Content build uses its package-owned entry')
+      continue
+    }
     assert.match(name, /^test(?::[a-z0-9][a-z0-9:-]*)?$/u, 'Kit scripts must not add build, install or runtime lifecycle commands')
     assert.equal(typeof command, 'string', 'Kit test command must be a string')
     for (const segment of command.split('&&')) {

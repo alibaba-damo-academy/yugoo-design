@@ -6,12 +6,12 @@ import { assertKitTestScripts, isKitRootDevelopmentFile } from './kit-test-file-
 test('current declared Node tests are accepted without executing any test command', async () => {
   const manifest = JSON.parse(await readFile(new URL('../packages/skills-web-app/package.json', import.meta.url), 'utf8'))
   const files = assertKitTestScripts(manifest.scripts)
-  assert.equal(files.size, 10)
+  assert.equal(files.size, 12)
   assert.ok(files.has('test/test-reading-order.mjs'))
   assert.ok(files.has('test/smoke-layout-production.mjs'))
 })
 
-test('build, publication, install and runtime lifecycle names stay forbidden', () => {
+test('only the package-owned source build is allowed; publication/install/runtime lifecycle stays absent', () => {
   for (const name of ['build', 'pretest', 'posttest', 'prepack', 'prepare', 'postinstall', 'start', 'dev']) {
     assert.throws(() => assertKitTestScripts({ test: 'node test/test-page-file-contract.mjs', [name]: 'node test/test-page-file-contract.mjs' }))
   }
@@ -43,6 +43,6 @@ test('source-only development exemptions do not widen the published content or r
   const manifest = JSON.parse(await readFile(new URL('../packages/skills-web-app/package.json', import.meta.url), 'utf8'))
   assert.equal(manifest.main, undefined)
   assert.equal(manifest.exports, undefined)
-  assert.deepEqual(manifest.files, ['README.md', 'kits', 'bundles', 'LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md'])
+  assert.deepEqual(manifest.files, ['README.md', 'lib', 'LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md'])
   assert.equal(manifest.files.some(isKitRootDevelopmentFile), false)
 })

@@ -9291,6 +9291,8 @@
       "path": "examples/web-app-panel-review/zh-CN/project.json",
       "action": "include",
       "reason": "Independent format-3 synthetic migration-source identity and Kit metadata; no registered project or execution result is claimed."
-    }
+    },
+    {"kind": "file", "path": "packages/skills-web-app/build.mjs", "action": "include", "reason": "Package-owned complete Kit/Bundle build and shared three independent Flow CLI closure; no runtime installer or model client."},
+    {"kind": "file", "path": "packages/skills-web-app/test/portable-distribution.mjs", "action": "include", "reason": "Temporary actual npm pack and full Bundle relocation regression with source-resource parity, portable CLI execution and original material hashes; no user project edits."}
   ]
 }

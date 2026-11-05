@@ -7,8 +7,11 @@ validators, panel declarations and resources live in `bundles/<name>/`.
 `skill.yaml` remains each Bundle's identity and execution contract. The npm
 package is a distribution container, not the Kit or Bundle lifecycle authority.
 
-`package.json.designSystem.kit` declares the Kit root, Mindset, mount manifest
-and Bundle search root. Load the package root through the generic Kit resolver;
+`package.json.designSystem.kit` declares the built `lib/kits/web_app/` root,
+Mindset, mount manifest and `lib/bundles/` search root. `node build.mjs` copies
+the complete authoring trees and builds the three Flow CLI entries into `lib/`.
+The npm files list selects this complete output; methods, schemas, examples and
+other resources stay inside their owning Kit or Bundle. Load the package root through the generic Kit resolver;
 a bare Kit directory needs its exact Bundle resolver supplied separately.
 Loading content never installs npm dependencies. Repository-only checks and
 preview tools live in `test/` and `scripts/` and are excluded from package files.
@@ -17,28 +20,33 @@ preview tools live in `test/` and `scripts/` and are excluded from package files
 
 | Package | Used by | Purpose |
 | --- | --- | --- |
-| `bpmn-moddle` ^9.0.1 | `bundles/flow_design/scripts/layout.mjs`, `bpmn-validator.mjs` | BPMN XML parse/serialize |
+| `bpmn-moddle` ^9.0.1 | `bundles/flow_design/scripts/layout.mjs`, `layout-metrics.mjs`, `layout-search.mjs` | BPMN XML parse/serialize |
 | `elkjs` ^0.10.0 | `bundles/flow_design/scripts/layout.mjs` | layered graph layout geometry |
 | `bpmn-js` ^18.24.0 | `bundles/web_app_prd_assembly/scripts/visual-renderer.mjs` | conditional BPMN snapshots |
 | `playwright` ^1.61.1 | `bundles/web_app_prd_assembly/scripts/visual-renderer.mjs` | conditional browser snapshots |
 
 These dependencies belong to this engineering package. Source development uses
-the repository's locked dependencies. Copying a bare Bundle does not install its
-script dependencies or provide a browser. A distributable Bundle must include
-or otherwise explicitly provision its required runtime and license materials;
-the loader does not fetch them. Existing dependency diagnostics mention the
-legacy “Kit package.json”; that means this engineering package, not `kit.yaml`.
-Missing dependencies fail with a non-zero exit rather than fabricated output.
+the repository's locked dependencies. Distribution builds include the Flow
+CLI dependency closure, so a complete distributed Flow Bundle can be copied
+into a project and run without `node_modules`, `NODE_PATH` or an install step.
+The structure/final validator already uses only Node built-ins and is copied
+unchanged. A raw source Bundle still needs the repository's development
+dependencies; loading content never installs them.
 
-## Delivery context 2: packaged Companion payload
+The npm content package and both Companion packaging routes reuse the same
+three independent Node 22 ESM entries: layout, metrics and search. Search keeps
+its explicit sibling metrics import to preserve both CLI entry guards. Matching
+original licenses, notices and existing ELK source-availability materials live
+inside `flow_design/licenses/`; project LICENSE, NOTICE and inventory texts also
+remain at the Flow root, so copying the complete Bundle retains them.
+`flow-build.json` records the actual observed build inputs and original-material
+identities; it does not claim a complete nested-prebundle inventory or license
+acceptance. The existing normal-build module observations bind output bytes and
+source inputs for DSH release preparation.
 
-In the packaged payload, Kit files live in `kits/web_app/` and Bundle files
-live independently in `bundles/<name>/`. `bundles/flow_design/scripts/layout.mjs` resolves against a
-bundled dist (ELK and bpmn-moddle included); the layout entry was verified
-self-contained by running it outside the repository with empty `NODE_PATH` and
-`NODE_OPTIONS` and no `node_modules` present: exit 0 with BPMN DI injection.
-Bundled third-party code retains its license materials in the distribution
-package (`licenses/`); see `THIRD_PARTY_NOTICES.md` for the Kit-level inventory.
+`node --test test/portable-distribution.mjs` builds and packs the content package,
+extracts its full Flow Bundle outside the repository, and exercises layout,
+metrics, search and structure/final validation with no ancestor `node_modules`.
 
 ## flow_design layout contract (verified)
 
@@ -92,12 +100,11 @@ Retention mapping for the user-authorized detail simplification:
   not rewritten. Native-reference implementations are
   retained; this change targets the official declarative Panel, not old renderers.
 
-The 1.0 decision above records the internal Function detail update. The Flow
-execution-resource correction declares `flow_design@1.1`, mounted by
-`web_app@1.1`, for its next content release; the other 14 Bundles retain 1.0.
-Existing project pins and retained snapshots stay unchanged. Adopting new
-content requires an explicit upgrade through a Host with verified native
-migration isolation; a plugin update alone does not upgrade a project.
+The 1.0 decision above records the internal Function detail update. Flow and
+Kit version metadata is upstream provenance. Each project owns its complete
+saved definitions; a plugin update does not replace those files. An Agent may
+compare and revise an explicitly selected project copy through the existing
+editing and validation path, preserving user content without a version gate.
 
 Verification is reported separately for conversion/validation, rendered edits,
 durable save/reopen and native-model consumption; these claims are not implied

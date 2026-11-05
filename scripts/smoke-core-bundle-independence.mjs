@@ -5,7 +5,7 @@
  * They may not depend on a concrete Kit/provider or embed its globally
  * namespaced driver identities. The official Kit may ship ordinary Agent-facing
  * `.mjs` files under each Bundle's `scripts/` directory; those scripts are
- * invoked through the generic confined Host port and require no Kit build or
+ * invoked through the generic confined Host port with package-built dependencies and no
  * Bundle-specific Provider runtime. An adjacent `.d.mts` may describe an
  * existing `.mjs` script for typed consumers; it is not executable Kit code.
  */
@@ -72,7 +72,7 @@ const kitManifestPath = join(kitRoot, 'package.json')
 const kitManifest = await manifest(kitRoot)
 assert.deepEqual(
   kitManifest.designSystem?.kit,
-  { root: './kits/web_app', mindset: './kits/web_app/mindset.md', manifest: './kits/web_app/kit.yaml', bundles: './bundles' },
+  { root: './lib/kits/web_app', mindset: './lib/kits/web_app/mindset.md', manifest: './lib/kits/web_app/kit.yaml', bundles: './lib/bundles' },
   'the official content Kit must publish only host-neutral discovery metadata',
 )
 assert.equal(kitManifest.main, undefined, 'the content Kit must not publish a JavaScript entry')
@@ -89,7 +89,7 @@ assert.deepEqual(
 for (const field of ['optionalDependencies', 'peerDependencies']) {
   assert.deepEqual(kitManifest[field], undefined, `the content Kit must not have ${field}`)
 }
-assert.deepEqual(kitManifest.files, ['README.md', 'kits', 'bundles', 'LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md'], 'the content package includes separate Kit and Bundle roots and license materials, excluding engineering tests and previews')
+assert.deepEqual(kitManifest.files, ['README.md', 'lib', 'LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md'], 'the content package includes separate Kit and Bundle roots and license materials, excluding engineering tests and previews')
 for (const path of await collectFiles(kitRoot)) {
   if (path === kitManifestPath || !codeExtensions.has(extname(path))) continue
   const rel = relative(kitRoot, path)

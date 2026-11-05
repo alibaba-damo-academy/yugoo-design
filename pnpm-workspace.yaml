@@ -89,14 +89,68 @@ overrides:
   unified@^11.0.0: 11.0.5
   recharts@3.5.1>immer: 10.2.0
   tslib: 2.8.1
-  d3@7.9.0>d3-array: 3.2.4
-  d3-contour@4.0.2>d3-array: 3.2.4
+  d3-array@^3.0.0: 3.2.4
   d3-geo@3.1.1>d3-array: 3.2.4
   d3-scale@4.0.2>d3-array: 3.2.4
   d3-time@3.1.0>d3-array: 3.2.4
   force-graph@1.49.4>d3-array: 3.2.4
   three-forcegraph@1.43.4>d3-array: 3.2.4
-  victory-vendor@37.3.6>d3-array: 3.2.4
+  d3-axis: 3.0.0
+  d3-brush: 3.0.0
+  d3-chord: 3.0.1
+  d3-color: 3.1.0
+  d3-contour: 4.0.2
+  d3-delaunay: 6.0.4
+  d3-dispatch@^3.0.0: 3.0.1
+  d3-brush@3.0.0>d3-dispatch: 3.0.1
+  d3-drag@3.0.0>d3-dispatch: 3.0.1
+  d3-force-3d@3.0.6>d3-dispatch: 3.0.1
+  d3-force@3.0.0>d3-dispatch: 3.0.1
+  d3-transition@3.0.1>d3-dispatch: 3.0.1
+  d3-zoom@3.0.0>d3-dispatch: 3.0.1
+  d3-drag@^3.0.0: 3.0.0
+  d3-brush@3.0.0>d3-drag: 3.0.0
+  d3-zoom@3.0.0>d3-drag: 3.0.0
+  force-graph@1.49.4>d3-drag: 3.0.0
+  d3-dsv: 3.0.1
+  d3-ease: 3.0.1
+  d3-fetch: 3.0.1
+  d3-force: 3.0.0
+  d3-format: 3.1.2
+  d3-geo: 3.1.1
+  d3-hierarchy: 3.1.2
+  d3-interpolate: 3.0.1
+  d3-path@^3.0.0: 3.1.0
+  d3-chord@3.0.1>d3-path: 3.1.0
+  d3-polygon: 3.0.1
+  d3-quadtree: 3.0.1
+  d3-random: 3.0.1
+  d3-scale-chromatic: 3.1.0
+  d3-scale: 4.0.2
+  d3-selection@^3.0.0: 3.0.0
+  d3-transition@3.0.1>d3-selection: 3.0.0
+  d3-zoom@3.0.0>d3-selection: 3.0.0
+  float-tooltip@1.7.5>d3-selection: 3.0.0
+  force-graph@1.49.4>d3-selection: 3.0.0
+  d3-shape@^3.0.0: 3.2.0
+  d3-time-format: 4.1.0
+  d3-time: 3.1.0
+  d3-timer@^3.0.0: 3.0.1
+  d3-force-3d@3.0.6>d3-timer: 3.0.1
+  d3-force@3.0.0>d3-timer: 3.0.1
+  d3-transition@3.0.1>d3-timer: 3.0.1
+  d3-transition: 3.0.1
+  d3-zoom: 3.0.0
+  d3: 7.9.0
+  float-tooltip: 1.7.5
+  markdown-table: 3.0.4
+  mdast-util-gfm-table: 2.0.0
+  bpmn-moddle@^9.0.1: 9.0.4
+  min-dash@^4.0.0: 4.2.3
+  moddle@^7.0.0: 7.2.0
+  moddle-xml@^11.0.0: 11.0.0
+  moddle-xml@11.0.0>moddle: 7.2.0
+  saxen@^10.0.0: 10.0.0
 allowBuilds:
   "@deepseek-ai/dsh-subprocess-local@0.2.0-rc.2": true
   koffi@3.1.1: true

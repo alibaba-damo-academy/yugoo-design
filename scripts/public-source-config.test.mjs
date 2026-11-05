@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
 import { proposePublicSourceConfig } from './public-source-config.mjs'
-import { satisfies } from 'semver'
+import { satisfies, subset } from 'semver'
 import YAML from 'yaml'
 
 function fixture() {
@@ -176,11 +176,17 @@ test('the reviewed Mermaid edge keeps Cytoscape peer consumers on their compatib
   assert.equal(mermaid.dependencies.cytoscape, '3.34.2')
 })
 
-test('reviewed D3 Array parent edges pin 3.x without replacing the Sankey 2.x input', () => {
+test('reviewed public D3 inputs pin moving parents and preserve coexisting majors', () => {
   const repo = new URL('../', import.meta.url)
   const workspace = YAML.parse(readFileSync(new URL('pnpm-workspace.yaml', repo), 'utf8'))
   const lock = YAML.parse(readFileSync(new URL('pnpm-lock.yaml', repo), 'utf8'))
   const baseline = JSON.parse(readFileSync(new URL('release/public-source-baseline.json', repo), 'utf8'))
+  // Child edges alone do not match when a newly resolved parent version changes.
+  for (const [name, version] of Object.entries({ d3: '7.9.0', 'd3-contour': '4.0.2', 'd3-geo': '3.1.1',
+    'd3-scale': '4.0.2', 'd3-time': '3.1.0', 'float-tooltip': '1.7.5',
+    'markdown-table': '3.0.4', 'mdast-util-gfm-table': '2.0.0' })) {
+    assert.equal(workspace.overrides[name], version, name)
+  }
   // Original incoming ranges from these selected upstream package manifests.
   const parents = {
     'd3@7.9.0': '3',
@@ -194,13 +200,25 @@ test('reviewed D3 Array parent edges pin 3.x without replacing the Sankey 2.x in
   }
   for (const [parent, range] of Object.entries(parents)) {
     assert.ok(satisfies('3.2.4', range), parent)
-    assert.equal(workspace.overrides[`${parent}>d3-array`], '3.2.4', parent)
+    const selector = subset(range, '^3.0.0') ? 'd3-array@^3.0.0' : `${parent}>d3-array`
+    assert.equal(workspace.overrides[selector], '3.2.4', parent)
     const snapshot = Object.entries(lock.snapshots).find(([key]) => key === parent || key.startsWith(parent + '('))?.[1]
     assert.equal(snapshot?.dependencies['d3-array'], '3.2.4', parent)
   }
   assert.deepEqual(lock.overrides, workspace.overrides)
   assert.deepEqual(baseline.reviewedWorkspaceOverrides, workspace.overrides)
-  assert.ok(!Object.keys(workspace.overrides).some(key => /^d3-array(?:@|$)/u.test(key)))
+  const coexisting = {
+    'd3-array': ['2.12.1', '3.2.4'], 'd3-path': ['1.0.9', '3.1.0'], 'd3-shape': ['1.3.7', '3.2.0'],
+    'd3-dispatch': ['1.0.6', '3.0.1'], 'd3-drag': ['1.2.5', '3.0.0'],
+    'd3-selection': ['1.4.2', '3.0.0'], 'd3-timer': ['1.0.10', '3.0.1'],
+  }
+  for (const [name, [legacy, current]] of Object.entries(coexisting)) {
+    assert.equal(workspace.overrides[name], undefined, name)
+    assert.equal(workspace.overrides[`${name}@^3.0.0`], current, name)
+    assert.ok(!satisfies(legacy, '^3.0.0'), name)
+    assert.ok(lock.packages[`${name}@${legacy}`], name)
+    assert.ok(lock.packages[`${name}@${current}`], name)
+  }
   assert.equal(workspace.overrides['d3-sankey@0.12.3>d3-array'], undefined)
   assert.equal(lock.snapshots['d3-sankey@0.12.3'].dependencies['d3-array'], '2.12.1')
   assert.ok(satisfies('2.12.1', '1 - 2'))
@@ -210,6 +228,31 @@ test('reviewed D3 Array parent edges pin 3.x without replacing the Sankey 2.x in
     assert.deepEqual(materials.packages[name].components.filter(component => component.name === 'd3-array')
       .map(component => component.version).sort(), ['2.12.1', '3.2.4'])
   }
+})
+
+test('reviewed Flow script dependencies retain their own major beside the BPMN editor', () => {
+  const repo = new URL('../', import.meta.url)
+  const workspace = YAML.parse(readFileSync(new URL('pnpm-workspace.yaml', repo), 'utf8'))
+  const lock = YAML.parse(readFileSync(new URL('pnpm-lock.yaml', repo), 'utf8'))
+  const baseline = JSON.parse(readFileSync(new URL('release/public-source-baseline.json', repo), 'utf8'))
+  for (const [name, range, version] of [
+    ['bpmn-moddle', '^9.0.1', '9.0.4'], ['min-dash', '^4.0.0', '4.2.3'],
+    ['moddle', '^7.0.0', '7.2.0'], ['moddle-xml', '^11.0.0', '11.0.0'],
+    ['saxen', '^10.0.0', '10.0.0'], ['elkjs', '^0.10.0', '0.10.2'],
+  ]) {
+    assert.equal(workspace.overrides[`${name}@${range}`], version, name)
+    assert.equal(workspace.overrides[name], undefined, name)
+    assert.ok(satisfies(version, range), name)
+    assert.ok(lock.packages[`${name}@${version}`], name)
+  }
+  assert.equal(workspace.overrides['moddle-xml@11.0.0>moddle'], '7.2.0')
+  assert.equal(lock.snapshots['moddle-xml@11.0.0(moddle@7.2.0)'].dependencies.moddle, '7.2.0')
+  assert.equal(lock.snapshots['bpmn-js@18.24.0'].dependencies['bpmn-moddle'], '10.1.0')
+  assert.equal(lock.snapshots['bpmn-moddle@10.1.0'].dependencies.moddle, '8.2.1')
+  assert.equal(lock.snapshots['bpmn-moddle@10.1.0'].dependencies['min-dash'], '5.1.0')
+  assert.equal(lock.snapshots['moddle-xml@12.1.0(moddle@8.2.1)'].dependencies.saxen, '11.1.1')
+  assert.deepEqual(lock.overrides, workspace.overrides)
+  assert.deepEqual(baseline.reviewedWorkspaceOverrides, workspace.overrides)
 })
 
 test('development scripts, ambiguous root/workspace policies and invalid identities fail explicitly', () => {

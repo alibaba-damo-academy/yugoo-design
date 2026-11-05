@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { lstat, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+import { createRequire } from 'node:module'
 import fixtureNotices from './test-fixtures/fixture-notice-map.json' with { type: 'json' }
 
 export const BUNDLED_LICENSE_PINS = Object.freeze({
@@ -619,4 +620,83 @@ async function copyBundledJsEntries(entries, targetRoot) {
     assets[relativePath] = sha(bytes)
   }
   return { scope: 'selected-emitted-javascript-original-materials', assets }
+}
+
+/** Retain actual Flow build inputs' existing originals inside the copyable Bundle. */
+export async function writeFlowScriptMaterials(sourceRoot, bundleRoot, maps) {
+  const components = new Map(), materials = new Map()
+  for (const map of maps) for (const output of map.outputs) for (const module of output.modules ?? []) {
+    if (module.renderedLength === 0) continue
+    const match = module.rawId.replaceAll('\\', '/').match(/^(.*\/node_modules\/((?:@[^/]+\/)?[^/]+))(?:\/|$)/u)
+    if (!match) continue
+    const [, root, name] = match
+    const metadataBytes = await regularMaterial(root, 'package.json'), metadata = JSON.parse(metadataBytes)
+    assert.equal(metadata.name, name, 'Flow module package identity mismatch')
+    const key = `${name}@${metadata.version}`
+    if (!components.has(key)) {
+      let selected
+      if (name === 'elkjs') {
+        await inspectBundledModuleLicense(module.rawId)
+        selected = Object.entries(BUNDLED_LICENSE_PINS).filter(([path]) => path.startsWith(`elkjs-${metadata.version}/`))
+          .map(([path, sha256]) => ({ source: `third-party/companion/${path}`, path: `licenses/third-party/${path}`, sha256 }))
+      } else {
+        const prefix = key + '/'
+        selected = BUNDLED_JS_LICENSE_FILES.filter(path => path.startsWith(prefix))
+          .map(path => ({ source: `third-party/companion/bundled-js/${path}`, path: `licenses/bundled-js/${path}` }))
+      }
+      assert.ok(selected.length, `Missing maintained Flow originals: ${key}`)
+      const originalLicense = selected.find(item => /\/LICENSE(?:\.md)?$/u.test(item.path))
+      assert.ok(originalLicense, `Missing original Flow license: ${key}`)
+      const installed = await regularMaterial(root, name === 'elkjs' ? 'LICENSE.md' : 'LICENSE')
+      for (const item of selected) {
+        const bytes = await regularMaterial(sourceRoot, item.source), hash = sha(bytes)
+        if (item.sha256) assert.equal(hash, item.sha256, `Flow source material changed: ${item.source}`)
+        if (item === originalLicense) assert.equal(sha(installed), hash, `Flow installed license differs: ${key}`)
+        materials.set(item.path, { ...item, sha256: hash, bytes })
+      }
+      components.set(key, { name, version: metadata.version, declaredLicense: metadata.license,
+        packageMetadataSha256: sha(metadataBytes), ...(metadata.author ? { author: metadata.author } : {}),
+        outputs: new Set(), materials: selected.map(item => ({ path: item.path, sha256: materials.get(item.path).sha256 })),
+        correspondence: 'exact-original-bytes-from-observed-local-package' })
+    }
+    components.get(key).outputs.add(`scripts/${output.fileName}`)
+  }
+  assert.ok(['elkjs', 'bpmn-moddle'].every(name => [...components.values()].some(item => item.name === name)), 'Flow dependency membership missing')
+  // Rolldown's generated helper is virtual, not a physical module input. Bind
+  // its observed code to the loaded toolchain and retain matching existing texts.
+  const runtimeOutputs = maps.flatMap(map => map.outputs.flatMap(output => (output.modules ?? [])
+    .filter(module => module.rawId === '\0rolldown/runtime.js' && module.renderedLength > 0)
+    .map(module => ({ output: `scripts/${output.fileName}`, moduleId: module.id }))))
+  let generatedRuntime
+  if (runtimeOutputs.length) {
+    const toolRequire = createRequire(import.meta.resolve('tsdown'))
+    const toolRoot = dirname(toolRequire.resolve('rolldown/package.json'))
+    const metadataBytes = await regularMaterial(toolRoot, 'package.json'), metadata = JSON.parse(metadataBytes)
+    const authority = fixtureNotices.components.find(item => item.name === 'rolldown' && item.version === metadata.version)
+    assert.ok(authority, 'Matching maintained generated-runtime originals required')
+    const selected = []
+    for (const source of authority.noticePaths) {
+      const retained = embeddedPicaMaterials.find(item => item.source === source)
+      assert.ok(retained, 'Generated-runtime original material missing')
+      const bytes = await regularMaterial(sourceRoot, source), installed = await regularMaterial(toolRoot, source.split('/').at(-1))
+      assert.equal(sha(bytes), retained.sha256); assert.equal(sha(installed), retained.sha256, 'Generated-runtime original differs')
+      const path = `licenses/bundled-js/rolldown@${metadata.version}/${source.split('/').at(-1)}`
+      materials.set(path, { source, path, sha256: sha(bytes), bytes })
+      selected.push({ path, sha256: sha(bytes) })
+    }
+    generatedRuntime = { name: metadata.name, version: metadata.version, packageMetadataSha256: sha(metadataBytes),
+      outputs: runtimeOutputs, materials: selected, sourceLocator: authority.sourceLocator, physicalModuleInput: false,
+      correspondence: 'observed generated runtime helper; actual loaded tsdown toolchain; original license byte comparison' }
+  }
+  const records = [...components.values()].sort((a, b) => a.name.localeCompare(b.name)).map(item => ({ ...item, outputs: [...item.outputs].sort() }))
+  const index = { scope: 'actual-flow-build-module-membership-and-maintained-original-materials', components: records, generatedRuntime,
+    outputs: Object.fromEntries(maps.flatMap(map => map.outputs.map(output => [`scripts/${output.fileName}`, output.sha256]))),
+    completeBundledInventoryVerified: false, releaseLicenseAcceptance: false,
+    limitations: 'Top-level bundler membership only; nested ELK prebundle inventory and corresponding-source review remain separate.' }
+  for (const item of materials.values()) {
+    await mkdir(dirname(join(bundleRoot, item.path)), { recursive: true })
+    await writeFile(join(bundleRoot, item.path), item.bytes, { flag: 'wx' })
+  }
+  await writeFile(join(bundleRoot, 'licenses/flow-build.json'), JSON.stringify(index, null, 2) + '\n', { flag: 'wx' })
+  return { index, materials: [...materials.values()].map(({ bytes, ...item }) => item) }
 }

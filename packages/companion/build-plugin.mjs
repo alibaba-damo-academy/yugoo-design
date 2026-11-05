@@ -6,10 +6,10 @@ import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import { build } from 'tsdown'
+import { buildWebAppContent } from '../skills-web-app/build.mjs'
 import { packageKnowledge } from './package-knowledge.mjs'
 import { prepareBundledLicenseMaterials, copyBundledLicenseMaterials, prepareBrowserLicenseMaterials, copyBrowserLicenseMaterials, BROWSER_LICENSE_NOTICE, prepareBundledJsLicenseMaterials, copyBundledJsLicenseMaterials, BUNDLED_JS_LICENSE_NOTICE } from '../../scripts/companion-bundled-license.mjs'
-import { copyOwnLicenseMaterials, OWN_LICENSE_FILES } from '../../scripts/release-own-license.mjs'
+import { copyOwnLicenseMaterials } from '../../scripts/release-own-license.mjs'
 import { readOfficialDshJsonInput } from '../../scripts/official-dsh-json-input.mjs'
 import { preparePanelAuthoringMaterial, writePanelAuthoringMaterial } from '../../scripts/companion-authoring-material.mjs'
 import { prepareStudioAuthoringMaterial, writeStudioAuthoringMaterial } from '../../scripts/studio-authoring-material.mjs'
@@ -66,31 +66,6 @@ export async function copyNativeExecutionReference(target, { host, companionRoot
   return path
 }
 
-/** The normal standalone Flow script closure, exercised without a whole package copy. */
-export async function packageFlowLayout(target) {
-  return build({
-    config: false,
-    entry: { layout: join(here, '../skills-web-app/bundles/flow_design/scripts/layout.mjs') },
-    outDir: join(target, 'bundles/flow_design/scripts'),
-    format: 'esm', platform: 'node', target: 'node22',
-    tsconfig: false, dts: false, clean: false,
-    deps: { alwaysBundle: [/.*/], onlyBundle: false },
-    plugins: [{
-      name: 'portable-kit-script-imports',
-      generateBundle(_options, bundle) {
-        for (const output of Object.values(bundle)) {
-          if (output.type !== 'chunk') continue
-          for (const dependency of [...output.imports, ...output.dynamicImports]) {
-            if (!dependency.startsWith('node:') && !bundle[dependency]) {
-              throw new Error(`Unbundled Kit script dependency: ${dependency}`)
-            }
-          }
-        }
-      },
-    }],
-  })
-}
-
 export async function packagePlugin(destination, { host = 'codex', qwenworkRuntime, nativeGitArtifactRoot, nodeExecutable } = {}) {
   if (!['codex', 'codex-desktop', 'qoder', 'claude-code', 'qwenwork'].includes(host)) throw new Error('Unsupported package host.')
   const overlayHost = host === 'codex-desktop' ? 'codex' : host
@@ -136,15 +111,7 @@ export async function packagePlugin(destination, { host = 'codex', qwenworkRunti
   await copyTree(join(here, 'dist'), join(target, 'web'))
   await cp(join(here, 'index.html'), join(target, 'web/index.html'))
   await packageKnowledge(target)
-  const kit = join(target, 'kits/web_app')
-  await mkdir(kit, { recursive: true })
-  await copyTree(join(here, '../skills-web-app/kits/web_app'), kit)
-  await copyTree(join(here, '../skills-web-app/bundles'), join(target, 'bundles'))
-  for (const name of OWN_LICENSE_FILES) await copyTree(join(here, '../skills-web-app', name), join(kit, name))
-  // Agent-facing scripts run as separate Node processes, outside design.mjs.
-  // Bundle their runtime imports at publication time, not in a user's session.
-  // Keep the source Kit (and the native DSH execution path) unchanged.
-  await packageFlowLayout(target)
+  await buildWebAppContent(target)
   // Separate third-party notice: the bundled JSON utility comes from upstream DSH.
   await mkdir(join(target, 'licenses'))
   await writeFile(join(target, 'licenses/DSH-LICENSE'), officialInputs.licenseBytes, { flag: 'wx' })

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": "0bc8be1bda7826b02212a6d7a200d045ef456376",
-  "policySha256": "010405513cf732f03a5ee3166fdcaaedbdfd85caff446fe401e82a19527071f2",
+  "revision": "dcf551515dfc81506355be4103c0337195e7191d",
+  "policySha256": "1bb46e36a53a7ed6eae195a9676f67f4d08569d0c9c51c3585c551d5a049b899",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
       "sha256": "99c0ddca35a9a65ca9b097ee9072994a1ca2a4848ef6fe3ca07f5f29956806ed",
@@ -284,7 +284,7 @@
       "mode": "100644"
     },
     "docs/testing/agentic-e2e.md": {
-      "sha256": "1d1c6a9c6b939512e28ee6b20063e99e6d6d06b5193d08a6cdd95ca5c74eaf81",
+      "sha256": "65f87b7855c2f851eda76027eabb1b304696160253fcfd7809378890398f5ffa",
       "mode": "100644"
     },
     "docs/ust-score-explanations.md": {
@@ -1064,7 +1064,7 @@
       "mode": "100644"
     },
     "packages/companion/build-plugin.mjs": {
-      "sha256": "582daf7350eaffd72740ebb690c317c44609fd0e309024b4460bee77850d7fd9",
+      "sha256": "65bc5dbff189dd1517fc40e8fe2377813631e52c1b415bc8495c996b49b22789",
       "mode": "100644"
     },
     "packages/companion/codex-desktop-package.mjs": {
@@ -7776,11 +7776,15 @@
       "mode": "100644"
     },
     "packages/skills-web-app/README.md": {
-      "sha256": "bd540078a773ea7405047adca90578b6c8c47b0266f6fb4b8a3611f6b3ba8585",
+      "sha256": "3847150050d6162d8b86aeef18358582a44e001907b2fd2f55de7d1879b4703b",
       "mode": "100644"
     },
     "packages/skills-web-app/THIRD_PARTY_NOTICES.md": {
       "sha256": "1d358b1a367efd6f4e0fb04436df7f814531cd6a01a0b2b752d7b8268a461c79",
+      "mode": "100644"
+    },
+    "packages/skills-web-app/build.mjs": {
+      "sha256": "912412c2c7dcd0468fcc44a6e692d81c21ed192529c49c692ef442840a3bc298",
       "mode": "100644"
     },
     "packages/skills-web-app/bundles/ai_agent_capabilities/SKILL.md": {
@@ -8715,6 +8719,10 @@
       "sha256": "cb4f753568feadb97f3ae0db3c38563ccfdad2981d09c468ed3d5e47f03553c0",
       "mode": "100644"
     },
+    "packages/skills-web-app/test/portable-distribution.mjs": {
+      "sha256": "3e69595301ea1fe1e39caf416aeb9baff55b0ff32d89ce145ca43fce4294d5d7",
+      "mode": "100644"
+    },
     "packages/skills-web-app/test/smoke-bpmn-routing.mjs": {
       "sha256": "d082a9f1c846081938df483a5ee834361e19095e47a2e9a2ba5d03bfd1422a7e",
       "mode": "100644"
@@ -8728,11 +8736,11 @@
       "mode": "100644"
     },
     "packages/skills-web-app/test/smoke-flow-design-script.mjs": {
-      "sha256": "1d465c54ef70bd851d9563a2513ea3f903f069137e6e76adeaaaed63cf429804",
+      "sha256": "bad3b6cec22bce3d9af5d866e63d160c36fd19d2d15be526817ef9db93fe3ad0",
       "mode": "100644"
     },
     "packages/skills-web-app/test/smoke-layout-production.mjs": {
-      "sha256": "e633c23f88092a09825ea9bf58d982ee649d54f2a56ae32c07a22c0a474bfdfd",
+      "sha256": "d6e829ebbfb686294100fa42c7a5bb6fe19f37067a131698aa572ae250c35097",
       "mode": "100644"
     },
     "packages/skills-web-app/test/smoke-page-design-script.mjs": {
@@ -9428,7 +9436,7 @@
       "mode": "100644"
     },
     "release/dsh-distribution-materials.json": {
-      "sha256": "fae9e2d9b4c042a32955075deb4e7cf9acab627598d8104b200df9d5e2293583",
+      "sha256": "e1fa2a5c4c16b140989ff31f1c8b6783609061d3eb832e99f04b0843d98f288c",
       "mode": "100644"
     },
     "release/product-package-template.json": {
@@ -9440,11 +9448,11 @@
       "mode": "100644"
     },
     "release/public-source-baseline.json": {
-      "sha256": "ba64f5ffad6997e29004e1543e5b0cdd0e4584113efe2d9c7733c4fa23f46452",
+      "sha256": "ae0e21542d098cfc3049b07518d8843fb96dfddef6129b11a8d16c077b34cdd5",
       "mode": "100644"
     },
     "release/public-source-policy.json": {
-      "sha256": "9006f893a259b6d6ddc93a7911833fe2424535edc3975b4e0ec3d86aa4d685d4",
+      "sha256": "342a0105f98cb2e28a59e78ad6e27c3b2eb6e1eaf1daada369fb65ffd9078fc7",
       "mode": "100644"
     },
     "release/public-source-test-selection.json": {
@@ -9464,7 +9472,7 @@
       "mode": "100644"
     },
     "scripts/build-companion-npm-candidate.mjs": {
-      "sha256": "2eaadb128491987d6a4a8db99869beeb4c78269ada4a96fe04e9bb4a7697dfa0",
+      "sha256": "a96d7fc83ca091f41aee1ef847fe805375f170b553f3d9cf7c61f04aa588a82d",
       "mode": "100644"
     },
     "scripts/build-companion-npm-candidate.test.mjs": {
@@ -9496,7 +9504,7 @@
       "mode": "100644"
     },
     "scripts/companion-bundled-license.mjs": {
-      "sha256": "87aeb035df2b36ba11c000212074b7313e3532df0bfb9064a6a6bb64dd310f6f",
+      "sha256": "4543ec8f862a9fa6b5f0d05bab057cec96e54f5bba08c4a33f9f15da0eff9d46",
       "mode": "100644"
     },
     "scripts/companion-bundled-license.test.mjs": {
@@ -9592,11 +9600,11 @@
       "mode": "100644"
     },
     "scripts/dsh-release-observations.mjs": {
-      "sha256": "d54d56cc195a736c74088dc45e6e7149f6c796dff395acfb7b42cba3fa8d4f92",
+      "sha256": "ec329641a34502469e7c805aea330934e2cff6b84194ccdb7bf9e1da24ef1604",
       "mode": "100644"
     },
     "scripts/dsh-release-observations.test.mjs": {
-      "sha256": "7a81b85bc477904b62f99e9eaee2df28bc1880c28119800c68ceac62c3db10c6",
+      "sha256": "2ab3e8d504da4d0aaf183980dbae32aa3a3910aa6a06d05e42acfc6c019babd7",
       "mode": "100644"
     },
     "scripts/embedded-image-loader-proof.mjs": {
@@ -9644,11 +9652,11 @@
       "mode": "100644"
     },
     "scripts/kit-test-file-policy.mjs": {
-      "sha256": "36b953a572661d578fb03ed24b8d5d7349d949e90570854e5e0ac68c56381f58",
+      "sha256": "6df3fa5a27cf946d98c10dbdd1d49c2cf10e31692cb08eff4ba79a6c9d276f9f",
       "mode": "100644"
     },
     "scripts/kit-test-file-policy.test.mjs": {
-      "sha256": "b099ade2ecacafe65b61ec99340a23aa37d59a0b801c53b6c1c80d2104da8a1e",
+      "sha256": "275816e71e9b6b8bcb57639b41ae5ae0c83b6b82234f0aa5987316084d5f01aa",
       "mode": "100644"
     },
     "scripts/known-browser-loader-proof.mjs": {
@@ -9828,7 +9836,7 @@
       "mode": "100644"
     },
     "scripts/public-source-config.test.mjs": {
-      "sha256": "338fa1808a605ba12a820a72fc6c3be3005d564076a7d2e93851095297eecca2",
+      "sha256": "465fb0bce64924d15f4c91fbad4f5afaccf6eb3c6b0c42d64281e74623db7ad9",
       "mode": "100644"
     },
     "scripts/public-sync-apply.mjs": {
@@ -10044,7 +10052,7 @@
       "mode": "100644"
     },
     "scripts/smoke-core-bundle-independence.mjs": {
-      "sha256": "11122ff4a19dea09cb95ae9eb3e88e71646e07095026d5f5fdf412a1997af55a",
+      "sha256": "87aaf0e23283ad0407aa359576e262276f92bbd674caefe5a6c7573f6efb29c5",
       "mode": "100644"
     },
     "scripts/smoke-design-advisory-journal.mjs": {
@@ -11920,7 +11928,7 @@
       "mode": "100644"
     },
     "pnpm-workspace.yaml": {
-      "sha256": "c591e77fbddd42c2c9704cb5ca4f07b1d06d0d1bd330322ce7f2d01ba3ab7b26",
+      "sha256": "9831ccf71f28e6aa72f4d482db331979f820d5c374ad444ef5853d65bc53ca25",
       "mode": "100644"
     },
     "packages/companion-dev/package.json": {
@@ -11956,7 +11964,7 @@
       "mode": "100644"
     },
     "packages/skills-web-app/package.json": {
-      "sha256": "f68b4a4f12b56b52bedb5b1b2c675f3f5569297ad61bcc9a5c5597effb8cabaf",
+      "sha256": "c3000a2389b705fe6ec8ab483c05faf431f577bbbdaa90324d7885270160eccc",
       "mode": "100644"
     },
     "packages/studio-dsh/package.json": {
@@ -11983,8 +11991,8 @@
     "inputs": [
       {
         "path": "release/public-source-baseline.json",
-        "sourceOid": "fd921782bbe19120a69faf7c9aed64fc81aeff43",
-        "sourceSHA256": "ba64f5ffad6997e29004e1543e5b0cdd0e4584113efe2d9c7733c4fa23f46452"
+        "sourceOid": "32bb24adc228800021184126ac411ea2d6e22daa",
+        "sourceSHA256": "ae0e21542d098cfc3049b07518d8843fb96dfddef6129b11a8d16c077b34cdd5"
       },
       {
         "path": "release/public-source-test-selection.json",
@@ -11995,15 +12003,15 @@
     "files": [
       {
         "path": "package.json",
-        "sourceOid": "4eada6c349796e2ac551d9edd7911f279f2f11ec",
-        "sourceSHA256": "6b4b89a30df5bd1a1ee968a4a388a9ec74df33b3ad3131a1a8f98795b48c2ff5",
+        "sourceOid": "46fa7251ae376fee45833d7fd00a3be0eca455c8",
+        "sourceSHA256": "deecd79dc6fcdf946dee52e2ba395a8795eb61eba0da179b945921467db33329",
         "outputSHA256": "677c41cba6519c9b67b61ae67b38a67ccb361bec6857070c57a349941a14e235"
       },
       {
         "path": "pnpm-workspace.yaml",
-        "sourceOid": "54748225a8ab41f83893f54c0dfc86ec9f43ae2a",
-        "sourceSHA256": "f6bbada227043782a24dd905e066df467d4586f380062245f1715e635f831077",
-        "outputSHA256": "c591e77fbddd42c2c9704cb5ca4f07b1d06d0d1bd330322ce7f2d01ba3ab7b26"
+        "sourceOid": "13e7ea2ee9ad12b58384f171d8cd5dad88235a3d",
+        "sourceSHA256": "3407c6f9aba78ae6207dbcc727c6eb484cf3f65a2014b77a960436875f3caea6",
+        "outputSHA256": "9831ccf71f28e6aa72f4d482db331979f820d5c374ad444ef5853d65bc53ca25"
       },
       {
         "path": "packages/companion-dev/package.json",
@@ -12055,9 +12063,9 @@
       },
       {
         "path": "packages/skills-web-app/package.json",
-        "sourceOid": "6dec33ae637afa7dc4baae91b861a8b4590c110d",
-        "sourceSHA256": "f68b4a4f12b56b52bedb5b1b2c675f3f5569297ad61bcc9a5c5597effb8cabaf",
-        "outputSHA256": "f68b4a4f12b56b52bedb5b1b2c675f3f5569297ad61bcc9a5c5597effb8cabaf"
+        "sourceOid": "570d52681c05eaa0d0bf4d637d98785be2241147",
+        "sourceSHA256": "c3000a2389b705fe6ec8ab483c05faf431f577bbbdaa90324d7885270160eccc",
+        "outputSHA256": "c3000a2389b705fe6ec8ab483c05faf431f577bbbdaa90324d7885270160eccc"
       },
       {
         "path": "packages/studio-dsh/package.json",

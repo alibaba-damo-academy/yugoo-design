@@ -6,7 +6,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
-import {buildFlowScripts} from '../../../scripts/build-companion-npm-candidate.mjs';
+import {buildFlowScripts} from '../build.mjs';
 
 const here=fileURLToPath(new URL('.',import.meta.url));
 const entry=join(here,'../bundles/flow_design/scripts/layout.mjs');

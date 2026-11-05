@@ -127,12 +127,14 @@ export async function observeDshBuild({ workspace, report, evidenceDirectory, so
     const selection = manifest.packages[sourceName]
     assert.ok(selection, `Maintained material selection missing: ${sourceName}`)
     const packageRoot = join(workspace, item.directory), modulesByOutput = {}, normalBuildMaps = [], hashes = {}, normalHashes = {}, urls = {}
-    const packageSnapshots = snapshots.filter(({ snapshot }) => resolve(snapshot.outputRoot) === join(packageRoot, 'lib'))
-    // Content and aggregate have no compiler. Every package with lib has observed normal configs.
-    if (sourceName !== 'dsh-design-skills-web-app' && sourceName !== DSH_AGGREGATE_SOURCE) assert.ok(packageSnapshots.length, `Normal build receipt missing: ${sourceName}`)
-    const outputFiles = sourceName === 'dsh-design-skills-web-app'
-      ? Object.keys(selection.observedOutputSha256)
-      : sourceName === DSH_AGGREGATE_SOURCE ? [] : (await filesUnder(join(packageRoot, 'lib'))).map(path => 'lib/' + path)
+    const packageSnapshots = snapshots.filter(({ snapshot }) => {
+      const path = relative(packageRoot, resolve(snapshot.outputRoot)).replaceAll('\\', '/')
+      return path === 'lib' || path.startsWith('lib/')
+    })
+    // All compiled packages, including content scripts, need their normal receipt.
+    if (sourceName !== DSH_AGGREGATE_SOURCE) assert.ok(packageSnapshots.length, `Normal build receipt missing: ${sourceName}`)
+    const outputFiles = sourceName === DSH_AGGREGATE_SOURCE ? []
+      : (await filesUnder(join(packageRoot, 'lib'))).map(path => 'lib/' + path)
     for (const path of outputFiles) {
       assert.ok(safe(path))
       if (path.endsWith('.map') || isDeclarationOutput(path) || /pica-static-workers-(?:client|interpreter)\.json$/u.test(path)) continue
@@ -143,7 +145,8 @@ export async function observeDshBuild({ workspace, report, evidenceDirectory, so
     }
     for (const { snapshot, file, sha256: evidenceSha256 } of packageSnapshots) {
       for (const output of snapshot.outputs) {
-        const path = 'lib/' + output.fileName
+        const path = relative(packageRoot, join(snapshot.outputRoot, output.fileName)).replaceAll('\\', '/')
+        assert.ok(safe(path) && path.startsWith('lib/'), 'Normal output outside package lib')
         if (!Object.hasOwn(hashes, path)) continue
         assert.equal(output.sha256, normalHashes[path], 'Normal output changed after build receipt')
         const identities = []

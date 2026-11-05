@@ -15637,43 +15637,592 @@
     },
     "dsh-design-skills-web-app": {
       "observedArchiveSha256": null,
-      "normalBuildMaps": [],
+      "normalBuildMaps": [
+        {
+          "output": "lib/bundles/flow_design/scripts/layout.mjs",
+          "observation": "normal-build-done-module-membership",
+          "evidenceFile": "dsh-release-skills-web-app-flow-layout-0-output-modules.json",
+          "evidenceSha256": "fb8c5952e9aa2ce13fd6d838feda050c82a9a06ff853d4c7f5126f4a69cecf9d",
+          "normalOutputSha256": "5dd48402189d404d08044112a60b25010913a3e7a2891463271c9ce88b4ef41f",
+          "packedOutputSha256": "5dd48402189d404d08044112a60b25010913a3e7a2891463271c9ce88b4ef41f",
+          "projectOwnedSources": [
+            "packages/skills-web-app/bundles/flow_design/scripts/channel-spacing.mjs",
+            "packages/skills-web-app/bundles/flow_design/scripts/cost.mjs",
+            "packages/skills-web-app/bundles/flow_design/scripts/feedback.mjs",
+            "packages/skills-web-app/bundles/flow_design/scripts/labels.mjs",
+            "packages/skills-web-app/bundles/flow_design/scripts/layout-policy.mjs",
+            "packages/skills-web-app/bundles/flow_design/scripts/layout.mjs",
+            "packages/skills-web-app/bundles/flow_design/scripts/moves.mjs",
+            "packages/skills-web-app/bundles/flow_design/scripts/reading-order.mjs",
+            "packages/skills-web-app/bundles/flow_design/scripts/router.mjs",
+            "packages/skills-web-app/bundles/flow_design/scripts/search.mjs"
+          ],
+          "projectOwnedSourceSha256": {
+            "packages/skills-web-app/bundles/flow_design/scripts/channel-spacing.mjs": "07b88c78684345a94093d2be41b3d6db9e16d527cceafc090f4954e45857b433",
+            "packages/skills-web-app/bundles/flow_design/scripts/cost.mjs": "20a6d114204f0353b987432e3b1cab76f6fc04dd2f68cae1e5a4b66c269c0b93",
+            "packages/skills-web-app/bundles/flow_design/scripts/feedback.mjs": "f6755f21fbcb8d2bf528ffc391ec47449c141b362c81741891417c59a5d43a55",
+            "packages/skills-web-app/bundles/flow_design/scripts/labels.mjs": "10ecbee9edb4b6419d5e391ee30da9ea9e886f7ca3fb11f98d40094fd02af641",
+            "packages/skills-web-app/bundles/flow_design/scripts/layout-policy.mjs": "b321f26825212a2364c2f66eef422d56b33b4a095292cd8da9c8c1d475d74ec4",
+            "packages/skills-web-app/bundles/flow_design/scripts/layout.mjs": "7cdc5022c3b01a051243a6369252a20b1226e806871eafc17ef4cee85500daaf",
+            "packages/skills-web-app/bundles/flow_design/scripts/moves.mjs": "aa0eb935e3ea6dc8b09e7f129742938bd784be91eb7faf5b2e5be9409ace0b7f",
+            "packages/skills-web-app/bundles/flow_design/scripts/reading-order.mjs": "b3f888002ea99b72696efc47598903f92d02c286229abde40716d4174c0bd9c3",
+            "packages/skills-web-app/bundles/flow_design/scripts/router.mjs": "0db60048413879feb7c77b26c61ed7e20f104cf0b2153f38089a75474e6d785f",
+            "packages/skills-web-app/bundles/flow_design/scripts/search.mjs": "985551d82d77e6eb2528de90806922787b0bf0d79dca43a0cdf8e466b1a66327"
+          },
+          "sourceCount": 10,
+          "sourceContentsVerified": false,
+          "moduleInputsReadAndHashed": true,
+          "actualArchiveOutputBindingVerified": false,
+          "limitations": "Current normal build inputs/output bytes; actual DSH archive binding remains an external receipt; no complete nested/prebundle or license acceptance claim."
+        },
+        {
+          "output": "lib/bundles/flow_design/scripts/layout-metrics.mjs",
+          "observation": "normal-build-done-module-membership",
+          "evidenceFile": "dsh-release-skills-web-app-flow-layout-metrics-0-output-modules.json",
+          "evidenceSha256": "607def953236a5588f9a54280c38add21630275f59457a4d7d519189a8b7e2bb",
+          "normalOutputSha256": "ecfa31be6184ca7a85c44a36fbf4023606578697e2e750210216cc418238bb05",
+          "packedOutputSha256": "ecfa31be6184ca7a85c44a36fbf4023606578697e2e750210216cc418238bb05",
+          "projectOwnedSources": [
+            "packages/skills-web-app/bundles/flow_design/scripts/cost.mjs",
+            "packages/skills-web-app/bundles/flow_design/scripts/feedback.mjs",
+            "packages/skills-web-app/bundles/flow_design/scripts/layout-metrics.mjs"
+          ],
+          "projectOwnedSourceSha256": {
+            "packages/skills-web-app/bundles/flow_design/scripts/cost.mjs": "20a6d114204f0353b987432e3b1cab76f6fc04dd2f68cae1e5a4b66c269c0b93",
+            "packages/skills-web-app/bundles/flow_design/scripts/feedback.mjs": "f6755f21fbcb8d2bf528ffc391ec47449c141b362c81741891417c59a5d43a55",
+            "packages/skills-web-app/bundles/flow_design/scripts/layout-metrics.mjs": "03c53ee80dfa8480e8735c0dae8e11ef35a2798b4b11e4e8df2fac2efb2c8202"
+          },
+          "sourceCount": 3,
+          "sourceContentsVerified": false,
+          "moduleInputsReadAndHashed": true,
+          "actualArchiveOutputBindingVerified": false,
+          "limitations": "Current normal build inputs/output bytes; actual DSH archive binding remains an external receipt; no complete nested/prebundle or license acceptance claim."
+        },
+        {
+          "output": "lib/bundles/flow_design/scripts/layout-search.mjs",
+          "observation": "normal-build-done-module-membership",
+          "evidenceFile": "dsh-release-skills-web-app-flow-layout-search-0-output-modules.json",
+          "evidenceSha256": "d4813dca0a2b4c78faa95041530cbafa4511d09953de436b90a113cc0ea4d172",
+          "normalOutputSha256": "c7cf5c638a23ea147f95024f8c3592ebe07db325d751fb24e42238fd40e0c0f9",
+          "packedOutputSha256": "c7cf5c638a23ea147f95024f8c3592ebe07db325d751fb24e42238fd40e0c0f9",
+          "projectOwnedSources": [
+            "packages/skills-web-app/bundles/flow_design/scripts/cost.mjs",
+            "packages/skills-web-app/bundles/flow_design/scripts/layout-search.mjs",
+            "packages/skills-web-app/bundles/flow_design/scripts/moves.mjs",
+            "packages/skills-web-app/bundles/flow_design/scripts/router.mjs",
+            "packages/skills-web-app/bundles/flow_design/scripts/search.mjs"
+          ],
+          "projectOwnedSourceSha256": {
+            "packages/skills-web-app/bundles/flow_design/scripts/cost.mjs": "20a6d114204f0353b987432e3b1cab76f6fc04dd2f68cae1e5a4b66c269c0b93",
+            "packages/skills-web-app/bundles/flow_design/scripts/layout-search.mjs": "9525aa1dca2ee407a4e7d50d5029009fba382c0ec038b1b8c92b81c2f3ae643a",
+            "packages/skills-web-app/bundles/flow_design/scripts/moves.mjs": "aa0eb935e3ea6dc8b09e7f129742938bd784be91eb7faf5b2e5be9409ace0b7f",
+            "packages/skills-web-app/bundles/flow_design/scripts/router.mjs": "0db60048413879feb7c77b26c61ed7e20f104cf0b2153f38089a75474e6d785f",
+            "packages/skills-web-app/bundles/flow_design/scripts/search.mjs": "985551d82d77e6eb2528de90806922787b0bf0d79dca43a0cdf8e466b1a66327"
+          },
+          "sourceCount": 5,
+          "sourceContentsVerified": false,
+          "moduleInputsReadAndHashed": true,
+          "actualArchiveOutputBindingVerified": false,
+          "limitations": "Current normal build inputs/output bytes; actual DSH archive binding remains an external receipt; no complete nested/prebundle or license acceptance claim."
+        }
+      ],
       "observedOutputSha256": {
-        "bundles/design_style/reference/aesthetics/classic_blue_saas/tokens.css": "b3e846f9e559e19ad8cce5a2f685bf0996f598ddb943062da9e963effdae69e4",
-        "bundles/design_style/reference/aesthetics/clean_web/tokens.css": "73ab32898f82a8c1573db7b5c74b3c93f5c5930543a70fa72a185769678edaa1",
-        "bundles/design_style/reference/aesthetics/data_operations/tokens.css": "3e36b54655a2020e68f73f01eb69b297fc195b0c4852ec5e257c0badda62bcdc",
-        "bundles/design_style/reference/aesthetics/editorial_mono/tokens.css": "ea7a41048c4e7fcc702f0fee3504c4ef547031fecc8d6161d58dd5adf43718e1",
-        "bundles/design_style/reference/aesthetics/frosted_prism/tokens.css": "da54bf1fa88efb65f53549df5182749cfca345282cca76030f10efb04af73d01",
-        "bundles/design_style/reference/aesthetics/honey_twilight/tokens.css": "7321e8f3d3ff6283d6b2ca04480a972562ca309ac4c1b22e0054aaf7a1f8945e",
-        "bundles/design_style/reference/aesthetics/morandi_still/tokens.css": "2a3179c9dc814c6d653b67ee2eda0c9dbd7048cbf48c8ea1d1b2e49785f886f5",
-        "bundles/design_style/reference/aesthetics/neutral_workspace/tokens.css": "5c643660ae71d3a4da3c80d70166f517ca43516b8d1a205fb220e3be2efcf466",
-        "bundles/design_style/reference/aesthetics/studio_noir/tokens.css": "61fa07a6f16dcd19b7e3bc772a1e39f5dc856f0b6ca4ef276a053ce1eb8b92e6",
-        "bundles/design_style/reference/aesthetics/trust_light/tokens.css": "661d0d390067d02fb10ca5500948aef13ad80b80a0162aaa96674fd81a375bf0",
-        "bundles/design_style/reference/aesthetics/vermilion_festival/tokens.css": "2543e48cfce78c6500bd5802207a76b4a86dd3015418ce76443f08c5dce725be",
-        "bundles/design_style/scripts/design-style.mjs": "a22f201e4ff5f6c5c1e4b71cadf1e19d6e15cf297c30628778f81e3e7fe8f406",
-        "bundles/flow_design/scripts/bpmn-validator.mjs": "1be906b5b366beb5d0f8ec772252ce07928f86922e6f01531f68adf28831059a",
-        "bundles/flow_design/scripts/channel-spacing.mjs": "07b88c78684345a94093d2be41b3d6db9e16d527cceafc090f4954e45857b433",
-        "bundles/flow_design/scripts/cost.mjs": "20a6d114204f0353b987432e3b1cab76f6fc04dd2f68cae1e5a4b66c269c0b93",
-        "bundles/flow_design/scripts/feedback.mjs": "f6755f21fbcb8d2bf528ffc391ec47449c141b362c81741891417c59a5d43a55",
-        "bundles/flow_design/scripts/labels.mjs": "10ecbee9edb4b6419d5e391ee30da9ea9e886f7ca3fb11f98d40094fd02af641",
-        "bundles/flow_design/scripts/layout-metrics.mjs": "03c53ee80dfa8480e8735c0dae8e11ef35a2798b4b11e4e8df2fac2efb2c8202",
-        "bundles/flow_design/scripts/layout-policy.mjs": "b321f26825212a2364c2f66eef422d56b33b4a095292cd8da9c8c1d475d74ec4",
-        "bundles/flow_design/scripts/layout-regression.mjs": "8ca70450d5a28cd68460aa8ce71305dfad31aed9f565e50df2b9f0ce2a0d8a28",
-        "bundles/flow_design/scripts/layout-search.mjs": "9525aa1dca2ee407a4e7d50d5029009fba382c0ec038b1b8c92b81c2f3ae643a",
-        "bundles/flow_design/scripts/layout.mjs": "7cdc5022c3b01a051243a6369252a20b1226e806871eafc17ef4cee85500daaf",
-        "bundles/flow_design/scripts/moves.mjs": "aa0eb935e3ea6dc8b09e7f129742938bd784be91eb7faf5b2e5be9409ace0b7f",
-        "bundles/flow_design/scripts/reading-order.mjs": "b3f888002ea99b72696efc47598903f92d02c286229abde40716d4174c0bd9c3",
-        "bundles/flow_design/scripts/router.mjs": "0db60048413879feb7c77b26c61ed7e20f104cf0b2153f38089a75474e6d785f",
-        "bundles/flow_design/scripts/search.mjs": "985551d82d77e6eb2528de90806922787b0bf0d79dca43a0cdf8e466b1a66327",
-        "bundles/function_modules/scripts/merge-usage-scenario.mjs": "4daa7b61f6818598bbe401eba14a6c56c9b8c1d48ac29cf79827c1583dc530ea",
-        "bundles/page_design/scripts/page-design.mjs": "136409ce9faa382ad43abe8eb51356d93b8c26102be7674e552645f3d5754caa",
-        "bundles/web_app_prd_assembly/scripts/prd.mjs": "5ba1c95584a419b12c7ad005b80fe278e2a68fc15f602e2019f5785b0417680f",
-        "bundles/web_app_prd_assembly/scripts/visual-renderer.mjs": "8741b5cc9f5b5fbc60621d9394856f1f2826ee792501360f7c0193d4d77723ce",
-        "bundles/whiteboard/scripts/scene.mjs": "df95fffab4a9cba4ddf9b42af39c72f2f53bfacf3ae51b34be27666441567391",
-        "bundles/whiteboard/scripts/validate.mjs": "03e58f0870f73fad0097d7eeedc35b57c89ec82c187d232c3f5b92ebac37c3e5"
+        "lib/bundles/ai_agent_capabilities/SKILL.md": "19275c9befe48c2800407e585a29f5c89d6e623fa06866464193531224c5f2b9",
+        "lib/bundles/ai_agent_capabilities/locales/en-US.json": "14fd95b441da095181d0f51685b6328211de844e2a546fe7bae31088a865d4cc",
+        "lib/bundles/ai_agent_capabilities/locales/zh-CN.json": "a5f6c41dc676eae2998f41580444ea00334b7521fdd5eeb259e5dbdfd527413f",
+        "lib/bundles/ai_agent_capabilities/panel.yaml": "052bf1ca52a3656023a92092b662607a755e986c3c740248a15ee06628b62328",
+        "lib/bundles/ai_agent_capabilities/reference/agent-canvas-example.json": "5ffb5375c28f331ddbaf0e96521c73b26128d1fff27d9691166a9a2dab0630da",
+        "lib/bundles/ai_agent_capabilities/reference/artifact-contract.md": "2247c7136902898337edca0c05feb5f06a48e47019abec557e115caadeef2e17",
+        "lib/bundles/ai_agent_capabilities/reference/canvas-guide.md": "c19f1eb5649ce95ac53b2f02d28214fe27037cd340e397e1f3900f7c9d00dc78",
+        "lib/bundles/ai_agent_capabilities/reference/cooperation-guide.md": "cb8a28debbdd47e792a55bf2fd4650f5ab0994734d42133f570714fc8eaec20c",
+        "lib/bundles/ai_agent_capabilities/reference/example.json": "534bdac4363ba15306a59c4f777d67af01f4b4eef1e3ba1b0b3db0eddff6aec0",
+        "lib/bundles/ai_agent_capabilities/reference/preview.json": "ded771c9df08f3ce281402ad2c188666ea56a1645bb458d8738985b59bab8f29",
+        "lib/bundles/ai_agent_capabilities/reference/runtime-guide.md": "827f9c387cf6cd1e1a264817d4b2d5b6f8bda04d1b2876c0d50e9c2d37951cf2",
+        "lib/bundles/ai_agent_capabilities/schema.yaml": "b6e10d1b7a2792a4a95968f8b4b0e1452ff0502736b19c0090454e8b28194260",
+        "lib/bundles/ai_agent_capabilities/skill.yaml": "3a0a7706b7ec4c58d6d776fe0715be422008aecfef7203f1aa6e5ccecdac783c",
+        "lib/bundles/ai_agent_capabilities/validation.yaml": "fe129a0b887cef39925fe25694628b6440173b7f5cf6456d2ecd8b5c6ff4f986",
+        "lib/bundles/business_data/SKILL.md": "8755112ab6c90ff373bd2e92dd8db4efeb98e28d916e1620b8bd11d0d39df72e",
+        "lib/bundles/business_data/locales/en-US.json": "9565c9572dec72f7d709924c05eae3c5478ef0c6e79b02c7f46a7fa9ecbcaf29",
+        "lib/bundles/business_data/locales/zh-CN.json": "415d419e10920a6c66f132ea3259d982e602acf6867f5bd04a38c484971b35d1",
+        "lib/bundles/business_data/panel.yaml": "1a85b45e317e23730cc336c687f3d1d4a6b4c8e53d4f51443648d549e0163779",
+        "lib/bundles/business_data/reference/artifact-contract.md": "c6a7e6433e48f086d8d17e5110ad42d7ebd213277e06588ec30042a3f37367b8",
+        "lib/bundles/business_data/reference/canvas-guide.md": "b15bdd0e83791410cba292eb39dd5a73aa3c8cb6d8789345160eb628a6368501",
+        "lib/bundles/business_data/reference/example.json": "5cf80b9cb74fd609bd470d98fbd1be91a7fbcc9768daec167df4915f02748d56",
+        "lib/bundles/business_data/reference/preview.json": "df4003881c97b4ed6d5a3412b6464463019cb650dc8b21584a421b33daafff55",
+        "lib/bundles/business_data/schema.yaml": "77380ec387ea99cae63bec8587c65c4ae6e2b7820dcbf33eceb263c96a76d24c",
+        "lib/bundles/business_data/skill.yaml": "5fdfb88f6f546d42df5eee4f3162f22de940340f6129bd9111e483fd51569504",
+        "lib/bundles/business_data/validation.yaml": "e431df0ad2bcbbef5d18c1c930091876b589d5b21164a2996f4a4aed6bce0d59",
+        "lib/bundles/business_rules/SKILL.md": "3c921e7eb69dcea53bea9492cb7bf72829bac5543c860fc45ac9eea740a87283",
+        "lib/bundles/business_rules/locales/en-US.json": "ec51b0ab063e99af43567cc4d7b2b98e97b75c29b6e9e56017c04c8e6ec014e9",
+        "lib/bundles/business_rules/locales/zh-CN.json": "3fc1b5b0dabd1ba378e2eef291ce0a65f5a518ec0552ca80d0f825f648140c04",
+        "lib/bundles/business_rules/panel.yaml": "0067017f1136c5fc0d7e508e94778723e4081d7dfe9aa58965fe1ec1ce9ce501",
+        "lib/bundles/business_rules/reference/artifact-contract.md": "36a011953af558390748675b75fdbdd97b644919e5093cb0cd0973116949a968",
+        "lib/bundles/business_rules/reference/preview.json": "54028d981caca9516422a8b34760f01f9a3c625c8624ecbf04d0587ddf71d5a9",
+        "lib/bundles/business_rules/schema.yaml": "078ffe8971961e900a3c12a0b7c03b69b10e5cee3488c25f24985d43a8a752c5",
+        "lib/bundles/business_rules/skill.yaml": "63ba9d3d69be4056fa35d58bdd4b5ccc794877a7244756f8e388008268bdf09c",
+        "lib/bundles/business_rules/validation.yaml": "e602782ac72f4117d8756d07cb9a9882c3e17f0dd79251c1ab8b2073bbcac0a5",
+        "lib/bundles/design_style/SKILL.md": "988cadf67346cc12571fe7a6a08e19c7409ec8d2c16011862860218fe394dbb8",
+        "lib/bundles/design_style/THIRD_PARTY_NOTICES.md": "78c6e38716bf00cf980c681f47865918ddf7ef8fce56e5f397387e0e8458313c",
+        "lib/bundles/design_style/assets/icons/_index.md": "b5221c1d1d5a949904c9430851a0904fe3c5011a74af6e496e0712b5d8a15698",
+        "lib/bundles/design_style/assets/icons/alert.svg": "4cdf14bbdccd5e35538ddf0b3fab46101b50ccaaebcfa29d8bb64aaecdef2cce",
+        "lib/bundles/design_style/assets/icons/arrow-right.svg": "ff5f768676a08743c0edd9d2a88dfd990802977961571d8880e7145fc7fe9504",
+        "lib/bundles/design_style/assets/icons/arrow-up-right.svg": "d9ea47258ddc613e62e518f379e76f8f926da5c8929d25a8616bc06398f8c0a3",
+        "lib/bundles/design_style/assets/icons/check.svg": "5b9f227f5b315eed0377c6f26a5beb006844d28b92cc2d63cb7f9cb6b92e8a87",
+        "lib/bundles/design_style/assets/icons/chevron-down.svg": "d1dc38bd6afbe2802c32dac90b11a335997c25f5c6218accb3d2bf0333c8ef54",
+        "lib/bundles/design_style/assets/icons/chevron-right.svg": "77be848786e7ab682840a486c1b541e483908adaf501ecacbd30d6be4c7cc4f8",
+        "lib/bundles/design_style/assets/icons/dot.svg": "4316ebe3de8992b85f55f8e907239350f65c29a53ffecabfe367eed60bef529e",
+        "lib/bundles/design_style/assets/icons/external-link.svg": "e5d98fe3905e34fc0700504997907a0c373af8cd399049ac207a3a09e556eb73",
+        "lib/bundles/design_style/assets/icons/headphones.svg": "7ae6204f01db4e531c0b9b6d5bed01929979e5d74327fb971b33af3fa51204b2",
+        "lib/bundles/design_style/assets/icons/info.svg": "0b917f67708f8594731dd40b86a1e676d0385cc2a23d2715f4d395a089b588a6",
+        "lib/bundles/design_style/assets/icons/mail.svg": "cd078dfacf07c99a8abd16cef2fcb359d352ea4e5960e03490e5787717c51d4e",
+        "lib/bundles/design_style/assets/icons/map-pin.svg": "cbe4657d1f1133a93e09e42ea63b55d551b990de57a1c4bf5fd219aa74897393",
+        "lib/bundles/design_style/assets/icons/menu.svg": "a289c9796ed144fa8560037078aa6454d5bb5ca68974182e7e1b071128c86763",
+        "lib/bundles/design_style/assets/icons/music-note.svg": "009f862dfb996f862634c583994a25ec483a39969823357d096552274092b960",
+        "lib/bundles/design_style/assets/icons/pause.svg": "4e7c50b801181e1ec308e168c538ea959e45da9bd8ae48dc2cb7618a48d7c7be",
+        "lib/bundles/design_style/assets/icons/play.svg": "af904e511d7c26fc3c6b8f3ff5192d60ef97c13c01d4c383ca1bc8689e8b8eac",
+        "lib/bundles/design_style/assets/icons/search.svg": "45873287ce6b6b4078d2a1090b66439ceba995125721da956f91d358411cf5ca",
+        "lib/bundles/design_style/assets/icons/share.svg": "e4e7b5fa06c08053a1bd6261f2df3974576f51e515f21b651c1942420042d471",
+        "lib/bundles/design_style/assets/icons/volume.svg": "ca24107d50d614831594d879bcc811467bcdd3ececcd165890fe8c6cc2c30c3a",
+        "lib/bundles/design_style/assets/icons/x-close.svg": "3e934aa7b6bc5a9ffecaef457bcfcae683cdd6fa3e51372f927b8381ee228e1d",
+        "lib/bundles/design_style/licenses/SOURCE.md": "3cf087ae8fdb9992d80845ab21cae9a655ec361481f0cec513949754a57d3d66",
+        "lib/bundles/design_style/licenses/impeccable/LICENSE": "02bb8c3b4e70190e3986c0404ad2fd8d639b4f534252d82379cc1b502b6d1812",
+        "lib/bundles/design_style/licenses/lucide/LICENSE": "b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57",
+        "lib/bundles/design_style/licenses/taste-skill/LICENSE": "4575a543ab88dad12ccea7d97e563d0bce5b448b06072e65d3264497dad326df",
+        "lib/bundles/design_style/locales/en-US.json": "fe09101a9aa7fa378b5f39dcdd81eaa7844a01ad17ffd2a042233510e8687d73",
+        "lib/bundles/design_style/locales/zh-CN.json": "f6f6d35897923fb57306684c674b947545da92f51c8d7fe04141cae5f61d29e7",
+        "lib/bundles/design_style/panel.yaml": "cf6b7da78e3001255e7c5d16e510e82767c554541bc8eccf4b59f236096b8d42",
+        "lib/bundles/design_style/reference/aesthetic_index.yaml": "c8f48708b31f8c10d3dddd85b2c322593e824c348189673c41f77a588248137e",
+        "lib/bundles/design_style/reference/aesthetics/classic_blue_saas/DESIGN.md": "af126b55739c65088d0952e195cd99d4a27914767f39f742f3aa566623283dc8",
+        "lib/bundles/design_style/reference/aesthetics/classic_blue_saas/tokens.css": "b3e846f9e559e19ad8cce5a2f685bf0996f598ddb943062da9e963effdae69e4",
+        "lib/bundles/design_style/reference/aesthetics/clean_web/DESIGN.md": "911544fd6546a64fd5017deea47c1aee9fcf87f1730eaf267a6085d615f812d8",
+        "lib/bundles/design_style/reference/aesthetics/clean_web/tokens.css": "73ab32898f82a8c1573db7b5c74b3c93f5c5930543a70fa72a185769678edaa1",
+        "lib/bundles/design_style/reference/aesthetics/data_operations/DESIGN.md": "245bb0bf9dea3fa03776a679b85dcdf20db94f6953876cb28b71c6440b642878",
+        "lib/bundles/design_style/reference/aesthetics/data_operations/tokens.css": "3e36b54655a2020e68f73f01eb69b297fc195b0c4852ec5e257c0badda62bcdc",
+        "lib/bundles/design_style/reference/aesthetics/editorial_mono/DESIGN.md": "46853b2f0bd3d2ec7b5f7aeb4569a4a87e4cb322f0e3e48c5f8885be19a36873",
+        "lib/bundles/design_style/reference/aesthetics/editorial_mono/tokens.css": "ea7a41048c4e7fcc702f0fee3504c4ef547031fecc8d6161d58dd5adf43718e1",
+        "lib/bundles/design_style/reference/aesthetics/frosted_prism/DESIGN.md": "61ca10176fdbe392bafa0bc53e271006e0eda3e934e767e761621e8ce877e96e",
+        "lib/bundles/design_style/reference/aesthetics/frosted_prism/tokens.css": "da54bf1fa88efb65f53549df5182749cfca345282cca76030f10efb04af73d01",
+        "lib/bundles/design_style/reference/aesthetics/honey_twilight/DESIGN.md": "e09eb34530b7b6d35f786b3ac1ed30bbe4529925543d1edba60f0e8e684e6679",
+        "lib/bundles/design_style/reference/aesthetics/honey_twilight/tokens.css": "7321e8f3d3ff6283d6b2ca04480a972562ca309ac4c1b22e0054aaf7a1f8945e",
+        "lib/bundles/design_style/reference/aesthetics/morandi_still/DESIGN.md": "dfc367bfed10e3300880b3b125429349be9777b59b3a942f60875049e06a8c5b",
+        "lib/bundles/design_style/reference/aesthetics/morandi_still/tokens.css": "2a3179c9dc814c6d653b67ee2eda0c9dbd7048cbf48c8ea1d1b2e49785f886f5",
+        "lib/bundles/design_style/reference/aesthetics/neutral_workspace/DESIGN.md": "fcfa30949f03c8c7ad2aa2f503282990f646a479760a5b97407915c39d0c0b2e",
+        "lib/bundles/design_style/reference/aesthetics/neutral_workspace/tokens.css": "5c643660ae71d3a4da3c80d70166f517ca43516b8d1a205fb220e3be2efcf466",
+        "lib/bundles/design_style/reference/aesthetics/studio_noir/DESIGN.md": "d0045480134f09010f0d9a47634cf8a555836be11b0622b554e6204d95bfb438",
+        "lib/bundles/design_style/reference/aesthetics/studio_noir/tokens.css": "61fa07a6f16dcd19b7e3bc772a1e39f5dc856f0b6ca4ef276a053ce1eb8b92e6",
+        "lib/bundles/design_style/reference/aesthetics/trust_light/DESIGN.md": "b5a242422aa7ceb776e571bf8c534115e25c028f627b1db56c74f0689cfd56ce",
+        "lib/bundles/design_style/reference/aesthetics/trust_light/tokens.css": "661d0d390067d02fb10ca5500948aef13ad80b80a0162aaa96674fd81a375bf0",
+        "lib/bundles/design_style/reference/aesthetics/vermilion_festival/DESIGN.md": "b821d289c2ebb5702225896a23c71c81e2cd0b6e52e9df366a4ad60af797e1aa",
+        "lib/bundles/design_style/reference/aesthetics/vermilion_festival/tokens.css": "2543e48cfce78c6500bd5802207a76b4a86dd3015418ce76443f08c5dce725be",
+        "lib/bundles/design_style/reference/artifact-contract.md": "1a8179f3e01628705d198a08a155716b37b942df6e9ae5ff6eecfc16ac99bf2c",
+        "lib/bundles/design_style/reference/motion.md": "2be4869701ca8019dec66b119563491f4734733ce13b2050c879242323faf1db",
+        "lib/bundles/design_style/reference/post_check.md": "114e708a0d6155b5360d85e48409eba6dc87bfe6f5b1384bb623b66f6f24f09e",
+        "lib/bundles/design_style/reference/preview.json": "52a05ef773333805f3bf1d63b79ff6fb64abce3be848a5eccf8b7d4128f3fd10",
+        "lib/bundles/design_style/reference/quality_rubric.md": "8e40fdf4557d1a7074f6357e2545deedac2f2d3354e6821d815a068ef0350f86",
+        "lib/bundles/design_style/schema.yaml": "5cc966e20df38a6eadac81424cc923eebead590791adb25b56c589496e179b41",
+        "lib/bundles/design_style/scripts/design-style.mjs": "a22f201e4ff5f6c5c1e4b71cadf1e19d6e15cf297c30628778f81e3e7fe8f406",
+        "lib/bundles/design_style/skill.yaml": "cac4dd182ca48ba7e0a81708d2a25d7d764532a5a21e92f4db438d78f6d1c13b",
+        "lib/bundles/design_style/validation.yaml": "4b0193b219f5a9fa523b432d33aaed7ea87bf7c137e2442b57d52ef3dc768364",
+        "lib/bundles/flow_design/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "lib/bundles/flow_design/NOTICE": "6b4eec391144fcbd96ec7b45a28764ab1932722a96325248377c3e28aac2c62d",
+        "lib/bundles/flow_design/SKILL.md": "7237420e879ac80f28a801074568764debcd5c2b944c5abfb819444783dcd500",
+        "lib/bundles/flow_design/THIRD_PARTY_NOTICES.md": "1d358b1a367efd6f4e0fb04436df7f814531cd6a01a0b2b752d7b8268a461c79",
+        "lib/bundles/flow_design/licenses/bundled-js/bpmn-moddle@9.0.4/LICENSE": "3082b548bd9c98364ebbed1cbd40bfe1721c7edf2376f26f25fb06c729cc077a",
+        "lib/bundles/flow_design/licenses/bundled-js/min-dash@4.2.3/LICENSE": "21b28e21af7e43fbdc4a77d166146024baacc509cf9c8c4986fb0248724fdd30",
+        "lib/bundles/flow_design/licenses/bundled-js/moddle-xml@11.0.0/LICENSE": "39e5358fd556ba6cb3b7eb1ff69ff43766e2f29c4e1d67e43cab08ad74016632",
+        "lib/bundles/flow_design/licenses/bundled-js/moddle@7.2.0/LICENSE": "39e5358fd556ba6cb3b7eb1ff69ff43766e2f29c4e1d67e43cab08ad74016632",
+        "lib/bundles/flow_design/licenses/bundled-js/rolldown@1.2.4/LICENSE": "23ecfff35a5a2e80d92142f75228912c3b1abc4b5a8337a821ff4397e2f9f734",
+        "lib/bundles/flow_design/licenses/bundled-js/rolldown@1.2.4/THIRD-PARTY-LICENSE": "a877291d800ed43692f3f9ae09d8e01cc6f7293ad39d43896059c188ffbb8b7c",
+        "lib/bundles/flow_design/licenses/bundled-js/saxen@10.0.0/LICENSE": "dbda1f03cbd146adb0da20657a72432d83eae3134dffacdfeff6db4c5e32207a",
+        "lib/bundles/flow_design/licenses/flow-build.json": "754d0b01bb9ef24112c99c6d5c7af5fbfdd97353444d864c482eabbd6bf2e414",
+        "lib/bundles/flow_design/licenses/third-party/elkjs-0.10.2/DEPENDENCIES": "4e441b47d606b18cdd1937cbbe5d79f92ca72dfe5d56327f5e2c6ff35e42a558",
+        "lib/bundles/flow_design/licenses/third-party/elkjs-0.10.2/LICENSE.md": "89591d4578fb1ebd91501312a3d25f021bd865a2e436641c1cf7b1bc7e3c1617",
+        "lib/bundles/flow_design/licenses/third-party/elkjs-0.10.2/NOTICE.md": "cf5ce01bb3b3b7974cfa296cd14c2be4de7f88ab67d7b911b0a402e382fb2701",
+        "lib/bundles/flow_design/licenses/third-party/elkjs-0.10.2/SOURCE.md": "d58c5d5ff4cc9c18456e6379b9303e3e60f51dcd884e68be67a4b5eaa7989f64",
+        "lib/bundles/flow_design/licenses/third-party/elkjs-0.10.2/graph-layout-worker.ts": "ec766700ef21f6464fde45ac217975cb9468815113159d3bf77156ed511ca523",
+        "lib/bundles/flow_design/licenses/third-party/elkjs-0.10.2/release-source-binding.json": "581bc1cdf3beebcbb6373f1501bc267e6993ec0835b687aaf8adb0ea91a2b0ba",
+        "lib/bundles/flow_design/licenses/third-party/elkjs-0.10.2/upstream-README.md": "5f01b86cacdaf3e9928e24bcddf4e91ca344b859831ed856d6fcba3a2c4a24ac",
+        "lib/bundles/flow_design/licenses/third-party/elkjs-0.10.2/upstream-build.gradle": "36c74b36571d3fca2fb3b5df492314c1ed6ddd0eb982899a0b2791dfa9c435d4",
+        "lib/bundles/flow_design/licenses/third-party/elkjs-0.10.2/upstream-ci.yml": "a38c88225333591436c479fcede470df46a409cf13fa8fafdefa048ae0455d4e",
+        "lib/bundles/flow_design/locales/en-US.json": "a204cb734e8929db42ff1f59376526b360123cd3b9554963c0b89bea9d787593",
+        "lib/bundles/flow_design/locales/zh-CN.json": "2f286bfbcb376aa3bacd466a330ec0c7a02f2e6c4119c03375737e3f4fddf6a8",
+        "lib/bundles/flow_design/panel.yaml": "927aae6d9afa0ee2612690cf78869f8cf4420d1b4e0013c618fee52ba6f7b15b",
+        "lib/bundles/flow_design/reference/artifact-contract.md": "36781aaf7be6f924c99e6e0e9edf9cccf98fc4164a933fe177cb4f95a6194c54",
+        "lib/bundles/flow_design/reference/bpmn_authoring.md": "03a9b1840699c1837dd626363275e56418dd2e2416330513d632f64cc8bed4e7",
+        "lib/bundles/flow_design/reference/canvas-guide.md": "a4e7dc020f617d6fc917943942cfbd0e81f449df414979647e3a768c22ab7757",
+        "lib/bundles/flow_design/reference/preview.json": "2aab1fe7a87db11723c4c0d324b85cb192226c7e270fde25c8f1067d424d41b5",
+        "lib/bundles/flow_design/schema.yaml": "3ca1cffb33a753786c0b6902ee586b2ff2b0d192110c1feb9d721e50d596d4b7",
+        "lib/bundles/flow_design/scripts/bpmn-validator.mjs": "4c496dee2739a2575a6c4309a7e19f47b024a64ad694354955e266e340b3a9cb",
+        "lib/bundles/flow_design/scripts/channel-spacing.mjs": "07b88c78684345a94093d2be41b3d6db9e16d527cceafc090f4954e45857b433",
+        "lib/bundles/flow_design/scripts/cost.mjs": "20a6d114204f0353b987432e3b1cab76f6fc04dd2f68cae1e5a4b66c269c0b93",
+        "lib/bundles/flow_design/scripts/feedback.mjs": "f6755f21fbcb8d2bf528ffc391ec47449c141b362c81741891417c59a5d43a55",
+        "lib/bundles/flow_design/scripts/labels.mjs": "10ecbee9edb4b6419d5e391ee30da9ea9e886f7ca3fb11f98d40094fd02af641",
+        "lib/bundles/flow_design/scripts/layout-metrics.mjs": "ecfa31be6184ca7a85c44a36fbf4023606578697e2e750210216cc418238bb05",
+        "lib/bundles/flow_design/scripts/layout-policy.mjs": "b321f26825212a2364c2f66eef422d56b33b4a095292cd8da9c8c1d475d74ec4",
+        "lib/bundles/flow_design/scripts/layout-regression.mjs": "8ca70450d5a28cd68460aa8ce71305dfad31aed9f565e50df2b9f0ce2a0d8a28",
+        "lib/bundles/flow_design/scripts/layout-search.mjs": "c7cf5c638a23ea147f95024f8c3592ebe07db325d751fb24e42238fd40e0c0f9",
+        "lib/bundles/flow_design/scripts/layout.mjs": "5dd48402189d404d08044112a60b25010913a3e7a2891463271c9ce88b4ef41f",
+        "lib/bundles/flow_design/scripts/moves.mjs": "aa0eb935e3ea6dc8b09e7f129742938bd784be91eb7faf5b2e5be9409ace0b7f",
+        "lib/bundles/flow_design/scripts/reading-order.mjs": "b3f888002ea99b72696efc47598903f92d02c286229abde40716d4174c0bd9c3",
+        "lib/bundles/flow_design/scripts/router.mjs": "0db60048413879feb7c77b26c61ed7e20f104cf0b2153f38089a75474e6d785f",
+        "lib/bundles/flow_design/scripts/search.mjs": "985551d82d77e6eb2528de90806922787b0bf0d79dca43a0cdf8e466b1a66327",
+        "lib/bundles/flow_design/skill.yaml": "5cb80776a5c8e9224d0fa8e3a0f37b87f7fd50bf099c3b6df86326e063085def",
+        "lib/bundles/flow_design/validation.yaml": "d34cfa2958494d1a8a6ac992ea99c7f377f98376d8c3982e5010f3cf8702c715",
+        "lib/bundles/function_modules/SKILL.md": "67f401819388e5b8c05c9240050865f0bb2c7f6f04e669b4b508f37ba596df0e",
+        "lib/bundles/function_modules/locales/en-US.json": "d65dbd02801844ce48ee4bb485617b2cb446cf81bb32bb235b29357edee517c0",
+        "lib/bundles/function_modules/locales/zh-CN.json": "ee688c5f390e29c01e904b5d0f8e27bd5f988c6090cad1fd3531eb05c72d4219",
+        "lib/bundles/function_modules/panel.yaml": "0d2067afd62ff338d729d04e3194c46abd4f9003ebf38a47894e7b6bc2f72406",
+        "lib/bundles/function_modules/reference/artifact-contract.md": "471b3bbe828b41e5389e92e20bec3dfacaa4114dbe3cc9cfb796542c1c1b4774",
+        "lib/bundles/function_modules/reference/canvas-guide.md": "b8bf373a03be6f968c0387b72b660192bb86f74d3d6c96763a72e92f7990d261",
+        "lib/bundles/function_modules/reference/preview.json": "a2d396aa287550bd4dd2ac4344d11e071f494a65fac6fb57b7eb033b2213f8dc",
+        "lib/bundles/function_modules/schema.yaml": "e471da02acabe567dc7e7b4ddbba2d5752b3e53768417af65220fdb19c74ceec",
+        "lib/bundles/function_modules/scripts/merge-usage-scenario.mjs": "4daa7b61f6818598bbe401eba14a6c56c9b8c1d48ac29cf79827c1583dc530ea",
+        "lib/bundles/function_modules/skill.yaml": "f64c18d80002ac66895ba156ef5bd8790d993ea09fcef86c8abc049f0638238d",
+        "lib/bundles/function_modules/validation.yaml": "5ee9caa11bd020022290b738a9d8855b8cb935d6e7ef72151e2c7ef579f66bef",
+        "lib/bundles/integration_design/SKILL.md": "93b0dd1ad9c911791132dd06f7eb7fcbbb1bd264f8acf1960922ff9e7475cdcd",
+        "lib/bundles/integration_design/locales/en-US.json": "f37692e2d9306eeb5e15bd8ee188fb0379c4a543c1b0e3ad9d4ec34608301ed3",
+        "lib/bundles/integration_design/locales/zh-CN.json": "e298d5968f8931cb7fdaef71b894a0a2f24140d8f17d13ecfaf3557470d65c61",
+        "lib/bundles/integration_design/panel.yaml": "2eb87b437f3c00de03d065832250fc69b35d9a511012f52ca913a13b9b8cf8c6",
+        "lib/bundles/integration_design/reference/artifact-contract.md": "e4bf5b5c73ccf28cdfc71e19eefc8bba1d9dd6aa2ee9b7f56f3c84760f865071",
+        "lib/bundles/integration_design/reference/preview.json": "cd20c71e9deb43f55c40ae84d9d66865818690aa5eb3025ca1013beaff29c35d",
+        "lib/bundles/integration_design/schema.yaml": "947d9fe989b93b5d9761991cc76709fd8c99e196ee2fead517de9d19260bfd7f",
+        "lib/bundles/integration_design/skill.yaml": "4b4b440853e812e49c76986e8b1d7848d1dcc88325ab3e1cf077c9b181dd6997",
+        "lib/bundles/integration_design/validation.yaml": "78aa5f91125e68710150c6a90056f37b4558c1c552979ad959ca2fc0d5697cae",
+        "lib/bundles/notification_design/SKILL.md": "b1aaf29abea75ddc0944541f03e1ca62329be7feb4baed84ddb87d7f5ae461be",
+        "lib/bundles/notification_design/locales/en-US.json": "ed21a8199918ddd3631ecce1c816b050e26f7af5ba42dbeec09cc2743763389e",
+        "lib/bundles/notification_design/locales/zh-CN.json": "641e57888a0279fe1266cad235d28177be224874528e0830b6721710d5ed6f2a",
+        "lib/bundles/notification_design/panel.yaml": "b80c62973b3801e019079f5a1208dd50173467fe53fb577b0bddfbae82c6c495",
+        "lib/bundles/notification_design/reference/artifact-contract.md": "f433e94ee78d433dc7a8fe7e4ba413668284b9fe47ca4e9608fcfe7d6217c14d",
+        "lib/bundles/notification_design/reference/preview.json": "0c4c326d8bf90bee017d6f10ba3748505d1751edffc542b8f213083a4b3dd145",
+        "lib/bundles/notification_design/schema.yaml": "cae986d0901c9a70376496423902880972aad7a48f0c214c18f4d283471a0e33",
+        "lib/bundles/notification_design/skill.yaml": "8ab651dce9c6ed904d4319974c91fb20981dfd89cabe83a90c577168faade970",
+        "lib/bundles/notification_design/validation.yaml": "6d682f7e74a882e0652a6fb200c96bcb109c072322005b9cdbb0e5fd44bc4294",
+        "lib/bundles/page_design/SKILL.md": "f7911dfe269779cbca3f06c311d521bda8a581a49daa2385a5525c9ff77f246a",
+        "lib/bundles/page_design/locales/en-US.json": "e37b566da17422fa1a47c5fad41aea4e881caddcc65d2d9eb9af2b16ef0e356a",
+        "lib/bundles/page_design/locales/zh-CN.json": "0a0fbceaa6ccdaeae9be863209833d4b78f4f386827d87fa366351398e451717",
+        "lib/bundles/page_design/panel.yaml": "08772f4ebbc25f9a6941448efcb2ba32da8e3e003462529cf74db5f5526d64cb",
+        "lib/bundles/page_design/reference/artifact-contract.md": "28242ba4e9025517e6f79c0d48d0b2f648bbf436825e6d0bbe61ea27c2d0da87",
+        "lib/bundles/page_design/reference/canvas-guide.md": "c9b8fc4ef08f2b5f518205fdc351bdbc6182bf21cec4202a91db84c8ac17606d",
+        "lib/bundles/page_design/reference/preview.json": "55e95454968bad715b7bdd68ca5e2d658a3120a602112b767a13b9187a805b7a",
+        "lib/bundles/page_design/reference/task-to-page-method.md": "22ff3255bffb806c7447309d8e22d37812eb188cee3d482da55b766e256fcf24",
+        "lib/bundles/page_design/schema.yaml": "d66525f207918988a8fb1d0ab18ee64ff0f70cd5c732c5820b45335dde9c3f94",
+        "lib/bundles/page_design/scripts/page-design.mjs": "136409ce9faa382ad43abe8eb51356d93b8c26102be7674e552645f3d5754caa",
+        "lib/bundles/page_design/skill.yaml": "5d8212131b32431ceadcdb715cfe75f791965b313ea64ebf59ae4b57da994a79",
+        "lib/bundles/page_design/validation.yaml": "80adcc397e11a7a416e0fe02e9fbbdcd53d87fc2fcf44b6b0c9ec2c8bacb8f77",
+        "lib/bundles/quality_acceptance/SKILL.md": "09ba35d8441c71def334c9d89b982ef5c426eb7ea8f075220bb8106643f7df23",
+        "lib/bundles/quality_acceptance/locales/en-US.json": "d861eaa374efda0e5f981ab4195e73b927edddfddcc69a10a3ea86dc846f0ecc",
+        "lib/bundles/quality_acceptance/locales/zh-CN.json": "15dcaf0dc40a45919344007046ec529c2ddec41e62764a9704f64ae7e08692e9",
+        "lib/bundles/quality_acceptance/panel.yaml": "1863b3759b252f2762359a3bb8f14c6787388d3e07380d51eb431f73e6791ca5",
+        "lib/bundles/quality_acceptance/reference/artifact-contract.md": "201b411a5cc530eaf48eb7c1024cca47de352a61193f1aec36e6d66d478a3f49",
+        "lib/bundles/quality_acceptance/reference/preview.json": "30586660e3aa4bb1eb2eabbf148569e3ca330542ab6569973917592d8200e22f",
+        "lib/bundles/quality_acceptance/schema.yaml": "0b4738c34378b56b6c4afa6fee2b2be1a19ded83c79a8d94dad99e52d96ac408",
+        "lib/bundles/quality_acceptance/skill.yaml": "bd838a1137876bd5487523fb0aa35b9b8b77f43caf19af723a31328d111cbf67",
+        "lib/bundles/quality_acceptance/validation.yaml": "142dc2390a22564fbd060c91a2bfd3e58938faddad3a10f9d843bd2473e4fee5",
+        "lib/bundles/research/SKILL.md": "49e1e4467cf4371a7d9d45873a6c99676967581a0fcb0b4bb40edd693496c50f",
+        "lib/bundles/research/locales/en-US.json": "b0481d52d176b25c64e00fbb76174d61d433fbcbf3737b481c35ddc826e8759c",
+        "lib/bundles/research/locales/zh-CN.json": "4c44e5e264ffe5ccfdd176c2f76b9ea04be5f7d8b8957d90694134f529f53765",
+        "lib/bundles/research/panel.yaml": "3ab124e8d4b6a123b23e55514c366ee57a9916c2e5fc594c5ae67a4372ffd777",
+        "lib/bundles/research/reference/artifact-contract.md": "3fca99f34d8e640e2b39f8971c2ef0c2919072b8f7006d92491f1e3cf8221f40",
+        "lib/bundles/research/reference/preview.json": "92ccf64a9de27d6b465bc53f6611f5c6e1fde498389a1e034a238fbc65b4a082",
+        "lib/bundles/research/reference/trusted_sources.md": "fd6f305c95a121e7433012febfbbf3bcb2c57621a55ad6dd80a64011662a2c0f",
+        "lib/bundles/research/schema.yaml": "5e860ea59c8184622779cd279d4c9bc7d34eac656519baaa63afcbece944516d",
+        "lib/bundles/research/skill.yaml": "2a75c77416d84bfa7752c0cb68b0d4ed75348d0a5034754834744dbc8dd6e4a3",
+        "lib/bundles/research/validation.yaml": "20d1fb01144ff5ec350b7f68110f77abe1c6da2d892cf04ce2a1be580f698424",
+        "lib/bundles/role_access/SKILL.md": "2fd098a49633475403c47b68012486197b146b53a6bfde60f9ba79a6a8e6f748",
+        "lib/bundles/role_access/locales/en-US.json": "6240d65c09738e86c97f545fe42443be46c05d7e92c72da2624b5c1d2461d7ff",
+        "lib/bundles/role_access/locales/zh-CN.json": "0a58af29b8103ef202e6dbaf0650065348a4894d0d8494c0f314e7fa6734632e",
+        "lib/bundles/role_access/panel.yaml": "601047d94c6aea52d466a055aad6f282f1f183f255b5d20a001cef237d05f3bf",
+        "lib/bundles/role_access/reference/artifact-contract.md": "11b10948de206b32c526345cd6fc6c4d62c46c71555fc2db1a7d5ad8ba4380c4",
+        "lib/bundles/role_access/reference/canvas-guide.md": "c662d3ad8fe1b843f54cde58a3759d8d79fdbf2341187b6ceca88a97d55d6f29",
+        "lib/bundles/role_access/reference/example.json": "b310cfb8ca97df15ad2109d95dbfcce50af69a9052f378d6d151be2ca1c62b5c",
+        "lib/bundles/role_access/reference/preview.json": "b310cfb8ca97df15ad2109d95dbfcce50af69a9052f378d6d151be2ca1c62b5c",
+        "lib/bundles/role_access/schema.yaml": "29a59b981c2fbc383f50f478d12a22770885feb373624c282c9e178dcf39e85c",
+        "lib/bundles/role_access/skill.yaml": "b357d990a0211c5e06308d308bffeb5a886bb1c18ab1078eaaf291ab5d7da328",
+        "lib/bundles/role_access/validation.yaml": "1938c94cfe98531a301145c64547fb510b1c466e1bfacd199092c52e7a7187ac",
+        "lib/bundles/smart_questions/SKILL.md": "cdad10316dcb9a0dfe68c580ceb2c68e542b54df8b915334280f6a28f93763ba",
+        "lib/bundles/smart_questions/locales/en-US.json": "94471e49ec46813ec9b7d1ef618e917ee7f50b8baed6d932b9edbab4c00d5203",
+        "lib/bundles/smart_questions/locales/zh-CN.json": "e8d7d05e80f2dd0a30b5ac798c18758e5b049b1bf27d64a1511423c3424dfc46",
+        "lib/bundles/smart_questions/panel.yaml": "f4b6623e1fa174ed8e26adf2c3b5d8b76e3d9074c57a403997de7557855bee9a",
+        "lib/bundles/smart_questions/reference/artifact-contract.md": "f07798a5a0c1a4b571b58c7e853347f91f02aa4cd58fc47e8fa4b8b533ca5c0e",
+        "lib/bundles/smart_questions/reference/preview.json": "ed01430c104428644890baeda3423c2236abee136bdd6270874b23adadc3aa41",
+        "lib/bundles/smart_questions/schema.yaml": "d44507cd50e580ef46c9fac65c463d19fb50ae2326d039d73c5b3f71d89cc5ee",
+        "lib/bundles/smart_questions/skill.yaml": "647ada1e624de57e2d9cdcd319b6221c4a7782f8a093413f6522fa8f7d46a77a",
+        "lib/bundles/smart_questions/validation.yaml": "1bf84e3aac09b512e7fdd4e9e8c67994264a56286364530c6c3e3a14f252e874",
+        "lib/bundles/web_app_prd_assembly/SKILL.md": "913986994e1782a7b9bf7f67b1be716b793ee936d39777053f4f98c511c15168",
+        "lib/bundles/web_app_prd_assembly/locales/en-US.json": "95c6a96b3cfb52f4dfc61ea7c128f343a1a349aab9fb45ec17f3e51ad11969d3",
+        "lib/bundles/web_app_prd_assembly/locales/zh-CN.json": "c4df050bddcfd54019f91a1e341a1844fe7fe4195afc099d9773bf2291390380",
+        "lib/bundles/web_app_prd_assembly/panel.yaml": "cd36b8aea0f9b928d8ba54455fbf85dcf21a59d1355fdc19a85e3c362c0db7a4",
+        "lib/bundles/web_app_prd_assembly/reference/artifact-contract.md": "d3602309c9da63d52807f70f7e205d46b47280d5f40d7b94f2f46b2a9f3a6c56",
+        "lib/bundles/web_app_prd_assembly/reference/prd-template.html": "9e24ac0706a77d6009989b85cbb92409d6112d4461f16de560dcb389c2cbf08d",
+        "lib/bundles/web_app_prd_assembly/reference/preview.json": "dd9c3a0921925f9da92310e23cd772cd824e0bbd725fbe6769a34a4d92b01438",
+        "lib/bundles/web_app_prd_assembly/schema.yaml": "a216bf0e288faf3576486617823b130b9635abec93b4d7b261f4311509fb077d",
+        "lib/bundles/web_app_prd_assembly/scripts/prd.mjs": "a34396351da2d0ac41831b48c9f92a428ac1df2536064b68fb306fa818d83f25",
+        "lib/bundles/web_app_prd_assembly/scripts/visual-renderer.mjs": "8741b5cc9f5b5fbc60621d9394856f1f2826ee792501360f7c0193d4d77723ce",
+        "lib/bundles/web_app_prd_assembly/skill.yaml": "879a81d095a4daeee20ceb66d88192f876191d9e01b299d0cff0f23ce26353f1",
+        "lib/bundles/web_app_prd_assembly/validation.yaml": "e75c416a62ada26da94cf3c61fad352eea90f89d50d305854e15f5b9b818de10",
+        "lib/bundles/whiteboard/SKILL.md": "af5e18fb3a90b20dfb7f46c11a9ff78fc5f5d403a3e53b6f8bf86bf81b50a838",
+        "lib/bundles/whiteboard/locales/en-US.json": "3bcabd6aa5c24fe8ac5451be3eaf10dbcb28ce8e1d2175b5765073e69c3343e9",
+        "lib/bundles/whiteboard/locales/zh-CN.json": "566faa3a5831062b7d59f583548ea009517e0af69cf1700fdee3d552febc8dbe",
+        "lib/bundles/whiteboard/panel.yaml": "218a2aba76203bfd5b8d8bdd847925b63203f688661dbdf3bc44ab50d240d62b",
+        "lib/bundles/whiteboard/reference/artifact-contract.md": "b296d159ea4f0b1d2bce3660a330947b7d14563e79ae60b15f0c9753ad64b049",
+        "lib/bundles/whiteboard/reference/canvas-guide.md": "0f4dadcf0ffd13dc6f1afcc9125791413807073a29053146d771dc2fe30d60ce",
+        "lib/bundles/whiteboard/reference/drawing-method.md": "353bf10a1ae8aba3dea6d165ef05137902fa94a75e51cde651156c4a21f3a206",
+        "lib/bundles/whiteboard/reference/geometry.md": "7eac05dbba13f1656e15aa937348f8c7bf3a68b498888adf4ee0687f20102ad8",
+        "lib/bundles/whiteboard/reference/preview.json": "33fc661f02c626c861c0a3224b1ce569c868d0a110de9874a830cc76075aa4d5",
+        "lib/bundles/whiteboard/schema.yaml": "35af8ba68e60fbca411ef41fa58cb799e8eedf4e2aae107da765305e9234bebb",
+        "lib/bundles/whiteboard/scripts/scene.mjs": "df95fffab4a9cba4ddf9b42af39c72f2f53bfacf3ae51b34be27666441567391",
+        "lib/bundles/whiteboard/scripts/validate.mjs": "03e58f0870f73fad0097d7eeedc35b57c89ec82c187d232c3f5b92ebac37c3e5",
+        "lib/bundles/whiteboard/skill.yaml": "f11da9f62e9cc1bb0f36a35ecc32e3c81437cdc1314376f09584d108426ea6f7",
+        "lib/bundles/whiteboard/validation.yaml": "df32839f037695ce60cfc15f9345fca06720033b800ccbcbf4443b926b657e75",
+        "lib/kits/web_app/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "lib/kits/web_app/NOTICE": "6b4eec391144fcbd96ec7b45a28764ab1932722a96325248377c3e28aac2c62d",
+        "lib/kits/web_app/THIRD_PARTY_NOTICES.md": "1d358b1a367efd6f4e0fb04436df7f814531cd6a01a0b2b752d7b8268a461c79",
+        "lib/kits/web_app/kit.yaml": "95355214687158a583847c3f3a3206908753efb35e85d5804cf35748aac19216",
+        "lib/kits/web_app/mindset.md": "c0b96c9fc00f6a8f2f412d2f3c4b1abf417fe6cbbe37418c22deeb5572164d80"
       },
-      "components": [],
-      "materials": [],
+      "components": [
+        {
+          "name": "bpmn-moddle",
+          "version": "9.0.4",
+          "declaredLicense": "MIT",
+          "packageMetadataSha256": "d64f1dba3c48e5c2c5042a8274066e589685f0c62175323d529f48185a9383da",
+          "author": {
+            "name": "Nico Rehwaldt",
+            "url": "https://github.com/nikku"
+          },
+          "outputs": [
+            "lib/bundles/flow_design/scripts/layout-metrics.mjs",
+            "lib/bundles/flow_design/scripts/layout-search.mjs",
+            "lib/bundles/flow_design/scripts/layout.mjs"
+          ],
+          "materials": [
+            {
+              "path": "licenses/bundled-js/bpmn-moddle@9.0.4/LICENSE",
+              "sha256": "3082b548bd9c98364ebbed1cbd40bfe1721c7edf2376f26f25fb06c729cc077a"
+            }
+          ],
+          "correspondence": "exact-original-bytes-from-observed-local-package"
+        },
+        {
+          "name": "elkjs",
+          "version": "0.10.2",
+          "declaredLicense": "EPL-2.0",
+          "packageMetadataSha256": "c6b0154cf890fde4c3db3426f7b60ee7853a89764d3c42652a846eb985417642",
+          "author": {
+            "name": "Ulf R\u00fcegg",
+            "email": "uruurumail@gmail.com"
+          },
+          "outputs": [
+            "lib/bundles/flow_design/scripts/layout.mjs"
+          ],
+          "materials": [
+            {
+              "path": "licenses/third-party/elkjs-0.10.2/LICENSE.md",
+              "sha256": "89591d4578fb1ebd91501312a3d25f021bd865a2e436641c1cf7b1bc7e3c1617"
+            },
+            {
+              "path": "licenses/third-party/elkjs-0.10.2/SOURCE.md",
+              "sha256": "d58c5d5ff4cc9c18456e6379b9303e3e60f51dcd884e68be67a4b5eaa7989f64"
+            },
+            {
+              "path": "licenses/third-party/elkjs-0.10.2/NOTICE.md",
+              "sha256": "cf5ce01bb3b3b7974cfa296cd14c2be4de7f88ab67d7b911b0a402e382fb2701"
+            },
+            {
+              "path": "licenses/third-party/elkjs-0.10.2/DEPENDENCIES",
+              "sha256": "4e441b47d606b18cdd1937cbbe5d79f92ca72dfe5d56327f5e2c6ff35e42a558"
+            },
+            {
+              "path": "licenses/third-party/elkjs-0.10.2/graph-layout-worker.ts",
+              "sha256": "ec766700ef21f6464fde45ac217975cb9468815113159d3bf77156ed511ca523"
+            },
+            {
+              "path": "licenses/third-party/elkjs-0.10.2/release-source-binding.json",
+              "sha256": "581bc1cdf3beebcbb6373f1501bc267e6993ec0835b687aaf8adb0ea91a2b0ba"
+            },
+            {
+              "path": "licenses/third-party/elkjs-0.10.2/upstream-README.md",
+              "sha256": "5f01b86cacdaf3e9928e24bcddf4e91ca344b859831ed856d6fcba3a2c4a24ac"
+            },
+            {
+              "path": "licenses/third-party/elkjs-0.10.2/upstream-build.gradle",
+              "sha256": "36c74b36571d3fca2fb3b5df492314c1ed6ddd0eb982899a0b2791dfa9c435d4"
+            },
+            {
+              "path": "licenses/third-party/elkjs-0.10.2/upstream-ci.yml",
+              "sha256": "a38c88225333591436c479fcede470df46a409cf13fa8fafdefa048ae0455d4e"
+            }
+          ],
+          "correspondence": "exact-original-bytes-from-observed-local-package"
+        },
+        {
+          "name": "min-dash",
+          "version": "4.2.3",
+          "declaredLicense": "MIT",
+          "packageMetadataSha256": "c47d7a7dac3dcd1beaafa29e255c933849ebfab4f9117f3d3727f6f5860eccca",
+          "author": "bpmn.io <http://bpmn.io>",
+          "outputs": [
+            "lib/bundles/flow_design/scripts/layout-metrics.mjs",
+            "lib/bundles/flow_design/scripts/layout-search.mjs",
+            "lib/bundles/flow_design/scripts/layout.mjs"
+          ],
+          "materials": [
+            {
+              "path": "licenses/bundled-js/min-dash@4.2.3/LICENSE",
+              "sha256": "21b28e21af7e43fbdc4a77d166146024baacc509cf9c8c4986fb0248724fdd30"
+            }
+          ],
+          "correspondence": "exact-original-bytes-from-observed-local-package"
+        },
+        {
+          "name": "moddle",
+          "version": "7.2.0",
+          "declaredLicense": "MIT",
+          "packageMetadataSha256": "d093e22c8d885c12ed1e4aefc92674008246204746cfd11b4932321821d54f09",
+          "author": {
+            "name": "Nico Rehwaldt",
+            "url": "https://github.com/Nikku"
+          },
+          "outputs": [
+            "lib/bundles/flow_design/scripts/layout-metrics.mjs",
+            "lib/bundles/flow_design/scripts/layout-search.mjs",
+            "lib/bundles/flow_design/scripts/layout.mjs"
+          ],
+          "materials": [
+            {
+              "path": "licenses/bundled-js/moddle@7.2.0/LICENSE",
+              "sha256": "39e5358fd556ba6cb3b7eb1ff69ff43766e2f29c4e1d67e43cab08ad74016632"
+            }
+          ],
+          "correspondence": "exact-original-bytes-from-observed-local-package"
+        },
+        {
+          "name": "moddle-xml",
+          "version": "11.0.0",
+          "declaredLicense": "MIT",
+          "packageMetadataSha256": "1d31be229d7deb44824ae1798596b6fb66a2c11cbe4bd89344c5dfb79169e0a7",
+          "author": {
+            "name": "Nico Rehwaldt",
+            "url": "https://github.com/Nikku"
+          },
+          "outputs": [
+            "lib/bundles/flow_design/scripts/layout-metrics.mjs",
+            "lib/bundles/flow_design/scripts/layout-search.mjs",
+            "lib/bundles/flow_design/scripts/layout.mjs"
+          ],
+          "materials": [
+            {
+              "path": "licenses/bundled-js/moddle-xml@11.0.0/LICENSE",
+              "sha256": "39e5358fd556ba6cb3b7eb1ff69ff43766e2f29c4e1d67e43cab08ad74016632"
+            }
+          ],
+          "correspondence": "exact-original-bytes-from-observed-local-package"
+        },
+        {
+          "name": "saxen",
+          "version": "10.0.0",
+          "declaredLicense": "MIT",
+          "packageMetadataSha256": "40d0a06c151a56bce923b0cf5db7c4c9b3eb878108befd158ca488130147e3f8",
+          "author": {
+            "name": "Nico Rehwaldt",
+            "url": "https://github.com/nikku"
+          },
+          "outputs": [
+            "lib/bundles/flow_design/scripts/layout-metrics.mjs",
+            "lib/bundles/flow_design/scripts/layout-search.mjs",
+            "lib/bundles/flow_design/scripts/layout.mjs"
+          ],
+          "materials": [
+            {
+              "path": "licenses/bundled-js/saxen@10.0.0/LICENSE",
+              "sha256": "dbda1f03cbd146adb0da20657a72432d83eae3134dffacdfeff6db4c5e32207a"
+            }
+          ],
+          "correspondence": "exact-original-bytes-from-observed-local-package"
+        }
+      ],
+      "materials": [
+        {
+          "source": "third-party/companion/bundled-js/bpmn-moddle@9.0.4/LICENSE",
+          "path": "licenses/bundled-js/bpmn-moddle@9.0.4/LICENSE",
+          "sha256": "3082b548bd9c98364ebbed1cbd40bfe1721c7edf2376f26f25fb06c729cc077a"
+        },
+        {
+          "source": "third-party/companion/elkjs-0.10.2/LICENSE.md",
+          "path": "licenses/third-party/elkjs-0.10.2/LICENSE.md",
+          "sha256": "89591d4578fb1ebd91501312a3d25f021bd865a2e436641c1cf7b1bc7e3c1617"
+        },
+        {
+          "source": "third-party/companion/elkjs-0.10.2/SOURCE.md",
+          "path": "licenses/third-party/elkjs-0.10.2/SOURCE.md",
+          "sha256": "d58c5d5ff4cc9c18456e6379b9303e3e60f51dcd884e68be67a4b5eaa7989f64"
+        },
+        {
+          "source": "third-party/companion/elkjs-0.10.2/NOTICE.md",
+          "path": "licenses/third-party/elkjs-0.10.2/NOTICE.md",
+          "sha256": "cf5ce01bb3b3b7974cfa296cd14c2be4de7f88ab67d7b911b0a402e382fb2701"
+        },
+        {
+          "source": "third-party/companion/elkjs-0.10.2/DEPENDENCIES",
+          "path": "licenses/third-party/elkjs-0.10.2/DEPENDENCIES",
+          "sha256": "4e441b47d606b18cdd1937cbbe5d79f92ca72dfe5d56327f5e2c6ff35e42a558"
+        },
+        {
+          "source": "third-party/companion/elkjs-0.10.2/graph-layout-worker.ts",
+          "path": "licenses/third-party/elkjs-0.10.2/graph-layout-worker.ts",
+          "sha256": "ec766700ef21f6464fde45ac217975cb9468815113159d3bf77156ed511ca523"
+        },
+        {
+          "source": "third-party/companion/elkjs-0.10.2/release-source-binding.json",
+          "path": "licenses/third-party/elkjs-0.10.2/release-source-binding.json",
+          "sha256": "581bc1cdf3beebcbb6373f1501bc267e6993ec0835b687aaf8adb0ea91a2b0ba"
+        },
+        {
+          "source": "third-party/companion/elkjs-0.10.2/upstream-README.md",
+          "path": "licenses/third-party/elkjs-0.10.2/upstream-README.md",
+          "sha256": "5f01b86cacdaf3e9928e24bcddf4e91ca344b859831ed856d6fcba3a2c4a24ac"
+        },
+        {
+          "source": "third-party/companion/elkjs-0.10.2/upstream-build.gradle",
+          "path": "licenses/third-party/elkjs-0.10.2/upstream-build.gradle",
+          "sha256": "36c74b36571d3fca2fb3b5df492314c1ed6ddd0eb982899a0b2791dfa9c435d4"
+        },
+        {
+          "source": "third-party/companion/elkjs-0.10.2/upstream-ci.yml",
+          "path": "licenses/third-party/elkjs-0.10.2/upstream-ci.yml",
+          "sha256": "a38c88225333591436c479fcede470df46a409cf13fa8fafdefa048ae0455d4e"
+        },
+        {
+          "source": "third-party/companion/bundled-js/min-dash@4.2.3/LICENSE",
+          "path": "licenses/bundled-js/min-dash@4.2.3/LICENSE",
+          "sha256": "21b28e21af7e43fbdc4a77d166146024baacc509cf9c8c4986fb0248724fdd30"
+        },
+        {
+          "source": "third-party/companion/bundled-js/moddle@7.2.0/LICENSE",
+          "path": "licenses/bundled-js/moddle@7.2.0/LICENSE",
+          "sha256": "39e5358fd556ba6cb3b7eb1ff69ff43766e2f29c4e1d67e43cab08ad74016632"
+        },
+        {
+          "source": "third-party/companion/bundled-js/moddle-xml@11.0.0/LICENSE",
+          "path": "licenses/bundled-js/moddle-xml@11.0.0/LICENSE",
+          "sha256": "39e5358fd556ba6cb3b7eb1ff69ff43766e2f29c4e1d67e43cab08ad74016632"
+        },
+        {
+          "source": "third-party/companion/bundled-js/saxen@10.0.0/LICENSE",
+          "path": "licenses/bundled-js/saxen@10.0.0/LICENSE",
+          "sha256": "dbda1f03cbd146adb0da20657a72432d83eae3134dffacdfeff6db4c5e32207a"
+        },
+        {
+          "source": "scripts/test-fixtures/pica-worker/source/rolldown/LICENSE",
+          "path": "licenses/bundled-js/rolldown@1.2.4/LICENSE",
+          "sha256": "23ecfff35a5a2e80d92142f75228912c3b1abc4b5a8337a821ff4397e2f9f734"
+        },
+        {
+          "source": "scripts/test-fixtures/pica-worker/source/rolldown/THIRD-PARTY-LICENSE",
+          "path": "licenses/bundled-js/rolldown@1.2.4/THIRD-PARTY-LICENSE",
+          "sha256": "a877291d800ed43692f3f9ae09d8e01cc6f7293ad39d43896059c188ffbb8b7c"
+        }
+      ],
       "fonts": [],
       "externalDependencies": {
         "bpmn-js": "^18.24.0",
@@ -15683,15 +16232,10 @@
       },
       "externalPeers": {},
       "limitations": [
-        "This component list is scoped to retained maps whose output was compared to actual adapted archive bytes, and emitted source-region IDs; no complete coverage claim for generated/unmapped code.",
-        "External npm dependencies and peer host services are separate artifacts, even where other modules from that package are embedded.",
-        "Shared Radix/upstream attribution records keep their original historical-source limitations.",
-        "Existing embedded/font/native source obligations and rendering checks remain distinct from delivery of original license text.",
-        "Current observations bind fixed 0e4184db ordinary builds and the local 0.1.0-r2mac.2 identity projection. Experimental own-package versions are not published versions. Old archive hashes/maps/external values are historicalObservation only; observedArchiveSha256 is null and current archive binding is false until independently verified by the external new-archive receipt.",
-        "Controlled 0.1.0-r2mac.3 trial: only four packages change exact DSH Host peer declarations to 0.2.1-rc.3 after actual official rc3 rejected the unchanged rc2 declarations. Runtime outputs remain the fixed 0e4184db build against the unchanged rc2 development SDK; existing npm identity projection changes package names only, so output/material/font/map bytes remain unchanged. Own dependency versions project to .3. This is permission for actual API testing, not established rc3 API compatibility, installation or release acceptance. The prior .2 observation and archives remain separately sealed.",
-        "Controlled .4 trial integrates accepted ce8b4aeb GRA API adaptation as 73bbd8fd: Core rebuilt normally, unchanged other outputs and original materials reused by hash, exact own versions project to .4. RC3 public Agent factory has no Subagent Runtime catalog/history/manager start-end events/concurrency pool; no such records are fabricated. Actual installed GRA remains to be tested after normal update; original .3 package-graph peer failure is retained separately.",
-        "Controlled .5 trial integrates accepted Grounding dd778798 and KAG final74d29d74 including51fff1dc; Core and Knowledge rebuilt normally once; other five packages reuse 214 outputs by hash. Original .3 peer-graph failure, .4 update failure and installed native mode difference remain separate. Original Mac GRA completion and KAG restore after normal update remain pending; no installed hotpatch or fabricated runtime events.",
-        "Controlled .6 trial uses accepted fixed99dc12a0 Core normal outputs and reuses unchanged other outputs, with actual current client/map hashes and exact own .6 versions. 32KiB bounds only initial model KAG projection, not the complete model request or later tool results. Actual RC3 scripted SDK acceptance and Linux built-native checks are separate from installed .6 exact-review query and real Grounding. Original .5 model abort, peer graph exit1 and installed native mode difference remain retained."
+        "Current package-owned portable Flow normal build: three independent Node 22 ESM CLI artifacts in a complete lib/kits and lib/bundles tree. Project-owned definitions are never silently replaced.",
+        "Six physical dependency identities bind current top-level modules and exact original license bytes. Nested ELK prebundle inventory, corresponding-source fulfillment and runtime acceptance remain separate; retained source-availability materials are not a complete coverage claim.",
+        "The observed virtual rolldown helper is not a physical module input. Matching loaded-toolchain originals remain inside the Flow Bundle and this package; current helper/output membership is recorded in the normal maps and Flow build index, without borrowing historical Pica execution proof.",
+        "External PRD/browser dependencies remain separate conditional artifacts. This build/selected material observation is not complete bundled inventory or release license acceptance. Actual DSH npm archive correspondence must use the existing fixed-source external observation receipt."
       ],
       "embeddedBpmnFonts": [],
       "unresolvedEmbeddedFonts": [],

@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { build } from 'tsdown'
+import { buildFlowScripts as buildPortableFlowScripts, buildWebAppContent } from '../packages/skills-web-app/build.mjs'
 import { valid } from 'semver'
 import { buildCompanionCandidate, validateCompanionDistribution, readCompanionReleaseHosts } from './companion-npm-candidate.mjs'
 import { validateLadybugDependency } from './companion-ladybug-dependency.mjs'
@@ -32,14 +33,14 @@ const inputRoots = [
   'packages/git-native', 'scripts/companion-native-git.mjs', 'scripts/companion-source-labels.mjs',
   'packages/companion/build-plugin.mjs', 'packages/companion/codex-desktop-package.mjs', 'packages/companion/qwenwork-package.mjs',
   'packages/companion/README.md',
-  'scripts/companion-output-module-map.mjs',
+  'scripts/companion-output-module-map.mjs', 'scripts/normal-build-module-evidence.mjs',
   'scripts/companion-bundled-license.mjs', 'third-party/companion',
   ...EMBEDDED_PICA_LICENSE_SOURCE_PATHS,
   ...LADYBUG_MATERIAL_FILES.map(path => `third-party/native/${LADYBUG_MATERIAL_DIRECTORY}/${path}`),
   'packages/companion/src', 'packages/companion/index.html', 'packages/companion/tsdown.config.ts', 'packages/companion/tsdown.server.config.ts', 'packages/companion/package-knowledge.mjs',
   'packages/companion/plugin', 'packages/companion/plugin-claude', 'packages/companion/plugin-qoder',
   ...['core', 'knowledge-ladybug', 'panel', 'provider-web-app', 'studio', 'studio-ui'].flatMap(name => [`packages/${name}/src`, `packages/${name}/package.json`]),
-  'packages/provider-web-app/tsdown.config.ts', 'packages/skills-web-app/kits/web_app', 'packages/skills-web-app/package.json', 'packages/skills-web-app/bundles',
+  'packages/provider-web-app/tsdown.config.ts', 'packages/skills-web-app/kits/web_app', 'packages/skills-web-app/package.json', 'packages/skills-web-app/build.mjs', 'packages/skills-web-app/bundles',
   ...OWN_LICENSE_FILES.map(name => `packages/skills-web-app/${name}`),
   'scripts/tsdown-client-styles.ts', 'scripts/component-skill-resource.ts', 'packages/companion/component-skill-package.mjs', 'scripts/graph-layout-worker.ts', 'scripts/graph-browser-dependencies.ts', 'scripts/official-dsh-json-input.mjs',
   'scripts/known-browser-loader-proof.mjs', 'scripts/companion-packaged-knowledge.mjs', 'scripts/emitted-loader-check.mjs', 'scripts/release-own-license.mjs', 'scripts/companion-npm-candidate.mjs', 'scripts/build-companion-npm-candidate.mjs', 'scripts/test-fixtures/official-dsh-json',
@@ -128,41 +129,11 @@ async function buildInto(label, config, records, emittedMaps = []) {
   assert.ok(isAbsolute(config.outDir))
   for (const path of Object.values(config.entry)) assert.ok(isAbsolute(path))
   const result = await build({ ...config, plugins: [...(config.plugins ?? []), graphGuard(label, records)] })
-  await recordCompletedBuildOutputs(label, result, config.outDir, emittedMaps)
+  return recordCompletedBuildOutputs(label, result, config.outDir, emittedMaps)
 }
 
 export async function buildFlowScripts(source, outDir, records = [], emittedMaps = []) {
-  // Independent CLI modules preserve import.meta.url. Inlining metrics into
-  // search would activate metrics' entry guard with search's CLI arguments.
-  for (const name of ['layout', 'layout-metrics', 'layout-search']) {
-    const entry = join(source, `${name}.mjs`)
-    await buildInto(`flow-${name}`, {
-      config: false, entry: { [name]: entry }, outDir, format: 'esm', platform: 'node', target: 'node22',
-      tsconfig: false, dts: false, clean: false, failOnWarn: true,
-      // Each entry is an independent Node CLI; keep its dynamic imports and
-      // loader helper inside that artifact. Search retains its explicit sibling
-      // metrics import below, rather than exposing internal loader exports.
-      outputOptions: { codeSplitting: false },
-      deps: { alwaysBundle: [/.*/], onlyBundle: false },
-      plugins: [{
-        name: 'standalone-kit-no-runtime-imports',
-        resolveId(specifier, importer) {
-          if (name === 'layout-search' && importer === entry && specifier === './layout-metrics.mjs') return { id: specifier, external: true }
-          return null
-        },
-        async generateBundle(_options, bundle) {
-          for (const output of Object.values(bundle)) if (output.type === 'chunk') {
-            for (const dependency of [...output.imports, ...output.dynamicImports]) {
-              if (dependency.startsWith('node:') || bundle[dependency]) continue
-              assert.ok(name === 'layout-search' && dependency === './layout-metrics.mjs', `Unbundled Kit dependency: ${dependency}`)
-              const info = await lstat(join(outDir, 'layout-metrics.mjs'))
-              assert.ok(info.isFile() && !info.isSymbolicLink(), 'Missing standalone metrics artifact')
-            }
-          }
-        },
-      }],
-    }, records, emittedMaps)
-  }
+  return buildPortableFlowScripts(source, outDir, { runBuild: (label, config) => buildInto(label, config, records, emittedMaps) })
 }
 
 async function copyTree(source, target) {
@@ -259,11 +230,9 @@ export async function buildSameSourceCandidate({ ladybugDependency, nativeGitArt
       assert.deepEqual(result.manifest.runtimeDependencies, template.dependencies)
       report.knowledgeBuildAdapter = result.manifest.buildAdapter // instrumented real tsdown adapter is explicitly labelled injected
     })
-    const kit = join(shared, 'kits/web_app'); await mkdir(kit, { recursive: true })
-    await copyTree(join(workspace, 'packages/skills-web-app/kits/web_app'), kit)
-    await copyTree(join(workspace, 'packages/skills-web-app/bundles'), join(shared, 'bundles'))
-    for (const name of OWN_LICENSE_FILES) await copyTree(join(workspace, 'packages/skills-web-app', name), join(kit, name))
-    await stage('flow-layout', () => buildFlowScripts(join(workspace, 'packages/skills-web-app/bundles/flow_design/scripts'), join(shared, 'bundles/flow_design/scripts'), report.moduleInputs, report.emittedModuleMaps))
+    await stage('flow-layout', () => buildWebAppContent(shared, {
+      runBuild: (label, config) => buildInto(label, config, report.moduleInputs, report.emittedModuleMaps),
+    }))
     for (const [host, overlay] of Object.entries({ codex: 'plugin', 'claude-code': 'plugin-claude', qoder: 'plugin-qoder' })) {
       const target = join(source, 'overlays', host)
       await copyTree(join(companion, overlay, 'design-system'), target)
