@@ -1,15 +1,18 @@
-import { useEffect, useRef, useState } from 'react'
+import { PanelTextarea } from './panel-textarea.tsx'
+import { useEffect, useId, useRef, useState } from 'react'
 import { Sparkles, X } from 'lucide-react'
 import type { ComponentNode, PanelManifest } from './dsl.ts'
 import type { RenderOptions } from './interpreter.ts'
 import { usePanelI18n } from './panel-i18n.tsx'
 import { fieldsForSection } from './record-state.ts'
+import { PanelFieldCaption } from './panel-workspace.tsx'
 
 /** A request is user input to the current host, not a canonical record mutation. */
 export function RecordRequestDialog({ node, manifest, options, onClose }: {
   node: ComponentNode; manifest: PanelManifest; options?: RenderOptions; onClose: () => void
 }) {
   const { t } = usePanelI18n()
+  const fieldId = useId()
   const request = node.board!.request_create!
   const section = manifest.sections.find(item => item.id === node.source)!
   const sectionFields = fieldsForSection(manifest.fields, node.source!)
@@ -34,12 +37,13 @@ export function RecordRequestDialog({ node, manifest, options, onClose }: {
       } catch (failure) { setError(failure instanceof Error ? failure.message : String(failure)) }
       finally { sending.current = false; setPending(false) }
     }}>
-      {fields.map(field => <label key={field.key}><span>{field.label}{field.required ? <span className="dsh-design-required-mark" aria-hidden="true" title={t('requiredField')}> *</span> : null}</span>
-        {field.options ? <select disabled={!writable || pending} required={field.required} value={values[field.key]} onChange={event => setValues({ ...values, [field.key]: event.target.value })}>
+      {fields.map(field => <div className="dsh-record-request-field" key={field.key}>
+        <span className="dsh-design-field-label"><PanelFieldCaption htmlFor={`${fieldId}-${field.key}`} label={field.label ?? field.key} required={field.required} description={field.description} /></span>
+        {field.options ? <select id={`${fieldId}-${field.key}`} disabled={!writable || pending} required={field.required} value={values[field.key]} onChange={event => setValues({ ...values, [field.key]: event.target.value })}>
           {field.options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-        </select> : field.control === 'textarea' ? <textarea rows={2} disabled={!writable || pending} required={field.required} value={values[field.key]} onChange={event => setValues({ ...values, [field.key]: event.target.value })} />
-          : <input disabled={!writable || pending} required={field.required} value={values[field.key]} onChange={event => setValues({ ...values, [field.key]: event.target.value })} />}
-      </label>)}
+        </select> : field.control === 'textarea' ? <PanelTextarea id={`${fieldId}-${field.key}`} disabled={!writable || pending} required={field.required} value={values[field.key]} onChange={event => setValues({ ...values, [field.key]: event.target.value })} />
+          : <input id={`${fieldId}-${field.key}`} disabled={!writable || pending} required={field.required} value={values[field.key]} onChange={event => setValues({ ...values, [field.key]: event.target.value })} />}
+      </div>)}
       {error ? <p role="alert">{error}</p> : null}
       <footer><button type="button" disabled={pending} onClick={onClose}>{t('cancel')}</button><button type="submit" disabled={!writable || !valid || pending}><Sparkles size={16} />{request.submit_label}</button></footer>
     </form>

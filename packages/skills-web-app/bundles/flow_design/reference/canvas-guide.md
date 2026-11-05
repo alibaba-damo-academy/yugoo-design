@@ -19,7 +19,8 @@ uses the existing SKILL's product-boundary and process-granularity methods.
 Use the installed Bundle's structure-validation → layout → final-validation
 pipeline by file path. The layout script produces BPMN DI; never hand-author a
 second layout or patch truncated output. Lane labels use actual supplied names;
-the built-in System ID and the exact lane/stakeholder name follow the contract.
+resolve the built-in System display name from its stable ID in the canonical
+role cast, and pass that cast to both file validators as the contract specifies.
 Ports/bindings and routing remain BPMN/layout behavior, not the AI midpoint rule.
 Review readable node/condition labels and real branch/return meaning; valid DI
 does not prove readability or correct process semantics. Missing sources stay

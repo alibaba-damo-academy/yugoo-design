@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react'
-import { PanelWorkspace, PanelWorkspaceNavigation, type PanelWorkspaceNavItem } from './panel-workspace.tsx'
+import { PanelTextarea } from './panel-textarea.tsx'
+import { useEffect, useId, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react'
+import { PanelDisclosureIcon, PanelRecordHeader, PanelWorkspace, PanelWorkspaceNavigation, type PanelWorkspaceNavItem } from './panel-workspace.tsx'
 import { QuestionAttachments, type StandardQuestionAttachment } from './question-attachments.tsx'
 import type { SidebarIcon } from './dsl.ts'
 import { sidebarIcon } from './sidebar-icon.tsx'
@@ -40,7 +41,7 @@ export interface StandardQuestionLabels {
 
 const DEFAULT_LABELS: StandardQuestionLabels = {
   answerPlaceholder: '填写你的回答，也可以说明暂不确定的部分',
-  detail: '补充说明（选填）',
+  detail: '补充说明',
   edit: '编辑',
   unanswered: '未回答',
   recommended: '推荐',
@@ -88,13 +89,13 @@ export function standardQuestionAnswered(question: StandardQuestionItem): boolea
   return answerValues(question.answer).length > 0
 }
 
-export function standardQuestionSummary(question: StandardQuestionItem): string {
+export function standardQuestionSummary(question: StandardQuestionItem, locale = 'zh-CN'): string {
   if (question.kind === 'text') {
     return typeof question.answer === 'string' ? question.answer : question.answer.join(', ')
   }
   const values = answerValues(question.answer)
   const labels = new Map((question.choices ?? []).map(choice => [choice.value, choice.label]))
-  return values.map(value => labels.get(value) ?? value).join('、')
+  return values.map(value => labels.get(value) ?? value).join(locale.toLowerCase().startsWith('zh') ? '、' : ', ')
 }
 
 function QuestionActionIcon({ action }: { action: 'edit' | 'skip' | 'restore' | 'multiple' }): ReactElement {
@@ -129,8 +130,10 @@ function StandardQuestionCard(props: {
   renderActions?: StandardQuestionListProps['renderActions']
   renderAccessory?: StandardQuestionListProps['renderAccessory']
 }): ReactElement {
-  const { t } = usePanelI18n()
+  const { t, locale } = usePanelI18n()
   const answered = standardQuestionAnswered(props.question)
+  const bodyId = useId()
+  const [bodyVisible, setBodyVisible] = useState(true)
   const [editing, setEditing] = useState(() => props.editable && (!props.collapseAnswered || !answered))
   const previousCollapseToken = useRef(props.collapseToken)
   useEffect(() => {
@@ -143,28 +146,20 @@ function StandardQuestionCard(props: {
     if (props.collapseAnswered && answered) setEditing(false)
   }, [answered, props.collapseAnswered, props.collapseToken])
 
-  const expanded = props.presentation?.alwaysExpanded === true || editing
+  const showEditor = props.presentation?.alwaysExpanded === true || editing
   const canEdit = props.editable && !props.disabled && !props.question.rejected
   const canManageRejection = props.editable && !props.disabled
   const showDetail = props.presentation?.showDetail !== false
   const showAttachments = props.presentation?.showAttachments !== false
   const selected = useMemo(() => answerValues(props.question.answer), [props.question.answer])
-  const summary = standardQuestionSummary(props.question)
+  const summary = standardQuestionSummary(props.question, locale)
   const hasSummary = summary.trim() !== ''
   const choices = props.question.choices ?? []
-  const canUseChoiceActions = props.allowChoiceActions && canEdit && expanded
+  const canUseChoiceActions = props.allowChoiceActions && canEdit && showEditor
   const allSelected = choices.length > 0 && choices.every(choice => selected.includes(choice.value))
-  const detailReadLabel = props.labels.detail.replace(/\s*(?:（选填）|\(optional\))$/iu, '')
-  const textContext = showDetail && props.question.kind === 'text' && props.question.detail?.trim()
-    ? <div className='dsh-standard-question-context' data-testid='standard-question-context'>
-        <span>{detailReadLabel}</span>
-        <div className='dsh-standard-question-answer-info'>{props.question.detail}</div>
-      </div>
-    : null
-
   const answerControl = props.question.kind === 'text'
     ? (
-      <textarea
+      <PanelTextarea
         className='dsh-standard-question-text'
         aria-label={props.question.prompt}
         placeholder={props.labels.answerPlaceholder}
@@ -178,7 +173,7 @@ function StandardQuestionCard(props: {
         {choices.map(choice => {
           const checked = selected.includes(choice.value)
           return (
-            <label key={choice.value} className={`dsh-standard-question-option question-option-frame${checked ? ' is-selected' : ''}${!canEdit ? ' is-disabled' : ''}`}>
+            <label key={choice.value} className={`dsh-standard-question-option${checked ? ' is-selected' : ''}${!canEdit ? ' is-disabled' : ''}`}>
               <input
                 type={props.question.kind === 'single' ? 'radio' : 'checkbox'}
                 name={props.question.kind === 'single' ? `dsh-question-${props.question.id}` : undefined}
@@ -216,15 +211,17 @@ function StandardQuestionCard(props: {
   ) : null
 
   return (
-    <article className={`dsh-standard-question-card${props.embedded ? ' is-embedded' : ''}`} data-question-id={props.question.id} data-answered={answered ? 'true' : 'false'}>
-      <header className='dsh-standard-question-header'>
+    <details className={`dsh-panel-content-group dsh-standard-question-card dsh-panel-record-action-context${showEditor && canEdit ? ' is-editing' : ''}${props.embedded ? ' is-embedded' : ''}`} data-question-id={props.question.id} data-answered={answered ? 'true' : 'false'}
+      open={bodyVisible} onToggle={event => { if (event.target === event.currentTarget) setBodyVisible(event.currentTarget.open) }}>
+      <summary className='dsh-standard-question-header dsh-panel-disclosure dsh-standard-question-toggle'
+        aria-expanded={bodyVisible} aria-controls={bodyId}>
         <div className='dsh-standard-question-heading'>
-          <h3>{props.question.prompt}</h3>
+          <h3><span className='dsh-panel-disclosure-label'>{props.question.prompt}</span></h3>
           {props.question.note ? <p>{props.question.note}</p> : null}
         </div>
-        <div className='dsh-standard-question-actions'>
-          {props.editable && !expanded && !props.question.rejected
-            ? <button type='button' data-testid='standard-question-edit' disabled={props.disabled} onClick={() => { if (canEdit) setEditing(true) }}><QuestionActionIcon action='edit' /><span>{props.labels.edit}</span></button>
+        <div className='dsh-standard-question-actions dsh-panel-record-actions'>
+          {props.editable && !showEditor && !props.question.rejected
+            ? <button type='button' data-testid='standard-question-edit' disabled={props.disabled} onClick={() => { if (canEdit) { setEditing(true); setBodyVisible(true) } }}><QuestionActionIcon action='edit' /><span>{props.labels.edit}</span></button>
             : null}
           {props.renderActions?.(props.question, editing && canEdit)}
           {canUseChoiceActions && props.question.kind === 'single' && props.onKindChange
@@ -242,8 +239,10 @@ function StandardQuestionCard(props: {
             : null}
           {props.question.rejected === true ? <span className='dsh-standard-question-rejected'>{t('skipped')}</span> : null}
         </div>
-      </header>
-      {expanded
+        <PanelDisclosureIcon expanded={false} />
+      </summary>
+      <div id={bodyId} className='dsh-standard-question-body' hidden={!bodyVisible}>
+      {showEditor
         ? (
           <div className='dsh-standard-question-editor'>
             <div className={props.question.kind === 'text' ? 'dsh-standard-question-answer-shell' : undefined}>
@@ -256,7 +255,6 @@ function StandardQuestionCard(props: {
                 onUploadFiles={props.onUploadFiles ? files => canEdit ? props.onUploadFiles?.(props.question.id, files) ?? Promise.resolve() : Promise.resolve() : undefined}
                 onChange={props.onAttachmentsChange ? attachments => { if (canEdit) props.onAttachmentsChange?.(props.question.id, attachments) } : undefined}
               >{supplement}</QuestionAttachments> : supplement}
-              {textContext}
             </div>
             {props.renderAccessory?.(props.question, editing && canEdit)}
           </div>
@@ -270,16 +268,21 @@ function StandardQuestionCard(props: {
             /> : null}
             {props.renderAccessory?.(props.question, false)}
             {hasSummary
-              ? <div>{summary}</div>
+              ? props.question.kind === 'text'
+                ? <div className='dsh-panel-reading-item dsh-standard-question-answer'>{summary}</div>
+                : <ul className='dsh-panel-reading-list'>{selected.map((value, index) =>
+                    <li key={`${index}:${value}`} className='dsh-panel-reading-item dsh-standard-question-answer'>{choices.find(choice => choice.value === value)?.label ?? value}</li>,
+                  )}</ul>
               : !answered
-                ? <div className='is-empty'>{props.labels.unanswered}</div>
+                ? <div className='dsh-standard-question-answer is-empty'>{props.labels.unanswered}</div>
                 : null}
-            {props.question.kind === 'text' ? textContext : showDetail && props.question.detail?.trim()
-              ? <p><span>{detailReadLabel}</span>{props.question.detail}</p>
+            {props.question.kind !== 'text' && showDetail && props.question.detail?.trim()
+              ? <p><span>{props.labels.detail}</span>{props.question.detail}</p>
               : null}
           </div>
         )}
-    </article>
+      </div>
+    </details>
   )
 }
 
@@ -455,16 +458,11 @@ export function StandardQuestionWorkspace(props: StandardQuestionWorkspaceProps)
       autoSaveId='question-workspace'
       sidebar={<PanelWorkspaceNavigation icon={sidebarIcon(props.sidebarIcon)} title={props.title ?? t('questions')} items={navItems} selectedId={group?.id ?? ''} onSelect={setSelected} />}
     >
-      <div className='dsh-question-workspace-content'>
-        <div className='dsh-question-workspace-sticky'>
-          <header className='dsh-question-workspace-header'>
-            <div>
-              <h2>{roundCopy.title ?? group?.label ?? props.title ?? t('questions')}</h2>
-              {roundCopy.description ? <p>{roundCopy.description}</p> : null}
-            </div>
-            <span>{visible.filter(standardQuestionAnswered).length}/{visible.length} {t('answered')}</span>
-          </header>
-        </div>
+      <div className='dsh-panel-workspace-content dsh-question-workspace-content'>
+        <PanelRecordHeader placement='workspace' context={roundCopy.description}>
+          <h2 className='dsh-panel-header-heading'>{roundCopy.title ?? group?.label ?? props.title ?? t('questions')}</h2>
+          <span className='dsh-panel-header-meta'>{visible.filter(standardQuestionAnswered).length}/{visible.length} {t('answered')}</span>
+        </PanelRecordHeader>
         {invalidRoundGroups.size > 0 ? <p role='alert'>{t('invalidQuestionCardGroup')}</p> : null}
         <StandardQuestionList {...props} cardGroups={cardGroups} questions={visible} choiceActionExcludedIds={[...(props.choiceActionExcludedIds ?? []), ...(props.firstRoundIds ?? [])]} editable={props.editable && (!props.historyReadonly || group?.id === latest)} />
       </div>

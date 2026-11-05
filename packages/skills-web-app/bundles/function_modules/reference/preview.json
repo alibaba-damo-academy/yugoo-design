@@ -1,4 +1,5 @@
 {
+  "function_order": ["F-PREVIEW-001", "F-PREVIEW-002"],
   "functions": {
     "F-PREVIEW-001": {
       "function_id": "F-PREVIEW-001",

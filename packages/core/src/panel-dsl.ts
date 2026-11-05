@@ -130,8 +130,11 @@ export interface FormGroup {
   title?: string
   description?: string
   separator?: boolean
-  /** Optional initially closed disclosure; contents retain their canonical values. */
+  /** Declare a titled disclosure; semantic grey groups fold without unmounting editors.
+   * The glyph follows title/help/count/actions at the far right of the whole content header. */
   collapsible?: boolean
+  /** Authored initial preference; omission defaults open and later disclosure state belongs to the user. */
+  default_open?: boolean
   items: readonly (FormField | FormRow)[]
   /** Read-only same-record preview beside this group's fields; stacks in narrow containers. */
   sidecar?: { component: 'record_preview'; title?: string; preview: NonNullable<ComponentNode['preview']> }
@@ -200,7 +203,7 @@ export interface EditorField {
   placeholder?: string
   max_length?: number
   input_type?: 'text' | 'url'
-  /** Authored textarea viewport only; 3..20 visible rows, default unchanged. */
+  /** Automatic textarea row budget; rendered at 3..5 rows maximum, never a minimum height. */
   textarea_rows?: number
   /** Choice presentation only; omitted keeps the legacy column layout. */
   choice_layout?: 'column' | 'row_wrap' | 'row_scroll'
@@ -254,6 +257,17 @@ export interface EditorField {
   item_label_field?: string
   item_collapsible?: boolean
   readonly [extra: string]: unknown
+}
+
+/** Optional labels and grouping for reading existing nested facts, never editors. */
+export interface ReadField {
+  /** Direct own property of this object, or of each object in the bound array. */
+  key: string
+  label: string
+  item_label_field?: string
+  fields?: readonly ReadField[]
+  options_from_section?: string
+  collapsed?: boolean
 }
 
 /** A node in the UI component tree, data-bound to sections. */
@@ -342,6 +356,10 @@ export interface ComponentNode {
   }
   /** Card-board bindings are ordinary declared fields, not Kit-specific semantics. */
   board?: { label: string; description: string; group?: string; rejected?: string; badge?: string; detail_sections?: readonly string[]; detail_fields?: readonly string[]; details_title?: string; detail_presentation?: 'inline' | 'cover';
+    /** Ordered labeled body fields; replaces the single unlabeled description. */
+    body_fields?: readonly string[];
+    /** Whether this board offers its optional generated mind-map overview. */
+    overview?: boolean;
     /** Optional existing record ID, displayed without an editor or generated fallback. */
     id_field?: string;
     /** Fixed nested inputs remain visible even when optional/absent; viewing never initializes state. */
@@ -365,6 +383,8 @@ export interface ComponentNode {
   /** Independent panel-use guidance, not a Bundle description or empty-state message. */
   guidance?: string
   source?: string
+  /** structured_data only; unspecified fields remain readable in their original order. */
+  read_fields?: readonly ReadField[]
   sources?: readonly string[]
   /** Studio field bindings (e.g. object_ref, axis_effects); keys are logical roles. */
   bindings?: Record<string, string>
@@ -470,6 +490,7 @@ export interface ComponentNode {
   rounds_source?: string
   /** Contiguous cards sharing a content-owned frame, without changing record order. */
   card_groups?: readonly { id: string; title: string; question_ids: readonly string[];
+    /** always_expanded selects answer reading/editing; the outer question frame can still collapse. */
     presentation?: { always_expanded?: boolean; show_detail?: boolean; show_attachments?: boolean }
   }[]
   /** Optional question-workspace behavior; record identities belong to the Bundle. */
@@ -888,7 +909,7 @@ export function validatePanelManifest(manifest: PanelManifest): string[] {
         if (typeof item.kind !== 'string' || !allowed.includes(item.kind)) { errors.push(`${at}: invalid body kind`); return }
         const keys = item.kind === 'field' ? ['kind', 'field', 'label', 'width']
           : item.kind === 'text' ? ['kind', 'text'] : item.kind === 'row' ? ['kind', 'items']
-          : item.kind === 'tabs' ? ['kind', 'id', 'title', 'tabs'] : ['kind', 'title', 'description', 'separator', 'collapsible', 'items', 'sidecar']
+          : item.kind === 'tabs' ? ['kind', 'id', 'title', 'tabs'] : ['kind', 'title', 'description', 'separator', 'collapsible', 'default_open', 'items', 'sidecar']
         if (Object.keys(item).some(key => !keys.includes(key))) errors.push(`${at}: unknown body option`)
         if (item.kind === 'tabs') {
           if (typeof item.id !== 'string' || !item.id.trim() || tabGroups.has(item.id)) errors.push(`${at}: tabs require a unique nonempty id`)
@@ -921,6 +942,7 @@ export function validatePanelManifest(manifest: PanelManifest): string[] {
             for (const key of ['title', 'description']) if (item[key] !== undefined && (typeof item[key] !== 'string' || !(item[key] as string).trim())) errors.push(`${at}: ${key} must be nonempty text`)
             if (item.separator !== undefined && typeof item.separator !== 'boolean') errors.push(`${at}: separator must be boolean`)
             if (item.collapsible !== undefined && (typeof item.collapsible !== 'boolean' || (item.collapsible && (typeof item.title !== 'string' || !item.title.trim())))) errors.push(`${at}: collapsible group requires boolean and nonempty title`)
+            if (item.default_open !== undefined && (typeof item.default_open !== 'boolean' || item.collapsible !== true)) errors.push(`${at}: default_open requires a collapsible group and boolean value`)
             if (item.sidecar !== undefined) {
               const sidecar = item.sidecar as Record<string, unknown>
               if (!sidecar || typeof sidecar !== 'object' || Array.isArray(sidecar)
@@ -1206,6 +1228,15 @@ export function validatePanelManifest(manifest: PanelManifest): string[] {
         for (const key of [board.label, board.description, board.group, board.badge].filter(value => value !== undefined)) {
           if (!['text', 'textarea', 'select', 'radio', 'radio_custom'].includes(fieldOf(component.source, key)?.control ?? '')) errors.push(`${path}: board needs declared text fields`)
         }
+        if (board.overview !== undefined && typeof board.overview !== 'boolean') errors.push(`${path}: board overview must be boolean`)
+        if (board.body_fields !== undefined && (!isStringList(board.body_fields) || !board.body_fields.length
+          || new Set(board.body_fields).size !== board.body_fields.length || !board.body_fields.includes(board.description)
+          || board.body_fields.some(key => {
+            const field = fieldOf(component.source, key)
+            return !field || field.hidden || !['text', 'textarea'].includes(field.control)
+              || [board.label, board.group, board.badge, board.rejected].includes(key)
+              || board.detail_fields?.includes(key)
+          }))) errors.push(`${path}: board body_fields requires unique visible text fields including description, separate from header/group/details`)
         if (board.id_field !== undefined) {
           const identity = fieldOf(component.source, board.id_field)
           if (!identity || identity.control !== 'text' || !identity.readonly || identity.hidden)
@@ -1545,6 +1576,30 @@ export function validatePanelManifest(manifest: PanelManifest): string[] {
     }
     if (component.component === 'structured_data' && !isSafeDottedPath(component.source)) {
       errors.push(`${path}: structured_data needs a safe source path`)
+    }
+    if (component.read_fields !== undefined) {
+      if (component.component !== 'structured_data') errors.push(`${path}: read_fields requires structured_data`)
+      const validateReadFields = (value: unknown, at: string, depth: number): void => {
+        if (!Array.isArray(value) || value.length > 100 || depth >= 8) {
+          errors.push(`${at}: read_fields must be a list of at most 100 fields within eight levels`)
+          return
+        }
+        const keys = new Set<string>()
+        for (const [index, entry] of value.entries()) {
+          const location = `${at}[${index}]`
+          if (!entry || typeof entry !== 'object' || Array.isArray(entry)) { errors.push(`${location}: invalid read field`); continue }
+          if (Object.keys(entry).some(key => !['key', 'label', 'item_label_field', 'fields', 'options_from_section', 'collapsed'].includes(key))) errors.push(`${location}: unknown read field option`)
+          if (!isSafeDottedPath(entry.key) || entry.key.includes('.')) errors.push(`${location}: key must be a safe direct property`)
+          if (keys.has(entry.key)) errors.push(`${location}: duplicate read field ${String(entry.key)}`)
+          keys.add(entry.key)
+          if (typeof entry.label !== 'string' || !entry.label.trim()) errors.push(`${location}: label must be nonempty text`)
+          if (entry.item_label_field !== undefined && (!isSafeDottedPath(entry.item_label_field) || entry.item_label_field.includes('.'))) errors.push(`${location}: item_label_field must be a safe direct property`)
+          if (entry.options_from_section !== undefined && (typeof entry.options_from_section !== 'string' || !sectionIds.has(entry.options_from_section))) errors.push(`${location}: options_from_section references an unknown section`)
+          if (entry.collapsed !== undefined && typeof entry.collapsed !== 'boolean') errors.push(`${location}: collapsed must be boolean`)
+          if (entry.fields !== undefined) validateReadFields(entry.fields, `${location}.fields`, depth + 1)
+        }
+      }
+      validateReadFields(component.read_fields, `${path}.read_fields`, 0)
     }
     if (component.component === 'schema_field'
       && (!isSafeDottedPath(component.path) || !['text', 'textarea', 'number', 'select', 'toggle', 'list', 'color'].includes(String(component.control)))) {

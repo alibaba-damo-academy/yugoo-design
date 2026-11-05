@@ -61,6 +61,16 @@ const compactLabel = (value, limit = 24) => {
   return text.length <= limit ? text : `${text.slice(0, limit - 1)}…`
 }
 
+const VISUAL_COPY = {
+  zh: { otherFunctions: '其他功能', noFunctions: '暂无功能', functionRoot: '产品功能结构', noPages: '暂无页面结构', functionMap: '功能范围图', pageMap: '页面关系图', primaryNavigation: '主要导航', relatedNavigation: '关联跳转' },
+  en: { otherFunctions: 'Other functions', noFunctions: 'No functions yet', functionRoot: 'Product functions', noPages: 'No page structure yet', functionMap: 'Function scope map', pageMap: 'Page map', primaryNavigation: 'Main navigation', relatedNavigation: 'Related navigation' },
+}
+function visualCopy(html) {
+  // The authored document already owns its language; Host UI never translates facts.
+  const tag = /<html\b[^>]*>/iu.exec(html)?.[0] ?? ''
+  return /^en(?:-|$)/iu.test((attribute(tag, 'lang') ?? '').trim()) ? VISUAL_COPY.en : VISUAL_COPY.zh
+}
+
 function parseSourceJson(sourceFiles, path, diagnostics) {
   const text = sourceFiles[path]
   if (typeof text !== 'string') return undefined
@@ -160,11 +170,11 @@ function svgDocument(content, viewBox) {
   return `<svg class="prd-visual-svg" xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" role="img"><defs><marker id="prd-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/></marker></defs>${content}</svg>`
 }
 
-function functionMapSvg(state) {
+function functionMapSvg(state, copy) {
   const active = orderedRecords(state.functions).filter(([, item]) => item.rejected !== true)
   const groups = new Map()
   for (const [id, item] of active) {
-    const epic = String(item.function_epic ?? '').trim() || '其他功能'
+    const epic = String(item.function_epic ?? '').trim() || copy.otherFunctions
     if (!groups.has(epic)) groups.set(epic, [])
     groups.get(epic).push([id, item])
   }
@@ -175,7 +185,7 @@ function functionMapSvg(state) {
   const branches = []
   let cursorY = top
   if (groups.size === 0) {
-    branches.push({ epic: '暂无功能', functions: [], color: palette[0], centerY: 68 })
+    branches.push({ epic: copy.noFunctions, functions: [], color: palette[0], centerY: 68 })
     cursorY = 108
   } else for (const [index, [epic, functions]] of [...groups].entries()) {
     const leaves = functions.map(([id, item], leafIndex) => ({ id, item, y: cursorY + leafIndex * rowHeight }))
@@ -190,7 +200,7 @@ function functionMapSvg(state) {
     parts.push(`<path d="M ${rootX + rootWidth} ${rootY + 34} C 238 ${rootY + 34}, 246 ${branch.centerY}, ${epicX} ${branch.centerY}" fill="none" stroke="${branch.color}" stroke-width="3"/>`)
     for (const leaf of branch.functions) parts.push(`<path d="M ${epicX + epicWidth} ${branch.centerY} C 520 ${branch.centerY}, 530 ${leaf.y + 18}, ${leafX} ${leaf.y + 18}" fill="none" stroke="${branch.color}" stroke-width="2" opacity="0.72"/>`)
   }
-  parts.push(`<rect x="${rootX}" y="${rootY}" width="${rootWidth}" height="68" rx="18" fill="#4c1d95" stroke="#4c1d95"/><text x="${rootX + rootWidth / 2}" y="${rootY + 41}" text-anchor="middle" font-family="system-ui,sans-serif" font-size="17" font-weight="700" fill="#ffffff">${escapeHtml(compactLabel(state.title ?? '产品功能结构', 16))}</text>`)
+  parts.push(`<rect x="${rootX}" y="${rootY}" width="${rootWidth}" height="68" rx="18" fill="#4c1d95" stroke="#4c1d95"/><text x="${rootX + rootWidth / 2}" y="${rootY + 41}" text-anchor="middle" font-family="system-ui,sans-serif" font-size="17" font-weight="700" fill="#ffffff">${escapeHtml(state.title == null ? copy.functionRoot : compactLabel(state.title, 16))}</text>`)
   for (const branch of branches) {
     parts.push(`<rect x="${epicX}" y="${branch.centerY - 24}" width="${epicWidth}" height="48" rx="14" fill="${branch.color}" stroke="${branch.color}"/><text x="${epicX + epicWidth / 2}" y="${branch.centerY + 5}" text-anchor="middle" font-family="system-ui,sans-serif" font-size="15" font-weight="700" fill="#ffffff">${escapeHtml(compactLabel(branch.epic, 18))}</text>`)
     for (const leaf of branch.functions) {
@@ -202,7 +212,7 @@ function functionMapSvg(state) {
   return svgDocument(parts.join(''), `0 0 ${width} ${height}`)
 }
 
-function pageMapSvg(state) {
+function pageMapSvg(state, copy) {
   const pages = record(state.pages)
   const ordered = orderedRecords(pages, state.page_order)
   const ids = ordered.map(([id]) => id)
@@ -254,7 +264,7 @@ function pageMapSvg(state) {
   const maxDepth = Math.max(0, ...depths.values())
   const height = top + (maxDepth + 1) * cardHeight + maxDepth * verticalGap + 72
   const parts = []
-  parts.push('<path d="M 24 18 H 60" stroke="#6d28d9" stroke-width="3" marker-end="url(#prd-arrow)"/><text x="70" y="22" font-family="system-ui,sans-serif" font-size="12" fill="#475569">主要导航</text><path d="M 170 18 H 206" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5 5"/><text x="216" y="22" font-family="system-ui,sans-serif" font-size="12" fill="#475569">关联跳转</text>')
+  parts.push(`<path d="M 24 18 H 60" stroke="#6d28d9" stroke-width="3" marker-end="url(#prd-arrow)"/><text x="70" y="22" font-family="system-ui,sans-serif" font-size="12" fill="#475569">${escapeHtml(copy.primaryNavigation)}</text><path d="M 170 18 H 206" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5 5"/><text x="216" y="22" font-family="system-ui,sans-serif" font-size="12" fill="#475569">${escapeHtml(copy.relatedNavigation)}</text>`)
   for (const edge of connections.filter(edge => !primaryEdges.has(edge.id))) {
     const from = positions.get(edge.source), to = positions.get(edge.target)
     if (from === undefined || to === undefined) continue
@@ -275,7 +285,7 @@ function pageMapSvg(state) {
     const isRoot = id === primaryRoot
     parts.push(`<g data-prd-page-id="${escapeHtml(id)}"><rect x="${position.x}" y="${position.y}" width="${cardWidth}" height="${cardHeight}" rx="12" fill="${isRoot ? '#f5f3ff' : '#ffffff'}" stroke="${isRoot ? '#6d28d9' : '#94a3b8'}" stroke-width="${isRoot ? '2' : '1.2'}"/><text x="${position.x + 14}" y="${position.y + 31}" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#0f172a">${escapeHtml(compactLabel(page.name ?? id, 14))}</text><rect x="${position.x + 14}" y="${position.y + 45}" width="${Math.max(48, typeLabel.length * 8 + 16)}" height="20" rx="10" fill="#f1f5f9"/><text x="${position.x + 22}" y="${position.y + 59}" font-family="system-ui,sans-serif" font-size="10.5" fill="#475569">${escapeHtml(typeLabel)}</text></g>`)
   }
-  if (ordered.length === 0) parts.push('<rect x="48" y="48" width="864" height="80" rx="12" fill="#f8fafc" stroke="#cbd5e1"/><text x="480" y="96" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" fill="#64748b">暂无页面结构</text>')
+  if (ordered.length === 0) parts.push(`<rect x="48" y="48" width="864" height="80" rx="12" fill="#f8fafc" stroke="#cbd5e1"/><text x="480" y="96" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" fill="#64748b">${escapeHtml(copy.noPages)}</text>`)
   return svgDocument(parts.join(''), `0 0 ${width} ${height}`)
 }
 
@@ -304,9 +314,9 @@ function htmlPreview(item) {
   return `<figure class="prd-visual-figure" data-prd-source-ref="${escapeHtml(item.path)}" data-prd-source-digest="${digest(item.content)}" data-prd-projection-digest="${digest(item.screenshot)}"${dependencies}><figcaption class="prd-visual-caption">${escapeHtml(item.title)}</figcaption><img class="prd-page-image" loading="lazy" alt="${escapeHtml(item.title)}" width="${PAGE_VIEWPORT.width * PAGE_VIEWPORT.deviceScaleFactor}" height="${PAGE_VIEWPORT.height * PAGE_VIEWPORT.deviceScaleFactor}" src="${item.screenshot}"></figure>`
 }
 
-function renderVisual(item) {
-  if (item.kind === 'function-map') return `<figure class="prd-visual-figure" data-prd-source-ref="${escapeHtml(item.path)}"><figcaption class="prd-visual-caption">功能范围图</figcaption>${functionMapSvg(item.state)}</figure>`
-  if (item.kind === 'page-map') return `<figure class="prd-visual-figure" data-prd-source-ref="${escapeHtml(item.path)}"><figcaption class="prd-visual-caption">页面关系图</figcaption>${pageMapSvg(item.state)}</figure>`
+function renderVisual(item, copy) {
+  if (item.kind === 'function-map') return `<figure class="prd-visual-figure" data-prd-source-ref="${escapeHtml(item.path)}"><figcaption class="prd-visual-caption">${escapeHtml(copy.functionMap)}</figcaption>${functionMapSvg(item.state, copy)}</figure>`
+  if (item.kind === 'page-map') return `<figure class="prd-visual-figure" data-prd-source-ref="${escapeHtml(item.path)}"><figcaption class="prd-visual-caption">${escapeHtml(copy.pageMap)}</figcaption>${pageMapSvg(item.state, copy)}</figure>`
   if (item.kind === 'bpmn') {
     if (typeof item.renderedSvg !== 'string') throw new Error(`BPMN visual ${JSON.stringify(item.path)} has not been rendered`)
     return `<figure class="prd-visual-figure" data-prd-source-ref="${escapeHtml(item.path)}" data-prd-source-digest="${digest(item.content)}" data-prd-projection-digest="${digest(item.renderedSvg)}"><figcaption class="prd-visual-caption">${escapeHtml(item.title)}</figcaption>${item.renderedSvg}</figure>`
@@ -323,7 +333,7 @@ function replaceVisualRegion(html, name, content) {
 
 const DISTRIBUTED_VISUAL_REGIONS = new Set(['all_bpmn', 'all_page_prototypes'])
 
-function replaceDistributedVisualRegion(html, name, items, diagnostics) {
+function replaceDistributedVisualRegion(html, name, items, diagnostics, copy) {
   const regionExpression = new RegExp(`(<!--\\s*prd-visual:${name}:start\\s*-->)(?<body>[\\s\\S]*?)(<!--\\s*prd-visual:${name}:end\\s*-->)`, 'iu')
   const region = regionExpression.exec(html)
   if (region === null) throw new Error(`prd.html must keep one ordered ${name} visual region`)
@@ -336,7 +346,7 @@ function replaceDistributedVisualRegion(html, name, items, diagnostics) {
       diagnostics.push(`visual region ${JSON.stringify(name)} must place exactly one inline visual reference for ${JSON.stringify(item.path)}`)
       continue
     }
-    body = body.replace(expression, (_match, start, end) => `${start}\n${renderVisual(item)}\n${end}`)
+    body = body.replace(expression, (_match, start, end) => `${start}\n${renderVisual(item, copy)}\n${end}`)
   }
   for (const match of body.matchAll(/<!--\s*prd-visual-item:(?<path>[A-Za-z0-9._/-]+):start\s*-->/giu)) {
     const path = match.groups?.path ?? ''
@@ -346,6 +356,7 @@ function replaceDistributedVisualRegion(html, name, items, diagnostics) {
 }
 
 async function materializeVisuals(html, sourceFiles) {
+  const copy = visualCopy(html)
   const { plan, diagnostics } = visualPlan(sourceFiles)
   if (diagnostics.length > 0) return { html, diagnostics }
   try {
@@ -365,8 +376,8 @@ async function materializeVisuals(html, sourceFiles) {
   try {
     for (const name of VISUAL_REGIONS) {
       outputHtml = DISTRIBUTED_VISUAL_REGIONS.has(name)
-        ? replaceDistributedVisualRegion(outputHtml, name, plan[name], diagnostics)
-        : replaceVisualRegion(outputHtml, name, plan[name].map(renderVisual).join('\n'))
+        ? replaceDistributedVisualRegion(outputHtml, name, plan[name], diagnostics, copy)
+        : replaceVisualRegion(outputHtml, name, plan[name].map(item => renderVisual(item, copy)).join('\n'))
     }
   } catch (error) {
     diagnostics.push(error instanceof Error ? error.message : String(error))
@@ -480,6 +491,7 @@ function protectedBlocks(body) {
 }
 
 function htmlDiagnostics(state, html, template, sourceFiles) {
+  const copy = visualCopy(html)
   const diagnostics = []
   const lower = html.toLowerCase()
   if (!lower.includes('<html') || !lower.includes('</html>') || !lower.includes('<body') || !lower.includes('</body>')) diagnostics.push('prd.html must be a complete HTML document')
@@ -610,7 +622,7 @@ function htmlDiagnostics(state, html, template, sourceFiles) {
     const expected = visual.plan[name] ?? []
     const expectedRefs = expected.map(item => item.path)
     if (!DISTRIBUTED_VISUAL_REGIONS.has(name) && !expected.some(item => item.kind === 'html')) {
-      const expectedMarkup = expected.map(renderVisual).join('\n')
+      const expectedMarkup = expected.map(item => renderVisual(item, copy)).join('\n')
       if (region.trim() !== expectedMarkup.trim()) diagnostics.push(`visual region ${JSON.stringify(name)} does not match its deterministic owner projection`)
     }
     if (DISTRIBUTED_VISUAL_REGIONS.has(name)) {
@@ -661,7 +673,7 @@ function htmlDiagnostics(state, html, template, sourceFiles) {
           if (attribute(figureTag, 'data-prd-projection-digest') !== digest(svg)) diagnostics.push(`BPMN visual ${JSON.stringify(ref)} projection integrity check failed`)
         }
       } else if (item !== undefined) {
-        const expectedSvg = item.kind === 'function-map' ? functionMapSvg(item.state) : pageMapSvg(item.state)
+        const expectedSvg = item.kind === 'function-map' ? functionMapSvg(item.state, copy) : pageMapSvg(item.state, copy)
         if (!figure.includes(expectedSvg)) diagnostics.push(`visual projection ${JSON.stringify(ref)} does not match its deterministic owner projection`)
       }
     }

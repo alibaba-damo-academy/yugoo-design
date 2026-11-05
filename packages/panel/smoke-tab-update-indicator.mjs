@@ -46,6 +46,27 @@ try {
   assert.equal(document.querySelector('[data-testid="chat-design-tab-unread-a"]')?.textContent.trim(), 'new')
   await act(async () => timers[1].callback())
   assert.ok(document.querySelector('[data-testid="chat-design-tab-unread-a"]'), 'unread does not expire with the flash')
+  Object.defineProperty(dom.window.HTMLElement.prototype, 'scrollWidth', { configurable: true, get() { return this.classList.contains('dsh-design-tabs-scroll') ? 600 : 0 } })
+  Object.defineProperty(dom.window.HTMLElement.prototype, 'clientWidth', { configurable: true, get() { return 200 } })
+  navigator.language = 'en-US'
+  const selected = []
+  await act(async () => root.render(React.createElement(DesignTabsBar, { value: 'b', onChange: value => selected.push(value), onAddPanel() {}, options: [{ value: 'a', label: 'First panel' }, { value: 'b', label: 'Current panel' }] })))
+  const trigger = document.querySelector('[data-testid="chat-design-tabs-overflow"]')
+  assert.equal(trigger.getAttribute('aria-label'), 'All panels')
+  assert.equal(trigger.textContent.trim(), '')
+  assert.ok(trigger.querySelector('svg[aria-hidden="true"]'), 'overflow is an icon-only menu with its accessible name retained')
+  await act(async () => trigger.click())
+  assert.equal(document.activeElement.textContent.trim(), 'Current panel')
+  const menu = document.querySelector('[role="menu"]')
+  await act(async () => menu.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Home', bubbles: true })))
+  assert.equal(document.activeElement.textContent.trim(), 'First panel')
+  await act(async () => document.activeElement.click())
+  assert.deepEqual(selected, ['a'])
+  assert.equal(document.activeElement === trigger, true, 'choosing an overflow item restores focus after the item unmounts')
+  await act(async () => trigger.click())
+  await act(async () => document.querySelector('[role="menu"]').dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
+  assert.equal(document.querySelector('[role="menu"]'), null)
+  assert.equal(document.activeElement === trigger, true)
 } finally {
   await act(async () => root.unmount())
   globalThis.setTimeout = originalTimeout

@@ -10,8 +10,6 @@ export function ArtifactStatusIcon({ status, label }: { status: ProjectedArtifac
       : status === 'queued' ? <Clock3 aria-hidden='true' style={{ ...size, color: 'var(--ds-brand-text-primary, #7c3aed)' }} />
         : status === 'unknown' ? <span aria-hidden='true' style={{ color: 'var(--ds-text-tertiary, #64748b)', fontSize: 11, lineHeight: 1 }}>?</span>
           : status === 'failed' ? <span aria-hidden='true' style={{ color: 'var(--ds-error-text-primary, #ef4444)', fontSize: 11, lineHeight: 1 }}>×</span>
-          : <span aria-hidden='true' style={{ ...size, borderRadius: '50%', boxSizing: 'border-box',
-            background: status === 'completed' ? 'var(--ds-success-6, #10b981)' : 'transparent',
-            border: status === 'completed' ? undefined : '1px solid var(--ds-brand-text-primary, #8b5cf6)' }} />}
+          : <span aria-hidden='true' className='dsh-artifact-status-dot' />}
   </span>
 }

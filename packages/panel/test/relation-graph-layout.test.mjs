@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import ELK from 'elkjs/lib/elk.bundled.js'
 import { register } from 'tsx/esm/api'
 register()
-const { relationLayoutInput, relationRoute, relationGraphFitViewport, relationFallbackCurve, RELATION_SIDES, RELATION_GRAPH_AUTO_FIT } = await import('../src/relation-graph-layout.ts')
+const { relationLayoutInput, layoutRelationGraph, relationRoute, relationGraphFitViewport, relationFallbackCurve, relationNodeId, relationEdgeId, RELATION_SIDES, RELATION_GRAPH_AUTO_FIT } = await import('../src/relation-graph-layout.ts')
 const { readFile } = await import('node:fs/promises')
 
 test('automatic framing caps sparse canvas at natural size, shrinks large graphs and preserves manual zoom', async () => {
@@ -73,7 +73,7 @@ test('all shared ReactFlow workspaces reuse ports, count chrome and automatic fi
   assert.match(await source('record-board.tsx'), /nodesDraggable=\{false\} nodesConnectable=\{false\} elementsSelectable=\{false\}/)
   assert.match(await source('record-board.tsx'), /<PanelCanvasHandles isConnectable=\{false\}/)
   assert.match(workspace, /isConnectableStart=\{isConnectable\} isConnectableEnd=\{isConnectable\}/)
-  assert.match(await source('record-board.tsx'), /counts=\{t\('boardMapCounts'/)
+  assert.match(await source('record-board.tsx'), /counts=\{t\([^\n]*'boardMapCounts'/)
   assert.match(await source('use-flow-container-fit.ts'), /flow\.fitView\(RELATION_GRAPH_AUTO_FIT\)/)
   const css = await source('visual-components.css')
   assert.match(css, /\.dsh-relation-graph\s*\{[^}]*padding: 12px 16px 0/)
@@ -81,6 +81,28 @@ test('all shared ReactFlow workspaces reuse ports, count chrome and automatic fi
 })
 const overlaps = (a, b) => a.x < b.x + b.width - .1 && a.x + a.width > b.x + .1 && a.y < b.y + b.height - .1 && a.y + a.height > b.y + .1
 const label = (id, placement, width = 200, height = 64) => ({ id, placement, width, height })
+
+test('annotated relationship chains use the canvas area without dropping labels or changing endpoints', async () => {
+  const nodes = Array.from({ length: 7 }, (_, id) => ({ id: String(id), width: 180, height: 64 }))
+  const edges = [[0,1], [1,2], [1,3], [2,3], [3,4], [4,5], [5,6], [2,5]].map(([source, target], id) => ({
+    id: String(id), source: String(source), target: String(target),
+    labels: [label('main', 'CENTER', 160, 44), label('source', 'TAIL', 150, 36), label('target', 'HEAD', 150, 36)],
+  }))
+  const result = await layoutRelationGraph(new ELK(), nodes, edges, 1250 / 700)
+  assert.equal(result.children.length, 7)
+  assert.equal(result.edges.length, 8)
+  assert.ok(relationGraphFitViewport({ x: 0, y: 0, width: result.width, height: result.height }, 1250, 700).zoom >= 0.5,
+    'seven annotated objects must not open as a quarter-scale horizontal strip')
+  const boxes = [...result.children, ...result.edges.flatMap(edge => edge.labels)]
+  assert.equal(boxes.length, 7 + 8 * 3, 'all endpoint and relationship annotations remain visible')
+  assert.ok(boxes.every((a, i) => boxes.slice(i + 1).every(b => !overlaps(a, b))), 'wrapping does not overlap text boxes')
+  for (const edge of result.edges) {
+    const authored = edges.find(value => relationEdgeId(value.id) === edge.id)
+    assert.equal(edge.sources[0], `${relationNodeId(authored.source)}:right`)
+    assert.equal(edge.targets[0], `${relationNodeId(authored.target)}:left`)
+    assert.equal(edge.sections.length, 1, 'the shared route renderer receives one complete orthogonal route')
+  }
+})
 
 for (const [name, links] of [
   ['chain', [['a','b'], ['b','c']]],
@@ -91,9 +113,8 @@ for (const [name, links] of [
   const nodes = ['a','b','c','d'].map((id, i) => ({ id, width: 180, height: 64 + 40 * i }))
   const edges = links.map(([source,target], i) => ({ id: `e${i}`, source, target,
     labels: [label('main', 'CENTER'), label('source', 'TAIL', 150, 58), label('target', 'HEAD', 150, 58)] }))
-  const input = relationLayoutInput(nodes, edges)
   const before = structuredClone({ nodes, edges })
-  const result = await new ELK().layout(input)
+  const result = await layoutRelationGraph(new ELK(), nodes, edges)
   assert.deepEqual({ nodes, edges }, before, 'source records remain immutable even though ELK mutates its private input')
   const boxes = [...result.children.map(n => ({...n, kind:'node'})), ...result.edges.flatMap(e => e.labels.map(l => ({...l, id:`${e.id}/${l.id}`,kind:'label'})))]
   const collisions = boxes.flatMap((a,i) => boxes.slice(i+1).filter(b=>overlaps(a,b)).map(b=>`${a.id} / ${b.id}`))

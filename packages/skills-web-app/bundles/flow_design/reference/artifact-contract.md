@@ -6,10 +6,14 @@ new design and reconstruction without replacing domain-specific rules.
 
 Shared by authoring and reconstruction; convert established behavior into BPMN without inventing policy. Canonical state is `flow_design/flow_design.json`; active processes are listed by `process_order`, stakeholders reuse `roles[].name`. The installed schema/validation are unchanged.
 
-For product automation, the existing built-in role is
-`{"id":"System","name":"系统"}`. `System` is its ID, not its stakeholder or
-lane label: process stakeholders and BPMN lanes use the exact name `系统`.
-Check this in the canonical plan as well as the XML before accepting a file.
+For product automation, keep exactly one built-in role with stable `id: "System"`
+and a non-empty display name in the authored language, for example
+`{"id":"System","name":"系统"}` in Chinese or
+`{"id":"System","name":"System"}` in English. Role IDs and display names
+remain unique. Process stakeholders and BPMN lanes reuse the exact canonical
+`roles[].name`; resolve the product's display name by its `System` ID, never by
+a translated-name whitelist or lane ID. Check the cast, participating roles and
+automated/human task ownership before accepting a file.
 
 Bind serial/delegated activity using `artifact_kind: "flow_bpmn"`, the stable process ID and `artifact_file: "flow_design/<process_id>.bpmn"`. A Worker receives the matching process descriptor, focused evidence and this shared contract; the Producer integrates its returned file reference.
 
@@ -25,10 +29,13 @@ model tool arguments.
 Validate the file with `run_skill_script`: use `path: "bpmn-validator.mjs"`,
 `args: ["validate-bpmn-file"]`, `input_file` equal to the pre-bound BPMN path,
 and `input_context` containing
-`{"process_id":"P-...","process":{...}}`. The bounded `process` object is the
+`{"process_id":"P-...","process":{...},"roles":[...]}`. `roles` is the existing
+canonical role cast, not a new process field. The bounded `process` object is the
 matching canonical descriptor; it needs the supplied stakeholders,
 system_responsibilities, trigger_hints, and process_type. The validator returns
 only validity and diagnostics. Repair the same file and retry until it passes.
+Older calls without `roles` retain the original Chinese system-lane semantics;
+always include the canonical cast for new or revised localized files.
 
 Next call `run_skill_script` with `path: "layout.mjs"`, the same `input_file`, no
 args, and `output_file` equal to that same BPMN path. On exit 0 the Host writes the

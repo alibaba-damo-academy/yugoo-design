@@ -5,6 +5,7 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ReviewPolicyControl } from './src/client/review-policy-control.tsx'
 import { ADVISORY_CSS } from './src/client/styles.ts'
+import { bindDesignHostLocale } from './src/client/ported/host.ts'
 
 const dom = new JSDOM('<div id="root" style="font-weight:600"></div>', { url: 'http://localhost' })
 // The advisory slot must work before a Dock ever mounts. Do not load the
@@ -25,6 +26,9 @@ const runtime = {
   sendPrompt: async (...args) => { prompts.push(args) },
 }
 const root = createRoot(document.getElementById('root'))
+let activeLanguage = 'zh-CN'
+const localeListeners = new Set()
+const releaseLocale = bindDesignHostLocale({ getSnapshot: () => ({ active: activeLanguage }), subscribe: listener => { localeListeners.add(listener); return () => localeListeners.delete(listener) } })
 const click = async selector => { await act(async () => document.querySelector(selector).click()) }
 try {
   await act(async () => root.render(React.createElement(ReviewPolicyControl, { sessionId: 'test-session', runtime })))
@@ -65,6 +69,18 @@ try {
   assert.equal(prompts.length, 2, 'policy off retains the same manual-check route')
   assert.match(prompts[1][1], /未经用户选择不改变评审策略、不自动同步运行/)
   assert.equal(saved.length, 3, 'manual check leaves the explicitly selected off policy intact')
+  await act(async () => { activeLanguage = 'en-US'; for (const notify of localeListeners) notify() })
+  assert.equal(document.querySelector('dialog'), dialog, 'switching language preserves the open dialog and draft policy')
+  assert.equal(select.value, 'off')
+  assert.equal(document.querySelector('.dsh-review-settings-trigger').textContent.trim(), 'Settings')
+  assert.equal(document.querySelector('[role="status"]').textContent, 'Review requested. Check its progress in the conversation.')
+  assert.doesNotMatch(dialog.textContent, /[\u3400-\u9fff]/)
+  assert.equal(prompts.length, 2, 'switching language does not request another check')
+  await click('.dsh-review-settings-check')
+  assert.match(prompts[2][1], /design_recheck_reviews/)
+  assert.match(prompts[2][1], /only after explicit confirmation/)
+  assert.doesNotMatch(prompts[2][1], /[\u3400-\u9fff]/)
+  assert.equal(saved.length, 3, 'localized manual request preserves policy')
   await click('.dsh-review-settings-close')
   assert.equal(dialog.open, false)
   const css = await readFile(new URL('./src/client/styles.ts', import.meta.url), 'utf8')
@@ -77,6 +93,7 @@ try {
   assert.match(css, /\.dsh-review-settings-dialog::backdrop/)
 } finally {
   await act(async () => root.unmount())
+  releaseLocale()
   dom.window.close()
 }
 console.log('REVIEW POLICY CONTROL OK')

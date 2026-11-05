@@ -11,21 +11,24 @@ const rules=[...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
 test('simple record card titles and field captions have distinct hierarchy without changing nested forms or compact tables',()=>{
  const dom=new JSDOM(`<style>${css}</style><div class="dsh-design-panel"><div class="dsh-record-map"><section>
  <header><strong id="title">Credential 1</strong></header>
+ <div class="dsh-record-map-body">
  <label><span id="caption">Credential name</span><input id="input"></label>
  <div class="dsh-design-field"><span id="nested" class="dsh-design-field-label">Nested typed field</span></div>
+ </div>
  </section></div><div class="dsh-record-map is-compact"><section><label><span id="compact">Table caption</span><input></label></section></div></div><div class="dsh-record-map"><section><header><strong id="host">Host heading</strong></header></section></div>`)
  try{
   const style=id=>dom.window.getComputedStyle(dom.window.document.getElementById(id))
   assert.equal(style('title').fontSize,'14px')
   assert.equal(style('title').fontWeight,'500')
-  assert.equal(style('caption').fontSize,'12px')
+  assert.equal(style('caption').fontSize,style('nested').fontSize)
   assert.equal(style('caption').fontWeight,'400')
-  assert.equal(style('caption').lineHeight,'18px')
-  assert.equal(style('input').fontSize,'14px','editing text remains standard size')
+  assert.equal(style('caption').lineHeight,'20px')
+  assert.equal(style('input').fontSize,'var(--ygd-panel-text-size,14px)','editing text uses the shared text-size token')
   assert.equal(style('input').height,'36px')
-  assert.equal(style('compact').fontSize,'14px','compact table headings are not card captions')
-  assert.equal(style('compact').fontWeight,'500')
+  assert.equal(style('compact').fontSize,style('nested').fontSize,'field labels share the same density in compact and nested views')
+  assert.equal(style('compact').fontWeight,'400')
   assert.notEqual(style('nested').fontSize,'12px','nested form labels retain their own hierarchy')
+  assert.equal(style('nested').fontWeight,'400','ordinary nested labels do not compete with record titles')
   assert.notEqual(style('host').fontWeight,'500','host headings are outside Panel scope')
  }finally{dom.window.close()}
 })
@@ -35,8 +38,8 @@ test('nested native choice controls do not inherit full-width text input styling
  try{
   const style=id=>dom.window.getComputedStyle(dom.window.document.getElementById(id))
   for(const id of ['radio','checkbox']){
-   assert.equal(style(id).width,'auto',`${id} retains intrinsic native size`)
-   assert.equal(style(id).flex,'0 0 auto',`${id} is not stretched or compressed by choice labels`)
+   assert.equal(style(id).width,'16px',`${id} keeps the shared choice-control size instead of full-width text styling`)
+   assert.equal(style(id).flex,'0 0 16px',`${id} is not stretched or compressed by choice labels`)
    assert.notEqual(style(id).paddingLeft,'10px',`${id} does not inherit text field padding`)
   }
   for(const id of ['text','number','textarea','select']){
@@ -53,20 +56,22 @@ test('nested native choice controls do not inherit full-width text input styling
 test('nested choice rows use only the shared choice gap while card fields own section spacing',()=>{
  const dom=new JSDOM(`<style>${css}</style><div class="dsh-design-panel"><div class="dsh-record-workspace">
  <button class="dsh-panel-workspace-map-toggle"><svg class="dsh-panel-disclosure-icon"></svg></button>
- <div class="dsh-record-map"><section>
-   <header><button class="dsh-record-map-heading dsh-panel-disclosure"><span class="dsh-panel-disclosure-label">Field</span><svg class="dsh-panel-disclosure-icon"></svg></button></header>
+ <div class="dsh-record-map"><details open>
+   <summary class="dsh-record-map-heading dsh-panel-disclosure"><span class="dsh-panel-disclosure-label">Field</span><div class="dsh-record-map-actions"><button>Remove</button></div><svg class="dsh-panel-disclosure-icon"></svg></summary>
+   <div class="dsh-record-map-body">
    <label id="column"><span>Name</span><input></label>
    <div class="dsh-design-field"><span class="dsh-design-field-label">When required?</span><div class="dsh-design-field-choices">
      <label id="first" class="dsh-design-field-choice"><input type="radio" checked><span>Optional</span></label>
      <label id="second" class="dsh-design-field-choice"><input type="radio"><span>Required</span></label>
-   </div></div>
- </section><button class="dsh-record-map-add">Add</button></div>
- <details class="dsh-record-board-editor" open><summary class="dsh-panel-disclosure"><span class="dsh-panel-disclosure-label">Details</span><svg class="dsh-panel-disclosure-icon"></svg></summary></details>
+   </div></div></div>
+ </details><section><header><strong>Ordinary record</strong></header></section><button class="dsh-record-map-add">Add</button></div>
+ <details class="dsh-record-board-editor" open><summary class="dsh-panel-disclosure"><span class="dsh-panel-disclosure-label">Details</span><svg class="dsh-panel-disclosure-icon"></svg></summary><section><h5 id="detail-group">Input</h5></section><div class="dsh-compact-record-details"><section data-detail-control="record_map"><header><h5 id="nested-group">Output</h5></header></section></div></details>
  </div></div>`)
  try{
   const style=selector=>dom.window.getComputedStyle(dom.window.document.querySelector(selector))
-  assert.equal(style('.dsh-record-map').gap,'var(--ygd-panel-detail-control-gap, 8px)')
-  assert.equal(style('.dsh-record-map > section').gap,'var(--ygd-panel-detail-section-gap, 16px)')
+  assert.equal(style('.dsh-record-map').gap,'var(--ygd-panel-detail-section-gap, 16px)')
+  assert.equal(style('.dsh-record-map > section').gap,'var(--ygd-panel-detail-control-gap, 8px)')
+  assert.equal(style('.dsh-record-map-body').gap,'var(--ygd-panel-detail-section-gap, 16px)')
   assert.equal(style('#column').margin,'0px')
   assert.equal(style('.dsh-design-field').margin,'0px')
   assert.equal(style('.dsh-design-field-choices').gap,'8px')
@@ -79,6 +84,8 @@ test('nested choice rows use only the shared choice gap while card fields own se
   assert.equal(style('.dsh-record-map-heading').fontWeight,'500')
   assert.equal(style('.dsh-record-map-heading').fontSize,'14px')
   assert.equal(style('.dsh-record-map-heading').gap,'8px')
+  // The native summary resets physical padding. JSDOM reports an empty logical
+  // shorthand here; keep checking both real insets instead of dropping the guard.
   assert.equal(style('.dsh-record-map-heading').paddingLeft,'0px','inline heading never inherits ordinary button indentation')
   assert.equal(style('.dsh-record-map-heading').paddingRight,'0px')
   assert.equal(style('.dsh-record-map-heading').minHeight,'28px')
@@ -86,7 +93,9 @@ test('nested choice rows use only the shared choice gap while card fields own se
   assert.equal(style('.dsh-panel-disclosure-icon').width,'16px')
   assert.equal(style('.dsh-panel-workspace-map-toggle').padding,'0px','workspace defaults cannot override the shared canvas toggle')
   assert.equal(style('.dsh-panel-workspace-map-toggle').borderRadius,'8px 0 0 8px')
-  assert.equal(style('summary').fontWeight,'400','detail disclosure retains its accepted normal weight')
+  assert.equal(style('.dsh-record-board-editor > summary').fontWeight,'400','detail disclosure retains its accepted normal weight')
+  assert.equal(style('#detail-group').fontWeight,'500','record detail groups do not outweigh the record title')
+  assert.equal(style('#nested-group').fontWeight,'500','compact detail groups use the same hierarchy')
   // JSDOM incorrectly lets its UA summary rules override author styles. Real
   // Chromium verifies flex + no marker; retain the authored rule check here.
   assert.equal([...dom.window.document.styleSheets[0].cssRules].find(rule=>rule.selectorText==='summary.dsh-panel-disclosure').style.getPropertyValue('list-style'),'none')

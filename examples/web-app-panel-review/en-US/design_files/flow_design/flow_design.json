@@ -15,7 +15,7 @@
     },
     {
       "id": "System",
-      "name": "系统"
+      "name": "System"
     }
   ],
   "processes": {
@@ -29,7 +29,7 @@
         "Customer",
         "Designer",
         "Project lead",
-        "系统"
+        "System"
       ],
       "system_responsibilities": [
         "Save original evidence, decisions and delivery results; distinguish their failures."
@@ -58,7 +58,7 @@
       "tier": "auxiliary",
       "process_type": "linear",
       "stakeholders": [
-        "系统",
+        "System",
         "Project lead"
       ],
       "system_responsibilities": [

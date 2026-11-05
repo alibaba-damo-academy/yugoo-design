@@ -43,6 +43,8 @@ test('live drag positions change routing without changing edge identity, label o
   assert.notEqual(first.sourceHandle, after.sourceHandle)
   assert.equal(after.source, 'node:a'); assert.equal(after.target, 'node:b')
   assert.equal(after.id, edge.id); assert.equal(after.label, edge.label)
+  assert.equal(after.ariaLabel, edge.label)
+  assert.equal(navigationEdge({ ...edge, ariaLabel: '列表 → 详情 · 打开项目' }, source, { x: 0, y: 0 }).ariaLabel, '列表 → 详情 · 打开项目')
   assert.equal(after.selected, true)
   assert.ok(after.style.strokeWidth > first.style.strokeWidth)
   assert.ok(after.markerEnd)

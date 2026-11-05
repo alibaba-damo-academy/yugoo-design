@@ -6,7 +6,7 @@ export const navigationHandleId = (_type: 'source' | 'target', position: Positio
 /** Match the native navigation map's dominant-axis routing using live positions.
  * Handle choice and selection are view state, never new canonical edge fields.
  */
-export function navigationEdge(edge: { id: string; source: string; target: string; label: string },
+export function navigationEdge(edge: { id: string; source: string; target: string; label: string; ariaLabel?: string },
   source: { x: number; y: number }, target: { x: number; y: number }, selected = false): Edge {
   const dx = target.x - source.x, dy = target.y - source.y
   const horizontal = Math.abs(dx) >= Math.abs(dy)
@@ -14,6 +14,7 @@ export function navigationEdge(edge: { id: string; source: string; target: strin
   const end = horizontal ? (dx >= 0 ? Position.Left : Position.Right) : (dy >= 0 ? Position.Top : Position.Bottom)
   return {
     ...edge, source: `node:${edge.source}`, target: `node:${edge.target}`,
+    ariaLabel: edge.ariaLabel ?? edge.label,
     sourceHandle: navigationHandleId('source', start), targetHandle: navigationHandleId('target', end),
     type: 'smoothstep', zIndex: 1, selected,
     markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--ds-text-tertiary, #737780)' },

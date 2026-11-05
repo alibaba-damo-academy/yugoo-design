@@ -26,9 +26,11 @@ not useful.
 
 ## Product boundary and lanes
 
-`系统` is the product being designed, not an invented organization role. The
-brief always states its grounded responsibilities. Realize those
-responsibilities in the `系统` lane; if a proposed process has no product
+The role with stable `id: "System"` is the product being designed, not an invented
+organization role. Its display name comes from the supplied canonical cast
+(`系统` in the Chinese example below, `System` in English). The brief always
+states its grounded responsibilities. Realize those responsibilities in that
+role's exact display-name lane; if a proposed process has no product
 responsibility, it should not have reached this worker.
 
 For two or more participating roles, create exactly one lane per supplied role
@@ -57,14 +59,15 @@ decoration and do not flatten known semantics into generic tasks.
 |---|---|
 | Human works in/with the product | `userTask` in that human role lane |
 | Human performs offline work | `manualTask` in that human role lane |
-| Product runs an automated operation | `serviceTask` in `系统` |
-| Product evaluates a stated decision table/rule | `businessRuleTask` in `系统` |
-| Product sends a message/notification | `sendTask` in `系统` |
-| Product waits for a message | `receiveTask` in `系统` |
+| Product runs an automated operation | `serviceTask` in the System role lane |
+| Product evaluates a stated decision table/rule | `businessRuleTask` in the System role lane |
+| Product sends a message/notification | `sendTask` in the System role lane |
+| Product waits for a message | `receiveTask` in the System role lane |
 | Evidence does not distinguish a more specific activity | `task` |
 
-Never place `userTask`/`manualTask` in `系统`. Never place
-`serviceTask`/`businessRuleTask`/`sendTask`/`receiveTask` in a human lane.
+Never place `userTask`/`manualTask` in the System role lane, and do not use a generic
+`task` for its automated responsibility. Never place
+`serviceTask`/`businessRuleTask`/`scriptTask`/`sendTask`/`receiveTask` in a human lane.
 
 Use gateways by their actual control-flow semantics:
 
@@ -184,7 +187,7 @@ the structure to the brief; never copy its business facts or ids blindly.
 2. All ids are ASCII and process-prefixed; all references resolve.
 3. Lane names exactly match supplied stakeholders; every node belongs to one
    responsible lane.
-4. `系统` responsibilities are typed system activities; human work stays in
+4. The System role's responsibilities are typed system activities; human work stays in
    human lanes.
 5. Every supplied trigger hint is realized, and no ungrounded trigger appears.
 6. Exclusive outcomes are named; parallel/event-driven shapes use the matching

@@ -291,6 +291,10 @@ enters Git history, G/R/A owns ongoing cross-Bundle drift checks.
 
 ### 4. Finalize inside the same agentic loop
 
+Keep `<html lang>` in the authored document's language. Fixed visual labels use
+that language as described in the shared contract; source business names remain
+unchanged and switching the Host UI does not translate the document.
+
 Once prose and provenance are complete, run the shared contract’s file-mode finalization against the already-written HTML. Do not rewrite the document or transport visual bytes through model context.
 
 If the script reports diagnostics, preserve valid content, apply the smallest

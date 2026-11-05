@@ -4,6 +4,74 @@ import { JSDOM } from 'jsdom'
 import { installSelectDom } from './select-interaction.mjs'
 import { validatePanelManifest } from '../../core/src/panel-dsl.ts'
 
+test('related card projections keep each complete record together and preserve nested edits', async () => {
+  const dom = new JSDOM('<div id="root"></div>', { url: 'https://panel.test/' })
+  for (const key of ['window', 'document', 'HTMLElement', 'Element', 'Node']) globalThis[key] = dom.window[key]
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true
+  const React = await import('react'); globalThis.React = React
+  const { createRoot } = await import('react-dom/client')
+  const { renderManifest, applyPanelUpdatesToDraft } = await import('../src/interpreter.ts')
+  const root = createRoot(document.getElementById('root'))
+  const manifest = { version: 1, panel_kind: 'document', sections: [
+    { id: 'parents', title: 'Parents' },
+    { id: 'items', title: 'Items', records_path: 'items', form: { header: { variant: 'card', title: { field: 'title', editable: true } } } },
+    { id: 'details', title: 'Details', records_path: 'items', fields_path: 'details', navigation: 'contextual' },
+  ], fields: [
+    { key: 'title', label: 'Name', control: 'text', applies_to: ['parents', 'items'] },
+    { key: 'parent', control: 'record_select', options_from_section: 'parents', hidden: true, applies_to: ['details'] },
+    { key: 'rule', label: 'Rule', control: 'text', applies_to: ['details'] },
+  ], ui: { id: 'workspace', component: 'record_workspace', sources: ['parents', 'details'], children: [
+    { id: 'inspector', component: 'record_inspector', children: [
+      { id: 'children', component: 'record_related_editor', source: 'details', sources: ['items', 'details'], bindings: { reference: 'parent' } },
+    ] },
+  ] } }
+  assert.deepEqual(validatePanelManifest(manifest), [])
+  let data = { parents: { p: { title: 'Purchaser' } }, items: {
+    a: { id: 'a', title: 'Read orders', source_refs: ['customer:decision'], details: { parent: 'p', rule: 'Own orders only' } },
+    b: { id: 'b', title: 'Approve orders', source_refs: ['manager:decision'], details: { parent: 'p', rule: 'Assigned orders only' } },
+  } }
+  const initial = structuredClone(data)
+  let editable = true, writes = 0
+  const show = () => root.render(renderManifest(manifest, data, { editable, locale: 'en-US', onPanelUpdate: updates => {
+    writes++; data = applyPanelUpdatesToDraft(data, updates); show()
+  } }))
+  const cards = () => [...document.querySelectorAll('.dsh-record-related-collection > .dsh-design-form-group-content > .dsh-design-record-form > .dsh-panel-content-card')]
+  try {
+    await React.act(show)
+    assert.equal(cards().length, 2, 'one complete boundary per record, not per projection')
+    assert.deepEqual(cards().map(card => card.dataset.record), ['a', 'b'])
+    for (const [index, card] of cards().entries()) {
+      assert.equal(card.querySelectorAll('.dsh-panel-content-card').length, 0, 'projections do not become extra cards')
+      assert.equal(card.querySelectorAll('.dsh-design-record-header').length, 1)
+      assert.equal(card.querySelectorAll('[data-testid^="record-remove-"]').length, 1)
+      assert.equal(card.querySelector('input[aria-label="Rule"]').value, index === 0 ? 'Own orders only' : 'Assigned orders only')
+    }
+    await React.act(() => {
+      const input = cards()[1].querySelector('input[aria-label="Rule"]')
+      Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value').set.call(input, 'Explicit manager confirmation')
+      input.dispatchEvent(new dom.window.Event('input', { bubbles: true }))
+    })
+    assert.equal(data.items.b.details.rule, 'Explicit manager confirmation')
+    assert.equal(data.items.b.title, initial.items.b.title)
+    assert.deepEqual(data.items.b.source_refs, initial.items.b.source_refs)
+    assert.deepEqual(data.items.a, initial.items.a)
+    assert.equal(writes, 1)
+    editable = false
+    await React.act(show)
+    assert.equal(cards().length, 2)
+    assert.match(cards()[0].textContent, /Read orders.*Own orders only/s)
+    assert.match(cards()[1].textContent, /Approve orders.*Explicit manager confirmation/s)
+    assert.equal(document.querySelector('.dsh-record-related-collection input, .dsh-record-related-collection textarea'), null)
+    assert.equal(document.querySelector('.dsh-record-related-collection [data-testid^="record-remove-"]'), null)
+    assert.equal(writes, 1)
+    manifest.fields.find(field => field.key === 'rule').hidden = true
+    await React.act(show)
+    assert.equal(document.querySelectorAll('.dsh-record-related-collection .dsh-record-inspector-views .dsh-design-record').length, 0, 'an empty supplemental projection contributes no record body')
+    assert.equal(cards().length, 2, 'root identities remain visible')
+    assert.equal(writes, 1)
+  } finally { await React.act(() => root.unmount()); dom.window.close() }
+})
+
 test('related table details preserve root-name editing and nested-cell ownership', async () => {
   const dom = new JSDOM('<div id="root"></div>', { url: 'https://panel.test/' })
   for (const key of ['window', 'document', 'HTMLElement', 'Element', 'Node']) globalThis[key] = dom.window[key]

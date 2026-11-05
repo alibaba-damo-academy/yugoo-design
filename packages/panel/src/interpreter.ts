@@ -1,10 +1,11 @@
+import { PanelTextarea } from './panel-textarea.tsx'
 /**
  * Design-panel interpreter: renders a validated PanelManifest plus Design Files
  * data as a React element tree. Phase 3 is read-only presentation; Phase 4 adds
  * the edit handlers that round-trip changes back to Design Files. Kept free of
  * dsh client plumbing so it is independently renderable and testable (SSR).
  */
-import { Fragment, cloneElement, createElement, useId, useState, type ReactElement, type ReactNode } from 'react'
+import { Children, Fragment, cloneElement, createElement, useId, useState, type KeyboardEvent, type ReactElement, type ReactNode } from 'react'
 import { ArrowDown, ArrowUp, Trash2 } from 'lucide-react'
 import type { ComponentKind, ComponentNode, EditorField, FieldOption, FormField, FormRow, FormGroup, FormTabs, PanelManifest, RowColumn } from './dsl.ts'
 import { useRecordSelection, RecordWorkspace, RecordInspector, RecordPreview, RecordRelatedEditor, RelationGraph, ReferenceGraph, RecordMatrix, RecordArtifact, WorkspaceTextBlock } from './visual-components.tsx'
@@ -13,7 +14,7 @@ import { MathDocument } from './math-document.tsx'
 import { CustomChoice } from './custom-choice.tsx'
 import { NavigationWorkspace } from './navigation-workspace.tsx'
 import { CompactRecordDetails } from './compact-record-details.tsx'
-import { RecordMap } from './record-map.tsx'
+import { RecordMap, isCompactRecordMap } from './record-map.tsx'
 import { BoardCard, RecordBoard } from './record-board.tsx'
 import { boardDetailScope } from './board-detail-scope.ts'
 import { SourceReferences } from './source-reference.tsx'
@@ -25,6 +26,7 @@ import { CanvasWorkspace } from './canvas-workspace.tsx'
 import { PreviewWorkspace } from './preview-workspace.tsx'
 import { ColorControl } from './color-control.tsx'
 import { TokenList } from './token-list.tsx'
+import { readableValue, readableCount, remainingItems } from './structured-data.tsx'
 import { ComponentTabs } from './component-tabs.tsx'
 import { referenceMatches } from './reference-graph.ts'
 import { PanelSelect } from './panel-select.tsx'
@@ -32,7 +34,7 @@ import { PanelLocaleContext, panelText } from './panel-i18n.tsx'
 import { localizePanelManifest } from './dsl.ts'
 import { WORKSPACE_COMPONENT_KINDS, declarativePanelOwnsWorkspace } from './dsl.ts'
 import { StandardQuestionList, StandardQuestionWorkspace, type StandardQuestionItem, type StandardQuestionWorkspaceProps } from './question-list.tsx'
-import { PanelWorkspace, PanelDisclosureIcon, PanelEditableTitle, PanelRecordHeader, PanelWorkspaceGuidance } from './panel-workspace.tsx'
+import { PanelWorkspace, PanelContentGroup, PanelDetailDisclosure, PanelDisclosureIcon, PanelEditableTitle, PanelRecordHeader, PanelWorkspaceGuidance, PanelHelp, PanelRequiredMark, PanelFieldCaption } from './panel-workspace.tsx'
 import {
   DECLARATIVE_PANEL_ARTIFACTS_KEY,
   prepareDeclarativeQuestionAttachment,
@@ -374,7 +376,7 @@ function renderRowsControl(
       return createElement(
         'td',
         { key: column.key, className: 'dsh-design-rows-cell' },
-        createElement('textarea', {
+        createElement(PanelTextarea, {
           ...accessibility,
           className: 'dsh-design-field-input',
           value: cellText,
@@ -406,7 +408,7 @@ function renderRowsControl(
       createElement('thead', null, createElement(
         'tr',
         null,
-        columns.map((column) => createElement('th', { key: column.key }, column.label, column.required ? requiredMark(options?.locale) : null)),
+        columns.map((column) => createElement('th', { key: column.key }, column.label, column.required ? createElement(PanelRequiredMark, { locale: options?.locale }) : null)),
         rowsEditable ? createElement('th', { key: '__actions' }, '') : null,
       )),
       createElement(
@@ -528,8 +530,14 @@ function renderSourceList(
 const SINGLE_CHOICE_CONTROLS = new Set(['select', 'record_select'])
 const MULTI_CHOICE_CONTROLS = new Set(['multi_select', 'record_multi_select'])
 
-function requiredMark(locale?: string): ReactElement {
-  return createElement('span', { className: 'dsh-design-required-mark', 'aria-hidden': true, title: panelText('requiredField', locale) }, ' *')
+/** React owns the stable association, including repeated forms of one record. */
+function LabeledFieldControl({ label, required, description, locale, control }: {
+  label: string; required?: boolean; description?: string; locale?: string; control: ReactElement<Record<string, unknown>>
+}): ReactElement {
+  const id = useId()
+  return createElement(Fragment, null,
+    createElement('span', { className: 'dsh-design-field-label' }, createElement(PanelFieldCaption, { label, required, description, locale, htmlFor: id })),
+    cloneElement(control, { id }))
 }
 
 function renderField(
@@ -539,6 +547,7 @@ function renderField(
   recordId: string,
   data: DesignData,
   options?: RenderOptions,
+  presentation?: { collectionGrouped?: boolean; collectionHelpInHeading?: boolean },
 ): ReactElement {
   const value = record[field.key]
   const text = value === undefined || value === null ? '' : String(value)
@@ -551,7 +560,7 @@ function renderField(
   } else if (field.control === 'record_map') {
     // Multi-column scalar records share the numbered-table expression across
     // forms. Single-field captions and typed/disclosed child forms are retained.
-    control = createElement(RecordMap, { field, record, compact: options?.compactFields || Boolean((field.columns?.length ?? 0) > 1 && !field.item_fields && !field.item_collapsible), editable: editable && options?.onRecordPatch !== undefined,
+    control = createElement(RecordMap, { field, record, compact: isCompactRecordMap(field, options?.compactFields), editable: editable && options?.onRecordPatch !== undefined,
       onPatch: patch => options?.onRecordPatch?.(patch),
       renderItem: field.item_fields ? (id, item, change) => {
         const manifest: PanelManifest = { version: 1, panel_kind: 'document', sections: [{ id: 'items', title: 'Items' }],
@@ -609,9 +618,8 @@ function renderField(
       disabled: !editable, onChange: value => options?.onEdit?.({ section: sectionId, record: recordId, field: field.key, value }) })
   } else if (field.control === 'textarea') {
     control = editable
-      ? createElement('textarea', {
-        rows: field.textarea_rows ?? (options?.compactFields ? 1 : undefined),
-        style: field.textarea_rows === undefined ? undefined : { minHeight: `calc(${field.textarea_rows} * 1lh + 18px)` },
+      ? createElement(PanelTextarea, {
+        rows: field.textarea_rows,
         className: 'dsh-design-field-input',
         value: text,
         onChange: (event: { target: { value: string } }) => {
@@ -636,7 +644,7 @@ function renderField(
       : createElement('span', { className: 'dsh-design-field-value' }, text)
   } else if (field.control === 'list') {
     control = editable
-      ? createElement('textarea', {
+      ? createElement(PanelTextarea, {
         className: 'dsh-design-field-input',
         placeholder: panelText('listPlaceholder', options?.locale),
         defaultValue: listText(value),
@@ -652,7 +660,7 @@ function renderField(
       : createElement('span', { className: 'dsh-design-field-value' }, listText(value))
   } else if (field.control === 'key_value') {
     control = editable
-      ? createElement('textarea', {
+      ? createElement(PanelTextarea, {
         className: 'dsh-design-field-input',
         placeholder: panelText('keyValuePlaceholder', options?.locale),
         defaultValue: keyValueText(value),
@@ -692,21 +700,35 @@ function renderField(
       })
       : createElement('span', { className: 'dsh-design-field-value' }, text)
   }
+  const nativeControl = control.type === PanelTextarea || ['input', 'textarea', 'select'].includes(String(control.type))
+  // Card collections are real titled groups: the group owns its title, help,
+  // records and add action. An authored chapter may already own that surface.
+  const cardCollection = field.control === 'record_map' && !isCompactRecordMap(field, options?.compactFields)
+  const captionProps = { label: field.label ?? field.key, required: field.required, locale: options?.locale,
+    description: presentation?.collectionHelpInHeading ? undefined : field.description }
+  const caption = createElement(PanelFieldCaption, captionProps)
+  const labeledControl = nativeControl
+    ? cloneElement(control as ReactElement<Record<string, unknown>>, { 'aria-label': field.label ?? field.key,
+      ...(field.required ? { 'aria-required': true } : {}),
+      ...(field.placeholder ? { placeholder: field.placeholder } : {}),
+      ...(field.max_length ? { maxLength: field.max_length } : {}),
+      ...(field.input_type ? { type: field.input_type } : {}) })
+    : control
+  if (cardCollection && !presentation?.collectionGrouped) return createElement(PanelContentGroup, {
+    className: 'dsh-design-field is-card-collection', key: field.key,
+    'data-field': field.key, 'data-control': field.control,
+    'aria-label': field.required ? panelText('requiredFieldName', options?.locale, { item: field.label ?? field.key }) : field.label ?? field.key,
+    title: caption,
+  } as Parameters<typeof PanelContentGroup>[0], createElement('div', { className: 'dsh-design-form-group-content' }, control))
   return createElement(
     'div',
-    { className: 'dsh-design-field', 'data-field': field.key, key: field.key,
+    { className: `dsh-design-field${cardCollection ? ' is-card-collection' : ''}`, 'data-field': field.key, 'data-control': field.control, key: field.key,
       ...(field.required && ['record_map', 'rows', 'source_reference_map', 'source_list', 'color'].includes(field.control)
         ? { role: 'group', 'aria-label': panelText('requiredFieldName', options?.locale, { item: field.label ?? field.key }) } : {}) },
-    createElement('span', { className: 'dsh-design-field-label' }, field.label ?? field.key, field.required ? requiredMark(options?.locale) : null),
-    ['input', 'textarea', 'select'].includes(String(control.type))
-      ? cloneElement(control as ReactElement<Record<string, unknown>>, { 'aria-label': field.label ?? field.key,
-        ...(field.required ? { 'aria-required': true } : {}),
-        ...(field.placeholder ? { placeholder: field.placeholder } : {}),
-        ...(field.max_length ? { maxLength: field.max_length } : {}),
-        ...(field.input_type ? { type: field.input_type } : {}) })
-      : control,
-    field.max_length ? createElement('small', { className: 'dsh-design-field-description' }, `${text.length}/${field.max_length}`) : null,
-    field.description ? createElement('p', { className: 'dsh-design-field-description' }, field.description) : null,
+    nativeControl || control.type === PanelSelect
+      ? createElement(LabeledFieldControl, { ...captionProps, control: labeledControl as ReactElement<Record<string, unknown>> })
+      : createElement(Fragment, null, createElement('span', { className: 'dsh-design-field-label' }, caption), control),
+    field.max_length ? createElement('small', { className: 'dsh-design-field-count', 'data-near-limit': text.length >= field.max_length * .9 || undefined }, `${text.length}/${field.max_length}`) : null,
   )
 }
 
@@ -753,7 +775,7 @@ function RecordTableRow(props: {
         createElement('div', { id: detailId }, props.detail))) : null)
 }
 
-function renderRecordForm(node: ComponentNode, manifest: PanelManifest, data: DesignData, options?: RenderOptions, selectedRecord?: string | readonly string[], bodyOnly = false, omittedFields: readonly string[] = [], supplement?: (id: string) => ReactElement, headerAccessory?: ReactNode, part?: 'header'): ReactElement {
+function renderRecordForm(node: ComponentNode, manifest: PanelManifest, data: DesignData, options?: RenderOptions & { recordCard?: boolean; recordTitleRole?: 'record' }, selectedRecord?: string | readonly string[], bodyOnly = false, omittedFields: readonly string[] = [], supplement?: (id: string) => ReactElement, headerAccessory?: ReactNode, part?: 'header'): ReactElement {
   const sectionId = node.source ?? ''
   const binding = sectionBindingOf(manifest, sectionId)
   const records = recordsAtPath(data, binding.recordsPath)
@@ -844,7 +866,7 @@ function renderRecordForm(node: ComponentNode, manifest: PanelManifest, data: De
               // replaces only its repeated visible caption, not help or requiredness.
               return cloneElement(control, { key, className: `dsh-design-field is-label-visually_hidden${field.required ? ' has-inline-required' : ''}` },
                 ...(control.props as { children: ReactElement[] }).children,
-                field.required ? requiredMark(options?.locale) : null)
+                field.required ? createElement(PanelRequiredMark, { locale: options?.locale }) : null)
             })))
           return createElement(RecordTableRow, { key: `${binding.recordsPath}:${id}`, id, cells,
             label: actionLabel(record, id), locale: options?.locale, detail: supplement?.(id),
@@ -885,7 +907,8 @@ function renderRecordForm(node: ComponentNode, manifest: PanelManifest, data: De
             header.title.text)
           : recordLabel(record, id)
       const consumed = new Set<string>(titleField ? [titleField.key] : [])
-      const renderBodyItem = (item: FormField | FormRow | FormGroup | FormTabs | { kind: 'text'; text: string }, key: string, headingOwnsRequirement = false): ReactElement | null => {
+      const renderBodyItem = (item: FormField | FormRow | FormGroup | FormTabs | { kind: 'text'; text: string }, key: string, headingOwnsRequirement = false,
+        collectionGrouped = false, collectionHelpInHeading = false): ReactElement | null => {
         if (item.kind === 'text') return createElement('span', { className: 'dsh-design-form-text', key }, item.text)
         if (item.kind === 'tabs') {
           // Render all pages before fallback collection, including inactive fields.
@@ -906,12 +929,12 @@ function renderRecordForm(node: ComponentNode, manifest: PanelManifest, data: De
           if (item.field === titleField?.key && header && 'field' in header.title && header.title.editable === true) return null
           const field = fields.find(entry => entry.key === item.field)
           if (!field || !fieldIsVisible(field, values)) return null
-          const element = renderField(field, values, sectionId, id, data, fieldOptions(id, record, values))
+          const element = renderField(field, values, sectionId, id, data, fieldOptions(id, record, values), { collectionGrouped, collectionHelpInHeading })
           const inlineRequired = field.required && item.label === 'visually_hidden' && !headingOwnsRequirement
           return cloneElement(element as ReactElement<Record<string, unknown>>, { key: item.field,
-            className: `dsh-design-field${item.label ? ` is-label-${item.label}` : ''}${item.width ? ` is-width-${item.width}` : ''}${inlineRequired ? ' has-inline-required' : ''}`,
-          }, ...(element.props as { children: ReactElement[] }).children,
-          inlineRequired ? requiredMark(options?.locale) : null)
+            className: `${(element.props as { className: string }).className}${item.label ? ` is-label-${item.label}` : ''}${item.width ? ` is-width-${item.width}` : ''}${inlineRequired ? ' has-inline-required' : ''}`,
+          }, ...Children.toArray((element.props as { children: ReactNode }).children),
+          inlineRequired ? createElement(PanelRequiredMark, { locale: options?.locale }) : null)
         }
         // One field needs one caption. Only exact caption duplication is
         // structural: differently named scopes and preview titles carry meaning.
@@ -919,33 +942,83 @@ function renderRecordForm(node: ComponentNode, manifest: PanelManifest, data: De
         const soleItem = item.kind === 'group' && !item.sidecar && item.items.length === 1
           && item.items[0]?.kind === 'field' ? item.items[0] : undefined
         const soleField = soleItem ? fields.find(field => field.key === soleItem.field) : undefined
-        const duplicateCaption = soleItem && item.kind === 'group' && !item.collapsible && soleItem.label !== 'visually_hidden' && soleField
-          && item.kind === 'group' && item.title === fieldDisplayLabel(soleField, values)
+        const sameCaption = soleItem && soleField && item.kind === 'group'
+          && item.title === fieldDisplayLabel(soleField, values)
+        const groupFrame = item.kind === 'group' && Boolean(item.title) && (item.collapsible === true || !collectionGrouped)
+        const summaryOwnsCaption = sameCaption && groupFrame && fieldIsVisible(soleField, values)
+        const duplicateCaption = sameCaption && !groupFrame && soleItem.label !== 'visually_hidden'
         // A matching single-field group heading replaces that field's hidden
         // caption. Unrelated/multi-field groups keep per-control indicators.
         const headingTitle = item.kind === 'group' && !duplicateCaption ? item.title : undefined
+        // A named task section owns its surface whether it can collapse or not.
+        // Inner layout groups reuse that surface instead of adding another box.
+        const sectionSurface = groupFrame
         const headingKey = item.kind === 'group' && headingTitle && item.items.length === 1
-          && item.items[0]?.kind === 'field' && item.items[0].label === 'visually_hidden' ? item.items[0].field : undefined
+          && item.items[0]?.kind === 'field' && (item.items[0].label === 'visually_hidden' || summaryOwnsCaption) ? item.items[0].field : undefined
         const headingField = headingKey ? fields.find(field => field.key === headingKey && fieldDisplayLabel(field, values) === headingTitle && fieldIsVisible(field, values)) : undefined
         const headingRequired = headingField?.required === true
-        const children = item.items.map((child, i) => renderBodyItem(child, `${key}-${i}`, headingRequired))
+        const headingHelp = item.kind === 'group' ? item.description ?? ((soleItem?.label === 'visually_hidden' || summaryOwnsCaption)
+          ? soleField?.description : undefined) : undefined
+        // A disclosure must retain its summary. An exactly matching sole field
+        // keeps its accessible caption without repeating the same visible title.
+        const children = item.items.map((child, i) => renderBodyItem(summaryOwnsCaption && child === soleItem
+          ? { ...child, label: 'visually_hidden' } : child, `${key}-${i}`, headingRequired,
+          collectionGrouped || sectionSurface, Boolean(headingHelp)))
         if (item.kind === 'row') {
           const hasFields = item.items.some(child => child.kind === 'field')
           if (hasFields && !item.items.some((child, i) => child.kind === 'field' && children[i] !== null)) return null
           return createElement('div', { className: 'dsh-design-form-row', key }, children)
         }
         if (!children.some(child => child !== null)) return null
-        return createElement(item.collapsible ? 'details' : 'section', { className: `dsh-design-form-group${item.separator ? ' has-separator' : ''}${item.collapsible ? ' is-collapsible' : ''}`, key },
-          headingTitle ? createElement(item.collapsible ? 'summary' : 'h3', { className: `dsh-design-form-group-title${item.collapsible ? ' dsh-panel-disclosure' : ''}` },
-            createElement('span', { className: item.collapsible ? 'dsh-panel-disclosure-label' : undefined }, headingTitle, headingRequired ? requiredMark(options?.locale) : null),
-            item.collapsible ? createElement(PanelDisclosureIcon, { expanded: false }) : null) : null,
-          item.description ? createElement('p', { className: 'dsh-design-form-group-description' }, item.description) : null,
-          createElement('div', { className: `dsh-design-form-group-content${item.sidecar ? ' has-sidecar' : ''}` },
-            createElement('div', { className: 'dsh-design-form-group-fields' }, children),
-            item.sidecar ? createElement(RecordPreview, {
-              node: { ...item.sidecar, id: `${node.id}-${key}-preview`, source: sectionId },
-              manifest, data, options, record: id,
-            }) : null))
+        const groupKeys = item.items.flatMap(child => child.kind === 'field' ? [child.field]
+          : child.items.flatMap(entry => entry.kind === 'field' ? [entry.field] : []))
+        const filled = item.collapsible ? [...new Set(groupKeys)].filter(key => {
+          const field = fields.find(field => field.key === key)
+          const value = values[key]
+          return field && fieldIsVisible(field, values) && value !== undefined && value !== null
+            && (typeof value === 'string' ? value.trim() !== '' : typeof value === 'object' ? Object.keys(value).length > 0 : true)
+        }).length : 0
+        // A section contains complete content surfaces, not colored inputs.
+        // Consecutive ordinary fields share one body (labels, help and controls).
+        // Collections already rendered as independent cards keep their own
+        // boundary instead of gaining another same-colored outer card.
+        const surfaces: ReactElement[] = []
+        let fieldRun: (ReactElement | null)[] = [], runStart = 0
+        const flushFields = () => {
+          if (fieldRun.some(Boolean)) surfaces.push(createElement('div', {
+            className: 'dsh-design-form-group-fields dsh-panel-content-card', key: `fields-${runStart}`,
+          }, fieldRun))
+          fieldRun = []
+        }
+        if (sectionSurface) {
+          item.items.forEach((child, i) => {
+            const field = child.kind === 'field' ? fields.find(field => field.key === child.field) : undefined
+            const ownsCards = field?.control === 'record_map' && !isCompactRecordMap(field, options?.compactFields)
+            if (ownsCards) {
+              flushFields()
+              if (children[i]) surfaces.push(children[i]!)
+              runStart = i + 1
+            } else fieldRun.push(children[i] ?? null)
+          })
+          flushFields()
+        }
+        const content = createElement('div', { className: `dsh-design-form-group-content${item.sidecar ? ' has-sidecar' : ''}` },
+          createElement('div', { className: 'dsh-design-form-group-fields' }, sectionSurface ? surfaces : children),
+          item.sidecar ? createElement(RecordPreview, {
+            node: { ...item.sidecar, id: `${node.id}-${key}-preview`, source: sectionId }, manifest, data, options, record: id,
+          }) : null)
+        const heading = createElement(PanelFieldCaption, { label: headingTitle ?? '', required: headingRequired,
+          description: headingTitle ? headingHelp : undefined, locale: options?.locale })
+        if (sectionSurface) return createElement(PanelContentGroup, {
+          key, title: heading,
+          defaultOpen: item.default_open ?? true,
+          preview: filled ? createElement('small', { className: 'dsh-design-form-group-preview' }, panelText('filledFieldCount', options?.locale, { count: filled })) : null,
+        }, content)
+        return createElement('section', { className: `dsh-design-form-group${item.separator ? ' has-separator' : ''}`, key },
+          headingTitle ? createElement('h3', { className: 'dsh-design-form-group-title' }, heading) : null,
+          !headingTitle && item.description ? createElement('p', { className: 'dsh-design-form-group-description' }, item.description) : null,
+          content)
+
       }
       // Traverse declared items before fallback: invisible referenced fields remain
       // consumed and cannot bypass their visibility rule through a second editor.
@@ -957,7 +1030,9 @@ function renderRecordForm(node: ComponentNode, manifest: PanelManifest, data: De
       if (bodyOnly && !hasBody) return null
       const recordHeader = bodyOnly ? null : createElement(
           PanelRecordHeader,
-          { variant: header?.variant, placement: part === 'header' ? 'workspace' : undefined, key: id },
+          { variant: header?.variant, placement: part === 'header' ? 'workspace' : undefined,
+            titleRole: options?.recordCard || typeof selectedRecord !== 'string' ? 'record' : options?.recordTitleRole ?? 'workspace',
+            context: sectionMeta?.description, key: id },
           title,
           headerAccessory,
           lifecycle
@@ -1001,9 +1076,9 @@ function renderRecordForm(node: ComponentNode, manifest: PanelManifest, data: De
         )
       if (part === 'header') return recordHeader!
       return createElement('div', {
-        className: `dsh-design-record${header && !bodyOnly ? ` has-form-header is-${header.variant}` : ''}`,
+        className: `dsh-design-record${options?.recordCard ? ' dsh-panel-content-card' : ''}${header && !bodyOnly ? ` has-form-header is-${header.variant}` : ''}`,
         'data-record': id, key: id,
-      }, recordHeader, hasBody ? createElement('div', { className: `dsh-design-record-fields${sectionMeta?.form?.body ? ' has-form-body' : ''}` }, body, fallback) : null)
+      }, recordHeader, hasBody ? createElement('div', { className: `dsh-design-record-fields${sectionMeta?.form?.body ? ' has-form-body' : ''}` }, body, fallback) : null, supplement?.(id))
     }),
     lifecycle && selectedRecord === undefined
       ? createElement('button', {
@@ -1030,7 +1105,7 @@ function renderGroupedRecords(node: ComponentNode, manifest: PanelManifest, data
   const groupViews = [...groups.entries()].map(([group, ids]) => {
     const recordViews = ids.map(id => createElement('details', { key: id, className: 'dsh-design-grouped-record' },
       createElement('summary', null, recordLabel(records[id] ?? {}, id)),
-      renderRecordForm({ component: 'record_form', id: `${node.id}-${id}`, source: section }, manifest, data, options, id)))
+      renderRecordForm({ component: 'record_form', id: `${node.id}-${id}`, source: section }, manifest, data, { ...options, recordTitleRole: 'record' }, id)))
     return createElement('details', { key: group, className: 'dsh-design-grouped-records-group', open: true },
       createElement('summary', null, group || panelText('ungrouped', options?.locale),
         createElement('span', null, readableCount(ids.length, 'item', options?.locale))),
@@ -1991,56 +2066,21 @@ function DocLifecycleStudio({ node, manifest: _manifest, data, options }: {
       envelope.module !== undefined ? createElement('span', { className: 'dsh-design-studio-meta-chip' }, envelope.module) : null,
       envelope.residue_shape !== undefined ? createElement('span', { className: 'dsh-design-studio-meta-chip' }, envelope.residue_shape) : null,
     ),
-    views.map(([label, view], index) => createElement(
-      'details',
-      { className: 'dsh-design-form-group is-collapsible', key: label, open: index === 0 },
-      createElement('summary', { className: 'dsh-design-form-group-title dsh-panel-disclosure' },
-        createElement('span', { className: 'dsh-panel-disclosure-label' }, label),
-        createElement(PanelDisclosureIcon, { expanded: index === 0 })),
-      index === 0
+    views.map(([label, view], index) => createElement(PanelContentGroup,
+      { key: label, title: createElement(Fragment, null, label, index === 0 ? createElement(PanelHelp, {
+        label: panelText('fieldHelp', options?.locale, { field: label }),
+        children: '行是动作，列是状态。空白表示不改变；带单据名称的列表示对其他单据的影响。直接改写结果值即可。',
+      }) : null) },
+      createElement('div', { className: 'dsh-design-form-group-content' }, createElement('div', { className: 'dsh-panel-content-card' }, index === 0
         ? createElement('div', { className: 'dsh-matrix-scroll' },
-            createElement('p', { className: 'dsh-design-field-description' }, '行是动作，列是状态。空白表示不改变；带单据名称的列表示对其他单据的影响。直接改写结果值即可。'),
             view)
-        : view,
+        : view)),
     )),
   )
 }
 
 function keyed(element: ReactElement, key: string): ReactElement {
   return cloneElement(element, { key })
-}
-
-function readableCount(count: number, kind: 'item' | 'field', locale?: string): string {
-  return panelText(kind === 'item'
-    ? (count === 1 ? 'itemCountOne' : 'itemCountMany')
-    : (count === 1 ? 'fieldCountOne' : 'fieldCountMany'), locale, { count })
-}
-
-function remainingItems(count: number, locale?: string, original = false): string {
-  return panelText(original
-    ? (count === 1 ? 'moreItemsOriginalOne' : 'moreItemsOriginalMany')
-    : (count === 1 ? 'moreItemsOne' : 'moreItemsMany'), locale, { count })
-}
-
-/** Schema-backed facts remain in Design JSON; this is only a bounded reading
- * view. Nested values are expandable instead of dumped as a JSON string. */
-function readableValue(value: unknown, depth = 0, locale?: string): ReactElement {
-  if (value === null || typeof value !== 'object') {
-    return createElement('span', { className: 'dsh-design-field-value' }, value === null ? '—' : String(value))
-  }
-  if (depth >= 8) return createElement('span', null, panelText('contentTooDeep', locale))
-  const entries = Array.isArray(value) ? value.map((item, index) => [String(index + 1), item] as const)
-    : Object.entries(value as Record<string, unknown>)
-  return createElement('div', { className: 'dsh-design-structured-list' },
-    entries.slice(0, 100).map(([key, item]) => createElement('div', { className: 'dsh-design-structured-row', key },
-      createElement('span', { className: 'dsh-design-field-label' }, key.replace(/[_-]/gu, ' ')),
-      item !== null && typeof item === 'object'
-        ? createElement('details', { className: 'dsh-design-structured-branch' },
-          createElement('summary', null, Array.isArray(item)
-            ? readableCount(item.length, 'item', locale) : readableCount(Object.keys(item).length, 'field', locale)),
-          readableValue(item, depth + 1, locale))
-        : readableValue(item, depth + 1, locale))),
-    entries.length > 100 ? createElement('p', null, remainingItems(entries.length - 100, locale, true)) : null)
 }
 
 function ArtifactGallery({ paths, options }: { paths: readonly string[]; options?: RenderOptions }): ReactElement {
@@ -2087,7 +2127,7 @@ function renderSchemaField(node: ComponentNode, data: DesignData, options?: Rend
     onChange: (event: { target: { checked: boolean } }) => emit(event.target.checked) })
   else if (node.control === 'select') control = createElement(PanelSelect, { className: 'dsh-design-field-input', 'aria-label': label,
     value: String(value ?? ''), options: node.options ?? [], onValueChange: emit })
-  else if (node.control === 'textarea' || node.control === 'list') control = createElement('textarea', {
+  else if (node.control === 'textarea' || node.control === 'list') control = createElement(PanelTextarea, {
     className: 'dsh-design-field-input', 'aria-label': label,
     value: node.control === 'list' && Array.isArray(value) ? value.join('\n') : String(value ?? ''),
     onChange: (event: { target: { value: string } }) => emit(node.control === 'list'
@@ -2171,7 +2211,7 @@ function renderReadingCards(node: ComponentNode, sources: readonly string[], ids
         onRecordPatch: (patch: Record<string, unknown>) => cardOptions?.onTransaction?.(Object.entries(patch).map(([field, value]) => ({ section: source, record: id, field, value })), {}),
       } : options
       return createElement(BoardCard, { key: `${source}:${id}`, id, record: values,
-        binding: { label: card.label, description: card.description }, section: source, manifest, options: cardOptions, onEditing: () => {},
+        binding: { label: card.label, description: card.description }, section: source, manifest, options: cardOptions,
         actions: options?.editable && options.onPanelUpdate && section?.add_mode !== 'none'
           ? createElement('button', { type: 'button', className: 'dsh-reading-card-remove',
             'aria-label': panelText('remove', options.locale, { item: String(values[card.label] ?? id) }),
@@ -2180,8 +2220,7 @@ function renderReadingCards(node: ComponentNode, sources: readonly string[], ids
           }, createElement(Trash2, { size: 16, 'aria-hidden': true })) : null },
         ...shownAttention.map(key => createElement('div', { key, className: 'dsh-reading-card-attention' },
           renderField(fieldsForSection(manifest.fields, source).find(field => field.key === key)!, values, source, id, data, attentionOptions))),
-        createElement('details', { className: 'dsh-record-board-editor dsh-reading-card-details' },
-          createElement('summary', { className: 'dsh-panel-disclosure' }, card.details_title, createElement(PanelDisclosureIcon)),
+        createElement(PanelDetailDisclosure, { className: 'dsh-record-board-editor dsh-reading-card-details', title: card.details_title },
           createElement('div', { className: 'dsh-record-inspector-views' }, ...sources.map(view => keyed(renderRecordForm({ component: 'record_form', id: `${node.id}-${view}`, source: view }, manifest, data, options, id, true,
             view === source ? [card.label, card.description, ...shownAttention] : []), view)))))
     }))
@@ -2189,12 +2228,22 @@ function renderReadingCards(node: ComponentNode, sources: readonly string[], ids
 
 export const PANEL_COMPONENT_RENDERERS: Readonly<Record<ComponentKind, PanelComponentRenderer>> = Object.freeze({
   navigation_workspace: (node, manifest, data, options) => createElement(NavigationWorkspace, { node, manifest, data, options,
-    children: (node.children ?? []).map(child => createElement('details', { key: child.id },
-      createElement('summary', null, child.title ?? child.id), renderNode(child, manifest, data, options))),
+    specificationTitle: node.children?.length === 1 ? node.children[0].title : panelText('sharedSpecification', options?.locale),
+    children: (node.children ?? []).map(child => createElement('section', { key: child.id, className: 'dsh-navigation-spec-section' },
+      (node.children?.length ?? 0) > 1 ? createElement('h3', null, child.title ?? child.id) : null,
+      renderNode(child.component === 'structured_data' ? { ...child, title: undefined } : child, manifest, data, options))),
     render: (section, id, editOptions, displayData) => renderRecordForm({ component: 'record_form', id: `${node.id}-${section}`, source: section }, manifest, (displayData ?? data) as DesignData, editOptions, id) }),
   text_block: node => createElement(WorkspaceTextBlock, { id: node.id }, node.text ?? ''),
-  structured_data: (node, _manifest, data, options) => createElement('section', { className: 'dsh-design-structured-data', 'data-node': node.id },
-    renderNodeHeader(node), readableValue(pathGet(data as unknown as Record<string, unknown>, node.source ?? ''), 0, options?.locale)),
+  structured_data: (node, manifest, data, options) => createElement('section', { className: 'dsh-design-structured-data', 'data-node': node.id },
+    renderNodeHeader(node), readableValue(pathGet(data as unknown as Record<string, unknown>, node.source ?? ''), 0, options?.locale, {
+      fields: node.read_fields,
+      referenceLabel: (section, id) => {
+        const binding = sectionBindingOf(manifest, section)
+        const records = data[section] ?? recordsAtPath(options?.canonicalData ?? data, binding.recordsPath)
+        const target = Object.hasOwn(records, id) ? records[id] : undefined
+        return target && typeof target === 'object' ? recordLabel(fieldValuesOf(target, binding.fieldsPath), id) : undefined
+      },
+    })),
   schema_field: (node, _manifest, data, options) => renderSchemaField(node, data, options),
   artifact_gallery: (node, _manifest, _data, options) => createElement('section', { className: 'dsh-design-artifact-section', 'data-node': node.id },
     renderNodeHeader(node), createElement(ArtifactGallery, { paths: node.paths ?? [], options })),
@@ -2205,13 +2254,49 @@ export const PANEL_COMPONENT_RENDERERS: Readonly<Record<ComponentKind, PanelComp
   artifact_workspace: (node, _manifest, data, options) => createElement(ArtifactWorkspace, { node, data, options }),
   canvas_workspace: (node, manifest, data, options) => createElement(CanvasWorkspace, { node, manifest, data, options }),
   preview_workspace: (node, manifest, data, options) => createElement(PreviewWorkspace, { node, data, options,
-    children: (node.children ?? []).map((child, index) => createElement('details', { key: child.id, className: 'dsh-preview-control-group', open: index === 0 },
-      createElement('summary', null, child.title ?? child.id),
-      child.description ? createElement('p', null, child.description) : null,
-      renderNode(child, manifest, data, options))) }),
+    children: (node.children ?? []).map(child => createElement(PanelContentGroup, {
+      key: child.id, className: 'dsh-preview-control-group',
+      title: createElement(Fragment, null, child.title ?? child.id, child.description
+        ? createElement(PanelHelp, { label: child.title ?? child.id, children: child.description }) : null),
+    }, createElement('div', { className: 'dsh-design-form-group-content' },
+      renderNode({ ...child, title: undefined, description: undefined }, manifest, data, options)))) }),
+
   diagram_workspace: (node, manifest, data, options) => createElement(DiagramWorkspace, { node, manifest, data, options,
     render: (id, section = node.source!, editable = false) => renderRecordForm({ component: 'record_form', id: node.id, source: section }, manifest, data, { ...options, editable: editable && options?.editable }, id) }),
   record_board: (node, manifest, data, options) => createElement(RecordBoard, { node, manifest, data, options,
+    renderBodyField: (id, field, values, change, editable) => renderField(field, values, node.source!, id, data, {
+      ...options, editable, compactFields: true,
+      onEdit: edit => change(edit.value), onRecordPatch: patch => change(patch[field.key]),
+    }),
+    renderActions: (id, siblings) => {
+      const section = manifest.sections.find(section => section.id === node.source)
+      if (!options?.editable || !options.onPanelUpdate || section?.add_mode === 'none') return null
+      const binding = sectionBindingOf(manifest, node.source!)
+      const records = recordsAtPath(data, binding.recordsPath)
+      const order = binding.orderPath ? pathGet(data, binding.orderPath) : undefined
+      const ids = orderedRecordIds(records, Array.isArray(order) ? order : undefined)
+      const label = String(fieldValuesOf(records[id] ?? {}, binding.fieldsPath)[node.board!.label] ?? id)
+      const move = (delta: number) => {
+        const neighbor = siblings[siblings.indexOf(id) + delta]
+        const index = ids.indexOf(id), target = neighbor === undefined ? -1 : ids.indexOf(neighbor)
+        if (!binding.orderPath || index < 0 || target < 0) return
+        // Swap the visible siblings in their existing canonical slots. Moving a
+        // card must not reorder other groups or filtered-out records.
+        const next = [...ids]; [next[index], next[target]] = [next[target]!, next[index]!]
+        options.onPanelUpdate!({ [binding.orderPath]: next })
+      }
+      return createElement(Fragment, null,
+        binding.orderPath && section?.form?.reorder !== false ? [-1, 1].map(delta => createElement('button', {
+          key: delta, type: 'button', 'data-testid': `record-${delta < 0 ? 'up' : 'down'}-${id}`,
+          'aria-label': `${panelText(delta < 0 ? 'moveUp' : 'moveDown', options.locale)} ${label}`,
+          title: panelText(delta < 0 ? 'moveUp' : 'moveDown', options.locale),
+          disabled: !siblings.includes(id) || siblings[siblings.indexOf(id) + delta] === undefined, onClick: () => move(delta),
+        }, createElement(delta < 0 ? ArrowUp : ArrowDown, { size: 16, 'aria-hidden': true }))) : null,
+        createElement('button', { type: 'button', 'data-testid': `record-remove-${id}`,
+          'aria-label': panelText('remove', options.locale, { item: label }), title: panelText('remove', options.locale, { item: label }),
+          onClick: () => removeBoundRecord(manifest, data, node.source!, id, options),
+        }, createElement(Trash2, { size: 16, 'aria-hidden': true })))
+    },
     renderDetails: node.board?.detail_sources ? (id, overrides) => {
       const detailOptions = overrides ?? options
       const writable = detailOptions?.editable === true
@@ -2240,11 +2325,12 @@ export const PANEL_COMPONENT_RENDERERS: Readonly<Record<ComponentKind, PanelComp
       const values = fieldValuesOf(record, storage.fieldsPath)
       const detailOptions = overrides ?? options
       const labelField = fieldsForSection(manifest.fields, section).find(field => field.key === node.board?.label)
-      const titleInHeader = !!options?.editable && !!options.onTransaction && labelField?.control === 'text'
-        && !labelField.readonly && !labelField.hidden && !(node.board?.rejected && values[node.board.rejected] === true)
-      const consumed = [node.board?.description, node.board?.badge, node.board?.rejected, ...(titleInHeader ? [node.board?.label] : [])]
+      const titleInHeader = !!options?.editable && !!(options.onTransaction || options.onEdit) && labelField?.control === 'text'
+        && !labelField.readonly && fieldIsVisible(labelField, values) && !(node.board?.rejected && values[node.board.rejected] === true)
+      const consumed = [node.board?.description, node.board?.badge, node.board?.rejected, ...(node.board?.body_fields ?? []), ...(node.board?.body_fields ? [node.board.label, node.board.group] : titleInHeader ? [node.board?.label] : [])]
       const fields = fieldsForSection(manifest.fields, section).filter(field =>
         section !== node.source || (node.board?.detail_fields ? node.board.detail_fields.includes(field.key) && !(titleInHeader && field.key === node.board.label) : !consumed.includes(field.key)))
+      if (!fields.some(field => !field.hidden)) return null
       const change = (field: EditorField, value: unknown) => {
         if (!detailOptions?.editable || field.readonly || field.hidden) return
         detailOptions.onEdit?.({ section, record: id, field: field.key, value })
@@ -2299,9 +2385,12 @@ export const PANEL_COMPONENT_RENDERERS: Readonly<Record<ComponentKind, PanelComp
       if (node.record_table) return renderRecordForm({ ...node, component: 'record_form' }, manifest, data, editOptions, ids, false, [],
         node.sources?.some(source => source !== node.source) ? id => createElement('div', null, ...views.filter(source => source !== node.source).map(source => keyed(renderRecordForm({ component: 'record_form', id: `${node.id}-${source}`, source }, manifest, data, editOptions, id), source))) : undefined)
       if (node.record_cards) return renderReadingCards(node, views, ids, manifest, data, editOptions)
-      const forms = views.map((source, index) => keyed(
-        renderRecordForm({ component: 'record_form', id: `${node.id}-${source}`, source }, manifest, data, editOptions, ids, index > 0), source))
-      return forms.length === 1 ? forms[0]! : createElement('div', { className: 'dsh-record-inspector-views' }, ...forms)
+      // Projections describe the same record. Keep its title, actions and all
+      // projected fields inside one card, in the declared source order.
+      return renderRecordForm({ component: 'record_form', id: `${node.id}-${views[0]}`, source: views[0] }, manifest, data,
+        { ...editOptions, recordCard: true }, ids, false, [], views.length > 1 ? id =>
+          createElement('div', { className: 'dsh-record-inspector-views' }, ...views.slice(1).map(source => keyed(
+            renderRecordForm({ component: 'record_form', id: `${node.id}-${source}`, source }, manifest, data, editOptions, id, true), source))) : undefined)
     } }),
   relation_graph: (node, manifest, data, options) => createElement(RelationGraph, { node, manifest, data, options }),
   reference_graph: (node, manifest, data, options) => createElement(ReferenceGraph, { node, manifest, data, options }),
@@ -2374,7 +2463,15 @@ export function renderManifest(manifest: PanelManifest, data: DesignData, option
   const logical = logicalSectionData(manifest, data)
   return createElement(PanelLocaleContext.Provider, { value: options?.locale ?? 'zh-CN' }, createElement(
     'div',
-    { className: 'dsh-design-panel', 'data-panel-kind': manifest.panel_kind, 'data-layout': declarativePanelOwnsWorkspace(manifest) ? 'workspace' : 'document' },
+    { className: 'dsh-design-panel', 'data-panel-kind': manifest.panel_kind, 'data-layout': declarativePanelOwnsWorkspace(manifest) ? 'workspace' : 'document',
+      onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => {
+        // Native disclosure activation belongs to the focused control. Retained
+        // canvases also listen on window; do not let them cancel this default.
+        // Inputs inside a summary and modified Host shortcuts keep their route.
+        if (event.key === ' ' && !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey
+          && event.target instanceof HTMLElement && event.target.tagName === 'SUMMARY') event.stopPropagation()
+      },
+    },
     renderNode(manifest.ui, manifest, logical, { ...options, canonicalData: data }),
   ))
 }

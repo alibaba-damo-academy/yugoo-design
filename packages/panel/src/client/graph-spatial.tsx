@@ -1,9 +1,10 @@
+import { usePanelI18n } from '../panel-i18n.tsx'
 import React, { useEffect, useRef, useState } from 'react'
 import type { ForceGraph3DInstance, NodeObject, LinkObject } from '3d-force-graph'
 import type * as Three from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import type { GraphCanvasProps } from './graph-canvas.js'
-import { nodeRadius, type GraphNode, type GraphEdge } from './graph-model.js'
+import { nodeRadius, relationDisplayLabel, type GraphNode, type GraphEdge } from './graph-model.js'
 import { placeLabels, graphLabelRanks, shortGraphLabel } from './graph-labels.js'
 import { createGraphLayoutJob } from './graph-layout-client.js'
 import { createGraphNebula } from './graph-nebula.js'
@@ -15,6 +16,9 @@ type Graph = ForceGraph3DInstance<Node, Link>
 
 /** Owned 3D view of the same KAG, without experimental DOM globals or graph writes. */
 export function SpatialGraphCanvas(props: GraphCanvasProps & GraphCanvasTheme & { engine: string }) {
+  const { locale, t } = usePanelI18n()
+  const localeRef = useRef(locale)
+  localeRef.current = locale
   const host = useRef<HTMLDivElement>(null), labels = useRef<HTMLDivElement>(null), nebulaRef = useRef<HTMLCanvasElement>(null), latest = useRef(props)
   const actions = useRef({ fit: (_all?: boolean) => {}, zoom: (_factor: number) => {}, pause: (_value: boolean) => {}, projection: (_value: boolean) => {}, restart: () => {}, style: () => {} })
   const [error, setError] = useState(''), [paused, setPaused] = useState(false), [orthographic, setOrthographic] = useState(false)
@@ -67,7 +71,7 @@ export function SpatialGraphCanvas(props: GraphCanvasProps & GraphCanvasTheme & 
       native.backgroundColor('rgba(0,0,0,0)').showNavInfo(false).forceEngine('d3').enableNodeDrag(false)
         .width(mount.clientWidth).height(mount.clientHeight).warmupTicks(0).cooldownTicks(1).cooldownTime(6000)
         .nodeLabel(n => { const el = document.createElement('span'); el.textContent = n.label; return el })
-        .linkLabel(e => { const el = document.createElement('span'); el.textContent = e.label; return el })
+        .linkLabel(e => { const el = document.createElement('span'); el.textContent = relationDisplayLabel(e, localeRef.current); return el })
         .nodeThreeObject(n => {
           const geometry = new THREE.SphereGeometry(1, 12, 8)
           const material = new THREE.MeshBasicMaterial({ color: color(n.owner), transparent: true })
@@ -301,17 +305,17 @@ export function SpatialGraphCanvas(props: GraphCanvasProps & GraphCanvasTheme & 
   useEffect(() => { actions.current.style() }, [props.selected, props.selectedEdge, props.matches, props.sizeMode, props.dark])
   return <div className='graph-spatial-canvas' data-canvas-theme={props.dark ? 'dark' : 'light'} style={{ position: 'relative', flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden', background: props.dark ? '#121a25' : '#fafbfd' }}>
     <canvas ref={nebulaRef} aria-hidden='true' style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: .9, pointerEvents: 'none' }} />
-    <div ref={host} aria-label='三维关联图' style={{ position: 'absolute', inset: 0 }} />
-    <div ref={labels} aria-label='三维图谱标签' style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }} />
-    {error && <p role='alert' style={{ position: 'relative', padding: 12 }}>3D 不可用，可切回 2D：{error}</p>}
+    <div ref={host} aria-label={t('graphSpatialCanvas')} style={{ position: 'absolute', inset: 0 }} />
+    <div ref={labels} aria-label={t('graphSpatialLabels')} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }} />
+    {error && <p role='alert' style={{ position: 'relative', padding: 12 }}>{t('graphSpatialUnavailable', { error })}</p>}
     <GraphCameraTools dark={props.dark} onToggleDark={props.onToggleDark} disabled={loading || Boolean(error)} onFit={() => actions.current.fit(true)} onZoom={factor => actions.current.zoom(factor)} onRestart={() => actions.current.restart()}>
       <details className='graph-popover'>
-        <summary>3D 选项</summary>
+        <summary>{t('graphSpatialOptions')}</summary>
         <div className='graph-popover-body'>
-          <label>三维投影<select disabled={loading || Boolean(error)} aria-label='三维投影' value={orthographic ? 'orthographic' : 'perspective'} onChange={e => { const value = e.target.value === 'orthographic'; setOrthographic(value); actions.current.projection(value) }}><option value='perspective'>透视 · 近大远小</option><option value='orthographic'>正交 · 大小可比</option></select></label>
-          <button disabled={loading || Boolean(error)} onClick={() => actions.current.fit()}>聚焦主体</button>
-          <button disabled={loading || Boolean(error)} onClick={() => { actions.current.pause(!paused); setPaused(!paused) }}>{paused ? '继续动画' : '暂停动画'}</button>
-          <p>拖动画布旋转 · 右键拖动平移 · 滚轮缩放</p>
+          <label>{t('graphSpatialProjection')}<select disabled={loading || Boolean(error)} aria-label={t('graphSpatialProjection')} value={orthographic ? 'orthographic' : 'perspective'} onChange={e => { const value = e.target.value === 'orthographic'; setOrthographic(value); actions.current.projection(value) }}><option value='perspective'>{t('graphSpatialPerspective')}</option><option value='orthographic'>{t('graphSpatialOrthographic')}</option></select></label>
+          <button disabled={loading || Boolean(error)} onClick={() => actions.current.fit()}>{t('graphSpatialFocus')}</button>
+          <button disabled={loading || Boolean(error)} onClick={() => { actions.current.pause(!paused); setPaused(!paused) }}>{t(paused ? 'graphSpatialResume' : 'graphSpatialPause')}</button>
+          <p>{t('graphSpatialNavigation')}</p>
         </div>
       </details>
     </GraphCameraTools>

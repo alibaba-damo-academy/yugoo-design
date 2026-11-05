@@ -14,11 +14,17 @@ sections:
       reorder: false
       header: {variant: detail, title: {field: title, editable: true}}
       body:
-        - {kind: field, field: trigger}
-        - {kind: field, field: recipients}
-        - {kind: field, field: channels}
-        - {kind: field, field: message}
-        - {kind: field, field: action_target}
+        - kind: group
+          title: $t:deliveryGroup
+          items:
+            - {kind: field, field: trigger}
+            - {kind: field, field: recipients}
+            - {kind: field, field: channels}
+        - kind: group
+          title: $t:messageAndAction
+          items:
+            - {kind: field, field: message}
+            - {kind: field, field: action_target}
     create:
       id_field: id
       defaults: {title: '', channels: [in_app]}
@@ -30,7 +36,13 @@ sections:
 fields:
   - {key: title, label: $t:title, control: text, required: true, applies_to: [notifications]}
   - {key: trigger, label: $t:trigger, control: textarea, required: true, applies_to: [notifications]}
-  - {key: recipients, label: $t:recipients, control: token_list, required: true, applies_to: [notifications]}
+  - key: recipients
+    label: $t:recipients
+    control: token_list
+    token_add_mode: menu
+    required: true
+    options_from_panel: {panel_type: role_access, section_id: roles}
+    applies_to: [notifications]
   - key: channels
     required: true
     label: $t:channels

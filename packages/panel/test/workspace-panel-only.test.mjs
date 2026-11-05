@@ -19,7 +19,8 @@ test('panel-only hides workspace chrome and delegates dirty/save/retract to the 
   globalThis.React = React; globalThis.IS_REACT_ACT_ENVIRONMENT = true
   globalThis.requestAnimationFrame = dom.window.requestAnimationFrame.bind(dom.window)
   globalThis.cancelAnimationFrame = dom.window.cancelAnimationFrame.bind(dom.window)
-  globalThis.ResizeObserver = class { observe() {} disconnect() {} }
+  const resizeCallbacks = new Set()
+  globalThis.ResizeObserver = class { constructor(callback) { this.callback = callback; resizeCallbacks.add(callback) } observe() {} disconnect() { resizeCallbacks.delete(this.callback) } }
   let root
   try {
     // Graph and browser-only canvas engines are not exercised by this control test.
@@ -46,13 +47,39 @@ test('panel-only hides workspace chrome and delegates dirty/save/retract to the 
       cancelPendingNextStepQuestion: async id => { cancels.push(id); return false }, sendPrompt: async (...args) => prompts.push(args), readGraph: async () => ({ content: '{}' }) }
     const props = { projectId: 'fixture-project', projectName: 'Fixture project', projectPath: '/isolated/fixture', checkpoint: 'fixture',
       worktreeRevision: null, sessionId: 'fixture-session', dockOpen: true, access: { mode: 'writable', writable: true, kit: { name: 'fixture', version: '1.0' } }, executionAttempts: [],
-      design: { example: { state: { title: 'Original' }, skillManifest: { title: { en: 'Fixture bundle' }, presentation: { mode: 'native', renderer: 'fixture' } } } },
+      design: { example: { state: { title: 'Original' }, skillManifest: { title: { zh: '示例面板', en: 'Fixture bundle' }, presentation: { mode: 'native', renderer: 'fixture' } } } },
       runtime, onControlsChange: value => { controls = value } }
     const container = document.getElementById('root'); root = createRoot(container)
     const render = presentation => React.act(async () => root.render(React.createElement(DesignWorkspace, { ...props, presentation })))
     await render(undefined)
+    assert.equal(container.querySelector('[data-testid="chat-design-tab-example"]').textContent, 'Fixture bundle', 'tab uses the English title in an English Host')
+    assert.equal(container.querySelector('[data-testid="chat-design-tabs-add"]').getAttribute('aria-label'), 'New design panel')
     assert.ok(container.querySelector('[data-testid="design-project-header"]'))
     assert.ok(container.querySelector('[data-testid="design-view-switcher"]'))
+    const tabs = container.querySelector('[data-testid="chat-design-tabs"]'), strip = tabs.querySelector('.dsh-design-tabs-scroll')
+    let available = 480
+    Object.defineProperty(tabs, 'clientWidth', { configurable: true, get: () => available })
+    Object.defineProperty(strip, 'scrollWidth', { configurable: true, get: () => 500 })
+    Object.defineProperty(strip, 'clientWidth', { configurable: true, get: () => available - (container.querySelector('[data-testid="chat-design-tabs-overflow"]') ? 34 : 0) })
+    const resizeTabs = () => React.act(async () => { for (const callback of resizeCallbacks) callback() })
+    await resizeTabs()
+    assert.ok(container.querySelector('[data-testid="chat-design-tabs-overflow"]'), 'narrow strip offers all panels')
+    available = 520
+    await resizeTabs()
+    assert.equal(container.querySelector('[data-testid="chat-design-tabs-overflow"]'), null, 'menu disappears as soon as the tabs themselves fit, excluding its own footprint')
+    available = 480
+    await resizeTabs()
+    await React.act(async () => container.querySelector('[data-testid="chat-design-tabs-overflow"]').click())
+    assert.ok(container.querySelector('[role="menu"]'))
+    available = 520
+    await resizeTabs()
+    assert.equal(container.querySelector('[role="menu"]'), null)
+    assert.equal(document.activeElement, container.querySelector('[data-testid="chat-design-tab-example"]'), 'removing an open overflow menu restores a reachable tab')
+    available = 480
+    await resizeTabs()
+    assert.equal(container.querySelector('[role="menu"]'), null, 'overflow returning does not reopen an old menu')
+    available = 520
+    await resizeTabs()
     const fullButtons = container.querySelectorAll('button').length
     const hint = () => container.querySelector('[data-testid="design-must-edit-hint"]')
     assert.equal(hint(), null, 'the workspace does not repeat the existing save action in a fixed hint')
@@ -61,7 +88,7 @@ test('panel-only hides workspace chrome and delegates dirty/save/retract to the 
     props.mustEditHandoffs = [handoff]
     await render(undefined)
     assert.equal(hint(), null, 'a real matching must_edit handoff adds no redundant fixed hint')
-    assert.match(container.querySelector('[data-testid="dsh-design-save"]').textContent, /Save and assess next step/)
+    assert.match(container.querySelector('[data-testid="dsh-design-save"]').textContent, /Save & continue/)
     assert.equal(container.querySelectorAll('button').length, fullButtons, 'the handoff adds no second action')
     assert.equal(controls.saveDisabled, true, 'an unchanged draft does not release must_edit')
     assert.equal(saved.length, 0); assert.equal(prompts.length, 0)
@@ -99,8 +126,11 @@ test('panel-only hides workspace chrome and delegates dirty/save/retract to the 
     let releaseLocale
     await React.act(async () => { releaseLocale = bindDesignHostLocale({ getSnapshot: () => ({ active: 'zh-CN' }), subscribe: () => () => {} }) })
     assert.equal(hint(), null, 'the Chinese locale does not restore the redundant hint')
-    assert.match(container.querySelector('[data-testid="dsh-design-save"]').textContent, /保存并评估下一步/)
+    assert.match(container.querySelector('[data-testid="dsh-design-save"]').textContent, /保存并继续/)
+    assert.equal(container.querySelector('[data-testid="chat-design-tab-example"]').textContent, '示例面板', 'mounted tab follows the Host language without waiting for a design update')
+    assert.equal(container.querySelector('[data-testid="chat-design-tabs-add"]').getAttribute('aria-label'), '新建设计面板')
     await React.act(async () => releaseLocale())
+    assert.equal(container.querySelector('[data-testid="chat-design-tab-example"]').textContent, 'Fixture bundle', 'switching back restores the English title')
     props.mustEditHandoffs = []
     await render(undefined); assert.equal(hint(), null, 'a consumed handoff adds no fixed hint')
     props.mustEditHandoffs = [handoff]
@@ -139,6 +169,10 @@ test('panel-only hides workspace chrome and delegates dirty/save/retract to the 
     await React.act(async () => controls.retract())
     assert.equal(controls.dirty, false)
     let closes = 0
+    await React.act(async () => root.render(React.createElement(DesignWorkspace, { ...props, onClose: () => { closes++ } })))
+    assert.equal(container.querySelectorAll('[data-testid="dsh-design-dock-close"]').length, 1)
+    assert.ok(container.querySelector('[data-testid="design-project-header"] [data-testid="dsh-design-dock-close"]'), 'populated dock closes from the project header')
+    assert.equal(container.querySelector('[data-testid="chat-design-tabs"]').parentElement.querySelector('[data-testid="dsh-design-dock-close"]'), null, 'tab actions no longer contain the whole-dock close')
     const emptyProps = { ...props, design: {}, onClose: () => { closes++ } }
     await React.act(async () => root.render(React.createElement(DesignWorkspace, emptyProps)))
     assert.ok(container.querySelector('[data-testid="design-project-header"] [data-testid="dsh-design-dock-close"]'), 'empty dock closes from the compact project header')

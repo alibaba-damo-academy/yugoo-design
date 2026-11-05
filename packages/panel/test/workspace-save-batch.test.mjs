@@ -6,7 +6,6 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { join, resolve } from 'node:path'
 import React from 'react'
 import { JSDOM } from 'jsdom'
-import { createRoot } from 'react-dom/client'
 
 const deferred = () => {
   let resolve, reject
@@ -52,7 +51,7 @@ test('mounted Workspace hands off only its fully saved, current batch', async t 
         }))
       } }],
     })
-    const api = await import(pathToFileURL(join(output, 'workspace.mjs')).href)
+    let api
 
     async function withWorkspace(run, overrides = {}) {
       const dom = new JSDOM('<div id="root"></div>', { url: 'http://127.0.0.1:32124/', pretendToBeVisual: true })
@@ -63,7 +62,10 @@ test('mounted Workspace hands off only its fully saved, current batch', async t 
       globalThis.IS_REACT_ACT_ENVIRONMENT = true
       globalThis.requestAnimationFrame = dom.window.requestAnimationFrame.bind(dom.window)
       globalThis.cancelAnimationFrame = dom.window.cancelAnimationFrame.bind(dom.window)
-      globalThis.ResizeObserver = class { observe() {} disconnect() {} }
+      globalThis.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} }
+      // Native input events need ReactDOM's browser feature detection after DOM setup.
+      api ??= await import(pathToFileURL(join(output, 'workspace.mjs')).href)
+      const { createRoot } = await import('react-dom/client')
       const calls = { saves: [], prompts: [], cancels: [] }
       let controls
       const definition = {
@@ -113,7 +115,7 @@ test('mounted Workspace hands off only its fully saved, current batch', async t 
       const save = async () => React.act(async () => { controls.save() })
       try {
         await render({})
-        assert.ok(container.querySelector('[data-testid="regenerate-alpha"]'), 'the actual Workspace renders its provider panel')
+        assert.ok(container.querySelector('[data-testid="dsh-design-panel-alpha"]'), 'the actual Workspace mounts its active panel')
         await run({ calls, container, render, edit, save, get controls() { return controls } })
       } finally {
         await React.act(async () => root.unmount())
@@ -125,6 +127,46 @@ test('mounted Workspace hands off only its fully saved, current batch', async t 
         }
       }
     }
+
+    await t.test('switching projects in one session retires its direct card draft before the new project can save', async () => {
+      const panelYaml = `version: 1
+panel_kind: document
+sections: [{id: items, title: Items, add_mode: none}]
+fields:
+  - {key: title, label: Title, control: text, applies_to: [items]}
+  - {key: description, label: Description, control: textarea, applies_to: [items]}
+ui:
+  {component: record_board, id: board, source: items, board: {label: title, description: description}}
+`
+      const bundle = () => ({ panelYaml, state: { items: { shared: { title: 'Shared identity', description: 'Identical saved base' } } },
+        skillManifest: { title: { en: 'Records' }, presentation: { mode: 'declarative' } } })
+      await withWorkspace(async fixture => {
+        const editLocal = async text => {
+          await React.act(async () => {
+            const input = fixture.container.querySelector('.dsh-record-board-description-editor')
+            Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set.call(input, text)
+            input.dispatchEvent(new window.Event('input', { bubbles: true }))
+          })
+        }
+        await editLocal('Only for project A')
+        assert.equal(fixture.controls.saveDisabled, false)
+        await fixture.render({ checkpoint: 'fresh-read' })
+        assert.equal(fixture.container.querySelector('textarea').value, 'Only for project A', 'ordinary same-project refresh keeps input')
+        assert.equal(fixture.controls.saveDisabled, false)
+        const oldControls = fixture.controls
+        await fixture.render({ projectId: 'project-b', projectName: 'Project B', projectPath: '/isolated/b', design: { alpha: bundle() } })
+        assert.equal(fixture.container.querySelector('.dsh-record-board-description-editor').value, 'Identical saved base')
+        assert.equal(fixture.controls.saveDisabled, true, 'same skill, record ID and saved value do not inherit the previous project input')
+        assert.equal(fixture.calls.saves.length, 0)
+        await editLocal('Only for project B')
+        await React.act(async () => oldControls.retract())
+        assert.equal(fixture.container.querySelector('textarea').value, 'Only for project B', 'retired controls cannot clear the new project input')
+        await fixture.save()
+        await eventually(() => fixture.calls.saves.length === 1 && !fixture.controls.saving, 'current project save should finish')
+        assert.equal(fixture.calls.saves[0][2].items.shared.description, 'Only for project B')
+        assert.equal(fixture.calls.prompts.length, 1)
+      }, { props: { design: { alpha: bundle() } } })
+    })
 
     await t.test('two dirty Panels yield one prompt containing each actual save receipt', async () => {
       const second = deferred()
@@ -146,7 +188,7 @@ test('mounted Workspace hands off only its fully saved, current batch', async t 
         assert.equal(new Set(eventIds).size, 2, 'the correlation uses distinct actual operation ids')
         const [session, text, requestId, receipts] = fixture.calls.prompts[0]
         assert.equal(session, 'session-a')
-        assert.equal(text, 'Save and assess next step', 'the native main request carries the same assessment intent as the save control')
+        assert.equal(text, 'Save & continue', 'the native main request uses the same visible wording as the save control')
         assert.match(requestId, /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i,
           'the existing client delivery correlation is a UUID, not a claimed native Host invocation id')
         assert.equal(eventIds.includes(requestId), false, 'batch delivery and individual save identities stay distinct')
@@ -229,7 +271,7 @@ test('mounted Workspace hands off only its fully saved, current batch', async t 
         assert.equal(fixture.calls.saves.length, 1)
         assert.deepEqual(fixture.calls.saves[0].slice(0, 3), ['session-a', 'alpha', { title: 'Regenerate Alpha' }])
         assert.match(fixture.calls.prompts[0][1], /alpha/)
-        assert.doesNotMatch(fixture.calls.prompts[0][1], /^Save and assess next step$/)
+        assert.doesNotMatch(fixture.calls.prompts[0][1], /^Save & continue$/)
         assert.deepEqual(fixture.calls.prompts[0][3], [
           { eventId: fixture.calls.saves[0][4], commit: 'checkpoint-alpha' },
         ])

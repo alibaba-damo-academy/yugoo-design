@@ -7,6 +7,8 @@ test('shared artifact and matrix messages localize without rereading artifacts o
   for (const key of ['window', 'document', 'HTMLElement', 'Element', 'Node', 'MutationObserver']) globalThis[key] = dom.window[key]
   globalThis.IS_REACT_ACT_ENVIRONMENT = true
   globalThis.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} }
+  dom.window.HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', '') }
+  dom.window.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open') }
   const { default: React, act } = await import('react'); globalThis.React = React
   const { createRoot } = await import('react-dom/client')
   const { renderManifest } = await import('../src/interpreter.ts')
@@ -69,13 +71,13 @@ test('shared artifact and matrix messages localize without rereading artifacts o
     const add = document.querySelector('[aria-label="Create Authored children"]')
     assert.ok(add, 'real hierarchical create control must be available')
     await act(async () => add.click())
-    assert.equal(document.querySelector('[role="dialog"]').getAttribute('aria-label'), 'Create record')
-    assert.ok(document.querySelector('[role="dialog"]').textContent.includes('Inherits: Original category.'))
-    assert.ok(document.querySelector('[role="dialog"]').textContent.includes('User label {row}'))
+    assert.equal(document.querySelector('dialog').getAttribute('aria-label'), 'Create record')
+    assert.ok(document.querySelector('dialog').textContent.includes('Inherits: Original category.'))
+    assert.ok(document.querySelector('dialog').textContent.includes('User label {row}'))
     await act(async () => root.render(renderManifest(hierarchy, data, { locale: 'zh-CN', editable: true,
       onPanelUpdate: () => assert.fail('language switch cannot create a record') })))
-    assert.equal(document.querySelector('[role="dialog"]').getAttribute('aria-label'), '创建记录')
-    assert.ok(document.querySelector('[role="dialog"]').textContent.includes('创建后沿用：Original category'))
+    assert.equal(document.querySelector('dialog').getAttribute('aria-label'), '创建记录')
+    assert.ok(document.querySelector('dialog').textContent.includes('创建后沿用：Original category'))
     assert.deepEqual(data, before)
   } finally { await act(async () => root.unmount()); dom.window.close() }
 })

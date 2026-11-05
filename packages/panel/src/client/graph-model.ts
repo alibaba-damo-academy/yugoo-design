@@ -1,10 +1,12 @@
+import { panelText, type PanelMessageKey } from '../panel-i18n.js'
+
 /** Read-only presentation model. Layout groups never become design facts. */
 export interface GraphNode { id: string; label: string; sourceLabel?: string; sourcePanel?: string; previewSourcePanel?: string; file: string; pointer: string; context: string; owner: string; record: boolean; recordId?: string; parentId?: string; contentKind?: 'container' | 'unit'; recordKind?: 'design-record' | 'design-content' | 'design-artifact'; ontologyType?: string; identityQuality?: 'stable' | 'structural' | 'anonymous'; schemaPointer?: string; ontologyRevision?: string }
 
 /** Display groups are existing persisted units, never inferred from text or values. */
-export function contentDetail(graph: Pick<DesignGraph, 'nodes'>, node: GraphNode) {
+export function contentDetail(graph: Pick<DesignGraph, 'nodes'>, node: GraphNode, locale = 'zh-CN') {
   return {
-    kind: node.contentKind === 'container' ? '来源容器' : node.contentKind === 'unit' ? '设计单元' : node.record ? '来源记录' : '设计内容',
+    kind: panelText(node.contentKind === 'container' ? 'knowledgeGraphSourceContainer' : node.contentKind === 'unit' ? 'knowledgeGraphDesignUnit' : node.record ? 'knowledgeGraphSourceRecord' : 'knowledgeGraphDesignContent', locale),
     source: graph.nodes.find(n => n.id === node.recordId),
     children: graph.nodes.filter(n => n.parentId === node.id && n.contentKind !== undefined),
   }
@@ -21,15 +23,29 @@ export function edgeReading(edge: EdgeSource): RelationReading {
   return { relationType: edge.kind ?? 'unknown', meaning: edge.kind === 'contains' ? 'contains' : edge.kind === 'semantic' ? 'similar' : 'unknown',
     origin: 'unknown', direction: edge.kind === 'contains' ? 'forward' : edge.kind === 'semantic' ? 'symmetric' : 'unknown', lifecycle: 'unknown' }
 }
-const meaningLabels: Record<string, string> = { contains: '包含', references: '引用', similar: '相似候选', supports: '支持', realizes: '实现', constrains: '约束', precedes: '先于', contradicts: '矛盾', unknown: '未分类' }
-export const relationOriginLabels: Record<RelationReading['origin'], string> = { file: '文件投影', embedding: 'Embedding', agent: 'Agent 分析', human: '人工记录', unknown: '来源未知' }
-export function relationMeaningLabel(meaning: string): string { return Object.hasOwn(meaningLabels, meaning) ? meaningLabels[meaning] : meaning }
-export function relationDirectionLabel(direction: RelationReading['direction']): string {
-  return direction === 'forward' ? '从源端到目标端' : direction === 'symmetric' ? '对称关系（无先后）' : '语义方向未声明'
+const meaningLabels: Record<string, PanelMessageKey> = { contains: 'knowledgeGraphMeaningContains', references: 'knowledgeGraphMeaningReferences', similar: 'knowledgeGraphMeaningSimilar', supports: 'knowledgeGraphMeaningSupports', realizes: 'knowledgeGraphMeaningRealizes', constrains: 'knowledgeGraphMeaningConstrains', precedes: 'knowledgeGraphMeaningPrecedes', contradicts: 'knowledgeGraphMeaningContradicts', unknown: 'knowledgeGraphMeaningUnknown' }
+const originLabels: Record<string, PanelMessageKey> = { file: 'knowledgeGraphOriginFile', embedding: 'knowledgeGraphOriginEmbedding', agent: 'knowledgeGraphOriginAgent', human: 'knowledgeGraphOriginHuman', unknown: 'knowledgeGraphOriginUnknown' }
+/** The default-locale map remains available for existing callers; IDs stay stable. */
+export const relationOriginLabels = Object.fromEntries(Object.keys(originLabels).map(origin => [origin, relationOriginLabel(origin)])) as Record<RelationReading['origin'], string>
+export function relationMeaningLabel(meaning: string, locale = 'zh-CN'): string { return Object.hasOwn(meaningLabels, meaning) ? panelText(meaningLabels[meaning], locale) : meaning }
+export function relationOriginLabel(origin: string, locale = 'zh-CN'): string { return Object.hasOwn(originLabels, origin) ? panelText(originLabels[origin], locale) : origin }
+export function relationDirectionLabel(direction: string, locale = 'zh-CN'): string {
+  const labels: Record<string, PanelMessageKey> = { forward: 'knowledgeGraphDirectionForward', symmetric: 'knowledgeGraphDirectionSymmetric', unknown: 'knowledgeGraphDirectionUnknown' }
+  return Object.hasOwn(labels, direction) ? panelText(labels[direction], locale) : direction
 }
-export function relationLifecycleLabel(lifecycle: string): string {
-  const labels: Record<string, string> = { observed: '已观测', proposed: '候选解释', accepted: '已采纳', rejected: '已拒绝', superseded: '已被替代', unknown: '状态未知' }
-  return Object.hasOwn(labels, lifecycle) ? labels[lifecycle] : lifecycle
+export function relationLifecycleLabel(lifecycle: string, locale = 'zh-CN'): string {
+  const labels: Record<string, PanelMessageKey> = { observed: 'knowledgeGraphLifecycleObserved', proposed: 'knowledgeGraphLifecycleProposed', accepted: 'knowledgeGraphLifecycleAccepted', rejected: 'knowledgeGraphLifecycleRejected', superseded: 'knowledgeGraphLifecycleSuperseded', unknown: 'knowledgeGraphLifecycleUnknown' }
+  return Object.hasOwn(labels, lifecycle) ? panelText(labels[lifecycle], locale) : lifecycle
+}
+/** Localize only generated display copy. Original member labels and evidence
+ * remain untouched, and canvas topology never depends on the current locale.
+ * Projection labels and UI readings share this one generated-label formatter.
+ */
+export function relationDisplayLabel(edge: GraphEdge, locale = 'zh-CN'): string {
+  const members = edge.members
+  return members && members.length > 1
+    ? panelText('knowledgeGraphOriginalRelations', locale, { meaning: relationMeaningLabel(edgeReading(edge).meaning, locale), count: members.length })
+    : members?.[0]?.label ?? edge.label
 }
 /** Independent filters, applied before neighborhood expansion and display limits. */
 export function filterRelations(graph: GraphScope, meaning = 'all', origin = 'all'): GraphScope {
@@ -78,7 +94,7 @@ export function recordOwner(graph: Pick<DesignGraph, 'nodes' | 'edges'>, id: str
 }
 
 /** false=overview, true=all descendants, set=complete trees of selected records. */
-export function projectRecords(graph: Pick<DesignGraph, 'nodes' | 'edges'>, expanded: boolean | ReadonlySet<string>): GraphScope {
+export function projectRecords(graph: Pick<DesignGraph, 'nodes' | 'edges'>, expanded: boolean | ReadonlySet<string>, locale = 'zh-CN'): GraphScope {
   const owner = new Map(graph.nodes.map(n => [n.id, recordOwner(graph, n.id)]))
   const nodes = graph.nodes.filter(n => n.record || (owner.get(n.id) && (expanded === true || (typeof expanded !== 'boolean' && expanded.has(owner.get(n.id)!)))))
   const visible = new Set(nodes.map(n => n.id))
@@ -98,12 +114,12 @@ export function projectRecords(graph: Pick<DesignGraph, 'nodes' | 'edges'>, expa
     const first = unique[0], reading = edgeReading(first)
     let from = endpoint(first.from)!, to = endpoint(first.to)!
     if (reading.direction === 'symmetric' && from > to) [from, to] = [to, from]
-    edges.push({ ...first, from, to, reading,
+    const projected: GraphEdge = { ...first, from, to, reading,
       id: unique.length === 1 ? first.id : 'aggregate:' + key,
-      label: unique.length === 1 ? first.label : first.label + ' · ' + unique.length + ' 处依据',
       evidence: unique.map(e => e.evidence).join('\n'),
       members: unique.map(e => ({ id: e.id, from: e.from, to: e.to, label: e.label, evidence: e.evidence, kind: e.kind, reading: edgeReading(e) })),
-    })
+    }
+    edges.push({ ...projected, label: relationDisplayLabel(projected, locale) })
   }
   return { nodes, edges, total: nodes.length }
 }

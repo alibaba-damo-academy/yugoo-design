@@ -1,9 +1,10 @@
+import { usePanelI18n } from '../panel-i18n.tsx'
 import React, { useEffect, useId, useRef, useState } from 'react'
 import { select } from 'd3-selection'
 import { drag } from 'd3-drag'
 import { zoom, zoomIdentity, type ZoomTransform } from 'd3-zoom'
 import type { SimulationNodeDatum } from 'd3-force'
-import { nodeRadius, edgeReading, type GraphScope, type GraphNode, type GraphEdge } from './graph-model.js'
+import { nodeRadius, edgeReading, relationDisplayLabel, type GraphScope, type GraphNode, type GraphEdge } from './graph-model.js'
 import { createGraphLayoutJob } from './graph-layout-client.js'
 import { SpatialGraphCanvas } from './graph-spatial.js'
 import { intersects, graphLabelRanks, shortGraphLabel, type LabelBox } from './graph-labels.js'
@@ -26,6 +27,7 @@ export function GraphCanvas(props: GraphCanvasProps) {
   </div>
 }
 function PlanarGraphCanvas(props: GraphCanvasProps & GraphCanvasTheme & { engine: string }) {
+  const { locale, t } = usePanelI18n()
   const svgRef = useRef<SVGSVGElement>(null), nebulaRef = useRef<HTMLCanvasElement>(null), latest = useRef(props)
   const instanceId = 'graph-' + useId().replace(/[^a-zA-Z0-9_-]/g, '')
   const views = useRef(new Map<string, { positions: Map<string, { x: number; y: number }>; camera: ZoomTransform; key: string; baseScale: number; center: [number, number] }>())
@@ -76,7 +78,7 @@ function PlanarGraphCanvas(props: GraphCanvasProps & GraphCanvasTheme & { engine
     const marker = defs.append('marker').attr('id', instanceId + '-arrow').attr('viewBox', '0 0 6 6').attr('refX', 7.6).attr('refY', 3).attr('markerWidth', 4).attr('markerHeight', 4).attr('orient', 'auto')
     const arrow = marker.append('path').attr('d', 'M0 0L6 3L0 6')
     const arcs = root.append('g').selectAll<SVGGElement, typeof groups[number]>('g').data(ring ? groups : []).join('g')
-      .attr('role', 'button').attr('tabindex', 0).attr('data-bundle', g => g.owner).attr('aria-label', g => '突出' + (latest.current.sourceLabels?.[g.owner] ?? g.owner) + '关联').style('cursor', 'pointer')
+      .attr('role', 'button').attr('tabindex', 0).attr('data-bundle', g => g.owner).attr('aria-label', g => t('graphCameraHighlightSource', { source: latest.current.sourceLabels?.[g.owner] ?? g.owner })).style('cursor', 'pointer')
       .on('click', (event, g) => { event.stopPropagation(); bundleFocusRef.current = bundleFocusRef.current === g.owner ? '' : g.owner; setBundleFocus(bundleFocusRef.current); latest.current.onClear(); style() })
       .on('keydown', (event, g) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.stopPropagation(); bundleFocusRef.current = bundleFocusRef.current === g.owner ? '' : g.owner; setBundleFocus(bundleFocusRef.current); latest.current.onClear(); style() } })
     arcs.append('path').attr('class', 'graph-bundle-arc').attr('fill', 'none').attr('stroke', g => palette(g.owner)).attr('vector-effect', 'non-scaling-stroke').attr('stroke-opacity', .8)
@@ -106,7 +108,7 @@ function PlanarGraphCanvas(props: GraphCanvasProps & GraphCanvasTheme & { engine
     const lines = edgeGlyphs.append('path')
       .attr('data-relation-kind', e => e.kind).attr('data-edge-id', e => e.id).attr('fill', 'none').attr('vector-effect', 'non-scaling-stroke')
     const hits = root.append('g').selectAll<SVGPathElement, GraphEdge>('path').data(graph.edges).join('path')
-      .attr('data-edge', e => e.id).attr('fill', 'none').attr('stroke', 'transparent').attr('stroke-width', 12).attr('vector-effect', 'non-scaling-stroke').attr('role', 'button').attr('tabindex', 0).attr('aria-label', e => e.label).style('cursor', 'pointer')
+      .attr('data-edge', e => e.id).attr('fill', 'none').attr('stroke', 'transparent').attr('stroke-width', 12).attr('vector-effect', 'non-scaling-stroke').attr('role', 'button').attr('tabindex', 0).attr('aria-label', e => relationDisplayLabel(e, locale)).style('cursor', 'pointer')
       .on('click', (event, e) => { event.stopPropagation(); bundleFocusRef.current = ''; setBundleFocus(''); latest.current.onEdge(e.id) })
       .on('keydown', (event, e) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.stopPropagation(); bundleFocusRef.current = ''; setBundleFocus(''); latest.current.onEdge(e.id) } })
     const nodeEls = root.append('g').selectAll<SVGGElement, Particle>('g').data(particles, n => n.id).join('g')
@@ -293,12 +295,24 @@ function PlanarGraphCanvas(props: GraphCanvasProps & GraphCanvasTheme & { engine
     }
   }, [props.graph, props.engine, props.layoutEdges, instanceId])
   useEffect(() => { actions.current.style() }, [props.selected, props.selectedEdge, props.matches, props.sizeMode, dark, bundleFocus])
+  // Update names without restarting the layout or discarding the camera.
+  useEffect(() => {
+    for (const group of svgRef.current?.querySelectorAll<SVGGElement>('[data-bundle]') ?? []) {
+      const owner = group.getAttribute('data-bundle') ?? ''
+      group.setAttribute('aria-label', t('graphCameraHighlightSource', { source: props.sourceLabels?.[owner] ?? owner }))
+    }
+    const edges = new Map(props.graph.edges.map(edge => [edge.id, edge]))
+    for (const path of svgRef.current?.querySelectorAll<SVGPathElement>('[data-edge]') ?? []) {
+      const edge = edges.get(path.getAttribute('data-edge') ?? '')
+      if (edge) path.setAttribute('aria-label', relationDisplayLabel(edge, locale))
+    }
+  }, [locale, props.sourceLabels, props.graph])
   return <div className='graph-planar-canvas' data-canvas-theme={dark ? 'dark' : 'light'} data-canvas-view={props.engine === 'ring' ? 'ring' : 'graph'} style={{ position: 'relative', flex: 1, minWidth: 0, minHeight: 0, overflow: 'hidden', background: dark ? '#121a25' : '#fafbfd' }}>
     <canvas ref={nebulaRef} aria-hidden='true' style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: .9, pointerEvents: 'none' }} />
-    <svg ref={svgRef} aria-label='字段关联图' tabIndex={0} style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, touchAction: 'none', userSelect: 'none', cursor: 'grab' }} />
-    {layoutError && <p role='alert' style={{ position: 'relative', padding: 12 }}>布局不可用，可切换算法：{layoutError}</p>}
+    <svg ref={svgRef} aria-label={t('graphFieldConnections')} tabIndex={0} style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, touchAction: 'none', userSelect: 'none', cursor: 'grab' }} />
+    {layoutError && <p role='alert' style={{ position: 'relative', padding: 12 }}>{t('graphLayoutUnavailable', { error: layoutError })}</p>}
     <GraphCameraTools dark={dark} onToggleDark={props.onToggleDark} onZoom={factor => actions.current.zoom(factor)} onFit={() => actions.current.fit()} onRestart={props.engine !== 'ring' ? () => actions.current.restart() : undefined}>
-      {bundleFocus && props.engine === 'ring' && <button onClick={() => { bundleFocusRef.current = ''; setBundleFocus('') }}>返回完整环形图</button>}
+      {bundleFocus && props.engine === 'ring' && <button onClick={() => { bundleFocusRef.current = ''; setBundleFocus('') }}>{t('graphFullRing')}</button>}
     </GraphCameraTools>
   </div>
 }

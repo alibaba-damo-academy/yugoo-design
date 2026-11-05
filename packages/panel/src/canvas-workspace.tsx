@@ -8,6 +8,7 @@ import { PanelEditableTitle, PanelWorkspace, PanelWorkspaceTree, PanelWorkspaceT
 import { usePanelI18n } from './panel-i18n.tsx'
 import { PanelContentState } from './panel-content-state.tsx'
 import { emptyCanvasScene, parseCanvasScene } from './canvas-scene.ts'
+import { ArrowUp, ArrowDown, Trash2 } from 'lucide-react'
 import { confinedEditableArtifact, discardTextArtifactRecordEdits, PANEL_TEXT_ARTIFACTS_KEY, stageTextArtifact, type PendingTextArtifact } from './text-artifact-edit.ts'
 const Surface = lazy(() => import('./excalidraw-surface.tsx'))
 
@@ -80,14 +81,16 @@ export function CanvasWorkspace({ node, manifest, data, options }: { node: Compo
       <header className="dsh-canvas-heading"><PanelEditableTitle aria-label={t('canvasTitle')} aria-required={titleField?.required || undefined}
         value={String(record[config.label_field] ?? '')} disabled={!titleEditable}
         onChange={event => { if (titleEditable) options?.onEdit?.({ section: node.source!, record: selected, field: config.label_field, value: event.target.value }) }} />
-        <button type="button" disabled={!editable || ids.indexOf(selected) === 0} onClick={() => move(-1)}>{t('canvasUp')}</button>
-        <button type="button" disabled={!editable || ids.indexOf(selected) === ids.length - 1} onClick={() => move(1)}>{t('canvasDown')}</button>
-        <button type="button" className="dsh-canvas-delete" disabled={!editable} onClick={() => {
+        <div className="dsh-design-record-actions">
+        <button type="button" aria-label={t('canvasUp')} title={t('canvasUp')} disabled={!editable || ids.indexOf(selected) === 0} onClick={() => move(-1)}><ArrowUp size={16} aria-hidden="true" /></button>
+        <button type="button" aria-label={t('canvasDown')} title={t('canvasDown')} disabled={!editable || ids.indexOf(selected) === ids.length - 1} onClick={() => move(1)}><ArrowDown size={16} aria-hidden="true" /></button>
+        <button type="button" aria-label={t('canvasDelete')} title={t('canvasDelete')} className="dsh-canvas-delete" disabled={!editable} onClick={() => {
           if (!window.confirm(t('canvasDeleteConfirm'))) return
           const next = { ...records }; delete next[selected]
           update({ [binding.recordsPath]: next, ...(binding.orderPath ? { [binding.orderPath]: ids.filter(id => id !== selected) } : {}),
             ...(pendingList === undefined ? {} : { [PANEL_TEXT_ARTIFACTS_KEY]: discardTextArtifactRecordEdits(pendingList, binding.recordsPath, selected) }) })
-        }}>{t('canvasDelete')}</button>
+        }}><Trash2 size={16} aria-hidden="true" /></button>
+        </div>
       </header>
       {pending && identity.current.base !== 'new' && identity.current.base !== version ? <p role="alert">{t('canvasChanged')}</p> : null}
       <div className="dsh-canvas-stage">{valid && scene ? <Suspense fallback={<PanelContentState state="loading" message={t('canvasLoading')} kind="canvas" />}>

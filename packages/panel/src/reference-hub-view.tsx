@@ -8,6 +8,7 @@ import { referenceNodeKey } from './reference-graph.ts'
 import { sidebarIcon } from './sidebar-icon.tsx'
 import { PanelCanvasHandles, PanelCanvasToolbar, PanelDisclosureIcon } from './panel-workspace.tsx'
 import { usePanelI18n } from './panel-i18n.tsx'
+import { canvasAriaLabels } from './canvas-i18n.ts'
 import { useFlowContainerFit } from './use-flow-container-fit.ts'
 import { RELATION_GRAPH_AUTO_FIT } from './relation-graph-layout.ts'
 import { Brain, FileText, MapPin, Sparkles, Wrench } from 'lucide-react'
@@ -186,6 +187,7 @@ export function ReferenceHub(props: { node: ComponentNode; manifest: PanelManife
     const selectedEndpoint = (node: HubNode) => node.id === selectedKey || node.members?.some(member => member.id === selectedKey)
     const muted = highlight && selected && !selectedEndpoint(source) && !selectedEndpoint(target)
     return [{ ...edge, label: portraits && !collaboration ? undefined : edge.label,
+      ariaLabel: `${source.name} → ${target.name}${edge.label ? ` · ${edge.label}` : ''}`,
       type: 'hubLink', sourceHandle, targetHandle, selectable: false, focusable: false, deletable: false,
       data: { rail: collaboration ? Math.min(source.y, target.y) - 64 - lane++ * 32 : undefined },
       style: { stroke: collaboration ? 'var(--ds-brand-6, #7c5af6)' : 'var(--ds-text-tertiary, #9695a1)', strokeWidth: 1.4,
@@ -223,8 +225,7 @@ export function ReferenceHub(props: { node: ComponentNode; manifest: PanelManife
       <div className="ygd-reference-hub-canvas" ref={canvas}><ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
         onInit={setFlow} connectionMode={ConnectionMode.Loose} nodesDraggable={false} nodesConnectable={false}
         deleteKeyCode={null} multiSelectionKeyCode={null} onNodesChange={onNodesChange}
-        ariaLabelConfig={{ 'node.a11yDescription.default': t('hubKeyboard'), 'node.a11yDescription.keyboardDisabled': t('hubKeyboard'),
-          'controls.zoomIn.ariaLabel': t('zoomIn'), 'controls.zoomOut.ariaLabel': t('zoomOut'), 'controls.fitView.ariaLabel': t('fitAll') }}
+        ariaLabelConfig={canvasAriaLabels(t, t('hubKeyboard'))}
         onNodeClick={(_event, node) => { const owner = projection.owners[node.id]; if (owner) { setHighlight(true); props.select(owner) } }}
         onNodeDoubleClick={(_event, node) => { const owner = projection.owners[node.id]; if (owner?.section === layout.center) { props.select(owner); setFocus(owner.record) } }}
         fitView fitViewOptions={RELATION_GRAPH_AUTO_FIT} minZoom={.15} maxZoom={2.5}>

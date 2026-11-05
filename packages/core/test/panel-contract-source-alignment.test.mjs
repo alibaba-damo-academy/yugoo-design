@@ -102,3 +102,27 @@ test('shared path and scalar primitives reject prototype segments and non-finite
   assert.deepEqual(validateScalarDefaults({ title: 'New', enabled: true, count: 1 }, 'defaults'), [])
   assert.ok(validateScalarDefaults({ count: Infinity }, 'defaults').length > 0)
 })
+
+
+test('reading boards bind labeled text fields once and can omit the generated overview', () => {
+  const panel = base()
+  panel.fields.push(...['condition', 'criteria', 'verification', 'group'].map(key => ({ key, control: 'textarea', applies_to: ['items'] })))
+  panel.ui = { id: 'board', component: 'record_board', source: 'items', board: {
+    label: 'title', description: 'criteria', group: 'group', body_fields: ['condition', 'criteria', 'verification'], overview: false, detail_fields: [],
+  } }
+  assert.deepEqual(validatePanelManifest(panel), [])
+  for (const mutate of [
+    p => { p.ui.board.body_fields = [] },
+    p => { p.ui.board.body_fields = ['condition'] },
+    p => { p.ui.board.body_fields.push('criteria') },
+    p => { p.ui.board.body_fields.push('missing') },
+    p => { p.ui.board.body_fields.push('title') },
+    p => { p.ui.board.detail_fields = ['criteria'] },
+    p => { p.fields.find(f => f.key === 'condition').hidden = true },
+    p => { p.fields.find(f => f.key === 'condition').control = 'toggle' },
+    p => { p.ui.board.overview = 'no' },
+  ]) {
+    const invalid = structuredClone(panel); mutate(invalid)
+    assert.ok(validatePanelManifest(invalid).length > 0)
+  }
+})

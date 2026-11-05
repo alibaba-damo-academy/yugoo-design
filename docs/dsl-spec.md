@@ -120,11 +120,13 @@ manifest against the actual target version before publishing it.
 
 ### Long text editing
 
-Authored `textarea` fields may opt into `textarea_rows: 3..20` to give complete
-instructions or configuration text a readable initial viewport. This is finite
-presentation only: it does not trim text, parse it, change storage or impose a
+Multiline fields fit actual content from one line up to five automatic lines,
+then scroll internally. Users can resize them beyond that automatic limit.
+`textarea_rows`, when provided, chooses an automatic row budget between three
+and five; larger existing values are capped at five, never used as a minimum
+height. This is finite presentation only: it does not trim text, parse it, change storage or impose a
 character limit. Typed `record_map.item_fields` use the same leaf rule. Omission
-preserves existing sizing; generated-origin panels do not expose this option.
+uses the five-line automatic budget; generated-origin panels do not expose this option.
 
 ### Same-record inspector views
 
@@ -200,14 +202,17 @@ are read on demand through the existing host artifact port, only when the path
 is safe, is present in `artifactFiles`, and an exact `sourceRevision` is available.
 The source revision is passed to the reader. The preview is escaped plain text,
 bounded to 262,144 characters, with unavailable and retry states; no code, HTML or
-model is executed. Nonempty provenance/evidence uses a folded readonly view;
+model is executed. File reading starts only when the user explicitly opens that
+file preview; opening a surrounding group does not activate it.
+Nonempty provenance/evidence uses an initially open readonly group;
 empty technical fields are not presented as a form. Other unbound fields retain
 their original field controls, not an inferred metadata role.
 
 Each statement is a collapsible card, expanded initially, containing its business explanation, formula
-and relevant shared symbol definitions, with a source disclosure at the bottom.
-Per-formula symbol definitions are initially folded, showing their count; source,
-complete-model and technical-record disclosures also start folded.
+and relevant shared symbol definitions, with readonly source context at the bottom.
+Per-formula symbol definitions, the complete model and technical records reuse
+the shared initially open disclosure groups. Users can close each independently;
+neither one-item content nor property count removes the disclosure control.
 The complete formulation is a separate collapsible card containing the editable
 symbol glossary. Folds are local presentation, not saved facts or approval.
 Symbol usage is a read-only projection of matching rendered MathML notation; it
@@ -634,12 +639,25 @@ contain only the existing field/row/group items: no nested tabs or groups.
 They reuse the shared `tabs` component, including keyboard navigation, stable
 ID selection and mounted inactive editors. Fields remain unique across all
 pages and the record header; fallback fields are appended once outside tabs.
+Section `description` supplies whole-record guidance in the shared record header;
+group descriptions and field help appear beside their captions through shared
+hover/focus/click help, not as trailing paragraphs. Saved descriptive fields
+remain ordinary editable business content.
 Changing page, language or disclosure state emits no canonical edit and never
 clears existing values. Readonly follows the original field's authority.
-`group.collapsible: true` requires a nonempty title, starts closed and uses the
-shared disclosure glyph with native keyboard-accessible details semantics.
-Its content remains mounted; display state is not another data field. Choose
-this only for optional material, not to hide an unresolved blocking decision.
+`group.collapsible: true` requires a nonempty title and uses the shared disclosure
+glyph with native keyboard-accessible details semantics. All existing semantic
+grey content groups support disclosure and start open by default; several groups
+may remain open together. Item, property and option counts do not decide whether
+a group can collapse. Ordinary fields and choices do not gain extra wrappers.
+The complete content header orders the title, existing help/count/actions, then
+the disclosure glyph at its far right; actions must not follow the glyph.
+This does not change the leading chevrons of ordinary navigation trees.
+The existing optional `default_open` boolean remains valid only on an explicitly
+collapsible authored group; an explicit `false` retains its initial-state meaning.
+Later renders, locale changes and readonly changes do
+not reset the user's disclosure choice. Content remains mounted; display state
+is not another data field. Never hide an unresolved blocking decision by default.
 Both additions are static authored form presentation; generated-origin A2UI
 still rejects the complete `form` extension rather than silently dropping it.
 
@@ -987,10 +1005,30 @@ Ordinary `detail_sections` retain their existing same-record nested-form meaning
 directly, cards have no artificial group heading, and the overview connects the
 root directly to records. Do not bind long summaries merely to satisfy grouping;
 this projection never adds a grouping field to canonical records.
-Sidebar selection scrolls to a card; it does not start editing. Description and
-badge drafts have explicit Save/Cancel, while rejected records remain inspectable
-without granting edit access. Optional `board.id_field` binds a declared visible,
-readonly `text` field and displays its existing string beside the card title and
+Sidebar selection scrolls the board's own content to the card title; it does not
+start editing or move the host conversation. Manual scrolling updates the current
+sidebar record, including a current cue on a collapsed navigation group. The
+reading order honors the section's durable order; grouping preserves first-group
+and within-group order without changing stored data. `board.overview: false`
+omits the generated mind-map entry when it does not help the task.
+
+Optional `board.body_fields` declares an ordered list of visible text/textarea
+fields, including `description`. It replaces the unlabeled description with labeled
+content using the existing field labels. Editable cards expose those fields and the
+optional group field directly in the shared Panel draft. Readonly cards retain labels
+for required fields even when empty; optional empty values do not occupy reading space.
+Header, group and detail
+bindings cannot duplicate the body fields. Ordinary section creation/deletion and
+reordering remain available when the existing section allows them; request-based
+creation retains its host-owned workflow.
+Grouped reordering swaps adjacent visible records within their current group in
+the durable order, leaving other groups and filtered-out records in place. The
+first and last records in that group disable their respective move actions.
+Description, body, title and badge edits use the Panel's existing Save/Cancel boundary;
+cards do not add a second save mode. Rejected records remain inspectable without
+granting edit access. Available move/delete actions remain visible on the right of
+the card title. Optional `board.id_field` binds a declared visible,
+readonly `text` field and displays its existing string before the card title and
 at the top of cover details. Inline details retain the same card header. It does
 not add an ID editor, generate a fallback ID or write state; omission retains the
 existing title-only presentation. `board.detail_fields` restricts the parent fields
@@ -1097,9 +1135,13 @@ authored extension.
 
 Each group may declare a `presentation` object containing only optional boolean
 `always_expanded`, `show_detail`, and `show_attachments` properties. These select
-shared component behavior, not Bundle-specific styling. Omission preserves the
-usual collapse, detail, and attachment controls. Hiding a control preserves its
-canonical data; keeping a card expanded does not grant editing permission.
+shared component behavior, not Bundle-specific styling. `always_expanded` selects
+the answer area's reading/editing presentation; it does not prevent the user from
+collapsing the outer grey question frame. That frame starts open, and its
+disclosure is independent of editing, finishing or rejecting an answer.
+Omission preserves the usual answer, detail and attachment behavior. Hiding a
+control or closing the frame preserves canonical data and mounted drafts;
+keeping an answer expanded does not grant editing permission.
 Read-only, disabled, protected, historical and rejection guards still apply.
 
 `question_workspace` composes the same question cards with the standard
@@ -1281,6 +1323,49 @@ Styles use the dedicated `.dsh-component-tabs` namespace so public `renderNode`
 mounting does not collide with host navigation. Hosts must load shared Panel
 styles; the component does not inject CSS. Test keyboard/hidden behavior and
 narrow-container overflow in a real browser in addition to structural checks.
+
+## Reading nested saved facts
+
+`structured_data` reads its existing `source` path. Optional `read_fields`
+declares display labels and reading order without adding fields to Design JSON:
+
+```yaml
+component: structured_data
+id: shared-reading
+source: common_spec
+read_fields:
+  - {key: layout, label: '$t:layout'}
+  - key: navigation
+    label: $t:navigation
+    item_label_field: label
+    fields:
+      - {key: target_page_id, label: '$t:targetPage', options_from_section: pages}
+      - {key: icon_ref, label: '$t:iconReference', collapsed: true}
+  - {key: source, label: '$t:source', collapsed: true}
+```
+
+Each declaration has a direct own-property `key` and nonempty `label`.
+`fields` describes a nested object, or each object in an array;
+`item_label_field` uses an existing scalar property as an array item's heading.
+That property is not repeated as a separate row when its value is shown in the
+heading. Missing, empty or non-scalar headings leave the original property
+readable. String arrays remain ordinary text lists. `collapsed: true` folds
+low-frequency details, including scalar references; declared content otherwise
+opens directly. Labels use the existing `$t:` resources recursively; property
+keys, source paths, reference IDs and saved values never translate.
+
+`options_from_section` names an existing declared section. Its current record
+label is shown beside the original ID; unresolved references keep their ID.
+This is the existing section/record-label lookup, not an external lookup or
+permission grant. Declared keys appear first in authored order, followed by
+undeclared keys in their saved order with their original names. Declarations
+never remove unknown properties, rewrite values, create missing content, or
+make this reading view editable. Without `read_fields`, existing generic
+reading remains unchanged. The same bounded traversal (eight levels and 100
+entries per level, with visible overflow feedback) applies. Declarations are
+limited to eight levels and 100 entries per level; duplicate keys, unsafe
+property names, unknown section references and invalid option types fail
+manifest validation.
 
 ## Validation rules (fail loud)
 

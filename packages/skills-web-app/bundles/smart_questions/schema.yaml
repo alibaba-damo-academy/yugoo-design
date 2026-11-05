@@ -66,8 +66,8 @@ properties:
         # in reconstruction belong here too, without implying user confirmation.
         # Leave genuinely unknown answers empty; never promote a proposal as an answer.
         answer: { type: string }
-        # Optional supplementary explanation, constraints or source locations.
-        # Do not put a known text answer only here. A choice response outside the
+        # Optional choice-question explanation, constraints or source locations.
+        # Text questions use only answer and leave detail empty. A choice response outside the
         # available options may be preserved here without inventing a selection.
         # Supplementary detail alone does not mark the question answered.
         detail: { type: string }

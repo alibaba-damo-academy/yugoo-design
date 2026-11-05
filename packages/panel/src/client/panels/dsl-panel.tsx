@@ -69,6 +69,10 @@ export function DslPanel({ skill, draft, originalState, onChange, panelYaml, pan
 }): ReactElement {
   const latestDraft = useRef<Record<string, unknown>>({})
   const savingEditor = useRef(0)
+  const registerEditor = useMemo<SkillPanelProps['registerBeforeSave']>(() => registerBeforeSave ? (flush, discard) => registerBeforeSave(async () => {
+    savingEditor.current++
+    try { await flush() } finally { savingEditor.current-- }
+  }, discard) : undefined, [registerBeforeSave])
   latestDraft.current = isRecord(draft) ? draft : {}
   const uploadScope = useRef({ live: true, writable: !readOnly && allowAttachments, editorWritable: !readOnly, skill })
   uploadScope.current.writable = !readOnly && allowAttachments
@@ -133,10 +137,7 @@ export function DslPanel({ skill, draft, originalState, onChange, panelYaml, pan
     artifactActivities,
     executionAttempts,
     readExecutionLog,
-    registerBeforeSave: registerBeforeSave ? flush => registerBeforeSave(async () => {
-      savingEditor.current++
-      try { await flush() } finally { savingEditor.current-- }
-    }) : undefined,
+    registerBeforeSave: registerEditor,
     onStageArtifact: edit => {
       if (!uploadScope.current.live || uploadScope.current.skill !== skill || (!uploadScope.current.editorWritable && !savingEditor.current)) {
         throw new Error(panelText('panelEditorUnavailable', locale))

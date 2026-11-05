@@ -6,8 +6,8 @@
  * and renders the design workspace as a right dock in `shell.overlay`
  * (aligned with the conversation header, below desktop chrome). Inside the dock, every skill of
  * the plugin-owned DesignJournal workspace gets a browser-style sub tab
- * (DesignTabsBar replica): panels stay mounted across tab switches, local
- * edits raise a gray dot, off-screen agent updates a "new" badge, and saves
+ * (DesignTabsBar replica): the active panel mounts after existing local editors
+ * flush into its shared draft; edits raise a gray dot, off-screen agent updates a "new" badge, and saves
  * round-trip through `remote.designPanel.savePanel` (host: Design Files
  * write + git commit + model notification).
  */
@@ -886,10 +886,10 @@ function DesignToggle(): ReactElement | null {
   }>()
   useEffect(() => {
     if (previousPending.current === 0 && pending > 0) {
-      showDesignToast(`${pending} design ${pending === 1 ? 'advisory needs' : 'advisories need'} review`, 'success')
+      showDesignToast(isZh ? `${pending} 条设计建议待处理` : `${pending} design ${pending === 1 ? 'advisory needs' : 'advisories need'} review`, 'success')
     }
     previousPending.current = pending
-  }, [pending])
+  }, [pending, isZh])
   useEffect(() => {
     const sessionId = info.sessionId
     const projectId = workspace?.projectId
@@ -1135,6 +1135,8 @@ interface HandlePointerEvent {
 
 /** The dock's left-edge drag strip: dragging resizes the dock (and the conversation). */
 function DockResizeHandle(): ReactElement {
+  const snapshot = useSyncExternalStore(rail.subscribe, rail.getSnapshot)
+  const isZh = useCurrentLanguage() === 'zh_CN'
   const onPointerDown = (event: HandlePointerEvent): void => {
     event.preventDefault()
     const target = event.currentTarget
@@ -1151,7 +1153,14 @@ function DockResizeHandle(): ReactElement {
     target.addEventListener('pointerup', onUp)
     target.addEventListener('pointercancel', onUp)
   }
-  return <div className='dsh-design-dock-resize' onPointerDown={onPointerDown} />
+  return <div className='dsh-design-dock-resize' role='separator' tabIndex={0}
+    aria-label={isZh ? '调整设计面板宽度' : 'Resize design panel'} aria-orientation='vertical'
+    aria-valuemin={clampDockWidth(0)} aria-valuemax={clampDockWidth(window.innerWidth)} aria-valuenow={Math.round(snapshot.width)}
+    onPointerDown={onPointerDown} onKeyDown={event => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+      event.preventDefault()
+      setRailWidth(rail.getSnapshot().width + (event.key === 'ArrowLeft' ? 12 : -12))
+    }} />
 }
 
 /** Dock body bound to the current session's provide bundle. */
@@ -1283,7 +1292,7 @@ function AdvisoryComposerInbox(): ReactElement | null {
     >
       <div className='dsh-advisory-inbox-heading'>
         <div className='dsh-advisory-inbox-title'>
-          <span>{isZh ? '设计建议' : 'Design advisor'}</span>
+          <span>{isZh ? '设计建议' : 'Design Advisories'}</span>
           {runtime.readReviewPolicy && runtime.updateReviewPolicy && <ReviewPolicyControl key={`${sessionId}:${workspace.projectId}`} sessionId={sessionId} runtime={runtime} />}
         </div>
         <div className='dsh-advisory-inbox-actions'>

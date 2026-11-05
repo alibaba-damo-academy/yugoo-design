@@ -44,7 +44,13 @@ test('diagram sidebar marks observed artifacts, not refs alone; active and faile
     assert.equal(titleStyle.whiteSpace, 'normal', 'long titles wrap without displacing the trailing status')
     assert.equal(titleStyle.overflowWrap, 'anywhere')
     assert.equal(markers()[0].style.flexShrink, '0')
-    assert.match(markers()[0].firstElementChild.style.background, /--ds-success-6/)
+    const completedDot = markers()[0].firstElementChild
+    const dotStyle = window.getComputedStyle(completedDot)
+    // JSDOM does not resolve the semantic color token; verify its actual author
+    // rule matches the rendered dot. Chromium/Host walkthrough checks color.
+    assert.ok([...sheet.sheet.cssRules].some(rule => rule.selectorText && completedDot.matches(rule.selectorText)
+      && rule.style.background?.includes('--ds-success-6')))
+    assert.ok(parseFloat(dotStyle.width) < parseFloat(markers()[0].style.width), 'the quiet static marker does not fill its alignment slot')
     assert.equal(markers()[0].getAttribute('aria-label'), '可阅读')
     await show([attempt('working')])
     assert.equal(markers()[0].dataset.executionStatus, 'working')

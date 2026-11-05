@@ -38,14 +38,14 @@ test('explicit round context follows saved round numbers without splitting quest
     for (const component of ['question_rounds', 'question_workspace']) {
       manifest.ui.component = component
       await React.act(async () => show('en-US'))
-      assert.equal(document.querySelector('.dsh-question-workspace-header h2').textContent, 'Goal: clarify scope', `${component} binds authored round context`)
+      assert.equal(document.querySelector('.dsh-panel-header-heading').textContent, 'Goal: clarify scope', `${component} binds authored round context`)
     }
     const buttons = () => [...document.querySelectorAll('.dsh-panel-workspace-nav-items button')]
     assert.equal(buttons().length, 2, 'orphan metadata never creates another round')
     assert.equal(buttons()[0].querySelector('.dsh-panel-workspace-nav-eyebrow').textContent, 'Round 2')
     assert.equal(buttons()[0].querySelector('.dsh-panel-workspace-nav-label').textContent, 'Goal: clarify scope', 'independent titles are not colon-split')
-    assert.equal(document.querySelector('.dsh-question-workspace-header h2').textContent, 'Goal: clarify scope')
-    assert.equal(document.querySelector('.dsh-question-workspace-header p').textContent, 'A separate round explanation: retain every colon.')
+    assert.equal(document.querySelector('.dsh-panel-header-heading').textContent, 'Goal: clarify scope')
+    assert.equal(document.querySelector('.dsh-panel-header-context').textContent, 'A separate round explanation: retain every colon.')
     assert.ok(document.querySelector('[data-question-id="first"]').textContent.includes(before.entries.first.prompt))
     const input = document.querySelector('[data-question-id="second"] textarea')
     Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype, 'value').set.call(input, 'New answer')
@@ -54,7 +54,7 @@ test('explicit round context follows saved round numbers without splitting quest
     assert.deepEqual(draft.envelope, before.envelope, 'answer editing preserves every round and unrelated field')
     delete draft.entries.first
     await React.act(async () => show('zh-CN'))
-    assert.equal(document.querySelector('.dsh-question-workspace-header h2').textContent, 'Goal: clarify scope', 'deleting the first question cannot rename its round')
+    assert.equal(document.querySelector('.dsh-panel-header-heading').textContent, 'Goal: clarify scope', 'deleting the first question cannot rename its round')
     assert.equal(buttons()[0].querySelector('.dsh-panel-workspace-nav-eyebrow').textContent, '第 2 轮')
     await React.act(async () => buttons()[1].click())
     assert.ok(document.querySelector('[data-question-id="fixed"]'))
@@ -62,7 +62,7 @@ test('explicit round context follows saved round numbers without splitting quest
     delete draft.envelope.rounds
     await React.act(async () => show('en-US'))
     assert.equal(buttons()[0].querySelector('.dsh-panel-workspace-nav-label').textContent, 'Round 2', 'missing metadata uses a round label, not the first question')
-    assert.equal(document.querySelector('.dsh-question-workspace-header p'), null)
+    assert.equal(document.querySelector('.dsh-panel-header-context'), null)
     assert.equal(draft.entries.history.answer, 'Saved evidence')
     assert.equal(draft.entries.history.detail, 'Kept')
   } finally { await React.act(async () => root.unmount()) }

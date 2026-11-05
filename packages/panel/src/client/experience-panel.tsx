@@ -9,8 +9,7 @@ import { Button } from './ported/ui/button.tsx'
 import { Info } from 'lucide-react'
 import { EXPERIENCE_CSS } from './experience-styles.ts'
 import { DesignPanelSurface } from './design-panel-surface.tsx'
-
-const recommendExperiencePrompt = '请根据目前已经落盘的设计，推荐一两个值得体验的具体情境，说明各自能帮助我判断什么。先讨论，不要直接生成或修改设计。'
+import { usePanelI18n } from '../panel-i18n.tsx'
 
 let documentGeneration = 0
 
@@ -24,6 +23,7 @@ export interface ExperiencePanelProps {
   footerStart?: ReactNode
 }
 export function ExperiencePanel(props: ExperiencePanelProps): ReactElement {
+  const { locale, t } = usePanelI18n()
   const [selected, setSelected] = useState(''), [sectionId, setSectionId] = useState('')
   const [pending, setPending] = useState(false), [sendError, setSendError] = useState('')
   const [navigationOpen, setNavigationOpen] = useState(false)
@@ -71,15 +71,15 @@ export function ExperiencePanel(props: ExperiencePanelProps): ReactElement {
     <div className='dsh-experience-body'><DesignPanelSurface><div className='dsh-experience' data-testid='experience-panel'>
     {errors.map(error => <p key={error} role='alert' className='dsh-experience-error'>{error}</p>)}
     {!view || !section ? <div className='flex flex-1 flex-col items-center justify-center gap-3 p-6 text-sm text-muted-foreground'>
-      <p>{paths.some(path => indexes[path] === undefined) ? '正在读取场景体验…' : '尚无可读取的已发布体验。从一个具体情境出发，把分散的设计放在一起看。'}</p>
-      <Button disabled={!props.writable || pending} onClick={() => void send(recommendExperiencePrompt)}>让 AI 推荐体验情境</Button>
+      <p>{paths.some(path => indexes[path] === undefined) ? t('experienceLoading') : t('experienceEmpty')}</p>
+      <Button disabled={!props.writable || pending} onClick={() => void send(t('experienceRecommendPrompt'))}>{t('experienceRecommend')}</Button>
     </div> : <div className='dsh-experience-layout'>
-      <button type='button' className='dsh-experience-directory-toggle' aria-expanded={navigationOpen} onClick={() => setNavigationOpen(v => !v)}>场景目录 · {views.length} 个场景 {navigationOpen ? '▴' : '▾'}</button>
-      <nav aria-label='场景目录' className={`dsh-experience-directory dsh-panel-workspace-navigation dsh-record-workspace-flat-nav${navigationOpen ? ' is-open' : ''}`}>
-        <header className='dsh-experience-directory-heading'><h2><span className='dsh-experience-directory-title'>场景体验<span className='dsh-experience-info' title='已保存的体验可随时回看，不替代设计文件。' aria-label='已保存的体验可随时回看，不替代设计文件。' tabIndex={0}><Info size={14} aria-hidden='true' /></span></span><span className='dsh-experience-count'>{views.length}</span></h2></header>
+      <button type='button' className='dsh-experience-directory-toggle' aria-expanded={navigationOpen} onClick={() => setNavigationOpen(v => !v)}>{t('experienceDirectory')} · {views.length} {navigationOpen ? '▴' : '▾'}</button>
+      <nav aria-label={t('experienceDirectory')} className={`dsh-experience-directory dsh-panel-workspace-navigation dsh-record-workspace-flat-nav${navigationOpen ? ' is-open' : ''}`}>
+        <header className='dsh-experience-directory-heading'><h2><span className='dsh-experience-directory-title'>{t('experienceTitle')}<span className='dsh-experience-info' title={t('experienceHint')} aria-label={t('experienceHint')} tabIndex={0}><Info size={14} aria-hidden='true' /></span></span><span className='dsh-experience-count'>{views.length}</span></h2></header>
         <div className='dsh-panel-workspace-nav-items'>
-        <button type='button' className='dsh-experience-add dsh-record-workspace-flat-add' aria-label='新增场景' disabled={!props.writable || pending}
-          onClick={() => void send(recommendExperiencePrompt)}><span aria-hidden='true'>＋</span>新增场景</button>
+        <button type='button' className='dsh-experience-add dsh-record-workspace-flat-add' aria-label={t('experienceAdd')} disabled={!props.writable || pending}
+          onClick={() => void send(t('experienceRecommendPrompt'))}><span aria-hidden='true'>＋</span>{t('experienceAdd')}</button>
         {views.map(v => <div key={v.id} className='dsh-experience-nav-group'>
           <button type='button' className='dsh-experience-scene' aria-current={v.id === view.id ? 'page' : undefined}
             onClick={() => { if (v.id !== view.id) { setSelected(v.id); setSectionId('') }; setNavigationOpen(false) }}>{v.title}</button>
@@ -93,36 +93,36 @@ export function ExperiencePanel(props: ExperiencePanelProps): ReactElement {
       <div className='dsh-experience-content'>
         <header className='dsh-experience-heading'>
           <h2>{view.sections.length > 1 ? section.title : view.title}</h2>
-          <span className='dsh-experience-disclaimer'>演示 · 非已确认设计{section.assumptions.length > 0 ? ` · ${section.assumptions.length} 项假设` : ''}</span>
+          <span className='dsh-experience-disclaimer'>{t('experienceDemo')}{section.assumptions.length > 0 ? ` · ${t('experienceAssumptionCount', { count: section.assumptions.length })}` : ''}</span>
         </header>
-        {freshness?.status === 'stale' && <div role='alert' className='dsh-experience-warning'>设计依据已变化或缺失，此体验可能过期。可回看原体验，或按最新设计刷新。</div>}
-        {freshness?.status === 'unknown' && <p role='status' className='dsh-experience-warning'>暂不能核对来源版本。</p>}
+        {freshness?.status === 'stale' && <div role='alert' className='dsh-experience-warning'>{t('experienceStale')}</div>}
+        {freshness?.status === 'unknown' && <p role='status' className='dsh-experience-warning'>{t('experienceUnknown')}</p>}
         <details key={`${view.id}:${section.id}`} className='dsh-experience-evidence'>
-          <summary>体验说明与设计依据</summary>
+          <summary>{t('experienceEvidence')}</summary>
           <div className='dsh-experience-evidence-body'>
             <p>{view.purpose}</p>
-            <p>画面内操作仅用于演示；切换内容后重置，不会保存到设计文件。</p>
-            <p>{view.stylesheet ? '引用已有视觉样式' : '中性示意'}</p>
-            {section.assumptions.length > 0 && <><h3>演示假设（未确认）</h3><ul>{section.assumptions.map((a, i) => <li key={i}>{a}</li>)}</ul></>}
-            <h3>设计依据</h3>{section.sources.map(path => <div key={path}>{path}</div>)}
-            {freshness?.status === 'stale' && <p>已变化或缺失：{freshness.changed.join('、')}</p>}
-            <p>资源支持：内联内容、选定 CSS、已引用的 PNG/JPEG/WebP 图片；外部字体、CSS 依赖及其他外链不加载。</p>
+            <p>{t('experienceDemoHint')}</p>
+            <p>{t(view.stylesheet ? 'experienceExistingStyle' : 'experienceNeutralStyle')}</p>
+            {section.assumptions.length > 0 && <><h3>{t('experienceAssumptions')}</h3><ul>{section.assumptions.map((a, i) => <li key={i}>{a}</li>)}</ul></>}
+            <h3>{t('experienceSources')}</h3>{section.sources.map(path => <div key={path}>{path}</div>)}
+            {freshness?.status === 'stale' && <p>{t('experienceChanged', { files: freshness.changed.join(t('listSeparator')) })}</p>}
+            <p>{t('experienceResources')}</p>
           </div>
         </details>
         <div className='dsh-experience-canvas'>
-          {srcDoc ? <iframe key={`${view.id}:${view.version}:${section.id}:${generation}`} title={`场景体验：${section.title}`} sandbox='allow-scripts' referrerPolicy='no-referrer' srcDoc={srcDoc} />
-            : <p role='status' className='p-6 text-sm text-gray-500'>{contents.html === null || styles.css === null ? '体验文件或样式暂不可用；原引用已保留。' : '正在读取体验画面…'}</p>}
+          {srcDoc ? <iframe key={`${view.id}:${view.version}:${section.id}:${generation}`} title={t('experienceFrameTitle', { title: section.title })} sandbox='allow-scripts' referrerPolicy='no-referrer' srcDoc={srcDoc} />
+            : <p role='status' className='p-6 text-sm text-gray-500'>{t(contents.html === null || styles.css === null ? 'experienceUnavailable' : 'experienceFrameLoading')}</p>}
         </div>
-        {sendError && <p role='alert' className='dsh-experience-error'>发送失败，当前体验已保留：{sendError}</p>}
+        {sendError && <p role='alert' className='dsh-experience-error'>{t('experienceSendFailedRetained', { error: sendError })}</p>}
       </div>
     </div>}
-    {sendError && !view && <p role='alert' className='dsh-experience-error'>发送失败：{sendError}</p>}
+    {sendError && !view && <p role='alert' className='dsh-experience-error'>{t('experienceSendFailed', { error: sendError })}</p>}
     </div></DesignPanelSurface></div>
     <footer className='dsh-design-view-footer dsh-experience-footer' data-testid='experience-footer'>
       {props.footerStart}
       {view && section && <div className='dsh-experience-actions'>
-        <Button size='sm' disabled={!props.writable || pending} onClick={() => void send(experienceFeedback(view, section, props.artifactFiles))}>在主对话讨论当前内容</Button>
-        <Button size='sm' variant='outline' disabled={!props.writable || pending} onClick={() => void send(experienceFeedback(view, section, props.artifactFiles, true))}>按最新设计刷新</Button>
+        <Button size='sm' disabled={!props.writable || pending} onClick={() => void send(experienceFeedback(view, section, props.artifactFiles, false, locale))}>{t('experienceDiscuss')}</Button>
+        <Button size='sm' variant='outline' disabled={!props.writable || pending} onClick={() => void send(experienceFeedback(view, section, props.artifactFiles, true, locale))}>{t('experienceRefresh')}</Button>
       </div>}
     </footer>
   </div>

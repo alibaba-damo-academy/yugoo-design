@@ -115,6 +115,12 @@ use file-mode scripts for transforms and final checks.
 
 ## File-mode finalization
 
+Keep the document's `<html lang>` aligned with its authored language. The visual
+script uses this existing language for fixed map captions, navigation legends
+and empty-state labels (`en`/`en-*` use English; existing Chinese/default output
+is retained otherwise). It does not translate source business text or follow
+the Host UI language. Materialization and validation use the same document language.
+
 Once the prose and provenance are complete, process the already-written HTML;
 do not rewrite it for finalization. First call `run_skill_script` with
 `path: "prd.mjs"`, `args: ["materialize-visuals"]`, and both `input_file` and

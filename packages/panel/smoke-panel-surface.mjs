@@ -19,7 +19,7 @@ assert.match(
 )
 assert.match(
   workspace,
-  /PANEL_SAVE_VISIBLE_MESSAGE = \{ zh: '保存并评估下一步', en: 'Save and assess next step' \}/,
+  /PANEL_SAVE_VISIBLE_MESSAGE = \{ zh: '保存并继续', en: 'Save & continue' \}/,
   'panel save must send only a concise localized visible message',
 )
 assert.doesNotMatch(

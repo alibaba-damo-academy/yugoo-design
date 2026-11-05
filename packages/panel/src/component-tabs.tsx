@@ -5,8 +5,12 @@ import type { ComponentNode } from './dsl.ts'
 export const ComponentTabsNavigation = createContext<((component: ComponentNode['component']) => void) | undefined>(undefined)
 
 /** Navigation only: children remain mounted and never acquire write authority. */
-export function ComponentTabs({ node, render }: {
+export function ComponentTabs({ node, render, appearance, renderNavigation }: {
   node: ComponentNode
+  /** Compact peer-view switch; native consumers choose it, not Bundle CSS. */
+  appearance?: 'segmented'
+  /** Place the existing tab controls in the owning toolbar without another row. */
+  renderNavigation?: (controls: ReactElement, active: string | undefined) => ReactElement
   render: (child: ComponentNode) => ReactElement
 }): ReactElement {
   const children = node.children ?? []
@@ -19,11 +23,7 @@ export function ComponentTabs({ node, render }: {
   const active = selected !== undefined && ids.includes(selected) ? selected : ids[0]
   // Commit the fallback so a removed/re-added ID cannot regain selection.
   useEffect(() => { if (selected !== active) setSelected(active) }, [selected, active])
-  return createElement(ComponentTabsNavigation.Provider, { value: component => {
-    const target = children.find(child => child.component === component)
-    if (target) setSelected(target.id)
-  } }, createElement('div', { className: 'dsh-component-tabs' },
-    createElement('div', { className: 'dsh-component-tabs-list', role: 'tablist',
+  const controls = createElement('div', { className: `dsh-component-tabs-list${appearance === 'segmented' ? ' is-segmented' : ''}`, role: 'tablist',
       'aria-label': node.title ?? node.id, 'aria-orientation': 'horizontal' },
     children.map((child, index) => createElement('button', {
       key: child.id, type: 'button', role: 'tab', id: `${base}-tab-${index}`,
@@ -43,7 +43,12 @@ export function ComponentTabs({ node, render }: {
         const target = event.currentTarget.parentElement?.children.item(next)
         if (target instanceof event.currentTarget.ownerDocument.defaultView!.HTMLElement) target.focus()
       },
-    }, child.title ?? child.id))),
+    }, child.title ?? child.id)))
+  return createElement(ComponentTabsNavigation.Provider, { value: component => {
+    const target = children.find(child => child.component === component)
+    if (target) setSelected(target.id)
+  } }, createElement('div', { className: 'dsh-component-tabs' },
+    renderNavigation ? renderNavigation(controls, active) : controls,
     children.map((child, index) => createElement('div', {
       key: child.id, className: 'dsh-component-tabs-panel', role: 'tabpanel',
       id: `${base}-panel-${index}`, 'aria-labelledby': `${base}-tab-${index}`,

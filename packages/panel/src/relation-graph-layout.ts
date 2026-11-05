@@ -1,4 +1,4 @@
-import type { ElkNode, ElkExtendedEdge } from 'elkjs/lib/elk-api.js'
+import type { ELK, ElkNode, ElkExtendedEdge } from 'elkjs/lib/elk-api.js'
 import { getViewportForBounds } from '@xyflow/react'
 
 /** Automatic framing never magnifies 14px labels beyond their authored size.
@@ -83,6 +83,25 @@ export function relationLayoutInput(nodes: Array<GraphSize & { id: string }>, li
         layoutOptions: { 'elk.edgeLabels.placement': label.placement } })),
     })),
   }
+}
+
+/** ELK's wrapped routing can overlap annotations on converging or cyclic edges.
+ * Prefer its compact layout only when every measured text box remains distinct;
+ * otherwise retain the existing full-label layout, without changing Design data.
+ */
+export async function layoutRelationGraph(elk: Pick<ELK, 'layout'>, nodes: Array<GraphSize & { id: string }>, links: RelationLayoutLink[], aspectRatio = 1.6): Promise<ElkNode> {
+  const input = relationLayoutInput(nodes, links)
+  input.layoutOptions = { ...input.layoutOptions, 'elk.layered.wrapping.strategy': 'MULTI_EDGE', 'elk.aspectRatio': String(aspectRatio) }
+  try {
+    const result = await elk.layout(input)
+    const boxes = [...result.children ?? [], ...(result.edges ?? []).flatMap(edge => edge.labels ?? [])]
+    const positioned = boxes.every(box => [box.x, box.y, box.width, box.height].every(Number.isFinite))
+    const overlaps = positioned && boxes.some((a, i) => boxes.slice(i + 1).some(b =>
+      a.x! < b.x! + b.width! - 0.1 && a.x! + a.width! > b.x! + 0.1
+      && a.y! < b.y! + b.height! - 0.1 && a.y! + a.height! > b.y! + 0.1))
+    if (positioned && !overlaps) return result
+  } catch { /* Some wrapped graph topologies are unsupported; use ordinary routing. */ }
+  return elk.layout(relationLayoutInput(nodes, links))
 }
 
 export function relationRoute(edge: ElkExtendedEdge): RelationRoute | undefined {

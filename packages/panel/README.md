@@ -62,12 +62,33 @@ components in `ui`.
 
 ## Shared presentation and editing
 
+Ordinary navigation, titles and field labels use the semantic typography roles
+defined once in `src/visual-components.css`. Components supply the role and state;
+their layout rules do not define another font scale. Reading and editing inherit
+the same role, including related record cards rendered with a detail frame.
+Remove superseded declarations when changing a role. The maintained
+[Panel UIUX standard](../../docs/panel-uiux-standard.md#3-字体层级与阅读编辑)
+owns the guidance; specialist notation retains its own presentation.
+
+Ordinary record cards edit the shared Panel draft directly. Their title actions
+stay visible; the Panel's global Cancel / Save & continue remains the save boundary.
+`PanelTextarea` owns multiline sizing across forms: fit actual content from one
+line to five automatic lines, then scroll internally. A user's manual resize can
+exceed that budget and survives subsequent input and temporary hiding.
+
 The interpreter uses the existing component catalog’s workspace ownership for
 both host scrolling and a shared, inset-free layout surface. Full workspaces,
 single-child stacks and switches between workspaces pass the allocated height
 through this surface. Components own scrolling within their navigation and content
 areas; ordinary document content keeps its natural height. Hosts supply the outer
 space instead of styling individual component wrappers.
+
+`PanelRecordHeader` shares title layout across record forms and specialized readers.
+Its optional `context` briefly orients the reader to the current object's scope,
+shown below the title using shared 12px supporting typography. Essential decisions
+and constraints remain body content, not captions. Missing context adds no row;
+long context wraps and expands the header. Counts and actions remain beside the
+title. This does not replace workspace action guidance, field help or error feedback.
 
 Trusted native Providers can opt into the bounded
 [component-package contract](../../docs/component-package-contract.md) for exact

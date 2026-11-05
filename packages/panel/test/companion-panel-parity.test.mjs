@@ -15,7 +15,7 @@ const VISUAL_CSS = await readFile(new URL('../src/visual-components.css', import
 test('shared action group uses non-wrapping row and preserves independent disabled states', () => {
   const markup = renderToStaticMarkup(React.createElement(FooterButtons, {
     disabled: true, saveDisabled: false,
-    regenerateText: '撤回操作', saveText: '保存并评估下一步',
+    regenerateText: '取消', saveText: '保存并继续',
   }))
   const dom = new JSDOM(`<style>${DOCK_CSS}</style><div class="dsh-design-dock">${markup}</div>`)
   try {
@@ -25,8 +25,8 @@ test('shared action group uses non-wrapping row and preserves independent disabl
     assert.equal(style.flexDirection, 'row')
     assert.equal(style.flexWrap, 'nowrap')
     const [revert, save] = group.querySelectorAll('button')
-    assert.equal(revert.textContent, '撤回操作')
-    assert.equal(save.textContent, '保存并评估下一步')
+    assert.equal(revert.textContent, '取消')
+    assert.equal(save.textContent, '保存并继续')
     assert.equal(revert.disabled, true)
     assert.equal(save.disabled, false)
     assert.equal(dom.window.getComputedStyle(save).width, 'auto')

@@ -132,8 +132,8 @@ export function BpmnSurface(props: { xml: string; editing: boolean; disabled: bo
   }
   return <div className="dsh-bpmn-surface">
     <div className="dsh-bpmn-toolbar" role="group" aria-label={t('diagram')}>
-      <button type="button" disabled={!ready} onClick={() => { viewport.current = 'width'; fit('width') }}>{t('fitWidth')}</button>
-      <button type="button" disabled={!ready} onClick={() => { viewport.current = 'all'; fit('all') }}>{t('fitAll')}</button>
+      <button type="button" disabled={!ready} title={t('fitWidthHint')} onClick={() => { viewport.current = 'width'; fit('width') }}>{t('fitWidth')}</button>
+      <button type="button" disabled={!ready} title={t('fitAllHint')} onClick={() => { viewport.current = 'all'; fit('all') }}>{t('fitAll')}</button>
       <button type="button" disabled={!ready} aria-label={t('zoomIn')} onClick={() => zoom(1.2)}>＋</button>
       <button type="button" disabled={!ready} aria-label={t('zoomOut')} onClick={() => zoom(1 / 1.2)}>−</button>
     </div>

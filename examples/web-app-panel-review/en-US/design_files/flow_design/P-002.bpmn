@@ -2,7 +2,7 @@
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:autoagent="https://autoagent.ai/bpmn/layout" id="Definitions_P-002" targetNamespace="http://bpmn.io/schema/bpmn" autoagent:layoutRevision="13" autoagent:layoutDirection="DOWN" autoagent:laneHeaderHeight="42">
   <bpmn:process id="Process_P-002" name="Notification failure review" isExecutable="false">
     <bpmn:laneSet id="LaneSet_P-002">
-      <bpmn:lane id="Lane_P-002_1" name="系统">
+      <bpmn:lane id="Lane_P-002_1" name="System">
         <bpmn:flowNodeRef>StartEvent_P-002_1</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>SendTask_P-002_1</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>ExclusiveGateway_P-002_1</bpmn:flowNodeRef>

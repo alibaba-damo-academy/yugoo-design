@@ -1,9 +1,10 @@
+import { usePanelI18n } from '../panel-i18n.tsx'
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { select } from 'd3-selection'
 import { zoom, zoomIdentity, type ZoomTransform } from 'd3-zoom'
 import { Button } from './ported/ui/button.js'
 import { PanelSelect } from '../panel-select.js'
-import { edgeReading, relationMeaningLabel, type GraphEdge, type GraphScope } from './graph-model.js'
+import { edgeReading, relationDisplayLabel, relationOriginLabel, relationLifecycleLabel, type GraphEdge, type GraphScope } from './graph-model.js'
 import { bundleCoordinates, bundleDisplay, edgeMembers, graphColor } from './graph-bundle-model.js'
 import { stressPositions } from './graph-stress.mjs'
 import { placeLabels } from './graph-labels.js'
@@ -13,6 +14,7 @@ type Point = { x: number; y: number; angle?: number }
 export function GraphExploration({ graph, selected, relation, onNode, onEdge, onClear }: {
   graph: GraphScope; selected: string; relation?: GraphEdge; onNode(id: string): void; onEdge(edge: GraphEdge): void; onClear(): void
 }) {
+  const { locale, t } = usePanelI18n()
   const [view, setView] = useState<'free' | 'bundle'>('bundle'), [style, setStyle] = useState('glow')
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set(graph.nodes.map(node => node.owner))), [hovered, setHovered] = useState('')
   const [motion, setMotion] = useState(true), [camera, setCamera] = useState(zoomIdentity)
@@ -92,20 +94,20 @@ export function GraphExploration({ graph, selected, relation, onNode, onEdge, on
   return <div className='graph-exploration' data-testid='graph-exploration'>
     <style>{explorationStyles}</style>
     <div className='graph-exploration-toolbar'>
-      <div role='group' aria-label='图谱视图'>
-        <Button variant='outline' size='sm' aria-pressed={view === 'free'} onClick={() => setView('free')}>自由关系</Button>
-        <Button variant='outline' size='sm' aria-pressed={view === 'bundle'} onClick={() => setView('bundle')}>Bundle 圆形总览</Button>
+      <div role='group' aria-label={t('graphExploreViews')}>
+        <Button variant='outline' size='sm' aria-pressed={view === 'free'} onClick={() => setView('free')}>{t('graphExploreFree')}</Button>
+        <Button variant='outline' size='sm' aria-pressed={view === 'bundle'} onClick={() => setView('bundle')}>{t('graphExploreBundle')}</Button>
       </div>
-      <PanelSelect aria-label='视觉方向' value={style} onValueChange={setStyle} options={[{ value: 'glow', label: '光环与束线' }, { value: 'depth', label: '空间层叠 · 2D' }]} />
-      {view === 'bundle' && <Button variant='outline' size='sm' onClick={() => setCollapsed(collapsed.size ? new Set() : new Set(display.sectors.map(s => s.owner)))}>{collapsed.size ? '展开所有 Bundle' : '聚合到 Bundle'}</Button>}
-      {internalCount > 0 && <PanelSelect aria-label='折叠内部关系' value='' onValueChange={value => { const edge = internalEdges.find(edge => edge.id === value); if (edge) onEdge(edge) }} options={[{ value: '', label: '内部关系 · ' + internalCount }, ...internalEdges.map(edge => ({ value: edge.id, label: (display.nodes.find(node => node.id === edge.from)?.label ?? '') + ' · ' + relationMeaningLabel(edgeReading(edge).meaning) + ' · ' + edgeMembers(edge).length }))]} />}
-      <Button variant='outline' size='sm' onClick={() => actions.current.fit()}>适应画布</Button>
-      <Button variant='outline' size='sm' aria-label='放大探索图' onClick={() => actions.current.scale(1.25)}>＋</Button>
-      <Button variant='outline' size='sm' aria-label='缩小探索图' onClick={() => actions.current.scale(.8)}>－</Button>
-      <Button variant='outline' size='sm' aria-pressed={!motion} onClick={() => setMotion(!motion)}>{motion ? '暂停光效' : '继续光效'}</Button>
+      <PanelSelect aria-label={t('graphExploreStyle')} value={style} onValueChange={setStyle} options={[{ value: 'glow', label: t('graphExploreGlow') }, { value: 'depth', label: t('graphExploreDepth') }]} />
+      {view === 'bundle' && <Button variant='outline' size='sm' onClick={() => setCollapsed(collapsed.size ? new Set() : new Set(display.sectors.map(s => s.owner)))}>{t(collapsed.size ? 'graphExploreExpandAll' : 'graphExploreCollapseAll')}</Button>}
+      {internalCount > 0 && <PanelSelect aria-label={t('graphExploreInternal')} value='' onValueChange={value => { const edge = internalEdges.find(edge => edge.id === value); if (edge) onEdge(edge) }} options={[{ value: '', label: t('graphExploreInternalCount', { count: internalCount }) }, ...internalEdges.map(edge => ({ value: edge.id, label: (display.nodes.find(node => node.id === edge.from)?.label ?? '') + ' · ' + relationDisplayLabel(edge, locale) }))]} />}
+      <Button variant='outline' size='sm' onClick={() => actions.current.fit()}>{t('graphCameraFit')}</Button>
+      <Button variant='outline' size='sm' aria-label={t('graphExploreZoomIn')} onClick={() => actions.current.scale(1.25)}>＋</Button>
+      <Button variant='outline' size='sm' aria-label={t('graphExploreZoomOut')} onClick={() => actions.current.scale(.8)}>－</Button>
+      <Button variant='outline' size='sm' aria-pressed={!motion} onClick={() => setMotion(!motion)}>{t(motion ? 'graphExplorePause' : 'graphExploreResume')}</Button>
     </div>
     <div className='graph-exploration-stage' ref={stage} data-style={style} data-view={view} data-motion={motion ? 'on' : 'off'}>
-      <svg ref={svg} aria-label={view === 'bundle' ? 'Bundle 圆形关系图' : '自由关系探索图'} tabIndex={0} onClick={event => { if (event.target === svg.current) onClear() }} onKeyDown={event => { if (event.key === 'Escape') onClear() }}>
+      <svg ref={svg} aria-label={t(view === 'bundle' ? 'graphExploreCircularAria' : 'graphExploreFreeAria')} tabIndex={0} onClick={event => { if (event.target === svg.current) onClear() }} onKeyDown={event => { if (event.key === 'Escape') onClear() }}>
         <defs>
           <radialGradient id={id + '-back'}><stop stopColor={style === 'depth' ? '#303164' : '#102e52'} stopOpacity='.65' /><stop offset='1' stopColor='#050c1c' stopOpacity='0' /></radialGradient>
           <filter id={id + '-glow'} x='-100%' y='-100%' width='300%' height='300%'><feGaussianBlur stdDeviation={style === 'depth' ? 4 : 3} /><feMerge><feMergeNode /><feMergeNode in='SourceGraphic' /></feMerge></filter>
@@ -118,7 +120,7 @@ export function GraphExploration({ graph, selected, relation, onNode, onEdge, on
           {style === 'depth' && <ellipse cy={radius * .7} rx={radius * 1.3} ry={radius * .18} fill='none' stroke='#a18eff' strokeOpacity='.18' pointerEvents='none' />}
           {view === 'bundle' && display.sectors.map(sector => {
             const r = radius + 18, a = sector.start, b = sector.end
-            return <g key={sector.owner} role='button' tabIndex={0} data-bundle-sector={sector.owner} aria-label={(collapsed.has(sector.owner) ? '展开 Bundle ' : '聚合 Bundle ') + sector.owner} className='exploration-sector' onClick={() => toggle(sector.owner)} onKeyDown={event => keyboard(event, () => toggle(sector.owner))}>
+            return <g key={sector.owner} role='button' tabIndex={0} data-bundle-sector={sector.owner} aria-label={t(collapsed.has(sector.owner) ? 'graphExploreExpandBundle' : 'graphExploreCollapseBundle', { bundle: sector.owner })} className='exploration-sector' onClick={() => toggle(sector.owner)} onKeyDown={event => keyboard(event, () => toggle(sector.owner))}>
               <path d={'M' + Math.sin(a) * r + ',' + -Math.cos(a) * r + ' A' + r + ',' + r + ' 0 ' + (b - a > Math.PI ? 1 : 0) + ' 1 ' + Math.sin(b) * r + ',' + -Math.cos(b) * r} fill='none' stroke={graphColor(sector.owner)} strokeWidth={collapsed.has(sector.owner) ? 7 : 3} filter={'url(#' + id + '-glow)'} />
               <text transform={'translate(' + Math.sin(sector.angle) * (radius + 46) + ',' + -Math.cos(sector.angle) * (radius + 46) + ')'} textAnchor='middle' fontSize={12 / camera.k} fontWeight='600'>{sector.label} · {sector.count}</text>
             </g>
@@ -126,7 +128,7 @@ export function GraphExploration({ graph, selected, relation, onNode, onEdge, on
           {visibleEdges.map(edge => { const reading = edgeReading(edge), emphasized = active(edge) || incident(edge), muted = Boolean((focusedId || sourceIds.size) && !emphasized)
             return <g key={edge.id}>
               <path className='exploration-link' d={path(edge)} stroke={emphasized ? '#ecf6ff' : graphColor(own.get(edge.from)!)} strokeWidth={emphasized ? 2.4 : 1.1} strokeOpacity={muted ? .055 : reading.meaning === 'contains' ? .18 : emphasized ? .95 : .4} strokeDasharray={reading.meaning === 'similar' ? '4 4' : reading.meaning === 'contains' ? '2 5' : undefined} filter={emphasized ? 'url(#' + id + '-glow)' : undefined} pointerEvents='none' />
-              <path d={path(edge)} stroke='transparent' strokeWidth='12' fill='none' role='button' tabIndex={0} aria-label={relationMeaningLabel(reading.meaning) + ' · ' + edgeMembers(edge).length + ' 条原始关系'} onClick={event => { event.stopPropagation(); onEdge(edge) }} onKeyDown={event => keyboard(event, () => onEdge(edge))}><title>{relationMeaningLabel(reading.meaning) + ' · ' + reading.origin + ' · ' + reading.lifecycle + ' · ' + edgeMembers(edge).length + ' 条原始关系'}</title></path>
+              <path d={path(edge)} stroke='transparent' strokeWidth='12' fill='none' role='button' tabIndex={0} aria-label={relationDisplayLabel(edge, locale)} onClick={event => { event.stopPropagation(); onEdge(edge) }} onKeyDown={event => keyboard(event, () => onEdge(edge))}><title>{relationDisplayLabel(edge, locale) + ' · ' + relationOriginLabel(reading.origin, locale) + ' · ' + relationLifecycleLabel(reading.lifecycle, locale)}</title></path>
             </g>
           })}
           {display.nodes.map(node => { const p = point(node.id), chosen = node.sources.includes(selected), hot = chosen || hovered === node.id || selectedEndpoints.has(node.id)
@@ -137,14 +139,14 @@ export function GraphExploration({ graph, selected, relation, onNode, onEdge, on
               <circle className='exploration-focus' r={r + 5} fill='none' stroke={color} opacity={hot ? .9 : !n ? .5 : .12} strokeWidth='1' />
               <circle r={r} fill={hot ? '#fff' : color} filter={'url(#' + id + '-glow)'} />
               <circle r={14} fill='transparent' />
-              <title>{node.label + ' · ' + node.owner + (n ? ' · ' + n.file + '#' + n.pointer : ' · 点击展开 ' + node.sources.length + ' 个对象')}</title>
+              <title>{node.label + ' · ' + node.owner + (n ? ' · ' + n.file + '#' + n.pointer : ' · ' + t('graphExploreExpandObjects', { count: node.sources.length }))}</title>
             </g>
           })}
         </g>
         <g aria-hidden='true'>{labels.map(label => <text key={label.id} x={label.box.x + 4} y={label.box.y + 15} fontSize={label.fontSize} fontWeight={label.fontSize === 14 ? 600 : 400}>{label.text}</text>)}</g>
       </svg>
-      <div className='graph-exploration-count'>{display.sectors.length} Bundles · {graph.nodes.length} 个可见原对象 · {visibleEdges.length} 组跨对象关系 · {internalCount} 条折叠内部关系 · 二维探索</div>
-      <div className='graph-exploration-legend'>实线：其他关联　虚线：相似候选　点线：包含<br />{view === 'bundle' ? '点击外圈聚合/展开 · 悬停追线 · 点击关系查看依据' : '拖动画布平移 · 滚轮缩放 · 点击对象或关系查看依据'}<br />束线仅组织阅读；数量不代表业务强度或确认程度</div>
+      <div className='graph-exploration-count'>{t('graphExploreCounts', { bundles: display.sectors.length, objects: graph.nodes.length, groups: visibleEdges.length, internal: internalCount })}</div>
+      <div className='graph-exploration-legend'>{t('graphExploreLineLegend')}<br />{t(view === 'bundle' ? 'graphExploreRingHint' : 'graphExploreFreeHint')}<br />{t('graphExploreBundlingNote')}</div>
     </div>
   </div>
 }

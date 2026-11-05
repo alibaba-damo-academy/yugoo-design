@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { PanelTextarea } from './panel-textarea.tsx'
+import { useEffect, useMemo, useRef, useState, type ReactNode, type SyntheticEvent } from 'react'
 import katex from 'katex'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import type { ComponentNode, EditorField, PanelManifest } from './dsl.ts'
 import type { MathEntriesBinding } from 'dsh-design-core/dsl'
-import { PanelDisclosureIcon, PanelEditableTitle, PanelRecordHeader } from './panel-workspace.tsx'
+import { PanelContentGroup, PanelDisclosureIcon, PanelEditableTitle, PanelHelp, PanelRecordHeader } from './panel-workspace.tsx'
 import { usePanelI18n } from './panel-i18n.tsx'
 import { fieldIsVisible } from './record-state.ts'
 import type { RenderOptions } from './interpreter.ts'
@@ -118,7 +119,7 @@ function ReadonlyArtifact({ field, path, context }: { field: EditorField; path: 
 
 function Source({ value }: { value: string }) {
   const { t } = usePanelI18n()
-  return value.trim() ? <Disclosure className="dsh-math-source" title={t('mathSource')}><code>{value}</code></Disclosure> : null
+  return value.trim() ? <div className="dsh-math-source"><span>{t('mathSource')}</span><code>{value}</code></div> : null
 }
 
 function ExplanationEntries({ binding, field, value, editable, collapseToken, onChange, symbols = false, renderNotation }: {
@@ -144,32 +145,46 @@ function ExplanationEntries({ binding, field, value, editable, collapseToken, on
     {rows.slice(0, limit).map((row, index) => {
       const title = binding.title ? stringOf(row[binding.title]) : ''
       const isEditing = editable && editing === index
-      const input = (key: string, rows = 2, labelVisible = false) => {
+      const input = (key: string, rows = 5, labelVisible = false) => {
         const column = field.columns!.find(column => column.key === key)!
         const prose = key === binding.meaning
         return <div className="dsh-math-editor is-inline"><label className={prose ? 'dsh-panel-prose-editor' : undefined}>
           {labelVisible ? <span>{key === binding.formula ? `${formulaLabel} · LaTeX` : column.label}</span> : null}
-          <textarea className={prose ? 'dsh-panel-prose-input' : undefined} rows={rows} value={stringOf(row[key])} aria-label={`${column.label} · ${index + 1}`}
+          <PanelTextarea className={prose ? 'dsh-panel-prose-input' : undefined} rows={rows} value={stringOf(row[key])} aria-label={`${column.label} · ${index + 1}`}
             spellCheck={key === binding.formula ? false : undefined} data-math-input={key}
             data-math-kind={key === binding.formula ? 'formula' : 'text'}
             onChange={event => change(index, key, event.currentTarget.value)} />
         </label></div>
       }
-      return <article className={`dsh-math-entry${symbols ? '' : ' is-statement'}`} key={index} data-math-entry={index}>
-        <div className="dsh-math-entry-heading">
+      const Entry = symbols ? 'article' : 'details'
+      const Heading = symbols ? 'div' : 'summary'
+      return <Entry className={`dsh-math-entry${symbols ? '' : ' is-statement'}`} key={index} data-math-entry={index}
+        {...!symbols ? { open: !collapsed[index], onToggle: (event: SyntheticEvent<HTMLElement>) => {
+          if (event.target !== event.currentTarget) return
+          const closed = !(event.currentTarget as HTMLDetailsElement).open
+          setCollapsed(current => current[index] === closed ? current : { ...current, [index]: closed })
+        } } : {}}>
+        <Heading className={`dsh-math-entry-heading${symbols ? '' : ' dsh-math-card-toggle dsh-panel-disclosure'}`}
+          {...!symbols ? { 'aria-expanded': !collapsed[index] } : {}}>
           {symbols ? <div className="dsh-math-symbol-heading"><MathFormula value={stringOf(row[binding.formula])} inline />
             {isEditing ? input(binding.formula, 1, true) : null}
             {binding.title ? isEditing ? input(binding.title, 1) : <span>{title}</span> : null}</div>
             : isEditing && binding.title ? <div className="dsh-math-title-edit">{input(binding.title, 1)}</div>
-              : <h4><button type="button" className="dsh-math-card-toggle" aria-expanded={!collapsed[index]}
-                onClick={() => setCollapsed(current => ({ ...current, [index]: !current[index] }))}>
-                <span>{title || t('mathUntitled')}</span><PanelDisclosureIcon expanded={!collapsed[index]} /></button></h4>}
+              : <h4>{title || t('mathUntitled')}</h4>}
           {editable ? <button type="button" className="dsh-math-edit" aria-expanded={editing === index}
             aria-label={t(editing === index ? 'mathFinishEntry' : 'mathEditEntry', { item: title || stringOf(row[binding.formula]) || index + 1 })}
             onClick={() => { setCollapsed(current => ({ ...current, [index]: false })); setEditing(editing === index ? undefined : index) }}>
             <Pencil size={14} aria-hidden="true" />{t(editing === index ? 'mathFinish' : 'mathEdit')}</button> : null}
-        </div>
-        <div className="dsh-math-entry-body" hidden={!symbols && !isEditing && collapsed[index]}>
+          {editable ? <span className="dsh-design-record-actions"><button type="button" className="dsh-math-remove"
+            aria-label={`${t('mathDelete')} ${title || stringOf(row[binding.formula]) || index + 1}`}
+            title={t('mathDelete')} onClick={event => {
+              event.preventDefault()
+              if (!window.confirm(t('mathDeleteConfirm'))) return
+              onChange(rows.filter((_, i) => i !== index)); setEditing(undefined); setCollapsed({})
+            }}><Trash2 size={16} aria-hidden="true" /></button></span> : null}
+          {!symbols ? <PanelDisclosureIcon expanded={false} /> : null}
+        </Heading>
+        <div className="dsh-math-entry-body" hidden={!symbols && collapsed[index]}>
         {isEditing ? input(binding.meaning) : <p className="dsh-math-meaning dsh-panel-prose-reading"><MathProse value={stringOf(row[binding.meaning]) || t('mathMissingMeaning')} /></p>}
         {binding.details?.length ? <dl className="dsh-math-details">{binding.details.map(key => isEditing || row[key] ? <div key={key}>
           <dt>{field.columns?.find(column => column.key === key)?.label ?? key}</dt><dd>{isEditing ? input(key, 1) : <MathProse value={stringOf(row[key])} />}</dd></div> : null)}</dl> : null}
@@ -179,15 +194,9 @@ function ExplanationEntries({ binding, field, value, editable, collapseToken, on
         {field.columns?.filter(column => !used.has(column.key)).map(column => isEditing ? <div key={column.key}>{input(column.key, 2, true)}</div> : row[column.key] ? <p key={column.key}>
           <span className="dsh-math-empty">{column.label} · </span><MathProse value={stringOf(row[column.key])} /></p> : null)}
         {binding.source ? <Source value={stringOf(row[binding.source])} /> : null}
-        {isEditing ? <div className="dsh-math-entry-actions">
-          <p className="dsh-math-edit-hint">{t('mathEditHint')}</p>
-          <button type="button" className="dsh-math-remove" onClick={() => {
-            if (!window.confirm(t('mathDeleteConfirm'))) return
-            onChange(rows.filter((_, i) => i !== index)); setEditing(undefined); setCollapsed({})
-          }}><Trash2 size={14} aria-hidden="true" />{t('mathDelete')}</button>
-        </div> : null}
+        {isEditing ? <p className="dsh-math-edit-hint">{t('mathEditHint')}</p> : null}
         </div>
-      </article>
+      </Entry>
     })}
     {rows.length > limit ? <button type="button" onClick={() => setLimit(limit + 20)}>{t('mathShowMore', { count: rows.length - limit })}</button> : null}
     {editable && (field.max_rows === undefined || rows.length < field.max_rows) ? <button type="button" className="dsh-math-add" onClick={() => {
@@ -225,7 +234,7 @@ export function MathDocument({ node, manifest, value, editable, collapseToken, o
           onClick={() => setEditing(editing === key ? undefined : key)}><Pencil size={14} aria-hidden="true" />{t(editing === key ? 'mathFinish' : 'mathEdit')}</button> : null}</div>
       {formula ? <MathFormula value={stringOf(value[field.key])} /> : !(canEdit(field) && editing === key) ? <p className="dsh-panel-prose-reading"><MathProse value={stringOf(value[field.key]) || t('mathNoText')} /></p> : null}
       {canEdit(field) && editing === key ? <div className="dsh-math-editor is-inline"><label className={formula ? undefined : 'dsh-panel-prose-editor'}>{formula ? <span>LaTeX</span> : null}
-        <textarea className={formula ? undefined : 'dsh-panel-prose-input'} aria-label={field.label ?? field.key} rows={formula ? 8 : 4} value={stringOf(value[field.key])}
+        <PanelTextarea className={formula ? undefined : 'dsh-panel-prose-input'} aria-label={field.label ?? field.key} value={stringOf(value[field.key])}
           maxLength={field.max_length} data-math-kind={formula ? 'formula' : 'text'} spellCheck={formula ? false : undefined} onChange={event => onChange(field, event.currentTarget.value)} /></label>
         {formula ? <p className="dsh-math-edit-hint">{t('mathEditHint')}</p> : null}</div> : null}
     </section>
@@ -246,12 +255,14 @@ export function MathDocument({ node, manifest, value, editable, collapseToken, o
     if (!binding) return null
     const indices = matchingMathSymbols(formula, definitions.map(row => stringOf(row[binding.formula])))
     if (!indices.length) return null
-    return <Disclosure className="dsh-math-inline-notation dsh-math-disclosure" title={<>{t('mathSymbolsHere')}<span className="dsh-math-count">{indices.length}</span></>}>
+    return <PanelContentGroup className="dsh-math-inline-notation dsh-math-disclosure" title={<>{t('mathSymbolsHere')}<span className="dsh-math-count">{indices.length}</span></>}>
+      <div className="dsh-design-form-group-content">
       <div className="dsh-math-notation-heading">
         <button type="button" onClick={openNotation}>{t(canEdit(symbolField) ? 'mathEditNotation' : 'mathViewNotation')}</button></div>
       <dl>{indices.map(index => <div key={index}><dt><MathFormula value={stringOf(definitions[index]![binding.formula])} inline /></dt>
         <dd><MathProse value={stringOf(definitions[index]![binding.meaning]) || t('mathMissingMeaning')} /></dd></div>)}</dl>
-    </Disclosure>
+      </div>
+    </PanelContentGroup>
   }
   const entries = (binding: MathEntriesBinding | undefined, symbols = false) => {
     const field = binding && fieldOf(binding.field)
@@ -277,12 +288,13 @@ export function MathDocument({ node, manifest, value, editable, collapseToken, o
     {entries(config.statements)}
     {textBlock(config.notes)}
     {fieldOf(config.complete) || symbolField ? <div ref={complete} data-math-complete>
-      <Disclosure className="dsh-math-card dsh-math-disclosure" title={fieldOf(config.complete)?.label ?? t('mathComplete')}>
-        <div className="dsh-math-card-content"><p className="dsh-math-section-hint">{t('mathCompleteHint')}</p>{textBlock(config.complete, true)}
+      <PanelContentGroup className="dsh-math-card dsh-math-disclosure" title={<>{fieldOf(config.complete)?.label ?? t('mathComplete')}<PanelHelp label={t('fieldHelp', { field: fieldOf(config.complete)?.label ?? t('mathComplete') })}>{t('mathCompleteHint')}</PanelHelp></>}>
+        <div className="dsh-math-card-content dsh-design-form-group-content">{textBlock(config.complete, true)}
           {symbolField ? <div ref={notation} tabIndex={-1} className="dsh-math-all-notation">
-            <Disclosure title={<>{symbolField.label ?? t('mathNotation')}<span className="dsh-math-count">{definitions.length}</span></>}>
-              <p className="dsh-math-section-hint">{t('mathNotationHint')}</p>{entries(config.symbols, true)}</Disclosure></div> : null}
-        </div></Disclosure></div> : null}
+            <PanelContentGroup className="dsh-math-disclosure" title={<>{symbolField.label ?? t('mathNotation')}<span className="dsh-math-count">{definitions.length}</span>
+                <PanelHelp label={t('fieldHelp', { field: symbolField.label ?? t('mathNotation') })}>{t('mathNotationHint')}</PanelHelp></>}>
+              <div className="dsh-design-form-group-content">{entries(config.symbols, true)}</div></PanelContentGroup></div> : null}
+        </div></PanelContentGroup></div> : null}
     {hasText(output) ? <section className="dsh-math-card dsh-math-output" data-math-output>
       <h3>{t('mathModelFile')}</h3><ReadonlyArtifact field={{ ...output!, label: t('mathViewFile') }} path={stringOf(value[output!.key])} context={artifactContext} />
       {hasText(outputFormat) ? <p className="dsh-math-section-hint">{outputFormat!.label} · {stringOf(value[outputFormat!.key])}</p> : null}</section> : null}
@@ -290,11 +302,11 @@ export function MathDocument({ node, manifest, value, editable, collapseToken, o
       <div className="dsh-math-entry-heading"><h3>{t('mathModelChecks')}</h3><span className="dsh-math-check-status">{statusLabel}</span></div>
       <p><MathProse value={hasText(checkSummary) ? stringOf(value[checkSummary!.key]) : t('mathNoCheckSummary')} /></p>
     </section> : null}
-    {provenance.length ? <Disclosure className="dsh-math-card dsh-math-disclosure dsh-math-provenance" title={t('mathProvenance')}>
-      <div className="dsh-math-card-content"><p className="dsh-math-section-hint">{t('mathProvenanceHint')}</p>
+    {provenance.length ? <PanelContentGroup className="dsh-math-card dsh-math-disclosure dsh-math-provenance" title={<>{t('mathProvenance')}<PanelHelp label={t('fieldHelp', { field: t('mathProvenance') })}>{t('mathProvenanceHint')}</PanelHelp></>}>
+      <div className="dsh-math-card-content dsh-design-form-group-content">
         <dl>{provenance.map(field => <div key={field.key}><dt>{field.label ?? field.key}</dt><dd>{field.control === 'artifact_ref'
-          ? <ReadonlyArtifact field={{ ...field, label: t('mathViewFile') }} path={stringOf(value[field.key])} context={artifactContext} /> : stringOf(value[field.key])}</dd></div>)}</dl></div></Disclosure> : null}
-    {other.length ? <Disclosure className="dsh-math-card dsh-math-disclosure" title={t('mathOtherFields')}>
-      <div className="dsh-math-card-content"><div className="dsh-math-evidence">{other.map(field => renderField(field))}</div></div></Disclosure> : null}
+          ? <ReadonlyArtifact field={{ ...field, label: t('mathViewFile') }} path={stringOf(value[field.key])} context={artifactContext} /> : stringOf(value[field.key])}</dd></div>)}</dl></div></PanelContentGroup> : null}
+    {other.length ? <PanelContentGroup className="dsh-math-card dsh-math-disclosure" title={t('mathOtherFields')}>
+      <div className="dsh-math-card-content dsh-design-form-group-content"><div className="dsh-math-evidence">{other.map(field => renderField(field))}</div></div></PanelContentGroup> : null}
   </div>
 }

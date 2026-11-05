@@ -597,9 +597,8 @@
           "requirement": "always",
           "example": "Email",
           "options": [
-            "Pending",
-            "Confirmed",
-            "Deferred"
+            "In-app notification",
+            "Email"
           ]
         },
         "delivery_key": {
@@ -716,9 +715,10 @@
           "requirement": "always",
           "example": "Project lead",
           "options": [
-            "Pending",
-            "Confirmed",
-            "Deferred"
+            "Customer",
+            "Designer",
+            "Project lead",
+            "Studio administrator"
           ]
         },
         "granted_by": {

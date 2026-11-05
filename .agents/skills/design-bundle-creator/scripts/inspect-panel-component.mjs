@@ -7,8 +7,8 @@ import { pathToFileURL } from 'node:url'
 
 // The complete trusted shared guide has a separate budget from each focused
 // component section (16 KiB), the DSL document (256 KiB), and the packaged
-// authoring artifact (4 MB). Keep the guide whole; never truncate its methods.
-const MAX_SHARED_STANDARD_BYTES = 128 * 1024
+// authoring artifact (6,000,000 bytes). Keep the guide whole; never truncate its methods.
+const MAX_SHARED_STANDARD_BYTES = 256 * 1024
 
 async function inspectionContext(repo) {
   repo = resolve(repo)
@@ -229,10 +229,15 @@ export async function exportPanelAuthoringReference(repo) {
     else names.push(name)
   }
   const components = Object.create(null), contracts = Object.create(null)
+  let sharedStandards
   for (const name of COMPONENT_KINDS) {
     const reference = await inspectWithContext(context, name)
     const documentation = await inspectWithContext(context, name, undefined, { documentationOnly: true })
-    components[name] = { ...reference, documentation: documentation.documentation }
+    // Store the complete common guide once; component-specific documentation
+    // remains inline. Packaged docs queries restore the existing response shape.
+    const { sharedStandards: guide, ...componentDocumentation } = documentation.documentation
+    sharedStandards ??= guide
+    components[name] = { ...reference, documentation: componentDocumentation }
   }
   // Contract names are source-derived, including focused nested properties;
   // they are not another component vocabulary or a per-component JSON Schema.
@@ -241,7 +246,7 @@ export async function exportPanelAuthoringReference(repo) {
   }
   const callbackSource = await readFile(join(repo, 'packages/panel/src/interpreter.ts'), 'utf8')
   return {
-    format: 'panel-authoring-reference/v1', catalogIdentity: panelAuthoringCatalogIdentity(), components, contracts,
+    format: 'panel-authoring-reference/v1', catalogIdentity: panelAuthoringCatalogIdentity(), components, contracts, sharedStandards,
     hostCallbackContract: {
       file: 'packages/panel/src/interpreter.ts', type: 'RenderOptions',
       declaration: (() => {

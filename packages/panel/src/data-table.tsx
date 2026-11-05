@@ -1,3 +1,4 @@
+import { PanelTextarea } from './panel-textarea.tsx'
 import { useEffect, useRef, useState, type ReactElement, type KeyboardEvent, type ClipboardEvent } from 'react'
 import { Plus, Trash2, ChevronDown, ArrowLeft, ArrowRight, X, Copy } from 'lucide-react'
 import { DATA_TABLE_TYPES, DATA_TABLE_LIMITS, dataTableIssues, dataTableCellIssue, type DataTableColumn, type DataTableValue, type DataTableType } from './dsl.ts'
@@ -163,9 +164,9 @@ export function DataTable({ value, label, editable, onChange, registerBeforeSave
         <label>{t('tableFieldName')}<input value={editor.column.name} maxLength={120} onChange={e => setEditor({ ...editor, column: { ...editor.column, name: e.target.value } })} /></label>
         <div className="dsh-data-table-field-pair"><label>{t('tableFieldType')}<select value={editor.column.type} onChange={e => setEditor({ ...editor, column: { ...editor.column, type: e.target.value as DataTableType } })}>{DATA_TABLE_TYPES.map(type => <option key={type} value={type}>{typeName(type)}</option>)}</select></label>
           <label>{t('tableFieldRole')}<select value={editor.column.role ?? 'attribute'} onChange={e => setEditor({ ...editor, column: { ...editor.column, role: e.target.value as DataTableColumn['role'] } })}><option value="attribute">{t('tableRoleAttribute')}</option><option value="dimension">{t('tableRoleDimension')}</option><option value="value">{t('tableRoleValue')}</option></select></label></div>
-        {editor.column.type === 'select' ? <label>{t('tableChoices')}<textarea rows={3} value={(editor.column.options ?? []).join('\n')} onChange={e => setEditor({ ...editor, column: { ...editor.column, options: e.target.value.split('\n') } })} /></label> : null}
+        {editor.column.type === 'select' ? <label>{t('tableChoices')}<PanelTextarea value={(editor.column.options ?? []).join('\n')} onChange={e => setEditor({ ...editor, column: { ...editor.column, options: e.target.value.split('\n') } })} /></label> : null}
         <label>{t('tableUnit')}<input value={editor.column.unit ?? ''} onChange={e => setEditor({ ...editor, column: { ...editor.column, unit: e.target.value } })} /></label>
-        <label>{t('tableDescription')}<textarea rows={3} value={editor.column.description ?? ''} onChange={e => setEditor({ ...editor, column: { ...editor.column, description: e.target.value } })} /></label>
+        <label>{t('tableDescription')}<PanelTextarea value={editor.column.description ?? ''} onChange={e => setEditor({ ...editor, column: { ...editor.column, description: e.target.value } })} /></label>
         {fieldError ? <p role="alert" className="dsh-data-table-error">{fieldError}</p> : null}
         {editor.original ? <div className="dsh-data-table-field-order">
           {[[-1, t('tableMoveLeft'), ArrowLeft], [1, t('tableMoveRight'), ArrowRight]].map(([delta, title, Icon]) => {

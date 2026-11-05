@@ -116,7 +116,7 @@ test('board and canvas names use the original canonical update and do not offer 
   const manifest = { version: 1, panel_kind: 'document', sections: [{ id: 'items', title: 'Items', add_mode: 'none' }],
     fields: [{ key: 'name', label: 'Name', control: 'text', applies_to: ['items'], required: true },
       { key: 'group', control: 'text', applies_to: ['items'] },
-      { key: 'description', control: 'textarea', applies_to: ['items'] }] }
+      { key: 'description', label: 'Description', description: 'Explain the capability.', required: true, control: 'textarea', applies_to: ['items'] }] }
   const data = { items: { first: { id: 'first', name: 'Original name', description: 'Keep content', group: 'Group' } } }
   const before = structuredClone(data)
   const node = { id: 'board', component: 'record_board', source: 'items', board: { label: 'name', description: 'description', group: 'group' } }
@@ -130,6 +130,13 @@ test('board and canvas names use the original canonical update and do not offer 
     await showBoard(true, edits => writes.push(edits))
     const title = document.querySelector('header [data-panel-title="editable"]')
     assert.ok(title && title.getAttribute('aria-required') === 'true')
+    assert.equal(document.querySelector('header .dsh-design-required-mark'), null, 'object titles retain their pencil convention')
+    const caption = document.querySelector('.dsh-record-board-description-field .dsh-design-field-label')
+    assert.equal(caption.querySelector('label').control, document.querySelector('.dsh-record-board-description-editor'))
+    assert.equal(caption.querySelectorAll('.dsh-design-required-mark').length, 1)
+    await React.act(async () => caption.querySelector('button').focus())
+    assert.equal(document.getElementById(caption.querySelector('button').getAttribute('aria-describedby')).textContent, 'Explain the capability.')
+    await React.act(async () => document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
     await React.act(async () => document.querySelector('.dsh-panel-title-edit').click())
     assert.equal(document.activeElement, title)
     assert.equal(writes.length, 0, 'pencil only focuses the existing editor')
@@ -180,4 +187,39 @@ test('guidance uses an overlay without padding or artificial scrollbar gutters',
   assert.ok(wrapper && /(?:^|;)\s*padding:\s*0\s*;/.test(wrapper[2]))
   assert.ok(!rules.some(match => match[1].includes('.dsh-panel-workspace-guidance') && /scrollbar-gutter:/.test(match[2])))
   assert.ok(rules.some(match => match[1].trim() === '.dsh-panel-guidance-popup' && /position:\s*fixed\s*;/.test(match[2])), 'help overlays rather than shifting content')
+})
+
+test('compact details expose declared help once beside the visible caption in both locales', async () => {
+  const { CompactRecordDetails } = await import('../src/compact-record-details.tsx')
+  const root = createRoot(document.getElementById('root'))
+  const values = { notes: 'Keep my content' }, before = structuredClone(values), changes = []
+  try {
+    for (const [locale, label, description, requiredName] of [
+      ['zh-CN', '说明', '说明影响范围。', '必填'],
+      ['en-US', 'Notes', 'Describe the affected scope.', 'Required'],
+    ]) {
+      const field = { key: 'notes', label, description, required: true, control: 'textarea' }
+      await React.act(async () => root.render(React.createElement(PanelLocaleContext.Provider, { value: locale },
+        React.createElement(CompactRecordDetails, { fields: [field], values, optional: false, editable: true,
+          change: (...args) => changes.push(args), render: nested => {
+            assert.equal(nested.description, undefined, 'the visible header owns help; the hidden inner caption does not duplicate it')
+            return React.createElement('textarea', { 'aria-label': nested.label, defaultValue: values.notes })
+          } }))))
+      const header = document.querySelector('h5'), trigger = header.querySelector('button')
+      assert.equal(header.querySelector('.dsh-design-required-mark').title, requiredName)
+      assert.equal(document.querySelectorAll('.dsh-panel-guidance-trigger').length, 1)
+      await React.act(async () => trigger.focus())
+      const tip = document.getElementById(trigger.getAttribute('aria-describedby'))
+      assert.equal(tip.getAttribute('role'), 'tooltip')
+      assert.equal(tip.textContent, description)
+      assert.equal(tip.hasAttribute('aria-label'), false)
+      await React.act(async () => document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
+      assert.equal(document.querySelector('[role="tooltip"]'), null)
+      assert.equal(document.activeElement, trigger)
+      assert.equal(document.querySelector('textarea').value, values.notes)
+      await React.act(async () => root.render(null))
+    }
+    assert.deepEqual(changes, [])
+    assert.deepEqual(values, before)
+  } finally { await React.act(async () => root.unmount()) }
 })

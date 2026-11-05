@@ -218,8 +218,10 @@ with pending records; never claim it is complete
 before the BPMN artifacts settle.
 
 1. **PLAN.** FIRST decide the product-wide role cast. It includes the built-in
-   `{"id":"System","name":"系统"}` role whenever the product has an active
-   responsibility in the process. THEN maintain ALL process
+   role with stable `id: "System"` whenever the product has an active
+   responsibility in the process. Its canonical display name follows the authored
+   language (`系统` in the Chinese example below, `System` in English); IDs and
+   display names remain unique. THEN maintain ALL process
    descriptors in ONE complete canonical state. The
    cast is decided once so every process + BPMN lane reuses the SAME names
    (no 主管/审批主管 drift). `process.stakeholders` MUST be drawn from
@@ -287,7 +289,8 @@ policy. G/R/A owns ongoing cross-Bundle drift detection after this check.
 - The plan must carry COMPLETE descriptors (description, stakeholders,
   system_responsibilities, trigger_hints, business_rules, exception_handling)
   — BPMN is authored only from this established state and the role cast.
-- Every active process includes `系统` and at least one concrete
+- Every active process includes the canonical display name of role `id: "System"`
+  and at least one concrete
   `system_responsibilities` item. If the product has no responsibility in the
   procedure, omit that procedure rather than drawing human-only choreography.
 - `trigger_hints` records only established asynchronous or event-waiting
@@ -364,7 +367,7 @@ when no exception is established.
 - **Element ids without process prefix** — causes id collisions when multiple processes render together. Always use `{ElementType}_{process_id}_{num}`.
 - **Process without a start or end event** — BPMN requires both. Every process has exactly one `<bpmn:startEvent>` and at least one `<bpmn:endEvent>`.
 - **Infrastructure "processes"** — do NOT propose processes for deployment, server setup, database migrations, CI/CD, log rotation, etc. Those are platform-managed. Only propose product user-facing / business-facing behavior.
-- **Human-only procedure presented as a product flow** — every process must reveal an actual product responsibility in the `系统` role.
+- **Human-only procedure presented as a product flow** — every process must reveal an actual product responsibility in the role with stable `id: "System"`, using its canonical display name.
 - **Known automation flattened into generic tasks** — state product work in `system_responsibilities`; author it with the appropriate BPMN activity type.
 - **Decorative BPMN events** — only express timer/message/error/conditional/signal facts established in `trigger_hints`.
 - **Inventing stakeholder roles not mentioned by the user** — use a generic name only for an evidenced participant; neither an organization title nor `管理员` is a default extra actor.

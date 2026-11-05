@@ -13,11 +13,194 @@ document.querySelector('style').textContent = readFileSync(new URL('../src/visua
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 const React = await import('react'); globalThis.React = React
 const { createRoot } = await import('react-dom/client')
-const { renderNode } = await import('../src/interpreter.ts')
+const { renderNode, renderManifest } = await import('../src/interpreter.ts')
 const { pathSet } = await import('../src/record-state.ts')
 const { parsePanelManifest, validatePanelManifest, localizePanelManifest } = await import('../../core/src/panel-dsl.ts')
 const { PanelLocaleContext } = await import('../src/panel-i18n.tsx')
 const { CustomChoice } = await import('../src/custom-choice.tsx')
+
+test('native disclosure activation keeps its default action beside a retained React Flow canvas', async () => {
+  const { ReactFlow } = await import('@xyflow/react')
+  const root = createRoot(document.getElementById('root'))
+  const manifest = { version: 1, panel_kind: 'document', sections: [{ id: 'items', title: 'Items', form: { body: [
+    { kind: 'group', title: 'Context', collapsible: true, items: [{ kind: 'field', field: 'notes' }] },
+  ] } }], fields: [{ key: 'notes', label: 'Notes', control: 'record_map', item_fields: [{key:'text',control:'textarea'}], applies_to: ['items'] }],
+    ui: { id: 'form', component: 'record_form', source: 'items' } }
+  let received = 0
+  const globalKey = () => { received++ }
+  window.addEventListener('keydown', globalKey)
+  const send = async (target, key = ' ', extra = {}) => {
+    const event = new window.KeyboardEvent('keydown', { key, code: key === ' ' ? 'Space' : key, bubbles: true, cancelable: true, ...extra })
+    await React.act(async () => target.dispatchEvent(event))
+    await React.act(async () => target.dispatchEvent(new window.KeyboardEvent('keyup', { key, code: event.code, bubbles: true, ...extra })))
+    return event
+  }
+  try {
+    await React.act(async () => root.render(React.createElement(React.Fragment, null,
+      renderManifest(manifest, { items: { a: { notes: {one:{text:'Keep the draft'},two:{text:'Second'}} } } }, { editable: true, onPanelUpdate:()=>{} }),
+      React.createElement('div', { style: { visibility: 'hidden', width: 600, height: 400 } },
+        React.createElement(ReactFlow, { nodes: [], edges: [] })),
+    )))
+    const summary = document.querySelector('summary')
+    const space = await send(summary)
+    assert.equal(space.defaultPrevented, false, 'native summary keeps browser activation; the canvas must not cancel it')
+    assert.equal(received, 0, 'the disclosure activation key is owned by the Panel')
+    await send(summary, 'Enter')
+    assert.equal(received, 1, 'other keys keep their existing propagation')
+    await send(summary, ' ', { ctrlKey: true })
+    assert.equal(received, 2, 'modified shortcuts are not intercepted')
+    const input = document.querySelector('textarea')
+    assert.equal((await send(input)).defaultPrevented, false)
+    assert.equal(received, 3, 'input editing events are not claimed by the disclosure boundary')
+    const pane = document.querySelector('.react-flow__pane')
+    assert.equal((await send(pane)).defaultPrevented, true, 'the real canvas retains its own Space handler')
+  } finally {
+    window.removeEventListener('keydown', globalKey)
+    await React.act(async () => root.unmount())
+  }
+})
+
+test('visible scalar labels activate unique controls across repeated forms and locale updates', async () => {
+  const root = createRoot(document.getElementById('root'))
+  const manifest = { version: 1, panel_kind: 'document', sections: [{ id: 'items', title: 'Items' }], fields: [
+    { key: 'name', label: 'Name', control: 'text', applies_to: ['items'] },
+    { key: 'notes', label: 'Notes', description: 'Explain the decision.', control: 'textarea', applies_to: ['items'] },
+    { key: 'mode', label: 'Mode', control: 'select', applies_to: ['items'], options: [{ value: 'one', label: 'One' }] },
+  ], ui: { id: 'form', component: 'record_form', source: 'items' } }
+  const data = { items: { a: { name: 'Original', notes: 'Keep', mode: 'one' } } }
+  const show = editable => React.act(async () => root.render(React.createElement(React.Fragment, null,
+    ...[0, 1].map(index => React.createElement('div', { key: index }, renderNode(manifest.ui, manifest, data, { editable }))))))
+  try {
+    await show(true)
+    const labels = [...document.querySelectorAll('.dsh-design-field-label > label')]
+    assert.equal(labels.length, 6)
+    assert.equal(new Set(labels.map(label => label.htmlFor)).size, labels.length)
+    assert.equal(document.querySelector('label button'), null, 'help is not another labelable control nested in a field label')
+    assert.equal(document.querySelectorAll('[data-field="notes"] .dsh-design-field-label > .dsh-panel-help').length, 2)
+    for (const label of labels) {
+      assert.ok(label.control, 'the visible caption has a native labelable control')
+      assert.equal(label.control.closest('[data-field]'), label.closest('[data-field]'))
+    }
+    const ids = labels.map(label => label.htmlFor)
+    await show(true)
+    assert.deepEqual([...document.querySelectorAll('.dsh-design-field-label > label')].map(label => label.htmlFor), ids)
+    await show(false)
+    assert.equal(document.querySelector('.dsh-design-field-label > label'), null, 'read-only text has no misleading focus label')
+    assert.deepEqual(data.items.a, { name: 'Original', notes: 'Keep', mode: 'one' })
+  } finally { await React.act(async () => root.unmount()) }
+})
+
+test('semantic groups disclose independently of property count or populated fields', async () => {
+  const root = createRoot(document.getElementById('root'))
+  const manifest = { version: 1, panel_kind: 'document', sections: [{ id: 'items', title: 'Items', form: { body: [
+    { kind: 'group', title: 'Context', collapsible: true, items: [
+      { kind: 'field', field: 'notes' }, { kind: 'field', field: 'empty' }, { kind: 'field', field: 'hidden' },
+    ] },
+    { kind: 'group', title: 'Unfilled', collapsible: true, items: [{ kind: 'field', field: 'empty' }] },
+  ] } }], fields: [
+    { key: 'notes', label: 'Notes', control: 'textarea' }, { key: 'empty', label: 'Empty', control: 'textarea' },
+    { key: 'hidden', label: 'Hidden', control: 'text', hidden: true },
+  ].map(field => ({ ...field, applies_to: ['items'] })), ui: { id: 'form', component: 'record_form', source: 'items' } }
+  const data = { items: { a: { notes: 'Existing context', hidden: 'Technical value' } } }, before = structuredClone(data)
+  try {
+    for (const locale of ['en-US', 'zh-CN']) {
+      await React.act(async () => root.render(renderNode(manifest.ui, manifest, data, { locale, editable: true })))
+      const groups = [...document.querySelectorAll('.dsh-design-form-group')]
+      assert.equal(groups[0].open, true)
+      assert.equal(groups[0].querySelector('summary').getAttribute('role'), null)
+      assert.match(groups[0].querySelector('.dsh-design-form-group-preview').textContent, /1/)
+      assert.equal(groups[1].querySelector('.dsh-design-form-group-preview'), null)
+      await React.act(async () => groups[0].querySelector('summary').click())
+      assert.equal(groups[0].querySelector('textarea').value, 'Existing context')
+      assert.deepEqual(data, before)
+      await React.act(async () => groups[0].querySelector('summary').click())
+    }
+  } finally { await React.act(async () => root.unmount()) }
+})
+
+test('initially open sections keep complete field bodies and native disclosure state across rerenders', async () => {
+  const root = createRoot(document.getElementById('root'))
+  const manifest = { version: 1, panel_kind: 'document', sections: [{ id: 'items', title: 'Items', form: { body: [
+    { kind: 'group', title: 'Main content', collapsible: true, default_open: true, items: [
+      { kind: 'field', field: 'notes' }, { kind: 'field', field: 'rules' },
+      { kind: 'field', field: 'children' }, { kind: 'field', field: 'after' },
+    ] },
+  ] } }], fields: [
+    { key: 'notes', label: 'Notes', description: 'Why this content matters', control: 'textarea' },
+    { key: 'rules', label: 'Rules', control: 'record_map', columns: [
+      { key: 'when', label: 'When', control: 'text' }, { key: 'then', label: 'Then', control: 'text' },
+    ] },
+    { key: 'children', label: 'Child records', control: 'record_map', item_collapsible: true,
+      item_fields: [{ key: 'name', label: 'Name', control: 'text' }] },
+    { key: 'after', label: 'Further context', control: 'textarea' },
+  ].map(field => ({ ...field, applies_to: ['items'] })), ui: { id: 'form', component: 'record_form', source: 'items' } }
+  const data = { items: { a: { notes: 'Retain this draft', rules: { a: { when: 'Requested', then: 'Show draft' } },
+    children: { one: { name: 'An independently edited record' },two:{name:'Another record'} }, after: 'Retain this too' } } }
+  const before = structuredClone(data), writes = []
+  const show = (locale, editable) => React.act(async () => root.render(renderNode(manifest.ui, manifest, data,
+    { locale, editable, onPanelUpdate: patch => writes.push(patch) })))
+  try {
+    await show('en-US', true)
+    const group = document.querySelector('details.dsh-design-form-group'), summary = group.querySelector(':scope > summary')
+    assert.equal(group.open, true, 'primary content is initially visible')
+    const notes = group.querySelector('[data-field="notes"]')
+    const body = notes.closest('.dsh-panel-content-card')
+    assert.ok(body)
+    assert.ok(body.contains(notes.querySelector('.dsh-design-field-label')))
+    assert.ok(body.contains(notes.querySelector('.dsh-panel-help')))
+    assert.ok(body.contains(group.querySelector('[data-field="rules"] .dsh-record-map-table')), 'ordinary scalar and tabular fields share the complete content surface')
+    const child = group.querySelector('[data-child-record="one"]')
+    assert.ok(child.classList.contains('dsh-panel-content-card'))
+    assert.equal(child.parentElement.closest('.dsh-panel-content-card'), null, 'existing record cards do not get a redundant outer card')
+    assert.notEqual(group.querySelector('[data-field="after"]').closest('.dsh-panel-content-card'), body)
+    await React.act(async () => summary.click())
+    assert.equal(group.open, false)
+    for (const [locale, editable] of [['zh-CN', true], ['en-US', false], ['en-US', true]]) {
+      await show(locale, editable)
+      assert.equal(document.querySelector('details'), group, 'locale/read-only updates retain the same native disclosure')
+      assert.equal(group.open, false, 'initial visibility does not override the user on rerender')
+    }
+    await React.act(async () => summary.click())
+    assert.equal(group.open, true)
+    assert.equal(group.querySelector('[data-field="notes"] textarea').value, 'Retain this draft')
+    assert.deepEqual(writes, [])
+    assert.deepEqual(data, before)
+  } finally { await React.act(async () => root.unmount()) }
+})
+
+test('visible task groups own complete bodies while inner layout groups reuse the same surface', async () => {
+  const root = createRoot(document.getElementById('root'))
+  const manifest = { version: 1, panel_kind: 'document', sections: [{ id: 'items', title: 'Items', form: { body: [
+    { kind: 'group', title: 'Delivery', items: [
+      { kind: 'field', field: 'trigger' },
+      { kind: 'group', title: 'Audience', items: [{ kind: 'field', field: 'recipients' }] },
+    ] },
+    { kind: 'group', title: 'Entries', items: [{ kind: 'field', field: 'entries', label: 'visually_hidden' }] },
+  ] } }], fields: [
+    { key: 'trigger', label: 'Trigger', control: 'textarea' },
+    { key: 'recipients', label: 'Recipients', control: 'text' },
+    { key: 'entries', label: 'Entries', control: 'record_map', item_collapsible: true,
+      item_fields: [{ key: 'name', label: 'Name', control: 'text' }] },
+  ].map(field => ({ ...field, applies_to: ['items'] })), ui: { id: 'form', component: 'record_form', source: 'items' } }
+  const data = { items: { a: { trigger: 'After approval', recipients: 'Applicant', entries: { one: { name: 'Inbox' } } } } }
+  const before = structuredClone(data), writes = []
+  try {
+    for (const editable of [true, false]) {
+      await React.act(async () => root.render(renderNode(manifest.ui, manifest, data, { editable, onPanelUpdate: patch => writes.push(patch) })))
+      const groups = [...document.querySelectorAll('.dsh-design-form-group.dsh-panel-content-group')]
+      assert.equal(groups.length, 2, 'only the two major task sections own supporting surfaces')
+      const body = groups[0].querySelector('.dsh-panel-content-card')
+      assert.equal(groups[0].querySelectorAll('.dsh-panel-content-card').length, 1)
+      assert.ok(body.contains(groups[0].querySelector('[data-field="recipients"]')), 'the nested layout shares its complete body')
+      const entry = groups[1].querySelector('[data-child-record="one"]')
+      assert.equal(entry.parentElement.closest('.dsh-panel-content-card'), null, 'independent records do not acquire another outer card')
+      assert.equal(groups[1].querySelectorAll('.dsh-design-form-group-title').length, 1)
+      assert.equal(groups[0].querySelector('details'), null, 'grouping does not introduce a new disclosure step')
+    }
+    assert.deepEqual(writes, [])
+    assert.deepEqual(data, before)
+  } finally { await React.act(async () => root.unmount()) }
+})
 
 test('sibling labels share visible/accessibility copy, fallback and read-only presentation without writes', async () => {
   const root = createRoot(document.getElementById('root'))
@@ -57,6 +240,8 @@ test('shared groups dedupe exact captions but retain semantic scopes, hidden sol
     { kind: 'group', title: '$t:example', items: [{ kind: 'field', field: 'example' }],
       sidecar: { component: 'record_preview', preview: { title: 'example', body: 'example' } } },
     { kind: 'group', title: 'Hidden group', items: [{ kind: 'field', field: 'conditional' }] },
+    { kind: 'group', title: '$t:collaboration', collapsible: true, items: [{ kind: 'field', field: 'collaboration' }] },
+    { kind: 'group', title: '$t:scope', collapsible: true, items: [{ kind: 'field', field: 'otherScope' }] },
   ] } }], fields: [
     { key: 'notes', label: '$t:notes', description: '$t:help', control: 'textarea', required: true },
     { key: 'requirement', label: '$t:required', control: 'textarea', required: true },
@@ -65,10 +250,12 @@ test('shared groups dedupe exact captions but retain semantic scopes, hidden sol
     { key: 'second', label: 'Second', control: 'text' },
     { key: 'example', label: '$t:example', control: 'textarea' },
     { key: 'conditional', label: 'Conditional', control: 'text', visible_when: { field: 'first', in: ['show'] } },
+    { key: 'collaboration', label: '$t:collaboration', control: 'textarea', required: true, description: '$t:help' },
+    { key: 'otherScope', label: '$t:context', control: 'textarea' },
   ].map(field => ({ ...field, applies_to: ['entries'] })),
   i18n: { default_locale: 'en-US', locales: { 'en-US': 'locales/en-US.json', 'zh-CN': 'locales/zh-CN.json' }, messages: {
-    'en-US': { notes: 'Notes', help: 'Preserve this explanation', required: 'Assignment', scope: 'Deployment boundary', context: 'Description', multiple: 'Inputs', example: 'Example' },
-    'zh-CN': { notes: '备注', help: '保留专业说明', required: '获得方式', scope: '部署边界', context: '说明', multiple: '输入', example: '样例' },
+    'en-US': { notes: 'Notes', help: 'Preserve this explanation', required: 'Assignment', scope: 'Deployment boundary', context: 'Description', multiple: 'Inputs', example: 'Example', collaboration: 'Collaboration' },
+    'zh-CN': { notes: '备注', help: '保留专业说明', required: '获得方式', scope: '部署边界', context: '说明', multiple: '输入', example: '样例', collaboration: '协作' },
   } }, ui: { id: 'neutral-form', component: 'record_form', source: 'entries' } }
   assert.deepEqual(validatePanelManifest(manifest), [])
   const data = { entries: { a: { notes: 'Original', requirement: '', context: 'Keep scope', first: 'hidden', second: 'Keep second', example: 'Preview' } } }
@@ -80,20 +267,24 @@ test('shared groups dedupe exact captions but retain semantic scopes, hidden sol
       await show(locale)
       const copy = manifest.i18n.messages[locale]
       assert.deepEqual([...document.querySelectorAll('.dsh-design-form-group-title')].map(e => e.textContent),
-        [copy.required + ' *', copy.scope, copy.multiple, copy.example], 'only an exact single-field duplicate disappears')
+        [copy.notes + ' *', copy.required + ' *', copy.scope, copy.multiple, copy.example, copy.collaboration + ' *', copy.scope], 'an exact duplicate never removes a disclosure summary')
+      const collaboration = document.querySelector('[data-field="collaboration"]')
+      assert.ok(collaboration.classList.contains('is-label-visually_hidden'), 'the summary is the single visible caption')
+      assert.equal(collaboration.querySelector('textarea').getAttribute('aria-label'), copy.collaboration)
+      assert.equal(collaboration.querySelector('textarea').getAttribute('aria-required'), 'true')
+      assert.ok(collaboration.closest('details').querySelector('summary .dsh-panel-help'))
+      assert.equal(collaboration.querySelector(':scope > .dsh-design-required-mark'), null, 'the summary owns the one visible requirement cue')
+      assert.equal(document.querySelector('[data-field="otherScope"]').classList.contains('is-label-visually_hidden'), false, 'different scope names retain their field caption')
       const field = document.querySelector('[data-field="notes"]')
       assert.equal(field.querySelector('.dsh-design-field-label').textContent, copy.notes + ' *')
       assert.equal(field.querySelector('textarea').getAttribute('aria-label'), copy.notes)
       assert.equal(field.querySelector('textarea').getAttribute('aria-required'), 'true')
       assert.equal(document.querySelector('[data-field="requirement"] textarea').getAttribute('aria-required'), 'true')
       assert.equal(document.querySelector('[data-field="requirement"] > .dsh-design-required-mark'), null)
-      assert.equal(document.querySelectorAll('.dsh-design-form-group-description').length, 1, 'help survives heading normalization')
+      assert.equal(document.querySelectorAll('.dsh-design-form-group-description').length, 0, 'group help lives beside its heading')
       assert.equal(document.querySelectorAll('.dsh-record-preview').length, 1, 'preview context is not treated as a single input')
       assert.equal(document.querySelector('[data-field="conditional"]'), null)
-      const help = window.getComputedStyle(field.querySelector('.dsh-design-field-description'))
-      assert.equal(help.marginTop, 'var(--ygd-panel-detail-control-gap, 8px)')
-      assert.equal(help.marginBottom, '0px', 'field help never stacks an extra section margin')
-      assert.equal(updates.length, 0, 'render and locale switching cannot change data')
+      assert.ok(field.closest('details').querySelector('summary .dsh-panel-help'))
     }
     const input = document.querySelector('[data-field="notes"] textarea')
     await React.act(async () => {
@@ -105,6 +296,51 @@ test('shared groups dedupe exact captions but retain semantic scopes, hidden sol
     assert.equal(document.querySelector('input,textarea,select'), null)
     assert.deepEqual(data, original)
     assert.equal(updates.length, 1)
+  } finally { await React.act(async () => root.unmount()) }
+})
+
+test('card collections own one group and caption help without changing edits or native disclosure', async () => {
+  const root = createRoot(document.getElementById('root'))
+  const fields = ['entries', 'partners', 'fallback'].map(key => ({ key, label: key, control: 'record_map', applies_to: ['items'],
+    description: `${key} instructions`, item_collapsible: true, item_label_field: 'name', max_rows: 2,
+    item_fields: [{ key: 'name', label: 'Name', control: 'text' }] }))
+  const manifest = { version: 1, panel_kind: 'document', sections: [{ id: 'items', title: 'Items', form: { body: [
+    { kind: 'field', field: 'entries' },
+    { kind: 'group', title: 'partners', collapsible: true, items: [{ kind: 'field', field: 'partners' }] },
+  ] } }], fields, ui: { component: 'record_form', id: 'collections', source: 'items' } }
+  assert.deepEqual(validatePanelManifest(manifest), [])
+  let data = { items: { a: { entries: { one: { name: 'Preserved' } }, partners: { one: { name: 'Partner' } }, fallback: {} } } }
+  const updates = []
+  const show = editable => React.act(async () => root.render(renderManifest(manifest, data,
+    { locale: 'en-US', editable, onPanelUpdate: patch => { updates.push(patch); data = { ...data, ...patch } } })))
+  try {
+    await show(true)
+    for (const key of ['entries', 'fallback']) {
+      const field = document.querySelector(`[data-field="${key}"]`)
+      assert.ok(field.classList.contains('dsh-panel-content-group'), 'declared and fallback collections share the same complete surface, including empty collections')
+      assert.ok(field.querySelector(':scope > summary .dsh-panel-help'))
+      assert.equal(field.querySelector('.dsh-design-field-description'), null, 'collection help does not create a trailing paragraph')
+    }
+    const partners = document.querySelector('[data-field="partners"]')
+    assert.equal(partners.classList.contains('dsh-panel-content-group'), false, 'the authored chapter already owns this collection')
+    assert.equal(partners.querySelector('.dsh-panel-help'), null, 'a hidden caption cannot contain an unreachable help button')
+    const summary = partners.closest('details').querySelector('summary')
+    const help = summary.querySelector('button')
+    await React.act(async () => help.focus())
+    assert.equal(document.querySelector('[role="tooltip"]').textContent, 'partners instructions')
+    await React.act(async () => document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
+    assert.equal(document.querySelector('[role="tooltip"]'), null)
+    assert.equal(document.activeElement, help)
+    assert.equal(updates.length, 0)
+    await React.act(async () => document.querySelector('[data-field="entries"] .dsh-record-map-add').click())
+    await show(true)
+    assert.equal(Object.keys(data.items.a.entries).length, 2)
+    assert.equal(data.items.a.entries.one.name, 'Preserved')
+    assert.equal(document.querySelector('[data-field="entries"] .dsh-record-map-add').disabled, true)
+    await show(false)
+    assert.ok(document.querySelector('[data-field="entries"].dsh-panel-content-group'))
+    assert.equal(document.querySelector('.dsh-record-map-add'), null)
+    assert.equal(updates.length, 1, 'readonly, help and group presentation never write data')
   } finally { await React.act(async () => root.unmount()) }
 })
 
@@ -122,18 +358,16 @@ test('shared help rhythm uses one owner in stacked and inline fields', async () 
       renderNode(manifest.ui, manifest, { items: { a: { stacked: 'First', inline: 'Second' } } }, { editable: true }))))
     const stacked = document.querySelector('[data-field="stacked"]')
     const inline = document.querySelector('[data-field="inline"]')
-    const stackedHelp = window.getComputedStyle(stacked.querySelector('.dsh-design-field-description'))
-    const inlineHelp = window.getComputedStyle(inline.querySelector('.dsh-design-field-description'))
-    assert.equal(stackedHelp.marginTop, 'var(--ygd-panel-detail-control-gap, 8px)')
-    assert.equal(stackedHelp.marginBottom, '0px')
-    assert.equal(window.getComputedStyle(inline).gap, '8px 12px')
-    assert.equal(inlineHelp.marginTop, '0px', 'grid row-gap must not stack with another help margin')
-    assert.equal(inlineHelp.marginBottom, '0px')
-    assert.equal(inlineHelp.gridColumn, '2')
-    const rules = [...document.querySelector('style').sheet.cssRules]
-    assert.ok(rules.some(rule => rule.selectorText?.split(',').map(selector => selector.trim())
-      .includes('.dsh-design-panel .dsh-design-field-description') && rule.style.marginTop),
-    'Panel scope protects help rhythm from host paragraph resets; actual cascade is checked in Chrome')
+    for (const field of [stacked, inline]) {
+      assert.equal(field.querySelector('.dsh-design-field-description'), null)
+      const help = field.querySelector('.dsh-panel-help button')
+      await React.act(async () => help.focus())
+      assert.equal(document.querySelector('[role="tooltip"]').textContent, field === stacked ? 'Stacked help' : 'Inline help')
+      await React.act(async () => document.dispatchEvent(new window.KeyboardEvent('keydown', {key:'Escape',bubbles:true})))
+      assert.equal(document.querySelector('[role="tooltip"]'), null)
+      assert.equal(document.activeElement, help)
+    }
+
   } finally { await React.act(async () => root.unmount()) }
 })
 
@@ -220,12 +454,17 @@ test('shared field foundations keep native input geometry across plain and compo
     checkInput('[data-field="name"] input'); checkInput('.dsh-record-map input')
     assert.equal(style('[data-field="name"] .dsh-design-field-label').fontSize, 'var(--ygd-panel-text-size, 14px)')
     assert.equal(style('[data-field="name"] .dsh-design-field-label').lineHeight, '20px')
-    assert.equal(style('.dsh-record-map label > span:first-child').fontSize, '12px', 'simple card captions use the reviewed secondary hierarchy, not nested field headings')
+    assert.equal(style('[data-field="name"] .dsh-design-field-label').fontWeight, '400')
+    assert.equal(style('[data-field="children"] > summary').fontWeight, '500', 'collection captions establish a group, ordinary field labels do not')
+    assert.equal(style('.dsh-record-map label > span:first-child').fontSize, 'var(--ygd-panel-text-size, 14px)', 'nested field labels share the ordinary field typography role')
     assert.notEqual(style('.dsh-record-map label > span:first-child').display, 'none', 'ordinary single-column records keep their visible column meaning')
     assert.equal(document.querySelector('.dsh-record-map.is-compact'), null, 'multi-column defaults do not change the single-column contract')
     const textarea = style('[data-field="notes"] textarea'), select = style('[data-field="mode"] [role="combobox"]')
     const exceptions = { textareaHeight: textarea.minHeight, textareaResize: textarea.resize, selectPadding: select.padding }
-    assert.equal(exceptions.textareaHeight, '88px'); assert.equal(exceptions.textareaResize, 'vertical')
+    // JSDOM has no layout boxes: content fitting is verified by panel-textarea-browser.
+    // The CSS foundation must not impose the superseded multi-line minimum.
+    assert.equal(exceptions.textareaHeight, '0px'); assert.equal(exceptions.textareaResize, 'vertical')
+    assert.equal(document.querySelector('[data-field="notes"] textarea').rows, 1)
     manifest.sections[0].form = { header: { variant: 'detail', title: { field: 'title', editable: true } },
       body: [{ kind: 'field', field: 'name' }, { kind: 'field', field: 'notes' }, { kind: 'field', field: 'mode' }, { kind: 'field', field: 'enabled' }, { kind: 'field', field: 'children' }] }
     assert.deepEqual(validatePanelManifest(manifest), [])
@@ -239,7 +478,7 @@ test('shared field foundations keep native input geometry across plain and compo
     assert.equal(style('[data-field="mode"] [role="combobox"]').height, '36px')
     assert.equal(style('[data-field="mode"] [role="combobox"]').borderRadius, '8px')
     assert.equal(style('[data-field="notes"] textarea').borderRadius, '8px')
-    assert.equal(style('[data-field="name"] .dsh-design-field-label').marginBottom, '8px')
+    assert.equal(style('[data-field="name"] .dsh-design-field-label').marginBottom, 'var(--ygd-panel-detail-control-gap, 8px)')
     assert.notEqual(style('[data-field="enabled"] input').height, '36px', 'choice controls are excluded')
     assert.equal(writes, 0); assert.deepEqual(data, before)
   } finally { await React.act(async () => root.unmount()) }
@@ -258,8 +497,12 @@ test('business-rule groups retain localized descriptions, accessible fields and 
     for(const locale of ['zh-CN','en-US']) {
       await show(locale)
       assert.equal(patch,undefined,'localization/mount cannot write canonical facts')
-      assert.equal(document.querySelectorAll('.dsh-design-form-group').length,2)
-      assert.equal(document.querySelector('.dsh-design-form-group-title').textContent,manifest.i18n.messages[locale].ruleContent)
+      assert.equal(document.querySelectorAll('.dsh-panel-content-group').length,0,'one flat rule form, not a highlighted remarks exception')
+      assert.equal(document.querySelector('.dsh-panel-header-context'),null,'generic writing instructions do not occupy the record context')
+      const help=document.querySelector('[data-field="notes"] .dsh-panel-help button')
+      await React.act(async()=>help.click())
+      assert.equal(document.querySelector('[role="tooltip"]').textContent,manifest.i18n.messages[locale].notesHelp)
+      await React.act(async()=>document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Escape',bubbles:true})))
       for(const key of ['condition','outcome','notes'])assert.equal(document.querySelectorAll(`[data-field="${key}"]`).length,1)
       const notes=document.querySelector('[data-field="notes"] textarea')
       assert.equal(notes.getAttribute('aria-label'),manifest.i18n.messages[locale].notes)
@@ -471,7 +714,9 @@ test('record artifact sibling views keep one original editable header above tabs
   assert.equal(document.querySelector('.dsh-record-inspector [data-panel-title]'), null)
   assert.equal(header.querySelector('.dsh-design-record'), null, 'workspace title has no padded record shell or negative-inset dependency')
   assert.equal(window.getComputedStyle(header.querySelector('.dsh-design-record-header')).margin, '0px')
-  assert.equal(window.getComputedStyle(header.querySelector('.dsh-design-record-header')).height, '44px')
+  // The title has a minimum height and grows with optional context. Real
+  // Chromium checks its resulting box in host-theme-browser.test.mjs.
+  assert.equal(window.getComputedStyle(header.querySelector('.dsh-design-record-header')).minHeight, '44px')
   container.parentElement.classList.add('dsh-design-auto-surface')
   assert.equal(window.getComputedStyle(header.querySelector('.dsh-design-record-header')).padding, '0px 16px', 'auto surface cannot restyle a framed shared title')
   container.parentElement.classList.remove('dsh-design-auto-surface')
@@ -489,4 +734,49 @@ test('record artifact sibling views keep one original editable header above tabs
   assert.match(document.querySelector('.dsh-record-workspace-header').textContent, /Second case/)
   assert.equal(writes, 1)
  } finally { await React.act(() => root.unmount()); container.remove(); localDom.window.close() }
+})
+
+test('collection collapse preserves edits, nested expansion and editor identity across one/many boundaries', async () => {
+  const container=document.createElement('div');container.id='root';document.body.append(container)
+  const root = createRoot(document.getElementById('root'))
+  const manifest = {version:1,panel_kind:'document',sections:[{id:'items',title:'Items'}],fields:[
+    {key:'entries',label:'Entries',required:true,control:'record_map',applies_to:['items'],item_collapsible:true,item_label_field:'name',
+      item_fields:[{key:'name',label:'Name',control:'text'}]},
+  ],ui:{component:'record_form',id:'collection',source:'items'}}
+  let data={items:{a:{entries:{one:{name:'First'},two:{name:'Second'}}}}}, writes=0
+  const paint=()=>root.render(renderManifest(manifest,data,{editable:true,onPanelUpdate:updates=>{
+    writes++; data={...data,...updates};paint()
+  }}))
+  const click=element=>React.act(async()=>{element.click();await new Promise(resolve=>setTimeout(resolve,0))})
+  try {
+    await React.act(paint)
+    const group=document.querySelector('details[data-field="entries"]'),summary=group.querySelector(':scope > summary')
+    const input=group.querySelector('[data-child-record="one"] input')
+    assert.equal(group.open,true)
+    assert.match(group.getAttribute('aria-label'), /Entries.*(?:required|必填)/)
+    await React.act(async()=>{
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set.call(input,'User draft')
+      input.dispatchEvent(new window.Event('input',{bubbles:true}))
+    })
+    assert.equal(writes,1)
+    await click(summary);assert.equal(group.open,false)
+    await React.act(paint);assert.equal(group.open,false)
+    assert.equal(group.querySelector('[data-child-record="one"] input'),input)
+    await click(summary);assert.equal(group.open,true)
+    assert.equal(input.value,'User draft')
+    delete data.items.a.entries.two
+    await React.act(paint)
+    assert.equal(document.querySelector('details[data-field="entries"]'),group)
+    assert.equal(summary.getAttribute('role'),null)
+    assert.ok(summary.querySelector('.dsh-panel-disclosure-icon'))
+    await click(summary);assert.equal(group.open,false,'a single record has the same disclosure')
+    assert.equal(group.querySelector('[data-child-record="one"] input'),input)
+    data.items.a.entries.two={name:'Returned'}
+    await React.act(paint)
+    assert.equal(summary.getAttribute('role'),null)
+    assert.equal(group.querySelector('[data-child-record="one"] input'),input)
+    assert.equal(group.open,false,'adding a record does not reset the chosen disclosure state')
+    await click(summary);assert.equal(group.open,true)
+    assert.equal(writes,1,'presentation and count transitions do not emit canonical edits')
+  } finally {await React.act(async()=>root.unmount())}
 })

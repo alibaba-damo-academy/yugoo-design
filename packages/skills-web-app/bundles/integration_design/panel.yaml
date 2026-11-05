@@ -7,7 +7,23 @@ initial_values: {schema_version: 8}
 empty_description: $t:empty
 sections:
   - id: integrations
-    form: {header: {variant: detail, title: {field: title, editable: true}}}
+    form:
+      header: {variant: detail, title: {field: title, editable: true}}
+      body:
+        - kind: group
+          title: $t:connectionDetails
+          items:
+            - {kind: field, field: description}
+            - {kind: field, field: url}
+        - kind: group
+          title: $t:secrets
+          items:
+            - {kind: field, field: secrets, label: visually_hidden}
+        - kind: group
+          title: $t:usageAndNotes
+          items:
+            - {kind: field, field: prompt_content}
+            - {kind: field, field: business_rules}
     title: $t:integrations
     item_name: $t:integration
     order: integration_order
@@ -46,7 +62,7 @@ fields:
     order_field: secret_order
     max_rows: 10
     columns:
-      - {key: name, label: '$t:secretName', control: text, format: upper_identifier}
+      - {key: name, label: '$t:secretName', control: text}
       - {key: description, label: '$t:secretDescription', control: text}
     applies_to: [integrations]
   - key: prompt_content

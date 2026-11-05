@@ -16,6 +16,25 @@ const base = () => ({ version: 1, panel_kind: 'document', sections: [{ id: 'item
     { key: 'note', control: 'text', applies_to: ['items'] },
   ], ui: { component: 'record_form', id: 'form', source: 'items' } })
 
+test('initial disclosure visibility is a boolean presentation choice on a collapsible group', () => {
+  const panel = base()
+  const group = panel.sections[0].form.body[1]
+  group.collapsible = true
+  for (const initial of [true, false]) {
+    group.default_open = initial
+    assert.deepEqual(validatePanelManifest(panel), [])
+    assert.equal(localizePanelManifest(panel, 'en-US').sections[0].form.body[1].default_open, initial)
+  }
+  for (const change of [
+    p => { p.sections[0].form.body[1].default_open = 'true' },
+    p => { delete p.sections[0].form.body[1].collapsible },
+    p => { p.sections[0].form.body[1].collapsible = false },
+  ]) {
+    const invalid = structuredClone(panel); change(invalid)
+    assert.ok(validatePanelManifest(invalid).some(error => error.includes('default_open')))
+  }
+})
+
 test('record tabs retain bounded same-record bindings and localized disclosure titles', () => {
   const panel = base()
   panel.sections[0].form.body = [{ kind: 'tabs', id: 'design', title: 'Design', tabs: [

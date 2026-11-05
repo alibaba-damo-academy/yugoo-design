@@ -1,20 +1,23 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react'
+import { Fragment, useCallback, useEffect, useId, useMemo, useLayoutEffect, useRef, useState, type ReactElement, type ReactNode } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { sidebarIcon } from './sidebar-icon.tsx'
 import remarkGfm from 'remark-gfm'
-import { ChevronRight, Pencil, CircleMinus } from 'lucide-react'
+import { ChevronRight, Filter } from 'lucide-react'
 import { ReactFlow, Background, Controls, ConnectionMode, applyNodeChanges, type Node, type NodeChange, type NodeProps, type ReactFlowInstance } from '@xyflow/react'
 import type { ComponentNode, PanelManifest } from './dsl.ts'
-import { fieldsForSection, fieldValuesOf, recordsAtPath, sectionBindingOf, type DesignData } from './record-state.ts'
+import { fieldsForSection, fieldIsVisible, fieldValuesOf, recordsAtPath, sectionBindingOf, orderedRecordIds, pathGet, type DesignData } from './record-state.ts'
 import type { RenderOptions } from './interpreter.ts'
 import { insertVisualRecord } from './visual-components.tsx'
-import { PanelEditableTitle, PanelWorkspace, PanelWorkspaceTree, PanelWorkspaceTreeGroup, PanelWorkspaceTreeItem, PanelWorkspaceCover, PanelWorkspaceCanvasToggle, PanelDisclosureIcon, PanelCanvasHandles, PanelCanvasToolbar } from './panel-workspace.tsx'
+import { PanelEditableTitle, PanelFieldCaption, PanelWorkspace, PanelWorkspaceTree, PanelWorkspaceTreeGroup, PanelWorkspaceTreeItem, PanelWorkspaceTreeAdd, PanelWorkspaceCover, PanelWorkspaceCanvasToggle, PanelDisclosureIcon, PanelDetailDisclosure, PanelCanvasHandles, PanelCanvasToolbar } from './panel-workspace.tsx'
 import { RELATION_GRAPH_AUTO_FIT } from './relation-graph-layout.ts'
 import { useFlowContainerFit } from './use-flow-container-fit.ts'
 import { RecordRequestDialog } from './record-request-dialog.tsx'
 import { usePanelI18n } from './panel-i18n.tsx'
+import { canvasAriaLabels } from './canvas-i18n.ts'
 import { PanelSelect } from './panel-select.tsx'
-import { useRecordCardDraft } from './record-card-drafts.tsx'
+import { RecordFacts } from './record-facts.tsx'
+import type { EditorField } from './dsl.ts'
+import { PanelTextarea } from './panel-textarea.tsx'
 
 /** View projection only: groups are labels, never newly persisted entities. */
 export function boardGroups(records: Record<string, Record<string, unknown>>, binding: NonNullable<ComponentNode['board']>, filter: 'active' | 'rejected' | 'all', ungrouped: string, editing?: { id: string; group: string }) {
@@ -30,7 +33,7 @@ export function boardGroups(records: Record<string, Record<string, unknown>>, bi
 
 /** Native horizontal mind-map geometry, projected solely from declared bindings. */
 export function boardMapProjection(groups: Map<string, [string, Record<string, unknown>][]>, binding: NonNullable<ComponentNode['board']>, label: string) {
-  const nodes: Node[] = [], edges: { id: string; source: string; target: string }[] = []
+  const nodes: Node[] = [], edges: { id: string; source: string; target: string; ariaLabel: string }[] = []
   let ordinal = 0
   const centers: number[] = []
   for (const [name, records] of groups) {
@@ -38,14 +41,15 @@ export function boardMapProjection(groups: Map<string, [string, Record<string, u
     const center = (ordinal + (records.length - 1) / 2) * 50
     centers.push(center)
     if (binding.group) nodes.push({ id: group, type: 'board', position: { x: 300, y: center }, data: { label: name, branch: true, rejected: !!binding.rejected && records.every(([, record]) => record[binding.rejected!] === true) } })
-    if (binding.group) edges.push({ id: `root:${group}`, source: 'root', target: group })
+    if (binding.group) edges.push({ id: `root:${group}`, source: 'root', target: group, ariaLabel: `${label} → ${name}` })
     for (const [id, record] of records) {
       const leaf = `record:${id}`
       nodes.push({ id: leaf, type: 'board', position: { x: binding.group ? 600 : 300, y: ordinal++ * 50 }, data: {
         label: String(record[binding.label] || id), record: id, description: String(record[binding.description] ?? ''),
         badge: binding.badge ? record[binding.badge] : undefined, rejected: !!binding.rejected && record[binding.rejected] === true,
       } })
-      edges.push({ id: `${group}:${leaf}`, source: binding.group ? group : 'root', target: leaf })
+      edges.push({ id: `${group}:${leaf}`, source: binding.group ? group : 'root', target: leaf,
+        ariaLabel: `${binding.group ? name : label} → ${String(record[binding.label] || id)}` })
     }
   }
   if (centers.length) nodes.unshift({ id: 'root', type: 'board', position: { x: 0, y: (centers[0]! + centers[centers.length - 1]!) / 2 }, data: { label, branch: true } })
@@ -97,7 +101,7 @@ function BoardMap({ groups, binding, onSelect, label, manifest, section }: { gro
       {[false, true].map(active => <marker key={String(active)} id={`${marker}-${active ? 'active' : 'normal'}`} markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><circle cx="5" cy="5" r="3" fill="white" stroke={active ? 'var(--ds-brand-bg-default, #663ae8)' : 'var(--ds-line-4, #b8b8c2)'} strokeOpacity={active ? .6 : 1} strokeWidth="1" /></marker>)}
       <linearGradient id={`${marker}-gradient`} x1="100%" y1="50%" x2="0%" y2="50%"><stop offset="0%" stopColor="var(--ds-brand-bg-default, #663ae8)" stopOpacity=".4" /><stop offset="100%" stopColor="var(--ds-brand-bg-default, #663ae8)" stopOpacity=".6" /></linearGradient>
     </defs></svg>
-    <ReactFlow<Node> onInit={setFlow} onNodesChange={onNodesChange} nodes={nodes.map(node => ({ ...node, data: { ...node.data,
+    <ReactFlow<Node> ariaLabelConfig={canvasAriaLabels(t, t('boardMapKeyboard'))} onInit={setFlow} onNodesChange={onNodesChange} nodes={nodes.map(node => ({ ...node, data: { ...node.data,
     badgeLabel: node.data.rejected ? t('rejectedRecords') : badge?.options?.find(option => option.value === node.data.badge)?.label ?? node.data.badge,
   } }))} edges={edges.map(edge => ({ ...edge, sourceHandle: 'right', targetHandle: 'left', style: { strokeWidth: 1, stroke: edge.source === hovered ? `url(#${marker}-gradient)` : 'var(--ds-line-4, #b8b8c2)', markerStart: `url(#${marker}-${edge.source === hovered ? 'active' : 'normal'})` } }))} nodeTypes={boardNodeTypes} connectionMode={ConnectionMode.Loose} fitView fitViewOptions={RELATION_GRAPH_AUTO_FIT} minZoom={0.15} maxZoom={2.5}
     defaultEdgeOptions={{ style: { stroke: 'var(--ds-line-4, #b8b8c2)', strokeWidth: 1 } }}
@@ -108,83 +112,78 @@ function BoardMap({ groups, binding, onSelect, label, manifest, section }: { gro
   </ReactFlow></div>
 }
 
-/** Cards edit only their declared description/badge; all other fields remain in
- * the existing detail renderer. Local Save emits one shared draft transaction. */
-export function BoardCard({ id, record, binding, section, manifest, options, hidden, onEditing, children, actions }: {
+/** Cards share the Panel draft with their detail fields. Editing never creates
+ * a second save boundary; only readonly presentation substitutes readable facts. */
+export function BoardCard({ id, record, binding, section, manifest, options, hidden, onFocusChange, children, actions, renderBodyField }: {
   id: string; record: Record<string, unknown>; binding: NonNullable<ComponentNode['board']>
-  section: string; manifest: PanelManifest; options?: RenderOptions; hidden?: boolean; onEditing: (active: boolean) => void; children?: ReactNode; actions?: ReactNode
+  section: string; manifest: PanelManifest; options?: RenderOptions; hidden?: boolean; onFocusChange?: (active: boolean) => void; children?: ReactNode; actions?: ReactNode
+  renderBodyField?: (field: EditorField, values: Record<string, unknown>, onChange: (value: unknown) => void, editable: boolean) => ReactNode
 }) {
   const { t } = usePanelI18n()
-  const owner = sectionBindingOf(manifest, section)
-  const [draft, setDraft] = useRecordCardDraft(JSON.stringify([
-    owner.recordsPath, owner.fieldsPath, id, binding.description, binding.badge,
-  ]))
-  const [error, setError] = useState('')
+  const descriptionId = useId()
   const rejected = !!binding.rejected && record[binding.rejected] === true
-  const writable = !!options?.editable && !!options.onTransaction && !rejected
+  const writable = !!options?.editable && !!(options.onTransaction || options.onEdit) && !rejected
   const field = (key: string | undefined) => fieldsForSection(manifest.fields, section).find(item => item.key === key)
-  const labelField = field(binding.label), badgeField = field(binding.badge), descriptionField = field(binding.description)
-  const canRename = writable && labelField?.control === 'text' && !labelField.readonly && !labelField.hidden
-  const canDescribe = writable && !!descriptionField && !descriptionField.readonly && !descriptionField.hidden
-  const canBadge = writable && !!badgeField && !badgeField.readonly && !badgeField.hidden
-  const current = draft?.values ?? record
-  const draftWritable = !draft || Object.keys(draft.values).every(key => { const current = field(key); return current && !current.readonly && !current.hidden })
-  const stale = draft && Object.keys(draft.values).some(key => record[key] !== draft.base[key])
-  const patch = (values: Record<string, unknown>) => options?.onTransaction?.(
-    Object.entries(values).map(([field, value]) => ({ section, record: id, field, value })), {})
-  const save = () => {
-    if (!draft || !writable || !draftWritable || stale) return
-    try { patch(draft.values); setDraft(undefined); onEditing(false); setError('') }
-    catch (failure) { setError(String(failure)) }
+  const visibleField = (key: string | undefined) => {
+    const item = field(key)
+    return item && fieldIsVisible(item, record) ? item : undefined
   }
-  const priorityControl = <>
+  const labelField = visibleField(binding.label), badgeField = visibleField(binding.badge), descriptionField = visibleField(binding.description)
+  const canRename = writable && labelField?.control === 'text' && !labelField.readonly
+  const canDescribe = writable && !!descriptionField && !descriptionField.readonly
+  const canBadge = writable && !!badgeField && !badgeField.readonly
+  const bodyFields = binding.body_fields?.map(key => visibleField(key)).filter((item): item is EditorField => !!item)
+  const groupField = visibleField(binding.group)
+  const editingFields = bodyFields ? [...bodyFields, ...(groupField ? [groupField] : [])] : []
+  const patch = (key: string, value: unknown) => {
+    const target = field(key)
+    if (!writable || !target || target.readonly || !fieldIsVisible(target, record)) return
+    const edit = { section, record: id, field: key, value }
+    if (options?.onTransaction) options.onTransaction([edit], {})
+    else options?.onEdit?.(edit)
+  }
+  return <article hidden={hidden} data-board-record={id} className={`dsh-panel-content-card${rejected ? ' is-rejected' : ''}`}
+    onFocusCapture={event => { if (!event.currentTarget.contains(event.relatedTarget as globalThis.Node | null)) onFocusChange?.(true) }}
+    onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget as globalThis.Node | null)) onFocusChange?.(false) }}>
+    <header>
+      <BoardRecordId record={record} binding={binding} manifest={manifest} section={section} />
+      <h4>{canRename ? <PanelEditableTitle aria-label={labelField.label ?? binding.label}
+        aria-required={labelField.required || undefined} value={String(record[binding.label] ?? '')}
+        placeholder={t('untitled')} onChange={event => patch(binding.label, event.target.value)} />
+        : String(record[binding.label] || t('untitled'))}</h4>
+      {actions ? <div className="dsh-design-record-actions">{actions}</div> : null}
+    </header>
+    {bodyFields ? writable ? editingFields.length ? <div className="dsh-record-board-fields">{editingFields.map(item => <Fragment key={item.key}>
+      {renderBodyField?.(item, record, value => patch(item.key, value), !item.readonly && !item.hidden)}
+    </Fragment>)}</div> : null : bodyFields.length ? <RecordFacts inline fields={bodyFields} value={record} rows={bodyFields.map(item => [item.key])} /> : null
+      : canDescribe ? <div className="dsh-design-field dsh-record-board-description-field" data-field={binding.description}>
+        <span className="dsh-design-field-label"><PanelFieldCaption htmlFor={descriptionId}
+          label={descriptionField.label ?? binding.description} required={descriptionField.required} description={descriptionField.description} /></span>
+        <PanelTextarea id={descriptionId} className="dsh-record-board-description-editor" aria-label={descriptionField?.label}
+        aria-required={descriptionField?.required || undefined} value={String(record[binding.description] ?? '')}
+        onChange={event => patch(binding.description, event.target.value)} /></div>
+      : descriptionField || !field(binding.description) ? <div className="dsh-record-board-description"><ReactMarkdown remarkPlugins={[remarkGfm]}>{String(record[binding.description] ?? '')}</ReactMarkdown></div> : null}
+    {rejected || badgeField ? <footer className="dsh-record-board-footer">
       {rejected ? <div className="dsh-record-board-priority"><span className="dsh-record-board-badge">{t('rejectedRecords')}</span>
         {options?.editable && options.onEdit ? <button type="button" onClick={() => options.onEdit?.({ section, record: id, field: binding.rejected!, value: false })}>{t('restoreRecord')}</button> : null}</div>
-        : badgeField ? <span className="dsh-record-board-priority-select" data-rank={badgeField.options?.findIndex(item => item.value === current[binding.badge!])}><i aria-hidden="true" /><PanelSelect className="dsh-record-board-badge" aria-label={badgeField.label} disabled={!canBadge}
-          value={String(current[binding.badge!] ?? '')} options={badgeField.options ?? []} onValueChange={value => {
-            if (!canBadge) return
-            if (draft) setDraft({ ...draft, values: { ...draft.values, [binding.badge!]: value } })
-            else patch({ [binding.badge!]: value })
-          }} /></span> : null}
-  </>
-  return <article hidden={hidden} data-board-record={id} className={`${rejected ? 'is-rejected' : ''}${draft ? ' is-editing' : ''}`}>
-    <header><h4>{canRename ? <PanelEditableTitle aria-label={labelField.label ?? binding.label}
-      aria-required={labelField.required || undefined} value={String(record[binding.label] ?? '')}
-      placeholder={t('untitled')} onChange={event => patch({ [binding.label]: event.target.value })} />
-      : String(record[binding.label] || t('untitled'))}</h4>
-      <BoardRecordId record={record} binding={binding} manifest={manifest} section={section} /></header>
-    {draft ? <textarea autoFocus className="dsh-record-board-description-editor" aria-label={descriptionField?.label}
-      aria-required={descriptionField?.required || undefined}
-      disabled={!canDescribe} value={String(draft.values[binding.description] ?? '')}
-      onChange={event => setDraft({ ...draft, values: { ...draft.values, [binding.description]: event.target.value } })} />
-      : <div className="dsh-record-board-description"><ReactMarkdown remarkPlugins={[remarkGfm]}>{String(record[binding.description] ?? '')}</ReactMarkdown></div>}
-    <footer className="dsh-record-board-footer">
-      {priorityControl}
-      <div className="dsh-record-board-actions">
-      {draft ? <><button type="button" onClick={() => { setDraft(undefined); onEditing(false); setError('') }}>{t('cancel')}</button>
-        <button type="button" disabled={!writable || !draftWritable || !!stale} onClick={save}>{t('saveRecord')}</button></>
-        : !rejected ? <>
-          {canDescribe ? <button type="button" aria-label={t('edit')} title={t('edit')} onClick={() => {
-            const values = { [binding.description]: record[binding.description], ...(canBadge ? { [binding.badge!]: record[binding.badge!] } : {}) }
-            onEditing(true); setDraft({ base: { ...values }, values }); setError('')
-          }}><Pencil size={16} aria-hidden="true" /></button> : null}
-          {binding.rejected && options?.editable && options.onEdit ? <button type="button" aria-label={t('rejectRecord')} title={t('rejectRecord')}
-            onClick={() => options.onEdit?.({ section, record: id, field: binding.rejected!, value: true })}><CircleMinus size={16} aria-hidden="true" /></button> : null}
-        </> : null}
-        {actions}
-      </div>
-    </footer>
-    {stale || error ? <p role="alert">{stale ? t('boardDraftConflict') : error}</p> : null}
+        : badgeField ? <span className="dsh-record-board-priority-select" data-rank={badgeField.options?.findIndex(item => item.value === record[binding.badge!])}><i aria-hidden="true" /><PanelSelect className="dsh-record-board-badge" aria-label={badgeField.label} disabled={!canBadge}
+          value={String(record[binding.badge!] ?? '')} options={badgeField.options ?? []} onValueChange={value => patch(binding.badge!, value)} /></span> : null}
+    </footer> : null}
     {children}
   </article>
 }
 
 export function RecordBoard(props: { node: ComponentNode; manifest: PanelManifest; data: DesignData; options?: RenderOptions
-  render: (section: string, id: string, options?: RenderOptions) => ReactElement; renderDetails?: (id: string, options?: RenderOptions) => ReactElement }) {
+  render: (section: string, id: string, options?: RenderOptions) => ReactElement | null;
+  renderActions?: (id: string, siblings: readonly string[]) => ReactNode;
+  renderBodyField?: (id: string, field: EditorField, values: Record<string, unknown>, onChange: (value: unknown) => void, editable: boolean) => ReactNode; renderDetails?: (id: string, options?: RenderOptions) => ReactElement }) {
   const { node, manifest, data, options } = props, { t } = usePanelI18n()
   const binding = node.board!, section = node.source!, definition = manifest.sections.find(item => item.id === section)!
   const storage = sectionBindingOf(manifest, section)
-  const records = Object.fromEntries(Object.entries(recordsAtPath(data, storage.recordsPath)).map(([id, record]) => [id, fieldValuesOf(record, storage.fieldsPath)]))
+  const rawRecords = recordsAtPath(data, storage.recordsPath)
+  const rawOrder = storage.orderPath ? pathGet(data, storage.orderPath) : undefined
+  const ids = orderedRecordIds(rawRecords, Array.isArray(rawOrder) ? rawOrder : undefined)
+  const records = Object.fromEntries(ids.map(id => [id, fieldValuesOf(rawRecords[id]!, storage.fieldsPath)]))
   const [filter, setFilter] = useState<'active' | 'rejected' | 'all'>('all')
   const [map, showMap] = useState(false)
   const [detailId, setDetailId] = useState<string>()
@@ -192,71 +191,107 @@ export function RecordBoard(props: { node: ComponentNode; manifest: PanelManifes
   const [adding, setAdding] = useState(false)
   const previousRunning = useRef(options?.running === true)
   useEffect(() => {
-    if (previousRunning.current && !options?.running && Object.keys(records).length) showMap(true)
+    if (binding.overview !== false && previousRunning.current && !options?.running && Object.keys(records).length) showMap(true)
     previousRunning.current = options?.running === true
   }, [options?.running, Object.keys(records).length])
   const [selected, select] = useState<string>()
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const content = useRef<HTMLDivElement>(null)
-  const [draftGroups, setDraftGroups] = useState<Record<string, string>>({})
-  const positioned = Object.fromEntries(Object.entries(records).map(([id, record]) => [id, !binding.group || !Object.hasOwn(draftGroups, id) ? record : { ...record, [binding.group]: draftGroups[id] }]))
+  const [focusedGroups, setFocusedGroups] = useState<Record<string, string>>({})
+  const positioned = Object.fromEntries(Object.entries(records).map(([id, record]) => [id, !binding.group || !Object.hasOwn(focusedGroups, id) ? record : { ...record, [binding.group]: focusedGroups[id] }]))
   const groups = boardGroups(positioned, binding, filter, t('ungrouped'))
   const allGroups = boardGroups(positioned, binding, 'all', t('ungrouped'))
+  const updateCurrent = useCallback(() => {
+    const container = content.current
+    if (!container || !container.getClientRects().length) return
+    const cards = [...container.querySelectorAll<HTMLElement>('[data-board-record]')].filter(card => card.getClientRects().length > 0)
+    if (!cards.length) { select(undefined); return }
+    const start = container.getBoundingClientRect().top + parseFloat(getComputedStyle(container).paddingTop || '0')
+    const atEnd = container.scrollHeight > container.clientHeight + 1 && container.scrollTop + container.clientHeight >= container.scrollHeight - 1
+    const current = atEnd ? cards.at(-1) : cards.find(card => card.getBoundingClientRect().bottom > start + 1) ?? cards.at(-1)
+    select(current?.dataset.boardRecord)
+  }, [])
+  const visibleSignature = JSON.stringify([...groups].map(([name, entries]) => [name, !!collapsed[name], entries.map(([id]) => id)]))
+  useLayoutEffect(() => {
+    const container = content.current
+    if (!container || map || detailsOpen) return
+    let frame = 0
+    const schedule = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(updateCurrent) }
+    const observer = new ResizeObserver(schedule)
+    observer.observe(container)
+    container.querySelectorAll('[data-board-group], [data-board-record]').forEach(element => observer.observe(element))
+    container.addEventListener('scroll', schedule, { passive: true })
+    container.addEventListener('toggle', schedule, true)
+    schedule()
+    return () => { cancelAnimationFrame(frame); observer.disconnect(); container.removeEventListener('scroll', schedule); container.removeEventListener('toggle', schedule, true) }
+  }, [visibleSignature, map, detailsOpen, updateCurrent])
+  const scrollTo = (selector: string, attribute: string, value: string) => {
+    const container = content.current
+    const target = [...(container?.querySelectorAll<HTMLElement>(selector) ?? [])].find(element => element.getAttribute(attribute) === value)
+    if (container && target) container.scrollTo?.({ top: Math.max(0, container.scrollTop + target.getBoundingClientRect().top - container.getBoundingClientRect().top - parseFloat(getComputedStyle(container).paddingTop || '0')) })
+  }
   const open = (id: string) => {
     select(id); showMap(false)
     if (binding.detail_presentation === 'cover') { setDetailId(id); setDetailsOpen(true) }
     const group = binding.group ? String(records[id]?.[binding.group] || t('ungrouped')) : ''
     setCollapsed(current => ({ ...current, [group]: false }))
-    requestAnimationFrame(() => [...(content.current?.querySelectorAll<HTMLElement>('[data-board-record]') ?? [])]
-      .find(element => element.dataset.boardRecord === id)?.scrollIntoView?.({ block: 'nearest' }))
+    requestAnimationFrame(() => scrollTo('[data-board-record]', 'data-board-record', id))
   }
+  const canAdd = options?.editable && (binding.request_create ? !!options.sendPrompt : !!options.onPanelUpdate) && definition.add_mode !== 'none'
+  const addRecord = () => {
+    if (binding.request_create) { setAdding(true); return }
+    const id = insertVisualRecord({ node, manifest, data, options }, section, {})
+    if (id) { setFilter('active'); open(id) }
+  }
+  const recordFilter = binding.rejected ? <PanelSelect aria-label={t('recordFilter')} title={`${t('recordFilter')}: ${t(filter === 'active' ? 'activeRecords' : filter === 'rejected' ? 'rejectedRecords' : 'allRecords')}`}
+    triggerIcon={<Filter size={16} strokeWidth={1.5} aria-hidden='true' />} data-active={filter !== 'all'} value={filter} onValueChange={value => setFilter(value as typeof filter)}
+    options={[{ value: 'active', label: t('activeRecords') }, { value: 'rejected', label: t('rejectedRecords') }, { value: 'all', label: t('allRecords') }]} /> : null
   const board = <div className="dsh-record-board">
     {adding ? <RecordRequestDialog node={node} manifest={manifest} options={options} onClose={() => setAdding(false)} /> : null}
     <PanelWorkspaceCover keepCoverMounted active={map} label={t('mindMap')} onClose={() => showMap(false)}
-      cover={<div className="dsh-record-board-overview"><PanelCanvasToolbar title={node.title ?? definition.title}
+      cover={binding.overview !== false ? <div className="dsh-record-board-overview"><PanelCanvasToolbar title={node.title ?? definition.title}
         counts={t(binding.group ? 'boardMapCounts' : 'boardItemCounts', { records: [...groups.values()].reduce((sum, entries) => sum + entries.length, 0), groups: groups.size })}>
         {binding.rejected ? <PanelSelect aria-label={t('recordFilter')} value={filter} onValueChange={value => setFilter(value as typeof filter)}
-          options={[{ value: 'active', label: t('activeRecords') }, { value: 'rejected', label: t('rejectedRecords') }, { value: 'all', label: t('allRecords') }]} /> : null}</PanelCanvasToolbar><BoardMap groups={groups} binding={binding} onSelect={open} label={node.title ?? definition.title} manifest={manifest} section={section} /></div>}>
+          options={[{ value: 'active', label: t('activeRecords') }, { value: 'rejected', label: t('rejectedRecords') }, { value: 'all', label: t('allRecords') }]} /> : null}</PanelCanvasToolbar><BoardMap groups={groups} binding={binding} onSelect={open} label={node.title ?? definition.title} manifest={manifest} section={section} /></div> : null}>
     <PanelWorkspace guidance={node.guidance} autoSaveId={`board:${manifest.panel_kind}:${node.id}`} sidebar={<>
-      <PanelWorkspaceTree icon={sidebarIcon(node.sidebar_icon)} title={node.title ?? definition.title}>
-        {[...groups].map(([name, entries]) => !binding.group ? entries.map(([id, record]) => <PanelWorkspaceTreeItem key={id} selected={selected === id} onSelect={() => open(id)}>{String(record[binding.label] || t('untitled'))}</PanelWorkspaceTreeItem>) : <PanelWorkspaceTreeGroup key={name} label={name} expanded={expanded[name] === true}
+      <PanelWorkspaceTree icon={sidebarIcon(node.sidebar_icon)} title={node.title ?? definition.title} actions={recordFilter}>
+        {[...groups].map(([name, entries]) => !binding.group ? entries.map(([id, record]) => <PanelWorkspaceTreeItem key={id} selected={selected === id} onSelect={() => open(id)}>{String(record[binding.label] || t('untitled'))}</PanelWorkspaceTreeItem>) : <PanelWorkspaceTreeGroup key={name} label={name} current={entries.some(([id]) => id === selected)} expanded={expanded[name] === true}
           onToggle={() => {
             setExpanded(current => ({ ...current, [name]: current[name] !== true }))
-            const target = [...(content.current?.querySelectorAll<HTMLElement>('[data-board-group]') ?? [])].find(element => element.dataset.boardGroup === name)
-            if (target && content.current) content.current.scrollTo?.({ top: Math.max(0, content.current.scrollTop + target.getBoundingClientRect().top - content.current.getBoundingClientRect().top - 12), behavior: 'smooth' })
+            scrollTo('[data-board-group]', 'data-board-group', name)
           }}>
           {entries.map(([id, record]) => <PanelWorkspaceTreeItem key={id} selected={selected === id} onSelect={() => open(id)}>{String(record[binding.label] || t('untitled'))}</PanelWorkspaceTreeItem>)}
         </PanelWorkspaceTreeGroup>)}
+        {canAdd ? <PanelWorkspaceTreeAdd onAdd={addRecord}>{t('addItem', { item: definition.item_name ?? definition.title })}</PanelWorkspaceTreeAdd> : null}
       </PanelWorkspaceTree>
-      <PanelWorkspaceCanvasToggle className="dsh-record-board-map-toggle" label={t('mindMap')} onOpen={() => showMap(true)} />
+      {binding.overview !== false ? <PanelWorkspaceCanvasToggle className="dsh-record-board-map-toggle" label={t('mindMap')} onOpen={() => showMap(true)} /> : null}
     </>}>
-      <div className="dsh-record-board-toolbar">
-        {options?.editable && (binding.request_create ? !!options.sendPrompt : !!options.onPanelUpdate) && definition.add_mode !== 'none' ? <button type="button" onClick={() => {
-          if (binding.request_create) { setAdding(true); return }
-          const id = insertVisualRecord({ node, manifest, data, options }, section, {})
-          if (id) { setFilter('active'); open(id) }
-        }}>＋ {t('addItem', { item: definition.item_name ?? definition.title })}</button> : null}
-        {binding.rejected ? <PanelSelect aria-label={t('recordFilter')} value={filter} onValueChange={value => setFilter(value as typeof filter)}
-          options={[{ value: 'active', label: t('activeRecords') }, { value: 'rejected', label: t('rejectedRecords') }, { value: 'all', label: t('allRecords') }]} /> : null}
-      </div>
       <div className="dsh-record-board-content" ref={content}>
         {groups.size === 0 ? <p role="status">{t('emptyFilter')}</p> : null}
-        {[...allGroups].map(([group, entries]) => <section key={group} hidden={!groups.has(group)} data-board-group={group} className="dsh-record-board-group">
-          {binding.group ? <button type="button" className="dsh-record-board-group-heading" aria-expanded={!collapsed[group]}
+        {[...allGroups].map(([group, entries]) => <section key={group} hidden={!groups.has(group)} data-board-group={group} className={`dsh-record-board-group${binding.group ? ' dsh-panel-content-group' : ''}`}>
+          {binding.group ? <button type="button" className="dsh-record-board-group-heading dsh-panel-disclosure" aria-expanded={!collapsed[group]}
             onClick={() => setCollapsed(current => ({ ...current, [group]: !current[group] }))}>
-            <span>{group}</span><small>({groups.get(group)?.length ?? 0})</small><ChevronRight size={14} aria-hidden="true" />
+            <span className="dsh-panel-disclosure-label">{group}</span><small>({groups.get(group)?.length ?? 0})</small><PanelDisclosureIcon expanded={!collapsed[group]} />
           </button> : null}
           <div className="dsh-record-board-cards" hidden={collapsed[group]}>
-            {entries.map(([id, record]) => <BoardCard key={id} hidden={!groups.get(group)?.some(([shown]) => shown === id)} id={id} record={record} binding={binding} section={section} manifest={manifest} options={options} onEditing={active => setDraftGroups(current => { const next = { ...current }; if (active) next[id] = group; else delete next[id]; return next })}>
-              {binding.detail_presentation === 'cover' ? <button type="button" className="dsh-record-board-open-details" onClick={() => open(id)}>{binding.details_title ?? t('details')}<ChevronRight size={14} aria-hidden="true" /></button> : <details className="dsh-record-board-editor"><summary className="dsh-panel-disclosure"><span className="dsh-panel-disclosure-label">{binding.details_title ?? t('details')}</span><PanelDisclosureIcon expanded={false} /></summary>
+            {entries.map(([id]) => {
+              const record = records[id]!
+              const detailOptions = { ...options, editable: !!options?.editable && !(binding.rejected && record[binding.rejected] === true) }
+              const remaining = props.render(section, id, detailOptions)
+              const hasDetails = remaining || props.renderDetails || binding.detail_sections?.length
+              return <BoardCard key={id} hidden={!groups.get(group)?.some(([shown]) => shown === id)} id={id} record={record} binding={binding} section={section} manifest={manifest} options={options} actions={props.renderActions?.(id, (groups.get(group) ?? []).map(([shown]) => shown))} renderBodyField={(field, values, change, editable) => props.renderBodyField?.(id, field, values, change, editable)} onFocusChange={active => setFocusedGroups(current => { const next = { ...current }; if (active) next[id] = group; else delete next[id]; return next })}>
+              {binding.detail_presentation === 'cover' ? <button type="button" className="dsh-record-board-open-details" onClick={() => open(id)}>{binding.details_title ?? t('details')}<ChevronRight size={14} aria-hidden="true" /></button> : hasDetails ? <PanelDetailDisclosure className="dsh-record-board-editor" title={binding.details_title ?? t('details')}>
                 {props.renderDetails?.(id, { ...options, editable: !!options?.editable && !(binding.rejected && record[binding.rejected] === true) })}
-                {(binding.detail_sections ?? []).map(detail => <section key={detail}>
-                  {props.renderDetails || (binding.detail_sections?.length ?? 0) > 1 ? <h5>{manifest.sections.find(item => item.id === detail)?.title}</h5> : null}
-                  {props.render(detail, id, { ...options, editable: !!options?.editable && !(binding.rejected && record[binding.rejected] === true) })}</section>)}
-                {props.render(section, id, { ...options, editable: !!options?.editable && !(binding.rejected && record[binding.rejected] === true) })}
-              </details>}
-            </BoardCard>)}
+                {(binding.detail_sections ?? []).map(detail => {
+                  const body = props.render(detail, id, { ...options, editable: !!options?.editable && !(binding.rejected && record[binding.rejected] === true) })
+                  return props.renderDetails || (binding.detail_sections?.length ?? 0) > 1
+                    ? <section key={detail}><h5>{manifest.sections.find(item => item.id === detail)?.title}</h5>{body}</section>
+                    : <Fragment key={detail}>{body}</Fragment>
+                })}
+                {remaining}
+              </PanelDetailDisclosure> : null}
+            </BoardCard>})}
           </div>
         </section>)}
       </div>
@@ -270,7 +305,7 @@ export function RecordBoard(props: { node: ComponentNode; manifest: PanelManifes
       <header><strong>{String(detailRecord[binding.label] ?? t('untitled'))}</strong>
         <BoardRecordId record={detailRecord} binding={binding} manifest={manifest} section={section} />
         <span>{String(detailRecord[binding.description] ?? '')}</span></header>
-      <details className="dsh-board-detail-definition"><summary className="dsh-panel-disclosure"><span className="dsh-panel-disclosure-label">{binding.details_title ?? t('details')}</span><PanelDisclosureIcon expanded={false} /></summary>{props.render(section, detailId, detailOptions)}</details>
+      <PanelDetailDisclosure className="dsh-board-detail-definition" title={binding.details_title ?? t('details')}>{props.render(section, detailId, detailOptions)}</PanelDetailDisclosure>
       {props.renderDetails?.(detailId, detailOptions)}
     </div> : null}>{board}</PanelWorkspaceCover> : board
 }

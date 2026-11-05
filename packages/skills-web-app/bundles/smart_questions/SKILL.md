@@ -58,8 +58,10 @@ The question panel remains the interaction surface: put a concise proposal,
 its useful context and the decision to make in the card's `prompt`, with
 appropriate `choices` or free-text input. Do not put the proposed answer into
 the user's `answer` or use `detail` as a substitute for visible question text.
-In forward design, leave new `detail` empty unless it preserves an actual
-user-supplied explanation or a faithful summary of explicit user evidence.
+Free-text questions have one response field: `answer`. Keep their `detail`
+empty; any user-supplied explanation belongs with that answer. Choice questions
+may use `detail` for an actual user-supplied explanation or a faithful summary
+of explicit user evidence. Do not generate a second response area for free text.
 Put your proposed scope, rationale, examples and unresolved questions in
 `prompt`, not in user-response fields. Your earlier proposal, a Producer brief,
 and another Agent's summary do not establish that the user said or confirmed

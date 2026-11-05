@@ -13,9 +13,9 @@
   "criteria": "What counts as passing?",
   "criteriaHelp": "Use observable or measurable criteria; avoid vague statements such as “a good experience”.",
   "criteriaExample": "For example: an order number is created and Pending is displayed",
-  "verification": "How will this be verified? (optional)",
+  "verification": "How will this be verified?",
   "verificationHelp": "Add a method only when it is not obvious. Test code is not required.",
   "workspace": "Acceptance criteria",
-  "group": "Group (optional)",
+  "group": "Group",
   "groupExample": "For example: Business flow, AI capabilities"
 }

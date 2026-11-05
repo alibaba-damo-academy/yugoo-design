@@ -13,9 +13,9 @@
   "criteria": "怎样才算通过？",
   "criteriaHelp": "写出用户能看到、系统能确认或可以衡量的标准，避免“体验良好”一类模糊描述。",
   "criteriaExample": "例如：生成订单号并显示待处理",
-  "verification": "如何确认？（可选）",
+  "verification": "如何确认？",
   "verificationHelp": "只有检查方法不明显时才补充，不需要写测试代码。",
   "workspace": "验收标准",
-  "group": "分组（可选）",
+  "group": "分组",
   "groupExample": "例如：业务流程、AI 能力"
 }

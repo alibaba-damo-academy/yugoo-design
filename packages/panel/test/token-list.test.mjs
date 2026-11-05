@@ -4,7 +4,7 @@ import { JSDOM } from 'jsdom'
 import { readFileSync } from 'node:fs'
 
 const dom = new JSDOM('<div id="root"></div>', { url: 'https://panel.test/', pretendToBeVisual: true })
-for (const name of ['window', 'document', 'navigator', 'HTMLElement', 'Element', 'Node', 'Event', 'MouseEvent', 'getComputedStyle', 'MutationObserver']) {
+for (const name of ['window', 'document', 'navigator', 'HTMLElement', 'Element', 'Node', 'Event', 'MouseEvent', 'getComputedStyle', 'MutationObserver', 'HTMLFormElement', 'HTMLInputElement', 'DocumentFragment', 'CustomEvent']) {
   if (globalThis[name] === undefined) globalThis[name] = dom.window[name]
 }
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
@@ -21,7 +21,7 @@ test('chip and card removal share a borderless icon target without inheriting or
   document.head.append(style); container.className = 'dsh-design-panel'
   const value = ['One', 'Two']
   try {
-    for (const config of [{ layout: 'chips' }, { layout: 'cards' }, { layout: 'cards', addMode: 'menu' }]) {
+    for (const config of [{ layout: 'chips' }, { layout: 'cards' }, { layout: 'cards', addMode: 'menu' }, { layout: 'chips', addMode: 'menu' }]) {
       await React.act(async () => root.render(React.createElement('div', { className: 'dsh-record-workspace' },
         React.createElement(PanelLocaleContext.Provider, { value: 'en-US' }, React.createElement(TokenList, {
           ...config, label: 'Recipients', value, editable: true, onChange: next => changes.push(next),
@@ -39,10 +39,20 @@ test('chip and card removal share a borderless icon target without inheriting or
       await React.act(async () => button.click())
       assert.deepEqual(changes.at(-1), ['Two'])
       assert.deepEqual(value, ['One', 'Two'], 'removal sends only the intended replacement and never mutates incoming data')
+      if (config.addMode === 'menu') {
+        const trigger = container.querySelector('[aria-haspopup="menu"]')
+        assert.equal(dom.window.getComputedStyle(trigger).minHeight, config.layout === 'chips' ? '32px' : '80px', 'compact collections do not inherit the card add target')
+        await React.act(async () => trigger.click())
+        const item = container.querySelector('[role="menuitem"]'), itemStyle = dom.window.getComputedStyle(item)
+        assert.equal(itemStyle.borderTopWidth, '0px', 'menu rows do not inherit ordinary button borders')
+        assert.equal(itemStyle.minHeight, '32px')
+        assert.equal(itemStyle.backgroundColor, 'rgba(0, 0, 0, 0)')
+        await React.act(async () => trigger.click())
+      }
     }
     await React.act(async () => root.render(React.createElement(TokenList, { label: 'Recipients', value, editable: false, onChange: next => changes.push(next) })))
     assert.equal(container.querySelector('.dsh-token-remove'), null)
-    assert.equal(changes.length, 3)
+    assert.equal(changes.length, 4)
   } finally { await React.act(async () => root.unmount()); style.remove(); container.className = '' }
 })
 
@@ -87,7 +97,7 @@ test('token preset, card descriptions and readonly/invalid boundaries stay gener
   const props = { label: 'Channels', value: ['internal', 'External'], options: [{ value: 'internal', label: 'Built in', description: 'Preset description' }],
     layout: 'cards', customDescription: 'Custom description', editable: true, onChange: next => changes.push(next) }
   try {
-    await React.act(async () => root.render(React.createElement(TokenList, props)))
+    await React.act(async () => root.render(React.createElement('form', null, React.createElement(TokenList, props))))
     assert.deepEqual([...container.querySelectorAll('.dsh-token-item small')].map(e => e.textContent), ['Preset description', 'Custom description'])
     assert.equal(container.querySelector('option[value="internal"]').disabled, true)
     await React.act(async () => container.querySelector('.dsh-token-item button').click())
@@ -103,6 +113,9 @@ test('token preset, card descriptions and readonly/invalid boundaries stay gener
 
 test('optional menu preserves presets, cancellable custom draft, keyboard focus and canonical strings', async () => {
   const container = document.getElementById('root'), root = createRoot(container)
+  const style = document.createElement('style')
+  style.textContent = readFileSync(new URL('../src/visual-components.css', import.meta.url), 'utf8')
+  document.head.append(style)
   const changes = []; let value = ['internal'], editable = true, locale = 'en-US', identity = 'first'
   const render = () => root.render(React.createElement(PanelLocaleContext.Provider, { value: locale }, React.createElement(TokenList, {
     key: identity, label: 'Delivery', value, editable, addMode: 'menu', layout: 'cards', customDescription: 'External service', customIcon: 'plug', addDescription: 'Choose a delivery method',
@@ -119,7 +132,8 @@ test('optional menu preserves presets, cancellable custom draft, keyboard focus 
   try {
     await React.act(async () => render())
     assert.equal(container.querySelector('input, select'), null)
-    assert.match(container.querySelector('[aria-haspopup="menu"]').textContent, /Add Delivery/)
+    assert.equal(container.querySelector('[aria-haspopup="menu"]').getAttribute('aria-label'), 'Add Delivery')
+    assert.equal(container.querySelector('[aria-haspopup="menu"] strong').textContent, 'Add')
     assert.match(container.querySelector('[aria-haspopup="menu"] small').textContent, /Choose a delivery method/)
     assert.equal(container.querySelector('.dsh-token-menu-add').parentElement, container.querySelector('.dsh-token-items'))
     assert.ok(container.querySelector('.dsh-token-icon svg'))
@@ -140,6 +154,9 @@ test('optional menu preserves presets, cancellable custom draft, keyboard focus 
     await click('[aria-haspopup="menu"]')
     await click('[role="menuitem"]:last-child')
     assert.equal(document.activeElement, container.querySelector('input'))
+    const heading = dom.window.getComputedStyle(container.querySelector('.dsh-token-custom-header > strong'))
+    assert.equal(heading.fontWeight, '500', 'the opened custom input title does not inherit browser bold')
+    assert.equal(heading.fontSize, '14px'); assert.equal(heading.lineHeight, '20px')
     await type('Uncommitted')
     assert.equal(container.querySelector('[aria-label="Cancel adding Delivery"] svg').getAttribute('width'), '16')
     await click('[aria-label="Cancel adding Delivery"]')
@@ -171,7 +188,7 @@ test('optional menu preserves presets, cancellable custom draft, keyboard focus 
     editable = true; await React.act(async () => render())
     assert.equal(container.querySelector('input'), null, 'unlock does not revive abandoned draft')
     assert.equal(changes.length, 1)
-  } finally { await React.act(async () => root.unmount()) }
+  } finally { await React.act(async () => root.unmount()); style.remove() }
 })
 
 test('the shared interpreter forwards menu configuration and isolates entry drafts across record navigation', async () => {

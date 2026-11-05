@@ -1,4 +1,4 @@
-import { Children, Fragment, createContext, useContext, useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react'
+import { Children, Fragment, createContext, useContext, useEffect, useId, useRef, useState, type ReactElement, type ReactNode } from 'react'
 import { ArrowUpRight, GitBranch, Plus } from 'lucide-react'
 import { hierarchyKey, projectRecordHierarchy, type HierarchyRecord } from './record-hierarchy.ts'
 import { sidebarIcon } from './sidebar-icon.tsx'
@@ -13,13 +13,13 @@ import type { RenderOptions } from './interpreter.ts'
 import { displayValue, relationCanvasLabel, graphRecords, pivotRows, replaceMatrixCell, type RecordMap } from './visual-records.ts'
 import { secureDesignSrcDoc } from './client/srcdoc-security.ts'
 import { usePanelI18n } from './panel-i18n.tsx'
+import { canvasAriaLabels } from './canvas-i18n.ts'
 import { ComponentTabsNavigation } from './component-tabs.tsx'
 import { relationParents, relationAncestors, relationRoots, relationHasCycle, reverseRelation, relationParticipants, projectParticipantRelations } from './relation-records.ts'
-import { RELATION_GRAPH_AUTO_FIT, isRelationSide, relationFallbackCurve, relationGraphFitViewport, relationLayoutInput, relationRoute, relationNodeId, relationEdgeId, type RelationSide, type RelationRoute, type RelationLayoutLink, type GraphSize } from './relation-graph-layout.ts'
+import { RELATION_GRAPH_AUTO_FIT, isRelationSide, relationFallbackCurve, relationGraphFitViewport, layoutRelationGraph, relationRoute, relationNodeId, relationEdgeId, type RelationSide, type RelationRoute, type RelationLayoutLink, type GraphSize } from './relation-graph-layout.ts'
 import { planRelationHierarchyCreate } from './relation-hierarchy-create.ts'
 import { planRelationParentEdit, relationHasParentConflict } from './relation-parent-edit.ts'
 import { projectReferenceGraph, referenceMatches, referenceNodeKey, referenceRecordLabel, withReferenceContext } from './reference-graph.ts'
-import { RecordCardDraftScope } from './record-card-drafts.tsx'
 import { ReferenceHub } from './reference-hub-view.tsx'
 import { useFlowContainerFit } from './use-flow-container-fit.ts'
 import {
@@ -34,6 +34,9 @@ import {
   PanelWorkspaceTreeSubgroup,
   PanelCanvasHandles,
   PanelCanvasToolbar,
+  PanelContentGroup,
+  PanelHelp,
+  PanelFieldCaption,
 } from './panel-workspace.tsx'
 
 interface Selection { section: string; record: string }
@@ -252,6 +255,19 @@ export function RecordWorkspace(props: Props & { children: ReactNode; renderHead
   const [expandedContext, setExpandedContext] = useState<Record<string, boolean>>({})
   const [createRequest, setCreateRequest] = useState<HierarchyCreateRequest>()
   const [createLabel, setCreateLabel] = useState('')
+  const createDialog = useRef<HTMLDialogElement>(null)
+  const createOpener = useRef<HTMLElement>()
+  const canCreateHierarchy = !!props.options?.editable && !!props.options.onPanelUpdate
+  useEffect(() => {
+    const dialog = createDialog.current
+    if (!dialog) return
+    dialog.showModal()
+    dialog.querySelector('input')?.focus()
+    return () => {
+      dialog.close()
+      if (createOpener.current?.isConnected) createOpener.current.focus({ preventScroll: true })
+    }
+  }, [!!createRequest, canCreateHierarchy])
   const createConfig = createRequest?.field?.hierarchy ?? createRequest?.graph?.hierarchy?.create
   const createTitle = createConfig?.create_title ?? createConfig?.create_label ?? t('createRecord')
   const createNameKey = createRequest?.field?.hierarchy?.label_field ?? createRequest?.graph?.label_field
@@ -308,6 +324,7 @@ export function RecordWorkspace(props: Props & { children: ReactNode; renderHead
       .map(([record, value]) => ({ section, record, label: workspaceLabel(section, record, value) }))
   })
   const beginHierarchy = (request: HierarchyCreateRequest) => {
+    createOpener.current = document.activeElement instanceof HTMLElement ? document.activeElement : undefined
     setCreateLabel('')
     setCreateRequest(request)
   }
@@ -569,7 +586,7 @@ export function RecordWorkspace(props: Props & { children: ReactNode; renderHead
     createHierarchy: beginHierarchy, graph, referenceGraph, artifactReferences: inlineArtifacts, headerOutside, previewLayout: detailWithPreview,
     canvasView: props.node.workspace_view === 'switch' && view === 'graph',
     showDetails: props.node.workspace_view === 'switch' ? () => setView('form') : undefined }}>
-    <RecordCardDraftScope><section ref={workspaceElement} className="dsh-record-workspace" aria-label={props.node.title ?? t('recordWorkspace')}>
+    <section ref={workspaceElement} className="dsh-record-workspace" aria-label={props.node.title ?? t('recordWorkspace')}>
       <PanelWorkspaceCover keepCoverMounted={props.node.workspace_view === 'switch'} active={props.node.workspace_view === 'switch' && view === 'graph'} label={t('relationCanvas')}
         onClose={() => setView('form')} cover={<div className="dsh-record-workspace-canvas">
           {Children.toArray(props.children)[0]}
@@ -641,11 +658,11 @@ export function RecordWorkspace(props: Props & { children: ReactNode; renderHead
         </div>}
       </PanelWorkspace>
       </PanelWorkspaceCover>
-      {createRequest && props.options?.editable && props.options.onPanelUpdate ? <div className="dsh-record-create-backdrop" onMouseDown={event => {
+      {createRequest && canCreateHierarchy ? <dialog ref={createDialog} className="dsh-record-create-dialog" aria-label={createTitle}
+        onCancel={event => { event.preventDefault(); setCreateRequest(undefined) }} onClick={event => {
         if (event.currentTarget === event.target) setCreateRequest(undefined)
       }}>
-        <form className="dsh-record-create-sheet" role="dialog" aria-modal="true"
-          aria-label={createTitle}
+        <form className="dsh-record-create-sheet"
           onSubmit={event => { event.preventDefault(); submitHierarchy() }}>
           <header>
             <div><h2>{createTitle}</h2>
@@ -666,8 +683,8 @@ export function RecordWorkspace(props: Props & { children: ReactNode; renderHead
           <footer><button type="button" onClick={() => setCreateRequest(undefined)}>{t('cancel')}</button>
             <button type="submit" className="is-primary" disabled={createLabel.trim() === '' || !Object.hasOwn(records(props, createRequest.section), createRequest.parent)}>{t('create')}</button></footer>
         </form>
-      </div> : null}
-    </section></RecordCardDraftScope>
+      </dialog> : null}
+    </section>
   </SelectionContext.Provider>
 }
 
@@ -686,7 +703,7 @@ function RecordInheritance({ graph, parents, nodes, select }: {
   if (!graph.hierarchy || !parents.length) return null
   return <section className="dsh-record-inheritance" aria-label={graph.hierarchy.label}>
     <div className="dsh-record-inheritance-heading">
-      <span className="dsh-record-inheritance-label"><GitBranch size={16} aria-hidden="true" />{graph.hierarchy.label}</span>
+      <span className="dsh-record-inheritance-label"><GitBranch size={16} aria-hidden="true" />{graph.hierarchy.label}{graph.hierarchy.description ? <PanelHelp label={t('fieldHelp', { field: graph.hierarchy.label })}>{graph.hierarchy.description}</PanelHelp> : null}</span>
       <div className="dsh-record-inheritance-parents">
         {parents.map(id => {
           const label = String(nodes[id]?.[graph.label_field] ?? id)
@@ -698,12 +715,12 @@ function RecordInheritance({ graph, parents, nodes, select }: {
         })}
       </div>
     </div>
-    {graph.hierarchy.description ? <p>{graph.hierarchy.description}</p> : null}
   </section>
 }
 
 export function RecordInspector(props: Props & { render: (selection: Selection, headerAccessory?: ReactNode, headerOutside?: boolean) => ReactElement; children?: ReactNode }): ReactElement {
   const { t } = usePanelI18n()
+  const parentSelectId = useId()
   const { selected, select, returnTo, createHierarchy, graph, canvasView, showDetails, artifactReferences, headerOutside, previewLayout } = useContext(SelectionContext)
   const [actionError, setActionError] = useState('')
   useEffect(() => setActionError(''), [selected?.section, selected?.record])
@@ -786,8 +803,8 @@ export function RecordInspector(props: Props & { render: (selection: Selection, 
   return <aside className={`dsh-record-inspector${previewLayout ? ' is-preview-pane' : ''}`} aria-label={t('recordProperties')}>
     {graph && !inlineParent ? <RecordInheritance graph={graph} parents={directParents} nodes={records(props, graph.nodes)} select={select} /> : null}
     {!inlineParent && graph?.hierarchy?.max_parents === 1 && selected?.section === graph.nodes && props.options?.editable && props.options.onPanelUpdate ?
-      <label className="dsh-record-parent-select"><span>{graph.hierarchy.label}</span>
-        <select aria-label={graph.hierarchy.label} value={directParents[0] ?? ''} disabled={directParents.length > 1}
+      <div className="dsh-record-parent-select"><span><PanelFieldCaption label={graph.hierarchy.label} description={graph.hierarchy.description} htmlFor={parentSelectId} /></span>
+        <select id={parentSelectId} aria-label={graph.hierarchy.label} value={directParents[0] ?? ''} disabled={directParents.length > 1}
           onChange={event => {
             const updates = planRelationParentEdit(props.manifest, props.options!.canonicalData ?? props.data, graph, selected.record, event.currentTarget.value)
             if (!updates) { setActionError(t('graphInvalidParent')); return }
@@ -800,7 +817,7 @@ export function RecordInspector(props: Props & { render: (selection: Selection, 
               [graph.edge_kind_field!]: graph.hierarchy!.values[0] }, records(props, graph.edges), graph)}>
             {String(record[graph.label_field] ?? id)}</option>)}
         </select>
-      </label> : null}
+      </div> : null}
     {graph?.reverse && currentEdge && selected && props.options?.editable && props.options.onPanelUpdate ? <button type="button" onClick={() => {
       const next = reverseRelation(currentEdge, graph)
       if (relationHasCycle(selected.record, next, records(props, graph.edges), graph)) { setActionError(t('graphCycle')); return }
@@ -854,21 +871,26 @@ export function RecordRelatedEditor(props: Props & { render: (ids: readonly stri
       return entries.length ? [{ parent, entries, label: String(records(props, graph.nodes)[parent]?.[graph.label_field] ?? parent) }] : []
     }) : []
   return <section className="dsh-record-related-editor" aria-label={props.node.title ?? definition.title}>
-    {inherited.map(({ parent, entries, label }) => <section key={parent} className="dsh-record-inherited-related" aria-label={t('inheritedFrom', { item: label })}>
-      <header><h3>{t('inheritedFrom', { item: label })}</h3><button type="button" className="dsh-record-inherited-source"
+    {inherited.map(({ parent, entries, label }) => <PanelContentGroup key={`${selected.section}:${selected.record}:${parent}`}
+      className="dsh-record-inherited-related" aria-label={t('inheritedFrom', { item: label })}
+      title={<>{t('inheritedFrom', { item: label })}<button type="button" className="dsh-record-inherited-source"
         aria-label={t('viewSourceRecord', { item: label })} title={t('viewSourceRecord', { item: label })}
-        onClick={() => select({ section: graph!.nodes, record: parent })}><ArrowUpRight size={14} aria-hidden="true" />{t('recordDetails')}</button></header>
-      {props.render(entries, true)}
-    </section>)}
-    <header><h3>{props.node.title ?? definition.title}</h3></header>
-    {props.node.description ? <p>{props.node.description}</p> : null}
-    {props.render(ids)}
-    {props.options?.editable && props.options.onPanelUpdate ? <button type="button" className="dsh-record-related-add"
-      aria-label={t('addItem', { item: definition.item_name ?? definition.title })}
-      title={t('addItem', { item: definition.item_name ?? definition.title })}
-      onClick={() => insertVisualRecord(props, source, { [field.key]: field.control === 'record_multi_select' ? [selected.record] : selected.record })}>
-      <Plus size={16} aria-hidden="true" />{t('add')}
-    </button> : null}
+        onClick={event => { event.preventDefault(); select({ section: graph!.nodes, record: parent }) }}><ArrowUpRight size={14} aria-hidden="true" />{t('recordDetails')}</button></>}>
+      <div className="dsh-design-form-group-content">{props.render(entries, true)}</div>
+    </PanelContentGroup>)}
+    <PanelContentGroup key={`${selected.section}:${selected.record}`} className="dsh-record-related-collection"
+      title={<>{props.node.title ?? definition.title}{props.node.description
+        ? <PanelHelp label={t('fieldHelp', { field: props.node.title ?? definition.title })}>{props.node.description}</PanelHelp> : null}</>}>
+      <div className="dsh-design-form-group-content">
+        {props.render(ids)}
+        {props.options?.editable && props.options.onPanelUpdate ? <button type="button" className="dsh-record-related-add"
+          aria-label={t('addItem', { item: definition.item_name ?? definition.title })}
+          title={t('addItem', { item: definition.item_name ?? definition.title })}
+          onClick={() => insertVisualRecord(props, source, { [field.key]: field.control === 'record_multi_select' ? [selected.record] : selected.record })}>
+          <Plus size={16} aria-hidden="true" />{t('add')}
+        </button> : null}
+      </div>
+    </PanelContentGroup>
   </section>
 }
 
@@ -1105,9 +1127,11 @@ function RelationCanvas(props: Props & { createConnection?: (source: string, tar
     void import('elkjs/lib/elk.bundled.js').then(async module => {
       const Constructor = module.default as unknown as new () => ELK
       const elk = new Constructor()
+      const canvas = canvasElement.current
+      const aspectRatio = canvas?.clientWidth && canvas.clientHeight ? canvas.clientWidth / canvas.clientHeight : undefined
       // elk.bundled uses an in-process worker shim (no workerUrl/factory).
       // Its shim has no terminate(); terminateWorker would discard a successful layout.
-      return await elk.layout(relationLayoutInput(ids.map(id => ({ id, ...(measurements[nodeId(id)] ?? { width: 180, height: 64 }) })), links.map(link => {
+      return await layoutRelationGraph(elk, ids.map(id => ({ id, ...(measurements[nodeId(id)] ?? { width: 180, height: 64 }) })), links.map(link => {
         const value = edgeRecords[link.id] ?? {}
         const labels: RelationLayoutLink['labels'] = edgeCopy(link).label
           ? [{ id: 'main', placement: 'CENTER', ...(measurements[`${relationEdgeId(link.id)}:main`] ?? { width: 160, height: 44 }) }] : []
@@ -1116,7 +1140,7 @@ function RelationCanvas(props: Props & { createConnection?: (source: string, tar
             ...(measurements[`${relationEdgeId(link.id)}:${id}`] ?? { width: 150, height: 36 }) })
         }
         return { ...link, labels }
-      })))
+      }), aspectRatio)
     }).then(result => {
       if (epoch.current !== revision) return
       layoutBounds.current = result.width && result.height ? { x: 0, y: 0, width: result.width, height: result.height } : undefined
@@ -1185,7 +1209,7 @@ function RelationCanvas(props: Props & { createConnection?: (source: string, tar
       </button>)}</div>
     </div> : null}
     <div ref={canvasElement} className="dsh-visual-canvas" aria-label={t('relationCanvas')}>
-      <ReactFlow nodeTypes={relationNodeTypes} edgeTypes={relationEdgeTypes} nodes={nodes.map(node => {
+      <ReactFlow ariaLabelConfig={canvasAriaLabels(t)} nodeTypes={relationNodeTypes} edgeTypes={relationEdgeTypes} nodes={nodes.map(node => {
         const record = String(node.data.record), value = nodeRecords[record] ?? {}
         return { ...node, type: 'business-record', connectable: editable && (!props.connectableRecords || props.connectableRecords.has(record)), selected: selected?.section === binding.nodes && selected.record === node.data.record,
           data: { ...node.data, label: String(value[binding.label_field] ?? node.data.record), icon: props.nodeIcons?.[record],

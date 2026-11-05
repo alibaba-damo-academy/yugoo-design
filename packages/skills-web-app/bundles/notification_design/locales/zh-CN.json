@@ -7,6 +7,8 @@
   "newNotification": "新通知 1",
   "newNotificationNumbered": "新通知 {index}",
   "title": "通知名称",
+  "deliveryGroup": "通知安排",
+  "messageAndAction": "内容与操作",
   "trigger": "触发时机",
   "recipients": "接收对象",
   "channels": "通知方式",

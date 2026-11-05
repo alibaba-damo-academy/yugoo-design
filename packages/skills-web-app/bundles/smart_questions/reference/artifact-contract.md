@@ -60,8 +60,11 @@ overview from representative entry points and user journeys, then include only
 material supporting context. Do not ask the user how many Bundles to scan, or
 replace the overview with component, SEO, billing or deployment inventories.
 
-Put a concise source-supported answer in `answer`; use `detail` for exact
-source locations, observation versus supported inference, and remaining limits.
+Put a concise source-supported answer in `answer`. For a free-text question,
+keep source locations, observation versus supported inference and remaining
+limits with that answer; leave `detail` empty. A choice question may use its
+optional `detail` for those qualifications. Free text has no separate supplement
+input or historical supplement display.
 A supported interpretation may explain the overall product, but label it as
 inferred, not stated user intent. Do not infer commercial positioning or target
 audience merely from the presence of an admin route or a technical capability.
@@ -70,8 +73,9 @@ Reconstruction prefill is reviewable, not user confirmation; it is not a license
 to guess answers during ordinary questioning.
 
 If evidence supports part of the answer, retain that part and identify remaining
-unknowns in `detail`. Split independent topics rather than let one known fact
-mask a separate unknown. Leave genuinely unsupported answers empty. Missing
+unknowns in the same answer (or `detail` for a choice). Split independent topics
+rather than let one known fact mask a separate unknown. Leave genuinely
+unsupported answers empty. Missing
 information in one summary document is not proof of absence in the repository:
 inspect a relevant source when the missing fact matters. Preserve user answers
 and explain conflicting source evidence without replacing their decisions.
@@ -79,8 +83,9 @@ and explain conflicting source evidence without replacing their decisions.
 Before closing, read the cards as a whole: can a reader understand the product's
 purpose, intended users, main scenario and scope to the extent the source permits?
 Are later details supporting that account rather than displacing it? Check that
-`detail` does not contain a verified answer missing from `answer`, that unknowns
-remain honest, and that each inference is supported. This is an Agent self-check,
+free-text `detail` is empty, choice `detail` does not contain a verified answer
+missing from `answer`, unknowns remain honest, and each inference is supported.
+This is an Agent self-check,
 not a new validator or host gate.
 
 ## Fixed-card contract
@@ -172,7 +177,7 @@ existing panel, carry the fixed-card definition and prior user decisions
 forward into the complete canonical state without adding them to the new round.
 
 - `value` is the stable selection token. `label` is visible text. Answers always store `value`, never a label, recommendation suffix, or invented internal token.
-- `single` stores one `value`; `multiple` stores comma-separated `value`s; `text` stores its substantive free-text response in `answer` and has no choices. A known answer must not exist only in `detail`; the answer should remain understandable without opening the supplementary explanation.
+- `single` stores one `value`; `multiple` stores comma-separated `value`s; `text` stores its complete free-text response in `answer`, has no choices and leaves `detail` empty. The answer, including useful qualifications, is read and edited in one place.
 - `recommended` is the only recommendation mechanism. Do not add a question-level `suggest` field or append `(推荐)` to stored labels.
 - Dynamic-card `round` controls the FE's round grouping; the latest round renders
   first. Assign a nonnegative integer explicitly: use 0 for the first dynamic
@@ -183,7 +188,10 @@ forward into the complete canonical state without adding them to the new round.
   values to 0 and truncates fractions for grouping only. Preserve those saved
   values on unrelated edits rather than silently renumbering history. Fixed
   cards do not participate in round-number allocation.
-- `detail` records the user's optional explanation, constraints, or source/provenance notes in reconstruction; it supplements rather than duplicates the answer. Preserve older detail-only records without automatically promoting uncertainty or provenance into an answer. When the user answers
+- For a choice question, `detail` records the user's optional explanation,
+  constraints or source/provenance notes in reconstruction; it supplements rather
+  than duplicates the selection. It is not a second field for free-text questions.
+  Preserve unrelated saved data without automatic answer conversion. When the user answers
   a choice question with wording that does not match a rendered option, keep
   `answer` empty and preserve the exact wording in `detail`; never replace it
   with a recommended option. On dynamic cards, `rejected` means the user

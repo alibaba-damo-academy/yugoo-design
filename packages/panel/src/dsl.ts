@@ -29,6 +29,7 @@ export {
   type FormTabs,
   type EditorField,
   type ComponentNode,
+  type ReadField,
   type PanelManifest,
 } from 'dsh-design-core/dsl'
 

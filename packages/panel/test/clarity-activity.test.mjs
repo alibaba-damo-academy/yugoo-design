@@ -158,7 +158,7 @@ test('locale and real lifecycle updates preserve mounted project state and remov
     assert.equal(document.querySelector('[data-testid="design-dock-meta-name"]').textContent, 'Design project: 同一个项目')
     await render(undefined)
     assert.equal(indicator(), null)
-    assert.equal(document.querySelector('.dsh-clarity-dock-label').textContent, 'Design completion')
+    assert.equal(document.querySelector('.dsh-clarity-dock-label').textContent, 'Ideation index')
     assert.equal(document.querySelector('[data-testid="design-clarity-dock-score"]').textContent, '64')
     assert.equal(document.querySelector('[data-testid="design-clarity-dock-stale"]').textContent, 'Needs reassessment',
       'activity removal does not silently clear the Host currentness flag')

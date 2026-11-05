@@ -44,10 +44,10 @@ test('reading cards keep canonical fields editable, create in context and delete
   assert.equal(document.querySelector('.dsh-reading-card-details').open,false)
   assert.ok(document.querySelector('.dsh-reading-card-attention').textContent.includes('Confirm scope'))
   const card=document.querySelector('[data-board-record="f"]')
-  const edit=card.querySelector('.dsh-record-board-actions button');await React.act(async()=>edit.click())
   const input=card.querySelector('textarea');await React.act(async()=>{
    Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype,'value').set.call(input,'Order only from accepted demand.');input.dispatchEvent(new dom.window.Event('input',{bubbles:true}))})
-  const save=[...card.querySelectorAll('button')].find(b=>b.textContent==='Save');assert.ok(save);await React.act(async()=>save.click());await show()
+  await show()
+  assert.equal(card.querySelector('.dsh-record-board-actions'),null)
   assert.equal(data.sections.functions.records.f.summary,'Order only from accepted demand.')
   assert.equal(data.sections.functions.records.f.details.parent,'m')
   assert.deepEqual(data.sections.modules.records.m.source_refs,['doc:1'])

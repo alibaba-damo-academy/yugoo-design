@@ -26,12 +26,294 @@ const choose = async (trigger, label) => {
   await React.act(() => option.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true })))
   await React.act(() => new Promise(resolve => setTimeout(resolve, 0)))
 }
+
+test('acceptance cards edit the Panel draft directly and preserve labeled reading, focus, order and lifecycle', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const { parsePanelManifest } = await import('../src/dsl.ts')
+  const { pathSet } = await import('../src/record-state.ts')
+  const bundle = new URL('../../skills-web-app/bundles/quality_acceptance/', import.meta.url)
+  const panel = parsePanelManifest(await readFile(new URL('panel.yaml', bundle), 'utf8'))
+  panel.i18n.messages = Object.fromEntries(await Promise.all(['zh-CN', 'en-US'].map(async locale =>
+    [locale, JSON.parse(await readFile(new URL(`locales/${locale}.json`, bundle), 'utf8'))])))
+  let data = { schema_version: 4, requirement_order: ['b', 'a'], requirements: {
+    a: { id: 'a', title: 'Submit feedback', group: 'Intake', condition: 'After entering feedback', pass_criteria: 'A saved receipt appears', verification: 'Submit and reload', source_refs: ['keep-source'] },
+    b: { id: 'b', title: 'Empty requirement', group: 'Intake', condition: '', pass_criteria: '' },
+  } }
+  const original = structuredClone(data), writes = []
+  const root = createRoot(document.getElementById('root'))
+  let editable = false, locale = 'en-US', confirm = false
+  const oldConfirm = window.confirm
+  window.confirm = () => confirm
+  const show = () => root.render(renderManifest(panel, data, { locale, editable,
+    onEdit(edit) { writes.push(edit); data = applyDesignEditToDraft(data, panel, edit); show() },
+    onTransaction(edits) { writes.push(edits); for (const edit of edits) data = applyDesignEditToDraft(data, panel, edit); show() },
+    onPanelUpdate(updates) { writes.push(updates); for (const [path, value] of Object.entries(updates)) data = pathSet(data, path, value); show() },
+  }))
+  const card = id => document.querySelector(`[data-board-record="${id}"]`)
+  const click = el => React.act(async () => el.click())
+  const input = (el, value) => React.act(async () => {
+    const prototype = el.tagName === 'TEXTAREA' ? dom.window.HTMLTextAreaElement.prototype : dom.window.HTMLInputElement.prototype
+    Object.getOwnPropertyDescriptor(prototype, 'value').set.call(el, value)
+    el.dispatchEvent(new dom.window.Event('input', { bubbles: true }))
+  })
+  try {
+    await React.act(show)
+    assert.deepEqual([...document.querySelectorAll('[data-board-record]')].map(el => el.dataset.boardRecord), ['b', 'a'])
+    assert.equal(card('b').querySelectorAll('.dsh-record-facts h5').length, 2, 'blank required fields retain labels in reading mode')
+    assert.equal(card('a').querySelectorAll('.dsh-record-facts h5').length, 3, 'nonempty verification is readable')
+    assert.match(card('a').textContent, /After entering feedback/)
+    assert.match(card('a').textContent, /A saved receipt appears/)
+    assert.equal(document.querySelector('.dsh-record-board-map-toggle'), null)
+    assert.equal(card('a').querySelector('details'), null, 'no empty fold or duplicate editor')
+    assert.deepEqual(writes, [])
+    editable = true
+    await React.act(show)
+    assert.equal(card('a').querySelectorAll('textarea').length, 3, 'all declared body fields are editable without an Edit action')
+    assert.ok(card('b').querySelector('[data-field="condition"] textarea'), 'an empty required field keeps its editor')
+    assert.equal(card('a').querySelector('.dsh-record-board-actions'), null, 'cards have no local Edit, Cancel or Finish boundary')
+    for (const kind of ['up', 'down', 'remove']) assert.ok(card('a').querySelector(`:scope > header > .dsh-design-record-actions [data-testid="record-${kind}-a"]`))
+    await input(card('a').querySelector('[data-field="condition"] textarea'), 'Changed condition')
+    await input(card('a').querySelector('header input'), 'Updated title')
+    await input(card('a').querySelector('[data-field="pass_criteria"] textarea'), 'Changed passing result')
+    assert.equal(data.requirements.a.title, 'Updated title', 'title and body update the same Panel draft immediately')
+    assert.equal(data.requirements.a.condition, 'Changed condition')
+    assert.equal(data.requirements.a.pass_criteria, 'Changed passing result')
+    assert.deepEqual(data.requirements.a.source_refs, ['keep-source'])
+    assert.equal(data.requirements.a.verification, 'Submit and reload')
+    assert.equal(original.requirements.a.title, 'Submit feedback', 'editing never mutates the saved input')
+    const groupInput = card('a').querySelector('[data-field="group"] input'), focusedCard = card('a')
+    await React.act(async () => groupInput.focus())
+    await input(groupInput, 'Review')
+    assert.equal(data.requirements.a.group, 'Review', 'group edits enter the Panel draft immediately')
+    assert.equal(card('a'), focusedCard, 'the focused card stays mounted while its group is edited')
+    assert.equal(card('a').querySelector('[data-field="group"] input'), groupInput)
+    assert.equal(document.activeElement, groupInput)
+    assert.equal(card('a').closest('[data-board-group]').dataset.boardGroup, 'Intake', 'only the display location is pinned during focus')
+    await React.act(async () => groupInput.blur())
+    assert.equal(card('a').closest('[data-board-group]').dataset.boardGroup, 'Review', 'leaving the field applies the canonical grouping')
+    data = structuredClone(original)
+    await React.act(show)
+    await click(card('a').querySelector('[data-testid="record-up-a"]'))
+    assert.deepEqual(data.requirement_order, ['a', 'b'])
+    const beforeDelete = structuredClone(data)
+    await click(card('a').querySelector('[data-testid="record-remove-a"]'))
+    assert.deepEqual(data, beforeDelete, 'cancelled delete preserves both records and order')
+    confirm = true
+    await click(card('a').querySelector('[data-testid="record-remove-a"]'))
+    assert.equal(data.requirements.a, undefined)
+    assert.deepEqual(data.requirement_order, ['b'])
+    await click(document.querySelector('.dsh-panel-workspace-tree-add'))
+    assert.equal(Object.keys(data.requirements).length, 2)
+    assert.equal(data.requirement_order.length, 2)
+    assert.ok(Object.keys(data.requirements).every(id => data.requirements[id].id === id))
+    editable = false; locale = 'zh-CN'
+    await React.act(show)
+    assert.equal(document.querySelector('[data-testid^="record-remove-"]'), null)
+    assert.equal(document.querySelector('textarea'), null)
+    assert.match(document.querySelector('.dsh-record-facts').textContent, /在什么情况下验收/)
+  } finally { window.confirm = oldConfirm; await React.act(() => root.unmount()) }
+})
+
+test('direct board cards preserve hidden grouping and conditional body visibility without erasing saved values', async () => {
+  const { validatePanelManifest } = await import('../../core/src/panel-dsl.ts')
+  const panel = { version: 1, panel_kind: 'document', sections: [
+    { id: 'items', title: 'Items', add_mode: 'none' },
+  ], fields: [
+    { key: 'title', label: 'Title', control: 'text', applies_to: ['items'] },
+    { key: 'group', label: 'Private grouping field', control: 'text', hidden: true, applies_to: ['items'] },
+    { key: 'show_details', label: 'Show details', control: 'select', options: [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }], applies_to: ['items'] },
+    { key: 'condition', label: 'Conditional condition', control: 'textarea', visible_when: { field: 'show_details', in: ['yes'] }, applies_to: ['items'] },
+    { key: 'result', label: 'Result', control: 'textarea', readonly: true, applies_to: ['items'] },
+  ], ui: { component: 'record_board', id: 'visible-board', source: 'items', board: {
+    label: 'title', description: 'condition', group: 'group', body_fields: ['condition', 'result'], detail_fields: [], overview: false,
+  } } }
+  let data = { items: { a: { title: 'One record', group: 'Saved grouping', show_details: 'no', condition: 'Retained conditional fact', result: 'Always readable fact', source_refs: ['keep-source'] } } }
+  const original = structuredClone(data), writes = [], root = createRoot(document.getElementById('root'))
+  let editable = true
+  const show = () => root.render(renderManifest(panel, data, { locale: 'en-US', editable,
+    onEdit(edit) { writes.push(edit); data = applyDesignEditToDraft(data, panel, edit); show() },
+    onTransaction(edits) { writes.push(edits); for (const edit of edits) data = applyDesignEditToDraft(data, panel, edit); show() },
+  }))
+  const card = () => document.querySelector('[data-board-record="a"]')
+  const hiddenFieldsAreAbsent = () => {
+    assert.equal(card().querySelector('[data-field="group"], [data-field="condition"]'), null)
+    assert.ok(!card().textContent.includes('Private grouping field'))
+    assert.ok(!card().textContent.includes('Conditional condition'))
+    assert.ok(!card().textContent.includes(data.items.a.condition), 'conditional facts are not exposed as readonly fallback text')
+    assert.match(card().textContent, /Always readable fact/, 'a visible readonly field remains readable')
+    assert.equal(card().querySelector('[data-field="result"] textarea'), null)
+  }
+  try {
+    assert.deepEqual(validatePanelManifest(panel), [], 'hidden grouping and conditional body fields are a supported declaration')
+    await React.act(show)
+    hiddenFieldsAreAbsent()
+    assert.deepEqual(writes, [])
+    assert.deepEqual(data, original, 'rendering cannot clear hidden saved facts')
+    data = { items: { a: { ...data.items.a, show_details: 'yes' } } }
+    await React.act(show)
+    const input = card().querySelector('[data-field="condition"] textarea')
+    assert.ok(input, 'the same field becomes editable only when its condition is satisfied')
+    assert.equal(input.value, 'Retained conditional fact')
+    assert.equal(card().querySelector('[data-field="group"]'), null)
+    await React.act(async () => {
+      Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype, 'value').set.call(input, 'Updated visible fact')
+      input.dispatchEvent(new dom.window.Event('input', { bubbles: true }))
+    })
+    assert.equal(data.items.a.condition, 'Updated visible fact')
+    assert.equal(writes.length, 1)
+    data = { items: { a: { ...data.items.a, show_details: 'no' } } }
+    await React.act(show)
+    hiddenFieldsAreAbsent()
+    editable = false
+    await React.act(show)
+    hiddenFieldsAreAbsent()
+    assert.equal(card().querySelector('textarea, header input'), null)
+    assert.equal(writes.length, 1, 'hiding a field or switching readonly cannot synthesize a write')
+    assert.equal(data.items.a.condition, 'Updated visible fact')
+    assert.equal(data.items.a.group, original.items.a.group)
+    assert.equal(data.items.a.result, original.items.a.result)
+    assert.deepEqual(data.items.a.source_refs, original.items.a.source_refs)
+  } finally { await React.act(() => root.unmount()) }
+})
+
+
 const manifest = { version: 1, panel_kind: 'evidence_workbook', sections: [{ id: 'items', title: 'Items', add_mode: 'none' }], fields: [
   { key: 'title', label: 'Title', control: 'text', applies_to: ['items'] },
   { key: 'description', label: 'Description', control: 'textarea', applies_to: ['items'] },
   { key: 'priority', label: 'Priority', control: 'select', applies_to: ['items'], options: [{ value: 'high', label: 'High' }, { value: 'low', label: 'Low' }] },
 ] }
 const node = { component: 'record_board', id: 'board', title: 'Items', source: 'items', board: { label: 'title', description: 'description', group: 'group', badge: 'priority', rejected: 'rejected' } }
+
+test('grouped card moves follow visible siblings without moving other groups or hidden records', async () => {
+  const { pathSet } = await import('../src/record-state.ts')
+  const panel = { ...manifest,
+    sections: [{ id: 'items', title: 'Items', order: 'item_order', create: { defaults: {} } }],
+    ui: { ...node, board: { ...node.board, overview: false } },
+  }
+  let data = { item_order: ['a', 'b', 'c', 'd', 'e'], items: {
+    a: { title: 'A first', description: 'First in A', group: 'Group A' },
+    b: { title: 'B first', description: 'First in B', group: 'Group B' },
+    c: { title: 'A second', description: 'Second in A', group: 'Group A', rejected: true },
+    d: { title: 'B last', description: 'Last in B', group: 'Group B' },
+    e: { title: 'A last', description: 'Last in A', group: 'Group A' },
+  } }
+  const records = structuredClone(data.items), writes = [], root = createRoot(document.getElementById('root'))
+  const show = () => root.render(renderManifest(panel, data, { locale: 'en-US', editable: true,
+    onPanelUpdate(updates) { writes.push(updates); for (const [path, value] of Object.entries(updates)) data = pathSet(data, path, value); show() },
+  }))
+  const action = (id, direction) => document.querySelector(`[data-testid="record-${direction}-${id}"]`)
+  const groups = () => [...document.querySelectorAll('[data-board-group]')].map(el => el.dataset.boardGroup)
+  const visible = group => [...document.querySelector(`[data-board-group="${group}"]`).querySelectorAll('[data-board-record]')].filter(el => !el.hidden).map(el => el.dataset.boardRecord)
+  try {
+    await React.act(show)
+    assert.equal(writes.length, 0, 'rendering does not normalize the durable order')
+    assert.deepEqual(groups(), ['Group A', 'Group B'])
+    assert.deepEqual(visible('Group A'), ['a', 'c', 'e'])
+    assert.equal(action('a', 'up').disabled, true)
+    assert.equal(action('b', 'up').disabled, true, 'first record in the second group cannot move into the first group')
+    assert.equal(action('d', 'down').disabled, true)
+    await React.act(async () => action('a', 'down').click())
+    assert.deepEqual(data.item_order, ['c', 'b', 'a', 'd', 'e'])
+    assert.deepEqual(visible('Group A'), ['c', 'a', 'e'])
+    assert.deepEqual(groups(), ['Group A', 'Group B'], 'moving the leading card cannot move its entire group')
+    const filter = document.querySelector('.dsh-panel-workspace-tree-actions [role="combobox"]')
+    await choose(filter, 'Active')
+    assert.deepEqual(visible('Group A'), ['a', 'e'])
+    assert.equal(action('a', 'up').disabled, true, 'hidden records do not create a misleading move target')
+    await React.act(async () => action('a', 'down').click())
+    assert.deepEqual(data.item_order, ['c', 'b', 'e', 'd', 'a'], 'other groups and filtered records retain their slots')
+    assert.deepEqual(visible('Group A'), ['e', 'a'])
+    assert.deepEqual(data.items, records, 'sorting does not alter grouping or record content')
+    await choose(filter, 'All')
+    delete panel.ui.board.group
+    await React.act(show)
+    await React.act(async () => action('e', 'up').click())
+    assert.deepEqual(data.item_order, ['c', 'e', 'b', 'd', 'a'], 'ungrouped boards move across the visible list normally')
+  } finally { await React.act(() => root.unmount()) }
+})
+
+test('canvas controls follow the Panel locale while keeping the overview and authored records', async () => {
+  const root = createRoot(document.getElementById('root'))
+  const data = { items: { a: { title: 'Authored record', description: 'Keep', group: 'Authored group' } } }
+  let locale = 'zh-CN'
+  const show = () => root.render(React.createElement(PanelLocaleContext.Provider, { value: locale }, React.createElement(RecordBoard, {
+    node, manifest, data, options: { onEdit: () => assert.fail('localizing controls must not edit records') }, render: () => null,
+  })))
+  try {
+    await React.act(show)
+    await React.act(async () => document.querySelector('.dsh-record-board-map-toggle').click())
+    assert.ok(document.querySelector('.react-flow__controls button[aria-label="放大"]'))
+    assert.ok(document.querySelector('.react-flow__controls button[aria-label="显示全图"]'))
+    assert.doesNotMatch(document.querySelector('.dsh-record-board-map').textContent, /Press enter|Press delete/)
+    locale = 'en-US'; await React.act(show)
+    assert.ok(document.querySelector('.react-flow__controls button[aria-label="Zoom in"]'))
+    assert.ok(document.querySelector('.react-flow__controls button[aria-label="Fit all"]'))
+    assert.match(document.querySelector('.dsh-record-board-map').textContent, /Authored record/)
+    assert.match(document.querySelector('.dsh-record-board-map').textContent, /Return to the list/)
+  } finally { await React.act(() => root.unmount()) }
+})
+
+test('direct card edits use the shared Panel draft and global Revert without a local save barrier', async () => {
+  const { panelStore, resetPanelStore, syncProjection, editDraft, isDirty, revertAll } = await import('../src/client/store.ts')
+  const registry = { get: () => undefined }, skill = 'direct-board-test'
+  const saved = { items: { a: { title: 'One', description: 'Saved description', priority: 'low', group: 'Group', untouched: 'Keep' } } }
+  const project = state => ({ [skill]: { state, skillManifest: { presentation: { mode: 'declarative' } } } })
+  const root = createRoot(document.getElementById('root'))
+  let writable = true, writes = 0, registrations = 0
+  resetPanelStore('direct-board-test')
+  syncProjection(project(saved), true, registry)
+  const show = () => root.render(React.createElement(PanelLocaleContext.Provider, { value: 'en-US' }, React.createElement(RecordBoard, {
+    node, manifest, data: panelStore.getSnapshot().drafts[skill], options: { editable: writable,
+      registerBeforeSave() { registrations++; assert.fail('a direct editor must not register another local save boundary') },
+      onEdit(edit) {
+        writes++
+        editDraft(skill, applyDesignEditToDraft(panelStore.getSnapshot().drafts[skill], manifest, edit))
+        show()
+      },
+    }, render: () => null,
+  })))
+  const input = value => React.act(async () => {
+    const el = document.querySelector('[data-board-record="a"] .dsh-record-board-description-editor')
+    assert.ok(el, 'the ordinary editor is available immediately')
+    Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype, 'value').set.call(el, value)
+    el.dispatchEvent(new dom.window.Event('input', { bubbles: true }))
+  })
+  try {
+    await React.act(show)
+    assert.equal(isDirty(skill, registry), false)
+    await input('Keep while changing panels')
+    assert.equal(panelStore.getSnapshot().drafts[skill].items.a.description, 'Keep while changing panels')
+    assert.equal(isDirty(skill, registry), true, 'the existing global save bar sees the input immediately')
+    assert.equal(registrations, 0)
+    await React.act(async () => root.render(React.createElement('div', null, 'Another panel')))
+    await React.act(show)
+    assert.equal(document.querySelector('textarea').value, 'Keep while changing panels')
+    assert.equal(panelStore.getSnapshot().drafts[skill].items.a.untouched, 'Keep')
+    assert.equal(saved.items.a.description, 'Saved description', 'navigation is not a durable save')
+    await input('Discard me')
+    await React.act(async () => { revertAll(); show() })
+    assert.equal(isDirty(skill, registry), false)
+    assert.equal(document.querySelector('textarea').value, 'Saved description')
+    await React.act(async () => root.render(React.createElement('div', null, 'Another panel')))
+    await React.act(show)
+    assert.equal(document.querySelector('textarea').value, 'Saved description', 'navigation cannot revive discarded card input')
+    await input('Keep the shared dirty draft')
+    const external = { items: { a: { ...saved.items.a, description: 'External input' } } }
+    await React.act(async () => { syncProjection(project(external), true, registry); show() })
+    assert.equal(document.querySelector('textarea').value, 'Keep the shared dirty draft', 'Host polling retains the existing dirty Panel draft')
+    assert.equal(panelStore.getSnapshot().originals[skill].items.a.description, 'External input')
+    await React.act(async () => { revertAll(); show() })
+    assert.equal(document.querySelector('textarea').value, 'External input', 'global Revert uses the current Host baseline')
+    const beforeLock = writes
+    writable = false
+    await React.act(show)
+    assert.equal(document.querySelector('textarea'), null)
+    assert.match(document.querySelector('.dsh-record-board-description').textContent, /External input/)
+    assert.equal(document.querySelector('[role="combobox"][aria-label="Priority"]').disabled, true)
+    assert.equal(writes, beforeLock, 'revoking editing cannot emit a retained local commit')
+    assert.equal(registrations, 0)
+  } finally { await React.act(() => root.unmount()); resetPanelStore() }
+})
 
 test('Function cards display the saved ID through expanded details, renaming and read-only rendering', async () => {
   const { readFile } = await import('node:fs/promises')
@@ -86,6 +368,89 @@ test('Function cards display the saved ID through expanded details, renaming and
     assert.equal(document.querySelector('.dsh-record-board-id'), null, 'missing ID never invents a map-key fallback')
     assert.equal(edits.length, editCount)
   } finally { await React.act(async () => root.unmount()) }
+})
+
+test('Function request creation retains header lifecycle actions and valid durable function order', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const { parsePanelManifest } = await import('../../core/src/panel-dsl.ts')
+  const { compileSchema, parseSchemaYaml } = await import('../../core/src/schema.ts')
+  const { pathSet } = await import('../src/record-state.ts')
+  const bundle = new URL('../../skills-web-app/bundles/function_modules/', import.meta.url)
+  const panel = parsePanelManifest(await readFile(new URL('panel.yaml', bundle), 'utf8'))
+  panel.i18n.messages = Object.fromEntries(await Promise.all(['zh-CN', 'en-US'].map(async locale =>
+    [locale, JSON.parse(await readFile(new URL(`locales/${locale}.json`, bundle), 'utf8'))])))
+  const validate = compileSchema(parseSchemaYaml(await readFile(new URL('schema.yaml', bundle), 'utf8')))
+  let data = { functions: {
+    'F-001': { function_id: 'F-001', function_name: 'Find saved material', function_description: 'Search the saved collection.', function_epic: 'Reading', priority: 'High', source: 'user', reason: 'Keep this source note', details: { situation: 'A reader returns to a saved article.' } },
+    'F-002': { function_id: 'F-002', function_name: 'Open saved material', function_description: 'Open the selected article.', function_epic: 'Reading', priority: 'Medium' },
+    'F-003': { function_id: 'F-003', function_name: 'Manage access', function_description: 'Choose who can read.', function_epic: 'Access', priority: 'Low' },
+  } }
+  const initial = structuredClone(data), writes = [], sent = []
+  const root = createRoot(document.getElementById('root'))
+  const dialogPrototype = dom.window.HTMLDialogElement.prototype
+  const oldShowModal = dialogPrototype.showModal, oldClose = dialogPrototype.close, oldConfirm = window.confirm
+  dialogPrototype.showModal = function() { this.open = true }
+  dialogPrototype.close = function() { this.open = false }
+  let editable = true, confirm = false
+  window.confirm = () => confirm
+  const show = () => root.render(renderManifest(panel, data, { locale: 'en-US', editable,
+    sendPrompt: prompt => sent.push(prompt),
+    onEdit(edit) { writes.push(edit); data = applyDesignEditToDraft(data, panel, edit); show() },
+    onTransaction(edits) { writes.push(edits); for (const edit of edits) data = applyDesignEditToDraft(data, panel, edit); show() },
+    onPanelUpdate(updates) { writes.push(updates); for (const [path, value] of Object.entries(updates)) data = pathSet(data, path, value); show() },
+  }))
+  const card = id => document.querySelector(`[data-board-record="${id}"]`)
+  const action = (id, kind) => card(id).querySelector(`:scope > header > .dsh-design-record-actions [data-testid="record-${kind}-${id}"]`)
+  try {
+    assert.ok(panel.ui.board.request_create, 'this is the actual Host-request creation declaration')
+    assert.equal(panel.sections.find(section => section.id === 'functions').order, 'function_order')
+    assert.deepEqual(validate(data), [], 'existing state remains valid without optional order metadata')
+    await React.act(show)
+    assert.equal(Object.hasOwn(data, 'function_order'), false, 'viewing old data cannot initialize metadata')
+    assert.deepEqual(writes, [])
+    assert.equal(card('F-001').querySelector(':scope > header').firstElementChild.textContent, 'F-001', 'saved identity leads the shared card header')
+    for (const kind of ['up', 'down', 'remove']) assert.ok(action('F-001', kind), 'Host-request creation does not suppress existing lifecycle actions')
+    assert.equal(action('F-001', 'up').disabled, true)
+    assert.equal(action('F-002', 'down').disabled, true, 'moves stay within their displayed group')
+    const originalOrder = Object.keys(data.functions)
+    await React.act(async () => action('F-001', 'up').click())
+    assert.deepEqual(writes, [], 'a disabled boundary cannot emit metadata')
+    await React.act(async () => document.querySelector('.dsh-panel-workspace-tree-add').click())
+    assert.ok(document.querySelector('dialog'))
+    await React.act(async () => document.querySelector('dialog button[aria-label="Cancel"]').click())
+    assert.deepEqual(data, initial, 'cancelling the Host request cannot create a canonical record')
+    assert.deepEqual(sent, [])
+    await React.act(async () => action('F-002', 'up').click())
+    assert.deepEqual(data.function_order, ['F-002', 'F-001', 'F-003'])
+    assert.deepEqual(Object.keys(data.functions), originalOrder, 'an explicit order change preserves the record map')
+    assert.deepEqual(data.functions, initial.functions, 'moving records preserves identities, details and source facts')
+    assert.deepEqual(validate(data), [])
+    data = JSON.parse(JSON.stringify(data))
+    await React.act(show)
+    assert.deepEqual([...document.querySelectorAll('[data-board-record]')].map(element => element.dataset.boardRecord), data.function_order, 'the saved wire representation reopens in declared order')
+    const beforeRemove = structuredClone(data), count = writes.length
+    await React.act(async () => action('F-001', 'remove').click())
+    assert.equal(writes.length, count)
+    assert.deepEqual(data, beforeRemove, 'a rejected confirmation preserves both map and order')
+    confirm = true
+    await React.act(async () => action('F-001', 'remove').click())
+    assert.equal(Object.hasOwn(data.functions, 'F-001'), false)
+    assert.deepEqual(data.function_order, ['F-002', 'F-003'])
+    assert.ok(data.function_order.every(id => Object.hasOwn(data.functions, id)), 'atomic deletion leaves no stale order reference')
+    assert.deepEqual(data.functions['F-002'], initial.functions['F-002'])
+    assert.deepEqual(data.functions['F-003'], initial.functions['F-003'])
+    assert.deepEqual(validate(data), [], 'the actual Function schema accepts the remaining records and metadata')
+    assert.ok(validate({ ...data, function_order: [1] }).length, 'order metadata retains string identity validation')
+    editable = false
+    await React.act(show)
+    assert.equal(document.querySelector('[data-testid^="record-up-"], [data-testid^="record-down-"], [data-testid^="record-remove-"]'), null)
+    assert.equal(document.querySelector('.dsh-panel-workspace-tree-add'), null)
+  } finally {
+    window.confirm = oldConfirm
+    await React.act(() => root.unmount())
+    if (oldShowModal === undefined) delete dialogPrototype.showModal; else dialogPrototype.showModal = oldShowModal
+    if (oldClose === undefined) delete dialogPrototype.close; else dialogPrototype.close = oldClose
+  }
 })
 
 test('cover keeps hidden content from extending the canvas and restores focus without scrolling', async () => {
@@ -150,8 +515,11 @@ test('inheritance source references retain multiple parents and navigate without
       await show(editable); await selectChild()
       const region = document.querySelector('.dsh-record-inheritance')
       assert.equal(region.getAttribute('aria-label'), graph.hierarchy.label)
-      assert.equal(region.querySelector('p').textContent, graph.hierarchy.description)
-      const parents = [...region.querySelectorAll('button')]
+      assert.equal(region.querySelector('p'), null, 'field help does not take a separate content row')
+      await React.act(async () => region.querySelector('.dsh-panel-help button').click())
+      assert.equal(document.querySelector('[role=tooltip]').textContent, graph.hierarchy.description)
+      await React.act(async () => document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
+      const parents = [...region.querySelectorAll('.dsh-record-inheritance-parent')]
       assert.deepEqual(parents.map(button => button.textContent), [longName, 'Second parent'])
       assert.equal(region.querySelector('strong'), null, 'a parent label cannot inject markup')
       assert.ok(parents.every(button => !button.disabled), 'read-only does not disable source navigation')
@@ -176,17 +544,41 @@ test('inheritance source references retain multiple parents and navigate without
   } finally { await React.act(() => root.unmount()) }
 })
 
-test('detail disclosure headings use normal weight without changing text size', async () => {
+test('compact record details share the first heading row while preserving disclosure and edits', async () => {
   const { readFileSync } = await import('node:fs')
-  const css = readFileSync(new URL('../src/visual-components.css', import.meta.url), 'utf8')
-  const rule = css.match(/\.dsh-record-board-editor > summary, \.dsh-board-detail-definition > summary \{([^}]+)\}/)?.[1]
-  assert.ok(rule)
-  assert.match(rule, /font-weight:\s*400\s*;/)
-  assert.match(rule, /font-size:\s*14px\s*;/)
-  assert.match(rule, /line-height:\s*20px\s*;/)
+  const { PanelDetailDisclosure } = await import('../src/panel-workspace.tsx')
+  const { CompactRecordDetails } = await import('../src/compact-record-details.tsx')
+  const style = document.createElement('style')
+  style.textContent = readFileSync(new URL('../src/visual-components.css', import.meta.url), 'utf8')
+  document.head.appendChild(style)
+  const root = createRoot(document.getElementById('root'))
+  try {
+    await React.act(() => root.render(React.createElement('div', { className: 'dsh-design-panel' },
+      React.createElement(PanelDetailDisclosure, { title: 'Details', className: 'dsh-record-board-editor' },
+        React.createElement(CompactRecordDetails, {
+          fields: [{ key: 'context', label: 'Context', control: 'text' }], values: { context: 'Draft' }, optional: false, editable: true,
+          render: () => React.createElement('input', { defaultValue: 'Draft' }), change: () => {},
+        })))))
+    const details = document.querySelector('details'), summary = details.querySelector('summary')
+    const label = summary.querySelector('.dsh-panel-disclosure-label'), input = details.querySelector('input')
+    assert.equal(window.getComputedStyle(summary).fontWeight, '400')
+    assert.equal(window.getComputedStyle(summary).lineHeight, '20px')
+    assert.equal(window.getComputedStyle(label).visibility, 'visible')
+    input.value = 'Unsaved change'
+    await React.act(() => summary.click())
+    assert.equal(details.open, true)
+    assert.equal(window.getComputedStyle(label).display, 'none')
+    assert.equal(summary.getAttribute('aria-label'), 'Details', 'open disclosure retains its accessible name')
+    assert.ok(summary.lastElementChild.classList.contains('dsh-panel-disclosure-icon'))
+    await React.act(() => summary.click())
+    assert.equal(details.open, false)
+    assert.equal(window.getComputedStyle(label).visibility, 'visible')
+    assert.equal(details.querySelector('input'), input, 'collapse keeps the editor mounted')
+    assert.equal(input.value, 'Unsaved change')
+  } finally { await React.act(() => root.unmount()); style.remove() }
 })
 
-test('detail spacing uses one section rhythm across first, nested and trailing groups', async () => {
+test('detail spacing distinguishes the title boundary from independent content groups', async () => {
   const { readFileSync } = await import('node:fs')
   const css = readFileSync(new URL('../src/visual-components.css', import.meta.url), 'utf8')
   const rule = selector => {
@@ -194,11 +586,13 @@ test('detail spacing uses one section rhythm across first, nested and trailing g
     assert.notEqual(start, -1, selector)
     return css.slice(start, css.indexOf('}', start))
   }
-  assert.match(rule(':is(.dsh-record-board-editor, .dsh-board-detail-definition)'),
-    /--ygd-panel-detail-section-gap:\s*16px;/)
-  assert.match(rule(':is(.dsh-record-board-editor, .dsh-board-detail-definition)'),
-    /--ygd-panel-detail-control-gap:\s*8px;/)
-  assert.match(rule('.dsh-record-board-editor > :is(section, .dsh-compact-record-details)'),
+  assert.match(rule('.dsh-design-panel'), /--ygd-panel-detail-section-gap:\s*16px;/)
+  assert.match(rule('.dsh-design-panel'), /--ygd-panel-detail-control-gap:\s*8px;/)
+  assert.ok(!css.includes(':is(.dsh-record-board-editor, .dsh-board-detail-definition) {'),
+    'detail leaves inherit the actual content density instead of fixing wide gaps')
+  assert.match(rule('.dsh-record-board-editor > summary + .dsh-compact-record-details:not(:has(> section:first-child > header))'),
+    /margin-top:\s*var\(--ygd-panel-detail-control-gap, 8px\);/)
+  assert.match(rule('.dsh-record-board-editor > :is(section, .dsh-compact-record-details) + :is(section, .dsh-compact-record-details)'),
     /margin-top:\s*var\(--ygd-panel-detail-section-gap, 16px\);/)
   assert.match(rule(':is(.dsh-record-board-editor, .dsh-board-detail-definition) .dsh-compact-record-details'),
     /gap:\s*var\(--ygd-panel-detail-section-gap, 16px\);/)
@@ -206,94 +600,109 @@ test('detail spacing uses one section rhythm across first, nested and trailing g
     /margin-bottom:\s*var\(--ygd-panel-detail-control-gap, 8px\);/)
   assert.match(rule('.dsh-design-panel .dsh-record-map-table td > :is(input, textarea, select)'),
     /display:\s*block;/)
-  assert.match(rule('.dsh-design-panel .dsh-record-map-table td > textarea'), /field-sizing:\s*content;/)
+  assert.match(rule('.dsh-design-panel textarea.dsh-panel-textarea'), /field-sizing:\s*fixed;/)
+  assert.match(rule('.dsh-design-panel textarea.dsh-panel-textarea'), /resize:\s*vertical;/)
   assert.match(rule('.dsh-design-panel .dsh-record-map.is-compact:has(> .dsh-record-map-table-scroll) > .dsh-record-map-add'), /margin-inline-start:\s*48px;/)
   assert.match(rule('.dsh-record-map.is-compact .dsh-record-map-table .dsh-record-map-actions'),
     /display:\s*flex;/)
-  assert.ok(!css.includes('.dsh-record-board-editor > section { margin-top: 8px; }'),
-    'the first content group must not keep a separate tight section gap')
 })
 
-test('native card draft boundaries, workspace overlay, selection, rejection and read-only lock', async () => {
+test('native cards edit the Panel draft directly through navigation, filters, rejection and read-only changes', async () => {
   const root = createRoot(document.getElementById('root'))
-  let data = { items: { a: { title: 'First', description: 'Before', group: 'Group', priority: 'low', details: { preserve: true } }, b: { title: 'Second', group: 'Group', rejected: true } } }
+  const localManifest = structuredClone(manifest)
+  let data = { items: { a: { title: 'First', description: 'Before', group: 'Group', priority: 'low', details: { preserve: true } }, b: { title: 'Second', description: 'Rejected source', group: 'Group', rejected: true } } }
   let editable = true
-  const transactions = []
+  const transactions = [], edits = []
   const show = () => root.render(React.createElement(PanelLocaleContext.Provider, { value: 'en-US' }, React.createElement(RecordBoard, {
-    node, manifest, data, options: { editable,
-      onTransaction(edits) { transactions.push(edits); for (const edit of edits) data = applyDesignEditToDraft(data, manifest, edit); show() },
-      onEdit(edit) { data = applyDesignEditToDraft(data, manifest, edit); show() },
+    node, manifest: localManifest, data, options: { editable,
+      onTransaction(batch) { transactions.push(batch); for (const edit of batch) data = applyDesignEditToDraft(data, localManifest, edit); show() },
+      onEdit(edit) { edits.push(edit); data = applyDesignEditToDraft(data, localManifest, edit); show() },
     }, render: () => React.createElement('p', null, 'Extra details'),
   })))
   const click = selector => React.act(async () => { document.querySelector(selector).focus(); document.querySelector(selector).click(); await new Promise(resolve => setTimeout(resolve, 0)) })
   const input = (selector, value) => React.act(async () => {
     const el = document.querySelector(selector)
-    Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype, 'value').set.call(el, value)
+    const prototype = el.tagName === 'TEXTAREA' ? dom.window.HTMLTextAreaElement.prototype : dom.window.HTMLInputElement.prototype
+    Object.getOwnPropertyDescriptor(prototype, 'value').set.call(el, value)
     el.dispatchEvent(new dom.window.Event('input', { bubbles: true }))
   })
-  const action = label => `[data-board-record="a"] button[aria-label="${label}"]`
-  const priority = () => document.querySelector('[data-board-record="a"] [role="combobox"][aria-label="Priority"]')
-  const choosePriority = value => choose(priority(), value === 'high' ? 'High' : 'Low')
+  const card = id => document.querySelector(`[data-board-record="${id}"]`)
+  const priority = () => card('a').querySelector('[role="combobox"][aria-label="Priority"]')
   try {
     await React.act(show)
-    const card = document.querySelector('[data-board-record="a"]')
-    assert.equal(card.querySelector('header select'), null, 'priority does not compete with the card title')
-    assert.equal(priority().closest('.dsh-record-board-footer'), card.querySelector('.dsh-record-board-actions').parentElement,
-      'priority and native actions share the footer row')
+    assert.equal(card('a').querySelector('header [role="combobox"]'), null, 'priority does not compete with the card title')
+    assert.ok(priority().closest('.dsh-record-board-footer'))
+    assert.equal(card('a').querySelector('.dsh-record-board-actions'), null, 'the card has no second Edit or Save boundary')
+    assert.equal(card('b').querySelector('input, textarea'), null, 'rejected source facts stay readonly')
+    assert.match(card('b').querySelector('.dsh-record-board-description').textContent, /Rejected source/)
     await click('.dsh-panel-workspace-tree-group-toggle')
     await click('.dsh-panel-workspace-tree-item')
-    assert.equal(document.querySelector('textarea'), null, 'sidebar navigation does not start editing')
-    await click(action('Edit'))
-    await input('textarea', 'Local draft')
-    await choosePriority('high')
-    assert.equal(transactions.length, 0)
-    assert.equal(data.items.a.description, 'Before')
-    assert.equal(data.items.a.priority, 'low', 'footer priority edits stay in the local draft')
-    await choose(document.querySelector('.dsh-record-board-toolbar [role="combobox"]'), 'Rejected')
-    assert.equal(document.querySelector('[data-board-record="a"]').hidden, true)
-    await choose(document.querySelector('.dsh-record-board-toolbar [role="combobox"]'), 'Active')
-    assert.equal(document.querySelector('textarea').value, 'Local draft', 'filter round trip retains local draft')
+    assert.ok(card('a').querySelector('textarea'), 'sidebar navigation uses the same directly editable card')
+    assert.equal(transactions.length, 0, 'navigation alone cannot write')
+    await input('[data-board-record="a"] textarea', 'Panel draft')
+    await choose(priority(), 'High')
+    assert.equal(transactions.length, 2)
+    assert.equal(data.items.a.description, 'Panel draft')
+    assert.equal(data.items.a.priority, 'high', 'priority writes the same Panel draft without a card commit')
+    await choose(document.querySelector('.dsh-panel-workspace-tree-actions [role="combobox"]'), 'Rejected')
+    const filter = document.querySelector('.dsh-panel-workspace-tree-actions [role="combobox"]')
+    assert.ok(filter.classList.contains('is-icon-only'))
+    assert.equal(filter.dataset.active, 'true')
+    assert.match(filter.title, /Rejected/)
+    assert.equal(filter.querySelector('svg')?.getAttribute('width'), '16')
+    assert.equal(filter.querySelector('.dsh-panel-select-hidden-value')?.textContent, 'Rejected')
+    assert.equal(filter.querySelectorAll('svg').length, 1)
+    assert.equal(card('a').hidden, true)
+    await choose(filter, 'All')
+    assert.equal(filter.dataset.active, 'false')
+    await choose(document.querySelector('.dsh-panel-workspace-tree-actions [role="combobox"]'), 'Active')
+    assert.equal(card('a').querySelector('textarea').value, 'Panel draft', 'filter round trips retain the canonical draft')
+    const field = card('a').querySelector('textarea'), focusedCard = card('a')
+    await React.act(async () => field.focus())
     data = { ...data, items: { ...data.items, a: { ...data.items.a, group: 'Updated group' } } }
     await React.act(show)
-    assert.equal(document.querySelector('textarea').value, 'Local draft', 'group movement must not remount the editor')
+    assert.equal(card('a'), focusedCard, 'changing the group does not remount a focused card')
+    assert.equal(card('a').querySelector('textarea'), field)
+    assert.equal(document.activeElement, field)
+    assert.equal(field.value, 'Panel draft')
     await click('.dsh-record-board-map-toggle')
     assert.ok(document.querySelector('.dsh-workspace-cover-base').hasAttribute('inert'))
     assert.equal(document.activeElement.className, 'dsh-workspace-cover-return')
     assert.ok(document.querySelector('.dsh-workspace-cover-surface .dsh-record-board-map'))
     await click('.dsh-workspace-cover-return')
-    assert.equal(document.querySelector('.dsh-workspace-cover-surface').style.opacity, '0', 'hidden graph descendants cannot override composited visibility')
+    assert.equal(document.querySelector('.dsh-workspace-cover-surface').style.opacity, '0')
     assert.ok(document.querySelector('.dsh-workspace-cover-surface').hasAttribute('inert'))
-    assert.equal(document.querySelector('textarea').value, 'Local draft')
-    assert.ok(document.activeElement.classList.contains('dsh-record-board-map-toggle'), 'return restores focus to the shared canvas toggle')
-    await React.act(async () => [...document.querySelectorAll('.dsh-record-board-actions button')].find(b => b.textContent === 'Cancel').click())
-    assert.equal(data.items.a.description, 'Before')
-    assert.equal(priority().value, 'low', 'cancel also restores the footer priority')
-    await click(action('Edit'))
-    await input('textarea', 'Saved description')
-    await choosePriority('high')
-    await React.act(async () => [...document.querySelectorAll('.dsh-record-board-actions button')].find(b => b.textContent === 'Save').click())
-    assert.equal(transactions.length, 1)
-    assert.equal(data.items.a.description, 'Saved description')
-    assert.equal(data.items.a.priority, 'high', 'save commits description and footer priority atomically')
+    assert.equal(card('a').querySelector('textarea').value, 'Panel draft')
+    assert.ok(document.activeElement.classList.contains('dsh-record-board-map-toggle'))
     assert.deepEqual(data.items.a.details, { preserve: true })
-    await click(action('Edit'))
-    await input('textarea', 'Stale overwrite')
-    manifest.fields.find(field => field.key === 'description').readonly = true
+    await input('[data-board-record="a"] .dsh-design-record-header-input', 'Changed title')
+    assert.equal(data.items.a.title, 'Changed title')
+    localManifest.fields.find(field => field.key === 'title').readonly = true
     await React.act(show)
-    assert.ok([...document.querySelectorAll('.dsh-record-board-actions button')].find(b => b.textContent === 'Save').disabled, 'new readonly declaration revokes pending write')
-    delete manifest.fields.find(field => field.key === 'description').readonly
-    data = { ...data, items: { ...data.items, a: { ...data.items.a, description: 'External update' } } }
+    assert.equal(card('a').querySelector('header input'), null, 'a readonly declaration removes only the affected editor')
+    assert.equal(card('a').querySelector('header h4').textContent, 'Changed title')
+    assert.ok(card('a').querySelector('textarea'))
+    localManifest.fields.find(field => field.key === 'description').readonly = true
     await React.act(show)
-    assert.match(document.querySelector('[role="alert"]').textContent, /record changed/)
-    assert.ok([...document.querySelectorAll('.dsh-record-board-actions button')].find(b => b.textContent === 'Save').disabled)
+    assert.equal(card('a').querySelector('textarea'), null)
+    assert.match(card('a').querySelector('.dsh-record-board-description').textContent, /Panel draft/)
+    await choose(document.querySelector('.dsh-panel-workspace-tree-actions [role="combobox"]'), 'All')
+    const restore = [...card('b').querySelectorAll('button')].find(button => button.textContent === 'Restore')
+    assert.ok(restore)
+    await React.act(async () => restore.click())
+    assert.equal(data.items.b.rejected, false)
+    assert.equal(data.items.b.description, 'Rejected source', 'restoring a record preserves its saved facts')
+    assert.equal(edits.at(-1).field, 'rejected')
+    const beforeLock = { transactions: transactions.length, edits: edits.length, data: structuredClone(data) }
     editable = false
     await React.act(show)
-    assert.ok(document.querySelector('textarea').disabled)
-    assert.ok(priority().disabled, 'footer relocation does not bypass the read-only lock')
-    assert.equal(transactions.length, 1, 'lock cannot commit the retained draft')
-  } finally { await React.act(() => root.unmount());  }
+    assert.equal(document.querySelector('[data-board-record] textarea, [data-board-record] header input'), null)
+    assert.ok(priority().disabled, 'the footer follows the same readonly lock')
+    assert.equal(transactions.length, beforeLock.transactions)
+    assert.equal(edits.length, beforeLock.edits)
+    assert.deepEqual(data, beforeLock.data, 'readonly rendering cannot flush a hidden card draft')
+  } finally { await React.act(() => root.unmount()) }
 })
-
 
 test('rejected board detail sources render through interpreter with no child writes', async () => {
   const root = createRoot(document.getElementById('root'))
@@ -306,13 +715,42 @@ test('rejected board detail sources render through interpreter with no child wri
   const writes = []
   try {
     await React.act(async () => root.render(renderManifest(panel, data, { editable: true, onEdit: e => writes.push(e), onPanelUpdate: e => writes.push(e), onTransaction: e => writes.push(e) })))
-    const filter = document.querySelector('.dsh-record-board-toolbar [role="combobox"]')
+    const filter = document.querySelector('.dsh-panel-workspace-tree-actions [role="combobox"]')
     await choose(filter, '已拒绝')
     const details = document.querySelector('[data-board-record="a"] details'); details.open = true
     const childEditor = document.querySelector('.dsh-board-detail-workspace')
     assert.match(childEditor.textContent, /Do not edit/)
     assert.equal(childEditor.querySelector('input, textarea, button'), null, 'child fields and record creation are readonly')
     assert.deepEqual(writes, [])
+  } finally { await React.act(() => root.unmount()) }
+})
+
+test('board sidebar add opens the existing request and cancels without writes or Host work', async () => {
+  dom.window.HTMLDialogElement.prototype.showModal = function() { this.open = true }
+  dom.window.HTMLDialogElement.prototype.close = function() { this.open = false }
+  const root = createRoot(document.getElementById('root'))
+  const sent = [], writes = []
+  let editable = true
+  const requestManifest = { ...manifest, sections: [{ id: 'items', title: 'Items', item_name: 'item', create: { defaults: { priority: 'low' } } }] }
+  const requestNode = { ...node, board: { ...node.board, request_create: { fields: ['title', 'description', 'priority'], prompt: 'Please add', submit_label: 'Send request' } } }
+  const show = () => root.render(React.createElement(PanelLocaleContext.Provider, { value: 'en-US' }, React.createElement(RecordBoard, {
+    node: requestNode, manifest: requestManifest, data: { items: {} },
+    options: { editable, sendPrompt: text => sent.push(text), onEdit: edit => writes.push(edit) }, render: () => null,
+  })))
+  try {
+    await React.act(show)
+    assert.equal(document.querySelector('.dsh-record-board-toolbar'), null, 'no empty toolbar remains above content')
+    assert.ok(document.querySelector('.dsh-panel-workspace-tree-actions [aria-label="Filter records"]'))
+    const add = document.querySelector('.dsh-panel-workspace-sidebar .dsh-panel-workspace-tree-add')
+    assert.match(add.textContent, /Add item/)
+    await React.act(() => add.click())
+    assert.ok(document.querySelector('dialog[open]'))
+    assert.match(document.querySelector('dialog').textContent, /Send request/)
+    await React.act(() => document.querySelector('dialog button[aria-label="Cancel"]').click())
+    assert.equal(document.querySelector('dialog'), null)
+    assert.deepEqual(sent, []); assert.deepEqual(writes, [])
+    editable = false; await React.act(show)
+    assert.equal(document.querySelector('.dsh-panel-workspace-tree-add'), null)
   } finally { await React.act(() => root.unmount()) }
 })
 
@@ -358,7 +796,7 @@ test('creation requests resolve section-scoped requirements without changing can
   dom.window.HTMLDialogElement.prototype.close = function() { this.open = false }
   const root = createRoot(document.getElementById('root'))
   const panel = { ...manifest, sections: [{ id: 'items', title: 'Items' }, { id: 'links', title: 'Links' }], fields: [
-    { key: 'description', label: 'Description', control: 'textarea', required_in: ['items'], applies_to: ['items', 'links'] },
+    { key: 'description', label: 'Description', description: 'Describe the intended outcome.', control: 'textarea', required_in: ['items'], applies_to: ['items', 'links'] },
   ] }
   const before = structuredClone(panel), sent = [], writes = []
   const show = source => root.render(React.createElement(PanelLocaleContext.Provider, { value: 'en-US' }, React.createElement(RecordRequestDialog, {
@@ -370,6 +808,13 @@ test('creation requests resolve section-scoped requirements without changing can
     await React.act(async () => show('items'))
     assert.equal(document.querySelector('textarea').required, true, 'request dialog retains its own existing required-input boundary')
     assert.equal(document.querySelector('.dsh-design-required-mark').title, 'Required')
+    assert.equal(document.querySelector('label').control, document.querySelector('textarea'))
+    assert.equal(document.querySelector('label button'), null)
+    await React.act(async () => document.querySelector('.dsh-panel-guidance-trigger').click())
+    const tooltip = document.querySelector('[role="tooltip"]')
+    assert.equal(tooltip.textContent, 'Describe the intended outcome.')
+    assert.equal(tooltip.closest('dialog'), document.querySelector('dialog'), 'help remains in the modal top layer')
+    assert.equal(tooltip.hasAttribute('aria-label'), false, 'the described body is not renamed to the help button label')
     assert.equal(document.querySelector('[type=submit]').disabled, true)
     await React.act(async () => submit()); assert.deepEqual(sent, [])
     await React.act(async () => {
@@ -397,6 +842,8 @@ test('mind-map parents center on native child centers and preserve canonical ids
   assert.deepEqual(nodes.find(n => n.id === 'record:c').position, { x: 600, y: 100 })
   assert.equal(nodes.find(n => n.id === 'group:0').data.rejected, true)
   assert.equal(edges.length, 5)
+  assert.deepEqual(edges.map(edge => edge.ariaLabel), ['Root → A', 'A → A', 'A → B', 'Root → B', 'B → C'],
+    'assistive edge names use the same authored labels as the visible nodes, not internal projection IDs')
 })
 
 test('optional details add and remove only their canonical dimension; AI names and scoped relation editors remain reachable', async () => {
@@ -894,4 +1341,90 @@ test('record board retains measured nodes through hidden mount, reveal and reope
       else delete globalThis[key]
     }
   }
+})
+
+test('board scroll location follows long cards, the end, collapsed groups and filters without writes', async () => {
+  const root = createRoot(document.getElementById('root'))
+  const data = { items: {
+    a: { title: 'Long first', description: 'Long', group: 'Group' },
+    b: { title: 'Second', description: 'Two', group: 'Group', rejected: true },
+    c: { title: 'Last', description: 'Three', group: 'Group' },
+  } }
+  let height = 300
+  const show = () => root.render(React.createElement(PanelLocaleContext.Provider, { value: 'en-US' }, React.createElement(RecordBoard, {
+    node, manifest, data, options: { editable: false, onEdit() { assert.fail('navigation wrote data') }, onPanelUpdate() { assert.fail('navigation wrote data') } }, render: () => null,
+  })))
+  const settle = () => React.act(() => new Promise(resolve => setTimeout(resolve, 20)))
+  const current = () => document.querySelector('.dsh-panel-workspace-tree-item[aria-current]')?.textContent
+  try {
+    await React.act(show)
+    const container = document.querySelector('.dsh-record-board-content')
+    container.getClientRects = () => [{ height }]
+    container.getBoundingClientRect = () => ({ top: 0, bottom: height, height })
+    Object.defineProperties(container, { clientHeight: { get: () => height }, scrollHeight: { get: () => 1260 } })
+    container.scrollTo = ({ top }) => { container.scrollTop = top; container.dispatchEvent(new dom.window.Event('scroll')) }
+    const starts = { a: 0, b: 1000, c: 1130 }, heights = { a: 1000, b: 130, c: 130 }
+    for (const card of document.querySelectorAll('[data-board-record]')) {
+      const id = card.dataset.boardRecord
+      card.getClientRects = () => card.closest('[hidden]') ? [] : [{}]
+      card.getBoundingClientRect = () => ({ top: starts[id] - container.scrollTop, bottom: starts[id] + heights[id] - container.scrollTop })
+    }
+    const group = document.querySelector('[data-board-group]')
+    group.getBoundingClientRect = () => ({ top: -container.scrollTop })
+    await React.act(async () => document.querySelector('.dsh-panel-workspace-tree-group-toggle').click())
+    await settle()
+    assert.equal(current(), 'Long first')
+    await React.act(async () => container.scrollTo({ top: 700 }))
+    await settle()
+    assert.equal(current(), 'Long first', 'a tall card stays current while reading its middle')
+    await React.act(async () => document.querySelector('.dsh-panel-workspace-tree-item').click())
+    await settle()
+    assert.equal(container.scrollTop, 0, 'clicking a partially visible tall card returns to its title')
+    await React.act(async () => container.scrollTo({ top: 1001 }))
+    // At a real overflow end the last visible item is the current destination.
+    await settle()
+    assert.equal(current(), 'Last')
+    height = 150
+    await React.act(async () => container.scrollTo({ top: 1001 }))
+    await settle()
+    assert.equal(current(), 'Second', 'away from end use the reading start, not the largest visible area')
+    await React.act(async () => document.querySelector('.dsh-panel-workspace-tree-group-toggle').click())
+    assert.equal(document.querySelector('.dsh-panel-workspace-tree-group-toggle').getAttribute('aria-current'), 'location')
+    await React.act(async () => document.querySelector('.dsh-record-board-group-heading').click())
+    await settle()
+    assert.equal(document.querySelector('.dsh-panel-workspace-tree-group-toggle').hasAttribute('aria-current'), false)
+    await React.act(async () => document.querySelector('.dsh-record-board-group-heading').click())
+    await choose(document.querySelector('.dsh-panel-workspace-tree-actions [role="combobox"]'), 'Active')
+    await settle()
+    await React.act(async () => document.querySelector('.dsh-panel-workspace-tree-group-toggle').click())
+    await React.act(async () => container.scrollTo({ top: 1001 }))
+    await settle()
+    assert.equal(current(), 'Last', 'filtered-out records never become current')
+    height = 2000
+    await React.act(async () => container.scrollTo({ top: 0 }))
+    await settle()
+    assert.equal(current(), 'Long first', 'nonoverflow content does not default to its last record')
+  } finally { await React.act(() => root.unmount()) }
+})
+
+test('an onEdit-only board consumes its directly editable title once', async () => {
+  const panel = { ...manifest, ui: { ...node, board: { ...node.board, overview: false } } }
+  let data = { items: { a: { title: 'Current title', description: 'One line', priority: 'low', source_refs: ['keep'] } } }
+  const root = createRoot(document.getElementById('root')), edits = []
+  const show = () => root.render(renderManifest(panel, data, { locale: 'en-US', editable: true,
+    onEdit(edit) { edits.push(edit); data = applyDesignEditToDraft(data, panel, edit); show() },
+  }))
+  try {
+    await React.act(show)
+    assert.equal(document.querySelectorAll('input[aria-label="Title"]').length, 1)
+    assert.equal(document.querySelector('.dsh-record-board-editor input[aria-label="Title"]'), null, 'the consumed header title is not duplicated inside details')
+    await React.act(async () => {
+      const input = document.querySelector('input[aria-label="Title"]')
+      Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value').set.call(input, 'Revised title')
+      input.dispatchEvent(new dom.window.Event('input', { bubbles: true }))
+    })
+    assert.equal(data.items.a.title, 'Revised title')
+    assert.equal(edits.length, 1)
+    assert.deepEqual(data.items.a.source_refs, ['keep'])
+  } finally { await React.act(() => root.unmount()) }
 })

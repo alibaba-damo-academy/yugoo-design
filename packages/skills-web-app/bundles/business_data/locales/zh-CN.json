@@ -19,5 +19,5 @@
   "sourceCount": "每个终点对象关联多少个起点对象？", "targetCount": "每个起点对象关联多少个终点对象？",
   "unknownCount": "尚未确定时留空，不代表零个或仅一个。",
   "countOne": "必须且仅一个", "countOptional": "可以没有，最多一个", "countMany": "至少一个，可有多个", "countAny": "可以没有，也可有多个",
-  "relationMeaning": "含义与约束（选填）", "relationMeaningHint": "数量、归属或删除时的约定尚未确定，也可以在这里说明。"
+  "relationMeaning": "含义与约束", "relationMeaningHint": "数量、归属或删除时的约定尚未确定，也可以在这里说明。"
 }

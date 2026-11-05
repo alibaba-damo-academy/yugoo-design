@@ -8,12 +8,11 @@
   "newRuleNumbered": "New rule {index}",
   "title": "Rule name",
   "ruleContent": "Rule content",
-  "condition": "Under what conditions, or based on which inputs? (optional)",
-  "conditionHelp": "Describe the trigger or calculation inputs, then the expected decision or behavior. Leave blank for unconditional rules.",
+  "condition": "Under what conditions, or based on which inputs?",
   "conditionExample": "For example: order total including tax exceeds 100,000; or: unit prices, quantities and discounts",
   "outcome": "What should the product decide, calculate or do?",
   "outcomeExample": "For example: require manager approval; or: sum the line amounts and subtract discounts",
-  "notes": "Notes (optional)",
+  "notes": "Notes",
   "notesHelp": "Clarify a boundary, exception or example. Leave blank if no clarification is needed.",
   "notesExample": "For example: an order of exactly 100,000 does not require manager approval."
 }

@@ -39,6 +39,7 @@ const { applyDeclarativePanelTransaction, declarativePanelOwnsWorkspace, appendD
 const { TokenList } = await import('../src/token-list.tsx')
 const { CustomChoice } = await import('../src/custom-choice.tsx')
 const { RecordMap } = await import('../src/record-map.tsx')
+const { ColorControl } = await import('../src/color-control.tsx')
 const { SourceReferences } = await import('../src/source-reference.tsx')
 const { renderManifest, applyPanelUpdatesToDraft } = await import('../src/interpreter.ts')
 const {
@@ -47,6 +48,58 @@ const {
   PanelWorkspaceTreeGroup,
   PanelWorkspaceTreeItem,
 } = await import('../src/panel-workspace.tsx')
+
+test('optional colors show absence without writing the native picker fallback and preserve authored CSS values', async () => {
+  const root = createRoot(document.getElementById('root'))
+  let value = '', calls = 0, disabled = false
+  const show = () => root.render(React.createElement(ColorControl, { value, label: 'Color', disabled,
+    onChange(next) { value = next; calls++; show() } }))
+  const change = async (selector, next) => {
+    const input = document.querySelector(selector)
+    Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value').set.call(input, next)
+    await React.act(async () => input.dispatchEvent(new dom.window.Event('input', { bubbles: true })))
+  }
+  try {
+    await React.act(show)
+    assert.equal(calls, 0)
+    assert.equal(document.querySelector('.dsh-color-swatch').textContent, '—')
+    assert.match(document.querySelector('input[type=color]').getAttribute('aria-label'), /未设置/)
+    assert.equal(document.querySelector('input[type=text]').value, '')
+    for (const next of ['#abc', 'rgba(20, 40, 60, 0.5)', 'var(--customer-brand)', '']) {
+      await change('input[type=text]', next)
+      assert.equal(value, next, 'editing does not normalize the authored color')
+      assert.equal(document.querySelector('.dsh-color-swatch').textContent, next ? '' : '—')
+    }
+    await change('input[type=color]', '#445566')
+    assert.equal(value, '#445566', 'an explicit picker selection remains editable')
+    disabled = true; await React.act(show)
+    assert.equal(document.querySelector('input[type=color]').disabled, true)
+    await change('input[type=text]', 'red')
+    assert.equal(value, '#445566', 'readonly controls cannot change the draft')
+  } finally { await React.act(() => root.unmount()) }
+})
+
+test('integration credential names preserve user spelling and non-ASCII text', async () => {
+  const manifest = parsePanelManifest(await readFile(new URL('../../skills-web-app/bundles/integration_design/panel.yaml', import.meta.url), 'utf8'))
+  const field = manifest.fields.find(field => field.key === 'secrets')
+  const root = createRoot(document.getElementById('root'))
+  let record = { secrets: { kept: { id: 'kept', name: '访问令牌引用', description: 'Purpose only' } }, secret_order: ['kept'] }
+  const show = () => root.render(React.createElement(RecordMap, { field, record, editable: true,
+    onPatch(patch) { record = { ...record, ...patch }; show() } }))
+  try {
+    await React.act(show)
+    for (const value of ['临时配置项', 'api-key']) {
+      const input = document.querySelector('[data-child-record="kept"] input')
+      assert.ok(input, 'the credential name remains an editable input')
+      Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value').set.call(input, value)
+      await React.act(async () => input.dispatchEvent(new dom.window.Event('input', { bubbles: true })))
+      assert.equal(record.secrets.kept.name, value)
+    }
+    assert.equal(record.secrets.kept.id, 'kept')
+    assert.equal(record.secrets.kept.description, 'Purpose only')
+    assert.deepEqual(record.secret_order, ['kept'])
+  } finally { await React.act(() => root.unmount()) }
+})
 
 test('declarative text artifact deletion restores net state without losing sibling edits', async () => {
   const manifest = parsePanelManifest(await readFile(new URL('../../skills-web-app/bundles/whiteboard/panel.yaml', import.meta.url), 'utf8'))
@@ -179,6 +232,10 @@ test('map-key-only records do not invent id or order fields', async () => {
 
 test('source cards read only on demand, pin revisions and escape source content', async () => {
   const container = dom.window.document.getElementById('root'), root = createRoot(container), reads = []
+  container.classList.add('dsh-design-panel')
+  const style = dom.window.document.createElement('style')
+  style.textContent = await readFile(new URL('../src/visual-components.css', import.meta.url), 'utf8')
+  dom.window.document.head.append(style)
   const value = { r: { file: 'questions/state.json', revision: 'a'.repeat(40), pointer: '/answer', note: 'Evidence' } }
   await React.act(async () => root.render(React.createElement(SourceReferences, { value, options: { sourceRevision: 'b'.repeat(40), readArtifact: async (path, revision) => {
     reads.push([path, revision]); return { found: true, content: JSON.stringify({ answer: revision[0] === 'a' ? '<script>not executable</script>' : 'Updated' }) }
@@ -190,7 +247,14 @@ test('source cards read only on demand, pin revisions and escape source content'
   assert.match(container.textContent, /当前来源已变化/)
   assert.match(container.textContent, /<script>not executable<\/script>/)
   assert.equal(container.querySelector('script'), null)
+  for (const title of container.querySelectorAll('.dsh-source-reference > section > strong')) {
+    const css = dom.window.getComputedStyle(title)
+    assert.equal(css.fontWeight, '500'); assert.equal(css.fontSize, '14px'); assert.equal(css.lineHeight, '20px')
+  }
+  assert.equal(container.querySelectorAll('.dsh-source-reference > section > strong').length, 2, 'pinned and changed sources share the same title role')
   await React.act(async () => root.unmount())
+  container.classList.remove('dsh-design-panel')
+  style.remove()
 })
 
 test('official question manifest declares its policy; malformed policies fail closed', async () => {
@@ -302,8 +366,9 @@ test('related editor filters without rewriting siblings and binds new records to
   assert.equal(editor.querySelector('[data-record=y]'), null)
   assert.equal(editor.querySelector('[data-field=parent_ref] select'), null)
   const add = editor.querySelector('.dsh-record-related-add')
-  assert.equal(editor.querySelector('header button'), null, 'adding belongs to the collection tail, not the title row')
-  assert.equal(editor.lastElementChild, add)
+  const collection = editor.querySelector(':scope > .dsh-record-related-collection')
+  assert.equal(collection.querySelector(':scope > summary .dsh-record-related-add'), null, 'adding belongs to the collection tail, not the title row')
+  assert.ok(collection.querySelector(':scope > .dsh-design-form-group-content').lastElementChild === add, 'the Add action remains after the collection content')
   assert.equal(add.textContent, 'Add')
   assert.equal(add.getAttribute('aria-label'), 'Add Child')
   assert.equal(add.getAttribute('title'), 'Add Child')
@@ -425,33 +490,26 @@ test('declarative fixed recommendation badges preserve dynamic recommendations a
   await React.act(async () => root.unmount())
 })
 
-test('text supplements stay readonly inside the answer shell and preserve collapsed content', async () => {
+test('text questions have one answer area and never render a supplement in editing or reading', async () => {
   const { PanelLocaleContext } = await import('../src/panel-i18n.tsx')
   const container = dom.window.document.getElementById('root')
   const root = createRoot(container)
   const changes = []
   const question = { id: 'text', prompt: '说明', kind: 'text', answer: '答案', detail: '第一行\n第二行' }
   const choice = { id: 'choice', prompt: '选择', kind: 'single', answer: 'yes', detail: '选择题的补充', choices: [{ value: 'yes', label: '同意' }] }
-  const show = (editable, detail = question.detail) => root.render(React.createElement(PanelLocaleContext.Provider, { value: 'en-US' },
-    React.createElement(StandardQuestionList, { questions: [{ ...question, detail }, choice], editable, collapseAnswered: false,
+  const show = (editable, collapseAnswered, locale) => root.render(React.createElement(PanelLocaleContext.Provider, { value: locale },
+    React.createElement(StandardQuestionList, { questions: [question, choice], editable, collapseAnswered,
       onDetailChange: (...args) => changes.push(args) })))
-  await React.act(async () => show(true))
-  const shell = container.querySelector('.dsh-standard-question-answer-shell')
-  const context = shell.querySelector('[data-testid=standard-question-context]')
-  assert.equal(context.querySelector('span').textContent, 'Additional context')
-  assert.equal(context.querySelector('.dsh-standard-question-answer-info').textContent, question.detail)
-  assert.equal(context.querySelector('input,textarea,[contenteditable=true]'), null)
-  assert.equal(shell.querySelectorAll('textarea').length, 1)
-  assert.equal(shell.querySelector('[data-testid=standard-question-detail]'), null)
-  assert.equal(container.querySelector('[data-question-id=choice] [data-testid=standard-question-detail]').placeholder, 'Additional context (optional)')
-  await React.act(async () => show(false))
-  assert.equal(container.querySelector('.dsh-standard-question-answer-shell'), null)
-  assert.equal(container.querySelector('.dsh-standard-question-result .dsh-standard-question-answer-info').textContent, question.detail)
-  assert.equal(container.querySelector('[data-testid=standard-question-context] > span').textContent, 'Additional context')
-  assert.equal(container.querySelector('[data-question-id=choice] .dsh-standard-question-result p > span').textContent, 'Additional context')
-  assert.equal(container.querySelector('input,textarea'), null)
-  await React.act(async () => show(false, '  '))
-  assert.equal(container.querySelector('[data-testid=standard-question-context]'), null)
+  for (const locale of ['zh-CN', 'en-US']) for (const editable of [true, false]) for (const collapsed of [true, false]) {
+    await React.act(async () => show(editable, collapsed, locale))
+    const text = container.querySelector('[data-question-id=text]')
+    assert.equal(text.querySelectorAll('textarea').length, editable && !collapsed ? 1 : 0)
+    assert.equal(text.querySelector('input,[data-testid=standard-question-detail],[data-testid=standard-question-context]'), null)
+    assert.equal(text.textContent.includes(question.detail), false, 'saved supplements are not a second read-only answer')
+    assert.ok(text.textContent.includes(question.answer) || text.querySelector('textarea')?.value === question.answer)
+    const choiceCard = container.querySelector('[data-question-id=choice]')
+    assert.ok(choiceCard.textContent.includes(choice.detail) || choiceCard.querySelector('[data-testid=standard-question-detail]')?.value === choice.detail)
+  }
   assert.deepEqual(changes, [])
   assert.equal(question.detail, '第一行\n第二行')
   await React.act(async () => root.unmount())
@@ -516,7 +574,8 @@ test('standard question list renders shared text, single and multiple interactio
       .dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
   })
   assert.equal(container.querySelectorAll('[data-question-id="audience"] textarea').length, 1)
-  assert.match(container.querySelector('[data-question-id="audience"] [data-testid="standard-question-context"]')?.textContent ?? '', /第一版先面向个人。/)
+  assert.equal(container.querySelector('[data-question-id="audience"] [data-testid="standard-question-context"]'), null)
+  assert.equal(container.querySelector('[data-question-id="audience"]').textContent.includes('第一版先面向个人。'), false)
   const detail = container.querySelector('[data-question-id="boundary"] [data-testid="standard-question-detail"]')
   assert.equal(detail.tagName, 'INPUT')
   assert.equal(detail.type, 'text')
@@ -548,7 +607,7 @@ test('provider-declared answered questions do not show an unanswered placeholder
   assert.equal(container.querySelector('[data-question-id="detail-only"] .is-empty'), null)
   assert.equal(container.querySelector('[data-question-id="attachment-only"] .is-empty'), null)
   assert.equal(container.querySelector('[data-question-id="whitespace-only"] .is-empty')?.textContent, '未回答')
-  assert.match(container.textContent, /先记录边界。/)
+  assert.doesNotMatch(container.textContent, /先记录边界。/)
   assert.match(container.textContent, /reference\.webp/)
   assert.equal(container.querySelectorAll('[data-answered="true"]').length, 2)
 
@@ -569,7 +628,9 @@ test('question workspace provides round navigation and keeps one selected batch 
   })
   assert.equal(container.querySelectorAll('.dsh-panel-workspace-sidebar').length, 1)
   assert.equal(container.querySelector('.dsh-panel-workspace-sidebar')?.textContent?.includes('先回答当前必要的问题。'), false)
-  assert.equal(container.querySelector('.dsh-panel-workspace-tip')?.textContent, '先回答当前必要的问题。')
+  assert.equal(container.querySelector('.dsh-panel-workspace-tip'), null, 'guidance does not occupy a content row')
+  await React.act(async () => container.querySelector('.dsh-panel-guidance-trigger').click())
+  assert.equal(document.querySelector('.dsh-panel-guidance-popup')?.textContent, '先回答当前必要的问题。')
   assert.equal(container.querySelectorAll('.dsh-standard-question-card').length, 1)
   assert.match(container.textContent, /当前问题/)
   const historyButton = [...container.querySelectorAll('.dsh-panel-workspace-nav-items button')][1]
@@ -595,8 +656,8 @@ test('question rounds separate authored titles and descriptions without changing
   }))
   try {
     await React.act(async () => { show(introduction) })
-    const heading = () => container.querySelector('.dsh-question-workspace-header h2')?.textContent
-    const description = () => container.querySelector('.dsh-question-workspace-header p')?.textContent
+    const heading = () => container.querySelector('.dsh-panel-header-heading')?.textContent
+    const description = () => container.querySelector('.dsh-panel-header-context')?.textContent
     const navigation = () => container.querySelector('.dsh-panel-workspace-nav-label')?.textContent
     assert.equal(navigation(), '确认本轮业务目标')
     assert.equal(container.querySelector('.dsh-panel-workspace-nav-eyebrow').textContent, '本轮确认')
@@ -768,6 +829,53 @@ test('native question attachment presentation preserves image preview, file meta
   await React.act(async () => root.unmount())
 })
 
+test('titled containers support question answers and board records without nested framing', async () => {
+  const { renderToStaticMarkup } = await import('react-dom/server')
+  const { RecordBoard } = await import('../src/record-board.tsx')
+  const css = await readFile(new URL('../src/visual-components.css', import.meta.url), 'utf8')
+  // JSDOM cannot resolve custom properties in padding/borders. Substitute only
+  // their authored fallbacks here; real Chromium checks the themed stylesheet.
+  const resolved = css.replace(/var\(--[^,()]+,\s*([^()]+)\)/g, '$1')
+  const questions = ['single', 'grouped1', 'grouped2'].map(id => ({ id, prompt: id, kind: 'text', answer: '' }))
+  const manifest = { version: 1, panel_kind: 'evidence_workbook', sections: [{ id: 'items', title: 'Items' }], fields: [] }
+  const board = grouped => React.createElement(RecordBoard, {
+    manifest, node: { id: grouped ? 'grouped' : 'flat', component: 'record_board', source: 'items', board: { label: 'name', ...(grouped ? { group: 'group' } : {}) } },
+    data: { items: { first: { name: 'First', group: 'Group' }, second: { name: 'Second', group: 'Group' } } }, render: () => null,
+  })
+  const html = renderToStaticMarkup(React.createElement('div', { className: 'dsh-design-panel' },
+    React.createElement(StandardQuestionList, { questions, editable: true, onAnswerChange() {}, cardGroups: [{ id: 'questions', title: 'Questions', questionIds: ['grouped1', 'grouped2'] }] }),
+    board(true), board(false), React.createElement(RecordMap, {
+      field: { key: 'fields', control: 'record_map', columns: [{ key: 'name', label: 'Name', control: 'text' }] },
+      record: { fields: { field: { name: 'Field' } } }, editable: false, onPatch() {},
+    })))
+  const page = new JSDOM(`<style>${resolved}</style>${html}`)
+  try {
+    const doc = page.window.document, style = element => page.window.getComputedStyle(element)
+    const cards = doc.querySelectorAll('.dsh-panel-content-card')
+    assert.equal(cards.length, 5, 'all four board records and the nested record keep their base content cards')
+    for (const card of cards) {
+      assert.equal(style(card).paddingLeft, '16px')
+      assert.equal(style(card).borderRadius, '8px')
+      assert.equal(style(card).borderLeftWidth, '1px')
+    }
+    const groups = doc.querySelectorAll('.dsh-panel-content-group')
+    assert.equal(groups.length, 4, 'three question containers and one board group share the supporting surface')
+    for (const group of groups) {
+      assert.equal(style(group).paddingLeft, '12px')
+      assert.equal(style(group).borderRadius, '12px')
+      const card = group.querySelector('.dsh-panel-content-card, .dsh-standard-question-answer-shell')
+      assert.notEqual(style(group).backgroundColor, style(card).backgroundColor, 'chapter and record cannot flatten into one surface')
+      assert.equal(style(card).borderLeftWidth, '1px', 'records and actual answer editors retain their individual boundary')
+    }
+    const questionGroup = doc.querySelector('[data-question-card-group="questions"]')
+    assert.equal(questionGroup.classList.contains('dsh-panel-content-group'), false, 'a question collection keeps its title and ordering without nesting a second muted frame')
+    assert.ok(doc.querySelector('[data-question-id="grouped1"] .dsh-standard-question-answer-shell'), 'answer boundary remains')
+    assert.ok(doc.querySelector('.dsh-record-board-group-heading.dsh-panel-disclosure .dsh-panel-disclosure-icon'), 'group keeps shared disclosure')
+    assert.equal(style(doc.querySelector('[data-question-id="single"] h3')).fontWeight, '500')
+    assert.equal(style(doc.querySelector('[data-board-record] h4')).fontWeight, '500')
+  } finally { page.window.close() }
+})
+
 test('authored card groups frame contiguous cards and preserve answers, actions and input order', async () => {
   const container = document.getElementById('root'), root = createRoot(container)
   const questions = ['a', 'b', 'c', 'd'].map(id => ({ id, prompt: id, kind: 'single', answer: '',
@@ -931,7 +1039,8 @@ test('presentation switches preserve text answers and default cards while invali
   const render = cardGroups => root.render(React.createElement(StandardQuestionList, { questions, cardGroups, editable: true }))
   await React.act(async () => render([{ id: 'text', title: 'Text', questionIds: ['a'], presentation: { alwaysExpanded: true, showAttachments: false, showDetail: true } }]))
   assert.equal(container.querySelector('textarea').value, 'Saved answer')
-  assert.match(container.querySelector('[data-testid="standard-question-context"]').textContent, /Saved context/)
+  assert.equal(container.querySelector('[data-testid="standard-question-context"]'), null)
+  assert.equal(container.textContent.includes('Saved context'), false)
   assert.ok(container.querySelector('[data-question-id="b"] [data-testid="standard-question-edit"]'))
   await React.act(async () => container.querySelector('[data-question-id="b"] [data-testid="standard-question-edit"]').click())
   assert.equal(container.querySelector('[data-testid="standard-question-detail"]').value, 'Saved detail')
@@ -967,4 +1076,200 @@ test('expanded group remains readonly in historical workspace rounds', async () 
   assert.deepEqual(changes, [])
   assert.equal(container.querySelector('[data-testid="standard-question-edit"]'), null)
   await React.act(async () => root.unmount())
+})
+
+
+test('choice summaries use the current UI language without translating or changing saved answers', () => {
+  const item = { id: 'choices', prompt: 'Review', kind: 'multiple', answer: ['saved', 'recipient', 'external'], choices: [{ value: 'saved', label: 'Saved' }, { value: 'recipient', label: 'Recipient' }] }
+  const before = structuredClone(item)
+  assert.equal(standardQuestionSummary(item, 'en-US'), 'Saved, Recipient, external')
+  assert.equal(standardQuestionSummary(item, 'zh-CN'), 'Saved、Recipient、external')
+  assert.deepEqual(item, before)
+})
+
+test('reading choice items preserve saved boundaries and order while text remains one complete answer', async () => {
+  const container = document.createElement('div')
+  document.body.append(container)
+  const root = createRoot(container)
+  const questions = [
+    { id: 'text', prompt: 'Context', kind: 'text', answer: 'First paragraph, with punctuation.\n第二段，保留原文。' },
+    { id: 'choices', prompt: 'Review', kind: 'multiple', answer: ['a', 'external', 'b'], choices: [
+      { value: 'b', label: 'Notify, retry' }, { value: 'a', label: '保存，审核' },
+    ] },
+  ]
+  const before = structuredClone(questions), writes = []
+  try {
+    await React.act(async () => root.render(React.createElement(StandardQuestionList, {
+      questions, editable: true, onAnswerChange: (...args) => writes.push(args),
+    })))
+    const choice = container.querySelector('[data-question-id=choices]')
+    assert.deepEqual([...choice.querySelectorAll('ul > li')].map(node => node.textContent), ['保存，审核', 'external', 'Notify, retry'])
+    assert.equal(container.querySelectorAll('[data-question-id=text] .dsh-panel-reading-item').length, 1)
+    assert.equal(container.querySelector('[data-question-id=text] .dsh-panel-reading-item').textContent, questions[0].answer)
+    assert.equal(choice.querySelector('.dsh-panel-reading-item').hasAttribute('tabindex'), false, 'reading items do not become pretend controls')
+    await React.act(async () => choice.querySelector('[data-testid=standard-question-edit]').click())
+    assert.equal(choice.querySelectorAll('input[type=checkbox]:checked').length, 2, 'original known selections remain selected in the existing editor')
+    assert.deepEqual(writes, [], 'reading and opening the editor never rewrite unknown values or answer order')
+    assert.deepEqual(questions, before)
+  } finally { await React.act(async () => root.unmount()); container.remove() }
+})
+
+const clickQuestionControl = element => React.act(async () => {
+  element.click()
+  await new Promise(resolve => setTimeout(resolve, 0))
+})
+
+test('question disclosure retains answer editors, nested state and an in-flight attachment upload', async () => {
+  const container = document.createElement('div'); document.body.append(container)
+  const root = createRoot(container), writes = [], uploads = []
+  let question = { id: 'draft', prompt: 'Keep the draft', note: 'Explain the current context', kind: 'text', answer: '' }
+  let finishUpload
+  const uploading = new Promise(resolve => { finishUpload = resolve })
+  function Accessory() {
+    const [count, setCount] = React.useState(0)
+    return React.createElement('button', { type: 'button', 'data-accessory': true, onClick: () => setCount(value => value + 1) }, `Inner ${count}`)
+  }
+  const show = () => root.render(React.createElement(StandardQuestionList, {
+    questions: [question], editable: true,
+    onAnswerChange: (id, answer) => { writes.push([id, answer]); question = { ...question, answer }; show() },
+    onUploadFiles: async (id, files) => { uploads.push([id, files.map(file => file.name)]); await uploading },
+    renderAccessory: () => React.createElement(Accessory),
+  }))
+  try {
+    await React.act(async () => show())
+    const card = container.querySelector('.dsh-standard-question-card'), toggle = card.querySelector('.dsh-standard-question-toggle')
+    const body = document.getElementById(toggle.getAttribute('aria-controls'))
+    const editor = body.querySelector('textarea'), fileInput = body.querySelector('input[type=file]')
+    const accessory = body.querySelector('[data-accessory]')
+    assert.equal(toggle.getAttribute('aria-expanded'), 'true')
+    assert.equal(body.hidden, false)
+    assert.equal(toggle.querySelector('.dsh-standard-question-heading > p').textContent, question.note)
+    await React.act(async () => {
+      Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype, 'value').set.call(editor, 'Unsaved answer')
+      editor.dispatchEvent(new dom.window.Event('input', { bubbles: true }))
+      accessory.click()
+    })
+    Object.defineProperty(fileInput, 'files', { configurable: true, value: [new dom.window.File(['draft'], 'draft.txt')] })
+    await React.act(async () => fileInput.dispatchEvent(new dom.window.Event('change', { bubbles: true })))
+    assert.equal(body.querySelector('.dsh-question-attachment-add').disabled, true)
+    await clickQuestionControl(toggle)
+    assert.equal(body.hidden, true)
+    assert.equal(toggle.getAttribute('aria-expanded'), 'false')
+    assert.ok(body.querySelector('textarea') === editor, 'folding does not unmount the editor')
+    await React.act(async () => show())
+    assert.equal(body.hidden, true, 'controlled answer updates do not reset visibility')
+    assert.ok(body.querySelector('input[type=file]') === fileInput, 'upload state keeps its original owner')
+    await clickQuestionControl(toggle)
+    assert.equal(editor.value, 'Unsaved answer')
+    assert.equal(accessory.textContent, 'Inner 1')
+    assert.equal(body.querySelector('.dsh-question-attachment-add').disabled, true)
+    await React.act(async () => finishUpload())
+    assert.equal(body.querySelector('.dsh-question-attachment-add').disabled, false)
+    assert.deepEqual(writes, [['draft', 'Unsaved answer']])
+    assert.deepEqual(uploads, [['draft', ['draft.txt']]])
+  } finally { finishUpload(); await React.act(async () => root.unmount()); container.remove() }
+})
+
+test('question disclosure is independent of editing, sibling actions, rejection and save echo', async () => {
+  const container = document.createElement('div'); document.body.append(container)
+  const root = createRoot(container), edits = [], rejections = []
+  let question = { id: 'review', prompt: 'Review the choice', kind: 'multiple', answer: ['a'], choices: [{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }] }
+  let collapseToken = 0
+  const show = () => root.render(React.createElement(StandardQuestionList, {
+    questions: [question], editable: true, allowChoiceActions: true, collapseToken,
+    onAnswerChange: (id, answer) => { edits.push([id, answer]); question = { ...question, answer }; show() },
+    onRejectedChange: (id, rejected) => { rejections.push([id, rejected]); question = { ...question, rejected }; show() },
+  }))
+  try {
+    await React.act(async () => show())
+    const card = container.querySelector('.dsh-standard-question-card'), toggle = card.querySelector('.dsh-standard-question-toggle')
+    const body = document.getElementById(toggle.getAttribute('aria-controls'))
+    assert.ok(body.querySelector('.dsh-standard-question-result'))
+    await clickQuestionControl(toggle)
+    await clickQuestionControl(card.querySelector('[data-testid=standard-question-edit]'))
+    assert.equal(body.hidden, false, 'Edit exposes the editor even after the user folded the card')
+    assert.equal(body.querySelectorAll('input[type=checkbox]').length, 2)
+    await clickQuestionControl(card.querySelector('[data-testid=standard-question-select-all]'))
+    assert.equal(body.hidden, false, 'select-all is not a disclosure action')
+    await clickQuestionControl(toggle)
+    const reject = () => [...card.querySelectorAll('.dsh-standard-question-actions button')].find(button => !button.dataset.testid)
+    await clickQuestionControl(reject())
+    assert.equal(body.hidden, true, 'Skip does not implicitly reopen or fold a card')
+    assert.ok(card.querySelector('.dsh-standard-question-rejected'))
+    await clickQuestionControl(reject())
+    assert.equal(body.hidden, true)
+    await clickQuestionControl(card.querySelector('[data-testid=standard-question-edit]'))
+    assert.equal(body.hidden, false)
+    await clickQuestionControl(toggle)
+    collapseToken++
+    await React.act(async () => show())
+    assert.equal(body.hidden, true, 'save echo may return to reading but does not reset disclosure choice')
+    assert.deepEqual(edits, [['review', ['a', 'b']]])
+    assert.deepEqual(rejections, [['review', true], ['review', false]])
+  } finally { await React.act(async () => root.unmount()); container.remove() }
+})
+
+test('fixed and readonly questions keep independent accessible disclosure without relaxing edit guards', async () => {
+  const container = document.createElement('div'); document.body.append(container)
+  const root = createRoot(container), writes = []
+  const questions = ['first', 'second'].map(id => ({ id, prompt: id, kind: 'single', answer: 'a', choices: [{ value: 'a', label: 'A' }] }))
+  const show = policy => root.render(React.createElement(StandardQuestionList, {
+    questions, cardGroups: [{ id: 'fixed', title: 'Fixed configuration', questionIds: ['first', 'second'], presentation: { alwaysExpanded: true } }],
+    onAnswerChange: (...args) => writes.push(args), ...policy,
+  }))
+  try {
+    await React.act(async () => show({ editable: false }))
+    const toggles = [...container.querySelectorAll('.dsh-standard-question-toggle')]
+    const bodies = toggles.map(toggle => document.getElementById(toggle.getAttribute('aria-controls')))
+    assert.notEqual(bodies[0].id, bodies[1].id)
+    assert.ok(toggles.every(toggle => toggle.tagName === 'SUMMARY' && toggle.parentElement.tagName === 'DETAILS' && toggle.getAttribute('aria-expanded') === 'true'))
+    assert.ok([...container.querySelectorAll('input[type=radio]')].every(input => input.disabled))
+    await clickQuestionControl(toggles[0])
+    assert.equal(bodies[0].hidden, true)
+    assert.equal(bodies[1].hidden, false)
+    await React.act(async () => show({ editable: true, disabled: true }))
+    assert.equal(bodies[0].hidden, true)
+    toggles[0].focus()
+    for (const key of ['Enter', ' ']) {
+      const event = new dom.window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
+      assert.equal(toggles[0].dispatchEvent(event), true, 'disclosure leaves native summary keyboard activation intact')
+    }
+    await clickQuestionControl(toggles[0])
+    assert.equal(bodies[0].hidden, false)
+    assert.ok(document.activeElement === toggles[0])
+    assert.deepEqual(writes, [])
+  } finally { await React.act(async () => root.unmount()); container.remove() }
+})
+
+test('native question summary uses the complete header and excludes its child actions from activation', async () => {
+  const { chromium } = await import('playwright')
+  const { renderToStaticMarkup } = await import('react-dom/server')
+  const browser = await chromium.launch({ headless: true })
+  try {
+    const page = await browser.newPage()
+    const html = renderToStaticMarkup(React.createElement(StandardQuestionList, {
+      editable: true, onRejectedChange() {},
+      questions: [{ id: 'native', prompt: 'Native question', kind: 'text', answer: 'Saved answer' }],
+    }))
+    await page.setContent(html)
+    const card = page.locator('.dsh-standard-question-card'), summary = card.locator(':scope > summary')
+    assert.equal(await summary.evaluate(node => node.lastElementChild.classList.contains('dsh-panel-disclosure-icon')), true, 'one disclosure glyph follows both the title and the actions')
+    assert.equal(await summary.locator('.dsh-standard-question-heading button').count(), 0, 'there is one native disclosure rather than a nested title toggle')
+    await summary.locator('.dsh-panel-disclosure-label').click()
+    assert.equal(await card.evaluate(node => node.open), false)
+    for (const action of await summary.locator('button').all()) {
+      await action.click()
+      assert.equal(await card.evaluate(node => node.open), false, 'the native click on Edit or Skip cannot activate the parent summary')
+      await action.focus()
+      await page.keyboard.press('Space')
+      assert.equal(await card.evaluate(node => node.open), false, 'Space on an action remains a button action')
+    }
+    await summary.focus()
+    await page.keyboard.press('Enter')
+    assert.equal(await card.evaluate(node => node.open), true)
+    await page.keyboard.press('Space')
+    assert.equal(await card.evaluate(node => node.open), false)
+    await summary.click({ position: { x: 2, y: 2 } })
+    assert.equal(await card.evaluate(node => node.open), true, 'header whitespace belongs to the same native target')
+  } finally { await browser.close() }
 })

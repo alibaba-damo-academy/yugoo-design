@@ -18,7 +18,7 @@
         <bpmn:flowNodeRef>UserTask_P-001_5</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>ExclusiveGateway_P-001_3</bpmn:flowNodeRef>
       </bpmn:lane>
-      <bpmn:lane id="Lane_P-001_4" name="系统">
+      <bpmn:lane id="Lane_P-001_4" name="System">
         <bpmn:flowNodeRef>ServiceTask_P-001_1</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>ServiceTask_P-001_2</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>EndEvent_P-001_1</bpmn:flowNodeRef>

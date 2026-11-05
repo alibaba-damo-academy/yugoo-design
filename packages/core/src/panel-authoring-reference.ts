@@ -28,7 +28,9 @@ export function queryPanelAuthoringReference(material: unknown, name: string, re
   }
   if (reference === 'docs') {
     if (!object(entry.documentation) || !Array.isArray(entry.documentation.sections) || !entry.documentation.sections.length) throw Error('Missing component documentation')
-    return { component: name, documentation: { ...entry.documentation, read: { name, reference: 'docs' } }, limits: entry.limits, protocolStatus: entry.protocolStatus }
+    return { component: name, documentation: { ...entry.documentation,
+      sharedStandards: entry.documentation.sharedStandards ?? material.sharedStandards,
+      read: { name, reference: 'docs' } }, limits: entry.limits, protocolStatus: entry.protocolStatus }
   }
   if (reference === 'examples') {
     if (!Array.isArray(entry.examples)) throw Error('Missing component examples')

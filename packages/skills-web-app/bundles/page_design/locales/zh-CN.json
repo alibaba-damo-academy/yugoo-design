@@ -30,5 +30,16 @@
   "members": "分区内页面",
   "map": "页面地图",
   "guidance": "从用户要完成的任务出发，检查页面内容、操作和跳转是否连贯，有没有遗漏或死路；地图位置和分区只影响组织方式。",
-  "shared": "公共规格"
+  "shared": "公共样式",
+  "sharedLayout": "布局",
+  "sharedBrand": "品牌标识",
+  "sharedBrandName": "品牌名称",
+  "sharedBrandDescription": "外观说明",
+  "sharedMarkRef": "标识引用",
+  "sharedNavigation": "导航",
+  "sharedNavigationGroup": "导航分组",
+  "sharedIconRef": "图标引用",
+  "sharedNavigationId": "导航编号",
+  "sharedComponents": "共享组件",
+  "sharedSource": "视觉风格来源"
 }

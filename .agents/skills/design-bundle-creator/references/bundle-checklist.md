@@ -27,7 +27,7 @@
 
 控件和组件是封闭集合，写入前读 `panel-dsl.ts` 中相应类型与绑定规则。例如当前有 `list` / `multi_select`，没有一个可任意猜用的 `tags` 控件；子表格控件还受 `ROW_COLUMN_CONTROLS` 限制。按数据和交互目标选类型，不照搬其他 UI 框架的命名。
 
-问题清单优先使用标准 `question_workspace`（无侧栏需求的极小清单可用 `question_list`），不要用 `record_form` 重新拼一套问答 UI。工作区复用通用 `panel_workspace` 的左侧导航和主内容边界；左侧只承载导航，工作区说明写在 `description`，由共享的顶部悬浮 Tip Bar 呈现，不要把长说明塞进窄侧栏。可选 `round` 自动形成轮次，未声明轮次时仍形成一个“当前问题”分组。记录的通用字段是 `prompt`、可选 `note`、`kind`（`text | single | multiple`）、可选 `choices`、`answer` 和可选 `detail`；其中 `choices` 仅服务交互选项，用户事实以非空 `answer` 为准。文本题只编辑一个 `answer` 文本框，已有 `detail` 作为只读上下文保留；选择题可用 `detail` 补充所选答案。可选 `rejected` 只表达问题交互状态；可选 `multimodal_answer` 使用标准本地附件引用，上传字节由 Host 的浏览器传输与 Panel Save 原子保存，绝不能进入 canonical JSON。不要为不需要的 Bundle 强制添加轮次、拒答或附件字段。
+问题清单优先使用标准 `question_workspace`（无侧栏需求的极小清单可用 `question_list`），不要用 `record_form` 重新拼一套问答 UI。工作区复用通用 `panel_workspace` 的左侧导航和主内容边界；左侧只承载导航，工作区说明写在 `description`，由共享的顶部悬浮 Tip Bar 呈现，不要把长说明塞进窄侧栏。可选 `round` 自动形成轮次，未声明轮次时仍形成一个“当前问题”分组。记录的通用字段是 `prompt`、可选 `note`、`kind`（`text | single | multiple`）、可选 `choices`、`answer` 和可选 `detail`；其中 `choices` 仅服务交互选项，用户事实以非空 `answer` 为准。文本题只显示一个 `answer` 文本框，不另显示 `detail` 输入或历史只读区；选择题可用 `detail` 补充所选答案。可选 `rejected` 只表达问题交互状态；可选 `multimodal_answer` 使用标准本地附件引用，上传字节由 Host 的浏览器传输与 Panel Save 原子保存，绝不能进入 canonical JSON。不要为不需要的 Bundle 强制添加轮次、拒答或附件字段。
 
 需要 Panel 内左侧导航的其他信息切片使用 `panel_workspace` 的 `sidebar` / `main` slots，复用统一的 containment、滚动和窄宽度退化；不要只为某个 Kit 复制一套双栏 CSS。该布局只定义交互骨架，不改变 Bundle 的 canonical 所有权和领域结构。
 

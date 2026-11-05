@@ -13,14 +13,13 @@ const { renderManifest, applyPanelUpdatesToDraft } = await import('../src/interp
 after(() => dom.window.close())
 const click = async element => { assert.ok(element); await React.act(async () => element.click()) }
 const nav = label => [...document.querySelectorAll('nav button')].find(button => button.getAttribute('aria-label') === label)
-const action = text => [...document.querySelectorAll('.dsh-record-board-actions button')].find(button => button.textContent === text)
 const type = async text => React.act(async () => {
   const input = document.querySelector('textarea')
   Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype, 'value').set.call(input, text)
   input.dispatchEvent(new dom.window.Event('input', { bubbles: true }))
 })
 
-test('reading-card input survives navigation; only explicit Save commits, with Cancel, readonly and stale guards retained', async () => {
+test('direct card draft survives navigation and respects global reset, readonly and canonical updates', async () => {
   const manifest = {
     version: 1, panel_kind: 'evidence_workbook',
     sections: [{ id: 'items', title: 'Items', add_mode: 'none', records_path: 'sections.items.records', fields_path: 'details' }],
@@ -39,49 +38,44 @@ test('reading-card input survives navigation; only explicit Save commits, with C
   } } } }
   const before = structuredClone(data), updates = []
   const root = createRoot(document.getElementById('root'))
-  const show = (editable = true) => React.act(async () => root.render(renderManifest(manifest, data, {
+  let editable = true
+  const render = () => root.render(renderManifest(manifest, data, {
     locale: 'en-US', editable,
-    onPanelUpdate: next => { updates.push(next); data = applyPanelUpdatesToDraft(data, next) },
-  })))
+    onPanelUpdate: next => { updates.push(next); data = applyPanelUpdatesToDraft(data, next); render() },
+  }))
+  const show = () => React.act(render)
   try {
     assert.deepEqual(validatePanelManifest(manifest), [])
     await show()
-    await click(document.querySelector('[data-board-record="a"] .dsh-record-board-actions button'))
+    assert.equal(document.querySelector('textarea').value, 'Original Alpha')
     await type('Unsubmitted Alpha revision')
+    assert.equal(data.sections.items.records.a.details.summary, 'Unsubmitted Alpha revision')
+    assert.equal(updates.length, 1, 'typing updates the existing Panel draft directly')
     await click(nav('Beta'))
-    assert.equal(document.querySelector('textarea'), null, 'another record never inherits the input')
+    assert.equal(document.querySelector('textarea').value, 'Original Beta', 'another record never inherits the input')
     await click(nav('Alpha'))
     assert.equal(document.querySelector('textarea').value, 'Unsubmitted Alpha revision')
-    assert.deepEqual(data, before)
-    assert.equal(updates.length, 0, 'navigation cannot implicitly commit an editor')
-    await show(false)
-    assert.equal(document.querySelector('textarea').disabled, true)
-    assert.equal(action('Save').disabled, true)
-    await show()
-    await click(nav('Beta'))
-    data.sections.items.records.a.details.summary = 'External Alpha revision'
-    await show()
-    await click(nav('Alpha'))
-    assert.equal(document.querySelector('textarea').value, 'Unsubmitted Alpha revision')
-    assert.ok(document.querySelector('[role="alert"]'))
-    assert.equal(action('Save').disabled, true, 'stale input cannot overwrite a newer source')
-    await click(action('Cancel'))
+    assert.equal(updates.length, 1, 'navigation adds no write')
+    editable = false; await show()
     assert.equal(document.querySelector('textarea'), null)
-    assert.equal(document.querySelector('.dsh-record-board-description').textContent, 'External Alpha revision')
-    assert.equal(updates.length, 0)
-    await click(document.querySelector('[data-board-record="a"] .dsh-record-board-actions button'))
-    await type('Accepted Alpha revision')
+    assert.equal(document.querySelector('.dsh-record-board-description').textContent, 'Unsubmitted Alpha revision')
+    assert.equal(document.querySelector('.dsh-record-board-actions'), null, 'readonly cannot submit an editor')
+    editable = true; await show()
     await click(nav('Beta'))
-    await click(nav('Alpha'))
-    await click(action('Save'))
+    data = structuredClone(before)
+    data.sections.items.records.a.details.summary = 'Current canonical Alpha revision'
     await show()
-    assert.equal(updates.length, 1)
+    await click(nav('Alpha'))
+    assert.equal(document.querySelector('textarea').value, 'Current canonical Alpha revision', 'no hidden local snapshot overwrites the current Panel draft')
+    await type('Accepted Alpha revision')
+    assert.equal(updates.length, 2)
     assert.equal(data.sections.items.records.a.details.summary, 'Accepted Alpha revision')
     assert.deepEqual(data.sections.items.records.a.source_refs, ['doc:1'])
     assert.deepEqual(data.sections.items.records.b, before.sections.items.records.b)
-    await click(nav('Beta'))
-    await click(nav('Alpha'))
-    assert.equal(document.querySelector('textarea'), null, 'Save clears transient input')
+    data = structuredClone(before); await show()
+    await click(nav('Beta')); await click(nav('Alpha'))
+    assert.equal(document.querySelector('textarea').value, 'Original Alpha', 'global draft reset is not revived by navigation')
+    assert.equal(updates.length, 2)
   } finally { await React.act(async () => root.unmount()) }
 })
 

@@ -14,16 +14,9 @@ sections:
       reorder: false
       header: {variant: detail, title: {field: title, editable: true}}
       body:
-        - kind: group
-          title: $t:ruleContent
-          description: $t:conditionHelp
-          items:
-            - {kind: field, field: condition}
-            - {kind: field, field: outcome}
-        - kind: group
-          title: $t:notes
-          description: $t:notesHelp
-          items: [{kind: field, field: notes, label: visually_hidden}]
+        - {kind: field, field: condition}
+        - {kind: field, field: outcome}
+        - {kind: field, field: notes}
     create:
       id_field: id
       defaults: {title: ''}
@@ -47,6 +40,7 @@ fields:
     applies_to: [rules]
   - key: notes
     label: $t:notes
+    description: $t:notesHelp
     control: textarea
     placeholder: $t:notesExample
     applies_to: [rules]

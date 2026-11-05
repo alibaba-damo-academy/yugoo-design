@@ -18,7 +18,8 @@
     }
   },
   "scripts": {
-    "test": "node --test test/test-reading-order.mjs test/test-channel-spacing.mjs test/test-layout-policy.mjs && node test/smoke-page-design-script.mjs && node test/test-page-file-contract.mjs && node test/smoke-flow-design-script.mjs && node test/smoke-bpmn-routing.mjs && node test/smoke-design-style-script.mjs && node test/smoke-prd-script.mjs",
+    "test": "node --test test/test-reading-order.mjs test/test-channel-spacing.mjs test/test-layout-policy.mjs test/smoke-bundle-localization.mjs && node test/smoke-page-design-script.mjs && node test/test-page-file-contract.mjs && node test/smoke-flow-design-script.mjs && node test/smoke-bpmn-routing.mjs && node test/smoke-design-style-script.mjs && node test/smoke-prd-script.mjs",
+    "test:localization": "node --test test/smoke-bundle-localization.mjs",
     "test:layout-production": "node test/smoke-layout-production.mjs",
     "test:page-file-contract": "node test/test-page-file-contract.mjs"
   },

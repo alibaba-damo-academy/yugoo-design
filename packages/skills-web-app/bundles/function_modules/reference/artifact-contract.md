@@ -75,6 +75,11 @@ do not send it to a differently pinned validator or rewrite its retained state.
 }
 ```
 
+- Optional `function_order` holds function map keys in the user’s chosen reading order.
+  Preserve it during revisions, remove deleted keys and append new keys without
+  changing unaffected positions. If absent, existing map order is used; the Panel
+  writes an order only when the user actually moves a card. Grouping still comes
+  from `function_epic`, not another membership list.
 - `function_id`, `function_name`, `function_description`, `function_epic`
   are required for every function. `priority` is optional (panel default Medium).
 - `rejected` means the user rejected the function. It remains visible in the

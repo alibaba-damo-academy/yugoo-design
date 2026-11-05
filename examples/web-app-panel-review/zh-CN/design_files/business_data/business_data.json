@@ -597,9 +597,8 @@
           "requirement": "always",
           "example": "邮件",
           "options": [
-            "待确认",
-            "已确认",
-            "暂缓"
+            "站内通知",
+            "邮件"
           ]
         },
         "delivery_key": {
@@ -716,9 +715,10 @@
           "requirement": "always",
           "example": "项目负责人",
           "options": [
-            "待确认",
-            "已确认",
-            "暂缓"
+            "客户",
+            "设计师",
+            "项目负责人",
+            "工作室管理员"
           ]
         },
         "granted_by": {

@@ -109,7 +109,10 @@ test('shared headers edit a single canonical title, retain readonly/delete seman
       y: { details: { caption: 'Gauge', note: '' } } }, order: ['y', 'x'] } }
     updates = undefined
     await show()
-    assert.equal(document.querySelector('[data-record="x"] > .dsh-design-record-fields > .dsh-design-form-group'),null,'title-only group does not leave an empty heading')
+    const groups = [...document.querySelectorAll('[data-record="x"] > .dsh-design-record-fields > .dsh-design-form-group')]
+    assert.equal(groups.some(group => group.querySelector(':scope > .dsh-design-form-group-title')?.textContent === 'Duplicated title'), false, 'title-only group does not leave an empty heading')
+    assert.equal(groups.length, 1, 'the real aliases collection keeps its content group')
+    assert.match(groups[0].textContent, /Aliases/)
     assert.equal(document.querySelector('[data-record="x"] > .dsh-design-record-fields > [data-field="caption"]'),null)
     assert.equal(document.querySelectorAll('[data-panel-title="editable"]').length,2,'one header editor per actual record')
     assert.equal(document.querySelector('[data-child-record] [data-field="caption"] input').value,'Nested alias','same-key nested name is not deduplicated')
@@ -129,7 +132,7 @@ test('shared headers edit a single canonical title, retain readonly/delete seman
       assert.equal(style('.dsh-record-inspector').paddingTop, '0px', 'a leading detail header meets guidance without an outer spacer')
       assert.equal(style('.dsh-record-inspector').paddingLeft, '16px', 'body reading gutter remains intact')
       assert.equal(style('.dsh-design-record-header.is-detail').minHeight, '44px')
-      assert.equal(style('.dsh-design-record-header.is-detail').height, '44px')
+      assert.equal(style('.dsh-design-record-header.is-detail').height, 'auto', 'the shared minimum remains 44px while authored context can expand naturally; Chromium checks actual geometry')
       detailLayout = Object.fromEntries(['display', 'alignItems', 'height'].map(key => [key, style('.dsh-design-record-header.is-detail')[key]]))
     }
     manifest.sections[0].confirm_delete = true

@@ -13,6 +13,7 @@ document.querySelector('style').textContent = readFileSync(new URL('../src/visua
   // JSDOM cannot resolve variables in padding shorthands. Browser evidence
   // checks the untouched CSS and its resolved gutter; this fixture uses its default.
   .replaceAll('var(--ygd-panel-content-gutter, 16px)', '16px')
+  .replaceAll('padding: var(--ygd-panel-detail-section-gap, 16px)', 'padding: 16px')
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 const React = await import('react')
 globalThis.React = React
@@ -36,7 +37,7 @@ test('ordinary record forms own one gutter and stacks without changing related e
       React.createElement('div', { className: 'dsh-design-panel' }, renderNode(node, manifest, data,
         { locale: 'en-US', editable, onPanelUpdate: next => { updates = next } })))))
   const style = selector => window.getComputedStyle(document.querySelector(selector))
-  const assertFormSpacing = () => {
+  const assertFormSpacing = (cardPadding = '12px') => {
     assert.equal(style('.dsh-record-workspace-frame .dsh-panel-workspace-main').paddingLeft, '0px')
     assert.equal(style('.dsh-record-inspector').paddingLeft, '16px')
     assert.equal(style('.dsh-record-inspector').paddingRight, '16px')
@@ -49,8 +50,9 @@ test('ordinary record forms own one gutter and stacks without changing related e
     assert.equal(style('.dsh-record-related-editor').paddingTop, '0px', 'one 16px boundary, not margin plus padding around a decorative line')
     assert.equal(style('.dsh-record-related-editor').borderTopWidth, '0px')
     assert.equal(style('.dsh-record-related-editor').gap, 'var(--ygd-panel-detail-control-gap, 8px)')
-    assert.equal(style('.dsh-record-related-editor > .dsh-design-record-form').gap, 'var(--ygd-panel-detail-section-gap, 16px)')
-    assert.equal(style('.dsh-record-related-editor .dsh-design-record').paddingLeft, '12px')
+    assert.equal(style('.dsh-record-related-collection > .dsh-design-form-group-content > .dsh-design-record-form').gap, 'var(--ygd-panel-detail-section-gap, 16px)')
+    assert.ok(document.querySelector('.dsh-record-related-collection.dsh-panel-content-group'), 'a child-card collection owns the shared supporting surface')
+    assert.equal(style('.dsh-record-related-editor .dsh-design-record').paddingLeft, cardPadding, 'the authored card-header form retains its inset')
     assert.equal(style('.dsh-record-related-editor .dsh-design-record').marginTop, '0px')
   }
   try {
@@ -98,9 +100,9 @@ test('ordinary record forms own one gutter and stacks without changing related e
     data = { groups: { g: { title: 'Group' } }, notes: { n: { title: 'Note', owner: 'g' } } }
     const neutralBefore = structuredClone(data)
     await show(neutral)
-    assertFormSpacing()
+    assertFormSpacing('16px')
     assert.equal(style('.dsh-record-inspector').paddingTop, '16px', 'untitled content keeps its reading inset')
-    assert.equal(style('.dsh-design-field-description').marginBottom, '0px')
+    assert.ok(document.querySelector('.dsh-design-field-label .dsh-panel-help'))
     assert.equal(document.querySelectorAll('.dsh-panel-workspace-tree-group').length, 0, 'one real collection needs no duplicate navigation root')
     assert.ok(document.querySelector('.dsh-record-related-editor [data-record="n"]'))
     assert.deepEqual(data, neutralBefore)
@@ -109,13 +111,13 @@ test('ordinary record forms own one gutter and stacks without changing related e
     // an explicitly flat neutral workspace rather than its old declaration.
     await show(neutral, false, { ...neutral.ui, navigation_layout: 'list' })
     assert.equal(document.querySelectorAll('nav [aria-expanded]').length, 0, 'explicit flat navigation stays flat')
-    assertFormSpacing()
+    assertFormSpacing('16px')
 
     const multi = { ...neutral.ui, children: [...neutral.ui.children, { id: 'text', component: 'text_block', text: 'Independent content' }] }
     await show(neutral, false, multi)
     assert.equal(document.querySelector('.is-record-form'), null)
     assert.equal(style('.dsh-record-workspace-frame .dsh-panel-workspace-main').paddingLeft, '0px')
-    assertFormSpacing()
+    assertFormSpacing('16px')
     const switched = { ...neutral.ui, workspace_view: 'switch', children: [{ id: 'canvas', component: 'text_block', text: 'Canvas' }, ...neutral.ui.children] }
     await show(neutral, false, switched)
     assert.ok(document.querySelector('.is-canvas-switch.is-record-form'), 'the detail-only side of a switch shares the same form rhythm')
@@ -196,7 +198,7 @@ test('ordinary record forms own one gutter and stacks without changing related e
       await show(declaration)
       assert.equal(style('.dsh-record-inspector').paddingLeft, '16px', `composition ${index} gutter`)
       assert.equal(style('.dsh-design-record-fields').display, 'grid', `composition ${index} rhythm`)
-      assert.equal(style('.dsh-design-record-header').height, '44px')
+      assert.equal(style('.dsh-design-record-header').minHeight, '44px', 'the header keeps its base height while allowing optional context to grow')
       assert.equal(style('.dsh-design-record-header').fontSize, '14px')
       if (index === 2) assert.ok(document.querySelector('[data-node=auxiliary].is-workspace-content'), 'bare prose owns its gutter through a shared flow context')
       assert.equal(document.querySelectorAll('.dsh-design-record-header.is-detail').length, 1, 'one canonical title bar')
@@ -232,6 +234,14 @@ test('ordinary record forms own one gutter and stacks without changing related e
     assert.ok(document.querySelector('.is-canvas-switch.is-record-tabs'))
     assert.ok(['', '0', '0px'].includes(style(slot).paddingLeft))
     assert.deepEqual(data, neutralBefore)
+
+    await show({ ...neutral, fields: neutral.fields.map(field => field.key === 'title'
+      ? { ...field, max_length: 100 } : field) }, true)
+    const counter = document.querySelector('.dsh-design-field-count')
+    assert.ok(counter, 'editable bounded text exposes its count')
+    assert.equal(window.getComputedStyle(counter).marginTop, '0px', 'field-description spacing cannot displace the label-aligned counter')
+    assert.equal(window.getComputedStyle(counter).fontSize, '12px')
+    assert.equal(window.getComputedStyle(counter).lineHeight, '20px')
 
   } finally { await React.act(async () => root.unmount()); dom.window.close() }
 })

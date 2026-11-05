@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, MessageSquare, Plug, Plus, X } from 'lucide-react'
 import type { FieldOption } from './dsl.ts'
 import { usePanelI18n } from './panel-i18n.tsx'
+import { PanelSelect } from './panel-select.tsx'
 
 /** Controlled string-list editor; labels/options are content, never domain code. */
 export function TokenList(props: {
@@ -75,9 +76,10 @@ export function TokenList(props: {
     })}
     {editable && menuMode ? <div className="dsh-token-menu-add">
       <button ref={trigger} type="button" className="dsh-token-add-trigger" aria-haspopup="menu" aria-expanded={menuOpen}
+        aria-label={t('addTokens', { item: props.label })}
         hidden={customOpen} onClick={() => setMenuOpen(!menuOpen)}
         onKeyDown={event => { if (['ArrowDown', 'ArrowUp'].includes(event.key)) { event.preventDefault(); setMenuOpen(true) } }}>
-        <Plus size={16} aria-hidden="true" /><span className="dsh-token-copy"><strong>{t('addTokens', { item: props.label })}</strong>{props.addDescription ? <small>{props.addDescription}</small> : null}</span><ChevronDown size={16} aria-hidden="true" />
+        <Plus size={16} aria-hidden="true" /><span className="dsh-token-copy"><strong>{t('add')}</strong>{props.addDescription ? <small>{props.addDescription}</small> : null}</span><ChevronDown size={16} aria-hidden="true" />
       </button>
       {menuOpen ? <div ref={menu} role="menu" aria-label={t('chooseTokens', { item: props.label })} className="dsh-token-menu"
         onKeyDown={event => {
@@ -104,9 +106,8 @@ export function TokenList(props: {
       </div> : null}
     </div> : null}</div>
     {editable && !menuMode ? <div className="dsh-token-add">
-      {props.options?.length ? <select aria-label={t('chooseTokens', { item: props.label })} value="" onChange={event => { if (event.target.value) add([event.target.value]) }}>
-        <option value="">{t('addPreset')}</option>{props.options.map(option => <option key={option.value} value={option.value} disabled={values.includes(option.value)}>{option.label}</option>)}
-      </select> : null}
+      {props.options?.length ? <PanelSelect aria-label={t('chooseTokens', { item: props.label })} value="" onValueChange={value => { if (value) add([value]) }}
+        options={[{ value: '', label: t('addPreset'), disabled: true }, ...props.options.map(option => ({ value: option.value, label: option.label, disabled: values.includes(option.value) }))]} /> : null}
       {editor}
     </div> : null}
   </div>

@@ -1,3 +1,4 @@
+import { usePanelI18n } from '../panel-i18n.tsx'
 import React from 'react'
 
 // Approved v5 source hues, shared by both graph renderers and the source legend.
@@ -18,12 +19,13 @@ export function GraphCameraTools(props: GraphCanvasTheme & {
   onRestart?: () => void
   children?: React.ReactNode
 }) {
-  return <div className='graph-camera-tools' role='group' aria-label='画布控件'>
-    <button disabled={props.disabled} aria-label='放大图谱' onClick={() => props.onZoom(1.25)}>＋</button>
-    <button disabled={props.disabled} aria-label='缩小图谱' onClick={() => props.onZoom(.8)}>－</button>
-    <button disabled={props.disabled} onClick={props.onFit}>适应画布</button>
-    <button onClick={props.onToggleDark}>画布切换到{props.dark ? '浅色' : '深色'}</button>
-    {props.onRestart && <><button disabled={props.disabled} onClick={props.onRestart}>解除固定并重新布局</button><button disabled>拖动后固定 · 仅当前视图</button></>}
+  const { t } = usePanelI18n()
+  return <div className='graph-camera-tools' role='group' aria-label={t('graphCameraControls')}>
+    <button disabled={props.disabled} aria-label={t('graphCameraZoomIn')} onClick={() => props.onZoom(1.25)}>＋</button>
+    <button disabled={props.disabled} aria-label={t('graphCameraZoomOut')} onClick={() => props.onZoom(.8)}>－</button>
+    <button disabled={props.disabled} onClick={props.onFit}>{t('graphCameraFit')}</button>
+    <button onClick={props.onToggleDark}>{t(props.dark ? 'graphCameraLight' : 'graphCameraDark')}</button>
+    {props.onRestart && <><button disabled={props.disabled} onClick={props.onRestart}>{t('graphCameraReset')}</button><span className='graph-hint'>{t('graphCameraPinHint')}</span></>}
     {props.children}
   </div>
 }

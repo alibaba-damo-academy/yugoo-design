@@ -48,7 +48,7 @@ test('host locale updates mounted shared questions and footer without discarding
   try {
     await React.act(async () => root.render(React.createElement(Panel)))
     assert.match(container.textContent, /Current questions/)
-    assert.equal(container.querySelector('#save').textContent, 'Save and assess next step')
+    assert.equal(container.querySelector('#save').textContent, 'Save & continue')
     assert.equal(container.querySelector('#empty').textContent, 'No design panels yet. Enable a design skill in the conversation first.')
     assert.equal(container.querySelector('#new-panel').textContent, 'New panel')
     assert.equal(container.querySelector('[data-testid="design-dock-meta-name"]').textContent, 'Design project: 合成项目 / Synthetic project')
@@ -58,7 +58,7 @@ test('host locale updates mounted shared questions and footer without discarding
     assert.equal(currentLanguage(), 'zh_CN')
     assert.doesNotMatch(container.textContent, /Current questions/)
     assert.match(container.textContent, /编辑/)
-    assert.equal(container.querySelector('#save').textContent, '保存并评估下一步')
+    assert.equal(container.querySelector('#save').textContent, '保存并继续')
     assert.equal(container.querySelector('#empty').textContent, '暂无设计面板。请先在对话中启用一个设计技能。')
     assert.equal(container.querySelector('#new-panel').textContent, '新建面板')
     assert.equal(container.querySelector('[data-testid="design-dock-meta-name"]').textContent, '设计项目：合成项目 / Synthetic project')
@@ -68,7 +68,7 @@ test('host locale updates mounted shared questions and footer without discarding
     assert.equal(mounts, 1)
     await switchTo('en')
     assert.match(container.textContent, /Current questions/)
-    assert.equal(container.querySelector('#save').textContent, 'Save and assess next step')
+    assert.equal(container.querySelector('#save').textContent, 'Save & continue')
     assert.equal(container.querySelector('#new-panel').textContent, 'New panel')
     assert.equal(container.querySelector('[data-testid="design-dock-meta-name"]').textContent, 'Design project: 合成项目 / Synthetic project')
     assert.ok(!container.innerHTML.includes('/synthetic/project'))
@@ -134,7 +134,7 @@ test('folder icon opens the exact project directory, localizes, reports failure 
 
 test('workspace empty state and new panel tab use shared host translations', () => {
   const source = readFileSync(new URL('../src/client/workspace.tsx', import.meta.url), 'utf8')
-  assert.match(source, /className='dsh-design-dock-empty flex-1'>\{t\.design_empty_panels\}/)
+  assert.match(source, /className='dsh-design-dock-empty flex-1'>\{access\.mode === 'recovery' \? null : t\.design_empty_panels\}/)
   assert.match(source, /value: NEW_PANEL_TAB,\s+label: t\.design_new_panel/)
   assert.doesNotMatch(source, /label: '新建面板'/)
 })

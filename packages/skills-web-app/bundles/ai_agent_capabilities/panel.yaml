@@ -11,7 +11,7 @@ empty_description: $t:empty
 sections:
   - id: skills
     title: $t:skillRoot
-    item_name: $t:skillRoot
+    item_name: $t:skillSlot
     confirm_delete: true
     create:
       id_field: id
@@ -47,7 +47,7 @@ sections:
           field: notes
   - id: tools
     title: $t:toolRoot
-    item_name: $t:toolRoot
+    item_name: $t:tool
     confirm_delete: true
     create:
       id_field: id
@@ -92,7 +92,7 @@ sections:
           field: notes
   - id: model_sources
     title: $t:modelSourceRoot
-    item_name: $t:modelSourceRoot
+    item_name: $t:modelSourceLink
     confirm_delete: true
     create:
       id_field: id
@@ -104,21 +104,21 @@ sections:
         variant: detail
         title: {field: name, editable: true}
       body:
-        - kind: field
-          field: model_connection
-        - kind: field
-          field: integration_ref
         - kind: group
           title: $t:resourceDescription
           items:
             - kind: field
+              field: model_connection
+            - kind: field
+              field: integration_ref
+            - kind: field
               field: description
               label: visually_hidden
-        - kind: field
-          field: notes
+            - kind: field
+              field: notes
   - id: knowledge_resources
     title: $t:knowledgeResourceRoot
-    item_name: $t:knowledgeResourceRoot
+    item_name: $t:knowledgeResource
     confirm_delete: true
     create:
       id_field: id
@@ -165,67 +165,48 @@ sections:
           field: name
           editable: true
       body:
-        - kind: tabs
-          id: agent-design
-          title: $t:agentDesign
-          tabs:
-            - id: experience
-              title: $t:experienceTab
-              items:
-                - kind: field
-                  field: description
-                - kind: field
-                  field: entries
-                - kind: group
-                  title: $t:contextGroup
-                  collapsible: true
-                  items:
-                    - kind: field
-                      field: knowledge_resource_refs
-                    - kind: field
-                      field: context
-                    - kind: field
-                      field: memory_retention
-            - id: instructions
-              title: $t:instructionsTab
-              items:
-                - kind: field
-                  field: system_prompt
-                - kind: field
-                  field: skill_refs
-                - kind: field
-                  field: tool_refs
-            - id: behavior
-              title: $t:behaviorTab
-              items:
-                - kind: field
-                  field: actions
-                - kind: field
-                  field: exceptions
-                - kind: field
-                  field: notes
-            - id: collaboration
-              title: $t:collaboration
-              items:
-                - kind: field
-                  field: collaborations
-            - id: model-connection
-              title: $t:modelConnectionTab
-              items:
-                - kind: field
-                  field: model_source_ref
-                - kind: field
-                  field: model_selection
-                - kind: group
-                  title: $t:legacyConnectionGroup
-                  collapsible: true
-                  items:
-                    - kind: field
-                      field: model_connection
-                    - kind: field
-                      field: integration_ref
-                    - kind: field
-                      field: model_service
+        - {kind: field, field: description}
+        - {kind: field, field: entries}
+        - kind: group
+          title: $t:behaviorTab
+          collapsible: true
+          default_open: true
+          items:
+            - {kind: field, field: actions}
+            - {kind: field, field: exceptions}
+            - {kind: field, field: notes}
+        - kind: group
+          title: $t:contextGroup
+          collapsible: true
+          items:
+            - {kind: field, field: knowledge_resource_refs}
+            - {kind: field, field: context}
+            - {kind: field, field: memory_retention}
+        - kind: group
+          title: $t:collaboration
+          collapsible: true
+          items:
+            - {kind: field, field: collaborations}
+        - kind: group
+          title: $t:instructionsTab
+          collapsible: true
+          items:
+            - {kind: field, field: system_prompt}
+            - {kind: field, field: skill_refs}
+            - {kind: field, field: tool_refs}
+        - kind: group
+          title: $t:modelConnectionTab
+          collapsible: true
+          items:
+            - {kind: field, field: model_source_ref}
+            - {kind: field, field: model_selection}
+        - kind: group
+          title: $t:legacyConnectionGroup
+          collapsible: true
+          items:
+            - {kind: field, field: model_connection}
+            - {kind: field, field: integration_ref}
+            - {kind: field, field: model_service}
 fields:
   - key: model_source_ref
     label: $t:modelSourceRef
@@ -324,6 +305,9 @@ fields:
           - {field: trigger, in: [conversation], label: '$t:conversationLocation'}
           - {field: trigger, in: [action], label: '$t:actionLocation'}
           - {field: trigger, in: [background], label: '$t:backgroundCondition'}
+      - key: feedback
+        label: $t:feedback
+        control: textarea
       - key: input_modes
         label: $t:inputModes
         control: token_list
@@ -331,7 +315,6 @@ fields:
         label_when:
           - {field: trigger, in: [conversation], label: '$t:conversationInputs'}
           - {field: trigger, in: [action], label: '$t:actionInputs'}
-        token_layout: cards
         token_add_mode: menu
         options:
           - value: text
@@ -348,9 +331,6 @@ fields:
         label: $t:autoContext
         control: textarea
         placeholder: $t:autoContextPlaceholder
-      - key: feedback
-        label: $t:feedback
-        control: textarea
     item_label_field: name
     item_defaults:
       name: ""

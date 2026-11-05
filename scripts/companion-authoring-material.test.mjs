@@ -29,7 +29,8 @@ test('normal material generation covers the source catalog and all source exampl
   assert.ok(inputs.includes('docs/dsl-spec.md'))
   assert.ok(inputs.includes('docs/panel-uiux-standard.md'))
   const standard = await readFile(new URL('../docs/panel-uiux-standard.md', import.meta.url), 'utf8')
-  assert.equal(prepared.material.components.record_form.documentation.sharedStandards.content, standard)
+  assert.equal(prepared.material.sharedStandards.content, standard)
+  assert.ok(prepared.bytes.length <= 6_000_000, 'complete source material fits the unchanged package budget')
   assert.ok(inputs.includes('packages/skills-web-app/package.json'))
   assert.ok(inputs.includes('packages/skills-web-app/bundles/function_modules/panel.yaml'))
   assert.ok(Object.values(prepared.material.components).some(component =>
@@ -65,7 +66,7 @@ test('missing, stale documentation and incomplete component coverage reject', as
   await writeFile(path, JSON.stringify(stale))
   await assert.rejects(verifyPanelAuthoringMaterial(root, prepared), /stale or incomplete/)
   const staleStandard = structuredClone(prepared.material)
-  staleStandard.components.record_form.documentation.sharedStandards.content += '\nstale rules'
+  staleStandard.sharedStandards.content += '\nstale rules'
   await writeFile(path, JSON.stringify(staleStandard))
   await assert.rejects(verifyPanelAuthoringMaterial(root, prepared), /stale or incomplete/)
   const incomplete = structuredClone(prepared.material)

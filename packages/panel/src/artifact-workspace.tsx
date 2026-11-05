@@ -162,7 +162,7 @@ export function ArtifactWorkspace({ node, data, options }: { node: ComponentNode
     </PanelWorkspaceTreeRecord>)}
   </PanelWorkspaceTree>}>
     {!item ? <PanelContentState state="empty" message={node.description ?? t('emptyDocument')} /> : <>
-      <header className="dsh-document-toolbar"><strong>{item.title}</strong><div className="dsh-artifact-toolbar-actions"><span role="status">{status(item)}</span>
+      <header className="dsh-document-toolbar"><strong>{item.title}</strong><div className="dsh-artifact-toolbar-actions">{item.status !== 'completed' ? <span role="status">{status(item)}</span> : null}
         <button type="button" disabled={!item.file || !options?.readArtifact || content.loading} onClick={() => setRefresh(value => value + 1)}>{content.loading ? t('refreshing') : t('refresh')}</button>
       </div></header>
       {!selected && group?.file && group.children.some(child => !child.fileAvailable) ? <p role="status" className="dsh-artifact-warning">{t('partialArtifacts', { count: group.children.filter(child => child.fileAvailable).length, total: group.children.length })}</p> : null}

@@ -44,10 +44,11 @@ test('shared navigation optional slots, explicit markers and native base styles 
     assert.equal(style.minHeight, '36px')
     assert.equal(style.paddingLeft, '8px')
     assert.equal(style.paddingTop, '8px')
-    assert.equal(style.backgroundColor, 'rgb(243, 240, 255)')
-    assert.equal(style.color, 'rgb(16, 8, 43)')
-    assert.equal(window.getComputedStyle(buttons[1].querySelector('.dsh-panel-workspace-nav-label')).fontSize, '14px')
-    assert.equal(window.getComputedStyle(buttons[1].querySelector('.dsh-panel-workspace-nav-label')).fontWeight, '500')
+    // Selection colors belong to Host semantic tokens, not a fixed light palette.
+    // host-theme-browser.test.mjs checks their resolved light/dark rendering;
+    // JSDOM does not resolve these custom properties.
+    // Resolved typography, including inherited label state, is exercised across
+    // card/tree navigation by host-theme-browser.test.mjs in real Chromium.
     assert.equal(window.getComputedStyle(document.querySelector('.dsh-panel-workspace-nav-items')).gap, '4px')
     assert.equal(/\.dsh-panel-workspace-nav-items button(?::|\[)[^{}]*::before/.test(css), false, 'no compulsory pseudo status marker')
     await React.act(async () => buttons[0].click())
@@ -86,8 +87,8 @@ test('question navigation shows only localized rounds and titles while preservin
     assert.equal(window.getComputedStyle(buttons()[0].querySelector('.dsh-panel-workspace-nav-label')).whiteSpace, 'normal', 'titles wrap when the sidebar is resized')
     assert.equal(document.querySelector('.dsh-panel-workspace-nav-description'), null)
     assert.equal(document.querySelector('.dsh-panel-workspace-nav-footer'), null)
-    assert.equal(document.querySelector('.dsh-question-workspace-header h2').textContent, 'Current evidence question')
-    assert.equal(document.querySelector('.dsh-question-workspace-header > span').textContent, '1/2 answered', 'progress remains in the content header')
+    assert.equal(document.querySelector('.dsh-panel-header-heading').textContent, 'Current evidence question')
+    assert.equal(document.querySelector('.dsh-panel-header-meta').textContent, '1/2 answered', 'progress remains in the content header')
     assert.equal(document.querySelector('.dsh-panel-workspace-nav-status'), null)
     await React.act(async () => buttons()[1].click())
     assert.ok(document.querySelector('[data-question-id="history"]'))

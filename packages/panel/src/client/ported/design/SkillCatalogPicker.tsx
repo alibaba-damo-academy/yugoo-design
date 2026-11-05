@@ -3,6 +3,7 @@ import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from '../ui/cn.ts';
 import { IconFont } from '../ui/icon-font.tsx';
+import { useLang } from '../host.ts';
 import { resolveActiveMindset, groupEntriesByLayer, type IDesignSkillCard, type IMindsetCatalogs } from './skillCatalog.ts';
 
 // 卡片描述是 SKILL.md frontmatter 的 markdown 列表（`- **能力**: …`）。用紧凑的
@@ -72,6 +73,7 @@ export const SkillCatalogPicker: React.FC<ISkillCatalogPickerProps> = ({
   onPick,
   className,
 }) => {
+  const t = useLang();
   const activeMindset = useMemo(
     () => resolveActiveMindset(openPanelTypes, mindsets),
     [openPanelTypes, mindsets]
@@ -98,10 +100,10 @@ export const SkillCatalogPicker: React.FC<ISkillCatalogPickerProps> = ({
           {mindsets === null && fetching ? (
             <>
               <div className='h-6 w-6 animate-spin rounded-full border-2 border-[var(--ds-fill-3)] border-t-[var(--ds-text-primary)]' />
-              <span>正在加载设计能力…</span>
+              <span>{t.design_catalog_loading}</span>
             </>
           ) : (
-            <span>暂时没有可添加的设计能力。</span>
+            <span>{t.design_catalog_empty}</span>
           )}
         </div>
       ) : (
@@ -151,7 +153,7 @@ export const SkillCatalogPicker: React.FC<ISkillCatalogPickerProps> = ({
                           </span>
                           {isOpen ? (
                             <span className='shrink-0 rounded bg-[var(--ds-fill-3)] px-1.5 py-0.5 text-[10px] leading-none text-[var(--ds-text-secondary)]'>
-                              已打开
+                              {t.design_catalog_open}
                             </span>
                           ) : null}
                         </div>

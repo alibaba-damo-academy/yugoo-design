@@ -221,6 +221,14 @@ test('source drift blocks publication, not viewing or feedback; no source write'
   assert.equal(experienceFreshness(view, {}).status, 'stale')
   assert.equal(experienceFreshness(view).status, 'unknown')
   assert.ok(experienceFeedback(view, view.sections[0], {}).includes('不是接受假设'))
+  for (const refresh of [false, true]) {
+    const zh = experienceFeedback(view, view.sections[0], {}, refresh)
+    const en = experienceFeedback(view, view.sections[0], {}, refresh, 'en-US')
+    assert.deepEqual(JSON.parse(en.slice(en.indexOf('{'))), JSON.parse(zh.slice(zh.indexOf('{'))), 'localization preserves exact view context and freshness')
+    assert.match(en, /original Bundle’s Design Files, validated and saved/)
+    assert.match(en, refresh ? /keep the other views/ : /does not confirm its assumptions/)
+    assert.doesNotMatch(en.slice(0, en.indexOf('{')), /[\u3400-\u9fff]/)
+  }
 }))
 test('stale concurrent draft cannot replace a newer view; prior version remains immutable', async () => fixture(async ({ call, ready, publish }) => {
   const one = await ready(), two = await ready()

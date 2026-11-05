@@ -33,6 +33,7 @@ export interface SkillPanelProps {
   artifactActivities?: readonly import('../types.ts').DesignArtifactActivityRead[]
   executionAttempts?: readonly import('../types.ts').DesignPanelWorkspaceRead['executionAttempts'][number][]
   readExecutionLog?: (executionRef: string, afterSeq?: number, target?: import('../types.ts').DesignArtifactLogTarget) => Promise<import('../types.ts').DesignExecutionLogRead>
-  /** Trusted editor serialization is awaited before the host snapshots a draft. */
-  registerBeforeSave?: (flush: () => Promise<void>) => BeforeSaveRegistration
+  /** Flush local input into the Panel draft before saving or navigation. Optional
+   * discard clears that input on the existing workspace Revert action. */
+  registerBeforeSave?: (flush: () => Promise<void>, discard?: () => void) => BeforeSaveRegistration
 }

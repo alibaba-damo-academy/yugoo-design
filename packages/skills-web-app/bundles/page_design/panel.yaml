@@ -55,4 +55,26 @@ ui:
     edges: {path: connections, order: connection_order, source: source_page_id, target: target_page_id, label: label, hotspot: source_element_id, hotspot_label: source_element_label, context: preview_context, new_label: '$t:newConnectionLabel'}
     frames: {path: canvas_sections, label: label, members: page_ids, position: canvas_position, size: canvas_size}
   children:
-    - {component: structured_data, id: shared-specification, title: $t:shared, source: common_spec}
+    - component: structured_data
+      id: shared-specification
+      title: $t:shared
+      source: common_spec
+      read_fields:
+        - {key: layout, label: '$t:sharedLayout'}
+        - key: logo
+          label: $t:sharedBrand
+          fields:
+            - {key: name, label: '$t:sharedBrandName'}
+            - {key: description, label: '$t:sharedBrandDescription'}
+            - {key: mark_ref, label: '$t:sharedMarkRef', collapsed: true}
+        - key: navigation
+          label: $t:sharedNavigation
+          item_label_field: label
+          fields:
+            - {key: target_page_id, label: '$t:target', options_from_section: pages}
+            - {key: group, label: '$t:sharedNavigationGroup'}
+            - {key: icon_ref, label: '$t:sharedIconRef', collapsed: true}
+            - {key: id, label: '$t:sharedNavigationId', collapsed: true}
+        - {key: shared_components, label: '$t:sharedComponents'}
+        - {key: visual_pattern_refs, label: '$t:patterns', collapsed: true}
+        - {key: source, label: '$t:sharedSource', collapsed: true}

@@ -12,11 +12,22 @@ const MAX_SIDEBAR_WIDTH = 460
 
 /** Record forms and specialized readers share the complete title-bar layout.
  * Without a declared variant, preserve the existing unframed record title. */
-export function PanelRecordHeader({ variant, placement, children }: { variant?: 'detail' | 'card'; placement?: 'workspace'; children?: ReactNode }): ReactElement {
+export function PanelRecordHeader({ variant, placement, titleRole, context, children }: {
+  variant?: 'detail' | 'card'
+  placement?: 'workspace'
+  /** The containing view owns hierarchy independently of the header's frame. */
+  titleRole?: 'workspace' | 'record'
+  /** Optional supporting context; essential decisions stay in the record body. */
+  context?: string
+  children?: ReactNode
+}): ReactElement {
   const style = variant ?? (placement === 'workspace' ? 'detail' : undefined)
+  const role = titleRole ?? (style === 'card' ? 'record' : 'workspace')
+  const hasContext = !!context?.trim()
+  const content = <>{children}{hasContext ? <p className='dsh-panel-header-context'>{context}</p> : null}</>
   return style
-    ? <header className={`dsh-design-record-title dsh-design-record-header is-${style}${placement === 'workspace' ? ' is-workspace' : ''}`}>{children}</header>
-    : <div className='dsh-design-record-title'>{children}</div>
+    ? <header data-panel-title-role={role} className={`dsh-design-record-title dsh-design-record-header is-${style}${placement === 'workspace' ? ' is-workspace' : ''}${hasContext ? ' has-context' : ''}`}>{content}</header>
+    : <div data-panel-title-role={role} className={`dsh-design-record-title${hasContext ? ' has-context' : ''}`}>{content}</div>
 }
 
 /** The existing name binding remains the only editor; the pencil only focuses it. */
@@ -45,8 +56,8 @@ export function PanelCanvasHandles({ isConnectable = true }: { isConnectable?: b
 }
 
 /** Counts describe the projected graph, not newly persisted business facts. */
-export function PanelCanvasToolbar(props: { title: ReactNode; counts: ReactNode; children?: ReactNode }): ReactElement {
-  return <header className='dsh-canvas-toolbar'>
+export function PanelCanvasToolbar(props: { title: ReactNode; counts: ReactNode; children?: ReactNode; placement?: 'workspace' }): ReactElement {
+  return <header className={`dsh-canvas-toolbar${props.placement === 'workspace' ? ' is-workspace' : ''}`}>
     <div className='dsh-canvas-toolbar-heading'><span className='dsh-canvas-toolbar-title'>{props.title}</span>
       <span className='dsh-canvas-toolbar-counts'>{props.counts}</span></div>
     {props.children ? <div className='dsh-canvas-toolbar-actions'>{props.children}</div> : null}
@@ -83,6 +94,39 @@ export function PanelDisclosureIcon(props: { expanded: boolean }): ReactElement 
   return <svg className='dsh-panel-disclosure-icon' viewBox='0 0 16 16' aria-hidden='true'>
     <path d={props.expanded ? 'm4 6 4 4 4-4' : 'm6 4 4 4-4 4'} />
   </svg>
+}
+
+/** Compact details share their first field's heading row with the open control.
+ * Keep the accessible name and mounted editors in both disclosure states. */
+export function PanelDetailDisclosure({ title, className = '', children }: {
+  title: string; className?: string; children?: ReactNode
+}): ReactElement {
+  return <details className={`dsh-panel-detail-disclosure ${className}`}>
+    <summary className='dsh-panel-disclosure' aria-label={title} title={title}>
+      <span className='dsh-panel-disclosure-label'>{title}</span>
+      <PanelDisclosureIcon expanded={false} />
+    </summary>
+    {children}
+  </details>
+}
+
+/** Semantic groups share one stable disclosure, independent of their size.
+ * Native details hides the body without unmounting editors or their drafts. */
+export function PanelContentGroup({ title, defaultOpen = true, preview, className = '', children, ...attributes }: {
+  title: ReactNode; defaultOpen?: boolean; preview?: ReactNode
+  className?: string; children?: ReactNode; 'aria-label'?: string
+}): ReactElement {
+  const [expanded, setExpanded] = useState(defaultOpen)
+  return <details {...attributes} className={`dsh-design-form-group dsh-panel-content-group is-collapsible ${className}`}
+    open={expanded}
+    onToggle={event => { if (event.target === event.currentTarget) setExpanded(event.currentTarget.open) }}>
+    <summary className='dsh-design-form-group-title dsh-panel-disclosure'>
+      <span className='dsh-panel-disclosure-label'>{title}</span>
+      {preview}
+      <PanelDisclosureIcon expanded={false} />
+    </summary>
+    {children}
+  </details>
 }
 
 /** Shared sidebar-edge entry to an in-workspace canvas, not another editor. */
@@ -218,16 +262,36 @@ export function PanelWorkspace(props: {
 }
 
 /** Shared sidebar heading and body, also used by choices that are not navigation. */
-export function PanelWorkspaceSidebar(props: { title: string; icon?: ReactNode; children: ReactNode; navigation?: boolean }): ReactElement {
+export function PanelWorkspaceSidebar(props: { title: string; icon?: ReactNode; actions?: ReactNode; children: ReactNode; navigation?: boolean }): ReactElement {
+  const heading = useRef<HTMLElement>(null)
+  const [actionsOverflow, setActionsOverflow] = useState(false)
+  useLayoutEffect(() => {
+    const header = heading.current
+    const label = header?.querySelector('h2')
+    const actions = header?.querySelector<HTMLElement>('.dsh-panel-workspace-tree-actions')
+    if (!header || !label || !actions) { setActionsOverflow(false); return }
+    const measure = () => {
+      const style = getComputedStyle(header)
+      const icon = header.firstElementChild === label ? 0 : header.firstElementChild!.getBoundingClientRect().width
+      const available = header.clientWidth - parseFloat(style.paddingLeft || '0') - parseFloat(style.paddingRight || '0')
+      const required = label.scrollWidth + icon + actions.getBoundingClientRect().width + parseFloat(style.columnGap || '0') * (icon ? 2 : 1)
+      setActionsOverflow(required > available + 1)
+    }
+    measure()
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure)
+    for (const element of [header, label, actions]) observer?.observe(element)
+    return () => observer?.disconnect()
+  }, [props.title, !!props.actions])
   const Container = props.navigation ? 'nav' : 'section'
   return <Container className='dsh-panel-workspace-tree' aria-label={props.title}>
-    <header>{props.icon ?? <PanelsTopLeft size={16} aria-hidden='true' />}<h2>{props.title}</h2></header>
+    <header ref={heading} data-actions-overflow={actionsOverflow || undefined}>{props.icon ?? <PanelsTopLeft size={16} aria-hidden='true' />}<h2>{props.title}</h2>
+      {props.actions ? <div className='dsh-panel-workspace-tree-actions'>{props.actions}</div> : null}</header>
     <div className='dsh-panel-workspace-tree-body'>{props.children}</div>
   </Container>
 }
 
 /** Structure navigation: a flat list is simply a tree without groups. */
-export function PanelWorkspaceTree(props: { title: string; icon?: ReactNode; children: ReactNode }): ReactElement {
+export function PanelWorkspaceTree(props: { title: string; icon?: ReactNode; actions?: ReactNode; children: ReactNode }): ReactElement {
   return <PanelWorkspaceSidebar {...props} navigation />
 }
 
@@ -243,6 +307,7 @@ export function PanelWorkspaceChoice(props: {
 
 /** Expandable first-tier node; children are rendered with a visible branch spine. */
 export function PanelWorkspaceTreeGroup(props: {
+  current?: boolean
   label: string
   expanded: boolean
   children: ReactNode
@@ -252,6 +317,7 @@ export function PanelWorkspaceTreeGroup(props: {
     <button
       type='button'
       className='dsh-panel-workspace-tree-group-toggle'
+      aria-current={props.current && !props.expanded ? 'location' : undefined}
       aria-expanded={props.expanded}
       onClick={props.onToggle}
     >
@@ -378,6 +444,29 @@ export function PanelWorkspaceTip(props: {
 /** Read-on-demand help never changes Panel data or remembers a profile preference. */
 export function PanelWorkspaceGuidance(props: { children: ReactNode }): ReactElement {
   const { t } = usePanelI18n()
+  return <PanelHelp label={t('panelGuidance')} className='dsh-panel-workspace-guidance'>{props.children}</PanelHelp>
+}
+
+/** Required-input expectation, not a new native submit or publication gate. */
+export function PanelRequiredMark({ locale }: { locale?: string }): ReactElement {
+  const { locale: contextLocale } = usePanelI18n()
+  return <span className='dsh-design-required-mark' aria-hidden='true' title={panelText('requiredField', locale ?? contextLocale)}> *</span>
+}
+
+/** One caption order for ordinary fields, collection headings and compact forms.
+ * Help is a sibling of the native label, never another labelable child inside it. */
+export function PanelFieldCaption({ label, required, description, htmlFor, locale }: {
+  label: string; required?: boolean; description?: string; htmlFor?: string; locale?: string
+}): ReactElement {
+  const { locale: contextLocale } = usePanelI18n()
+  const text = <>{label}{required ? <PanelRequiredMark locale={locale} /> : null}</>
+  return <>{htmlFor ? <label htmlFor={htmlFor}>{text}</label> : text}
+    {description?.trim() ? <PanelHelp label={panelText('fieldHelp', locale ?? contextLocale, { field: label })}>{description}</PanelHelp> : null}
+  </>
+}
+
+/** One help interaction for field/collection captions and workspace guidance. */
+export function PanelHelp(props: { children: ReactNode; label: string; className?: string }): ReactElement {
   const id = useId(), trigger = useRef<HTMLButtonElement>(null), popup = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
   const closeTimer = useRef<ReturnType<typeof setTimeout>>()
@@ -430,11 +519,11 @@ export function PanelWorkspaceGuidance(props: { children: ReactNode }): ReactEle
       view.removeEventListener('resize', close)
     }
   }, [open])
-  return <span className='dsh-panel-workspace-guidance' onPointerEnter={show} onPointerLeave={leave}>
-    <button ref={trigger} type='button' className='dsh-panel-guidance-trigger' aria-label={t('panelGuidance')}
+  return <span className={`dsh-panel-help${props.className ? ` ${props.className}` : ''}`} onPointerEnter={show} onPointerLeave={leave}>
+    <button ref={trigger} type='button' className='dsh-panel-guidance-trigger' aria-label={props.label}
       aria-expanded={open} aria-describedby={open ? id : undefined}
       onFocus={show} onClick={show}><Info size={16} aria-hidden='true' /></button>
-    {open && trigger.current ? createPortal(<div ref={popup} id={id} role='tooltip' aria-label={t('panelGuidance')}
+    {open && trigger.current ? createPortal(<div ref={popup} id={id} role='tooltip'
       className='dsh-panel-guidance-popup' style={position} onPointerEnter={cancelClose} onPointerLeave={leave}>
       <div>{props.children}</div>
     </div>, trigger.current.closest<HTMLDialogElement>('dialog[open]') ?? trigger.current.ownerDocument.body) : null}
@@ -495,6 +584,7 @@ export function PanelWorkspaceCover(props: {
   active: boolean; children: ReactNode; cover: ReactNode; label: string
   onClose: () => void
   keepCoverMounted?: boolean
+  returnLabel?: string
 }): ReactElement {
   const base = useRef<HTMLDivElement>(null)
   const close = useRef<HTMLButtonElement>(null)
@@ -521,8 +611,8 @@ export function PanelWorkspaceCover(props: {
     {props.active || props.keepCoverMounted ? <section ref={surface} className="dsh-workspace-cover-surface" aria-label={props.label}
       aria-hidden={!props.active || undefined} style={!props.active ? { visibility: 'hidden', opacity: 0, pointerEvents: 'none' } : undefined}>
       {props.cover}
-      <button ref={close} type="button" className="dsh-workspace-cover-return" aria-label={t('returnToDetails')}
-        title={t('returnToDetails')} onClick={props.onClose}>
+      <button ref={close} type="button" className="dsh-workspace-cover-return" aria-label={props.returnLabel ?? t('returnToDetails')}
+        title={props.returnLabel ?? t('returnToDetails')} onClick={props.onClose}>
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m10 4-4 4 4 4" /></svg>
       </button>
     </section> : null}

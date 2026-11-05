@@ -18,6 +18,6 @@
   "source": "Source object (subtype for inheritance)", "target": "Target object (parent for inheritance)",
   "sourceCount": "How many source objects per target object?", "targetCount": "How many target objects per source object?",
   "unknownCount": "Leave blank when undecided. Blank does not mean zero or exactly one.",
-  "countOne": "Exactly one", "countOptional": "None or one", "countMany": "One or more", "countAny": "None or more",
-  "relationMeaning": "Meaning and constraints (optional)", "relationMeaningHint": "Describe uncertainty about quantities, ownership or deletion behavior here."
+  "countOne": "Exactly one", "countOptional": "Zero or one", "countMany": "One or more", "countAny": "Zero or more",
+  "relationMeaning": "Meaning and constraints", "relationMeaningHint": "Describe uncertainty about quantities, ownership or deletion behavior here."
 }

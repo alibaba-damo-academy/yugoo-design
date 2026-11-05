@@ -1,7 +1,7 @@
 import { Map as MapIcon, Link2, MousePointerClick, Unlink, Trash2 } from 'lucide-react'
 import { ArtifactStatusIcon } from './artifact-status-icon.tsx'
 import { sidebarIcon } from './sidebar-icon.tsx'
-import { useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react'
+import { Children, useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react'
 import { ReactFlow, Background, Controls, ConnectionMode, applyNodeChanges, type Node, type ReactFlowInstance } from '@xyflow/react'
 import type { ComponentNode, PanelManifest } from './dsl.ts'
 import type { RenderOptions } from './interpreter.ts'
@@ -9,8 +9,10 @@ import { navigationPreviewLinks, bindNavigationHotspot, unbindNavigationHotspot 
 import { freshRecordId, pathGet, recordsAtPath } from './record-state.ts'
 import { navigationFormUpdates, translateNavigationFrame } from './navigation-map-edits.ts'
 import { PanelWorkspace, PanelWorkspaceTree, PanelWorkspaceTreeGroup, PanelWorkspaceTreeItem, PanelWorkspaceTreeAdd, PanelWorkspaceCover, PanelWorkspaceCanvasToggle, PanelCanvasToolbar } from './panel-workspace.tsx'
+import { ComponentTabs } from './component-tabs.tsx'
 import { RELATION_GRAPH_AUTO_FIT } from './relation-graph-layout.ts'
 import { usePanelI18n } from './panel-i18n.tsx'
+import { canvasAriaLabels } from './canvas-i18n.ts'
 import { NavigationPreview } from './navigation-preview.tsx'
 import { useFlowContainerFit } from './use-flow-container-fit.ts'
 import { NavigationRecordNode } from './navigation-record-node.tsx'
@@ -29,12 +31,16 @@ const point = (value: unknown, fallback: { x: number; y: number }) => value && t
   && Number.isFinite((value as { x: number }).x) && Number.isFinite((value as { y: number }).y) ? value as { x: number; y: number } : fallback
 
 /** Host-independent diagram; all canonical ownership comes from explicit bindings. */
-export function NavigationWorkspace({ node, manifest, data, options, render, children }: {
+export function NavigationWorkspace({ node, manifest, data, options, render, children, specificationTitle }: {
   node: ComponentNode; manifest: PanelManifest; data: Record<string, unknown>; options?: RenderOptions
   render: (section: string, id: string, options?: RenderOptions, displayData?: Record<string, unknown>) => ReactElement
   children?: ReactNode
+  /** Localized heading for the shared content view, independent of Page selection. */
+  specificationTitle?: string
 }): ReactElement {
   const { t } = usePanelI18n()
+  const hasSpecification = Children.count(children) > 0
+  const specificationLabel = specificationTitle ?? node.children?.[0]?.title ?? t('details')
   const binding = node.navigation_map!
   const projection = projectNavigationWorkspace(data, binding,
     manifest.sections.find(section => section.id === binding.frames.path)?.create?.id_field,
@@ -190,7 +196,7 @@ export function NavigationWorkspace({ node, manifest, data, options, render, chi
         })
   }
   const mapCanvas = (<div ref={mapElement} className="dsh-navigation-map" style={{ height: '100%', minHeight: 0, ...(artifactMode ? {} : preview && selectedRecord && binding.nodes.artifact ? { display: 'none' } : {}) }}>
-        <ReactFlow nodes={nodes.map(item => item.type !== 'navigation-record' ? item : { ...item, data: { ...item.data,
+        <ReactFlow ariaLabelConfig={canvasAriaLabels(t)} nodes={nodes.map(item => item.type !== 'navigation-record' ? item : { ...item, data: { ...item.data,
           caption: (binding.nodes.caption_fields ?? []).flatMap(key => {
             const field = manifest.fields.find(field => field.key === key && field.applies_to?.includes(binding.nodes.path))
             const value = recordsAtPath(data, binding.nodes.path)[String(item.data.record)]?.[key]
@@ -203,7 +209,8 @@ export function NavigationWorkspace({ node, manifest, data, options, render, chi
             artifactId={String(item.data.record)} artifactKind={binding.nodes.artifact_kind}
             path={recordsAtPath(data, binding.nodes.path)[String(item.data.record)]?.[binding.nodes.artifact]}
             title={String(item.data.label)} options={options} stylesheet={binding.stylesheet} sharedStylesheet={sharedStylesheet} /> : undefined,
-        } })} nodeTypes={types} edges={map.edges.filter(edge => !map.invalidEdges.includes(edge.id)).map(edge => navigationEdge(edge,
+        } })} nodeTypes={types} edges={map.edges.filter(edge => !map.invalidEdges.includes(edge.id)).map(edge => navigationEdge({ ...edge,
+          ariaLabel: `${map.nodes.find(item => item.id === edge.source)?.label} → ${map.nodes.find(item => item.id === edge.target)?.label}${edge.label ? ` · ${edge.label}` : ''}` },
           livePositions.get(`node:${edge.source}`) ?? { x: 0, y: 0 },
           livePositions.get(`node:${edge.target}`) ?? { x: 0, y: 0 },
           selection?.section === binding.edges.path && selection.id === edge.id))}
@@ -376,7 +383,6 @@ export function NavigationWorkspace({ node, manifest, data, options, render, chi
       {!artifactMode ? mapCanvas : null}
       {artifactMode ? <>{error ? <p role="alert">{error}</p> : null}{activePick ? <div className="dsh-navigation-binding-hint" role="status">{t('pickHotspot')}</div> : null}
         {!selectedRecord ? <div className="dsh-navigation-detail-header"><p role="status">{node.description ?? t('emptyFilter')}</p></div> : null}</> : <aside className="dsh-navigation-inspector">{error ? <p role="alert">{error}</p> : null}
-        {children}
         <div className="dsh-navigation-actions">
         {selectedRecord && selection && binding.entry_ids ? <label className="dsh-navigation-entry">
           <input type="checkbox" checked={entryIds.includes(selection.id)}
@@ -405,16 +411,22 @@ export function NavigationWorkspace({ node, manifest, data, options, render, chi
         {selection ? render(selection.section, selection.id, { ...options, onPanelUpdate: commit }, displayData) : node.description}</aside>}
     </div>
   </PanelWorkspace>
-  return artifactMode ? <PanelWorkspaceCover keepCoverMounted active={mapOpen} label={t('mindMap')} onClose={() => {
+  const toolbar = (controls?: ReactElement, active = 'map') => {
+    // Page detail owns its header; retain the hidden tabs as the panels' accessible names.
+    if (active === 'map' && artifactMode && !mapOpen) return <div hidden>{controls}</div>
+    return <PanelCanvasToolbar placement="workspace"
+      title={<><MapIcon size={16} aria-hidden="true" />{node.title ?? t('mindMap')}</>}
+      counts={<><span>{map.nodes.length} {manifest.sections.find(item => item.id === binding.nodes.path)?.title}</span>
+        <span>{map.edges.length} {manifest.sections.find(item => item.id === binding.edges.path)?.title}</span></>}>
+      {editable && manifest.sections.find(item => item.id === binding.frames.path)?.add_mode !== 'none' ? <button type="button" aria-hidden={active !== 'map' || undefined} disabled={active !== 'map' || !flow || (artifactMode && !mapOpen)} onClick={addFrameAtViewport}>{t('addItem', { item: manifest.sections.find(item => item.id === binding.frames.path)?.title ?? binding.frames.path })}</button> : null}
+      {controls}
+    </PanelCanvasToolbar>
+  }
+  const pageWorkspace = artifactMode ? <PanelWorkspaceCover keepCoverMounted active={mapOpen} label={t('mindMap')} onClose={() => {
     setMapOpen(false)
     if (selection?.section !== binding.nodes.path && map.nodes[0]) select({ section: binding.nodes.path, id: map.nodes[0].id })
   }} cover={<div className="dsh-navigation-map-cover">
-    <PanelCanvasToolbar title={<><MapIcon size={16} aria-hidden="true" />{node.title ?? t('mindMap')}</>}
-      counts={<><span>{map.nodes.length} {manifest.sections.find(item => item.id === binding.nodes.path)?.title}</span>
-        <span>{map.edges.length} {manifest.sections.find(item => item.id === binding.edges.path)?.title}</span></>}>
-      {editable && manifest.sections.find(item => item.id === binding.frames.path)?.add_mode !== 'none' ? <button type="button" disabled={!flow || !mapOpen} onClick={addFrameAtViewport}>{t('addItem', { item: manifest.sections.find(item => item.id === binding.frames.path)?.title ?? binding.frames.path })}</button> : null}
-    </PanelCanvasToolbar>
-    {children ? <div className="dsh-navigation-map-spec">{children}</div> : null}
+    {!hasSpecification ? toolbar() : null}
     {map.invalidEdges.length ? <p role="alert">{t('navigationInvalidEdges', { ids: map.invalidEdges.join(', ') })}</p> : null}
     <div className="dsh-navigation-map-stage">{mapCanvas}
       {selectedEdge ? <aside className="dsh-navigation-connection-editor">
@@ -435,4 +447,12 @@ export function NavigationWorkspace({ node, manifest, data, options, render, chi
       </aside> : null}
     </div>
   </div>}>{workspace}</PanelWorkspaceCover> : workspace
+  if (!hasSpecification) return pageWorkspace
+  return <ComponentTabs appearance="segmented" renderNavigation={toolbar} node={{ id: `${node.id}-views`, component: 'tabs',
+    title: node.title ?? t('mindMap'), children: [
+      { id: 'map', component: 'text_block', title: node.title ?? t('mindMap') },
+      { id: 'specification', component: 'text_block', title: specificationLabel },
+    ] }} render={view => view.id === 'map' ? pageWorkspace : <section className="dsh-navigation-spec-page">
+      <div className="dsh-record-inspector dsh-navigation-spec-content">{children}</div>
+    </section>} />
 }

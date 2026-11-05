@@ -51,13 +51,16 @@ fields:
     description: $t:verificationHelp
     applies_to: [requirements]
 ui:
-  component: record_workspace
-  guidance: "$t:guidance"
+  component: record_board
+  guidance: $t:guidance
   sidebar_icon: clipboard-check
-  navigation_layout: list
-  navigation_group_by: group
   id: acceptance-workspace
   title: $t:workspace
-  sources: [requirements]
-  children:
-    - {component: record_inspector, id: acceptance-editor}
+  source: requirements
+  board:
+    label: title
+    description: pass_criteria
+    group: group
+    body_fields: [condition, pass_criteria, verification]
+    overview: false
+    detail_fields: []

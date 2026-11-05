@@ -21,7 +21,7 @@ import {
 import type { DesignAdvisoryProjectionEntry } from './types.ts'
 import { canNavigate } from './navigation.ts'
 import { parsePanelManifest } from '../dsl.ts'
-import { panelText } from '../panel-i18n.tsx'
+import { PanelLocaleContext, panelText } from '../panel-i18n.tsx'
 import { AutoPanelNotice } from '../auto-panel-notice.tsx'
 import { sectionBindingOf, recordsAtPath, type DesignData } from '../interpreter.ts'
 import {
@@ -114,15 +114,16 @@ export interface DesignRuntime {
 const NEW_PANEL_TAB = '__new_panel__'
 
 export { ReviewPolicyControl } from './review-policy-control.tsx'
-const PANEL_SAVE_VISIBLE_MESSAGE = { zh: '保存并评估下一步', en: 'Save and assess next step' } as const
+const PANEL_SAVE_VISIBLE_MESSAGE = { zh: '保存并继续', en: 'Save & continue' } as const
 
 function regenerateInstruction(skill: string): string {
   return `Regenerate the saved ${JSON.stringify(skill)} Design state from the injected authoritative panel diff. Invoke run_design_skill exactly once with name ${JSON.stringify(skill)}; do not repeat the same invocation.`
 }
 
-/** Tab label: skill.yaml bilingual title, zh preferred. */
+/** Tab and graph-owner labels follow the Host UI language, without translating saved facts. */
 function tabLabel(manifest: { title?: { zh?: string; en?: string }; name?: string } | undefined, skill: string): string {
-  return manifest?.title?.zh ?? manifest?.title?.en ?? manifest?.name ?? skill
+  const title = manifest?.title
+  return (currentLanguage() === 'zh_CN' ? title?.zh ?? title?.en : title?.en ?? title?.zh) ?? manifest?.name ?? skill
 }
 
 function hasActiveExecution(
@@ -170,7 +171,7 @@ function SkillPanel(props: {
   readExecutionLog: (executionRef: string, afterSeq?: number, target?: import('./types.ts').DesignArtifactLogTarget) => Promise<DesignExecutionLogRead>
   artifactActivities?: DesignPanelWorkspaceRead['artifactActivities']
   executionAttempts: DesignPanelWorkspaceRead['executionAttempts']
-  registerBeforeSave: (skill: string, flush: () => Promise<void>) => import('./panels/shared.ts').BeforeSaveRegistration
+  registerBeforeSave: (skill: string, flush: () => Promise<void>, discard?: () => void) => import('./panels/shared.ts').BeforeSaveRegistration
   sendPrompt?: (text: string) => void | Promise<void>
   running?: boolean
   onSaveAndRegenerate?: () => void
@@ -183,7 +184,7 @@ function SkillPanel(props: {
   const onChange = useCallback((next: unknown) => {
     if (!editorReadOnly) editDraft(props.skill, next)
   }, [editorReadOnly, props.skill])
-  const registerBeforeSave = useCallback((flush: () => Promise<void>) => props.registerBeforeSave(props.skill, flush), [props.registerBeforeSave, props.skill])
+  const registerBeforeSave = useCallback((flush: () => Promise<void>, discard?: () => void) => props.registerBeforeSave(props.skill, flush, discard), [props.registerBeforeSave, props.skill])
   const common = {
     draft: props.draft,
     onChange,
@@ -362,6 +363,8 @@ export function DesignWorkspace(props: {
   const assertSaveAccess = useCallback(() => {
     if (!isCurrentSave() || !saveAccess.current.writable) throw new Error('The design workspace changed before saving.')
   }, [isCurrentSave])
+  const registerBeforeSave = useCallback((skill: string, flush: () => Promise<void>, discard?: () => void) =>
+    saveBarrier.register(skill, async () => { assertSaveAccess(); await flush(); assertSaveAccess() }, discard), [saveBarrier, assertSaveAccess])
   const subscribeNativePanels = useCallback(
     (listener: () => void) => runtime.nativePanels.subscribe(listener),
     [runtime.nativePanels],
@@ -496,7 +499,7 @@ export function DesignWorkspace(props: {
     label: tabLabel(store.manifests[skill], skill),
     badge: isDirty(skill, runtime.nativePanels),
     unread: !isDirty(skill, runtime.nativePanels) && store.unread[skill] === true,
-  })), [store, nativePanelRevision, runtime.nativePanels])
+  })), [store, nativePanelRevision, runtime.nativePanels, isZh])
 
   const save = useCallback((): void => {
     if (!writable || sessionId === undefined || store.saving || saveAdmission.busy) return
@@ -552,12 +555,13 @@ export function DesignWorkspace(props: {
       )
   }, [isZh, runtime, sessionId, store.saving, writable, saveBarrier, saveAdmission, assertSaveAccess, isCurrentSave, props.autoPanelDefinitions, props.demonstrationSave, demo, sourceDesign])
 
+  const retract = useCallback(() => { if (!isCurrentSave() || !saveAccess.current.writable) return; saveBarrier.discard(); revertAll() }, [saveBarrier, isCurrentSave])
   const controls = useMemo<DesignWorkspaceControls>(() => ({
     dirty: pending, saving: store.saving,
     saveDisabled: !writable || store.skills.length === 0 || store.saving || sessionId === undefined || !pending,
     retractDisabled: !writable || store.skills.length === 0 || store.saving || !pending,
-    ...(store.error ? { error: store.error } : {}), save, retract: revertAll,
-  }), [pending, store.saving, store.skills.length, store.error, writable, sessionId, save])
+    ...(store.error ? { error: store.error } : {}), save, retract,
+  }), [pending, store.saving, store.skills.length, store.error, writable, sessionId, save, retract])
   useEffect(() => { props.onControlsChange?.(controls) }, [props.onControlsChange, controls])
   useEffect(() => () => { props.onControlsChange?.(undefined) }, [props.onControlsChange])
 
@@ -660,7 +664,7 @@ export function DesignWorkspace(props: {
               ? '当前项目的设计套件内容无法读取。请恢复项目原始定义后重新打开；已保存的设计数据仍会保留。'
               : "This project's Design Kit content is unavailable. Restore its original project definitions, then reopen the project. Saved design data is preserved.")
           : (isZh
-              ? '当前项目尚未选择 Kit；Design Panel 保持只读。请在对话中输入 /yugoo kit <kit>。'
+              ? '当前项目尚未选择设计套件，设计面板暂时只读。请在对话中输入 /yugoo kit <kit>。'
               : 'This project has no selected Kit. The Design Panel is read-only until you run /yugoo kit <kit> in the conversation.')}
       </div>
     )
@@ -678,13 +682,14 @@ export function DesignWorkspace(props: {
         ×
       </button>
     )
-  const projectHeader = panelOnly || props.hideProjectHeader ? null : (
+  const projectHeader = panelOnly ? null : props.hideProjectHeader
+    ? (closeButton ? <div className='dsh-design-dock-toolbar'>{closeButton}</div> : null) : (
     <div className='dsh-design-project-header' data-testid='design-project-header' data-compact={props.compactHeader || undefined}>
       {hasDockMeta(clarity, projectPath, projectName)
         ? <DesignDockMeta compact={props.compactHeader} clarity={clarity} projectName={projectName} projectPath={projectPath}
             canOpenProjectFolder={runtime.canOpenProjectFolder} openProjectFolder={runtime.openProjectFolder} />
         : null}
-      {store.skills.length === 0 ? closeButton : null}
+      {closeButton}
     </div>
   )
   const viewSwitcher = !panelOnly && (props.experienceAvailable || runtime.readGraph) && projectId !== null ? (
@@ -694,20 +699,19 @@ export function DesignWorkspace(props: {
       {runtime.readGraph && <button type='button' aria-pressed={graphOpen} onClick={() => flushBeforeNavigation(() => { setGraphOpen(true); setExperienceOpen(false) })}>{t.design_graph_view}</button>}
     </nav>
   ) : null
-  if (!panelOnly && graphOpen && runtime.readGraph) return <div className='flex h-full min-h-0 flex-col'>{projectHeader}{accessNotice}<div className='min-h-0 flex-1'><GraphPanel ownerLabels={Object.fromEntries(store.skills.map(skill => [skill, tabLabel(store.manifests[skill], skill)]))} key={`${sessionId}:${projectId}`} read={readGraph} readStatus={runtime.readKnowledgeStatus ? readKnowledgeStatus : undefined} retry={runtime.retryKnowledge ? retryKnowledge : undefined} footer={viewSwitcher} /></div></div>
+  if (!panelOnly && graphOpen && runtime.readGraph) return <PanelLocaleContext.Provider value={isZh ? 'zh-CN' : 'en-US'}><div className='flex h-full min-h-0 flex-col'>{projectHeader}{accessNotice}<div className='min-h-0 flex-1'><GraphPanel ownerLabels={Object.fromEntries(store.skills.map(skill => [skill, tabLabel(store.manifests[skill], skill)]))} key={`${sessionId}:${projectId}`} read={readGraph} readStatus={runtime.readKnowledgeStatus ? readKnowledgeStatus : undefined} retry={runtime.retryKnowledge ? retryKnowledge : undefined} footer={viewSwitcher} /></div></div></PanelLocaleContext.Provider>
 
-  if (!panelOnly && props.experienceAvailable && experienceOpen) return <div className='flex h-full min-h-0 flex-col'>
+  if (!panelOnly && props.experienceAvailable && experienceOpen) return <PanelLocaleContext.Provider value={isZh ? 'zh-CN' : 'en-US'}><div className='flex h-full min-h-0 flex-col'>
     {projectHeader}
     {accessNotice}
     <div className='min-h-0 flex-1'><ExperiencePanel key={`${sessionId}:${projectId}`} footerStart={viewSwitcher} experienceFiles={props.experienceFiles} artifactFiles={props.artifactFiles} readArtifact={readExperienceArtifact} readBinaryArtifact={readExperienceBinary} writable={writable && sessionId !== undefined}
-      sendPrompt={async text => { if (!writable || sessionId === undefined) throw new Error('当前项目不可写'); await runtime.sendPrompt(sessionId, text) }} /></div>
-  </div>
+      sendPrompt={async text => { if (!writable || sessionId === undefined) throw new Error(isZh ? '当前项目不可写' : 'This project is read-only'); await runtime.sendPrompt(sessionId, text) }} /></div>
+  </div></PanelLocaleContext.Provider>
 
   if (store.skills.length === 0) {
     return (
       <div className='relative flex h-full min-h-0 flex-col'>
         {projectHeader}
-        {props.hideProjectHeader && !panelOnly ? closeButton : null}
         {accessNotice}
         <div className='dsh-design-dock-empty flex-1'>{access.mode === 'recovery' ? null : t.design_empty_panels}</div>
         {viewSwitcher && <div className='dsh-design-view-footer'>{viewSwitcher}</div>}
@@ -718,7 +722,7 @@ export function DesignWorkspace(props: {
   return (
     <div className='flex h-full min-h-0 flex-col'>
       {projectHeader}
-      {!panelOnly && <div className='relative grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-stretch'>
+      {!panelOnly && <div className='relative shrink-0'>
         <DesignTabsBar
           options={
             pickerOpen
@@ -746,7 +750,6 @@ export function DesignWorkspace(props: {
           onAddPanel={() => flushBeforeNavigation(openPicker)}
           addDisabled={!writable}
         />
-        {closeButton}
       </div>}
       {accessNotice}
       <div
@@ -775,7 +778,7 @@ export function DesignWorkspace(props: {
           const scrollOwner = panelScrollOwner(presentation, runtime.nativePanels)
           return (
             <div
-              key={skill}
+              key={JSON.stringify([sessionId, projectId, projectPath, skill])}
               data-testid={`dsh-design-panel-${skill}`}
               data-scroll-owner={scrollOwner}
               className={`h-full min-h-0 ${scrollOwner === 'workspace' ? 'overflow-y-auto' : 'overflow-hidden'}`}
@@ -801,7 +804,7 @@ export function DesignWorkspace(props: {
                 readExecutionLog={readExecutionLog}
                 executionAttempts={executionAttempts.filter(attempt => attempt.skill === skill)}
                 artifactActivities={props.artifactActivities?.filter(activity => activity.skill === skill)}
-                registerBeforeSave={saveBarrier.register}
+                registerBeforeSave={registerBeforeSave}
                 sendPrompt={sendPrompt}
                 running={store.saving || hasActiveExecution(executionAttempts, skill)
                   || props.activeMainBundles?.some(bundle => bundle.skill === skill) === true}
@@ -820,7 +823,7 @@ export function DesignWorkspace(props: {
         saveDisabled={!writable || store.skills.length === 0 || store.saving || sessionId === undefined || !pending}
         saveVariant={pending ? 'default' : 'outline'}
         onSave={save}
-        onRegenerate={writable ? revertAll : undefined}
+        onRegenerate={writable ? retract : undefined}
         regenerateText={t.button_regenerate}
         saveText={t.button_save_and_continue}
       >

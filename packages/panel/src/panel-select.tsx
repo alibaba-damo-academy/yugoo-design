@@ -1,4 +1,4 @@
-import { useRef, useState, type ComponentPropsWithoutRef, type CSSProperties } from 'react'
+import { useRef, useState, type ComponentPropsWithoutRef, type CSSProperties, type ReactNode } from 'react'
 import * as Select from '@radix-ui/react-select'
 import { Check, ChevronDown, ChevronUp } from 'lucide-react'
 import { PANEL_SELECT_MENU_CSS } from './client/styles.ts'
@@ -9,6 +9,8 @@ interface PanelSelectProps extends Omit<ComponentPropsWithoutRef<typeof Select.T
   value: string
   options: readonly PanelSelectOption[]
   onValueChange: (value: string) => void
+  /** Compact tool actions retain the same accessible value, menu and keyboard behavior. */
+  triggerIcon?: ReactNode
 }
 
 /** Capture the trigger's actual theme before moving the menu outside clipped
@@ -26,7 +28,7 @@ export function panelPopupTheme(trigger: HTMLElement): CSSProperties {
 
 /** Shared single-value choice. Values remain caller-owned, including unknown
  * stored values; Radix owns keyboard navigation, focus and popup positioning. */
-export function PanelSelect({ value, options, onValueChange, className, disabled, ...props }: PanelSelectProps) {
+export function PanelSelect({ value, options, onValueChange, triggerIcon, className, disabled, ...props }: PanelSelectProps) {
   const trigger = useRef<HTMLButtonElement>(null)
   const [theme, setTheme] = useState<CSSProperties>()
   const unique = [...new Map(options.map(option => [option.value, option])).values()]
@@ -44,9 +46,11 @@ export function PanelSelect({ value, options, onValueChange, className, disabled
     const decoded = next === empty ? '' : next
     if (!disabled && choices.some(option => option.value === decoded && !option.disabled)) onValueChange(decoded)
   }}>
-    <Select.Trigger {...props} ref={trigger} value={value} disabled={disabled} className={`dsh-panel-select-trigger${className ? ` ${className}` : ''}`}>
-      <Select.Value>{selected?.label || '\u00a0'}</Select.Value>
-      <Select.Icon className="dsh-panel-select-icon"><ChevronDown size={16} aria-hidden="true" /></Select.Icon>
+    <Select.Trigger {...props} ref={trigger} value={value} disabled={disabled} className={`dsh-panel-select-trigger${triggerIcon ? ' is-icon-only' : ''}${className ? ` ${className}` : ''}`}>
+      {triggerIcon
+        ? <span className='dsh-panel-select-hidden-value'><Select.Value>{selected?.label || '\u00a0'}</Select.Value></span>
+        : <Select.Value>{selected?.label || '\u00a0'}</Select.Value>}
+      {triggerIcon ?? <Select.Icon className="dsh-panel-select-icon"><ChevronDown size={16} aria-hidden="true" /></Select.Icon>}
     </Select.Trigger>
     <Select.Portal container={trigger.current?.closest<HTMLDialogElement>('dialog[open]') ?? trigger.current?.ownerDocument.body}>
       <Select.Content className="dsh-panel-select-content" style={theme} position="popper" sideOffset={4} collisionPadding={8}>

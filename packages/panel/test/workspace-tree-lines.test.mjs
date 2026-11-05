@@ -110,7 +110,7 @@ test('real nested record structure uses native row geometry and first-row branch
       const style = dom.window.getComputedStyle(button)
       assert.equal(style.height, 'auto', 'wrapped labels can grow the row')
       assert.equal(style.minHeight, '36px')
-      assert.equal(style.fontSize, '14px')
+      assert.equal(style.fontSize, '14px', button.className)
       assert.equal(style.lineHeight, '20px')
       assert.equal(style.gap, '8px')
       assert.equal(style.paddingTop, '8px', 'native tree scope wins over generic record button padding')
@@ -157,4 +157,25 @@ test('folded collections unmount descendants and leave no orphan branches', () =
     assert.equal(d.querySelectorAll('.dsh-panel-workspace-tree-branch').length, 1)
     assert.equal(matchingRules(d, d.querySelector('.dsh-panel-workspace-tree-branch'), '::before').length, 0)
   } finally { dom.window.close() }
+})
+
+
+test('selected records retain internal navigation padding with and without a disclosure column', () => {
+  for (const expanded of [true, false, undefined]) {
+    const content = h('div', { className: 'dsh-panel-workspace-tree' },
+      h(Item, { onSelect: noop }, 'Flat root'),
+      h(Record, { label: 'Selected record', selected: true, expanded, onSelect: noop, ...(expanded === undefined ? {} : { onToggle: noop }) },
+        expanded === undefined ? undefined : h(Item, { onSelect: noop }, 'Child')))
+    const dom = new JSDOM(`<style>${treeCss}</style>${renderToStaticMarkup(content)}`)
+    try {
+      const items = dom.window.document.querySelectorAll('.dsh-panel-workspace-tree-item')
+      assert.ok(items.length > 1)
+      for (const item of items) {
+        const style = dom.window.getComputedStyle(item)
+        assert.equal(style.paddingLeft, '8px', item.textContent)
+        assert.equal(style.paddingRight, '8px', item.textContent)
+      }
+      assert.ok(dom.window.document.querySelector('[aria-current="page"]'))
+    } finally { dom.window.close() }
+  }
 })

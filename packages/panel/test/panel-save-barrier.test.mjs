@@ -60,6 +60,16 @@ test('disposing while serialization is pending invalidates the save', async () =
   await assert.rejects(barrier.flush(), /workspace changed/)
 })
 
+test('an editor unmounted after flush queues cannot write into the next workspace', async () => {
+  const barrier = createPanelSaveBarrier()
+  let writes = 0
+  const remove = barrier.register('items', async () => { writes++ })
+  const pending = barrier.flush()
+  remove()
+  await pending
+  assert.equal(writes, 0)
+})
+
 test('focused editor pending signals enable save without writing a draft and clear per registration', async () => {
   const barrier = createPanelSaveBarrier()
   let writes = 0, notifications = 0
@@ -89,4 +99,21 @@ test('disposing clears pending editor signals and ignores stale input', () => {
   assert.equal(barrier.hasPendingChanges(), false)
   remove.setPending(true)
   assert.equal(barrier.hasPendingChanges(), false)
+})
+
+test('revert discards live local input without flushing or calling a retired editor', async () => {
+  const barrier = createPanelSaveBarrier()
+  let input = 'local', writes = 0, retired = 0
+  const old = barrier.register('items', async () => {}, () => { retired++ })
+  old()
+  const live = barrier.register('items', async () => { if (input) writes++ }, () => { input = ''; live.setPending(false) })
+  live.setPending(true)
+  barrier.discard()
+  assert.equal(input, '')
+  assert.equal(barrier.hasPendingChanges(), false)
+  assert.equal(retired, 0)
+  await barrier.flush()
+  assert.equal(writes, 0, 'navigation after Revert cannot restore discarded input')
+  barrier.dispose()
+  barrier.discard()
 })

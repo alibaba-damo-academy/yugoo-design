@@ -9,14 +9,15 @@ import { cn } from '../ui/cn.ts';
 import { IconFont } from '../ui/icon-font.tsx';
 import type { ITabOption } from './DesignTabs.tsx';
 import { currentLanguage } from '../host.ts';
+import { Ellipsis } from 'lucide-react';
 
 /**
  * DesignTabsBar - 设计子面板的浏览器 tab 式管理条（Chrome 标签条风格）。
  *
- * 布局：`[▾ 全部面板下拉（溢出时）] [ tab tab tab … ＋（横向可滚动） ]`
+ * 布局：`[ tab tab tab … ＋（横向可滚动） ] [… 全部面板菜单（溢出时）]`
  * - 标签区：所有 tab 常驻并横向滚动，不折叠隐藏；激活 tab 自动滚动进可视
  *   范围，鼠标滚轮纵向滚动映射为横向滚动；＋ 紧跟最后一个 tab 一起滚动。
- * - 左侧「全部面板」下拉：仅在标签溢出时出现，列出**全部**面板供快速跳转。
+ * - 右侧「全部面板」下拉：仅在标签溢出时出现，列出**全部**面板供快速跳转。
  *
  * 该组件只做「哪些 tab 显示 / 滚动 / 跳转」与「+ 点击」，不负责选择器内容与消息发送。
  */
@@ -78,6 +79,8 @@ const TabButton: React.FC<{
     type='button'
     data-testid={`chat-design-tab-${option.value}`}
     data-state={isActive ? 'active' : 'inactive'}
+    aria-pressed={isActive}
+    title={option.label}
     onClick={onClick}
     className={cn(
       'dsh-design-tab',
@@ -115,6 +118,7 @@ export const DesignTabsBar: React.FC<IDesignTabsBarProps> = ({
 }) => {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const menuTrigger = useRef<HTMLButtonElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(false);
 
@@ -133,8 +137,12 @@ export const DesignTabsBar: React.FC<IDesignTabsBarProps> = ({
   // scrollWidth === clientWidth === 0 → 不溢出，不显示下拉。
   const checkOverflow = useCallback(() => {
     const el = scrollRef.current;
-    if (!el) return;
-    setIsOverflowing(el.scrollWidth > el.clientWidth + 1);
+    const root = rootRef.current;
+    if (!el || !root) return;
+    // The menu must not create its own overflow by taking space from the strip.
+    const style = window.getComputedStyle(root);
+    const available = root.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0);
+    setIsOverflowing(el.scrollWidth > available + 1);
   }, []);
 
   useLayoutEffect(() => {
@@ -149,6 +157,12 @@ export const DesignTabsBar: React.FC<IDesignTabsBarProps> = ({
     ro.observe(el);
     return () => ro.disconnect();
   }, [checkOverflow]);
+
+  useEffect(() => {
+    if (isOverflowing || !menuOpen) return;
+    setMenuOpen(false);
+    scrollRef.current?.querySelector<HTMLButtonElement>('[data-state="active"]')?.focus();
+  }, [isOverflowing, menuOpen]);
 
   // 激活 tab 始终滚动进可视范围（新预发 / 手动切换 / 下拉跳转后不被滚动位置藏住）。
   // rAF 等布局稳定后再滚，避免切换当帧量到旧布局导致不滚动。
@@ -178,6 +192,7 @@ export const DesignTabsBar: React.FC<IDesignTabsBarProps> = ({
   // 关闭下拉：点击外部。
   useEffect(() => {
     if (!menuOpen) return;
+    (rootRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"][data-active]') ?? rootRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]'))?.focus();
     const onDocClick = (e: MouseEvent) => {
       if (!rootRef.current?.contains(e.target as Node)) setMenuOpen(false);
     };
@@ -186,9 +201,10 @@ export const DesignTabsBar: React.FC<IDesignTabsBarProps> = ({
   }, [menuOpen]);
 
   const handleSelect = useCallback(
-    (val: string) => {
+    (val: string, fromMenu = false) => {
       onChange(val);
       setMenuOpen(false);
+      if (fromMenu) menuTrigger.current?.focus();
     },
     [onChange]
   );
@@ -222,8 +238,8 @@ export const DesignTabsBar: React.FC<IDesignTabsBarProps> = ({
           data-testid='chat-design-tabs-add'
           onClick={onAddPanel}
           disabled={addDisabled}
-          title='新建设计面板'
-          aria-label='新建设计面板'
+          title={currentLanguage() === 'zh_CN' ? '新建设计面板' : 'New design panel'}
+          aria-label={currentLanguage() === 'zh_CN' ? '新建设计面板' : 'New design panel'}
           className={cn(
             'dsh-design-tabs-add',
             'disabled:cursor-not-allowed disabled:opacity-40',
@@ -235,40 +251,53 @@ export const DesignTabsBar: React.FC<IDesignTabsBarProps> = ({
         </button>
       </div>
 
-      {/* 「全部面板」下拉：固定在最左侧（order-first），仅溢出时出现，列出全部
+      {/* 「全部面板」下拉：固定在标签栏右侧，仅溢出时出现，列出全部
           面板供快速跳转。 */}
       {isOverflowing ? (
         <div className='dsh-design-tabs-more'>
           <button
+            ref={menuTrigger}
             type='button'
             data-testid='chat-design-tabs-overflow'
             aria-haspopup='menu'
             aria-expanded={menuOpen}
+            aria-label={currentLanguage() === 'zh_CN' ? '全部面板' : 'All panels'}
             onClick={() => setMenuOpen(open => !open)}
+            onKeyDown={event => {
+              if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); setMenuOpen(true); }
+            }}
             className={cn(
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-brand-6)]/20',
               'text-[var(--ds-text-7)] hover:bg-[var(--ds-fill-3)] hover:text-[var(--ds-text-primary)]',
             )}
-            title='全部面板'
+            title={currentLanguage() === 'zh_CN' ? '全部面板' : 'All panels'}
           >
-            <IconFont
-              type='icon-line-operation-ellipsis'
-              className='text-[14px]'
-            />
+            <Ellipsis size={16} strokeWidth={1.5} aria-hidden='true' />
           </button>
           {menuOpen ? (
             <div
               role='menu'
               data-testid='chat-design-tabs-overflow-menu'
-              className='absolute left-0 top-full z-20 mt-1 max-h-[60vh] min-w-[180px] overflow-y-auto rounded-lg border border-[var(--ds-line-1)] bg-[var(--ds-fill-1)] py-1 shadow-lg'
+              className='dsh-design-tabs-menu'
+              onKeyDown={event => {
+                if (event.key === 'Escape') { event.preventDefault(); setMenuOpen(false); menuTrigger.current?.focus(); return; }
+                if (event.key === 'Tab') { setMenuOpen(false); return; }
+                if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+                event.preventDefault();
+                const items = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')];
+                const current = items.indexOf(document.activeElement as HTMLButtonElement);
+                const index = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (current + (event.key === 'ArrowUp' ? -1 : 1) + items.length) % items.length;
+                items[index]?.focus();
+              }}
             >
               {options.map(option => (
                 <button
                   key={option.value}
                   type='button'
                   role='menuitem'
+                  data-active={option.value === value || undefined}
                   data-testid={`chat-design-tabs-overflow-item-${option.value}`}
-                  onClick={() => handleSelect(option.value)}
+                  onClick={() => handleSelect(option.value, true)}
                   className={cn(
                     'flex w-full items-center gap-2 px-3 py-2 text-left text-sm',
                     'hover:bg-[var(--ds-fill-3)]',

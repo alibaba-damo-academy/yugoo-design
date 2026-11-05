@@ -61,12 +61,17 @@ export function DocumentWorkspace({ node, data, options }: { node: ComponentNode
     })
     setChapters(next); setActive(next[0]?.id)
     const onScroll = () => {
+      const scrolling = doc.scrollingElement ?? doc.documentElement
+      const atEnd = scrolling.scrollHeight > window.innerHeight + 1
+        && scrolling.scrollTop + window.innerHeight >= scrolling.scrollHeight - 1
       let id = next[0]?.id
       for (const chapter of next) if ((doc.getElementById(chapter.id)?.getBoundingClientRect().top ?? Infinity) <= 96) id = chapter.id
-      setActive(id)
+      setActive(atEnd ? next.at(-1)?.id : id)
     }
+    onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
-    cleanup.current = () => window.removeEventListener('scroll', onScroll)
+    window.addEventListener('resize', onScroll)
+    cleanup.current = () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll) }
   }, [config.source_attribute, config.references_attribute])
   const rawReferences = config.references_path ? pathGet(data, config.references_path) : undefined
   const references = Array.isArray(rawReferences) ? rawReferences : rawReferences && typeof rawReferences === 'object' ? Object.values(rawReferences) : []
@@ -79,7 +84,7 @@ export function DocumentWorkspace({ node, data, options }: { node: ComponentNode
   const root = [...attempts].filter(attempt => attempt.invocationId === latest?.invocationId && attempt.role === 'producer' && attempt.artifactKind === undefined).sort((a, b) => b.sequence - a.sequence)[0]
   const activity = [...(options?.artifactActivities ?? [])].filter(item => item.artifactFile === path).sort((a, b) => b.sequence - a.sequence)[0]
   const focusedStatus = activity?.active && activity.available ? activity.nativeStatus : undefined
-  const status = content !== undefined ? t('documentReady') : focusedStatus === 'running' || root?.phase === 'queued' || root?.phase === 'working' ? t('documentWorking')
+  const status = content !== undefined ? undefined : focusedStatus === 'running' || root?.phase === 'queued' || root?.phase === 'working' ? t('documentWorking')
     : focusedStatus === 'failed' || focusedStatus === 'interrupted' || root?.phase === 'failed' || root?.phase === 'cancelled' ? t('documentFailed') : undefined
   return <div className="dsh-document-workspace"><PanelWorkspace guidance={node.guidance} autoSaveId={`document:${node.id}`} sidebar={<PanelWorkspaceTree icon={sidebarIcon(node.sidebar_icon)} title={node.title ?? t('contents')}>
     {chapters.map(chapter => <PanelWorkspaceTreeItem key={chapter.id} selected={active === chapter.id} onSelect={() => {
@@ -89,10 +94,12 @@ export function DocumentWorkspace({ node, data, options }: { node: ComponentNode
   </PanelWorkspaceTree>}>
     <header className="dsh-document-toolbar"><strong>{title}</strong>{status ? <span role="status">{status}</span> : null}
       <button type="button" disabled={!path || busy} onClick={() => setReload(value => value + 1)}>{busy ? t('refreshing') : t('refresh')}</button></header>
-    {config.legend ? <div className="dsh-document-legend">{config.legend}{config.references_path ? <span>{referenceLabel(ids.size)}</span> : null}</div> : null}
+    {config.legend && (!config.references_path || ids.size > 0) ? <div className="dsh-document-legend">{config.legend}{config.references_path ? <span>{referenceLabel(ids.size)}</span> : null}</div> : null}
     {selected && (selected.sources.length || selectedCount) ? <div className="dsh-document-sources">
       {selected.sources.map(id => { const definition = config.sources?.find(source => source.value === id)
-        return <button type="button" key={id} disabled={!definition?.navigable || !options?.selectPanel} onClick={() => { if (definition?.navigable) options?.selectPanel?.(id) }}>{definition?.label ?? id}</button>
+        return definition?.navigable && options?.selectPanel
+          ? <button type="button" key={id} onClick={() => options.selectPanel?.(id)}>{definition.label}</button>
+          : <span key={id}>{definition?.label ?? id}</span>
       })}{selectedCount ? <span>{referenceLabel(selectedCount)}</span> : null}
     </div> : null}
     <div className="dsh-document-body" aria-busy={busy}>

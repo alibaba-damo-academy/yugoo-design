@@ -25,7 +25,7 @@ const data = { schema_version: 3, notifications: {
 
 test('detail-preview family responds to its content width and owns one narrow scroll region', async () => {
   const css = await readFile(new URL('../src/visual-components.css', import.meta.url), 'utf8')
-  assert.match(css, /\.is-record-preview > \.dsh-panel-workspace-main \{ container: record-preview-main \/ inline-size;/)
+  assert.match(css, /\.is-record-preview > \.dsh-panel-workspace-main \{ container: record-preview-main(?: [\w-]+)* \/ inline-size;/)
   const narrow = css.match(/@container record-preview-main \(max-width: 720px\) \{([\s\S]*?)\n\}/)?.[1]
   assert.ok(narrow)
   assert.match(narrow, /\.is-record-preview > \.dsh-panel-workspace-main > \.dsh-record-workspace-body \{[^}]*flex: 1;[^}]*min-height: 0;[^}]*grid-template-columns: minmax\(0, 1fr\);[^}]*overflow: auto;/)
@@ -44,8 +44,8 @@ test('actual Kit loader retains notification fields with one label level and a s
     assert.equal(section.form.reorder, false)
     assert.deepEqual(section.form.header, { variant: 'detail', title: { field: 'title', editable: true } })
     const fields = ['trigger', 'recipients', 'channels', 'message', 'action_target']
-    assert.deepEqual(section.form.body.map(item => item.field), fields)
-    assert.ok(section.form.body.every(item => item.kind === 'field'))
+    assert.deepEqual(section.form.body.map(group => group.items.map(item => item.field)), [fields.slice(0, 3), fields.slice(3)])
+    assert.ok(section.form.body.every(item => item.kind === 'group' && !item.collapsible), 'the two main task sections stay visible')
     assert.deepEqual(fields.map(key => panel.fields.find(field => field.key === key).label), labels)
     assert.equal(panel.fields.find(field => field.key === 'action_target').control, 'text')
     assert.deepEqual(section.create.defaults.channels, ['in_app'])
@@ -71,7 +71,8 @@ test('notification composition has one editable title, visible accessible labels
   try {
     for (const locale of ['zh-CN', 'en-US']) {
       await show(locale)
-      assert.equal(container.querySelectorAll('.dsh-design-form-group').length, 0)
+      assert.equal(container.querySelectorAll('.dsh-design-form-group.dsh-panel-content-group').length, 2)
+      assert.equal(container.querySelectorAll('.dsh-design-form-group-fields.dsh-panel-content-card').length, 2, 'each task section owns one complete white field body')
       assert.equal(container.querySelectorAll('.dsh-design-record-header-input').length, 1)
       assert.equal(container.querySelector('[data-field="title"]'), null)
       for (const key of ['trigger', 'recipients', 'channels', 'message', 'action_target']) assert.equal(container.querySelectorAll(`[data-field="${key}"]`).length, 1)
@@ -165,5 +166,27 @@ test('workspace preview follows canonical edits, selection and locale without a 
     assert.equal(changes.length, 4)
     assert.deepEqual(current.notifications.b, original.notifications.b)
 
+  } finally { await React.act(async () => root.unmount()) }
+})
+
+
+test('recipient choices show role names while retaining IDs and custom recipients', async () => {
+  const container = document.getElementById('root'), root = createRoot(container), changes = []
+  const state = { schema_version: 3, notifications: { a: { ...data.notifications.a, recipients: ['R-DESIGNER', 'External contact'] } }, notification_order: ['a'] }
+  const before = structuredClone(state), panel = localizePanelManifest(manifest, 'en-US')
+  try {
+    await React.act(async () => root.render(React.createElement(PanelLocaleContext.Provider, { value: 'en-US' }, renderNode(panel.ui, panel, state, {
+      locale: 'en-US', editable: true, onPanelUpdate: next => changes.push(next),
+      panelData: (type, section) => type === 'role_access' && section === 'roles' ? { 'R-DESIGNER': { title: 'Designer' }, 'R-LEAD': { title: 'Project lead' } } : {},
+    }))))
+    const field = container.querySelector('[data-field="recipients"]')
+    assert.deepEqual([...field.querySelectorAll('.dsh-token-item strong')].map(e => e.textContent), ['Designer', 'External contact'])
+    await React.act(async () => field.querySelector('.dsh-token-add-trigger').click())
+    const lead = [...field.querySelectorAll('[role="menuitem"]')].find(e => e.textContent === 'Project lead')
+    assert.ok(lead)
+    assert.equal([...field.querySelectorAll('[role="menuitem"]')].find(e => e.textContent === 'Designer').disabled, true)
+    await React.act(async () => lead.click())
+    assert.deepEqual(changes.at(-1).notifications.a.recipients, ['R-DESIGNER', 'External contact', 'R-LEAD'])
+    assert.deepEqual(state, before)
   } finally { await React.act(async () => root.unmount()) }
 })

@@ -17,7 +17,7 @@ const h = React.createElement
 const shared = await readFile(new URL('../src/visual-components.css', import.meta.url), 'utf8')
 const utilities = await readFile(new URL('../src/client/generated/design.tw.css', import.meta.url), 'utf8')
 const footer = renderToStaticMarkup(React.createElement(FooterButtons, {
-  disabled: true, regenerateText: '撤回操作', saveText: '保存并评估下一步',
+  disabled: true, regenerateText: '取消', saveText: '保存并继续',
 }))
 const table = h('div', { className: 'dsh-design-rows', 'data-scroll': 'table' },
   h('table', { className: 'dsh-design-rows-table', style: { minWidth: 1200 } },

@@ -6,6 +6,7 @@ i18n:
 empty_description: $t:empty
 sections:
   - id: functions
+    order: function_order
     title: $t:functions
     item_name: $t:function
     confirm_delete: true

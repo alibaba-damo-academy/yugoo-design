@@ -136,13 +136,12 @@ function semanticDiagnostic(code, message, repair) {
 	return `${code}: ${message} Repair: ${repair}`;
 }
 /**
-* Validate the canonical process plan before any BPMN artifact work begins.
-* @param state - complete flow_design state proposed by the Producer.
-* @returns actionable plan diagnostics; empty accepts the canonical role cast and active processes.
+* Resolve product identity from the canonical role cast, independently of its language.
+* @param rawRoles - the existing roles array from flow_design.json.
 */
-function flowDesignStateErrors(state) {
+function flowRoleContext(rawRoles) {
 	const diagnostics = [];
-	const roles = Array.isArray(state.roles) ? state.roles.map(record$1) : [];
+	const roles = Array.isArray(rawRoles) ? rawRoles.map(record$1) : [];
 	const roleIds = roles.map((role) => typeof role.id === "string" ? role.id.trim() : "");
 	const roleNames = roles.map((role) => typeof role.name === "string" ? role.name.trim() : "");
 	const normalizedRoleNames = roleNames.map((name) => name.normalize("NFKC").toLowerCase());
@@ -151,9 +150,24 @@ function flowDesignStateErrors(state) {
 	const duplicateRoleNames = [...new Set(roleNames.filter((name, index) => name !== "" && normalizedRoleNames.indexOf(name.normalize("NFKC").toLowerCase()) !== index))].sort();
 	if (duplicateRoleIds.length > 0) diagnostics.push(semanticDiagnostic("flow_design.duplicate_role_id", `role ids are duplicated: ${duplicateRoleIds.join(", ")}.`, "Keep one stable id for each product-wide role."));
 	if (duplicateRoleNames.length > 0) diagnostics.push(semanticDiagnostic("flow_design.duplicate_role_name", `role names are duplicated: ${duplicateRoleNames.join(", ")}.`, "Keep one canonical display name for each product-wide role and reuse it in every process."));
-	const systemRoles = roles.filter((role) => role.id === "System" || role.name === "系统");
-	if (systemRoles.length !== 1 || systemRoles[0]?.id !== "System" || systemRoles[0]?.name !== "系统") diagnostics.push(semanticDiagnostic("flow_design.missing_system_role", "the product-wide role cast must contain exactly one canonical role {id: \"System\", name: \"系统\"}.", "Add or normalize the single built-in System/系统 role before describing active processes."));
+	const systemRoles = roles.filter((role) => role.id === "System");
+	if (systemRoles.length !== 1) diagnostics.push(semanticDiagnostic("flow_design.missing_system_role", "the product-wide role cast must contain exactly one role with stable id \"System\".", "Keep the built-in System identity and give it one non-empty canonical display name in the authored language."));
 	const roleNameSet = new Set(roleNames);
+	const systemName = systemRoles.length === 1 && typeof systemRoles[0]?.name === "string" ? systemRoles[0].name.trim() : "";
+	return { diagnostics, roleNameSet, systemName };
+}
+function processRoleErrors(process, processId, { roleNameSet, systemName }) {
+	const diagnostics = [];
+	const stakeholders = stringList(process.stakeholders);
+	const unknown = stakeholders.filter((role) => !roleNameSet.has(role));
+	if (unknown.length > 0) diagnostics.push(semanticDiagnostic("flow_design.unknown_stakeholder", `process ${processId} uses stakeholders outside the product-wide role cast: ${[...new Set(unknown)].sort().join(", ")}.`, "Reuse exact role names from roles, or establish the missing evidenced role in the shared cast first."));
+	if (systemName !== "" && !stakeholders.includes(systemName)) diagnostics.push(semanticDiagnostic("flow_design.system_not_participating", `process ${processId} does not include the System role ${JSON.stringify(systemName)} as a stakeholder.`, "Include its canonical display name and established product responsibility, or omit a procedure in which the product has no responsibility."));
+	if (stringList(process.system_responsibilities).length === 0) diagnostics.push(semanticDiagnostic("flow_design.missing_system_responsibility", `process ${processId} does not state any product/system responsibility.`, "Describe what the product validates, stores, decides, sends, or waits for before BPMN authoring."));
+	return diagnostics;
+}
+function flowDesignStateErrors(state) {
+	const roleContext = flowRoleContext(state.roles);
+	const diagnostics = [...roleContext.diagnostics];
 	const processes = record$1(state.processes);
 	const order = Array.isArray(state.process_order) ? state.process_order : [];
 	for (const rawProcessId of order) {
@@ -161,11 +175,7 @@ function flowDesignStateErrors(state) {
 		const process = record$1(processes[processId]);
 		if (Object.keys(process).length === 0 || process.deleted === true) continue;
 		if (process.process_id !== processId) diagnostics.push(semanticDiagnostic("flow_design.process_id_mismatch", `process map key ${processId} does not match process_id ${JSON.stringify(process.process_id)}.`, "Set process_id to the exact process map key before authoring or laying out BPMN."));
-		const stakeholders = stringList(process.stakeholders);
-		const unknown = stakeholders.filter((role) => !roleNameSet.has(role));
-		if (unknown.length > 0) diagnostics.push(semanticDiagnostic("flow_design.unknown_stakeholder", `process ${processId} uses stakeholders outside the product-wide role cast: ${[...new Set(unknown)].sort().join(", ")}.`, "Reuse exact role names from roles, or establish the missing evidenced role in the shared cast first."));
-		if (!stakeholders.includes("系统")) diagnostics.push(semanticDiagnostic("flow_design.system_not_participating", `process ${processId} does not include 系统 as a stakeholder.`, "Add 系统 and its established product responsibility, or omit a procedure in which the product has no responsibility."));
-		if (stringList(process.system_responsibilities).length === 0) diagnostics.push(semanticDiagnostic("flow_design.missing_system_responsibility", `process ${processId} does not state any product/system responsibility.`, "Describe what the product validates, stores, decides, sends, or waits for before BPMN authoring."));
+		diagnostics.push(...processRoleErrors(process, processId, roleContext));
 	}
 	return Object.freeze(diagnostics);
 }
@@ -174,10 +184,15 @@ function flowDesignStateErrors(state) {
 * @param xml - complete or structure-only BPMN XML after syntax validation.
 * @param processId - canonical process id used in diagnostics.
 * @param process - canonical process descriptor from flow_design.json.
+* @param roles - canonical role cast; omitted only by legacy Chinese file callers.
 * @returns actionable semantic diagnostics; empty accepts the process.
 */
-function semanticErrors(xml, processId, process) {
-	const diagnostics = [];
+function semanticErrors(xml, processId, process, roles) {
+	// Old file callers have no cast and retain the original Chinese lane semantics.
+	// New callers supply the existing canonical cast; identity never comes from a label.
+	const roleContext = roles === void 0 ? void 0 : flowRoleContext(roles);
+	const systemName = roleContext?.systemName ?? "系统";
+	const diagnostics = roleContext === void 0 ? [] : [...roleContext.diagnostics, ...processRoleErrors(process, processId, roleContext)];
 	const nodes = bpmnNodes(xml);
 	const expectedRoles = stringList(process.stakeholders);
 	const systemResponsibilities = stringList(process.system_responsibilities);
@@ -200,8 +215,8 @@ function semanticErrors(xml, processId, process) {
 		const duplicated = [...nodeLanes].filter(([, owners]) => owners.length !== 1).map(([nodeId]) => nodeId).sort();
 		if (duplicated.length > 0) diagnostics.push(semanticDiagnostic("flow_design.ambiguous_lane_assignment", `process ${processId}: flow nodes belong to more than one lane: ${duplicated.slice(0, 8).join(", ")}.`, "Keep exactly one flowNodeRef for each flow node in exactly one responsible lane."));
 	}
-	if (expectedRoles.includes("系统")) {
-		const systemActivities = [...expectedRoles.length === 1 && laneNames.length === 0 ? new Set(nodes.keys()) : new Set(laneNodes.get("系统") ?? [])].map((nodeId) => [nodeId, nodes.get(nodeId)?.tag]).filter((entry) => entry[1] !== void 0 && BPMN_ACTIVITY_TAGS.has(entry[1]));
+	if (expectedRoles.includes(systemName)) {
+		const systemActivities = [...expectedRoles.length === 1 && laneNames.length === 0 ? new Set(nodes.keys()) : new Set(laneNodes.get(systemName) ?? [])].map((nodeId) => [nodeId, nodes.get(nodeId)?.tag]).filter((entry) => entry[1] !== void 0 && BPMN_ACTIVITY_TAGS.has(entry[1]));
 		const humanTasks = systemActivities.filter(([, tag]) => tag === "userTask" || tag === "manualTask").map(([nodeId]) => nodeId).sort();
 		if (humanTasks.length > 0) diagnostics.push(semanticDiagnostic("flow_design.human_task_in_system_lane", `process ${processId}: system lane contains human-owned tasks: ${humanTasks.slice(0, 8).join(", ")}.`, "Move human/manual actions to a human lane or use an evidenced automated activity type."));
 		const genericTasks = systemActivities.filter(([, tag]) => tag === "task").map(([nodeId]) => nodeId).sort();
@@ -209,12 +224,12 @@ function semanticErrors(xml, processId, process) {
 		if (systemResponsibilities.length > 0 && !systemActivities.some(([, tag]) => BPMN_SYSTEM_ACTIVITY_TAGS.has(tag))) diagnostics.push(semanticDiagnostic("flow_design.system_responsibility_unrealized", `process ${processId}: no typed automated activity realizes the supplied system responsibilities.`, "Add system-lane semantic activities for established responsibilities without inventing new ones."));
 	}
 	for (const [role, refs] of laneNodes) {
-		if (role === "系统") continue;
+		if (role === systemName) continue;
 		const automated = refs.filter((ref) => {
 			const tag = nodes.get(ref)?.tag;
 			return tag !== void 0 && BPMN_SYSTEM_ACTIVITY_TAGS.has(tag);
 		}).sort();
-		if (automated.length > 0) diagnostics.push(semanticDiagnostic("flow_design.automation_in_human_lane", `process ${processId}: human lane ${JSON.stringify(role)} owns automated activities: ${automated.slice(0, 8).join(", ")}.`, "Move automated work to the 系统 lane and keep human work as userTask or manualTask."));
+		if (automated.length > 0) diagnostics.push(semanticDiagnostic("flow_design.automation_in_human_lane", `process ${processId}: human lane ${JSON.stringify(role)} owns automated activities: ${automated.slice(0, 8).join(", ")}.`, "Move automated work to the canonical System role's lane and keep human work as userTask or manualTask."));
 	}
 	const hintedKinds = new Set(triggerHints.map((hint) => typeof hint.kind === "string" ? hint.kind : ""));
 	const presentKinds = new Set(Object.entries(BPMN_TRIGGER_DEFINITIONS).filter(([, definition]) => new RegExp(`<bpmn:${definition}\\b`).test(xml)).map(([kind]) => kind));
@@ -404,7 +419,7 @@ async function validateFlowDesignProducerArtifacts(state, artifacts) {
 		const stakeholders = Array.isArray(process.stakeholders) ? process.stakeholders : [];
 		diagnostics.push(...layoutErrors(xml).map((message) => `process ${processId}: ${message}`));
 		diagnostics.push(...structuralErrors(structure, processId, stakeholders.length).map((message) => `process ${processId}: ${message}`));
-		diagnostics.push(...semanticErrors(structure, processId, process));
+		diagnostics.push(...semanticErrors(structure, processId, process, state.roles));
 	}
 	return Object.freeze(diagnostics);
 }
@@ -447,7 +462,7 @@ try {
 			...sourceDiagnostics,
 			...(operation === "validate-final-bpmn-file" ? layoutErrors(xml) : []),
 			...structuralErrors(structure, processId, (Array.isArray(processRecord.stakeholders) ? processRecord.stakeholders : []).length),
-			...semanticErrors(structure, processId, processRecord)
+			...semanticErrors(structure, processId, processRecord, context.roles)
 		]);
 	} else throw new Error("usage: bpmn-validator.mjs <validate-bpmn-file|validate-final-bpmn-file>");
 } catch (error) {

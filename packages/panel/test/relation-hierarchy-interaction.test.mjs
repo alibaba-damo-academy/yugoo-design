@@ -8,6 +8,9 @@ test('opt-in child creation uses one canonical transaction, with cancellation an
   const dom = new JSDOM('<div id="root"></div>', { url: 'https://panel.test/', pretendToBeVisual: true })
   for (const key of ['window', 'document', 'HTMLElement', 'Element', 'Node', 'MutationObserver']) globalThis[key] = dom.window[key]
   globalThis.IS_REACT_ACT_ENVIRONMENT = true
+  // JSDOM verifies the lifecycle; Chromium owns modal focus trapping.
+  dom.window.HTMLDialogElement.prototype.showModal = function () { this.open = true }
+  dom.window.HTMLDialogElement.prototype.close = function () { this.open = false }
   globalThis.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} }
   globalThis.getComputedStyle = dom.window.getComputedStyle
   globalThis.requestAnimationFrame = dom.window.requestAnimationFrame.bind(dom.window)
@@ -37,7 +40,7 @@ test('opt-in child creation uses one canonical transaction, with cancellation an
   const show = editable => act(async () => root.render(renderManifest(manifest, data, { locale: 'en-US', editable,
     onPanelUpdate: updates => { writes.push(updates); data = applyPanelUpdatesToDraft(data, updates) } })))
   const add = () => document.querySelector('.dsh-record-hierarchy-create')
-  const dialog = () => document.querySelector('[role="dialog"]')
+  const dialog = () => document.querySelector('dialog')
   const button = text => [...dialog().querySelectorAll('button')].find(el => el.textContent.trim() === text)
   const name = async value => act(async () => {
     const input = dialog().querySelector('input')
@@ -48,13 +51,21 @@ test('opt-in child creation uses one canonical transaction, with cancellation an
     await show(false); assert.equal(add(), null)
     await show(true); assert.ok(add())
     assert.ok(document.querySelector('[aria-label="Add subtype: Parent"]'), 'an empty parent subtree exposes creation of its first child')
-    await act(async () => add().click())
+    const opener = add(); opener.focus()
+    await act(async () => opener.click())
     assert.equal(dialog().getAttribute('aria-label'), 'Create subtype')
+    assert.equal(dialog().open, true)
+    assert.equal(document.activeElement, dialog().querySelector('input'))
+    await act(async () => dialog().dispatchEvent(new dom.window.Event('cancel', { bubbles: true, cancelable: true })))
+    assert.equal(dialog(), null)
+    assert.equal(document.activeElement, opener, 'Escape cancellation returns to the original action')
+    assert.equal(writes.length, 0)
+    await act(async () => opener.click())
     await name('Cancelled'); await act(async () => button('Cancel').click())
     assert.equal(dialog(), null); assert.equal(writes.length, 0); assert.deepEqual(data, before)
 
     await act(async () => add().click()); await name('Specialist')
-    await act(async () => dialog().dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true })))
+    await act(async () => dialog().querySelector('form').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true })))
     assert.equal(writes.length, 1, 'node, edge and order are one transaction')
     const child = Object.keys(data.things).find(id => !Object.hasOwn(before.things, id))
     assert.equal(data.things[child].name, 'Specialist')
@@ -74,14 +85,14 @@ test('opt-in child creation uses one canonical transaction, with cancellation an
     data = { ...data, things: { parent: data.things.parent, sibling: data.things.sibling } }
     await show(true)
     assert.ok(dialog().querySelector('button[type="submit"]').disabled)
-    await act(async () => dialog().dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true })))
+    await act(async () => dialog().querySelector('form').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true })))
     assert.equal(writes.length, 1, 'vanished parent cannot create')
     await show(false); assert.equal(dialog(), null); assert.equal(add(), null)
     assert.equal(writes.length, 1)
     await show(true); await act(async () => button('Cancel').click())
     data = { ...data, links: ['malformed collection: preserve for repair'] }
     await show(true); await act(async () => add().click()); await name('Must not replace the broken map')
-    await act(async () => dialog().dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true })))
+    await act(async () => dialog().querySelector('form').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true })))
     assert.equal(writes.length, 1, 'a malformed raw edge collection is rejected rather than rebuilt from its empty display projection')
     assert.deepEqual(data.links, ['malformed collection: preserve for repair'])
   } finally { await act(async () => root.unmount()); dom.window.close() }

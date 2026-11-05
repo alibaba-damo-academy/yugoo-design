@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { isDeepStrictEqual } from 'node:util'
 import { inspectPanelComponent, exportPanelAuthoringReference } from '../../../.agents/skills/design-bundle-creator/scripts/inspect-panel-component.mjs'
 import { COMPONENT_KINDS } from '../src/panel-component-catalog.ts'
 import { queryPanelAuthoringReference } from '../src/panel-authoring-reference.ts'
@@ -27,7 +28,9 @@ test('portable references preserve every catalog entry and focused source contra
   const material = JSON.parse(JSON.stringify(await exportPanelAuthoringReference(repo)))
   const standard = await readFile(new URL('../../../docs/panel-uiux-standard.md', import.meta.url), 'utf8')
   assert.deepEqual(Object.keys(material.components), COMPONENT_KINDS)
+  assert.equal(material.sharedStandards.content, standard)
   for (const name of COMPONENT_KINDS) {
+    assert.ok(!Object.hasOwn(material.components[name].documentation, 'sharedStandards'), 'store one common guide rather than a copy per component')
     assert.equal(queryPanelAuthoringReference(material, name, 'contract').component, name)
     assert.ok(queryPanelAuthoringReference(material, name, 'docs').documentation.sections.length)
     const shared = queryPanelAuthoringReference(material, name, 'docs').documentation.sharedStandards
@@ -35,7 +38,19 @@ test('portable references preserve every catalog entry and focused source contra
     assert.equal(shared.content, standard, 'packaged guide must be the canonical source, not another summary')
     assert.match(shared.authority, /not a component schema/)
     assert.ok(Array.isArray(queryPanelAuthoringReference(material, name, 'examples').examples))
+    const original = await inspectPanelComponent(repo, name, undefined, { documentationOnly: true })
+    const { read, ...packagedDocumentation } = queryPanelAuthoringReference(material, name, 'docs').documentation
+    const { read: sourceRead, ...sourceDocumentation } = original.documentation
+    assert.equal(sourceRead, '--docs')
+    assert.deepEqual(read, { name, reference: 'docs' })
+    assert.ok(isDeepStrictEqual(packagedDocumentation, sourceDocumentation), 'each component retains its complete source-derived documentation')
   }
+  const legacy = structuredClone(material)
+  for (const entry of Object.values(legacy.components)) entry.documentation.sharedStandards = legacy.sharedStandards
+  delete legacy.sharedStandards
+  for (const name of COMPONENT_KINDS) assert.deepEqual(
+    queryPanelAuthoringReference(legacy, name, 'docs'), queryPanelAuthoringReference(material, name, 'docs'),
+    'existing inline materials keep the same docs response')
   const focused = queryPanelAuthoringReference(material, 'navigation_workspace', 'contract', 'ComponentNode.navigation_map.edges')
   assert.match(focused.contract.declaration, /new_label\?: string/)
   const overview = queryPanelAuthoringReference(material, 'record_form', 'contract')
@@ -76,7 +91,7 @@ test('portable references preserve every catalog entry and focused source contra
   assert.throws(() => queryPanelAuthoringReference(partial, 'stack', 'docs'), /incompatible/)
 })
 
-test('shared standard preserves complete UTF-8 text through 128 KiB and rejects oversized or misidentified input', async t => {
+test('shared standard preserves complete UTF-8 text through 256 KiB and rejects oversized or misidentified input', async t => {
   const root = await mkdtemp(join(tmpdir(), 'panel-authoring-standard-'))
   t.after(() => rm(root, { recursive: true, force: true }))
   await writeFile(join(root, 'package.json'), '{"type":"module"}\n')
@@ -85,12 +100,12 @@ test('shared standard preserves complete UTF-8 text through 128 KiB and rejects 
   await symlink(join(repo, 'docs/dsl-spec.md'), join(root, 'docs/dsl-spec.md'))
   const standardPath = join(root, 'docs/panel-uiux-standard.md')
   const heading = '# Panel UIUX 规范\n'
-  const remaining = 128 * 1024 - Buffer.byteLength(heading)
+  const remaining = 256 * 1024 - Buffer.byteLength(heading)
   const exact = heading + '规'.repeat(Math.floor(remaining / 3)) + 'x'.repeat(remaining % 3)
   const inspect = () => inspectPanelComponent(root, 'record_form', undefined, { documentationOnly: true })
   await writeFile(standardPath, exact)
   const shared = (await inspect()).documentation.sharedStandards
-  assert.equal(Buffer.byteLength(shared.content), 128 * 1024)
+  assert.equal(Buffer.byteLength(shared.content), 256 * 1024)
   assert.deepEqual(Buffer.from(shared.content), Buffer.from(exact))
   await writeFile(standardPath, exact + '\n')
   await assert.rejects(inspect(), /heading or exceeds the bounded reference size/)

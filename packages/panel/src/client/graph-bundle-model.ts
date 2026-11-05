@@ -1,4 +1,4 @@
-import { edgeReading, recordOwner, relationMeaningLabel, type DesignGraph, type GraphEdge, type GraphNode, type GraphScope } from './graph-model.js'
+import { edgeReading, recordOwner, relationDisplayLabel, type DesignGraph, type GraphEdge, type GraphNode, type GraphScope } from './graph-model.js'
 
 export const edgeMembers = (edge: GraphEdge) => edge.members ?? [edge]
 export function graphColor(owner: string): string {
@@ -7,7 +7,7 @@ export function graphColor(owner: string): string {
   return 'hsl(' + ((hash >>> 0) % 360) + ' 85% 74%)'
 }
 function key(parts: unknown[]) { return JSON.stringify(parts) }
-function aggregate(edges: GraphEdge[], endpoint: (id: string) => string | undefined): GraphEdge[] {
+function aggregate(edges: GraphEdge[], endpoint: (id: string) => string | undefined, locale: string): GraphEdge[] {
   const groups = new Map<string, GraphEdge>()
   for (const edge of edges) {
     let from = endpoint(edge.from), to = endpoint(edge.to)
@@ -18,21 +18,22 @@ function aggregate(edges: GraphEdge[], endpoint: (id: string) => string | undefi
     const previous = groups.get(id)
     const members = [...(previous?.members ?? []), ...edgeMembers(edge)]
     // Identity, evidence and original endpoints survive every display fold.
-    groups.set(id, { ...edge, id, from, to, reading, label: members.length > 1 ? relationMeaningLabel(reading.meaning) + ' · ' + members.length + ' 条原始关系' : members[0]!.label, members })
+    const projected: GraphEdge = { ...edge, id, from, to, reading, members }
+    groups.set(id, { ...projected, label: relationDisplayLabel(projected, locale) })
   }
   return [...groups.values()]
 }
 /** Same record projection as the normal graph, retaining all original member IDs. */
-export function projectExplorationRecords(graph: DesignGraph, expanded: ReadonlySet<string>): GraphScope {
+export function projectExplorationRecords(graph: DesignGraph, expanded: ReadonlySet<string>, locale = 'zh-CN'): GraphScope {
   const owners = new Map(graph.nodes.map(node => [node.id, recordOwner(graph, node.id)]))
   const nodes = graph.nodes.filter(node => node.record || !owners.get(node.id) || expanded.has(owners.get(node.id)!))
   const visible = new Set(nodes.map(node => node.id))
-  const edges = aggregate(graph.edges, id => visible.has(id) ? id : owners.get(id))
+  const edges = aggregate(graph.edges, id => visible.has(id) ? id : owners.get(id), locale)
   return { nodes, edges, total: nodes.length }
 }
 export interface BundleDisplayNode { id: string; owner: string; label: string; sources: string[]; node?: GraphNode }
 export interface BundleSector { owner: string; label: string; start: number; end: number; angle: number; count: number }
-export function bundleDisplay(scope: GraphScope, collapsed: ReadonlySet<string>) {
+export function bundleDisplay(scope: GraphScope, collapsed: ReadonlySet<string>, locale = 'zh-CN') {
   const byOwner = new Map<string, GraphNode[]>()
   for (const node of scope.nodes) { const group = byOwner.get(node.owner) ?? []; group.push(node); byOwner.set(node.owner, group) }
   const nodes: BundleDisplayNode[] = [], sectors: BundleSector[] = []
@@ -51,7 +52,7 @@ export function bundleDisplay(scope: GraphScope, collapsed: ReadonlySet<string>)
     for (const node of group) endpoint.set(node.id, collapsed.has(owner) ? groupId : node.id)
     offset += group.length + 2
   }
-  const edges = aggregate(scope.edges, id => endpoint.get(id))
+  const edges = aggregate(scope.edges, id => endpoint.get(id), locale)
   return { nodes, edges, sectors }
 }
 export function bundleCoordinates(display: ReturnType<typeof bundleDisplay>) {

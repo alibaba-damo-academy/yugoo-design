@@ -21,7 +21,7 @@ properties:
       type: object
       properties:
         id: { type: string }     # ASCII slug for lane ids, e.g. "Buyer"
-        name: { type: string }   # Chinese display name, e.g. "采购员"
+        name: { type: string }   # Canonical display name in the authored language, e.g. "采购员" or "Buyer"
   processes:
     type: map
     value:
