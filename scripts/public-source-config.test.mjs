@@ -176,6 +176,42 @@ test('the reviewed Mermaid edge keeps Cytoscape peer consumers on their compatib
   assert.equal(mermaid.dependencies.cytoscape, '3.34.2')
 })
 
+test('reviewed D3 Array parent edges pin 3.x without replacing the Sankey 2.x input', () => {
+  const repo = new URL('../', import.meta.url)
+  const workspace = YAML.parse(readFileSync(new URL('pnpm-workspace.yaml', repo), 'utf8'))
+  const lock = YAML.parse(readFileSync(new URL('pnpm-lock.yaml', repo), 'utf8'))
+  const baseline = JSON.parse(readFileSync(new URL('release/public-source-baseline.json', repo), 'utf8'))
+  // Original incoming ranges from these selected upstream package manifests.
+  const parents = {
+    'd3@7.9.0': '3',
+    'd3-contour@4.0.2': '^3.2.0',
+    'd3-geo@3.1.1': '2.5.0 - 3',
+    'd3-scale@4.0.2': '2.10.0 - 3',
+    'd3-time@3.1.0': '2 - 3',
+    'force-graph@1.49.4': '1 - 3',
+    'three-forcegraph@1.43.4': '1 - 3',
+    'victory-vendor@37.3.6': '^3.1.6',
+  }
+  for (const [parent, range] of Object.entries(parents)) {
+    assert.ok(satisfies('3.2.4', range), parent)
+    assert.equal(workspace.overrides[`${parent}>d3-array`], '3.2.4', parent)
+    const snapshot = Object.entries(lock.snapshots).find(([key]) => key === parent || key.startsWith(parent + '('))?.[1]
+    assert.equal(snapshot?.dependencies['d3-array'], '3.2.4', parent)
+  }
+  assert.deepEqual(lock.overrides, workspace.overrides)
+  assert.deepEqual(baseline.reviewedWorkspaceOverrides, workspace.overrides)
+  assert.ok(!Object.keys(workspace.overrides).some(key => /^d3-array(?:@|$)/u.test(key)))
+  assert.equal(workspace.overrides['d3-sankey@0.12.3>d3-array'], undefined)
+  assert.equal(lock.snapshots['d3-sankey@0.12.3'].dependencies['d3-array'], '2.12.1')
+  assert.ok(satisfies('2.12.1', '1 - 2'))
+  assert.ok(!satisfies('3.2.4', '1 - 2'))
+  const materials = JSON.parse(readFileSync(new URL('release/dsh-distribution-materials.json', repo), 'utf8'))
+  for (const name of ['dsh-design-panel', 'dsh-design-provider-web-app']) {
+    assert.deepEqual(materials.packages[name].components.filter(component => component.name === 'd3-array')
+      .map(component => component.version).sort(), ['2.12.1', '3.2.4'])
+  }
+})
+
 test('development scripts, ambiguous root/workspace policies and invalid identities fail explicitly', () => {
   const mutations = [
     input => { input.rootScripts = ['dogfood'] },

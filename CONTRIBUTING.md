@@ -257,7 +257,8 @@ reproduction or proof of complete product acceptance.
 
 The release maintainer owns the product version, fixed source/tag, Actions/npm
 publication and verified native Release asset. The catalog maintainer owns the
-existing directory entry, its version-update PR and actual channel readback.
+existing directory entry, its discovery metadata, any required pin-update PR
+and actual channel readback.
 Both roles use the same completed stable product release; a catalog update does
 not create a second package, version sequence or build. This handoff follows the
 authorized release/catalog scope without adding another approval stage.
@@ -267,12 +268,13 @@ synchronization, from a completed product release with all eleven archives
 verified. Do not infer that selection from one package's `latest` value during
 publication. `latest` must select each package's highest published stable
 version; an older recovery must not roll it back or automatically downgrade a
-catalog pin. Do not use a beta channel or a mutable `latest` download URL for a
-catalog release. The pinned historical `beta.16` native input above remains an
+catalog pin. For channels that require an archive pin, use a fixed versioned
+URL, not a beta channel or a mutable `latest` download URL. The pinned
+historical `beta.16` native input above remains an
 input identity, not a product release channel.
 
 The community catalog installs the native aggregate
-`@yugoo-design/dsh-design-system-dsh@X.Y.Z`, not the `yugoo-design` CLI archive.
+`@yugoo-design/dsh-design-system-dsh`, not the `yugoo-design` CLI archive.
 Use that release receipt's original native tarball as the corresponding
 `vX.Y.Z` GitHub Release asset, named `dsh-design-system-dsh-X.Y.Z.tgz`. File
 renaming may preserve its raw bytes; rebuilding or repacking it is not allowed.
@@ -291,10 +293,21 @@ https://github.com/alibaba-damo-academy/yugoo-design/releases/download/vX.Y.Z/ds
 ```
 
 The current product workflow publishes npm packages; it does not automatically
-attach this Release asset or update community catalogs. Complete those steps as
-part of each applicable release handoff. A fixed catalog URL does not follow
-npm `latest`. Update the existing entry through a pin-update PR, preserving one
-Yugoo Design product entry. Include its fixed icon/screenshot sources; the native
+attach this Release asset. Record native asset availability separately from npm
+publication and catalog discovery.
+
+The existing [Awesome catalog](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin)
+[discovers the native npm identity and reads its registry `latest`](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/scripts/probe-npm.mjs),
+then [prefers that verified npm package over the declared tarball](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/scripts/build-site.mjs).
+Its normal install command therefore follows npm without a per-version catalog
+PR. The declared tarball remains a fallback; normal npm releases do not require
+rewriting it. The catalog's [scheduled and manual probes](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/.github/workflows/build-site.yml)
+refresh cached package and version data; ordinary catalog pushes can reuse that
+cache. Record a delayed display refresh separately from registry publication.
+
+For channels that actually select a fixed archive, the URL does not follow npm
+`latest`: update the existing entry through a pin-update PR, preserving one
+Yugoo Design product entry. Keep its fixed icon/screenshot sources; the native
 entry's screenshot index is `packages/dsh/screenshots.json`. Do not commit
 generated catalog pages or caches. If a newer release arrives while a pin PR is
 pending, update that PR or explicitly supersede it instead of leaving competing
@@ -306,17 +319,18 @@ record. Keep current pins and dynamic status there, rather than in this guide:
 | Stage and owner | Completion evidence and handoff |
 | --- | --- |
 | npm published — release maintainer | Exact product/native version, internal and public source commits, matching tag, producing Actions run/artifact/receipt, package `name@version`, registry tarball URL/SRI, all eleven archive confirmations and `latest` readback. Include tested Host versions, installation script approvals/CPU policy and untested behavior; reuse unaffected evidence. |
-| Native asset available — release maintainer | Matching Release/asset IDs, fixed public URL, original size/SHA-256/SRI and independent full-download comparison. |
-| Catalog PR submitted — catalog maintainer | Existing entry URL/path, selected version, fixed media sources, PR URL/head and exact validation scope. Submission is not acceptance. |
-| Catalog PR merged — catalog maintainer | Upstream merge result and resulting source commit. This does not prove either live market has updated. |
-| Awesome catalog effective — catalog maintainer | The live `plugins.json` contains the unique entry with exactly the intended tarball URL, and its effective install target/generated command still selects that archive. Record a change to npm routing separately; a matching tarball field alone is insufficient. |
-| dsh-market effective — catalog maintainer | The actual list/detail view exposes the entry and selects the same archive. Inspecting only its source consumption rules leaves runtime market observation unverified. |
+| Native asset available — release maintainer | Matching Release/asset IDs, fixed public URL, original size/SHA-256/SRI and independent full-download comparison. This evidence is separate from the catalog's npm route. |
+| Catalog PR submitted, when required by the channel — catalog maintainer | Existing entry URL/path, selected version, fixed media sources, PR URL/head and exact validation scope. Normal npm discovery in the existing Awesome entry needs no per-version PR. Submission is not acceptance. |
+| Catalog PR merged, when required by the channel — catalog maintainer | Upstream merge result and resulting source commit. This does not prove either live market has updated. |
+| Awesome catalog effective — catalog maintainer | The live `plugins.json` contains the unique entry with the intended native npm identity, and its effective install target/generated command selects npm. Record the displayed version and probe/cache freshness separately. For an archive route, verify the exact selected tarball URL; a matching fallback field alone is insufficient. |
+| dsh-market effective — catalog maintainer | The actual list/detail view exposes the entry and selects the effective npm target or intended fixed archive. Record the actual installed version separately. Inspecting only source consumption rules leaves runtime market observation unverified. |
 
 If publication fails, use the existing [original-archive recovery](#original-archives-and-recovery).
 If the asset or a catalog update fails, retain the successful npm state and mark
 the affected channel pending; do not republish npm to repair a directory entry.
-Cache delay is a channel delay, not a reason to roll back npm. An explicit catalog
-rollback changes its pin through a normal PR to a known fixed archive and records
+Cache delay is a channel delay, not a reason to roll back npm. For an archive-pinned
+channel, an explicit catalog rollback changes its pin through a normal PR to a
+known fixed archive and records
 the reason; it does not overwrite a package/asset, move an old tag or invent a
 market-specific version.
 

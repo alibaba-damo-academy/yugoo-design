@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "227aed10623f54e65826a8967a5878275c5c3384",
+  "revision": "0bc8be1bda7826b02212a6d7a200d045ef456376",
   "policySha256": "010405513cf732f03a5ee3166fdcaaedbdfd85caff446fe401e82a19527071f2",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -104,7 +104,7 @@
       "mode": "100644"
     },
     "CONTRIBUTING.md": {
-      "sha256": "6e328a7079dd9fda4408d9d119fcd19800ff05ed881184f3483b7bf40f753ee5",
+      "sha256": "92f15c506e1c1a87a9a8e03ee86069d0b9cffa7bc60d5482132c6c64c18a76e3",
       "mode": "100644"
     },
     "LICENSE": {
@@ -9440,7 +9440,7 @@
       "mode": "100644"
     },
     "release/public-source-baseline.json": {
-      "sha256": "55abc6faccbf111fec70dff665465147f2bf5a9f259450d8e9975f66e2268931",
+      "sha256": "ba64f5ffad6997e29004e1543e5b0cdd0e4584113efe2d9c7733c4fa23f46452",
       "mode": "100644"
     },
     "release/public-source-policy.json": {
@@ -9828,7 +9828,7 @@
       "mode": "100644"
     },
     "scripts/public-source-config.test.mjs": {
-      "sha256": "fd8d6839d39030f257a1185c181df799c48bda860f9ff3762fb0407403e0bc4d",
+      "sha256": "338fa1808a605ba12a820a72fc6c3be3005d564076a7d2e93851095297eecca2",
       "mode": "100644"
     },
     "scripts/public-sync-apply.mjs": {
@@ -11920,7 +11920,7 @@
       "mode": "100644"
     },
     "pnpm-workspace.yaml": {
-      "sha256": "c4614b9aaf3a6b527fa3e31cea50fed044e0f6b8cc1ee267b9ccc26adfbff8a2",
+      "sha256": "c591e77fbddd42c2c9704cb5ca4f07b1d06d0d1bd330322ce7f2d01ba3ab7b26",
       "mode": "100644"
     },
     "packages/companion-dev/package.json": {
@@ -11983,8 +11983,8 @@
     "inputs": [
       {
         "path": "release/public-source-baseline.json",
-        "sourceOid": "94a7be17d6ea62f5ef8f1bb0c5069be2ed0ee78a",
-        "sourceSHA256": "55abc6faccbf111fec70dff665465147f2bf5a9f259450d8e9975f66e2268931"
+        "sourceOid": "fd921782bbe19120a69faf7c9aed64fc81aeff43",
+        "sourceSHA256": "ba64f5ffad6997e29004e1543e5b0cdd0e4584113efe2d9c7733c4fa23f46452"
       },
       {
         "path": "release/public-source-test-selection.json",
@@ -12001,9 +12001,9 @@
       },
       {
         "path": "pnpm-workspace.yaml",
-        "sourceOid": "5c855b10536c6f2a9728fe7139b012dffb6dd287",
-        "sourceSHA256": "211f32de193be31bbf5b948a010012ccbb9f4e3cfb92183feac0a4a3b204b46f",
-        "outputSHA256": "c4614b9aaf3a6b527fa3e31cea50fed044e0f6b8cc1ee267b9ccc26adfbff8a2"
+        "sourceOid": "54748225a8ab41f83893f54c0dfc86ec9f43ae2a",
+        "sourceSHA256": "f6bbada227043782a24dd905e066df467d4586f380062245f1715e635f831077",
+        "outputSHA256": "c591e77fbddd42c2c9704cb5ca4f07b1d06d0d1bd330322ce7f2d01ba3ab7b26"
       },
       {
         "path": "packages/companion-dev/package.json",
