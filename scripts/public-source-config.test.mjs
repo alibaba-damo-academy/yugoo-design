@@ -237,7 +237,7 @@ test('reviewed Flow script dependencies retain their own major beside the BPMN e
   const baseline = JSON.parse(readFileSync(new URL('release/public-source-baseline.json', repo), 'utf8'))
   for (const [name, range, version] of [
     ['bpmn-moddle', '^9.0.1', '9.0.4'], ['min-dash', '^4.0.0', '4.2.3'],
-    ['moddle', '^7.0.0', '7.2.0'], ['moddle-xml', '^11.0.0', '11.0.0'],
+    ['moddle-xml', '^11.0.0', '11.0.0'],
     ['saxen', '^10.0.0', '10.0.0'], ['elkjs', '^0.10.0', '0.10.2'],
   ]) {
     assert.equal(workspace.overrides[`${name}@${range}`], version, name)
@@ -245,11 +245,21 @@ test('reviewed Flow script dependencies retain their own major beside the BPMN e
     assert.ok(satisfies(version, range), name)
     assert.ok(lock.packages[`${name}@${version}`], name)
   }
-  assert.equal(workspace.overrides['moddle-xml@11.0.0>moddle'], '7.2.0')
+  // A generic Moddle 7 override intersects both XML majors' broad peer ranges.
+  // Pin BPMN 9's ordinary dependency while preserving the upstream XML peers.
+  assert.equal(workspace.overrides['moddle'], undefined)
+  assert.equal(workspace.overrides['moddle@^7.0.0'], undefined)
+  assert.equal(workspace.overrides['bpmn-moddle@9.0.4>moddle'], '7.2.0')
+  assert.ok(lock.packages['moddle@7.2.0'])
+  assert.equal(lock.snapshots['bpmn-moddle@9.0.4'].dependencies.moddle, '7.2.0')
+  assert.equal(workspace.overrides['moddle-xml@11.0.0>moddle'], undefined)
+  assert.equal(lock.packages['moddle-xml@11.0.0'].peerDependencies.moddle, '>= 6.2.0')
+  assert.equal(lock.packages['moddle-xml@12.1.0'].peerDependencies.moddle, '>= 6.2.0')
   assert.equal(lock.snapshots['moddle-xml@11.0.0(moddle@7.2.0)'].dependencies.moddle, '7.2.0')
   assert.equal(lock.snapshots['bpmn-js@18.24.0'].dependencies['bpmn-moddle'], '10.1.0')
   assert.equal(lock.snapshots['bpmn-moddle@10.1.0'].dependencies.moddle, '8.2.1')
   assert.equal(lock.snapshots['bpmn-moddle@10.1.0'].dependencies['min-dash'], '5.1.0')
+  assert.equal(lock.snapshots['moddle-xml@12.1.0(moddle@8.2.1)'].dependencies.moddle, '8.2.1')
   assert.equal(lock.snapshots['moddle-xml@12.1.0(moddle@8.2.1)'].dependencies.saxen, '11.1.1')
   assert.deepEqual(lock.overrides, workspace.overrides)
   assert.deepEqual(baseline.reviewedWorkspaceOverrides, workspace.overrides)
