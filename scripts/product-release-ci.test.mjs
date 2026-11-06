@@ -347,6 +347,16 @@ test('product workflow has unified triggers, fixed-source fences and GHA-only pu
   assert.match(steps[record].env.UPLOADED_ARTIFACT_DIGEST, /archive.outputs.artifact-digest/)
   assert.match(steps[publish].run, /prepare-product-release.mjs diagnostics/)
   assert.ok(flow.on.workflow_dispatch.inputs.resume_run_id && flow.on.workflow_dispatch.inputs.resume_artifact_id)
+  const failedRuntime = steps.find(step => step.name === 'Retain failed product runtime diagnostics')
+  assert.equal(failedRuntime.if, "failure() && steps.route.outputs.mode == 'prepare'")
+  assert.equal(failedRuntime.uses, 'actions/upload-artifact@v7.0.2')
+  assert.equal(failedRuntime.with['retention-days'], 7)
+  assert.equal(failedRuntime.with['if-no-files-found'], 'ignore')
+  assert.deepEqual(failedRuntime.with.path.trim().split('\n'), [22, 24].flatMap(version => [
+    `\${{ runner.temp }}/product-node${version}/*.log`,
+    `\${{ runner.temp }}/product-node${version}/node-runtime-receipt.json`,
+    `\${{ runner.temp }}/product-node${version}/receipts/*.runtime.json`,
+  ]))
   assert.ok(steps.findIndex(x => x.run?.includes('PRODUCT_REGISTRY_STATE_DIR=')) < preflightStep)
   assert.doesNotMatch(JSON.stringify(flow.jobs.publish.env), /runner\.temp/u)
   assert.doesNotMatch(text, /secrets\.NPM_TOKEN|dist-tag rm|unpublish|continue-on-error/)

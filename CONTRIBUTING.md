@@ -124,6 +124,12 @@ WAL checks before publication. These checks do not establish model readiness,
 browser interaction or actual native Host installation. Keep each result's scope
 explicit and reuse unaffected Host evidence.
 
+If an archive check fails, the job reports the failing substep and bounded error
+details. Its command logs and runtime receipts are retained for seven days in a
+separate diagnostic artifact, including when later release steps are skipped.
+This artifact contains no package archives and cannot be used to resume a release;
+the failed runtime check still prevents publication.
+
 The isolated archive check is also available locally under each selected Node:
 
 ```sh

@@ -221,6 +221,21 @@ jobs:
             node scripts/npm-release-tags.mjs confirm "$index" "$plan_file"
           done
 
+      - name: Retain failed product runtime diagnostics
+        if: failure() && steps.route.outputs.mode == 'prepare'
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: product-runtime-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/product-node22/*.log
+            ${{ runner.temp }}/product-node22/node-runtime-receipt.json
+            ${{ runner.temp }}/product-node22/receipts/*.runtime.json
+            ${{ runner.temp }}/product-node24/*.log
+            ${{ runner.temp }}/product-node24/node-runtime-receipt.json
+            ${{ runner.temp }}/product-node24/receipts/*.runtime.json
+          if-no-files-found: ignore
+          retention-days: 7
+
   publish:
     if: github.repository == 'alibaba-damo-academy/yugoo-design' && startsWith(github.ref, 'refs/tags/v') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' && inputs.publish == true)
     runs-on: ubuntu-24.04

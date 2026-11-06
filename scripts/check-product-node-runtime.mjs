@@ -47,6 +47,8 @@ const receipt = {
   nativeHostRegistrationVerified: false, semanticKagVerified: false, published: false,
 }
 async function run(label, args, extraEnv = {}) {
+  receipt.stage = label
+  receipt.commandLog = join(output, label + '.log')
   try {
     const result = await execute(node, args, {
       cwd: directories.consumer, env: { ...env, ...extraEnv },
@@ -56,6 +58,12 @@ async function run(label, args, extraEnv = {}) {
     return result.stdout
   } catch (error) {
     await writeFile(join(output, label + '.log'), String(error.stdout ?? '') + String(error.stderr ?? '') + '\n' + error.message)
+    // The runtime CLI returns a structured failure before exiting nonzero.
+    // Retain it so CI can show the actual Git/native failure, not just exit 1.
+    if (label === 'check-runtime') {
+      try { receipt.runtime = JSON.parse(error.stdout) } catch { /* Raw output remains in the command log. */ }
+    }
+    receipt.commandStderr = String(error.stderr ?? '').slice(-4000)
     throw error
   }
 }
@@ -68,6 +76,7 @@ try {
   assert.equal(manifest.version, version)
   receipt.installed = { root: installed, engines: manifest.engines }
   const result = JSON.parse(await run('check-runtime', [join(installed, 'bin/yugoo-design.mjs'), 'check-runtime', '--host', 'codex', '--receipt-dir', directories.receipts]))
+  receipt.runtime = result
   assert.equal(result.scope, 'installed-runtime-readonly')
   assert.equal(result.observation.node, process.versions.node)
   assert.equal(await realpath(result.observation.execPath), node)
@@ -78,7 +87,6 @@ try {
   assert.equal(result.nativeHostRegistrationVerified, false)
   assert.equal(result.semanticKagVerified, false)
   assert.equal(result.graVerified, false)
-  receipt.runtime = result
   const requireInstalled = createRequire(join(installed, 'package.json'))
   const driver = requireInstalled.resolve('@ladybugdb/wasm-core/nodejs')
   receipt.ladybugDriver = driver
@@ -87,6 +95,13 @@ try {
 } catch (error) {
   receipt.status = 'failed'
   receipt.error = error.message
+  console.error(JSON.stringify({
+    status: 'failed', stage: receipt.stage, error: receipt.error.slice(0, 4000),
+    runtimeReason: receipt.runtime?.reason?.slice(0, 4000),
+    gitReason: receipt.runtime?.git?.reason?.slice(0, 4000),
+    loadReason: receipt.runtime?.load?.reason?.slice(0, 4000),
+    stderr: receipt.commandStderr, commandLog: receipt.commandLog,
+  }))
   process.exitCode = 1
 } finally {
   const file = join(output, 'node-runtime-receipt.json')

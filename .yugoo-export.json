@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "1842c0811c51dc696c4ef2adbd23ef4734c6d782",
+  "revision": "886b4edbef0e8ba2528d9ed7070759464a866bb5",
   "policySha256": "15525b708eea653e1895ec72d431af8d298db47ef529a4f1158cab5642858109",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -92,7 +92,7 @@
       "mode": "100644"
     },
     ".github/workflows/publish-product.yml": {
-      "sha256": "e728be0ce994d32980fbea6c465fba7af65b831452e6ea67ceaec085da2d5706",
+      "sha256": "7d39662b344c42b4cc6649f47b489fea26abbc4ce4610b0c406dd798246d5276",
       "mode": "100644"
     },
     ".gitignore": {
@@ -104,7 +104,7 @@
       "mode": "100644"
     },
     "CONTRIBUTING.md": {
-      "sha256": "92f15c506e1c1a87a9a8e03ee86069d0b9cffa7bc60d5482132c6c64c18a76e3",
+      "sha256": "31366f8f610c2e83ab138de17131665511197700515e8c1a22c5c55e1942e2ed",
       "mode": "100644"
     },
     "LICENSE": {
@@ -9484,7 +9484,7 @@
       "mode": "100644"
     },
     "release/product.json": {
-      "sha256": "19b639e332668d3a13a5799a4183eb94d95ea8c2c6a5524609fc565ed18463b5",
+      "sha256": "6dab6861fb7eba68b64c56cef241cb3e63bf39c8559d57aa61028956ec2ea656",
       "mode": "100644"
     },
     "release/public-source-baseline.json": {
@@ -9532,7 +9532,7 @@
       "mode": "100644"
     },
     "scripts/check-product-node-runtime.mjs": {
-      "sha256": "ea5800ad3775d034d94003f81da43f38c8c899a43350eca7c5bba1d1ffd23059",
+      "sha256": "7acd130503d656318e1a329d8584b53d174fca1155d64b6fd738941db4392e77",
       "mode": "100644"
     },
     "scripts/companion-authoring-material.mjs": {
@@ -9812,7 +9812,7 @@
       "mode": "100644"
     },
     "scripts/product-release-ci.test.mjs": {
-      "sha256": "3168fa8a1253be02566f0caa975532383a1047022318ac8bb330cd6faf2f9820",
+      "sha256": "5a6ac3231c9031aa8870b23ea504b75b49c5269f04f0ba16d110f60034239316",
       "mode": "100644"
     },
     "scripts/product-release.mjs": {
@@ -9824,7 +9824,7 @@
       "mode": "100644"
     },
     "scripts/product-runtime-ci.test.mjs": {
-      "sha256": "bebee14fe6da50a47fb1110adbf3ae690e6cdfb1061a5a28a61142a19886bbec",
+      "sha256": "b4aca8c36d8ba17c820c7f6a1766dfdd6619913381fff011169844eedd02307d",
       "mode": "100644"
     },
     "scripts/public-canonical-documents.test.mjs": {

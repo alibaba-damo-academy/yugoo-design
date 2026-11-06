@@ -16,6 +16,25 @@ test('product runtime consumer rejects outputs inside the checkout', () => {
   assert.equal(result.status,1);assert.match(result.stderr,/Install output must be outside the checkout/u);
  }
 })
+test('failed product consumer exposes its stage and error while retaining the command log', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'product-runtime-failure-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const tarball = join(root, 'invalid.tgz'), output = join(root, 'result')
+  await writeFile(tarball, 'invalid archive: exercise the actual npm failure path')
+  const result = spawnSync(process.execPath, [fileURLToPath(new URL('./check-product-node-runtime.mjs', import.meta.url)), tarball, '0.1.0', output], {
+    encoding: 'utf8', timeout: 30_000,
+  })
+  assert.equal(result.status, 1)
+  const failure = JSON.parse(result.stderr.trim())
+  assert.equal(failure.status, 'failed')
+  assert.equal(failure.stage, 'npm-install')
+  assert.match(failure.error, /Command failed/u)
+  const receipt = JSON.parse(await readFile(join(output, 'node-runtime-receipt.json'), 'utf8'))
+  assert.equal(receipt.status, 'failed')
+  assert.equal(receipt.stage, failure.stage)
+  assert.equal(receipt.commandLog, failure.commandLog)
+  assert.match(await readFile(failure.commandLog, 'utf8'), /TAR_BAD_ARCHIVE/u)
+})
 test('only reviewed exact native dependency versions are permitted; denials survive', async () => {
   const { allowBuilds } = YAML.parse(await read('pnpm-workspace.yaml'))
   for (const name of ['@deepseek-ai/dsh-subprocess-local@0.2.0-rc.2', 'koffi@3.1.1', 'node-pty@1.2.0-beta.15', 'esbuild@0.28.2']) assert.equal(allowBuilds[name], true)
