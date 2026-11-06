@@ -25,6 +25,7 @@ export interface PromptAssemblyLike {
 
 /** The system-prompt service surface used here. */
 export interface SystemPromptLike {
+  variable(name: string, provider: (context: PromptAssemblyLike) => string): () => void
   section(section: { name: string; order: number; text: (context: PromptAssemblyLike) => string }): () => void
   context(context: PromptContextLike): () => void
 }

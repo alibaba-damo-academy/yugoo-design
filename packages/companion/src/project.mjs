@@ -127,6 +127,7 @@ export async function openCompanionProject({ projectRoot, kitRoot, stateRoot, co
     publish: (current, components) => publishAutoPanelComponents(autoRoots().cacheRoot, current.context, components),
   })
   const api = {
+    readDesignJournal() { return journal.read(journalId) },
     get project() { return project }, get installedKit() { return kit }, get kit() { return assertWritable() }, store, refreshAccess, requireWritable, contentLibrary,
     get definitionRevision() { return kitRevision },
     mutateKnowledge: mutate,

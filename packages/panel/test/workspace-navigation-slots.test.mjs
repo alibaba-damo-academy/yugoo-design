@@ -58,6 +58,29 @@ test('shared navigation optional slots, explicit markers and native base styles 
   } finally { await React.act(async () => root.unmount()) }
 })
 
+test('shared navigation keeps long localized titles readable without a question workspace wrapper', async () => {
+  const root = createRoot(document.getElementById('root'))
+  const examples = {
+    'en-US': { title: 'Clarify the evidence needed before accepting a customer feedback request', description: 'Keep the confirmed scope and delivery constraints visible while comparing the available supporting evidence.' },
+    'zh-CN': { title: '确认接受客户反馈请求之前必须具备的证据与处理边界', description: '比较已有依据时保留已确认的功能范围、交付约束与人工补充说明。' },
+  }
+  try {
+    for (const [locale, example] of Object.entries(examples)) {
+      await React.act(async () => root.render(React.createElement(PanelLocaleContext.Provider, { value: locale },
+        React.createElement(PanelWorkspaceNavigation, { title: example.title, items: [{ id: 'evidence', label: example.title, description: example.description }], selectedId: 'evidence', onSelect() {} }))))
+      const label = document.querySelector('.dsh-panel-workspace-nav-label')
+      const description = document.querySelector('.dsh-panel-workspace-nav-description')
+      assert.equal(label.closest('.dsh-question-workspace'), null, 'readability belongs to the shared component')
+      assert.equal(label.textContent, example.title)
+      assert.equal(window.getComputedStyle(label).whiteSpace, 'normal', `${locale}: titles wrap without a feature wrapper`)
+      assert.equal(window.getComputedStyle(label).overflowWrap, 'anywhere', `${locale}: unbroken text can fit a narrow sidebar`)
+      assert.equal(description.textContent, example.description)
+      assert.equal(window.getComputedStyle(description).whiteSpace, 'normal')
+      assert.equal(window.getComputedStyle(description).getPropertyValue('-webkit-line-clamp'), '2', 'supporting descriptions retain the shared two-line budget')
+    }
+  } finally { await React.act(async () => root.unmount()) }
+})
+
 test('question navigation shows only localized rounds and titles while preserving history and answer progress', async () => {
   const root = createRoot(document.getElementById('root'))
   const questions = [

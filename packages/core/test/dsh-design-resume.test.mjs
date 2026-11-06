@@ -257,3 +257,78 @@ test('main handoff and resume reinstall the same scoped files and Worker delegat
   assert.equal(delegationInstalls, 2)
   assert.equal(published, 2)
 })
+
+test('main assembly shares Core evidence rules while preserving methods, fallback and invocation scope', async t => {
+  const { default: ToolRuntime } = await import('@deepseek-ai/dsh-tools')
+  const { createScope } = await import('@deepseek-ai/dsh-scope')
+  const { producerSystemPrompt } = await import('../src/dsh-design-execution-plugin.ts')
+  const { DESIGN_SKILL_RESOURCE_GUIDANCE: resource, DESIGN_EXECUTOR_EVIDENCE_GUIDANCE: evidence } = await import('../src/design-generation-guidance.ts')
+  const { KNOWLEDGE_AGENTIC_GUIDANCE: knowledge } = await import('../src/design-knowledge-query.ts')
+  const shared = [resource, knowledge, evidence]
+  const ctx = new Context()
+  await ctx.plugin(SystemPrompt, {})
+  await ctx.plugin(ToolRuntime)
+  t.after(() => ctx.fiber.dispose())
+  const agent = { session: { id: 'main-guidance', header: {}, snapshotEvents: () => [] } }
+  const other = { session: { id: 'other-agent', header: {}, snapshotEvents: () => [] } }
+  await ctx.plugin({ inject: ['tools', 'systemPrompt'], apply(inner) { agent.ctx = createScope(inner, agent).ctx } })
+  const skill = { name: 'example', execution: { mode: 'main', handoff: 'none' },
+    content: `Authored method stays exact, including a quotation:\n\n${resource}\n\nEnd of method.`,
+    metadata: { schemaYaml: 'type: object', validationYaml: 'skill: example\nrules: []' } }
+  let reconstruct = false, currentPrompt, fallbacks = 0
+  const bridge = createMainBundleBridge({ async run(request) {
+    fallbacks++
+    assert.equal(request.systemPrompt, currentPrompt, 'standalone Producer receives the complete original prompt')
+    return { kind: 'complete', stateRevision: 'child' }
+  } })
+  const port = bridge.wrap({ async run(request) {
+    currentPrompt = producerSystemPrompt(skill, { allowed: [], unavailableOptional: [] }, '/application', reconstruct, {}, '/design')
+    const receipt = await bridge.runtime.run({ parent: agent, signal: request.signal,
+      workspace: { async publish() { return { kind: 'published', stateRevision: 'saved', diff: '' } } },
+      resources: {}, activity: { async observeTool() {} }, allowedInheritedTools: [], handoff: 'none',
+      systemPrompt: currentPrompt, prompt: 'task' })
+    return { kind: 'completed', summary: 'saved', projectRoot: '/design', stateRevision: receipt.stateRevision,
+      clarity: { status: 'failed', summary: 'No evaluator in this deterministic SDK assembly check.' } }
+  } }, () => true)
+  const signal = new AbortController().signal
+  const assemble = who => (who.ctx ?? ctx).systemPrompt.assemble({ scope: who, agent: who, signal })
+  const mainText = assembly => assembly.sections.find(section => section.name === 'design:main-bundle')?.text
+  const count = (text, part) => text.split(part).length - 1
+  let coreText = ''
+  let registered = false
+  for (reconstruct of [false, true]) {
+    const marker = reconstruct ? '<reconstruction_task>' : '<design_skill_body>'
+    assert.equal((await port.run({ agent, name: skill.name, signal })).kind, 'in_progress')
+    const originalTail = currentPrompt.slice(currentPrompt.indexOf(marker))
+    // No Core delivery must never strip the executor's only copy.
+    coreText = ''
+    assert.equal(mainText(await assemble(agent)), currentPrompt)
+    if (!registered) {
+      ctx.systemPrompt.section({ name: 'design:progression', order: 500, text: () => coreText })
+      registered = true
+    }
+    for (const core of [resource, resource.slice(0, -17), DESIGN_CORE_PROGRESSION_PROMPT]) {
+      coreText = core
+      for (let round = 0; round < 2; round++) {
+        const assembly = await assemble(agent)
+        const text = mainText(assembly)
+        const prefix = text.slice(0, text.indexOf(marker))
+        assert.equal(text.slice(text.indexOf(marker)), originalTail, 'complete authored/reconstruction method bytes survive')
+        for (const guidance of shared) {
+          assert.equal(count(prefix, guidance), core.includes(guidance) ? 0 : 1)
+          assert.equal(count(core + prefix, guidance), 1, 'one effective shared rule in this assembled request')
+        }
+      }
+    }
+    assert.equal(mainText(await assemble(other)), undefined, 'another conversation never inherits active main method')
+    coreText = ''
+    assert.equal(mainText(await assemble(agent)), currentPrompt, 'Core disappearing restores full executor guidance without a cached flag')
+    await bridge.runtime.run({ parent: other, systemPrompt: currentPrompt })
+    const published = await ctx.tools.execute({ agent, name: 'design_publish', callId: `publish-${reconstruct}`,
+      arguments: { action: 'complete' }, signal })
+    assert.equal(published.isError, false, JSON.stringify(published))
+    assert.equal(activeMainBundleWork(agent), undefined)
+    assert.equal(mainText(await assemble(agent)), undefined, 'settlement disposes the method and assembly hook')
+  }
+  assert.equal(fallbacks, 2)
+})

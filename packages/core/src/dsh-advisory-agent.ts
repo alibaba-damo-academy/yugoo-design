@@ -12,6 +12,7 @@ import { designUnseededChildSessionMeta } from './dsh-child-session-meta.ts'
 import { designSessionEvents } from './dsh-session-events.ts'
 import { createYugooDesignMessage } from './dsh-message-source.ts'
 import { dshSubagentBackend } from './dsh-subagent-backend.ts'
+import { renderDesignReviewStartingPoints } from './design-review-depth.ts'
 
 /** Select only the two public Host capability shapes covered by SDK tests. */
 export function dshAdvisoryBackend(runtime: unknown): 'one-shot-runtime' | 'agent-factory' {
@@ -109,6 +110,9 @@ async function startReadOnlyReview(
     const sessionId = SessionId(randomUUID())
     const validateOutput = request.validateOutput
     const evidence = await evidenceFor(request.parent, request.reviewCommit, request.signal)
+    const priorityTargets = request.priorityTargets ?? []
+    const startingPoints = priorityTargets.length ? renderDesignReviewStartingPoints(priorityTargets,
+      Array.isArray(evidence.manifest.paths) ? evidence.manifest.paths.filter((path): path is string => typeof path === 'string') : evidence.list('')) : ''
     const snapshot = request.includeSmallSnapshot ? await evidence.readSmallSnapshot?.(request.signal) : undefined
     request.signal.throwIfAborted()
     if (request.parent.ctx.agents.get(request.parent.id) !== request.parent) {
@@ -205,7 +209,7 @@ async function startReadOnlyReview(
             // Keep the complete manifest and resource hashes in the evidence
             // reader. Listing each hash here adds no discovery capability;
             // read_skill_resource still returns the exact hash with its bytes.
-            text: `Use only the bound read tools. No shell, write, process, policy change or nested delegation is available. Call structured_output to finish.\nImmutable evidence discovery (resource hashes are returned by read_skill_resource):\n${JSON.stringify(modelEvidenceDiscovery(evidence.manifest))}` })
+            text: `Use only the bound read tools. No shell, write, process, policy change or nested delegation is available. Call structured_output to finish.\n${startingPoints}\nImmutable evidence discovery (resource hashes are returned by read_skill_resource):\n${JSON.stringify(modelEvidenceDiscovery(evidence.manifest))}` })
         },
       })
       request.signal.throwIfAborted()

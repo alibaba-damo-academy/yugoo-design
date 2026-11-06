@@ -18,6 +18,7 @@ const { createAdvisoryEvidence } = await import('../src/advisory-evidence.ts')
 const { loadDesignKit, createDirectoryBundleResolver } = await import('../src/kit-loader.ts')
 const { projectKitContentHash } = await import('../src/project-content.ts')
 const { advisoryKnowledgeModelContext, readAdvisoryDesignKnowledge } = await import('../src/advisory-knowledge.ts')
+const { registerLiteralDesignContext } = await import('../src/prompt.ts')
 const [llm, sessions, prompt, tools, agents, loop, projections, subagents, query] = await Promise.all(
   ['dsh-llm', 'dsh-session', 'dsh-system-prompt', 'dsh-tools', 'dsh-agent', 'dsh-agent-loop', 'dsh-session-projection', 'dsh-subagent', 'dsh-session-query']
     .map(name => import('@deepseek-ai/' + name)))
@@ -49,9 +50,10 @@ async function fixture(t, options = {}) {
   ctx.on('subagent/start', info => nativeStarts.push(info))
   ctx.on('subagent/end', info => nativeEnds.push(info))
   class Scripted extends llm.LlmAdapter {
-    async resolveModel(provider, model) { return { provider, id: model, name: model } }
+    async resolveModel(provider, model) { return { provider, id: model, name: model,
+      ...(options.systemPromptUpdate === undefined ? {} : { systemPromptUpdate: options.systemPromptUpdate }) } }
     async *stream(request) {
-      seen.push(request.tools.map(t => t.name))
+      seen.push((request.tools ?? []).map(t => t.name))
       try { yield* await options.step(requests++, request) }
       catch (error) { modelErrors.push(error); throw error }
     }
@@ -80,6 +82,71 @@ test('unknown runtime shapes reject rather than choosing an exception fallback',
   for (const shape of [undefined, {}, { start: 'not callable' }, { startActivation() {} }]) {
     assert.throws(() => dshAdvisoryBackend(shape), /unavailable|unsupported/)
   }
+})
+
+for (const systemPromptUpdate of [undefined, 'in-history']) test(`native runtime context changes assessment identity without repeating stable system instructions (${systemPromptUpdate ?? 'replace'})`, async t => {
+  const requests = []
+  const f = await fixture(t, {systemPromptUpdate, step(_n, request) { requests.push(request.messages.flatMap(message => message.content.filter(block => block.type === 'text').map(block => block.text)).join('\n')); return stop() }})
+  let checkpoint = 'checkpoint-first-fixture'
+  f.parent.agent.ctx.systemPrompt.section({name:'test:stable-design-method',order:525,text:'STABLE_DESIGN_METHOD_FIXTURE'})
+  registerLiteralDesignContext(f.parent.agent.ctx.systemPrompt, 'design:clarity-input', 590,
+    'design_clarity_input', () => `<design_clarity_input>${checkpoint}</design_clarity_input>`)
+  const turn = async () => {
+    f.parent.agent.followup(llm.createUserMessage({content:[{type:'text',text:'Inspect the current assessment identity.'}],source:{kind:'user'}}))
+    await f.parent.agent.whenIdle()
+  }
+  await turn(); checkpoint = 'checkpoint-second-fixture'; await turn(); await turn()
+  assert.equal(requests.length, 3, JSON.stringify(f.parent.agent.session.snapshotEvents().filter(event => /error|turn\/end/.test(event.type))))
+  for (const text of requests) assert.equal(text.split('STABLE_DESIGN_METHOD_FIXTURE').length - 1, 1)
+  assert.ok(requests[1].includes('checkpoint-second-fixture'))
+  assert.equal(requests[2].split('checkpoint-second-fixture').length - 1, 1, 'unchanged runtime context is not reinjected each turn')
+})
+
+test('native context preserves saved template examples without resolving Host variables', async t => {
+  const { default: DesignService } = await import('../src/design-service.ts')
+  const { parseDesignAdvisory } = await import('../src/design-advisory.ts')
+  const { renderDshDesignAdvisorySetReminder } = await import('../src/dsh-advisory.ts')
+  const { officialAdvisoryProfile, OFFICIAL_ALIGNMENT_PROFILE } = await import('../src/official-advisory-profiles.ts')
+  const advisory = parseDesignAdvisory({
+    ...officialAdvisoryProfile(OFFICIAL_ALIGNMENT_PROFILE).project(
+      {schemaVersion:1,runId:'literal',resultId:'literal',pins:[{source:'design-revision',revision:'1'}],facetRefs:['facts']},
+      {schemaVersion:1,questions:[{id:'account',facets:['facts'],decision:'Account template',question:'Which account?',rationale:'Resolve ownership',impact:'Access'}]}),
+    summary:'Keep {{account_id}}, {{missing_variable}}, and {{ not a variable }} literal.',
+  })
+  let raw = renderDshDesignAdvisorySetReminder([advisory])
+  const requests = []
+  const f = await fixture(t, {step(_n, request) { requests.push(request.messages.flatMap(message => message.content.filter(block => block.type === 'text').map(block => block.text)).join('\n')); return stop() }})
+  const host = f.parent.agent.ctx.systemPrompt
+  host.variable('account_id', () => 'MUST_NOT_REPLACE_SAVED_CONTENT')
+  const service = new DesignService(f.ctx, {stateRoot:join(f.root,'state'),projectsRoot:join(f.root,'projects'),hostInstanceId:'literal-test'})
+  let state = 'Saved state: {{account_id}}', identity = ''
+  service.renderDesignState = () => state
+  service.renderClarityInput = () => identity
+  service.renderAdvisoryProjection = async () => raw
+  const snapshot = async () => prompt.renderContextSections(await host.assemble(agents.assembleContextFor(f.parent.agent)))
+    .filter(section => section.name.startsWith('design:')).map(section => section.text).join('\n\n')
+  assert.equal(await snapshot(), `Saved state: {{account_id}}\n\n${raw}`)
+  f.parent.agent.followup(llm.createUserMessage({content:[{type:'text',text:'Read the current evidence.'}],source:{kind:'user'}}))
+  await f.parent.agent.whenIdle()
+  assert.equal(requests.length, 1, 'literal examples cannot prevent the native model boundary')
+  assert.ok(requests[0].includes(advisory.summary))
+  assert.doesNotMatch(requests[0], /MUST_NOT_REPLACE_SAVED_CONTENT/)
+  const accepted = await host.assemble(agents.assembleContextFor(f.parent.agent))
+  state = 'New saved state: {{account_id}}'
+  identity = 'New checkpoint: {{checkpoint_id}}'
+  const refreshed = prompt.renderContextSections(host.refreshContext(accepted, agents.assembleContextFor(f.parent.agent)))
+  assert.equal(refreshed.find(section => section.name === 'design:state').text, state,
+    'request preparation and same-step retries must reread current saved state')
+  assert.equal(refreshed.find(section => section.name === 'design:clarity-input').text, identity)
+  assert.equal(refreshed.find(section => section.name === 'design:advisories').text, raw,
+    'the async Journal snapshot remains accepted for this step')
+  state = 'Saved state: {{account_id}}'; identity = ''
+  raw = ''
+  assert.equal(await snapshot(), 'Saved state: {{account_id}}', 'empty current advice contributes no stale text')
+  const unsuppress = host.suppressRuntimeContext()
+  assert.equal(await snapshot(), '')
+  unsuppress()
+  assert.equal(await snapshot(), 'Saved state: {{account_id}}', 'normal context is restored after scoped suppression ends')
 })
 
 test('RC3 factory has real readonly child lifecycle without manager catalog, events or parent wake', { skip: !factoryBackend }, async t => {
@@ -421,6 +488,40 @@ test('oversized initial KAG uses the original readonly pinned query before offic
   assert.deepEqual(f.results.filter(r => r.name === 'design_query_knowledge').map(r => r.isError), [true, false])
   assert.equal(f.children.length, 1)
   assert.equal(f.ctx.agents.get(f.children[0].id), undefined)
+})
+
+test('manual depth reaches the native reviewer without shrinking ordinary evidence pages', async t => {
+  const reads = []
+  const f = await fixture(t, { evidence: {
+    manifest: {checkpoint:'a'.repeat(40), paths:['project.json', 'design_files/changed/changed.json']}, list: () => ['project.json'],
+    read: async (path, offset, maxChars) => { reads.push([path, offset, maxChars]); return {content:'pinned fact'} },
+    resource: (bundle, path, offset, maxChars) => { reads.push([bundle, path, offset, maxChars]); return {content:'exact method'} },
+    search: async () => ({matches:[]}),
+  }, step(n, request) {
+    if (n === 0) {
+      assert.match(JSON.stringify(request), /User-selected review depth: light/)
+      assert.match(JSON.stringify(request), /Priority investigation starting points/)
+      assert.match(JSON.stringify(request), /Observed foreground Design work/)
+      assert.match(JSON.stringify(request), /according to the selected depth/)
+      assert.doesNotMatch(JSON.stringify(request), /transient exclusion|review all content present in the commit/)
+      assert.match(JSON.stringify(request), /design_files\/changed\/changed.json/)
+      assert.doesNotMatch(JSON.stringify(request), /"bundle":"unsaved"/)
+      return call('read', {path:'project.json'})
+    }
+    if (n === 1) return call('read', {path:'project.json', offset:6000, max_chars:18000})
+    if (n === 2) return call('read_skill_resource', {bundle:'test', path:'SKILL.md'})
+    return call('structured_output', {schemaVersion:1, inconsistencies:[]})
+  } })
+  const outcome = await analyzeDshDesignAdvisory({parent:f.parent.agent, provider:'spawn',
+    profile:OFFICIAL_GROUNDING_PROFILE, reviewDepth:'light', latestChangedSkill:'changed',
+    foregroundDesignWork:{skillName:'unsaved'},
+    input:{schemaVersion:1,runId:'depth',resultId:'result',pins:[{source:'review-depth',revision:'light'}],facetRefs:['facts']},
+    projectRoot:f.root, designFilesRoot:join(f.root,'design_files'), reviewCommit:'a'.repeat(40),
+    signal:f.request.signal, stillCurrent:() => true,
+  }, f.port).catch(error => { throw f.modelErrors[0] ?? error })
+  assert.equal(outcome.status, 'produced')
+  assert.deepEqual(reads, [['project.json',0,12000], ['project.json',6000,18000], ['test','SKILL.md',0,12000]])
+  assert.equal(f.children.length, 1, 'no classifier Agent is created to choose manual depth')
 })
 
 test('ordinary text without structured output cannot be captured', async t => {

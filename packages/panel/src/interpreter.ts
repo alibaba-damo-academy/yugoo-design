@@ -1871,6 +1871,7 @@ function DocLifecycleStudio({ node, manifest: _manifest, data, options }: {
   node: ComponentNode; manifest: PanelManifest; data: DesignData; options?: RenderOptions
 }): ReactElement {
   const { selected } = useRecordSelection()
+  const text = (key: Parameters<typeof panelText>[0], values?: Record<string, string | number>) => panelText(key, options?.locale, values)
   const bindings = node.bindings ?? {}
   const objectRefField = bindings.object_ref ?? 'object_ref'
   const nodeRefField = bindings.process_node_ref ?? 'process_node_ref'
@@ -1927,14 +1928,14 @@ function DocLifecycleStudio({ node, manifest: _manifest, data, options }: {
       createElement(
         'tr',
         null,
-        createElement('th', null, '动作'),
+        createElement('th', null, text('docLifecycleAction')),
         axes.map(([axisId, axis]) => createElement(
           'th',
           { key: axisId },
           editable && titleSection !== undefined && !selectedKind
             ? createElement('input', {
               className: 'dsh-design-studio-axis-title dsh-design-field-input',
-              'aria-label': `重命名状态轴 ${String(axis.title ?? axisId)}`,
+              'aria-label': text('docLifecycleRenameAxis', { axis: String(axis.title ?? axisId) }),
               defaultValue: String(axis.title ?? axisId),
               onChange: (event: { target: { value: string } }) => {
                 options?.onEdit?.({ section: titleSection!, record: axisId, field: 'title', value: event.target.value })
@@ -1965,8 +1966,8 @@ function DocLifecycleStudio({ node, manifest: _manifest, data, options }: {
             editable
               ? createElement('input', {
                 className: 'dsh-design-field-input',
-                placeholder: '不改变',
-                'aria-label': `${String(action.title ?? actionId)} 在 ${String(axes.find(([id]) => id === axisId)?.[1]?.title ?? axisId)} 的效果`,
+                placeholder: text('docLifecycleUnchanged'),
+                'aria-label': text('docLifecycleEffect', { action: String(action.title ?? actionId), axis: String(axes.find(([id]) => id === axisId)?.[1]?.title ?? axisId) }),
                 defaultValue: effectMap[axisId] ?? '',
                 onChange: (event: { target: { value: string } }) => {
                   const next = { ...effectMap }
@@ -1988,7 +1989,7 @@ function DocLifecycleStudio({ node, manifest: _manifest, data, options }: {
     .map(([actionId, action]) => ({ actionId, title: String(action.title ?? actionId), ref: detailsOf(action)[nodeRefField] }))
     .filter((entry) => typeof entry.ref === 'string' && entry.ref !== '')
   const processView = processRefs.length === 0
-    ? createElement('p', { className: 'dsh-design-studio-unavailable', 'data-testid': 'studio-process-missing' }, '相关流程不可用：尚无动作引用流程节点。')
+    ? createElement('p', { className: 'dsh-design-studio-unavailable', 'data-testid': 'studio-process-missing' }, text('docLifecycleProcessMissing'))
     : createElement(
       'ul',
       { className: 'dsh-design-studio-process', 'data-testid': 'studio-process' },
@@ -2004,7 +2005,7 @@ function DocLifecycleStudio({ node, manifest: _manifest, data, options }: {
     .filter((entry) => typeof entry.target === 'string' && entry.target !== ''
       && (!selectedKind || entry.objectId === objectId || entry.target === objectId))
   const derivationView = derivationEdges.length === 0
-    ? createElement('p', { className: 'dsh-design-studio-unavailable', 'data-testid': 'studio-derivations-missing' }, '上下游单据不可用：尚无单据引用上游对象。')
+    ? createElement('p', { className: 'dsh-design-studio-unavailable', 'data-testid': 'studio-derivations-missing' }, text('docLifecycleDerivationsMissing'))
     : createElement(
       'ul',
       { className: 'dsh-design-studio-derivations', 'data-testid': 'studio-derivations' },
@@ -2021,7 +2022,7 @@ function DocLifecycleStudio({ node, manifest: _manifest, data, options }: {
       .map(([objectId, action]) => ({ objectId, title: String(action.title ?? objectId), details: detailsOf(action) }))
       .filter((entry) => entry.details[signField] !== undefined)
   const ledgerView = signField === undefined || ledgerRows.length === 0
-    ? createElement('p', { className: 'dsh-design-studio-unavailable', 'data-testid': 'studio-ledger-missing' }, '移动台账不可用：未绑定 movement_sign 或无移动记录。')
+    ? createElement('p', { className: 'dsh-design-studio-unavailable', 'data-testid': 'studio-ledger-missing' }, text('docLifecycleLedgerMissing'))
     : createElement(
       'table',
       { className: 'dsh-design-studio-ledger dsh-design-rows-table', 'data-testid': 'studio-ledger' },
@@ -2031,13 +2032,13 @@ function DocLifecycleStudio({ node, manifest: _manifest, data, options }: {
           'tr',
           { key: entry.objectId },
           createElement('td', null, entry.title),
-          createElement('td', { 'aria-label': `${entry.title} 方向：${inbound ? '入库（+）' : '出库（−）'}` }, inbound ? '入库（+）' : '出库（−）'),
+          createElement('td', { 'aria-label': text('docLifecycleDirection', { action: entry.title, direction: text(inbound ? 'docLifecycleInbound' : 'docLifecycleOutbound') }) }, text(inbound ? 'docLifecycleInbound' : 'docLifecycleOutbound')),
           createElement(
             'td',
             null,
             editable
               ? createElement('input', {
-                'aria-label': `${entry.title} 数量说明`,
+                'aria-label': text('docLifecycleQuantity', { action: entry.title }),
                 defaultValue: String(entry.details[qtyField] ?? ''),
                 onChange: (event: { target: { value: string } }) => {
                   options?.onEdit?.({ section: 'actions', record: entry.objectId, field: qtyField, value: event.target.value })
@@ -2051,10 +2052,10 @@ function DocLifecycleStudio({ node, manifest: _manifest, data, options }: {
 
   const envelope = readResidueEnvelope(data as unknown as Record<string, unknown>)
   const views: [string, ReactElement][] = [
-    ['状态与动作', actions.length && axes.length ? matrixView : createElement('p', { className: 'dsh-design-field-description' }, '尚未登记可比较的状态与动作，可从左侧添加；未知状态不自动补全。')],
-    ['相关流程', processView],
-    ['上下游单据', derivationView],
-    ['移动台账', ledgerView],
+    [text('docLifecycleStatesActions'), actions.length && axes.length ? matrixView : createElement('p', { className: 'dsh-design-field-description' }, text('docLifecycleStatesEmpty'))],
+    [text('docLifecycleProcess'), processView],
+    [text('docLifecycleDerivations'), derivationView],
+    [text('docLifecycleLedger'), ledgerView],
   ]
   return createElement(
     'div',
@@ -2069,7 +2070,7 @@ function DocLifecycleStudio({ node, manifest: _manifest, data, options }: {
     views.map(([label, view], index) => createElement(PanelContentGroup,
       { key: label, title: createElement(Fragment, null, label, index === 0 ? createElement(PanelHelp, {
         label: panelText('fieldHelp', options?.locale, { field: label }),
-        children: '行是动作，列是状态。空白表示不改变；带单据名称的列表示对其他单据的影响。直接改写结果值即可。',
+        children: text('docLifecycleMatrixHelp'),
       }) : null) },
       createElement('div', { className: 'dsh-design-form-group-content' }, createElement('div', { className: 'dsh-panel-content-card' }, index === 0
         ? createElement('div', { className: 'dsh-matrix-scroll' },

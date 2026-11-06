@@ -77,7 +77,8 @@ test('no-summary service/Producer context and execution settlement survive real 
   const { producerPrompt } = await import('../src/dsh-design-execution-plugin.ts')
   const { engageDesignExecution } = await import('../src/design-execution-runtime.ts')
   const { DesignFilesStore } = await import('../src/design-files.ts')
-  const { GitVersioning } = await import('../src/git.ts')
+  // Native Git loads its package-owned worker; source TS has no sibling JS worker.
+  const { GitVersioning } = await import('../lib/index.js')
   const { DesignPanelRemote } = await import('../src/panel-remote.ts')
   const { nodeFs } = await import('../src/service-tools.ts')
   const { mkdtemp, rm } = await import('node:fs/promises')
@@ -90,9 +91,11 @@ test('no-summary service/Producer context and execution settlement survive real 
   const service = { contentRecoveryLocation: () => undefined, kitForAgent: () => kit, activeWorkspaces: new Map([[agent, { values: { sample: { state } } }]]) }
   const render = () => DesignService.prototype.renderDesignState.call(service, agent)
   assert.equal(render(), '')
-  let context
-  registerDesignStateContext({ context: value => { context = value; return () => {} } }, render)
+  let context, valueProvider
+  registerDesignStateContext({ variable: (_name, provider) => { valueProvider = provider; return () => {} },
+    context: value => { context = value; return () => {} } }, render)
   assert.equal(context.text({ agent }), '')
+  assert.equal(valueProvider({ agent }), '{{')
   const input = { brief: 'Edit owned facts', currentDesignState: JSON.stringify(state), userContext: render() }
   assert.match(producerPrompt(skill, 'engage', input), /Saved facts/)
   const directory = await mkdtemp(join(tmpdir(), 'optional-summary-save-'))

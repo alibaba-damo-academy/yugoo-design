@@ -70,7 +70,8 @@ export const DOCK_CSS = `
 .dsh-design-project-header[data-testid="design-project-header"]{min-height:64px;padding:6px var(--ds-space-4,16px)}
 .dsh-design-project-header>[data-testid="design-dock-meta"]{flex:1;align-items:flex-start}
 .dsh-design-dock-toolbar{display:flex;justify-content:flex-end;flex:none;padding:6px var(--ds-space-4,16px)}
-.dsh-design-dock-meta{display:flex;min-width:0;flex-direction:column;justify-content:center;gap:4px}
+/* Keep the shared 8px rhythm; shorter Host bars reserve 20px + 24px rows and their divider. */
+.dsh-design-dock-meta{display:flex;min-width:0;flex-direction:column;justify-content:center;gap:clamp(0px,calc(var(--dsh-host-primary-header-height,64px) - 45px),var(--ds-space-2,8px))}
 .dsh-design-dock-meta>div{margin:0;min-height:20px;line-height:20px}
 .dsh-design-project-identity{display:flex;align-items:center;gap:6px;width:100%;min-width:0;font-size:13px;color:var(--ds-text-secondary)}
 .dsh-design-project-identity>[data-testid="design-dock-meta-name"]{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -82,7 +83,6 @@ export const DOCK_CSS = `
 .dsh-design-dock .dsh-design-project-header[data-testid="design-project-header"]:not([data-compact=true]){
   position:relative;height:var(--dsh-host-primary-header-height,64px);min-height:var(--dsh-host-primary-header-height,64px);
   padding-block:0;border-bottom-width:.5px}
-.dsh-design-dock .dsh-design-project-header[data-testid="design-project-header"]:not([data-compact=true])>[data-testid="design-dock-meta"]{gap:2px}
 .dsh-design-dock .dsh-design-project-header[data-testid="design-project-header"]:not([data-compact=true]) .dsh-design-project-folder{width:24px;height:24px}
 .dsh-design-dock .dsh-design-project-header[data-testid="design-project-header"]:not([data-compact=true]) .dsh-design-project-folder-error{
   position:absolute;top:calc(100% + 1px);left:0;right:0;z-index:1;padding:4px 16px;background:var(--ds-bg-white,light-dark(#fff,#19191c));border-bottom:1px solid var(--ds-line-1,#e8e8e8)}

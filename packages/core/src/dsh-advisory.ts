@@ -1,6 +1,7 @@
 /** DeepSeek Harness adapter for non-waking Design System advice. */
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createYugooDesignMessage } from './dsh-message-source.ts'
+import type { DesignJournalAdvisoryEntry } from './design-journal.ts'
 import {
   renderDesignAdvisoryReminder,
   type AdvisoryDeliveryPort,
@@ -59,19 +60,27 @@ function escapeReminderText(value: string): string {
 /**
  * Render the durable unresolved advisory projection for the main Agent.
  * @param advisories - current bounded advisories in review priority order.
+ * @param statuses - dispositions from the same Journal snapshot; standalone notices default to pending.
  * @returns source-attributed model context for one natural Agent boundary.
  */
-export function renderDshDesignAdvisorySetReminder(advisories: readonly DesignAdvisory[]): string {
-  const actionable = advisories.filter(advisory => advisory.attention === 'human-review')
+export function renderDshDesignAdvisorySetReminder(
+  advisories: readonly DesignAdvisory[],
+  statuses: ReadonlyMap<string, DesignJournalAdvisoryEntry['status']> = new Map(),
+): string {
+  const statusOf = (advisory: DesignAdvisory) => statuses.get(advisory.id) ?? 'pending'
+  const actionable = advisories.filter(advisory => advisory.attention === 'human-review' && statusOf(advisory) === 'pending')
   const lines = [
     `<design-advisory-set count="${advisories.length}" actionable="${actionable.length}">`,
     'This is the current durable Design advisory projection for recommendation routing. Each review loop publishes independently; this aggregate is a display projection, not an atomic G/R/A result.',
   ]
   for (const advisory of advisories) {
-    lines.push(`- [${escapeReminderText(advisory.profile)}] ${escapeReminderText(advisory.summary)}`)
+    lines.push(`- [${escapeReminderText(advisory.profile)}] [${statusOf(advisory)}] ${escapeReminderText(advisory.summary)}`)
   }
   if (actionable.length > 0) {
-    lines.push(`When offering the next host-native Design choice, reserve one option for reviewing these ${actionable.length} current advisory item(s). The review option does not accept advice or run a Bundle.`)
+    lines.push(`When offering the next host-native Design choice, reserve one option for reviewing these ${actionable.length} pending advisory item(s). The review option does not accept advice or run a Bundle.`)
+  }
+  if (advisories.some(advisory => statusOf(advisory) === 'deferred')) {
+    lines.push('Deferred advice remains unresolved and available, but the user chose to handle it later. Do not reserve a review option for deferred advice or repeat deferred advice unless the user asks to revisit it or materially new evidence makes it relevant.')
   }
   lines.push('Advice remains non-authoritative until the user explicitly accepts it.', '</design-advisory-set>')
   return lines.join('\n')

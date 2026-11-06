@@ -120,6 +120,45 @@ test('Kit import retains its exact bundled closure without global guessing and s
   assert.match((await service.readFile({ id: record.id, path: 'mindset.md' })).content, /Human correction/)
 })
 
+test('imported mount cards read bilingual copy from retained sources without creating catalog records', async t => {
+  const ports = adapters()
+  ports.catalog.listBundles = async () => []
+  ports.catalog.captureBundle = async () => { throw Error('No installed Bundle.') }
+  const { service, options } = await fixture(t, ports)
+  const translations = { zh: '保留事实，供设计判断。', en: 'Keep facts available for design decisions.' }
+  const closure = originalFiles.map(file => {
+    const language = file.path === 'locales/zh-CN.json' ? 'zh' : file.path === 'locales/en-US.json' ? 'en' : undefined
+    const source = language ? entry(file.path, JSON.stringify({ ...JSON.parse(textOf(originalFiles, file.path)), bundleDescription: translations[language] })) : file
+    return { ...source, path: `bundles/${pin.name}/${pin.version}/${file.path}` }
+  })
+  const record = await service.importSources({ kind: 'kit', files: [...kitSources(), ...closure] })
+  const { repository } = await createStudioDraftPorts(options, 'instance')
+  const stored = await repository.read(record.id)
+  const before = await service.exportArchive({ id: record.id, expectedRevision: record.revision })
+  const reopened = await createStudioInstances(options)
+  const read = await reopened.read(record.id)
+  assert.deepEqual(read.mounts[0].display, {
+    title: { zh: '观察记录', en: 'Observations' },
+    description: 'Record supplied observations without inventing missing facts.',
+    displayDescription: translations,
+  })
+  assert.deepEqual(read.availableBundles, [], 'retained sources are not new selectable library records')
+  assert.deepEqual(read.mounts[0].bundle, stored.mounts[0].bundle)
+  assert.equal(Object.hasOwn(stored.mounts[0], 'display'), false, 'display copy never becomes a stored mount authority')
+  assert.deepEqual(await repository.read(record.id), stored, 'reading display metadata never writes source or revision')
+  assert.equal((await reopened.list()).length, 1)
+  assert.deepEqual(await reopened.exportArchive({ id: record.id, expectedRevision: record.revision }), before)
+
+  // Invalid method/schema does not hide usable picker metadata or prevent editing.
+  const incomplete = closure.filter(file => !file.path.endsWith('/schema.yaml'))
+  const draft = await service.importSources({ kind: 'kit', files: [...kitSources(), ...incomplete] })
+  assert.equal(draft.readiness.ready, false)
+  assert.deepEqual(draft.mounts[0].display.title, read.mounts[0].display.title)
+  const missing = await service.importSources({ kind: 'kit', files: kitSources() })
+  assert.equal(missing.readiness.ready, false)
+  assert.equal(missing.mounts[0].display?.title, undefined)
+})
+
 test('invalid Kit declaration is importable and repaired through existing mount management', async t => {
   const { service } = await fixture(t)
   let record = await service.importSources({ kind: 'kit', files: kitSources().map(file => file.path === 'kit.yaml' ? entry(file.path, 'mounts: [\n') : file) })

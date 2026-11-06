@@ -60,3 +60,5 @@ export { DEFAULT_DESIGN_REVIEW_POLICY, parseDesignReviewPolicy, readDesignReview
 export { renderAdvisoryReviewMemory } from '../../core/src/advisory-review-memory.ts'
 
 export { DesignBundleVersion, DesignKitVersion } from '../../core/src/types.ts'
+
+export { designReviewDepth, renderDesignReviewDepth, renderDesignReviewStartingPoints } from '../../core/src/design-review-depth.ts'

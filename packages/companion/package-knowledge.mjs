@@ -8,6 +8,7 @@ import { mkdir, readdir, lstat, realpath, readFile, cp, writeFile } from 'node:f
 import { build } from 'tsdown'
 import { readOfficialDshJsonInput } from '../../scripts/official-dsh-json-input.mjs'
 import { OFFICIAL_LADYBUG_VERSION, validateLadybugDependency } from '../../scripts/companion-ladybug-dependency.mjs'
+import { prebuiltEmbeddingManifest } from '../../scripts/prebuilt-embedding-runtime.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 async function installedRoot(name, from) {
@@ -29,17 +30,20 @@ export async function packageKnowledge(target, { mode = 'directory', outputDirec
     // The manifest records the complete product installation closure, including
     // declared server-only trash and installer YAML. Snapshot before asynchronous reads.
     portableDependencies = Object.freeze({ ...runtimeDependencies })
-    const hasTrash = Object.hasOwn(portableDependencies, 'trash')
-    const hasYaml = Object.hasOwn(portableDependencies, 'yaml')
-    assert.deepEqual(Object.keys(portableDependencies).sort(), ['@ladybugdb/wasm-core', '@huggingface/transformers', 'onnxruntime-common', 'undici', ...(hasTrash ? ['trash'] : []), ...(hasYaml ? ['yaml'] : [])].sort(), 'Explicit portable runtime dependency set required')
-    for (const [name, version] of Object.entries({ '@huggingface/transformers': '3.8.1', 'onnxruntime-common': '1.21.0', undici: '8.10.2' })) {
-      assert.equal(portableDependencies[name], version, `Unsupported portable dependency version: ${name}`)
-    }
-    validateLadybugDependency(portableDependencies['@ladybugdb/wasm-core'])
-    if (hasTrash || hasYaml) {
-      const template = JSON.parse(await readFile(join(here, '../../release/product-package-template.json'), 'utf8'))
-      for (const name of ['trash', 'yaml']) if (Object.hasOwn(portableDependencies, name))
-        assert.equal(portableDependencies[name], template.dependencies[name], `Unsupported portable dependency version: ${name}`)
+    const template = JSON.parse(await readFile(join(here, '../../release/product-package-template.json'), 'utf8'))
+    const prebuilt = prebuiltEmbeddingManifest(template).dependencies
+    // The original minimal Knowledge closure remains valid. Product-only
+    // dependencies use the owning template; prebuilt inputs require its complete
+    // shared closure rather than a second list of native/support package pins.
+    const required = ['@ladybugdb/wasm-core', '@huggingface/transformers', 'onnxruntime-common', 'undici']
+    const usesPrebuilt = Object.keys(prebuilt).some(name => !Object.hasOwn(template.dependencies, name) && Object.hasOwn(portableDependencies, name))
+    const expected = usesPrebuilt ? prebuilt : template.dependencies
+    const names = usesPrebuilt ? Object.keys(expected)
+      : [...required, ...Object.keys(expected).filter(name => !required.includes(name) && Object.hasOwn(portableDependencies, name))]
+    assert.deepEqual(Object.keys(portableDependencies).sort(), names.sort(), 'Explicit portable runtime dependency set required')
+    for (const [name, version] of Object.entries(portableDependencies)) {
+      if (name === '@ladybugdb/wasm-core') validateLadybugDependency(version)
+      else assert.equal(version, expected[name], `Unsupported portable dependency version: ${name}`)
     }
     destination = resolve(outputDirectory)
     assert.equal(await realpath(dirname(destination)), dirname(destination), 'Portable output parent must be canonical')

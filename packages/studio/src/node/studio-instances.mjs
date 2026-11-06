@@ -156,11 +156,18 @@ export async function createStudioInstances(options) {
       catch (error) { if (error.code === 'ENOENT') return undefined; throw error }
       return typeof value === 'string' && Buffer.byteLength(value) <= MAX_TEXT ? value : undefined
     }
-    const source = await text(record.kind === 'kit' ? 'mindset.md' : 'SKILL.md')
+    const { title: _sourceTitle, ...copy } = await sourceDisplayCopy(record.kind, text)
+    return copy // The local record owns its user-renamed display title.
+  }
+  const sourceDisplayCopy = async (kind, text) => {
+    const source = await text(kind === 'kit' ? 'mindset.md' : 'SKILL.md')
     const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(source ?? '')
-    let meta = {}, translated
+    let meta = {}, manifest = {}, translated
+    if (kind === 'bundle') {
+      try { manifest = parseYaml(await text('skill.yaml') ?? '') ?? {} } catch { /* Incomplete authoring metadata stays editable. */ }
+    }
     try { meta = frontmatter ? parseYaml(frontmatter[1]) ?? {} : {} } catch { /* Editable malformed metadata is not a catalog-wide failure. */ }
-    if (record.kind === 'kit') translated = meta.display_description
+    if (kind === 'kit') translated = meta.display_description
     else {
       let locales = {}
       try { locales = parseYaml(await text('panel.yaml') ?? '')?.i18n?.locales ?? {} } catch { /* A working declaration may be incomplete. */ }
@@ -171,10 +178,13 @@ export async function createStudioInstances(options) {
       }
       translated = { zh: await readLocale('zh-CN'), en: await readLocale('en-US') }
       if (translated.zh === undefined && translated.en === undefined) {
-        try { translated = parseYaml(await text('skill.yaml') ?? '')?.description } catch { /* Original description remains available. */ }
+        translated = manifest.description
       }
     }
+    let title
+    try { title = titleOf(manifest.title) } catch { /* Missing titles use the card's existing fallback. */ }
     return {
+      ...(title ? { title } : {}),
       ...(typeof meta.description === 'string' ? { description: meta.description } : {}),
       ...(translated && ['zh', 'en'].every(language => typeof translated[language] === 'string' && translated[language].trim())
         ? { displayDescription: { zh: translated.zh, en: translated.en } } : {}),
@@ -260,7 +270,7 @@ export async function createStudioInstances(options) {
       try { decode(entry.base64) } catch { editable = false }
       return { path: entry.path, bytes, editable }
     }).sort((a, b) => a.path.localeCompare(b.path))
-    return { ...projection(record, records), ...await displayCopy(record), ...await readiness(record), files, ...(record.kind === 'kit' ? { availableBundles: await candidates(records) } : {}) }
+    return { ...projection(record, records), ...await displayCopy(record), ...await readiness(record), files, ...(record.kind === 'kit' ? { availableBundles: await candidates(records), mounts: await describedMounts(record) } : {}) }
   }
   const read = async input => describe(active(await repository.read(typeof input === 'string' ? input : input.id)))
   const mountRequests = (kitFiles, mounts) => {
@@ -268,20 +278,37 @@ export async function createStudioInstances(options) {
     try { return declaration ? parseKitMounts(decode(declaration.base64)) : mounts.map(mount => pin(mount.bundle)) }
     catch { return mounts.map(mount => pin(mount.bundle)) } // Incomplete source remains savable/exportable; Core diagnoses it at load/preview.
   }
-  const resolveMounts = (mounts, currentLibrary = false) => async requested => {
-    const selected = mounts.find(mount => same(mount.bundle, pin(requested)))
-    if (!selected) throw new Error('Core requested a Bundle outside the selected exact mounts.')
+  const currentMountRecord = async selected => {
     if (selected.bundle.instanceId) {
       const current = modern(await repository.read(selected.bundle.instanceId))
       if (current.kind !== 'bundle' || current.bundle.name !== selected.bundle.name) throw new Error('Mounted Bundle identity changed.')
-      return { files: await filesOf(current), sourceId: current.sourceId }
+      return current
     }
-    const current = (await repository.list()).find(record => !record.deletedAt && record.current === true && record.kind === 'bundle' && record.bundle.name === selected.bundle.name)
+    return (await repository.list()).find(record => !record.deletedAt && record.current === true && record.kind === 'bundle' && record.bundle.name === selected.bundle.name)
+  }
+  const resolveMounts = (mounts, currentLibrary = false) => async requested => {
+    const selected = mounts.find(mount => same(mount.bundle, pin(requested)))
+    if (!selected) throw new Error('Core requested a Bundle outside the selected exact mounts.')
+    const current = await currentMountRecord(selected)
     if (current) return { files: await filesOf(current), sourceId: current.sourceId }
     if (currentLibrary && selected.bundle.version !== requested.version) return catalog.captureBundle(pin(requested))
     if (!selected.bundle.source?.snapshot) throw new Error(`Mounted Bundle source is unavailable for ${selected.bindingKey}.`)
     return { files: await entriesOf(selected.bundle.source.snapshot), sourceId: selected.bundle.source.sourceId }
   }
+  const describedMounts = async record => Promise.all(record.mounts.map(async mount => {
+    try {
+      // Same selected source as execution/export, including retained imported trees.
+      // This is a read projection only: no catalog entry or stored mount is changed.
+      const captured = await resolveMounts(record.mounts, record.current === true)(mount.bundle)
+      const display = await sourceDisplayCopy('bundle', async path => {
+        safePath(path)
+        const file = captured.files.find(file => file.path === path)
+        return file && Buffer.byteLength(file.base64, 'base64') <= MAX_TEXT ? decode(file.base64) : undefined
+      })
+      const current = await currentMountRecord(mount)
+      return { ...mount, display: { ...display, ...(current ? { title: current.title } : {}) } }
+    } catch { return mount } // Readiness owns unavailable/invalid-source diagnostics.
+  }))
   const kitInput = async record => ({ kit: record.kit, kitFiles: await filesOf(record), mounts: record.mounts, resolveBundle: resolveMounts(record.mounts, record.current === true) })
   const retain = async (tx, files, sourceId) => { requireSourceId(sourceId); return { snapshot: (await tx.retainTree(files)).id, sourceId } }
   const mountOne = async (tx, requested, available) => {

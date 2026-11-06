@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto'
 import { execFile } from 'node:child_process'
 import { lstat, mkdir, mkdtemp, readFile, readdir, realpath } from 'node:fs/promises'
 import { createRequire } from 'node:module'
-import { dirname, join, relative, resolve, sep } from 'node:path'
+import { basename, dirname, join, relative, resolve, sep } from 'node:path'
 import { promisify } from 'node:util'
 import { verifyNodeRuntime } from './npm-node-runtime.mjs'
 
@@ -48,12 +48,19 @@ function dependencyRoots(root) {
 async function packageRoot(name,roots) {
   // Resolve package manifests explicitly inside this installation; never use
   // NODE_PATH, global module paths or an enclosing developer workspace.
+  const stores=roots.map(root=>dirname(dirname(root))).filter(root=>basename(root)==='.pnpm')
   for(const root of roots) {
     const path=join(root,...name.split('/'),'package.json')
     try {
-      const pin=await filePin(path),manifest=JSON.parse(await readFile(path,'utf8'))
+      const canonical=await realpath(path)
+      // Default pnpm links direct dependencies within this installation's own
+      // virtual store. Follow that link, then pin the real files. A link to an
+      // enclosing workspace or arbitrary external directory remains rejected.
+      assert.ok(canonical===path||stores.some(store=>inside(store,canonical)),
+        'Runtime dependency symlink escapes the installed pnpm store')
+      const pin=await filePin(canonical),manifest=JSON.parse(await readFile(canonical,'utf8'))
       assert.equal(manifest.name,name,'Runtime package identity mismatch')
-      return {root:dirname(path),manifest,pin}
+      return {root:dirname(canonical),manifest,pin}
     } catch(e) { if(e.code!=='ENOENT')throw e }
   }
   throw Object.assign(Error(`Missing installed dependency: ${name}`),{code:'ENOENT'})

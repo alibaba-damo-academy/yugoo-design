@@ -31,7 +31,7 @@ import type { CompiledDesignRelationVocabulary } from './design-relation-vocabul
 import type { DesignAdvisory } from './design-advisory.ts'
 import { collectGitStdout, GitVersioning, gitBackendSetting, type SpawnFn } from './git.ts'
 import { DesignFilesStore, type DesignFilesAccess, type FsLike } from './design-files.ts'
-import { registerDesignStateContext } from './prompt.ts'
+import { registerDesignStateContext, registerLiteralDesignContext } from './prompt.ts'
 import { nodeFs, registerServiceTools } from './service-tools.ts'
 import { registerDesignClarityTool } from './dsh-design-clarity-tool.ts'
 import { designClarityInputMatches, parseDesignClarityReported } from './design-clarity-report.ts'
@@ -197,7 +197,7 @@ const KNOWLEDGE_ORCHESTRATION_PRINCIPLES = [
   'Reading never requires freshness: design_query_knowledge serves the latest complete generation with its pins, and every conclusion still cites the Design Files commit, not the derived graph.',
   'Call design_refresh_knowledge when an explicit refresh is useful for upcoming queries, reviews, or cross-Bundle decisions. Publication already schedules maintenance, so reuse queued/running work rather than duplicating it. It runs in the background, never blocks the conversation, and never retries itself after a failure; a new generation or an explicit retry may proceed.',
   'Call design_request_reviews only for profiles that are due and only when newly settled content may carry cross-file inconsistencies (grounding), doubtful external knowledge worth research (reflection), or decisions only the user can clarify (alignment). Reviews are detached, publish through the ordinary advisory inbox, and are advice, never authoritative facts.',
-  'GRA follows the project user policy: auto combines your due-profile judgement with a publication-triggered configurable quiet window (default 30 seconds); every-publication reviews each published version; off forbids automatic and your autonomous reviews. Do not change that policy yourself. Reuse scheduled/running reviews rather than duplicating them. Neither KAG nor GRA is a foreground prerequisite; Clarity is independent.',
+  'GRA follows the project user policy: auto combines your due-profile judgement with a publication-triggered configurable quiet window (default 30 seconds); continuous uses the online periodic scheduler even when Design Files are unchanged; every-publication reviews each published version; off forbids automatic and your autonomous reviews, not explicit human rechecks or Clarity. Do not change that policy yourself or mechanically launch another review after every publication. Use explicit tools for useful initiative in auto or the user\'s manual check. Reuse scheduled/running reviews and existing suggestion dispositions; do not repeat pending/rejected issues without new evidence. Neither KAG nor GRA is a foreground prerequisite; Clarity is independent.',
   'If the user explicitly asks to check or recheck the current Design, use design_recheck_reviews with a fresh stable requestId for that user request, even when the same revision was reviewed before. Reuse the same requestId only when retrying the same request; never invoke this manual path on your own initiative. An active same-profile review is reported as already active instead of launching a duplicate; that no-op does not consume the requestId.',
   'When you start either action, tell the user in one sentence what you started and why; present derived knowledge and review output as evidence-located assistance, not as a second source of design truth.',
 ].join(' ')
@@ -458,6 +458,12 @@ export default class DesignService extends Service {
       order: 525,
       text: (assembly) => this.renderClarityRubric(assembly.agent),
     })
+    // Checkpoint changes are current evidence, not changes to the stable rubric.
+    // The Host logs/deduplicates this runtime snapshot and restores it after
+    // compaction. On in-history model routes this avoids appending the entire
+    // Core/Mindset prompt; replace routes keep a stable system prefix instead.
+    registerLiteralDesignContext(host.systemPrompt, 'design:clarity-input', 590,
+      'design_clarity_input', assembly => this.renderClarityInput(assembly.agent))
     // Mindset section: a provider re-evaluated at every assembly, so the active
     // mindset is present in every model request regardless of compaction.
     host.systemPrompt.section({
@@ -503,6 +509,24 @@ export default class DesignService extends Service {
     })
     // Design-state runtime context: logged and re-emitted after compaction.
     registerDesignStateContext(host.systemPrompt, (assembly) => this.renderDesignState(assembly.agent))
+    // Journal reads are async: this is the accepted per-step snapshot, unlike
+    // synchronous state/clarity providers which refresh at request admission.
+    host.systemPrompt.variable('design_advisories', () => '')
+    host.systemPrompt.context({name: 'design:advisories', order: 610, text: () => '{{design_advisories}}'})
+    ctx.on('system-prompt/assemble', async (assembly, context, next) => {
+      const projection = assembly.contexts.find(item => item.name === 'design:advisories')
+      if (projection && context.agent) {
+        context.signal?.throwIfAborted()
+        try {
+          assembly.variables.design_advisories = await this.renderAdvisoryProjection(context.agent)
+          context.signal?.throwIfAborted()
+        } catch (error) {
+          context.signal?.throwIfAborted()
+          this.context.logger?.warn(`design: could not read advisory context: ${String(error).slice(0, 1000)}`)
+        }
+      }
+      return next()
+    })
     // Model-facing discovery tools; execution is registered separately as run_design_skill.
     registerServiceTools(ctx, this)
     // Structured clarity reporting: the sole clarity assessment authority.
@@ -996,7 +1020,6 @@ export default class DesignService extends Service {
       await this.journals.publish(workspace, conversation, advisory)
       const read = await this.journals.read(workspace, conversation)
       this.notifyWorkspaceChange({ kind: 'advisory-changed', agent, journalRevision: read.revision })
-      this.injectAdvisoryProjection(agent, read.snapshot.advisories, read.snapshot.latestDesignChange?.journalRevision)
     })
   }
 
@@ -1025,7 +1048,6 @@ export default class DesignService extends Service {
     await this.withJournal(agent, async (workspace, conversation) => {
       const read = await this.journals.read(workspace, conversation)
       this.notifyWorkspaceChange({ kind: 'advisory-changed', agent, journalRevision: read.revision })
-      this.injectAdvisoryProjection(agent, read.snapshot.advisories, read.snapshot.latestDesignChange?.journalRevision)
     })
   }
 
@@ -1293,7 +1315,9 @@ export default class DesignService extends Service {
         }
         sourceCheckpoint = publication.checkpoint
       }
-      const read = await readAdvisoryDesignKnowledge({ project: project.projectId, checkpoint: requestedCheckpoint }, service, args.limit ?? this.advisoryKnowledgeLimit,
+      // Ordinary tool reads use the same small page as Companion; the internal
+      // review snapshot budget does not set a caller's default response size.
+      const read = await readAdvisoryDesignKnowledge({ project: project.projectId, checkpoint: requestedCheckpoint }, service, args.limit ?? 30,
         knowledgeQueryFilters(args),
         args.revision === undefined ? undefined : DesignKnowledgeRevision(args.revision), sourceCheckpoint)
       signal?.throwIfAborted()
@@ -1734,7 +1758,9 @@ export default class DesignService extends Service {
       // carries the project id, so dedupe can never suppress a real switch
       // between two projects with otherwise identical state.
       if (this.selectionForAgent(agent)?.projectId !== selectionAtSample) return
-      const text = `${renderDesignKnowledgeStatusReminder(knowledge, reviews)}\nProject GRA policy: ${JSON.stringify(reviewPolicy)}. Auto combines useful Agent initiative with publication admission; continuous uses the online periodic scheduler even when Design Files are unchanged. Do not mechanically launch another review after every publication. Use explicit tools for useful initiative in auto or the user's manual check. Off forbids autonomous GRA, not explicit human rechecks or Clarity. Review the existing suggestion dispositions and avoid repeating pending/rejected issues without new evidence.`
+      // Stable rules live in design:knowledge-orchestration, also present when
+      // a selected project's Kit is unavailable. Notices carry changed facts.
+      const text = `${renderDesignKnowledgeStatusReminder(knowledge, reviews)}\nProject GRA policy: ${JSON.stringify(reviewPolicy)}`
       if (this.knowledgeStatusInjections.get(agent) === text) return
       this.knowledgeStatusInjections.set(agent, text)
       agent.inject(createYugooDesignMessage({
@@ -2018,7 +2044,6 @@ export default class DesignService extends Service {
       const entries = await this.journals.decide(workspace, conversation, decision, actions)
       const read = await this.journals.read(workspace, conversation)
       this.notifyWorkspaceChange({ kind: 'advisory-changed', agent, journalRevision: read.revision })
-      this.injectAdvisoryProjection(agent, entries, read.snapshot.latestDesignChange?.journalRevision)
       const entry = entries.find(candidate => candidate.advisory.id === decision.advisoryId)
       if (entry === undefined) throw new Error(`design advisory: unknown advisory ${JSON.stringify(decision.advisoryId)}`)
       return Object.freeze({
@@ -2097,7 +2122,6 @@ export default class DesignService extends Service {
       const after = await this.journals.read(workspace, conversation)
       requireBinding()
       this.notifyWorkspaceChange({ kind: 'advisory-changed', agent, journalRevision: after.revision })
-      this.injectAdvisoryProjection(agent, after.snapshot.advisories, after.snapshot.latestDesignChange?.journalRevision)
       return selected
     })
   }
@@ -2172,7 +2196,6 @@ export default class DesignService extends Service {
       })
       const after = await this.journals.read(workspace, conversation)
       this.notifyWorkspaceChange({ kind: 'advisory-changed', agent, journalRevision: after.revision })
-      this.injectAdvisoryProjection(agent, after.snapshot.advisories, after.snapshot.latestDesignChange?.journalRevision)
       return settled
     })
   }
@@ -2216,7 +2239,6 @@ export default class DesignService extends Service {
       const after = await this.journals.read(workspace, conversation)
       if (result.claimed || after.revision !== read.revision) {
         this.notifyWorkspaceChange({ kind: 'advisory-changed', agent, journalRevision: after.revision })
-        this.injectAdvisoryProjection(agent, after.snapshot.advisories, after.snapshot.latestDesignChange?.journalRevision)
       }
       return Object.freeze({
         claimed: result.claimed,
@@ -2243,7 +2265,6 @@ export default class DesignService extends Service {
         await this.journals.settleAdvisoryActionExecution(workspace, conversation, request)
         const read = await this.journals.read(workspace, conversation)
         this.notifyWorkspaceChange({ kind: 'advisory-changed', agent, journalRevision: read.revision })
-        this.injectAdvisoryProjection(agent, read.snapshot.advisories, read.snapshot.latestDesignChange?.journalRevision)
       })
     } finally {
       if (owners?.get(request.receiptId) === request.attemptId) owners.delete(request.receiptId)
@@ -2316,20 +2337,21 @@ export default class DesignService extends Service {
     return currentAdvisoryEntries(entries, this.advisoryInboxLimit)
   }
 
-  /** Keep model routing count on the same durable unresolved projection as the UI. */
-  private injectAdvisoryProjection(
-    agent: Agent,
-    entries: readonly DesignJournalAdvisoryEntry[],
-    designRevision: number | undefined,
-  ): void {
-    const currency = this.advisoryCurrency(agent, designRevision)
-    const visible = this.currentAdvisoryEntries(entries)
+  /** Read the durable projection at assembly; the Host owns dedupe and compaction recovery. */
+  private async renderAdvisoryProjection(agent: Agent | undefined): Promise<string> {
+    if (agent === undefined) return ''
+    const workspace = this.activeWorkspaces.get(agent)
+    const project = workspace?.project
+    if (project === undefined || this.selectionForAgent(agent)?.projectId !== project.projectId) return ''
+    const read = await this.journals.read(project.root, String(project.projectId))
+    if (this.selectionForAgent(agent)?.projectId !== project.projectId) return ''
+    const currency = this.advisoryCurrency(agent, read.snapshot.latestDesignChange?.journalRevision)
+    const visible = this.currentAdvisoryEntries(read.snapshot.advisories)
       .filter(entry => !deriveAdvisoryStaleness(entry.advisory, currency))
-      .map(entry => entry.advisory)
-    agent.inject(createYugooDesignMessage({
-      content: [{ type: 'text', text: renderDshDesignAdvisorySetReminder(visible) }],
-      notice: `design advisory projection: ${visible.length}`,
-    }))
+    return renderDshDesignAdvisorySetReminder(
+      visible.map(entry => entry.advisory),
+      new Map(visible.map(entry => [entry.advisory.id, entry.status])),
+    )
   }
 
   /**
@@ -3367,9 +3389,14 @@ Discuss reactions in the main conversation; if a reaction requires durable clari
   /** Render the evidence standard used to assess design clarity. */
   private renderClarityRubric(agent: Agent | undefined): string {
     if (agent === undefined || this.kitForAgent(agent) === undefined) return ''
+    return DESIGN_CORE_CLARITY_RUBRIC_PROMPT
+  }
+
+  /** Mutable assessment identity belongs to the Host's current runtime context. */
+  private renderClarityInput(agent: Agent | undefined): string {
+    if (agent === undefined) return ''
     const input = this.clarityInputForAgent(agent)
-    return DESIGN_CORE_CLARITY_RUBRIC_PROMPT + (input === undefined ? ''
-      : `\n<design_clarity_input>${JSON.stringify(input)}</design_clarity_input>`)
+    return input === undefined ? '' : `<design_clarity_input>${JSON.stringify(input)}</design_clarity_input>`
   }
 
   /** Current model-facing input identity, from existing selected workspace state. */

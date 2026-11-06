@@ -43,7 +43,7 @@ test('product preparation forwards acquired native artifacts and stable identity
   const entry = new URL('./prepare-product-release.mjs', import.meta.url).href
   const mock = `import assert from 'node:assert/strict';
     export async function buildSameSourceCandidate(input) {
-      assert.deepEqual(input, { ladybugDependency: '0.21.1', nativeGitArtifactRoot: '/owned/native-artifacts',
+      assert.deepEqual(input, { ladybugDependency: '0.21.1', nativeGitArtifactRoot: '/owned/native-artifacts', npmCli: '/owned/npm-cli.js',
         candidate: { fixture: false, scope: '@yugoo-design', packageName: 'yugoo-design', version: ${JSON.stringify(product.version)}, distribution: 'stable' } });
       throw new Error('verified-native-builder-handoff');
     }

@@ -6,7 +6,7 @@ import { join } from 'node:path'
 const { register } = await import('tsx/esm/api'); register()
 const { default: DesignService } = await import('../src/design-service.ts')
 const { boundedKnowledgeQuery, registerKnowledgeQueryTool } = await import('../src/dsh-knowledge-query-tool.ts')
-const { knowledgeReadResult } = await import('../src/design-knowledge-query.ts')
+const { knowledgeReadResult, queryKnowledgeSnapshot } = await import('../src/design-knowledge-query.ts')
 const { GitVersioning } = await import('../src/git.ts')
 const { DesignFilesStore } = await import('../src/design-files.ts')
 const { nodeDesignProjectSpawn } = await import('../src/design-project.ts')
@@ -35,8 +35,28 @@ test('native child reads only its real ancestor project and exact graph revision
   const { child, reads, run } = fixture()
   const result = await run(child, { project: projectId, checkpoint: 'c', revision: 'rev:7', offset: 20, entityIds: ['a'], relationIds: [] })
   assert.equal(result.project, projectId); assert.equal(result.revision, 'rev:7')
-  assert.deepEqual(reads[0], { offset: 20, entityIds: ['a'], relationIds: [], projectId, revision: 'rev:7', limit: 20 })
+  assert.deepEqual(reads[0], { offset: 20, entityIds: ['a'], relationIds: [], projectId, revision: 'rev:7', limit: 30 })
   assert.equal(result.page.nextOffset, null)
+})
+test('ordinary query defaults page independently of review capture and preserve every record through continuation', async () => {
+  const f = fixture()
+  f.receiver.advisoryKnowledgeLimit = 256
+  const entities = Array.from({ length: 47 }, (_, index) => ({ id: `fact-${index}`,
+    properties: { description: `Complete source detail ${index}` },
+    provenance: { evidence: [{ source: 'facts.json', pointer: `/${index}` }] } }))
+  const snapshot = { revision: 'rev:7', entities, relations: [] }
+  f.service.query = async request => { f.reads.push(request); return queryKnowledgeSnapshot(snapshot, request) }
+  const pins = { project: projectId, checkpoint: 'c', revision: 'rev:7' }
+  const first = await f.run(f.child, pins)
+  assert.equal(first.entities.length, 30)
+  assert.equal(first.page.nextOffset, 30)
+  assert.equal(first.page.totalEntities, 47)
+  const next = await f.run(f.child, { ...pins, offset: first.page.nextOffset })
+  assert.equal(next.page.nextOffset, null)
+  assert.deepEqual([...first.entities, ...next.entities], entities, 'paging preserves full fields and original evidence')
+  assert.equal((await f.run(f.child, { ...pins, limit: 47 })).entities.length, 47, 'an explicit larger page remains available')
+  await assert.rejects(f.run(f.child, { ...pins, limit: 101 }), /limit/)
+  assert.ok(f.reads.every(request => request.projectId === projectId && request.revision === pins.revision))
 })
 test('registered read tool executes through a child native binding without exposing mutation methods', async () => {
   const { child, run, reads } = fixture()

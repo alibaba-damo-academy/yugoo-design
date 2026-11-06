@@ -181,4 +181,23 @@ test('Instance global actions preserve unknown mount selection; Refresh verifies
   } finally { await f.close() }
 })
 
+test('retained mount cards use bilingual source metadata and keep selection pins unchanged', async () => {
+  const retained = { name: 'local_bundle_uuid', version: '1.0', source: { snapshot: 'saved-source', sourceId: 'import:bundle' } }
+  const display = { title: { zh: '业务规则', en: 'Business rules' }, displayDescription: { zh: '定义业务判断。', en: 'Define business decisions.' } }
+  const record = { ...seed, mounts: [{ bundle: retained, display }], availableBundles: [] }
+  let actions
+  const props = { record, locale: 'en', client: {}, onSaved: () => assert.fail('read-only inspection'), onActions: value => { actions = value } }
+  const f = await mount(MountEditor, props)
+  try {
+    for (const locale of ['en', 'zh']) {
+      await f.render({ ...props, locale })
+      assert.equal(document.querySelector('.ygd-studio-bundle-card h3').textContent, display.title[locale])
+      assert.equal(document.querySelector('.ygd-studio-card-description').textContent, display.displayDescription[locale])
+      assert.equal(document.querySelectorAll('.ygd-studio-mounts-candidates article').length, 0)
+      assert.equal(actions.canSave, false)
+      assert.deepEqual(selectedMountPins(record, [retained.name]), [{ name: retained.name, version: retained.version }])
+    }
+  } finally { await f.close() }
+})
+
 test.after(() => dom.window.close())

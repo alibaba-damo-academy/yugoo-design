@@ -169,16 +169,15 @@ Use the accepted public installation guide and exact release manifest; the host 
    the canonical data and checkpoint. Verify KAG and GRA through actual host
    execution, reporting any capability or credential limitation explicitly.
 
-The CPU-first installation policy applies before acquiring the product installer
-and its DSH dependencies. Follow the
-[shared installation entry](../companion/HOSTS.md#agent-led-installation-and-updates)
-to use `ONNXRUNTIME_NODE_INSTALL_CUDA=skip` while retaining normal dependency
-lifecycle scripts. Skipping extra CUDA downloads does not prepare embedding
-model files: use the exact model cache or explicit download policy documented by
-the acquired version. Loader registration, a database opening and a working host
-LLM do not establish semantic indexing. GPU acceleration is outside the
-first-release scope; this policy does not change the published
-beta.2 archives or their installation acceptance.
+The formal release carries its upstream Node/CPU embedding runtime as a prebuilt
+npm bundle. Normal pnpm installation needs no source build, extra `approve-builds`
+or manual pnpm configuration. The shared [installation entry](../companion/HOSTS.md#agent-led-installation-and-updates)
+uses the same pnpm store for product acquisition and the official Host operation.
+Older immutable releases, including `0.2.8`, retain their own CPU environment and
+repair instructions. Model preparation remains separate: use the selected
+release's exact cache or explicit download policy. Loader registration, a database
+opening and a working Host LLM do not establish semantic indexing. GPU runtime
+provisioning remains outside this CPU release path.
 
 Use the selected release's manifest and installation guide, rather than the
 versions recorded in [historical release checks](#historical-release-checks).
@@ -475,6 +474,13 @@ change the exact release version or the canonical origin in that mapping.
 Use the same effective registry for dry-run, apply and receipt-owned updates;
 neither origin nor transport migration is implicit. The plan/receipt records
 both, with no automatic fallback or global registry configuration change.
+An existing same-name registry installation can be updated through this normal
+route even when it was installed by DSH's CLI or Plugins interface and has no
+Yugoo installer receipt. The plan records the actual current package and user
+configuration, then applies the selected exact release. A previous successful
+receipt is optional historical evidence; when supplied, its identity and bytes
+are checked. It is not a second authorization requirement for an update the
+user has already requested.
 For a release set, use the exact aggregate version recorded in that product
 candidate's `release-hosts.json` and its default registry or an explicitly
 selected mirror with matching release integrity, preserving

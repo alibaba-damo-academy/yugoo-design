@@ -38,28 +38,28 @@ for (const deadReference of ['<design_decision_policy>', '<design_loop>']) {
   if (kit.mindset.includes(deadReference)) throw new Error(`mindset references absent host section ${deadReference}`)
 }
 for (const coreRule of [
-  'After run_design_skill returns completed',
-  'intrinsic completion requirement of the explicitly requested output',
-  'Recommend one to three genuine alternatives',
-  'through the host-native question mechanism (ask_user_question)',
-  'conversation-language title from the injected catalog',
-  'never invent, translate, rename, or concatenate a Bundle identifier into a visible option',
-  'Map a returned Bundle title back to the exact Bundle id through the same pinned injected catalog',
-  'when it matches none of the offered actions or catalog titles, treat it as no selection and never guess an id',
-  'A valid host-native answer is the visible user decision receipt',
-  'first emit one concise conversation-language acknowledgement',
-  'never jump silently from the answered question to the tool call',
-  'never fabricate a duplicate human message',
-  'reserve one option for the conversation-language action',
-  'The advisory-review action and the explicitly offered scene-experience actions below are non-catalog choices, never Bundle aliases',
-  'A validator finding, advisory item, suggested recovery, ordinary evidence dependency, or newly discovered inconsistency is not that explicit request',
-  'obtain a new host-native selection or direct user instruction instead of silently invoking its owning Bundle',
-  'never ask again',
-  'route grouped editable decisions through run_design_skill with that question skill',
-  'is a Question Bundle round even when it contains exactly one question',
-  'A direct conversation or host-native blocking question is permitted only for a transient non-Design prerequisite',
-  'Never call run_design_skill before Kit activation',
-  "never treat a previous project's Kit or catalog as active",
+  'A completed run_design_skill result is saved.',
+  'intrinsic completion requirement of the requested output',
+  'one to three genuine alternatives',
+  'Use one native ask_user_question',
+  'exactly one conversation-language catalog title',
+  'Never invent, translate, rename or concatenate Bundle ids into visible options',
+  'mapping an exact catalog title to its id',
+  'No match means no selection; never guess',
+  'An answered native question is a valid visible decision receipt even without a new user message',
+  'Before every ordinary run_design_skill engagement, emit one concise user-visible assistant sentence in the conversation language',
+  'Put the sentence in visible assistant text before its corresponding tool call',
+  'do not fabricate a duplicate human message',
+  'reserve one option for “审阅设计建议（N 条）” / “Review design suggestions (N)”',
+  'Advice review and scene actions are not Bundle aliases',
+  'Validator findings, advisory items, recovery suggestions, ordinary dependencies and discovered inconsistencies alone are not that authorization',
+  'report them and get a new native selection/direct instruction',
+  'do not ask again',
+  'When the active Kit has a question Bundle, use it for durable grounding questions',
+  'including a singleton about background, users, goals, scenarios, scope, constraints or concrete content',
+  'Direct conversation or one concise native blocking question is allowed only for a transient non-Design prerequisite',
+  'or run_design_skill before activation',
+  "Never use a previous project's Kit/catalog as current",
   'installed Kit resources, not Design Project WorkingCopy files',
   'During an active Bundle invocation',
 ]) {
@@ -68,11 +68,22 @@ for (const coreRule of [
 }
 for (const mindsetRule of [
   'These relations never impose a fixed execution order',
-  'Maintain the coherent product background',
   'its result is a set of high-fidelity pages, never unstyled wireframes',
   'first run `design_style` with a brief to derive a product-appropriate, unconfirmed baseline',
 ]) {
   if (!kit.mindset.includes(mindsetRule)) throw new Error(`mindset missing Kit calibration rule: ${mindsetRule}`)
+}
+
+// Capability copy has one owner: the mounted Bundle's SKILL.md frontmatter.
+// The Mindset retains domain reasoning, rather than duplicating catalog prose.
+const questionSkill = kit.skills.find(skill => skill.name === 'smart_questions')
+for (const rule of [
+  'maintain coherent product background and evolving context',
+  'users, needs, value, scenarios and boundaries',
+  'relevant context not owned by another design facet',
+  'do not replace an authorized deliverable with questions',
+]) {
+  if (!questionSkill?.description.includes(rule)) throw new Error(`smart_questions missing capability rule: ${rule}`)
 }
 
 const pageSkill = kit.skills.find(skill => skill.name === 'page_design')
@@ -117,11 +128,11 @@ if (!reformattedSkill?.metadata?.skillYaml?.startsWith('\n')) throw new Error('w
 // Identity is the declared name+version: every Bundle pins the explicit
 // version its skill.yaml declares, and content edits never move it
 // (same-version hot update).
-// The official Web App 1.1 release explicitly pins corrected Flow 1.1.
+// Web App 1.2 pins revised Research 1.1 and corrected Flow 1.1.
 // Other Bundle pins remain 1.0; ordinary resource edits below do not retarget them.
-if (kit.version !== '1.1') throw new Error(`kit version ${kit.version} does not match the declared 1.1`)
+if (kit.version !== '1.2') throw new Error(`kit version ${kit.version} does not match the declared 1.2`)
 for (const skill of kit.skills) {
-  const expectedVersion = skill.name === 'flow_design' ? '1.1' : '1.0'
+  const expectedVersion = ['flow_design', 'research'].includes(skill.name) ? '1.1' : '1.0'
   if (skill.version !== expectedVersion) throw new Error(`skill ${skill.name} version ${skill.version} does not match ${expectedVersion}`)
 }
 

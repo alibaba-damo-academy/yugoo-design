@@ -34,6 +34,7 @@ export async function createCompanionDevFrontend({ server, origin }: { server: S
   ]
   const aliases = {
     'dsh-design-panel/client-api': path('packages/panel/src/client-api.ts'),
+    'dsh-design-panel/sample-preview': path('packages/panel/src/sample-preview.tsx'),
     'dsh-design-core/dsl': path('packages/core/src/panel-dsl.ts'),
     'dsh-design-core/experience-view': path('packages/core/src/experience-view.ts'),
     'dsh-design-core/source-reference': path('packages/core/src/design-source-reference.ts'),

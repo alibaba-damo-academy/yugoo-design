@@ -5,6 +5,7 @@ import type { StudioInstanceChangeRequest, StudioInstanceCandidate, StudioInstan
 import type { StudioAuthoring } from './authoring.ts'
 import { renderStudioDocument } from './markdown.tsx'
 import { LoadingIndicator } from './LoadingIndicator.tsx'
+import type { StudioBundleCardContent } from './BundleCard.tsx'
 import { MountEditor, type MountEditorActions } from './MountEditor.tsx'
 import { FileExplorer } from './FileExplorer.tsx'
 import { FileInfoSidebar, FileName } from './FileInfoSidebar.tsx'
@@ -31,7 +32,7 @@ export interface StudioInstance {
   readonly readiness?: { readonly ready: boolean; readonly diagnostics: readonly { code: string; message: string; path?: string; severity?: 'error' | 'warning' }[] }
   readonly files?: readonly { readonly path: string; readonly bytes: number; readonly editable: boolean }[]
   readonly mounts: readonly { readonly bundle: DesignBundleVersionPin & { readonly instanceId?: string; readonly revision?: number;
-    readonly source?: { readonly snapshot: string; readonly sourceId: string } }; readonly instanceId?: string }[]
+    readonly source?: { readonly snapshot: string; readonly sourceId: string } }; readonly instanceId?: string; readonly display?: Pick<StudioBundleCardContent, 'title' | 'description' | 'displayDescription'> }[]
   readonly refs: readonly { readonly id: string; readonly title: { readonly zh: string; readonly en: string } }[]
   readonly deletedAt?: string
   readonly availableBundles?: readonly (DesignBundleVersionPin & { readonly title: { readonly zh: string; readonly en: string }; readonly instanceId?: string; readonly revision?: number; readonly runtimeName?: string; readonly description?: string; readonly displayDescription?: { readonly zh: string; readonly en: string } })[]
@@ -139,7 +140,7 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
     return { ...proposal?.request, id, expectedRevision: record.revision, changes: [...changes].map(([path, content]) => ({ path, content })) }
   }, [record?.id, record?.revision, id, drafts, proposal, sourceDirty])
   const draftKey = draftRequest ? JSON.stringify(draftRequest) : undefined
-  const draftClient = useMemo(() => client.saveChanges ? { read: client.read.bind(client), saveChanges: client.saveChanges.bind(client) } : undefined, [client])
+  const draftClient = useMemo(() => client.saveChanges ? { read: client.read.bind(client), readFile: client.readFile.bind(client), saveChanges: client.saveChanges.bind(client) } : undefined, [client])
   const currentPrepared = sourceDirty ? preparedDraft && preparedDraft.key === draftKey ? preparedDraft.prepared : undefined : proposal
   const sourceClient = proposal ? editableChanges?.client : draftClient
   const candidateState = useSourceCandidate(currentPrepared && sourceClient ? {
@@ -277,6 +278,7 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
   }
   const refresh = () => {
     if (mountActions?.isSaveSubmitted()) { if (mountActions.saveUnverified) void mountActions.verifySave(); return }
+    if (candidateState?.isSaveSubmitted()) { if (candidateState.saveUnverified) void candidateState.verifySave(); return }
     if (busy || candidateBusy || !discard()) return
     const current = generation.current
     void mutate(async () => {

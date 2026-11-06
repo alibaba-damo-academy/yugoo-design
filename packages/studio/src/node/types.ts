@@ -89,7 +89,9 @@ export interface StudioInstanceBundleChoice extends DesignBundleVersionPin {
   readonly instanceId?: string
   readonly revision?: number
 }
-export interface StudioInstanceDescription extends Omit<StudioInstanceStoredRecord, 'overlays' | 'importedFromSnapshot'> {
+export interface StudioInstanceDescription extends Omit<StudioInstanceStoredRecord, 'overlays' | 'importedFromSnapshot' | 'mounts'> {
+  /** Display-only metadata from the selected source; never persisted in mount pins. */
+  readonly mounts: readonly (StudioInstanceMount & { readonly display?: Partial<Pick<StudioInstanceBundleChoice, 'title' | 'description' | 'displayDescription'>> })[]
   /** Same-identity editable projection of a catalog source. */
   readonly current?: boolean
   readonly refs: readonly { readonly id: string; readonly title: StudioDisplayTitle }[]

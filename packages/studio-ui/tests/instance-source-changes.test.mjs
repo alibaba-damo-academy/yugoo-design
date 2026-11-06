@@ -39,12 +39,16 @@ async function fixture(t, options = {}) {
   const saveGate = new Promise(resolve => { releaseSave = resolve })
   const root = createRoot(document.getElementById('root'))
   const client = { ...service, read: input => failRead ? Promise.reject(Error('Reopen unavailable')) : service.read(input).then(record => options.noPanel ? { ...record, files: record.files.filter(file => file.path !== 'panel.yaml') } : record), saveChanges: async input => {
-    manualSaves.push(input); const value = await service.saveChanges(input)
+    manualSaves.push(input)
+    if (options.offlineBeforeSave) throw Error('Failed to fetch')
+    const value = await service.saveChanges(input)
     if (options.manualUncertain) throw Error('Manual save response lost')
     return value
   } }
-  const candidateClient = { read: input => service.read(input), saveChanges: async input => {
-    saveCalls++; const value = await service.saveChanges(input)
+  let candidateClient = { read: input => client.read(input), readFile: input => client.readFile(input), saveChanges: async input => {
+    saveCalls++
+    if (options.offlineBeforeSave) throw Error('Failed to fetch')
+    const value = await service.saveChanges(input)
     saveCommitted(); if (options.pending) await saveGate
     if (options.uncertain) throw Error('Save response lost')
     return value
@@ -59,6 +63,7 @@ async function fixture(t, options = {}) {
   return { service, client, serviceOptions, record, prepared, saved, exported, dirty, manualSaves, committed, releaseSave: () => releaseSave(), saves: () => saveCalls,
     failRead(value) { failRead = value },
     async select(id) { displayedId = id; await React.act(async () => render()) },
+    async reconnect() { candidateClient = { ...candidateClient }; sourceChanges = { ...sourceChanges, client: candidateClient }; await React.act(async () => render()) },
     async present(value = prepared) { sourceChanges = { prepared: value, client: candidateClient, onDismiss: () => { sourceChanges = undefined; render() } }; await React.act(async () => render()) },
   }
 }
@@ -120,10 +125,7 @@ test('uncertain save remains blocked through a failed reopen and recovers withou
   await click('Save'); await until(() => document.body.textContent.includes('Verify the save result'))
   assert.equal(f.saves(), 1); assert.equal(button('Save').disabled, true); assert.equal(button('Export').disabled, true)
   f.failRead(true); await click('Refresh content')
-  await until(() => [...document.querySelectorAll('.ygd-studio-error-entry')].some(entry => entry.textContent.includes('The operation could not be completed')))
-  const failureEntry = [...document.querySelectorAll('.ygd-studio-error-entry')].find(entry => entry.textContent.includes('The operation could not be completed'))
-  await React.act(async () => [...failureEntry.querySelectorAll('button')].find(node => node.textContent === 'View issues').click())
-  assert.match(failureEntry.textContent, /Reopen unavailable/)
+  await until(() => document.body.textContent.includes('Reopen unavailable'))
   assert.equal(button('Save').disabled, true, 'a failed read cannot reset an uncertain save lifetime')
   assert.equal(f.saves(), 1)
   f.failRead(false); await click('Refresh content'); await until(() => button('Save') && !document.querySelector('.ygd-studio-inline-diff') && document.querySelector('.ygd-studio-document-body textarea'))
@@ -287,18 +289,100 @@ test('an uncertain manual batch save locks editing and survives a failed verific
   assert.equal(f.manualSaves.length, 1)
   assert.equal(button('Save').disabled, true); assert.equal(button('Revert').disabled, true)
   assert.equal(document.querySelector('textarea[aria-label="panel.yaml"]').readOnly, true)
-  window.confirm = () => true
-  f.failRead(true); await click('Refresh content')
-  await until(() => [...document.querySelectorAll('.ygd-studio-error-entry')].some(entry => entry.textContent.includes('The operation could not be completed')))
-  const failureEntry = [...document.querySelectorAll('.ygd-studio-error-entry')].find(entry => entry.textContent.includes('The operation could not be completed'))
-  await React.act(async () => [...failureEntry.querySelectorAll('button')].find(node => node.textContent === 'View issues').click())
-  assert.match(failureEntry.textContent, /Reopen unavailable/)
+  const confirm = window.confirm; let confirms = 0
+  window.confirm = () => { confirms++; return false }; t.after(() => { window.confirm = confirm })
+  f.failRead(true); await click('Verify saved copy')
+  await until(() => document.body.textContent.includes('Reopen unavailable'))
   assert.equal(button('Save').disabled, true); assert.equal(f.manualSaves.length, 1)
   f.failRead(false); await click('Refresh content')
   await until(() => document.querySelector('textarea[aria-label="panel.yaml"]')?.readOnly === false)
   assert.equal(document.querySelector('textarea[aria-label="panel.yaml"]').value, text)
   assert.equal((await f.service.read({ id: f.record.id })).revision, 1)
   assert.equal(f.manualSaves.length, 1)
+  assert.equal(confirms, 0, 'verification must not ask to discard the draft')
+})
+
+test('an offline save of human-refined AI changes keeps every draft and permits only an explicit retry', async t => {
+  const options = { offlineBeforeSave: true }, f = await fixture(t, options)
+  const confirm = window.confirm; let confirms = 0
+  window.confirm = () => { confirms++; return false }; t.after(() => { window.confirm = confirm })
+  await f.present(); await until(() => !button('Save').disabled)
+  const text = await editFile('panel.yaml', value => value.replaceAll('$t:records', 'Retain the human correction'))
+  await until(() => !button('Save').disabled)
+  await click('Save')
+  await until(() => document.body.textContent.includes('Verify the save result'))
+  assert.equal((await f.service.read({ id: f.record.id })).revision, 0)
+  await click('Verify saved copy')
+  await until(() => button('Save') && !button('Save').disabled)
+  assert.equal(confirms, 0)
+  assert.equal(document.querySelector('textarea[aria-label="panel.yaml"]').value, text)
+  assert.equal(button('Export').disabled, true)
+  assert.equal(f.saves(), 1)
+  options.offlineBeforeSave = false
+  await click('Save'); await until(() => f.saved.length === 1)
+  assert.equal(f.saves(), 2)
+  assert.equal((await f.service.readFile({ id: f.record.id, path: 'panel.yaml' })).content, text)
+})
+
+test('verification detects a different saved change without discarding the human draft', async t => {
+  const f = await fixture(t, { offlineBeforeSave: true })
+  const text = await editFile('panel.yaml', value => value.replaceAll('$t:records', 'My retained correction'))
+  await until(() => !button('Save').disabled)
+  await click('Save'); await until(() => button('Verify saved copy'))
+  await f.service.saveFile({ id: f.record.id, expectedRevision: 0, path: 'panel.yaml', content: text + '\n# Another author\n' })
+  const confirm = window.confirm
+  window.confirm = () => assert.fail('verification is not discard'); t.after(() => { window.confirm = confirm })
+  await click('Verify saved copy')
+  await until(() => document.body.textContent.includes('The saved content differs'))
+  assert.equal(document.querySelector('textarea[aria-label="panel.yaml"]').value, text)
+  assert.equal(button('Save').disabled, true)
+  assert.equal(button('Revert').disabled, false, 'a known conflict is recoverable through existing draft actions')
+  assert.equal(f.saved.length, 0)
+  assert.equal(f.manualSaves.length, 1)
+})
+
+test('a late verification cannot overwrite the newly selected copy', async t => {
+  const f = await fixture(t, { uncertain: true })
+  await f.present()
+  await until(() => !button('Save').disabled)
+  await click('Save'); await until(() => button('Verify saved copy'))
+  const other = await f.service.copy({ kind: 'bundle', bundle: pin, title: { zh: '另一副本', en: 'Other copy' } })
+  const read = f.client.read; let releaseVerify
+  f.client.read = input => input.id === f.record.id ? new Promise(resolve => { releaseVerify = () => read(input).then(resolve) }) : read(input)
+  await click('Verify saved copy')
+  assert.equal(typeof releaseVerify, 'function')
+  await f.select(other.id)
+  await until(() => document.querySelector('h1')?.textContent === 'Other copy')
+  await React.act(async () => releaseVerify())
+  assert.equal(document.querySelector('h1').textContent, 'Other copy')
+  assert.equal(f.saved.length, 0)
+})
+
+test('verification after a connection change uses the submitted identity and exact saved files', async t => {
+  const f = await fixture(t, { uncertain: true })
+  await f.present(); await until(() => button('Save') && !button('Save').disabled)
+  await click('Save'); await until(() => button('Verify saved copy'))
+  await f.reconnect()
+  await until(() => document.body.textContent.includes('The working copy changed'))
+  await click('Verify saved copy'); await until(() => f.saved.length === 1)
+  assert.equal(f.saved[0].revision, 1)
+  assert.equal(f.saves(), 1)
+})
+
+test('a missing saved file list cannot confirm that a deleted file is absent', async t => {
+  const f = await fixture(t, { uncertain: true })
+  const request = { id: f.record.id, expectedRevision: 0, changes: [{ path: 'panel.yaml', content: null }] }
+  await f.present({ request, candidate: await f.service.prepareChanges(request) })
+  await until(() => button('Save') && !button('Save').disabled)
+  await click('Save'); await until(() => button('Verify saved copy'))
+  const read = f.client.read
+  f.client.read = async input => { const { files, ...record } = await read(input); return record }
+  await click('Verify saved copy')
+  await until(() => document.body.textContent.includes('The saved file list is unavailable'))
+  assert.equal(f.saved.length, 0); assert.equal(button('Save').disabled, true)
+  f.client.read = read
+  await click('Verify saved copy'); await until(() => f.saved.length === 1)
+  assert.equal(f.saves(), 1)
 })
 
 test('a late prepared preview cannot replace the latest human source', async t => {

@@ -140,7 +140,8 @@ async function saveFixture(run) {
       workspaceContentEpochs: new WeakMap([[agent, 0]]), projectContentEpochs: new Map(),
       selectedAgents: new Set(), selectedAgentRefs: new WeakMap(),
       journalMutations: new Map(), journals: new DesignJournalRegistry(state => join(state, 'journal')),
-      resolveProjectKit: () => kit, spawnAdapter: () => spawn, notifyWorkspaceChange() {},
+      // Kit loading has its own real-source coverage; this fixture owns save/Git cost.
+      resolveProjectKit: () => kit, prepareProjectKit: async () => kit, spawnAdapter: () => spawn, notifyWorkspaceChange() {},
     })
     await design.journals.append(project.stateRoot, String(agent.id), {
       type: 'design/kit-selected', data: { kit: kit.name, version: kit.version, operation: 'activate' },
@@ -177,6 +178,21 @@ test('ordinary single-file save counts its complete Git path and starts fresh on
   assert.notEqual(second.commit, first.commit)
   const history = await design.readDesignJournal(agent)
   assert.equal(history.records.filter(row => row.type === 'design/changed').length, 2)
+}))
+
+test('saving changes the runtime assessment identity without rewriting the stable system rubric', async () => saveFixture(async ({ save, design, agent }) => {
+  const rubric = design.renderClarityRubric(agent)
+  const before = design.renderClarityInput(agent)
+  assert.doesNotMatch(rubric, /<design_clarity_input>/)
+  const first = await save('A new saved fact', 'runtime-context-first')
+  const after = design.renderClarityInput(agent)
+  assert.notEqual(after, before)
+  assert.equal(design.renderClarityRubric(agent), rubric)
+  assert.equal(JSON.parse(after.match(/<design_clarity_input>(.*?)<\/design_clarity_input>/)[1]).assessedCheckpoint, first.commit)
+  assert.equal(design.renderClarityInput(agent), after, 'unchanged reads give the Host an identical deduplicable snapshot')
+  assert.equal(design.renderClarityInput(undefined), '')
+  design.activeWorkspaces.delete(agent)
+  assert.equal(design.renderClarityInput(agent), '', 'a closed project cannot retain the prior identity')
 }))
 
 test('meaningful save injects exact main-report input after settlement and before returning; replay/noop does not score again', async () => saveFixture(async ({ save, project, design, agent }) => {

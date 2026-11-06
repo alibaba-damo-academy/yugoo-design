@@ -161,8 +161,13 @@ approval stage or separate checklist.
 ## Work safely and in parallel
 
 Check `git status` first. Existing uncommitted changes are not yours to discard or
-include in a commit. Use a separate branch/worktree for concurrent implementation;
-agree shared-file ownership and integrate fixed commits deliberately. When using
+include in a commit. Each development round has one agreed integration branch:
+collect that round's changes there for joint review and verification, then merge
+and release them together. Do not merge or publish a peer's subtask independently.
+Reuse existing worktrees. Use a temporary branch/worktree only when concurrent
+implementation needs isolation; agree shared-file ownership, integrate fixed
+commits deliberately, and retire it once integration and verification no longer
+need it. This is the standing branch convention for subsequent rounds. When using
 Chatroom, follow `.agents/skills/agent-comms/SKILL.md` and keep the existing ledger
 accurate. Close a task only for its stated verified outcome, not an acknowledgement.
 

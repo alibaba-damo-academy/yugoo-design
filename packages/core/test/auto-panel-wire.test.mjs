@@ -13,7 +13,7 @@ test('workspace wire retains generated auto Panel and progress instead of stripp
   const state = {
     projectId: 'p1', projectName: 'pilot', projectPath: '/tmp/pilot', checkpoint: 'abc', worktreeRevision: 'worktree:abc',
     executionRevision: 0, executionAttempts: [], access: { mode: 'writable', writable: true, kit: { name: 'web_app', version: '1.0' } },
-    journalRevision: 0, design: {}, continuations: [], clarity: { assessment: null, needsReassessment: false },
+    journalRevision: 0, design: {}, continuations: [], mustEditHandoffs: [], clarity: { assessment: null, needsReassessment: false },
     autoPanelManifests: { smart_questions: '{"version":1}' },
     autoPanelDefinitions: { smart_questions: { origin: 'retained', definitionRevision: 'pin', sourceChanged: true }, broken: { error: 'incompatible' } },
     autoPanelStates: { smart_questions: { phase: 'ready', target: 'revision-1', attempts: 2,

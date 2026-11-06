@@ -54,6 +54,20 @@ test('first Kit activation preserves its declared source when the catalog also c
   assert.match(await readFile(join(saved.kit.skills.find(skill => skill.name === 'research').resourceRoot, 'SKILL.md'), 'utf8'), /Research source 1\.1/)
 })
 
+test('mounted display follows current local title and content without rewriting the Kit', async t => {
+  const f = await fixture(t), selected = await f.service.editCurrent({ kind: 'kit', kit })
+  let local = await f.service.editCurrent({ kind: 'bundle', bundle: pin })
+  local = await f.service.rename({ id: local.id, expectedRevision: local.revision, title: { zh: '我的观察', en: 'My observations' } })
+  await f.service.saveFile({ id: local.id, expectedRevision: local.revision, path: 'SKILL.md', content: textOf(originalFiles, 'SKILL.md').replace('Record supplied observations without inventing missing facts.', 'Use the current library description.') })
+  const { repository } = await createStudioDraftPorts(f.options, 'instance')
+  const stored = await repository.read(selected.id)
+  const read = await f.service.read(selected.id)
+  assert.deepEqual(read.mounts[0].display.title, local.title)
+  assert.equal(read.mounts[0].display.description, 'Use the current library description.')
+  assert.deepEqual(await repository.read(selected.id), stored)
+  assert.deepEqual(read.mounts[0].bundle, stored.mounts[0].bundle)
+})
+
 test('an already captured current Kit uses its authoritative declaration without rewriting the saved source record', async t => {
   const f = await fixture(t), selected = await f.service.editCurrent({ kind: 'kit', kit })
   const { repository } = await createStudioDraftPorts(f.options, 'instance')

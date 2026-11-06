@@ -20,7 +20,7 @@ async function fixture(t) {
     else process.env.YUGOO_GIT_BACKEND = previousGitBackend
     await rm(root, { recursive: true, force: true })
   })
-  ctx.provide('systemPrompt', { section() {}, context() {} })
+  ctx.provide('systemPrompt', { variable() {}, section() {}, context() {} })
   ctx.provide('tools', { register() {} })
   ctx.provide('subprocess', {})
   const service = new DesignService(ctx, {

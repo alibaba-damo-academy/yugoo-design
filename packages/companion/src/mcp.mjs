@@ -194,7 +194,7 @@ export function createDesignMcp({ commandOptions = {}, loadAuthoringReference = 
   })
   register('design_read_review_policy', 'readReviewPolicy', 'Read the existing project GRA policy. A read never changes policy or dispatches reviews.', {}, true)
   register('design_update_review_policy', 'updateReviewPolicy', 'Update the existing project GRA policy ONLY after the user selects a change. For off, preserve existing interval fields from design_read_review_policy; manual design_recheck_reviews remains available. Never change policy merely because background execution is unavailable.', {
-    policy:z.object({mode:z.enum(['auto','continuous','off']),autoMergeWindowMs:z.number().int().min(0).max(3600000),continuousIntervalMs:z.number().int().min(60000).max(86400000).optional()}).strict(),
+    policy:z.object({depth:z.enum(['light','standard','thorough']).optional(),mode:z.enum(['auto','continuous','off']),autoMergeWindowMs:z.number().int().min(0).max(3600000),continuousIntervalMs:z.number().int().min(60000).max(86400000).optional()}).strict(),
   })
   register('design_recheck_reviews', 'recheckReviews', 'ONLY for an explicit human request to check/recheck Design. May run while GRA is off or already completed; does not change the user policy. Keep requestId and executionMode unchanged when retrying. Default background retains ordinary dispatch ownership and native binding. Use executionMode=foreground ONLY when the user chooses to occupy the main conversation for this batch: main reads each request and submits its result without nativeRun, not a new child or model client. Never call autonomously or silently fall back to foreground.', {
     requestId:z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,63}$/),

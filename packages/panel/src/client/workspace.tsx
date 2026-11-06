@@ -72,6 +72,8 @@ export interface DesignRuntime {
   openProjectFolder?: (path: string) => Promise<void>
   readReviewPolicy?: (sessionId: string) => Promise<import('../../../core/src/design-review-policy.ts').DesignReviewPolicy>
   updateReviewPolicy?: (sessionId: string, policy: import('../../../core/src/design-review-policy.ts').DesignReviewPolicy) => Promise<import('../../../core/src/design-review-policy.ts').DesignReviewPolicy>
+  /** Direct service-owned dispatch. Omit when the Host requires native Agent coordination. */
+  requestManualReview?: (sessionId: string, requestId: string) => Promise<import('../../../core/src/design-knowledge-status.ts').DesignOrchestrationResult>
   readGraph?: (sessionId: string) => Promise<{ content: string }>
   readKnowledgeStatus?: (sessionId: string) => Promise<import('../../../core/src/design-knowledge-status.ts').DesignKnowledgeStatusSnapshot | undefined>
   retryKnowledge?: (sessionId: string) => Promise<{ accepted: boolean }>

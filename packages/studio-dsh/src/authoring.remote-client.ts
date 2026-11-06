@@ -29,7 +29,9 @@ const instance = z.object({
   id: identity, revision, recordVersion: z.union([z.literal(1), z.literal(2)]).optional(),
   kind: z.enum(['kit', 'bundle']), title, source, kit: pin.optional(), bundle: pin.optional(),
   runtimeName: identity.optional(), sourceId: identity.optional(), baseSnapshot: identity,
-  mounts: z.array(mount), createdAt: text.optional(), deletedAt: text.optional(), bundlePath: text.optional(),
+  mounts: z.array(mount.extend({ display: z.object({
+    title: title.optional(), description: text.optional(), displayDescription: title.optional(),
+  }).strict().optional() }).strict()), createdAt: text.optional(), deletedAt: text.optional(), bundlePath: text.optional(),
   forkedFrom: z.object({ id: identity, revision, pin }).strict().optional(),
   migration: z.object({ fromRevision: revision, fromSnapshot: identity }).strict().optional(),
   refs: z.array(z.object({ id: identity, title }).strict()), requiresMigration: z.boolean().optional(),

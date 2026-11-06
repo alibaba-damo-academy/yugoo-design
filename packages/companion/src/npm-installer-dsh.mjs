@@ -223,11 +223,14 @@ function assertNativeOwner(record) {
       'Native install owner must start with an absent aggregate')
   } else {
     assert.equal(plan.action, 'update', 'A no-command observation is not a native owner')
-    assertOwnerReference(plan.previous)
-    assert.deepEqual(ownedState(plan.before), plan.previous.owned, 'Native update before-state differs from its owner')
+    assert.ok(plan.before.installed, 'Native update requires an observed existing installation')
+    if (plan.previous !== undefined) {
+      assertOwnerReference(plan.previous)
+      assert.deepEqual(ownedState(plan.before), plan.previous.owned, 'Native update before-state differs from its owner')
+      assert.notEqual(plan.previous.product.version, plan.product.version)
+      assert.equal(plan.previous.product.name, plan.product.name)
+    }
     assert.notEqual(plan.before.installed.version, receipt.readback.installed.version)
-    assert.notEqual(plan.previous.product.version, plan.product.version)
-    assert.equal(plan.previous.product.name, plan.product.name)
   }
 }
 
@@ -235,7 +238,7 @@ async function previousOwnership(path, state, input, product) {
   assert.ok(product?.releaseSelection, 'Owned update requires a release-bound acquired product')
   const selected = await readOwnedReceipt(path, state, input.profile, product)
   let anchor = selected
-  if (selected.plan.action !== 'install') {
+  if (selected.plan.action === 'already-registered' || selected.plan.previous !== undefined) {
     const reference = selected.plan.previous
     assertOwnerReference(reference)
     // Read exactly one native anchor. Never follow its own earlier reference.
@@ -345,13 +348,24 @@ async function snapshot(state, input) {
   assert.ok(Array.isArray(bundles) && bundles.every(x => typeof x === 'string') && new Set(bundles).size === bundles.length, 'Explicit unambiguous bundle list required')
   assert.ok(manifest.dsh.profile.patchReload === undefined || ['live', 'startup'].includes(manifest.dsh.profile.patchReload), 'Unknown profile patch lifecycle')
   const name = input.package.name, dependency = manifest.dependencies?.[name]
+  let registryRange = null
   for (const field of ['devDependencies', 'optionalDependencies', 'peerDependencies'])
     assert.ok(!Object.hasOwn(manifest[field] ?? {}, name), 'Foreign aggregate dependency conflict')
   if (dependency !== undefined) {
     if (input.aggregateDirectory) {
       assert.ok(typeof dependency === 'string' && dependency.startsWith('link:'), 'Existing aggregate must link to the retained installation')
       assert.equal(await realpath(resolve(dir, dependency.slice(5))), input.aggregateDirectory, 'Existing retained aggregate link conflict')
-    } else assert.equal(dependency, input.package.version, 'Existing selector conflict; replacement requires separate approval')
+    } else {
+      assert.ok(typeof dependency === 'string' && dependency.trim(), 'Existing registry dependency must be a version, range or tag')
+      if (!exactVersion.test(dependency)) {
+        // Loaded only during inspection of an installed registry dependency;
+        // CLI discovery and recovery remain usable before runtime acquisition.
+        const { validRange } = await import('semver')
+        registryRange = validRange(dependency)
+        assert.ok(registryRange || /^[A-Za-z][A-Za-z0-9._-]*$/u.test(dependency),
+          'Existing aggregate dependency is not a registry version, range or tag')
+      }
+    }
   }
   assert.ok(!bundles.includes(name) || dependency !== undefined, 'Foreign bundle registration conflict')
   const patches = {}
@@ -375,8 +389,19 @@ async function snapshot(state, input) {
     if (input.aggregateDirectory) assert.equal(await realpath(packageDir), input.aggregateDirectory, 'Resolved aggregate differs from retained installation')
     const bytes = await regular(join(packageDir, 'package.json')), value = JSON.parse(bytes)
     assert.equal(value.name, name, 'Resolved package identity conflict')
-    assert.equal(value.version, input.package.version, 'Installed version conflict; use replacement route')
     assert.ok(dependency !== undefined, 'Foreign installed aggregate conflict')
+    if (input.aggregateDirectory || exactVersion.test(dependency))
+      assert.equal(value.version, input.aggregateDirectory ? input.package.version : dependency,
+        'Installed version conflict; package differs from its declared current dependency')
+    else {
+      assert.ok(exactVersion.test(value.version), 'Installed version conflict; canonical package version required')
+      if (registryRange) {
+        const { satisfies } = await import('semver')
+        assert.ok(satisfies(value.version, registryRange), 'Installed version conflict; package differs from its declared current range')
+      }
+      // A tag records the user's source choice, not a promise that its current
+      // remote value still equals this already installed version.
+    }
     const patch = value.dsh?.bundle?.patch
     assert.ok(typeof patch === 'string' && !isAbsolute(patch), 'Aggregate must declare a relative dsh.bundle.patch')
     const patchPath = resolve(packageDir, patch)
@@ -410,7 +435,7 @@ export async function planDshInstallation(options) {
     // Official profiles contain pnpm-workspace.yaml; explicitly target their root.
     // The official CLI forwards this form to both its manifest lookup and pnpm add.
     args: [...state.pins.desktopHostManifest ? ['--expose-internals'] : [], state.pins.cli.path, 'plugin', '--profile', input.profile, 'add', '--workspace-root', '--save-exact', input.aggregateDirectory ? 'link:' + input.aggregateDirectory : input.aggregateSelector, `--registry=${input.registry}`],
-    action: previous && previous.input.package.version !== input.package.version ? 'update'
+    action: before.installed && before.installed.version !== input.package.version ? 'update'
       : before.installed && before.registered ? 'already-registered' : 'install',
     runtimeMounted: false, bundleCycleVerified: false, releaseValidated: false }
   return { ...plan, planSha256: digest(plan) }
@@ -420,6 +445,8 @@ export async function planDshInstallation(options) {
 export async function inspectDshInstallation(options) {
   const state = await protocol(options.adapter), input = await selectorInput(options)
   const current = await snapshot(state, input)
+  if (current.installed) assert.equal(current.installed.version, input.package.version,
+    'Installed version conflict; native operation did not produce the selected target')
   let configurationParsed = false, composedEntriesSha256 = null
   if (current.installed && current.registered) {
     const manifest = state.api.readProfileManifest('dsh', current.dir)
@@ -572,7 +599,7 @@ export async function applyDshInstallation(plan, { adapter, signal, timeoutMs = 
     configurationChanges = await preservedConfigPins(plan.before, readback, workspaceBefore)
     userConfigurationPreserved = readback.foreignSha256 === plan.before.foreignSha256
       && digest(readback.patches) === digest(plan.before.patches) && configurationChanges.preserved
-      && (plan.action !== 'update' || digest(readback.bundles) === digest(plan.before.bundles))
+      && (!plan.before.registered || plan.action !== 'update' || digest(readback.bundles) === digest(plan.before.bundles))
   } catch (error) { readbackError = error.message }
   const succeeded = exitCode === 0 && diagnosticError === null && userConfigurationPreserved && readback?.configurationParsed === true
   const reasons = []
@@ -591,7 +618,8 @@ export async function applyDshInstallation(plan, { adapter, signal, timeoutMs = 
       + 'Do not reapply this saved plan or use a failed receipt as previous ownership. DSH has no installer recover/adopt route; '
       + 'a restart or an already-registered observation cannot repair failed transaction ownership. Keep existing projects and configuration.' }
   const ownershipEstablished = Boolean(succeeded && plan.product?.releaseSelection && (plan.previous
-    || plan.action === 'install' && !plan.before.installed && !plan.before.registered && execution.state === 'completed'))
+    || execution.state === 'completed' && (plan.action === 'update'
+      || plan.action === 'install' && !plan.before.installed && !plan.before.registered)))
   return { schemaVersion: 2, kind: 'dsh-installation', host: 'dsh', route: 'official-dsh-bundle',
     product: plan.product, planSnapshot: plan, planSha256: plan.planSha256, operation: plan.action,
     ownershipEstablished, source: { expected: expectedSource(plan), observed: readback === null ? null : ownedState(readback) },

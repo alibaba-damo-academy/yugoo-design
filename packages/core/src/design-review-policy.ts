@@ -3,10 +3,13 @@ import { mkdir, readFile, rename, writeFile, rm } from 'node:fs/promises'
 import { join, relative, sep } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { resolveConfinedFilePath } from './confined-fs.ts'
+import { designReviewDepth, type DesignReviewDepth } from './design-review-depth.ts'
 
 export type DesignReviewMode = 'auto' | 'continuous' | 'every-publication' | 'off'
 export interface DesignReviewPolicy {
   readonly mode: DesignReviewMode
+  /** Missing in an existing project means the standard review depth. */
+  readonly depth?: DesignReviewDepth
   readonly autoMergeWindowMs: number
   readonly continuousIntervalMs?: number
 }
@@ -17,13 +20,14 @@ export const DEFAULT_DESIGN_REVIEW_POLICY: DesignReviewPolicy = Object.freeze({
 export function parseDesignReviewPolicy(value: unknown): DesignReviewPolicy {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid project GRA policy')
   const record = value as Record<string, unknown>
-  if (Object.keys(record).some(key => !['mode', 'autoMergeWindowMs', 'continuousIntervalMs'].includes(key))) throw new Error('Unknown GRA policy field')
+  if (Object.keys(record).some(key => !['mode', 'depth', 'autoMergeWindowMs', 'continuousIntervalMs'].includes(key))) throw new Error('Unknown GRA policy field')
   if (!['auto', 'continuous', 'every-publication', 'off'].includes(String(record.mode))) throw new Error('Invalid GRA mode')
   if (!Number.isSafeInteger(record.autoMergeWindowMs) || (record.autoMergeWindowMs as number) < 0
     || (record.autoMergeWindowMs as number) > 3_600_000) throw new Error('GRA auto merge window must be 0..3600000 milliseconds')
   if (record.continuousIntervalMs !== undefined && (!Number.isSafeInteger(record.continuousIntervalMs)
     || (record.continuousIntervalMs as number) < 60_000 || (record.continuousIntervalMs as number) > 86_400_000)) throw new Error('GRA continuous interval must be 1..1440 minutes')
   return Object.freeze({ mode: record.mode as DesignReviewMode, autoMergeWindowMs: record.autoMergeWindowMs as number,
+    ...(record.depth === undefined ? {} : { depth: designReviewDepth(record.depth) }),
     ...(record.continuousIntervalMs === undefined ? {} : { continuousIntervalMs: record.continuousIntervalMs as number }) })
 }
 

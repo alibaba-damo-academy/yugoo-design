@@ -36,15 +36,13 @@ You need **Node.js `>=22.19.0`** and an Agent Host with a configured model. The 
 
 The released npm product package and CLI are both `yugoo-design`. Check the [release status](docs/wiki/preview-status.md#current-release-and-use) before installation; stop if the required version is unavailable. The steps below describe installation and first use.
 
-1. **Install the plugin.** Copy this prompt into your current Agent host. It follows the [installation guide](packages/companion/HOSTS.md#default-prompt-any-supported-host) to check the environment, install the plugin and guide any required activation.
+1. **Install the plugin.** Copy this [universal prompt](packages/companion/HOSTS.md#default-prompt-any-supported-host) into your current Agent host. It acquires the npm product package, then connects and activates it in that host.
 
    ```text
-   Install or update Yugoo Design in my current Agent host from the official npm package yugoo-design.
-   First read the official guide and follow the steps for this host:
-   https://github.com/alibaba-damo-academy/yugoo-design/blob/main/packages/companion/HOSTS.md#agent-led-installation-and-updates
-   Use any version I explicitly request. Otherwise, resolve npm latest once to its exact published stable version; if latest points to a prerelease, report it and stop instead of choosing another version. Verify its integrity; reuse a matching installation or acquire the new version as instructed. The GitHub link is public documentation and requires no login, repository clone or source build.
-   Check the environment, install, complete native import or activation, and verify it while preserving my projects, settings and installation receipts. Give me the necessary steps for authorization, model downloads, plugin activation or a host restart, then continue verification after I complete them.
-   Finally report the acquired package version, the version actually loaded by the host and capabilities not ready. Give me this host's yugoo entry and one copyable request to create my first Design Project with the Web App Kit.
+   Install or update Yugoo Design in my current Agent host.
+   Reuse a matching installation, or acquire the npm package in a persistent directory. Use my requested version or resolve latest to an exact stable release; if latest is a prerelease, report and stop. Check its prerequisites and integrity, prepare missing Node/pnpm, then run pnpm add --save-exact yugoo-design@<resolved-version>.
+   Read node_modules/yugoo-design/README.md and run pnpm exec yugoo-design --help. Identify this host and use its install --host route. Discover local inputs and complete registration/import and activation. For required manual actions, give the exact UI location and generated file/configuration, then verify the yugoo entry and tools.
+   Preserve projects, settings and receipts. Consult GitHub only for a specific question unanswered by the packaged help; no clone or source build. Report acquired/loaded versions and remaining setup, then provide a first Web App Kit project request.
    ```
 
    Choose the host you actually use. DSH places conversation and Design Panels in one workspace; Codex Desktop uses its native plugin entry on macOS arm64. Installation steps, panel presentation and background review support differ across Codex CLI, Claude Code CLI, Qoder CLI, QwenWork and WorkBuddy; see the [host guide](docs/wiki/hosts.en.md).

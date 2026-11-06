@@ -249,97 +249,39 @@ the user. This does not auto-accept GRA suggestions or start another review loop
 
 ## Available Bundles
 
-The following catalog is retained in the source file for runtime discovery.
-`kit.yaml` owns the exact Bundle mounts; authoring tools maintain this catalog
-as their readable projection. The sections above are the editable domain method.
-Its entries describe capabilities, not an execution sequence.
+The ordered catalog below retains runtime membership; `kit.yaml` owns exact
+mounts. Capability descriptions come from the mounted Bundles' `SKILL.md`
+frontmatter. The sections above remain the editable domain method; catalog
+order is not an execution sequence.
 
 <design_skills>
-
-This catalog contains the installed Web App Bundles in this Kit
-revision. Choose only from these names; `run_design_skill` resolves the selected
-Bundle and supplies its `SKILL.md` internally to the focused execution runtime.
-
 ## smart_questions
-
-Maintain the coherent product background (users, needs, value, scenarios and
-boundaries) and relevant evolving context not owned by another facet. Use
-editable questions to obtain missing user evidence, not as a mandatory interview.
 
 ## research
 
-Research external facts, current products, industry practices, regulations,
-and other evidence that could materially change a design decision.
-
 ## function_modules
-
-Organize the established product intent into a user-facing capability map with
-clear module and feature boundaries.
 
 ## ai_agent_capabilities
 
-Design user-facing AI capabilities as grouped cards with a selected capability's
-collaborator graph and same-source details. Include prompts, skills, tools, MCP,
-memory and supporting harnesses only when necessary; this slice does not execute
-tools, configure a host or replace ordinary function modules.
-
 ## flow_design
-
-Design important cross-role or cross-module journeys, including ordered steps,
-handoffs, branches, approvals, and exception paths.
 
 ## design_style
 
-Define the visual language, design tokens, information density, component
-character, and a representative product-specific interface.
-
 ## business_data
-
-Define the durable business things the product keeps, the information recorded
-for each one, any user-visible states, and grounded relationships between
-object types, including subtype inheritance. This is the shared owner for
-object definitions and relationships, not database or workflow design.
 
 ## business_rules
 
-Define testable preconditions, validations, calculations, qualifications,
-thresholds, and exception rules.
-
 ## role_access
-
-Define role assignment and concrete allow or deny permission decisions without
-duplicating personas, workflow responsibilities, or page navigation.
 
 ## integration_design
 
-Design each required system integration as a new Plugin connection, including
-its URL, secrets, usage prompt, and product-side success, failure, and
-recovery rules.
-
 ## notification_design
-
-Design event-driven product notifications: trigger, recipients, human delivery
-channels, useful message intent, and any established action destination.
 
 ## quality_acceptance
 
-Define observable functional acceptance scenarios and measurable quality
-targets for established product behavior.
-
 ## page_design
-
-Design the product's page map, page-level content and interactions, navigation
-connections, and runnable local page prototypes from established design facts.
 
 ## web_app_prd_assembly
 
-Generate or target-edit one development-ready product requirements document
-from current Web App design evidence and user material as canonical HTML.
-
 ## whiteboard
-
-Explore and explain ideas with topic-based editable drawings, text and connectors.
-The user and Agent revise the same scene files. A freeform sketch does not replace
-formal process, page or other design artifacts when those are explicitly requested.
-
 </design_skills>

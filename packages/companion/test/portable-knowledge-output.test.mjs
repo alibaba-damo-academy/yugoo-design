@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { packageKnowledge } from '../package-knowledge.mjs'
 import { readOfficialDshJsonInput } from '../../../scripts/official-dsh-json-input.mjs'
+import { selectCompanionBuildInputs } from '../../../scripts/build-companion-npm-candidate.mjs'
 
 const dependencies = () => ({ '@ladybugdb/wasm-core': 'npm:@fixture-design-release/ladybug-wasm-core@0.19.1-walfix.1', '@huggingface/transformers': '3.8.1', 'onnxruntime-common': '1.21.0', undici: '8.10.2' })
 async function setup(t) {
@@ -73,14 +74,39 @@ test('portable product closure preserves template trash and installer YAML pins 
   for (const yaml of [undefined, null, 'latest', '^' + expected.yaml, '0.0.0']) {
     await assert.rejects(packageKnowledge(undefined, { ...options, runtimeDependencies: { ...expected, yaml } }), /Unsupported portable dependency version: yaml/)
   }
+  for (const semver of [undefined, null, 'latest', '^' + expected.semver, '0.0.0']) {
+    await assert.rejects(packageKnowledge(undefined, { ...options, runtimeDependencies: { ...expected, semver } }), /Unsupported portable dependency version: semver/)
+  }
   assert.equal(calls.length, 3, 'invalid declarations stop before compilation')
 })
 
-test('normal portable compilation bundles the private diagnostic helper inside the existing assets', async t => {
+test('real candidate dependency selection reaches portable compilation without weakening closure validation', async t => {
+  const { options, calls } = await setup(t)
+  const source = JSON.parse(await readFile(new URL('../../../release/product-package-template.json', import.meta.url)))
+  const { template } = selectCompanionBuildInputs(source, { candidate: { fixture: false } })
+  const runtimeDependencies = template.dependencies
+  const result = await packageKnowledge(undefined, { ...options, runtimeDependencies })
+  assert.deepEqual(result.manifest.runtimeDependencies, runtimeDependencies)
+  assert.equal(calls.length, 3)
+  const { sharp: _sharp, ...partial } = runtimeDependencies
+  for (const [invalid, error] of [
+    [partial, /Explicit portable runtime dependency set required/],
+    [{ ...runtimeDependencies, unknown: '1.0.0' }, /Explicit portable runtime dependency set required/],
+    [{ ...runtimeDependencies, sharp: '^' + runtimeDependencies.sharp }, /Unsupported portable dependency version: sharp/],
+    [{ ...runtimeDependencies, 'onnxruntime-node': 'latest' }, /Unsupported portable dependency version: onnxruntime-node/],
+    [{ ...runtimeDependencies, 'detect-libc': '0.0.0' }, /Unsupported portable dependency version: detect-libc/],
+  ]) {
+    await assert.rejects(packageKnowledge(undefined, { ...options, runtimeDependencies: invalid }), error)
+  }
+  assert.equal(calls.length, 3, 'invalid prebuilt closures stop before compilation')
+})
+
+test('normal portable compilation consumes the real candidate closure and bundles the private diagnostic helper', async t => {
   const { checkEmitted } = await import('../../../scripts/emitted-loader-check.mjs')
   const root = await mkdtemp(join(await realpath(tmpdir()), 'portable diagnostic build '))
   t.after(() => rm(root, { recursive: true, force: true }))
-  const runtimeDependencies = { ...dependencies(), '@ladybugdb/wasm-core': '0.21.1' }
+  const source = JSON.parse(await readFile(new URL('../../../release/product-package-template.json', import.meta.url)))
+  const runtimeDependencies = selectCompanionBuildInputs(source, { candidate: { fixture: false } }).template.dependencies
   const result = await packageKnowledge(undefined, { mode: 'portable', outputDirectory: join(root, 'knowledge'), runtimeDependencies })
   assert.equal(result.manifest.buildAdapter, 'tsdown')
   assert.deepEqual(Object.keys(result.manifest.assets).sort(), ['cli-lifecycle.mjs', 'embedding-worker.js', 'embedding-worker.mjs', 'package.json', 'runtime.mjs'].sort())

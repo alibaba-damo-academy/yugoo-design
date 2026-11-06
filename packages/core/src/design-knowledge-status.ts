@@ -184,9 +184,9 @@ export interface DesignOrchestrationTarget {
 }
 
 /**
- * Structured outcome of every Agent-initiated orchestration action. The lower
- * layer never loops or retries on its own; an explicit Agent request is the
- * only re-entry after failure, and it always learns exactly what happened.
+ * Structured outcome of every explicitly requested orchestration action. The
+ * lower layer never loops or retries on its own; an explicit caller request is
+ * the only re-entry after failure, and reports exactly what happened.
  */
 export type DesignOrchestrationResult =
   | { readonly outcome: 'accepted'; readonly reason: string; readonly target: DesignOrchestrationTarget; readonly profiles?: readonly string[] }

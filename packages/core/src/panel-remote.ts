@@ -22,7 +22,7 @@ import type DesignService from './design-service.ts'
 import { DesignGraphReadRaceError } from './design-service.ts'
 import type { DesignReviewPolicy } from './design-review-policy.ts'
 import type { DesignAdvisoryRuntimeStatus } from './advisory-runtime-status.ts'
-import type { DesignKnowledgeStatusSnapshot } from './design-knowledge-status.ts'
+import type { DesignKnowledgeStatusSnapshot, DesignOrchestrationResult } from './design-knowledge-status.ts'
 import { KnowledgeReadProgress } from './knowledge-read-progress.ts'
 import { readDesignGraph } from './design-graph.ts'
 import { designOntologyCoverage } from './design-ontology.ts'
@@ -581,6 +581,11 @@ export class DesignPanelRemote extends TypertRemoteService {
 
   async updateReviewPolicy(agent: Agent, policy: unknown, signal: AbortSignal): Promise<DesignReviewPolicy> {
     return this.design.updateReviewPolicy(agent, policy, signal)
+  }
+
+  /** Explicit Panel command; admission and replay remain owned by DesignService. */
+  async requestManualReview(agent: Agent, requestId: string, signal: AbortSignal): Promise<DesignOrchestrationResult> {
+    return this.design.requestManualReviews(agent, requestId, undefined, signal)
   }
 
   async readWorkspace(
@@ -1355,6 +1360,11 @@ Remote(DesignPanelRemote.prototype.updateReviewPolicy, {
   kind: 'method', name: 'updateReviewPolicy', static: false, private: false,
   addInitializer(initializer: (this: DesignPanelRemote) => void): void { initializer.call(Object.create(DesignPanelRemote.prototype) as DesignPanelRemote) },
 } as ClassMethodDecoratorContext<DesignPanelRemote, DesignPanelRemote['updateReviewPolicy']>)
+
+Remote(DesignPanelRemote.prototype.requestManualReview, {
+  kind: 'method', name: 'requestManualReview', static: false, private: false,
+  addInitializer(initializer: (this: DesignPanelRemote) => void): void { initializer.call(Object.create(DesignPanelRemote.prototype) as DesignPanelRemote) },
+} as ClassMethodDecoratorContext<DesignPanelRemote, DesignPanelRemote['requestManualReview']>)
 
 Remote(DesignPanelRemote.prototype.readGraph, {
   kind: 'method', name: 'readGraph', static: false, private: false,

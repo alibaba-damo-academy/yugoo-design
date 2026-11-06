@@ -7,6 +7,7 @@ import { knowledgeReviewSchema, knowledgeReviewGuidance, splitKnowledgeReviewRes
 import type { CompiledDesignRelationVocabulary } from './design-relation-vocabulary.ts'
 import { KNOWLEDGE_AGENTIC_GUIDANCE } from './design-knowledge-query.ts'
 import { publishDshDesignAdvisory, type AdvisoryPublishPort } from './dsh-advisory.ts'
+import { designReviewDepth, renderDesignReviewDepth, type DesignReviewDepth, type DesignReviewTarget } from './design-review-depth.ts'
 import {
   officialAdvisoryProfile,
   type OfficialAdvisoryInput,
@@ -32,6 +33,7 @@ export interface AdvisorySubagentPort {
     readonly knowledgeContext?: string
     /** Opt in to complete small original facts from the same immutable reader. */
     readonly includeSmallSnapshot?: boolean
+    readonly priorityTargets?: readonly DesignReviewTarget[]
   }): Promise<{
     /** Actual native child Session id, usable as assessment provenance. */
     readonly id: Agent['id']
@@ -40,7 +42,7 @@ export interface AdvisorySubagentPort {
   }>
 }
 
-/** One attached foreground Bundle whose incomplete output is outside a review run. */
+/** Observed foreground work; only its saved evidence belongs to a review run. */
 export interface ForegroundDesignWork {
   readonly skillName: string
   readonly brief?: string
@@ -51,6 +53,8 @@ type DshOutputSchema = ObjectJsonSchema
 
 /** One pinned official advisory invocation. */
 export interface DshAdvisoryRunRequest {
+  readonly reviewDepth?: DesignReviewDepth
+  readonly latestChangedSkill?: string
   readonly design: Pick<AdvisoryPublishPort, 'publishAdvisory'>
   readonly parent: Agent
   readonly provider: string
@@ -67,7 +71,7 @@ export interface DshAdvisoryRunRequest {
   readonly handlingMemory?: string
   /** Exact selected Kit vocabulary used by both the Agent schema and writeback. */
   readonly relationVocabulary?: CompiledDesignRelationVocabulary
-  /** Transient attached work to exclude from this review; it is not Design evidence. */
+  /** Transient observed targets, not an exclusion list or Design evidence. */
   readonly foregroundDesignWork?: ForegroundDesignWork
   readonly signal: AbortSignal
   /**
@@ -113,6 +117,7 @@ export async function analyzeDshDesignAdvisory(
   subagents: AdvisorySubagentPort,
 ): Promise<DshAdvisoryAnalysisOutcome> {
   const profile = officialAdvisoryProfile(request.profile)
+  const depth = designReviewDepth(request.reviewDepth)
   const input = profile.parseInput(request.input)
   const parseOutput = (value: unknown) => {
     if (request.knowledgeContext && value !== null && typeof value === 'object' && !Array.isArray(value)) {
@@ -123,6 +128,10 @@ export async function analyzeDshDesignAdvisory(
     return profile.parseOutput(value)
   }
   const run = await subagents.start(request.provider, {
+    priorityTargets: [
+      ...(request.latestChangedSkill ? [{ skill: request.latestChangedSkill }] : []),
+      ...(request.foregroundDesignWork ? [{ skill: request.foregroundDesignWork.skillName }] : []),
+    ],
     reviewCommit: request.reviewCommit,
     ...(request.knowledgeContext === undefined ? {} : { knowledgeContext: request.knowledgeContext }),
     label: `Design ${request.profile}`,
@@ -137,6 +146,7 @@ export async function analyzeDshDesignAdvisory(
       type: 'text',
       text: [
         profile.prompt,
+        renderDesignReviewDepth(depth),
         request.handlingMemory ?? '',
         'Files under design_files/_experiences/ are derived demonstrations, not authoritative design evidence. Do not use their assumptions or rendered content as new requirements or findings; inspect the original owning Bundle files instead.',
         '',
@@ -155,9 +165,9 @@ export async function analyzeDshDesignAdvisory(
           'Use design_query_knowledge for additional pages, exact endpoint IDs or text searches. Always pass project and checkpoint from this context, and pass knowledgeRevision as revision. Keep that revision for every read; do not switch to a newer graph mid-review. This tool is read-only; output validated graph observations through knowledgeRelations, never a write tool.'] : []),
         ...(request.foregroundDesignWork === undefined ? [] : [
           '',
-          'Foreground Design work (transient exclusion, not Design evidence):',
+          'Observed foreground Design work (not an exclusion list or Design evidence):',
           JSON.stringify(request.foregroundDesignWork),
-          'This only explains what is being produced concurrently. Do not exclude that entire Bundle from the published review commit: review all content present in the commit, while ignoring any newer worktree content.',
+          'This only explains what is being produced concurrently. Investigate relevant saved evidence in the published commit according to the selected depth, while ignoring newer worktree content. Do not skip an entire Bundle because an Agent is active, or treat unfinished work as missing completed output.',
         ]),
       ].join('\n'),
     }],

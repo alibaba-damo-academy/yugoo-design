@@ -97,7 +97,9 @@ function MountEditorSession({ client, record, locale, onSaved, onActions, onDirt
         <header className="ygd-studio-mounts-heading"><h2>{zh ? '已挂载' : 'Mounted Bundles'}</h2><span>{selected.size}</span></header>
         <div className="ygd-studio-mounts-card-list">
           {[...selected].map(key => {
-            const bundle = choices.get(key) ?? record.mounts.find(mount => keyOf(mount.bundle) === key)?.bundle ?? { name: key.split('@')[0], version: key.split('@')[1] }
+            const mounted = record.mounts.find(mount => keyOf(mount.bundle) === key)
+            const bundle = mounted?.display ? { ...mounted.bundle, ...mounted.display }
+              : choices.get(key) ?? mounted?.bundle ?? { name: key.split('@')[0], version: key.split('@')[1] }
             return <BundleCard key={key} bundle={bundle} locale={locale}>
               {!choices.has(key) && <StudioFeedback feedbackId={`source:${key}`} layout="inline" tone="info" locale={locale}
                 title={retained(key) ? (zh ? '引用随套件保留的来源' : 'References source retained with this Kit') : (zh ? '来源暂不可用' : 'Source unavailable')} />}

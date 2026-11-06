@@ -1,7 +1,7 @@
 ---
 name: quality_acceptance
 description: |-
-  - **Capability**: define the small set of observable requirements that tell users and the delivery team when established product behavior and material quality are good enough to accept.
+  - **Capability**: define the small set of observable requirements that tell users and the delivery team when established product behavior and material quality are good enough to accept. Use observable functional scenarios and grounded, measurable targets for material quality concerns.
   - **Resolves**: T gaps where an important function, rule, flow, page, or integration has no concrete passing result, or a material quality expectation remains vague.
   - **Candidate when**: the user asks for acceptance criteria, quality requirements, non-functional requirements, or a clear definition of done for product behavior.
   - **Do not infer**: business rules, missing product behavior, test code, release governance, project plans, risk registers, or a generic enterprise NFR checklist do not belong here.

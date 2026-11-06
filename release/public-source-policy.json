@@ -177,6 +177,24 @@
     }
   ],
   "rules": [
+    {
+      "kind": "file",
+      "path": "packages/companion/test/review-starting-points.test.mjs",
+      "action": "include",
+      "reason": "Synthetic prepared-review regression for pinned investigation locators, unavailable optional hints and unchanged manual-request replay; uses the built shared Core contract without private profiles, model calls or a native acceptance claim."
+    },
+    {
+      "kind": "file",
+      "path": "packages/panel/src/client/workspace-read-boundary.tsx",
+      "action": "include",
+      "reason": "Shared first-read loading/error/retry boundary uses existing Panel feedback and preserves the mounted workspace and drafts on later refresh failures; no new save or Host authority."
+    },
+    {
+      "kind": "file",
+      "path": "packages/panel/test/workspace-read-boundary.test.mjs",
+      "action": "include",
+      "reason": "Synthetic bilingual first-read, retry, confirmed-empty and draft-retention regressions; no private profile, model calls or native Host acceptance claim."
+    },
     {"kind": "file", "path": "packages/panel/test/graph-controls-localization.test.mjs", "action": "include", "reason": "Synthetic bilingual camera-control regression preserving actions and canvas theme; no live browser profile, credentials or canonical project writes."},
     {"kind": "file", "path": "packages/panel/test/graph-display-label.test.mjs", "action": "include", "reason": "Synthetic shared graph-label formatting regression preserving original relation labels, evidence and identities across display projections."},
     {"kind": "file", "path": "packages/panel/test/graph-panel-locale.test.mjs", "action": "include", "reason": "Synthetic graph locale, polling recovery and retained-selection regression; unchanged topology inputs are checked without claiming real canvas or native Host acceptance."},
@@ -9292,6 +9310,17 @@
       "action": "include",
       "reason": "Independent format-3 synthetic migration-source identity and Kit metadata; no registered project or execution result is claimed."
     },
+    {"kind": "file", "path": "scripts/prebuilt-embedding-runtime.mjs", "action": "include", "reason": "Shared release-owned upstream prebuilt Node/CPU runtime assembly and regression, retaining exact official registry identities and upstream license/notice provenance; no private workstation paths or runtime state."},
+    {"kind": "file", "path": "scripts/prebuilt-embedding-runtime.test.mjs", "action": "include", "reason": "Shared release-owned upstream prebuilt Node/CPU runtime assembly and regression, retaining exact official registry identities and upstream license/notice provenance; no private workstation paths or runtime state."},
+    {"kind": "file", "path": "third-party/companion/prebuilt-embedding/README.md", "action": "include", "reason": "Shared release-owned upstream prebuilt Node/CPU runtime assembly and regression, retaining exact official registry identities and upstream license/notice provenance; no private workstation paths or runtime state."},
+    {"kind": "file", "path": "third-party/companion/prebuilt-embedding/onnxruntime-1.21.0.LICENSE", "action": "include", "reason": "Shared release-owned upstream prebuilt Node/CPU runtime assembly and regression, retaining exact official registry identities and upstream license/notice provenance; no private workstation paths or runtime state."},
+    {"kind": "file", "path": "third-party/companion/prebuilt-embedding/onnxruntime-1.21.0.ThirdPartyNotices.txt", "action": "include", "reason": "Shared release-owned upstream prebuilt Node/CPU runtime assembly and regression, retaining exact official registry identities and upstream license/notice provenance; no private workstation paths or runtime state."},
+    {"kind": "file", "path": "packages/companion/test/conversation-shortcut-error.test.mjs", "action": "include", "reason": "Focused source UI locale, draft-retention and feedback regressions using shared component sources; no private workstation state."},
+    {"kind": "file", "path": "packages/companion/test/locale-presentation.test.mjs", "action": "include", "reason": "Focused source UI locale, draft-retention and feedback regressions using shared component sources; no private workstation state."},
+    {"kind": "file", "path": "packages/companion/test/source-ui-tsconfig.json", "action": "include", "reason": "Focused source UI locale, draft-retention and feedback regressions using shared component sources; no private workstation state."},
+    {"kind": "file", "path": "packages/companion/test/notification-feedback-owner.test.mjs", "action": "include", "reason": "Behavior regressions for ordinary chat and saved-event feedback ownership; no private runtime evidence."},
+    {"kind": "file", "path": "packages/companion/test/continuation-owner.test.mjs", "action": "include", "reason": "Regression for retired draft-observation references and the existing shared workspace continuation guards; no private runtime evidence."},
+    {"kind": "file", "path": "packages/core/src/design-review-depth.ts", "action": "include", "reason": "Shared user-selected GRA review depth and investigation guidance for native DSH and Companion; no user data or independent model client."},
     {"kind": "file", "path": "packages/skills-web-app/build.mjs", "action": "include", "reason": "Package-owned complete Kit/Bundle build and shared three independent Flow CLI closure; no runtime installer or model client."},
     {"kind": "file", "path": "packages/skills-web-app/test/portable-distribution.mjs", "action": "include", "reason": "Temporary actual npm pack and full Bundle relocation regression with source-resource parity, portable CLI execution and original material hashes; no user project edits."}
   ]

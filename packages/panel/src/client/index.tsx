@@ -22,6 +22,7 @@ import './owned-styles.ts'
 import { DesignWorkspace, ReviewPolicyControl, type DesignRuntime, type DesignWorkspaceControls } from './workspace.tsx'
 import { equalWorkspaceEmission } from './types.ts'
 import { createWorkspacePollReader } from './workspace-poll-reader.ts'
+import { WorkspaceReadBoundary } from './workspace-read-boundary.tsx'
 import type { WorkspacePollResult } from '../../../core/src/workspace-poll.ts'
 import {
   DesignContinuationBar,
@@ -549,6 +550,7 @@ function mountPanelShell(ctx: Context): void {
         retainAutoPanel(id: string, request: { projectId: string; skill: string; sourceRevision: string; definitionRevision: string }): Promise<RemoteResult<{ retained: true }>>
         readReviewPolicy(id: string): Promise<RemoteResult<import('../../../core/src/design-review-policy.ts').DesignReviewPolicy>>
         updateReviewPolicy(id: string, policy: import('../../../core/src/design-review-policy.ts').DesignReviewPolicy): Promise<RemoteResult<import('../../../core/src/design-review-policy.ts').DesignReviewPolicy>>
+        requestManualReview(id: string, requestId: string): Promise<RemoteResult<import('../../../core/src/design-knowledge-status.ts').DesignOrchestrationResult>>
         savePanel(
           id: string,
           skill: string,
@@ -588,6 +590,7 @@ function mountPanelShell(ctx: Context): void {
     nativePanels,
     readReviewPolicy: async id => unwrap('designPanel/readReviewPolicy', await face.remote.designPanel.readReviewPolicy(id)),
     updateReviewPolicy: async (id, policy) => unwrap('designPanel/updateReviewPolicy', await face.remote.designPanel.updateReviewPolicy(id, policy)),
+    requestManualReview: async (id, requestId) => unwrap('designPanel/requestManualReview', await face.remote.designPanel.requestManualReview(id, requestId)),
     sessions: { currentProvideInfo: panelSession.source },
     readWorkspace: createWorkspacePollReader(async (sessionId, knownRevision) => unwrap(
       'designPanel/pollWorkspace',
@@ -1175,25 +1178,6 @@ function DockContent({ visible }: { readonly visible: boolean }): ReactElement |
     '--dsh-design-dock-top': `${geometry.top}px`,
     '--dsh-host-primary-header-height': `${geometry.headerHeight}px`,
   } as CSSProperties
-  if (workspace === undefined && workspaceFailure !== undefined) {
-    const isZh = currentLanguage() === 'zh_CN'
-    return (
-      <div className='dsh-design-dock dsh-design-root' style={dockStyle}>
-        <style>{DESIGN_TW_CSS}</style>
-        <style>{DOCK_CSS}</style>
-        <div className='flex min-h-0 flex-1 items-center justify-center p-8'>
-          <div role='alert' className='max-w-xl rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-900 shadow-sm'>
-            <div className='mb-2 text-base font-semibold'>{isZh ? '设计面板加载失败' : 'Design Panel failed to load'}</div>
-            <div className='break-words opacity-80'>{workspaceFailure}</div>
-            <button type='button' className='mt-4 rounded-lg border border-red-300 bg-white px-3 py-2 font-medium' onClick={() => {
-              if (info.sessionId !== undefined) refreshPanelWorkspace(info.sessionId)
-            }}>{isZh ? '重试' : 'Retry'}</button>
-          </div>
-        </div>
-        <DockResizeHandle />
-      </div>
-    )
-  }
   return (
     <div className='dsh-design-dock dsh-design-root' style={dockStyle}>
       {/* DESIGN_TW_CSS first: its scoped preflight zeroes border-width under
@@ -1204,33 +1188,37 @@ function DockContent({ visible }: { readonly visible: boolean }): ReactElement |
       <style>{DOCK_CSS}</style>
       <style>{ICON_GLYPH_CSS}</style>
       <div className='flex min-h-0 flex-1 flex-col'>
-        <div className='min-h-0 flex-1'>
-          <DesignWorkspace
-            experienceAvailable
-            design={workspace?.design}
-            projectId={workspace?.projectId ?? null}
-            checkpoint={workspace?.checkpoint ?? null}
-            publicationError={workspace?.publicationError}
-            worktreeRevision={workspace?.worktreeRevision ?? null}
-            artifactFiles={workspace?.artifactFiles}
-            autoPanelManifests={workspace?.autoPanelManifests}
-            autoPanelDefinitions={workspace?.autoPanelDefinitions}
-            autoPanelStates={workspace?.autoPanelStates}
-            experienceFiles={workspace?.experienceFiles}
-            executionAttempts={workspace?.executionAttempts ?? []}
-            activeMainBundles={workspace?.activeMainBundles}
-            mustEditHandoffs={workspace?.mustEditHandoffs}
-            access={workspace?.access ?? { mode: 'unbound', writable: false }}
-            clarity={workspace?.clarity}
-            projectName={workspace?.projectName}
-            projectPath={workspace?.projectPath}
-            sessionId={info.sessionId}
-            runtime={runtime}
-            dockOpen={visible}
-            focus={rail.getSnapshot().focus}
-            onClose={() => { closeDesignDock(info.sessionId) }}
-          />
-        </div>
+        <WorkspaceReadBoundary loaded={workspace !== undefined} failure={workspaceFailure} onRetry={() => {
+          if (info.sessionId !== undefined) refreshPanelWorkspace(info.sessionId)
+        }}>
+          <div className='min-h-0 flex-1'>
+            <DesignWorkspace
+              experienceAvailable
+              design={workspace?.design}
+              projectId={workspace?.projectId ?? null}
+              checkpoint={workspace?.checkpoint ?? null}
+              publicationError={workspace?.publicationError}
+              worktreeRevision={workspace?.worktreeRevision ?? null}
+              artifactFiles={workspace?.artifactFiles}
+              autoPanelManifests={workspace?.autoPanelManifests}
+              autoPanelDefinitions={workspace?.autoPanelDefinitions}
+              autoPanelStates={workspace?.autoPanelStates}
+              experienceFiles={workspace?.experienceFiles}
+              executionAttempts={workspace?.executionAttempts ?? []}
+              activeMainBundles={workspace?.activeMainBundles}
+              mustEditHandoffs={workspace?.mustEditHandoffs}
+              access={workspace?.access ?? { mode: 'unbound', writable: false }}
+              clarity={workspace?.clarity}
+              projectName={workspace?.projectName}
+              projectPath={workspace?.projectPath}
+              sessionId={info.sessionId}
+              runtime={runtime}
+              dockOpen={visible}
+              focus={rail.getSnapshot().focus}
+              onClose={() => { closeDesignDock(info.sessionId) }}
+            />
+          </div>
+        </WorkspaceReadBoundary>
       </div>
       <DockResizeHandle />
     </div>

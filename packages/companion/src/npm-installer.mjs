@@ -818,7 +818,7 @@ export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=cod
       '--node-executable <path>':'Existing compatible Node for a new CLI installation/runtime check or desktop preparation; selected absolute executable is bound to owned native launchers. DSH retains its own host runtime.',
       '--qwenwork-runtime <file>':'QwenWork: verified native executable/worker/Node paths and byte pins. Agent obtains these through supported native inspection; no credentials.',
       '--separate-mcp':'QwenWork: emit one external connector instead of bundling it when organization policy requires this.',
-      '--previous-receipt <file>':'DSH: successful source-bound installation receipt for an owned update or repeat; sparse/manual receipts cannot be adopted. Desktop: reuse an owned preparation or prepare a newer native suite/npm version.',
+      '--previous-receipt <file>':'DSH: optional successful installation history to verify; ordinary Host-managed registry updates use the current profile and require no historical receipt. Supplied receipts must remain valid. Desktop: reuse an owned preparation or prepare a newer native suite/npm version.',
       '--npm-root-windows, --destination-windows':'Desktop: explicit Windows path mappings required when preparing from another platform; native Windows paths must match actual roots.',
     },
     limitations:['plugin-directory is an optional session-only diagnostic, not installation. Codex requires an admitted adapter; DSH requires pinned public CLI inputs. Desktop preparation needs native import and activation. Exit 2 means host selection or inputs are required; exit 0 does not establish a usable native session.',

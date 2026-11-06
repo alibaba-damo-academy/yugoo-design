@@ -198,7 +198,7 @@ export function GraphPanel({ read, readStatus, retry, footer, ownerLabels, explo
   const visibleError = statusDisconnected ? t('knowledgeGraphDisconnectedNotice')
     : publicationLoadFailed ? t('knowledgeGraphPublicationNotice')
       : pollFailed ? t('knowledgeGraphPollNotice') : error
-  return <section className='design-graph-view' onPointerDownCapture={event => {
+  return <section className='design-graph-view' aria-label={t('knowledgeGraphTitle')} onPointerDownCapture={event => {
     for (const menu of event.currentTarget.querySelectorAll<HTMLDetailsElement>('.graph-popover[open]')) if (!menu.contains(event.target as Node)) menu.open = false
   }} onKeyDown={event => {
     if (event.key !== 'Escape') return
@@ -207,7 +207,6 @@ export function GraphPanel({ read, readStatus, retry, footer, ownerLabels, explo
   }}>
     <style>{graphStyles}</style>
     <header className='graph-toolbar'>
-      <strong className='graph-title'>{t('knowledgeGraphTitle')}</strong>
       <div className='graph-levels' role='group' aria-label={t('knowledgeGraphLevels')}>
         <button aria-pressed={expanded.size === 0} onClick={() => { setExpanded(new Set()); clear(); setSeed('') }}>{t('knowledgeGraphOverview')}</button>
         <button aria-pressed={allExpanded} disabled={!expandable.length} onClick={() => { setExpanded(new Set(expandable.map(n => n.id))); clear(); setSeed('') }}>{t('knowledgeGraphExpand')}</button>

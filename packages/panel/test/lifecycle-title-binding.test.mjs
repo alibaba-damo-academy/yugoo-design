@@ -28,6 +28,30 @@ test('lifecycle matrix edits the root axis title and nested action effect withou
 
 after(()=>dom.window.close())
 
+test('English lifecycle chrome preserves authored names and canonical effect edits',async()=>{
+ const {createPanelComponentExample}=await import('../src/component-examples.ts')
+ const {parse}=await import('yaml')
+ const example=createPanelComponentExample('doc_lifecycle_studio','en')
+ const manifest=parse(example.panelYaml)
+ const data=example.sample
+ data.actions.complete.title='用户自定义动作 {axis}'
+ const edits=[]
+ const root=createRoot(document.getElementById('root'))
+ try{
+  await React.act(async()=>root.render(renderManifest(manifest,data,{locale:'en-US',editable:true,onEdit:edit=>edits.push(edit)})))
+  const panel=document.querySelector('[data-testid="doc-lifecycle-studio"]')
+  assert.match(panel.textContent,/States and Actions|Related Process|Upstream and Downstream Documents|Stock Movements/)
+  assert.match(panel.textContent,/用户自定义动作 \{axis\}/)
+  const effect=panel.querySelector('input[aria-label="Effect of 用户自定义动作 {axis} on Note Status"]')
+  assert.ok(effect)
+  assert.equal(effect.placeholder,'No change')
+  assert.equal(panel.querySelector('[data-testid="studio-process-missing"]'),null)
+  assert.match(panel.querySelector('[data-testid="studio-ledger-missing"]').textContent,/movement_sign/)
+  await React.act(async()=>{Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype,'value').set.call(effect,'Ready');effect.dispatchEvent(new dom.window.Event('input',{bubbles:true}))})
+  assert.deepEqual(edits,[{section:'actions',record:'complete',field:'axis_effects',value:{status:'Ready'}}])
+ }finally{await React.act(async()=>root.unmount())}
+})
+
 test('selected document scopes its matrix but retains cross-document effects, edits and action ledger',async()=>{
  const manifest={version:1,panel_kind:'lifecycle',sections:[
   {id:'documents',title:'单据',records_path:'facts.objects'},

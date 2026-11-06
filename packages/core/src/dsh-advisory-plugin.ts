@@ -588,8 +588,9 @@ export class DshAdvisoryScheduler {
   ): Promise<DesignAdvisoryRuntimeStatus['lastPublished'] | undefined> {
     const kit = this.ports.design.kitForAgent(agent)
     if (kit === undefined) return undefined
-    if ((attemptId === undefined || attemptId.startsWith('periodic-')) && this.ports.design.readReviewPolicy) {
-      const mode = (await this.ports.design.readReviewPolicy(agent, signal)).mode
+    const reviewPolicy = this.ports.design.readReviewPolicy ? await this.ports.design.readReviewPolicy(agent, signal) : DEFAULT_DESIGN_REVIEW_POLICY
+    if (attemptId === undefined || attemptId.startsWith('periodic-')) {
+      const mode = reviewPolicy.mode
       if (mode === 'off' || (attemptId?.startsWith('periodic-') && mode !== 'continuous')) return undefined
     }
     const journal = publication ?? await this.ports.design.readDesignJournal(agent)
@@ -673,6 +674,7 @@ export class DshAdvisoryScheduler {
       runId: identity.runId,
       resultId: identity.resultId,
       pins: [
+        { source: 'review-depth', revision: reviewPolicy.depth ?? 'standard' },
         { source: `kit:${kit.name}`, revision: kit.version },
         { source: 'relation-vocabulary', revision: relationVocabularyRevision },
         { source: 'design-project', revision: String(project.projectId) },
@@ -687,6 +689,8 @@ export class DshAdvisoryScheduler {
       ...(userContextSummary === undefined ? {} : { userContextSummary }),
     }
     const outcome = await analyzeDshDesignAdvisory({
+        reviewDepth: reviewPolicy.depth,
+        latestChangedSkill: change.skill,
         design: this.ports.design,
         parent: agent,
         provider: this.config.provider,

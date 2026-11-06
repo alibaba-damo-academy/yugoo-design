@@ -12,6 +12,7 @@ import { readNpmCandidates } from './release-npm-candidates.mjs'
 import { OWN_LICENSE_FILES } from './release-own-license.mjs'
 import { copyDshDistributionMaterials } from './dsh-distribution-materials.mjs'
 import { assertNativeGitManifest } from './release-physical-distribution-gate.mjs'
+import { prebuiltEmbeddingManifest, stagePrebuiltEmbedding } from './prebuilt-embedding-runtime.mjs'
 
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 export function mapOwnSpecifier(value, mapping) {
@@ -93,7 +94,8 @@ export async function prepareDshPackageMaterials({ source, target, sourceName, m
 /** One manifest projection shared by selection checks and actual staging. */
 export function createDshDistributionManifest(report, sourceName) {
   assert.ok(Object.hasOwn(report.mapping, sourceName), 'Unknown distribution package')
-  const manifest = structuredClone(report.candidates[sourceName])
+  const manifest = sourceName === 'dsh-design-knowledge-ladybug'
+    ? prebuiltEmbeddingManifest(report.candidates[sourceName]) : structuredClone(report.candidates[sourceName])
   if (manifest.dsh?.client?.inject) manifest.dsh.client.inject = manifest.dsh.client.inject.map(value => mapOwnSpecifier(value, report.mapping))
   // The source manifest owns the dependency graph. Release inventory membership
   // is not permission to install every artifact as an aggregate dependency.
@@ -169,7 +171,7 @@ export async function createDshPackageStage(packagesRoot, sourceName) {
   return target
 }
 
-export async function assembleDshDistribution({ source, destination, npmCli, scope = '@yugoo-design', version, versions, packageNames, retainedManifests, observationFile, observationSha256 }) {
+export async function assembleDshDistribution({ source, destination, npmCli, scope = '@yugoo-design', version, versions, packageNames, retainedManifests, observationFile, observationSha256, embeddingInputsDirectory }) {
   source = resolve(source); destination = resolve(destination)
   assert.ok(isAbsolute(npmCli), 'Absolute npm CLI required')
   assert.ok(destination !== source && !relative(source, destination).startsWith('.' + '/') && !destination.startsWith(source + '/'), 'Output must be outside source')
@@ -209,6 +211,8 @@ export async function assembleDshDistribution({ source, destination, npmCli, sco
       } else await cp(join(original, path), output)
     }
     await prepareDshPackageMaterials({ source, target, sourceName: originalName, manifest, observationFile, observationSha256 })
+    if (originalName === 'dsh-design-knowledge-ladybug')
+      await stagePrebuiltEmbedding({ target, npmCli, inputsDirectory: embeddingInputsDirectory, sourceRoot: source })
     await writeFile(join(target, 'package.json'), JSON.stringify(manifest, null, 2) + '\n')
     const packed = JSON.parse(execFileSync(process.execPath, [npmCli, 'pack', '--json', '--ignore-scripts', '--pack-destination', archiveRoot], { cwd: target, encoding: 'utf8' }))[0]
     assert.equal(packed.name, item.name); assert.equal(packed.version, item.version)

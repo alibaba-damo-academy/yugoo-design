@@ -325,6 +325,7 @@ test('only successful Design publications schedule KAG; status snapshots still d
   const messages = []
   const injectAgent = { id: 'a2', inject: message => messages.push(message) }
   let currentSnapshot
+  let policy = { mode: 'auto', autoMergeWindowMs: 30000 }
   const injectReceiver = {
     knowledgeStatusInjections: new WeakMap(),
     selectionForAgent: () => ({ projectId }),
@@ -333,7 +334,7 @@ test('only successful Design publications schedule KAG; status snapshots still d
       return currentSnapshot
     },
     reviewStatuses: async () => [],
-    readReviewPolicy: async () => ({mode:'auto',autoMergeWindowMs:30000}),
+    readReviewPolicy: async () => policy,
   }
   const inject = () => DesignService.prototype.injectKnowledgeOrchestrationSnapshot.call(injectReceiver, injectAgent)
   currentSnapshot = { schemaVersion: 1, project: projectId, head: 'c1', state: 'due', freshness: 'none', semanticLayer: 'enabled' }
@@ -341,16 +342,22 @@ test('only successful Design publications schedule KAG; status snapshots still d
   await inject()
   assert.equal(messages.length, 1, 'identical consecutive snapshots inject once')
   assert.match(messages[0].content[0].text, /<design-knowledge-status>/)
+  assert.ok(messages[0].content[0].text.endsWith(`Project GRA policy: ${JSON.stringify(policy)}`))
+  assert.doesNotMatch(messages[0].content[0].text, /Auto combines|Do not mechanically|Off forbids/)
   assert.equal(messages[0].source.form, 'notice')
   currentSnapshot = { ...currentSnapshot, state: 'current', freshness: 'matching' }
   await inject()
   assert.equal(messages.length, 2, 'a changed state injects again')
+  policy = { mode: 'off', autoMergeWindowMs: 30000 }
+  await inject()
+  assert.equal(messages.length, 3, 'a changed policy still reaches the Agent without repeating its rules')
+  assert.ok(messages[2].content[0].text.endsWith(`Project GRA policy: ${JSON.stringify(policy)}`))
   currentSnapshot = 'throw'
   await inject()
-  assert.equal(messages.length, 2, 'a sampling failure never surfaces to the lifecycle event')
+  assert.equal(messages.length, 3, 'a sampling failure never surfaces to the lifecycle event')
   currentSnapshot = undefined
   await inject()
-  assert.equal(messages.length, 2, 'no selection or runtime injects nothing')
+  assert.equal(messages.length, 3, 'no selection or runtime injects nothing')
 })
 
 test('injection identity: project switches are never deduped away and mid-sample selection changes are dropped', async () => {

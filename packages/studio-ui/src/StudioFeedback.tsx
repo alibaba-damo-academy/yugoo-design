@@ -68,14 +68,14 @@ function NoticeFeedback({ feedbackId, tone, title, message, details = [], action
   }, [feedbackId, tone, layout, dismissible])
   if (closed && tone === 'success') return null
   if (closed) return <div className="ygd-studio-notice-reopen">
-    <span>{title}</span><button ref={reopen} type="button" className="ygd-studio-btn-link" onClick={() => { restoreFocus.current = true; setDismissed(undefined) }}>{zh ? '查看原因' : 'View reason'}</button>
+    <span>{title}</span><button ref={reopen} type="button" className="ygd-studio-btn-link" onClick={() => { restoreFocus.current = true; setDismissed(undefined) }}>{zh ? '查看提示' : 'Show notice'}</button>
   </div>
   const hasDetails = !!message || details.length > 0
   return <div className={`ygd-studio-notice ygd-studio-notice-${layout}`} data-tone={tone}>
     <div className="ygd-studio-notice-heading">
       <span className="ygd-studio-notice-title" role={layout === 'notice' ? tone === 'error' ? 'alert' : 'status' : undefined}>{title}</span>
       {hasDetails && <button ref={toggle} type="button" className="ygd-studio-btn-link" aria-expanded={open} aria-controls={detailsId}
-        onClick={() => setExpanded(open ? undefined : feedbackId)}>{open ? (zh ? '收起详情' : 'Hide details') : (zh ? '查看问题' : 'View issues')}</button>}
+        onClick={() => setExpanded(open ? undefined : feedbackId)}>{open ? (zh ? '收起详情' : 'Hide details') : (zh ? '查看详情' : 'View details')}</button>}
       {actions.map(action => <button type="button" className={action.primary ? 'ygd-studio-btn-primary' : 'ygd-studio-btn-secondary'} key={action.label} disabled={action.disabled} onClick={action.onClick}>{action.label}</button>)}
       {dismissible && <button type="button" className="ygd-studio-btn-link" aria-label={zh ? '关闭提示' : 'Dismiss notice'} onClick={() => { restoreFocus.current = true; setDismissed(feedbackId) }}>×</button>}
     </div>

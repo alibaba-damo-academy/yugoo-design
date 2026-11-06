@@ -12,9 +12,9 @@ The unified product package and CLI are both named `yugoo-design`. The first sta
 
 ## 1. Copy the universal prompt
 
-The GitHub links provide public installation instructions; you do not need to sign in or clone the repository. Installation obtains the stable npm package `yugoo-design`, then uses that version's installation entry point to connect the host. If you selected a specific host on the website, the copied prompt should name it explicitly to avoid installing into another application.
+Copy the [universal installation prompt](../../packages/companion/HOSTS.md#default-prompt-any-supported-host) into your current host's Agent input, or select a host on the website to copy its specific setup steps. First installation and updates use the same entry point: acquire the unified `yugoo-design` package with pnpm, then register, import or enable it in the current host. The Agent reads the bundled README and CLI help first, consulting online instructions only for a specific unanswered question. You do not need to choose between internal DSH and Companion packages, and it will not install into every host on your computer at once.
 
-Copy the [universal installation prompt](../../packages/companion/HOSTS.md#default-prompt-any-supported-host) into your current host's Agent input. First installation and updates use the same entry point. The Agent selects the installation route from the actual host context; you do not need to decide whether it should install DSH or Companion internally, and it will not install into every host on your computer at once.
+The website prompt names the selected host to avoid installing into another application. Supplementary GitHub documentation is public; you do not need to sign in or clone the repository.
 
 Use the following entries when you need to specify a host or read its steps:
 

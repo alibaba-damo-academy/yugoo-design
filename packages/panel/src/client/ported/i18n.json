@@ -2,6 +2,9 @@
   "en_US": {
     "button_regenerate": "Cancel",
     "button_save_and_continue": "Save & continue",
+    "button_retry": "Retry",
+    "design_workspace_loading": "Loading design panels…",
+    "design_workspace_load_failed": "Design panels could not be loaded.",
     "design_project_label": "Design project: ",
     "design_project_path_label": "Project location: ",
     "design_project_open_folder": "Open project folder",
@@ -47,6 +50,9 @@
   "zh_CN": {
     "button_regenerate": "取消",
     "button_save_and_continue": "保存并继续",
+    "button_retry": "重试",
+    "design_workspace_loading": "正在加载设计面板…",
+    "design_workspace_load_failed": "无法加载设计面板。",
     "design_project_label": "设计项目：",
     "design_project_path_label": "项目位置：",
     "design_project_open_folder": "打开项目文件夹",

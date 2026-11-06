@@ -4,8 +4,8 @@ description: |-
   - **Capability**: design the AI behavior embedded in a Web App as Agent or direct-model units, with user experience, complete prompts, editable Skills and tools/MCP, and Agent collaboration.
   - **Resolves**: unclear responsibilities, triggers and results, action-condition-result rules, exceptions, materials and long-term memory, and per-Agent handoffs.
   - **Candidate when**: AI behavior needs to be designed, reconstructed from evidence, or revised; required Skills and tool capabilities can be described before selecting an implementation.
-  - **Do not infer**: a chat box, dependency or model name alone establishes the needed mechanisms. Saving the design does not install resources, connect services or prove evaluation success.
-  - **Output**: an editable AI design panel with linked Agents, Skills and tools; preserve complete instructions, user configuration and confirmation choices.
+  - **Do not infer**: a chat box, dependency or model name alone establishes the needed mechanisms. Saving the design does not install resources, connect services, execute tools, configure the coding host or prove evaluation success.
+  - **Output**: an editable AI design panel with linked Agents, Skills and tools; its collaboration graph opens the same canonical records. Preserve complete instructions, user configuration and confirmation choices.
 ---
 
 # AI Agent Design

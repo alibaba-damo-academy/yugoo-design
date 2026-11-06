@@ -123,8 +123,19 @@ Retention mapping for the Mindset reorganization:
 - The complete experience guidance moves from the opening to section 5.
 - Case strategies and enterprise calibration move to sections 6–7; reconstruction
   and source-evidence review remain complete in section 8.
-- The complete design_skills catalog moves to the end, with identical entries.
-  It remains persisted runtime input, not merely a hidden UI representation.
+- The ordered `design_skills` headings remain at the end as the runtime
+  membership list, matching `kit.yaml`. Capability descriptions come from each
+  mounted Bundle's `SKILL.md` frontmatter rather than repeating them in Mindset.
+  The professional guidance in sections 1–8 remains complete.
+- Those descriptions retain the same-source AI graph and Host boundary, Plugin
+  URL/Secret requirements/Prompt and recovery, observable acceptance scenarios
+  and grounded measurable quality targets, and shared whiteboard scene files.
+  Existing applicability and negative routing conditions remain intact.
+- The AI Bundle's current independent Agent/resource records and same-source
+  graph supersede the old catalog's grouped-card and supporting-harness wording.
+  Its existing method does not require manual functional groups or SDK selection.
+  Saving a design does not execute its tools or reconfigure the coding host;
+  no new behavior or field is introduced.
 - A purpose introduction and AI-capability candidate row clarify existing scope.
 - “Producers own product design choices” becomes “selected Bundle executor” to
   include the existing main execution mode (architecture baseline, Execution).

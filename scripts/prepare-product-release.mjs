@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url'
 import { setTimeout as delay } from 'node:timers/promises'
 import { DSH_AGGREGATE_SOURCE, releasePackagesFor } from './release-consumer-config.mjs'
 import { PRODUCT_NAME, readProductRelease, validateProductRelease, validateReleaseVersion, selectProductRelease, productReleaseHosts } from './product-release.mjs'
+import { PREBUILT_EMBEDDING_INPUTS } from './prebuilt-embedding-runtime.mjs'
 export { selectProductRelease } from './product-release.mjs'
 
 export const DSH_SOURCE_PACKAGES = Object.freeze(Object.keys(releasePackagesFor({ ladybugSource: 'registry' })))
@@ -597,7 +598,7 @@ export async function confirmPublication(entry, { timeoutMs = 15 * 60_000, pollI
 
 export async function prepareProductArchive({ version, output, nativeArtifactRoot, npmCli }) {
   const { buildSameSourceCandidate, verifyStagedUiCandidateAssociations } = await import('./build-companion-npm-candidate.mjs')
-  const build = await buildSameSourceCandidate({ ladybugDependency: '0.21.1', nativeGitArtifactRoot: nativeArtifactRoot,
+  const build = await buildSameSourceCandidate({ ladybugDependency: '0.21.1', nativeGitArtifactRoot: nativeArtifactRoot, npmCli,
     candidate: { fixture: false, scope: '@yugoo-design', packageName: PRODUCT_NAME, version, distribution: 'stable' } })
   const buildReportFile = join(build.root, 'build-report.json')
   assert.equal(build.sameSourceBuildCompleted, true, `Product same-source build failed: ${JSON.stringify({
@@ -610,6 +611,12 @@ export async function prepareProductArchive({ version, output, nativeArtifactRoo
   const associations = await verifyStagedUiCandidateAssociations({ buildReportFile, buildReportSha256 })
   const manifest = await json(join(build.candidate, 'package.json'))
   validateProductManifest(manifest, version)
+  // Fresh assembly owns the new packaging requirement. Immutable older
+  // archives remain recoverable through the general artifact validator.
+  for (const input of PREBUILT_EMBEDDING_INPUTS) {
+    assert.equal(manifest.dependencies?.[input.name], input.version, 'Exact prebuilt embedding input required')
+    assert.ok(manifest.bundledDependencies?.includes(input.name), 'Release must carry its reviewed prebuilt embedding bundle')
+  }
   const pack = args => {
     const result = spawnSync(process.execPath, [npmCli, 'pack', '--ignore-scripts', '--json', ...args],
       { cwd: build.candidate, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 })

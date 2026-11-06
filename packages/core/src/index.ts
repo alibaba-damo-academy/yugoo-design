@@ -720,3 +720,4 @@ export { DEFAULT_DESIGN_REVIEW_POLICY, parseDesignReviewPolicy, readDesignReview
 export { renderAdvisoryReviewMemory } from './advisory-review-memory.ts'
 export { workspacePollResult, type WorkspacePollResult } from './workspace-poll.ts'
 export type { DesignReviewMode, DesignReviewPolicy } from './design-review-policy.ts'
+export { designReviewDepth, renderDesignReviewDepth, renderDesignReviewStartingPoints, type DesignReviewDepth, type DesignReviewTarget } from './design-review-depth.ts'

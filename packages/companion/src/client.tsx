@@ -37,7 +37,7 @@ import { StudioRuntimePreview } from './studio-preview.tsx'
 import { studioComponentLibrary } from './studio-components.tsx'
 import { AdvisorySidebarEntry } from '../../panel/src/client/advisory-sidebar-entry.tsx'
 import { bindDesignHostLocale, useCurrentLanguage } from '../../panel/src/client/ported/host.ts'
-import { createCompanionLocale, companionChromeText, companionDocumentLanguage, type CompanionChromeKey, type CompanionLanguage } from './locale.ts'
+import { createCompanionLocale, companionChromeText, companionChromeMessages, companionDocumentLanguage, type CompanionChromeKey, type CompanionLanguage } from './locale.ts'
 import { AdvisoryReviewCard, selectPendingAdvisories, type AdvisoryReviewEntry, type AdvisoryAcceptanceAuthority } from '../../panel/src/client/ported/design/AdvisoryReviewCard.tsx'
 import '../../panel/src/client/owned-styles.ts'
 import '../../panel/src/client/generated/design.tw.css'
@@ -110,7 +110,9 @@ const studioAuthoring: StudioAuthoring = {
   },
   renderPreview: (preview, adoptSample, options) => <StudioRuntimePreview key={`${preview.kit?.name ?? 'standalone'}:${preview.bundle.name}:${preview.revision}`} preview={preview} adoptSample={adoptSample} readOnly={options.readOnly} toolbarTarget={options.toolbarTarget} />,
 }
-let nativeHostLabel = '原生 Agent'
+let nativeHostLabel = ''
+const currentHostLabel = () => nativeHostLabel || companionChromeText('nativeAgent', companionLocale.getSnapshot().active)
+const currentChrome = (key: CompanionChromeKey, values?: Record<string, string | number>) => companionChromeText(key, companionLocale.getSnapshot().active, values)
 const readConversation = createWorkspacePollReader<{ conversation: RecordedConversation; backgroundRows: RecordedConversation['rows'] }>(
   (_session, knownRevision) => rpc('readConversation', { knownRevision }),
 )
@@ -137,7 +139,7 @@ const runtime: DesignRuntime = {
   },
   savePanel: async (_session, skill, state, artifacts, eventId) => {
     const result = await rpc<{commit?: string}>('savePanel', { skill, state, artifacts, eventId: eventId ?? browserRandomUuid(), includeDerivedStatus:false })
-    onNotice(`文件已保存。正在通知 ${nativeHostLabel}；通知失败不会撤销保存。`)
+    onNotice(currentChrome('filesSavedNotifying', { host: currentHostLabel() }))
     requestLivePoll()
     return result
   },
@@ -145,21 +147,27 @@ const runtime: DesignRuntime = {
   readBinaryArtifact: (_session, path, revision) => rpc('readBinaryArtifact', { path, revision }),
   readExecutionLog: (_session, runId, afterSeq, target) => rpc('readExecutionLog', { runId, afterSeq, ...target }),
   sendPrompt: async (_session, text, requestId, saved) => {
-    onNotice(`正在发送到 ${nativeHostLabel}…`)
+    const savedNotification = saved !== undefined
+    if (savedNotification) onNotice(currentChrome('sendingToHost', { host: currentHostLabel() }))
     try {
       const result = await rpc<{ accepted?: boolean; status?: string }>('sendPrompt', { text, requestId, saved })
-      const notice = requireNotificationAccepted(result, nativeHostLabel)
-      // Clear only this acknowledged notification, never another save error.
-      const panel = panelStore.getSnapshot()
-      if (!panel.saving && lastNotificationFailure !== undefined && panel.error === lastNotificationFailure) setSaving(false)
-      lastNotificationFailure = undefined
-      onNotificationError('')
-      onNotice(notice, notificationAutoDismiss(result))
+      const notice = requireNotificationAccepted(result, currentHostLabel(), companionChromeMessages(companionLocale.getSnapshot().active))
+      if (savedNotification) {
+        // Clear only this acknowledged notification, never another save error.
+        const panel = panelStore.getSnapshot()
+        if (!panel.saving && lastNotificationFailure !== undefined && panel.error === lastNotificationFailure) setSaving(false)
+        lastNotificationFailure = undefined
+        onNotificationError('')
+        onNotice(notice, notificationAutoDismiss(result))
+      }
       requestLivePoll()
     } catch (error) {
-      onNotice(`已保存文件仍然有效。${error instanceof Error ? error.message : String(error)}`)
-      lastNotificationFailure = error instanceof Error ? error.message : String(error)
-      onNotificationError(String(error)); throw error
+      if (savedNotification) {
+        onNotice(currentChrome('filesSavedDeliveryFailed', { message: error instanceof Error ? error.message : String(error) }))
+        lastNotificationFailure = error instanceof Error ? error.message : String(error)
+        onNotificationError(String(error))
+      }
+      throw error
     }
   },
   cancelPendingNextStepQuestion: async () => false,
@@ -282,7 +290,7 @@ function App() {
   const [chatWidth, setChatWidth] = useState(savedChatWidth)
   const settingsDialog = useRef<HTMLDialogElement>(null)
   const locale = useCurrentLanguage()
-  const chrome = (key: CompanionChromeKey, values?: { host: string }) => companionChromeText(key, locale, values)
+  const chrome = (key: CompanionChromeKey, values?: Record<string, string | number>) => companionChromeText(key, locale, values)
   const continuation = designContinuationOf(workspace?.continuations)
   const continuationKey = continuation && thread && workspace?.projectId
     ? JSON.stringify([thread, workspace.projectId, continuationDismissKey(continuation)]) : undefined
@@ -294,7 +302,7 @@ function App() {
     ? (locale === 'zh_CN' ? '正在核对设计工作区，请稍后。' : 'Checking the design workspace. Please wait.')
     : !workspace?.access.writable
       ? (locale === 'zh_CN' ? '当前项目只读，不能继续执行。' : 'This project is read-only. Execution cannot continue.')
-      : panelDirty || drafts.notice
+      : panelDirty
         ? (locale === 'zh_CN' ? '请先保存或撤回面板修改，再继续。' : 'Save or discard the Panel edits before continuing.')
         : panelSaving || recoveringNotification
           ? (locale === 'zh_CN' ? '请等待当前保存或通知完成。' : 'Wait for the current save or notification to finish.')
@@ -319,7 +327,7 @@ function App() {
           setContinuationAttempt({ key: continuationKey, sending: true })
           // Reuse the ordinary one-shot native submission and its exact feedback.
           // A resolved receipt is not proof of consumption; an error is not a retry.
-          void runtime.sendPrompt(thread, label, browserRandomUuid()).catch(() => {}).finally(() => {
+          void runtime.sendPrompt(thread, label, browserRandomUuid()).catch(error => onNotice(error instanceof Error ? error.message : String(error))).finally(() => {
             setContinuationAttempt(current => current?.key === continuationKey ? { ...current, sending: false } : current)
           })
         }} /> : null
@@ -370,7 +378,7 @@ function App() {
     }
     void Promise.all([rpc<{threadId:string;host?:string;trialPanel?:TrialPanelBinding}>('info'), rpc<DesignProjectCatalogRead>('listProjects')])
       .then(([info, projects]) => { if (!disposed) {
-        nativeHostLabel = info.host === 'workbuddy' ? 'WorkBuddy' : info.host === 'qwenwork' ? 'QwenWork' : info.host === 'qoder' ? 'Qoder CLI' : info.host === 'claude-code' ? 'Claude Code' : info.host === 'codex' ? 'Codex' : '原生 Agent'
+        nativeHostLabel = info.host === 'workbuddy' ? 'WorkBuddy' : info.host === 'qwenwork' ? 'QwenWork' : info.host === 'qoder' ? 'Qoder CLI' : info.host === 'claude-code' ? 'Claude Code' : info.host === 'codex' ? 'Codex' : ''
         if (trialPanelPage && info.trialPanel && window.parent !== window) {
           if (info.trialPanel.locale) companionLocale.setPreference(info.trialPanel.locale === 'zh-CN' ? 'zh' : 'en', false)
           trialBridge.current = createTrialPanelBridge(window, info.trialPanel)
@@ -393,7 +401,7 @@ function App() {
       try {
         const next = await readConversation('bound')
         if (!disposed) {
-          setReviewLogError(next.conversation.available ? '' : next.conversation.error ?? '后台操作记录暂不可读。')
+          setReviewLogError(next.conversation.available ? '' : next.conversation.error ?? currentChrome('reviewActivityUnreadable'))
           setConversation(prior => JSON.stringify(prior) === JSON.stringify(next.conversation) ? prior : next.conversation)
           setBackgroundReviews(prior => {
             const value = { reviews: prior?.reviews ?? [], rows: next.backgroundRows }
@@ -402,9 +410,9 @@ function App() {
         }
       } catch {
         if (!disposed) {
-          setReviewLogError('后台操作记录暂不可读；以下保留上次收到的记录。')
+          setReviewLogError(currentChrome('reviewActivityLastReceived'))
           setConversation(prior => ({ ...prior, available: false, recordedStatus: 'unknown', catchingUp: false,
-            rows: prior?.rows ?? [], omitted: prior?.omitted ?? 0, error: '会话同步已断开，正在重试；以下保留上次收到的记录。' }))
+            rows: prior?.rows ?? [], omitted: prior?.omitted ?? 0, error: currentChrome('conversationSyncRetrying') }))
         }
       } finally { busy = false }
     }
@@ -422,14 +430,14 @@ function App() {
       try {
         const next = await readBackgroundRows('bound')
         if (!disposed) {
-          setReviewLogError(next.available ? '' : next.error ?? '后台操作记录暂不可读。')
+          setReviewLogError(next.available ? '' : next.error ?? currentChrome('reviewActivityUnreadable'))
           setBackgroundReviews(prior => {
             const value = { reviews: prior?.reviews ?? [], rows: next.backgroundRows }
             return JSON.stringify(prior) === JSON.stringify(value) ? prior : value
           })
         }
       } catch {
-        if (!disposed) setReviewLogError('后台操作记录暂不可读；以下保留上次收到的记录。')
+        if (!disposed) setReviewLogError(currentChrome('reviewActivityLastReceived'))
       } finally { busy = false }
     }
     void poll()
@@ -440,19 +448,19 @@ function App() {
     setAdvisoriesOpen(false)
     if (designOnly) shellRoot.current?.querySelector<HTMLButtonElement>('.companion-sidebar .dsh-advisory-sidebar-trigger')?.focus({ preventScroll: true })
   }
-  const advisoryInbox = advisoriesOpen && workspace?.projectId && thread && <section id="dsh-advisory-composer-inbox" className="dsh-advisory-inbox" aria-label="设计建议收件箱">
+  const advisoryInbox = advisoriesOpen && workspace?.projectId && thread && <section id="dsh-advisory-composer-inbox" className="dsh-advisory-inbox" aria-label={chrome('designInbox')}>
         <div className="dsh-advisory-inbox-heading">
-          <div className="dsh-advisory-inbox-title"><span>设计建议</span>
+          <div className="dsh-advisory-inbox-title"><span>{chrome('designSuggestions')}</span>
             <ReviewPolicyControl key={`${thread}:${workspace.projectId}`} sessionId={thread} runtime={runtime} />
           </div>
-          <button type="button" className="dsh-advisory-inbox-close" aria-label="收起设计建议" onClick={closeAdvisories}>×</button>
+          <button type="button" className="dsh-advisory-inbox-close" aria-label={chrome('collapseDesignSuggestions')} onClick={closeAdvisories}>×</button>
         </div>
-        <AdvisoryReviewCard entries={advisories} emptyText="暂无待处理的设计建议。"
+        <AdvisoryReviewCard entries={advisories} emptyText={chrome('designSuggestionsEmpty')}
           key={`${thread}:${workspace.projectId}`} readingScope={`${thread}:${workspace.projectId}`} preferredAdvisoryId={advisoryOpeningTarget}
           onRecordAccepted={async advisory => {
             const result = await rpc<AdvisoryAcceptanceAuthority & { notification?: string; notificationError?: string }>('decideAdvisory', { advisoryId: advisory.id, decision: 'accepted' })
             requestLivePoll()
-            if (result.notification === 'failed') { setNotificationError(result.notificationError ?? '建议已接受，但通知未确认。'); throw new Error(result.notificationError) }
+            if (result.notification === 'failed') { setNotificationError(result.notificationError ?? currentChrome('adviceNotificationUnconfirmed')); throw new Error(result.notificationError) }
             return result
           }}
           onAccept={async () => { requestLivePoll() }}
@@ -543,10 +551,10 @@ function App() {
             setError(lastKitReloadError.current)
           }).finally(() => { kitReloadPending.current = false })
         }}
-        onCommand={() => setError('当前预览绑定单个项目；新建、迁移、切换与移除尚未接通。')} />
+        onCommand={() => setError(chrome('previewSingleProject'))} />
       {!designOnly && <button type="button" className="companion-sidebar-action" aria-label={chrome(conversationOpen ? 'collapseConversation' : 'expandConversation')} title={chrome(conversationOpen ? 'collapseConversation' : 'expandConversation')} aria-expanded={conversationOpen} aria-controls="companion-conversation" onClick={() => setConversationOpen(value => !value)}>
         <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 3h12a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 16 15H8l-4 3v-3a1.5 1.5 0 0 1-1.5-1.5v-9A1.5 1.5 0 0 1 4 3Z"/><path d="M6 7h8M6 11h5"/></svg>
-        {sidebarOpen && <span>{nativeHostLabel} {chrome('conversation')}</span>}
+        {sidebarOpen && <span>{currentHostLabel()} {chrome('conversation')}</span>}
       </button>}
       <div className="companion-sidebar-bottom">
         <button type="button" className="companion-sidebar-action" aria-label={chrome('backgroundReviews')} title={chrome('backgroundReviews')} onClick={()=>{ reviewDialog.current?.showModal(); setReviewDialogOpen(true) }}>
@@ -560,20 +568,19 @@ function App() {
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14"/><circle cx="7" cy="5" r="2"/><circle cx="13" cy="10" r="2"/><circle cx="8" cy="15" r="2"/></svg>
           {sidebarOpen && <span>{chrome('settings')}</span>}
         </button>
-        {sidebarOpen && <div className="companion-sidebar-meta">Mindset：{workspace?.access && 'kit' in workspace.access
-          ? `${workspace.access.kit.name}@${workspace.access.kit.version}${workspace.access.mode === 'recovery' ? '（待恢复）' : ''}`
-          : workspace?.access.mode === 'unconfigured' ? '未选择' : '—'}</div>}
+        {sidebarOpen && <div className="companion-sidebar-meta">{chrome('projectKitLabel')}{workspace?.access && 'kit' in workspace.access
+          ? `${workspace.access.kit.name}@${workspace.access.kit.version}${workspace.access.mode === 'recovery' ? chrome('projectNeedsRecovery') : ''}`
+          : workspace?.access.mode === 'unconfigured' ? chrome('notSelected') : '—'}</div>}
       </div>
     </aside>}
     <main className="companion-main">
       <div className="companion-content" style={{ '--chat-width': `${chatWidth}%` } as CSSProperties}>
-      {!trialPanelPage && !designOnly && <Conversation hostLabel={nativeHostLabel} value={conversation} thread={thread} visible={conversationVisible} attempts={workspace?.executionAttempts}
+      {!trialPanelPage && !designOnly && <Conversation locale={locale} hostLabel={currentHostLabel()} value={conversation} thread={thread} visible={conversationVisible} attempts={workspace?.executionAttempts}
         readExecutionLog={(runId, afterSeq) => runtime.readExecutionLog(thread!, runId, afterSeq)}
         onClose={() => { setConversationOpen(false); document.querySelector<HTMLButtonElement>('.companion-sidebar-action')?.focus() }} send={text => runtime.sendPrompt(thread!, text)}
         beforeComposer={conversationVisible && advisoryInbox} continuation={conversationVisible && continuationBar} />}
-      {conversationVisible && <ConversationResize width={chatWidth} onChange={resizeChat} />}
+      {conversationVisible && <ConversationResize locale={locale} width={chatWidth} onChange={resizeChat} />}
       <div className="dsh-design-dock">
-        {drafts.notice}
         {!conversationVisible && continuationBar}
         {savedContinuationError && <p role="alert">{locale === 'zh_CN' ? savedContinuationError : 'Saved notification status is unavailable. Check the authoritative files in the original conversation; do not blindly resend.'}</p>}
         {!trialPanelPage && savedContinuations.some(entry => entry.retryable || ['unknown', 'preparing'].includes(entry.status)) && <section aria-label={locale === 'zh_CN' ? '保存后的通知状态' : 'Saved notification status'}>
@@ -590,19 +597,19 @@ function App() {
         </section>}
         {workspace && thread ? <DesignWorkspace hideProjectHeader={designOnly} {...workspace} experienceAvailable sessionId={thread} runtime={runtime} dockOpen
           presentation={trialPanelPage ? 'panel-only' : 'workspace'} demonstrationSave={trialPanelPage} onControlsChange={publishControls}
-          hostReportedSaveError={lastNotificationFailure} /> : <p>正在读取设计文件…</p>}
+          hostReportedSaveError={lastNotificationFailure} /> : <p>{chrome('designFilesReading')}</p>}
       </div>
       </div>
       {(error || pollError || notificationError || notice) && <div className={`dsh-design-toast companion-feedback${error || pollError || notificationError ? ' dsh-design-toast-error' : ''}`}>
         <div><span role={error || pollError || notificationError ? 'alert' : 'status'} className={error || pollError || notificationError ? 'companion-error' : undefined}>{error || pollError || notificationError || notice}</span>
           {!!(error || pollError || notificationError) && notice && <p role="status">{notice}</p>}</div>
-        <button type="button" aria-label="关闭提示" onClick={() => { setError(''); setPollError(''); setNotificationError(''); onNotice('') }}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"/></svg></button>
+        <button type="button" aria-label={chrome('dismissNotice')} onClick={() => { setError(''); setPollError(''); setNotificationError(''); onNotice('') }}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"/></svg></button>
       </div>}
     </main>
     <dialog className="companion-settings-dialog" ref={reviewDialog} aria-label={chrome('backgroundReviews')} onClose={() => setReviewDialogOpen(false)}>
       <header><strong>{chrome('backgroundReviews')}</strong><button type="button" onClick={()=>reviewDialog.current?.close()}>{chrome('closeBackgroundReviews')}</button></header>
       {reviewLogError && <p role="status">{reviewLogError}</p>}
-      <BackgroundReviewPanel value={backgroundReviews} disconnected={!!pollError || !!reviewLogError}/>
+      <BackgroundReviewPanel locale={locale} value={backgroundReviews} disconnected={!!pollError || !!reviewLogError}/>
     </dialog>
     <dialog className="companion-settings-dialog" ref={settingsDialog} aria-label={chrome('designSettings')}>
       <header><strong>{chrome('settings')}</strong><button type="button" onClick={() => settingsDialog.current?.close()}>{chrome('closeSettings')}</button></header>
@@ -626,7 +633,7 @@ function App() {
       <section><strong>{chrome('designStudio')}</strong><p>{chrome('studioDescription')}</p>
         <a href={transport.headers['X-Design-Token'] ? `?view=studio#${encodeURIComponent(transport.headers['X-Design-Token'])}` : '?view=studio'} target="_blank" rel="noopener noreferrer" onClick={() => settingsDialog.current?.close()}>{chrome('openStudio')}</a>
       </section>
-      <section><strong>{chrome('nativeConnection')}</strong><p>{nativeHostLabel} · {thread ?? chrome('connecting')}</p><p>{chrome('nativeConnectionDescription', { host: nativeHostLabel })}</p></section>
+      <section><strong>{chrome('nativeConnection')}</strong><p>{currentHostLabel()} · {thread ?? chrome('connecting')}</p><p>{chrome('nativeConnectionDescription', { host: currentHostLabel() })}</p></section>
     </dialog>
   </div>
 }
@@ -637,11 +644,11 @@ function StudioPage(): ReactElement {
   const locale = useCurrentLanguage()
   const [handoff] = useState(() => {
     try { return { request: studioConversationHandoff(location.search), error: '' } }
-    catch { return { request: undefined, error: '修改建议链接不完整，请从原对话重新打开。' } }
+    catch { return { request: undefined, error: currentChrome('studioLinkIncomplete') } }
   })
   useEffect(() => { document.documentElement.lang = companionDocumentLanguage(locale); document.title = 'Yugoo Design · Studio' }, [locale])
   useEffect(() => bindDesignHostLocale(companionLocale), [])
   const presentation = new URLSearchParams(location.search).get('presentation') === 'content-only' ? 'content-only' : 'conversation'
-  return <><style>{DOCK_CSS}{CONVERSATION_CSS}{'html,body,#root{height:100%;margin:0}body{overflow:hidden}'}</style>{handoff.error ? <StudioEntryFeedback error={handoff.error} locale={locale === 'zh_CN' ? 'zh' : 'en'} onOpenCatalog={() => location.assign('?view=studio')} /> : <StudioConversationLayout rpc={rpc} readConversation={readStudioConversation} checkConnection={checkStudioConnection} presentation={presentation} initialRequest={handoff.request}>{(renderInstanceWorkbench, initialInstance, renderContent) => <StudioWorkspace renderContent={renderContent} initialInstance={initialInstance} renderInstanceWorkbench={renderInstanceWorkbench} locale={locale === 'zh_CN' ? 'zh' : 'en'} onLocaleChange={value => companionLocale.setPreference(value)} client={studioClient} instances={studioInstances} trials={studioTrials} authoring={studioAuthoring} componentLibrary={studioComponentLibrary} renderSelect={PanelSelect} contentClient={studioContentClient} />}</StudioConversationLayout>}</>
+  return <><style>{DOCK_CSS}{CONVERSATION_CSS}{'html,body,#root{height:100%;margin:0}body{overflow:hidden}'}</style>{handoff.error ? <StudioEntryFeedback error={handoff.error} locale={locale === 'zh_CN' ? 'zh' : 'en'} onOpenCatalog={() => location.assign('?view=studio')} /> : <StudioConversationLayout locale={locale === 'zh_CN' ? 'zh' : 'en'} rpc={rpc} readConversation={readStudioConversation} checkConnection={checkStudioConnection} presentation={presentation} initialRequest={handoff.request}>{(renderInstanceWorkbench, initialInstance, renderContent) => <StudioWorkspace renderContent={renderContent} initialInstance={initialInstance} renderInstanceWorkbench={renderInstanceWorkbench} locale={locale === 'zh_CN' ? 'zh' : 'en'} onLocaleChange={value => companionLocale.setPreference(value)} client={studioClient} instances={studioInstances} trials={studioTrials} authoring={studioAuthoring} componentLibrary={studioComponentLibrary} renderSelect={PanelSelect} contentClient={studioContentClient} />}</StudioConversationLayout>}</>
 }
 createRoot(document.getElementById('root')!).render(<CanvasFontRoot>{studioPage ? <StudioPage /> : <App />}</CanvasFontRoot>)

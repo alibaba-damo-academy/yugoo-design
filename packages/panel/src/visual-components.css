@@ -466,25 +466,20 @@ html[data-dsh-panel-resizing=true], html[data-dsh-panel-resizing=true] * { curso
 .dsh-panel-guided-content { position: relative; display: flex; flex-direction: column; min-height: 0; height: 100%; overflow: hidden; }
 .dsh-panel-guided-body { flex: 1; min-height: 0; overflow: auto; padding-bottom: 40px; }
 .dsh-panel-guided-content[data-layout=workspace] > .dsh-panel-guided-body { display: flex; flex-direction: column; overflow: hidden; padding-bottom: 0; }
-.dsh-panel-workspace-navigation > header { padding: 12px 16px; }
+.dsh-panel-workspace-navigation > header { padding: 12px 16px; overflow-wrap: anywhere; }
 .dsh-panel-workspace-navigation h2 { display: flex; align-items: center; gap: 8px; margin: 0; }
 .dsh-panel-workspace-nav-icon { display: inline-flex; width: 16px; height: 16px; flex: none; }
 .dsh-panel-workspace-nav-icon svg { width: 16px; height: 16px; }
 .dsh-panel-workspace-navigation header p { margin: 5px 0 0; color: var(--ds-text-tertiary, #6d6d6d); font-size: 12px; line-height: 1.55; }
-.dsh-panel-workspace-nav-items { display: grid; gap: 4px; padding: 0 16px 16px; }
-.dsh-panel-workspace-nav-items button { display: block; width: 100%; min-height: 36px; padding: 8px; border: 0; border-radius: 8px; background: transparent; color: var(--ds-text-primary, #272727); text-align: left; cursor: pointer; }
+.dsh-panel-workspace-nav-items { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; padding: 0 16px 16px; }
+.dsh-panel-workspace-nav-items button { display: block; width: 100%; min-width: 0; min-height: 36px; padding: 8px; border: 0; border-radius: 8px; background: transparent; color: var(--ds-text-primary, #272727); text-align: left; cursor: pointer; }
 .dsh-panel-workspace-nav-items button:hover { background: var(--ds-bg-gary-hover, #f0f0f3); }
 .dsh-panel-workspace-nav-items button[aria-current=page] { background: var(--ds-brand-light-bg-default); color: var(--ds-text-primary); }
 .dsh-panel-workspace-nav-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
 .dsh-panel-workspace-nav-eyebrow { display: block; margin-bottom: 4px; color: var(--ds-text-tertiary, #777); font-size: 12px; font-weight: 400; line-height: 16px; }
-.dsh-panel-workspace-nav-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dsh-panel-workspace-nav-label { flex: 1; min-width: 0; white-space: normal; overflow-wrap: anywhere; }
 .dsh-panel-workspace-current { flex: none; color: var(--ds-brand-8, #5335b7); font-size: 11px; font-weight: 400; }
-.dsh-panel-workspace-nav-description { display: block; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ds-text-tertiary, #777); font-size: 12px; font-weight: 400; line-height: 16px; }
-.dsh-question-workspace .dsh-panel-workspace-nav-label { white-space: normal; overflow-wrap: anywhere; }
-.dsh-question-workspace .dsh-panel-workspace-nav-items { grid-template-columns: minmax(0, 1fr); }
-.dsh-question-workspace .dsh-panel-workspace-nav-items button { min-width: 0; }
-.dsh-question-workspace .dsh-panel-workspace-navigation > header { overflow-wrap: anywhere; }
-.dsh-question-workspace .dsh-panel-workspace-nav-description { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; white-space: normal; overflow-wrap: anywhere; }
+.dsh-panel-workspace-nav-description { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; margin-top: 4px; overflow: hidden; white-space: normal; overflow-wrap: anywhere; color: var(--ds-text-tertiary, #777); font-size: 12px; font-weight: 400; line-height: 16px; }
 .dsh-panel-workspace-nav-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; color: var(--ds-text-secondary, #4c4c4c); font-size: 11px; font-weight: 400; line-height: 16px; }
 .dsh-panel-workspace-nav-meta { margin-left: auto; }
 .dsh-panel-workspace-nav-status { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--ds-line-3, #bbb); }

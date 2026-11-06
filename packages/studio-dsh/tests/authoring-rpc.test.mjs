@@ -339,7 +339,15 @@ test('strict mount-choice codecs preserve optional descriptions without acceptin
   ]) {
     await assert.rejects(read({ ...value, availableBundles: [{ ...choice, ...fields }] }), /invalid|unrecognized/iu)
   }
-  for (const fields of [{ description: 'not a pin' }, { displayDescription: choice.displayDescription }]) {
+  const display = { title: choice.title, description: choice.description, displayDescription: choice.displayDescription }
+  const mounted = { ...value, mounts: [{ bundle: pin, display }] }
+  assert.deepEqual((await read(mounted)).mounts, mounted.mounts, 'read-only mount copy survives strict host transport')
+  const saved = await service.updateMounts({ id: kit.id, expectedRevision: kit.revision, bundles: [pin] })
+  assert.equal((await read(saved)).mounts[0].display?.title.en, 'Observations', 'the built domain projection reaches the host codec')
+  for (const invalid of [{ ...display, unknown: true }, { title: 'bad' }, { displayDescription: { en: 'missing Chinese' } }]) {
+    await assert.rejects(read({ ...mounted, mounts: [{ bundle: pin, display: invalid }] }), /invalid|unrecognized/iu)
+  }
+  for (const fields of [{ display }, { description: 'not a pin' }, { displayDescription: choice.displayDescription }]) {
     assert.equal(STUDIO_AUTHORING_RPC_SCHEMAS.updateMounts.request.safeParse({ id: kit.id, expectedRevision: 0, bundles: [{ ...pin, ...fields }] }).success, false)
   }
 })

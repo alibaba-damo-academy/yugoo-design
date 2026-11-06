@@ -7,10 +7,23 @@
  * `create()` factory; Host and Client consume this same contribution.
  */
 import { z } from 'zod'
+import type { DesignOrchestrationResult } from './design-knowledge-status.ts'
 
 /** Session id wire parameter (agent-scope lookup). */
 const agentIdSchema = z.intersection(z.string(), z.unknown())
-const reviewPolicySchema = z.object({ mode: z.enum(['auto', 'continuous', 'every-publication', 'off']), autoMergeWindowMs: z.number().int().min(0).max(3600000), continuousIntervalMs: z.number().int().min(60000).max(86400000).optional() }).strict()
+const reviewPolicySchema = z.object({ depth: z.enum(['light', 'standard', 'thorough']).optional(), mode: z.enum(['auto', 'continuous', 'every-publication', 'off']), autoMergeWindowMs: z.number().int().min(0).max(3600000), continuousIntervalMs: z.number().int().min(60000).max(86400000).optional() }).strict()
+const manualReviewRequestIdSchema = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,63}$/)
+const orchestrationTargetSchema = z.object({
+  checkpoint: z.string().optional(),
+  generation: z.string().optional(),
+  lastPublishedRevision: z.string().optional(),
+  revision: z.number().int().nonnegative().optional(),
+}).strict()
+const manualReviewResultSchema: z.ZodType<DesignOrchestrationResult> = z.discriminatedUnion('outcome', [
+  z.object({ outcome: z.literal('accepted'), reason: z.string(), target: orchestrationTargetSchema, profiles: z.array(z.string()).optional() }).strict(),
+  z.object({ outcome: z.literal('noop'), reason: z.string(), target: orchestrationTargetSchema.optional() }).strict(),
+  z.object({ outcome: z.literal('rejected'), reason: z.string(), target: orchestrationTargetSchema.optional() }).strict(),
+])
 /** The owning design skill name. */
 const skillSchema = z.string()
 /** The full post-edit panel state (arbitrary JSON). */
@@ -396,6 +409,17 @@ export const TYPERT_REMOTE = {
       ],
       cancellation: { parameter: 'signal' },
       result: { mode: 'strict', typeSymbol: 'dsh-design-core#designPanel/updateReviewPolicy:result', create: () => reviewPolicySchema },
+    },
+    {
+      id: 'dsh-design-core#designPanel/requestManualReview',
+      service: 'designPanel', namespace: 'designPanel', method: 'requestManualReview',
+      invocation: { kind: 'direct' }, scope: { context: 'agent', wire: 'agentId' },
+      parameters: [
+        { name: 'agent', wire: 'agentId', source: 'lookup', lookup: 'agent', codec: { mode: 'strict', typeSymbol: '@deepseek-ai/dsh-session/types#SessionId', create: () => agentIdSchema } },
+        { name: 'requestId', wire: 'requestId', source: 'json', codec: { mode: 'strict', typeSymbol: 'dsh-design-core#designPanel/requestManualReview:requestId', create: () => manualReviewRequestIdSchema } },
+      ],
+      cancellation: { parameter: 'signal' },
+      result: { mode: 'strict', typeSymbol: 'dsh-design-core#designPanel/requestManualReview:result', create: () => manualReviewResultSchema },
     },
     {
       id: 'dsh-design-core#designPanel/readGraph',

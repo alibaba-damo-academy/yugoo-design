@@ -71,6 +71,15 @@ One shared Design UI implements the Design Workspace, Studio, Alignment Workspac
 
 Yugoo Design has one product npm entry, `yugoo-design`, and one product version. The native DSH integration and Companion integrations are peer host adapters over this shared infrastructure. The product installer selects the host route; DSH installs its exact native module dependency closure, while Companion hosts use the shared portable payload. Companion is a presentation and integration implementation, not the name or version authority of the whole product.
 
+Formal release assemblers share the upstream Node/CPU embedding bundle preparation:
+verified, exact registry archives supply the prebuilt Transformers.js Node entry,
+ONNX CPU binaries and sharp code. Ordinary target-side npm/pnpm installs the
+selected platform's sharp assets and remaining dependencies without compiling
+product sources or running the bundled dependencies' installation scripts.
+Development dependencies, model preparation and actual native Host acceptance
+remain separate. Assembly records retained bytes, provenance and licenses; it
+does not copy a developer's installed dependency tree or change the execution backend.
+
 These are presentation modes for the same UI, not separate products or implementations. Capability detection selects embedded or inline presentation only when the host guarantees the required lifecycle and interaction APIs; companion presentation is the portable fallback. A companion panel contains design surfaces only and leaves conversation history, Agent controls, coding tools, and subsequent development in the originating host.
 
 During active design, the Design panel is the primary visual workspace. When an embedded host automatically opens the panel for new Design activity, it collapses its conversation-history navigation and initially assigns about 70% of the available workspace to Design and 30% to the conversation. The user may resize the split or reopen navigation while Design remains open; reflow fits the dock to the available space, and later activity focuses the newest Design tab without overwriting those manual choices. Restoring an open dock after a session switch or client remount preserves its width within the current Host layout rather than repeating the initial layout policy. Closing the automatically opened panel restores navigation only when the Design integration originally collapsed it and no later Host or user transition superseded that ownership. Inline and companion hosts preserve the same Design-first emphasis within the space they control without modifying unsupported host chrome.
@@ -572,6 +581,13 @@ Question delivery remains an ordinary main-Agent action. After accepted Alignmen
 
 Only user-provided or explicitly confirmed answers can become `human_confirmed` evidence. Answering a question does not authorize a background advisory profile to modify another Bundle's Design Files.
 
+Review history retains the recorded follow-up choice, its reason and execution
+status alongside acceptance. A reasoned no-action choice must not become an
+unanswered request merely because no source file was changed; another review
+needs a material new fact or explicit reconsideration that changes that reason.
+This history is context for judgment, not Design evidence or execution authority.
+Selecting host-native questioning or research does not establish completion.
+
 ### Background design Agent execution
 
 Grounding, reflection, and alignment are Kit-neutral capabilities installed with the Design System integration, not Bundles or optional members of a Kit. Their ordinary background runs leave the foreground conversation available and inherit the primary Agent's active model route, credentials, authentication, permissions, and tool infrastructure; the Design System does not select a separate advisory model. Background completion never gates the foreground conversation. When non-blocking background execution is unavailable, only the explicit user choice described below may authorize a one-time foreground review. Their output is advisory and safe to discard or recompute; partial output is never authoritative.
@@ -613,6 +629,96 @@ Host capability negotiation selects the first usable execution mode:
 
 All execution modes inspect the current filesystem and Git history, retain lifecycle pins for stale-result rejection, and return the same strict advisory outputs. Background review Agents cannot write authoritative Design Files, Question Bundle state, or KAG. A formal design change enters only through the main Agent's ordinary validated path after human confirmation or an explicit recorded delegation policy.
 
+### Review effort and context delivery
+
+GRA frequency and review depth are separate choices in the existing project
+policy. `depth` is `light`, `standard` (also the absent-field default), or
+`thorough`. DSH and Companion pin that choice when preparing a run; changing the setting
+does not alter an in-flight run or a replayed completed result. Light starts with
+the changed object, current task and direct facts; standard follows their direct
+dependencies; thorough follows relevant project chains and edge cases. Each
+scope has an evidence-based stopping condition. Known consequential risks may
+require further investigation at any depth; finding counts are not effort
+quotas. These are investigation instructions, not fixed token budgets or
+completeness guarantees. Read tools begin with bounded excerpts and still allow
+the reviewer to request necessary evidence. Every depth retains professional
+methods, source verification, uncertainty and the existing save boundaries.
+Changing depth neither enables automatic reviews nor creates a classifier job.
+
+The existing change event or current foreground task can supply investigation
+starting points. Both adapters intersect those locators with files in the run's
+pinned commit; Companion uses a Journal change only when its committed Design
+evidence is verified equivalent to that checkpoint. A locator is neither proof
+of a change nor evidence already reviewed,
+and does not exclude other relevant saved content. Missing locators do not block
+review. An unfinished foreground task is not itself a design defect; reviewers
+inspect saved evidence at their selected depth without reading newer worktree
+content or skipping an entire Bundle merely because it is being edited.
+
+The shared settings control's **Save & check** saves the selected policy before
+requesting the existing manual review. Saving settings alone writes the policy
+directly and does not send a conversation message or ask a model to apply it.
+A failed save sends no review request. On DSH, Save & check uses an Agent-bound
+Panel RPC to call the existing Core manual-review operation and its Journal /
+scheduler request identity; it does not ask the main Agent to forward the command.
+Adapters without direct dispatch retain their native Agent coordination path.
+Once direct dispatch is attempted, rejection or a lost response never falls back
+to a conversation prompt. The control reports accepted, already requested,
+already completed, rejected and unconfirmed outcomes distinctly. Ordinary design
+content saves still write Design Files / Git before notifying the Agent to read
+the changes; that separate save-and-continue flow is unchanged.
+Retrying an unacknowledged request with unchanged settings retains its request
+identity; editing a setting starts a new intent instead of replaying a review
+prepared under the old policy. Project/session changes retain their existing
+component-lifetime boundary. Automatic scheduling remains a separate choice.
+
+Stable DSH system sections contain methods and assessment rules. Mutable
+assessment identity and the current unresolved-advice projection use the Host's
+runtime-context mechanism instead of causing a full system-prompt update or a
+fresh inbox message on every unchanged projection. Advice context reads the
+selected project's Journal at assembly, so restart and compaction do not depend
+on an old process cache. Advice acceptance carries a locator and concise
+follow-up guidance; the existing `design_read_review_action` retrieves the
+complete finding before action selection. This changes delivery volume, not
+the authoritative advice or its disposition.
+The projection preserves each current advice's Journal status. Deferred advice
+remains available and unresolved, but does not require another review choice
+unless the user revisits it or materially new evidence changes its relevance.
+
+DSH model routes can either replace the system prompt or retain changed system
+prompts in history. Stable sections prevent whole-method duplication on the
+in-history route and preserve the system prefix on the replace route. Changed
+runtime contexts are still retained snapshots, not zero-cost replacements;
+unchanged ones are deduplicated. Measure each actual route with its cache and
+non-cache usage. Logged system snapshots or character counts alone cannot prove
+token or billing savings.
+In a main-conversation Bundle invocation, the scoped executor section omits an
+unchanged shared resource, KAG or evidence-cooperation block only when that same
+request's Core section supplies its complete text. The full method and output
+contract remain in place. Independent Producers and requests missing that Core
+guidance retain the complete executor instructions; no previous-turn receipt is
+used to assume the instructions are still available.
+KAG status notices carry the current state, failure/recovery details and project
+review policy. Their fixed scheduling and disposition guidance belongs to the
+existing stable knowledge-orchestration section, which remains present even
+when the selected project's Kit cannot be loaded.
+Ordinary KAG tool reads default to 30 entities and 30 relations per page in DSH
+and Companion. An explicit limit remains 1–100; continuation keeps the returned
+revision and source pins. This response default does not reduce the separately
+captured internal review graph or truncate fields within a returned record.
+Count auxiliary model calls, including context summaries, separately from normal
+responses before combining recorded usage. Failed summaries with no usage record
+are unknown, not free. The native Host owns compaction thresholds and retries;
+history compaction cannot remove a large required system prefix. Keep Host budget
+configuration and retry defects distinct from plugin context-delivery changes.
+
+Saved runtime-context text is literal evidence, not a Host prompt template.
+The adapter carries it through one variable substitution so template examples
+remain unchanged; it must not evaluate, escape away or delete their contents.
+Synchronous design-state and assessment-identity providers still refresh when
+the Host admits a request or retries the same step. The asynchronous Journal
+projection is the accepted step snapshot and is reread at the next assembly.
+
 ### Explicit foreground GRA fallback
 
 The shared source implementation adds a user-confirmed manual review path when
@@ -643,7 +749,7 @@ documented in its [owning guide](../packages/companion/hosts/qwenwork/README.md#
 
 Background output returns to the originating conversation as human-facing design assistance rather than a silent mutation. Grounding produces cross-file correction suggestions, Reflection produces bounded Research suggestions, and Alignment produces clarification reminders for the main Agent. Each result is persisted independently. The host may render the current journal entries through one aggregate, non-waking projection for the next natural model-context boundary; that projection is a display/read-model convenience and never turns the loops into one transaction.
 
-Advice that needs a decision also appears as a proactive review card. In DSH Web, each pending advisory is a separate non-modal card above the composer rather than content inside the Design Panel. When the main Agent asks the user to choose the next Design action and current advisory cards exist, the host-native question reserves one option for reviewing the current advisory set and offers at most two Bundle choices beside it. Selecting that option only exposes review; it accepts nothing and runs no Bundle. Rejecting or deferring a card does not wake the main Agent. Accepting a card submits one bounded, self-contained instruction containing the accepted review items through the host's authenticated user-input path, which records the action and may wake the main Agent; the advisory is marked accepted only after that submission succeeds. This preserves timely interaction without granting the background analysis its own execution authority. Completion never interrupts a model response already in progress or injects unbounded worker transcripts into the main context.
+Advice that needs a decision also appears as a proactive review card. In DSH Web, each pending advisory is a separate non-modal card above the composer rather than content inside the Design Panel. When the main Agent asks the user to choose the next Design action and pending actionable advisories exist, the host-native question reserves one option for reviewing those pending advisories and offers at most two Bundle choices beside it. Selecting that option only exposes review; it accepts nothing and runs no Bundle. Rejecting or deferring a card does not wake the main Agent. Accepting a card submits one bounded instruction containing the advisory locator, summary and follow-up guidance through the host's authenticated user-input path, which records the action and may wake the main Agent; the advisory is marked accepted only after that submission succeeds. For a review-choice advisory, the main Agent reads the complete saved finding through `design_read_review_action` before selecting the next action. This preserves timely interaction without granting the background analysis its own execution authority. Completion never interrupts a model response already in progress or injects unbounded worker transcripts into the main context.
 
 Every model-visible advisory is recorded by the Agent Host's conversation mechanism and is reconstructable from its Design System journal record and pinned inputs. DSH uses its non-waking Agent inbox for model delivery and its composer review cards for human attention. An active Codex or Claude CLI adapter may use the host's native user-question interaction; without an active interaction surface it queues the request for the next session boundary instead of inventing an out-of-band confirmation. Adapters preserve each accept, reject, and defer decision. When several acceptance receipts reach the same natural main-Agent boundary, the Agent revalidates them together, drops resolved items, and merges overlapping work by affected Bundle and entity into one revision plan; a later receipt arriving during attached foreground Design work waits for the next boundary. Acceptance records authority separately from applying a change, and only the subsequent validated write creates authoritative design state.
 

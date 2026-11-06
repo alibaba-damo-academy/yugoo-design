@@ -1,6 +1,6 @@
 ---
 name: whiteboard
-description: Draw and revise a topic-based freeform whiteboard with the user. Use text, shapes and connectors to explore or explain ideas; do not substitute a sketch for an explicitly requested formal BPMN, page prototype or other Bundle output.
+description: Draw and revise a topic-based freeform whiteboard in the same scene file as the user. Use text, shapes and connectors to explore or explain ideas; do not substitute a sketch for an explicitly requested formal BPMN, page prototype or other Bundle output.
 ---
 
 # Freeform whiteboards

@@ -53,7 +53,7 @@ async function fixture(t) {
   let number = 0
   async function start({ contentStateRoot, legacyRoot, discovery = false, watch = false, extraBundles } = {}) {
     const ctx = new Context()
-    ctx.provide('systemPrompt', { section() {}, context() {} })
+    ctx.provide('systemPrompt', { variable() {}, section() {}, context() {} })
     ctx.provide('tools', { register() {}, get() {} })
     let preExecute
     const on = ctx.on.bind(ctx)

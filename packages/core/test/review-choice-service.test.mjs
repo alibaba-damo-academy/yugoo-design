@@ -42,9 +42,67 @@ test('official profiles propose choices, not fixed Question or Research targets'
   assert.equal(alignment.actionSpec.kind,'review-choice')
   assert.equal(alignment.actionSpec.profile,'alignment')
   assert.match(alignment.acceptanceInstruction,/design_select_review_action/)
+  assert.match(alignment.acceptanceInstruction,/design_read_review_action/)
+  assert.doesNotMatch(alignment.acceptanceInstruction,/Who uses this\?/,'acceptance locates the complete finding instead of copying it again')
+  assert.equal(alignment.items[0].title, 'Who uses this?', 'the authoritative question remains complete')
+  assert.equal(alignment.items[0].rationale, 'Different workflows')
   assert.doesNotMatch(alignment.acceptanceInstruction,/invoke exactly one current Kit question capability/)
   const reflection=officialAdvisoryProfile(OFFICIAL_REFLECTION_PROFILE).project(input,{schemaVersion:1,researchNeeds:[{id:'r',facets:['facts'],uncertainty:'Unknown API',whyExternalKnowledge:'Published API matters',researchQuestion:'Which API?',suggestedSources:[]}]})
   assert.deepEqual(reflection.actionSpec,{kind:'review-choice',profile:'reflection',entityRefs:['research-r']})
+})
+
+test('advisory context reads restored Journal state without emitting duplicate inbox messages', async () => {
+  const agent = {inject() { assert.fail('aggregate routing belongs in runtime context') }}
+  let project = 'project-one', reads = 0, afterRead
+  const receiver = {activeWorkspaces:new Map([[agent, {project:{projectId:project, root:'/selected-project'}}]]),
+    selectionForAgent: () => project ? {projectId:project} : undefined,
+    journals:{async read(root, id) { reads++; assert.equal(root, '/selected-project'); assert.equal(id, 'project-one'); afterRead?.(); return {snapshot:{advisories:[]}} }},
+    advisoryCurrency: () => ({}), currentAdvisoryEntries: entries => entries}
+  const render = () => DesignService.prototype.renderAdvisoryProjection.call(receiver, agent)
+  const initial = await render(); assert.match(initial, /count="0"/)
+  assert.equal(await render(), initial, 'unchanged Journal state is deduplicable by the Host')
+  assert.equal(reads, 2, 'restoration needs no old process-local projection cache')
+  afterRead = () => { project = 'project-two' }
+  assert.equal(await render(), '', 'selection changes during reading cannot leak the old project')
+  project = undefined; assert.equal(await render(), '')
+})
+
+test('restored advisory context preserves deferral without repeatedly routing the user back to review', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'gra-deferred-context-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  let journals = new DesignJournalRegistry(() => root)
+  const advisory = officialAdvisoryProfile(OFFICIAL_ALIGNMENT_PROFILE).project(input, output)
+  await journals.publish(root, 'project', advisory)
+  const render = async () => {
+    const agent = { inject() { assert.fail('restoration must not inject another inbox message') } }
+    const receiver = {
+      activeWorkspaces: new Map([[agent, { project: { projectId: 'project', root } }]]),
+      selectionForAgent: () => ({ projectId: 'project' }), journals,
+      advisoryCurrency: () => ({ designRevision: 1 }), currentAdvisoryEntries: entries => entries,
+    }
+    return DesignService.prototype.renderAdvisoryProjection.call(receiver, agent)
+  }
+  assert.match(await render(), /count="1" actionable="1"/)
+  await journals.decide(root, 'project', { advisoryId: advisory.id, decision: 'deferred' }, [])
+  journals = new DesignJournalRegistry(() => root)
+  const restored = await render()
+  assert.match(restored, /count="1" actionable="0"/)
+  assert.ok(restored.includes(`[deferred] ${advisory.summary}`), 'retain the finding and its human disposition')
+  assert.doesNotMatch(restored, /When offering the next host-native Design choice/)
+  assert.match(restored, /unless the user asks to revisit it or materially new evidence/)
+  assert.equal(await render(), restored, 'unchanged restored context remains deduplicable')
+  const pending = officialAdvisoryProfile(OFFICIAL_REFLECTION_PROFILE).project(
+    { ...input, runId: 'new-review', resultId: 'new-result' },
+    { schemaVersion: 1, researchNeeds: [{ id: 'api', facets: ['facts'], uncertainty: 'Unknown API', whyExternalKnowledge: 'Published API matters', researchQuestion: 'Which API?', suggestedSources: [] }] },
+  )
+  await journals.publish(root, 'project', pending)
+  const mixed = await render()
+  assert.match(mixed, /count="2" actionable="1"/)
+  assert.ok(mixed.includes(`[pending] ${pending.summary}`))
+  assert.match(mixed, /reviewing these 1 pending advisory item\(s\)/)
+  assert.match(mixed, /Do not reserve a review option for deferred advice or repeat deferred advice unless/)
+  const accepted = await journals.decide(root, 'project', { advisoryId: advisory.id, decision: 'accepted' }, [])
+  assert.equal(accepted.find(entry => entry.advisory.id === advisory.id).status, 'accepted', 'explicit later acceptance still works')
 })
 
 async function fixture() {

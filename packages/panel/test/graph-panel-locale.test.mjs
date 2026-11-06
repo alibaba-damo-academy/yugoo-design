@@ -79,12 +79,14 @@ test('Graph locale changes retain the transport, reading context and canvas inpu
     assert.equal(globalThis.__graphLocaleProbe.layoutEdges, layoutEdges, 'translation alone must not rebuild layout inputs')
     assert.equal(container.querySelector('.graph-search input'), search); assert.equal(search.value, 'Alpha')
     assert.equal(container.querySelector('.graph-inspector h4').textContent, base.nodes[0].label)
-    assert.equal(container.querySelector('.graph-title').textContent, 'Design relationships')
+    assert.equal(container.querySelector('.design-graph-view').getAttribute('aria-label'), 'Design relationships')
+    assert.equal(container.querySelector('.graph-title'), null, 'the named region does not repeat a visible page title in its toolbar')
 
     statusMode = 'throw'; await sample()
     assert.match(alert(), /Graph status is unavailable/)
     const disconnectedReads = reads, disconnectedStatusReads = statusReads
     locale = 'zh-CN'; await render()
+    assert.equal(container.querySelector('.design-graph-view').getAttribute('aria-label'), '设计关联图')
     assert.match(alert(), /图谱状态暂不可确认/)
     assert.equal(reads, disconnectedReads); assert.equal(statusReads, disconnectedStatusReads)
     statusMode = 'ready'; await sample()

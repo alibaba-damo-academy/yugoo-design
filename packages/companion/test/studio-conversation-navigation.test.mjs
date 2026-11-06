@@ -67,8 +67,9 @@ test('only explicit object editing observes a fresh history interval and keeps g
   const readConversation = async () => { reads++; return { conversation: { available: true, threadId: 'main-fixture', recordedStatus: 'completed', rows: [...rows], omitted: 0 } } }
   const management = { workspace: async () => ({ query: '', kits: [], bundles: [] }) }
   const instances = { ...service }
-  const workspace = () => h(StudioConversationLayout, { rpc, checkConnection: checkConnection(rpc), readConversation }, (render, initialInstance, renderContent) => h(StudioWorkspace, {
-    initialInstance, renderContent, locale: 'zh', client: management, instances, renderInstanceWorkbench: render,
+  let uiLocale = 'zh'
+  const workspace = () => h(StudioConversationLayout, { locale: uiLocale, rpc, checkConnection: checkConnection(rpc), readConversation }, (render, initialInstance, renderContent) => h(StudioWorkspace, {
+    initialInstance, renderContent, locale: uiLocale, client: management, instances, renderInstanceWorkbench: render,
     authoring: { renderPreview: () => h('div', {}, 'S2 preview fixture') },
   }))
   await React.act(async () => root.render(workspace()))
@@ -89,6 +90,14 @@ test('only explicit object editing observes a fresh history interval and keeps g
   const originalWorkbench = document.querySelector('.ygd-studio-instance')
   const composer = () => document.querySelector('.companion-conversation textarea')
   await change(composer(), 'Only prepare a candidate for A.')
+  uiLocale = 'en'
+  await React.act(async () => root.render(workspace()))
+  assert.ok(button('Send to Codex'))
+  assert.equal(composer().value, 'Only prepare a candidate for A.')
+  assert.equal(document.querySelector('.ygd-studio-instance'), originalWorkbench)
+  assert.equal(sent.length, 0, 'language changes never send a request')
+  uiLocale = 'zh'
+  await React.act(async () => root.render(workspace()))
   await until(() => !button('发送到 Codex')?.disabled)
   await click(button('发送到 Codex'))
   assert.deepEqual(sent[0].context, { intent: 'edit', currentFile: 'SKILL.md' })

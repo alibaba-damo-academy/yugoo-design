@@ -7,7 +7,34 @@ import { callCompanion } from '../src/connection-file.mjs'
 import { createCompanionReviews } from '../src/reviews.mjs'
 const alignment={schemaVersion:1,questions:[]}
 const identity=r=>({reviewId:r.reviewId,ownerId:r.execution.ownerId,attemptId:r.execution.attemptId})
-async function until(check) {for(let i=0;i<200;i++){if(await check())return;await new Promise(resolve=>setTimeout(resolve,10))}throw new Error('Timed out')}
+test('manual depth persists across readers and pins each request without enabling automatic reviews', async () => {
+  const f = await fixture()
+  const call = (method, params = {}) => callCompanion(f.server.connectionPath, {method, params})
+  try {
+    await call('updateReviewPolicy', {policy: {mode:'off', autoMergeWindowMs:30000, depth:'light'}})
+    await f.server.project.savePanel({skill:'smart_questions', state:{questions:{}}, eventId:'manual-depth'})
+    const first = await call('recheckReviews', {requestId:'depth-light', profiles:['alignment']})
+    const read = id => call('readReview', {reviewId:id})
+    const light = await read(first.requests[0].reviewId)
+    assert.equal(light.depth, 'light')
+    assert.ok(light.input.pins.some(pin => pin.source === 'review-depth' && pin.revision === 'light'))
+    assert.match(light.prompt, /focused pass on the current user task/)
+    await call('updateReviewPolicy', {policy: {mode:'off', autoMergeWindowMs:30000, depth:'thorough'}})
+    const replay = await call('recheckReviews', {requestId:'depth-light', profiles:['alignment']})
+    assert.equal(replay.requests[0].reviewId, light.reviewId)
+    assert.equal((await read(light.reviewId)).depth, 'light', 'an in-flight/retried request keeps its selected effort')
+    const next = await call('recheckReviews', {requestId:'depth-thorough', profiles:['alignment']})
+    const thorough = await read(next.requests[0].reviewId)
+    assert.equal(thorough.depth, 'thorough')
+    assert.match(thorough.prompt, /broader consistency across the saved project/)
+    assert.notEqual(thorough.requestKey, light.requestKey)
+    assert.equal((await call('readReviewPolicy')).mode, 'off')
+    await assert.rejects(call('updateReviewPolicy', {policy:{mode:'off', autoMergeWindowMs:30000, depth:'adaptive'}}), /depth/)
+    assert.equal((await call('readReviewPolicy')).depth, 'thorough', 'invalid input does not overwrite the selected setting')
+  } finally { await f.close() }
+})
+// Native project/snapshot preparation can outlast two seconds on a shared test host.
+async function until(check) {const deadline=Date.now()+30000;while(Date.now()<deadline){if(await check())return;await new Promise(resolve=>setTimeout(resolve,25))}throw new Error('Timed out waiting for review state')}
 test('project policy defaults to 30s, persists, and off gates autonomous native requests',async()=>{
   const f=await fixture()
   const call=(method,params={})=>callCompanion(f.server.connectionPath,{method,params})

@@ -5,7 +5,7 @@ description: |-
   - **Resolves**: S/T gaps around which external capability the product needs, how the Agent accesses and uses it, and what the product does when the connection succeeds or fails.
   - **Candidate when**: a product behavior depends on an external API, webhook, SDK, MCP tool, third-party component, device, or team-operated system.
   - **Do not infer**: never invent vendor behavior, URL, credential, endpoint, or field-level API contract.
-  - **Output**: `integration_design` panel — one editable Plugin-style connection record plus product-side remarks for every external capability.
+  - **Output**: `integration_design` panel — one editable Plugin-style connection per external capability, including its URL, API Secret requirements and usage Prompt; optional product-side remarks describe success, failure and recovery.
 ---
 
 # Integration Design

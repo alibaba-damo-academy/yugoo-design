@@ -701,29 +701,102 @@ test('same-mirror owned update preserves canonical origin and rejects a release-
   assert.equal(g.calls.length, 1)
 })
 
-test('different selector without proof and sparse, failed or edited receipts never authorize registry replacement', async t => {
-  for (const mode of ['missing', 'sparse', 'failed', 'wrong host', 'wrong profile', 'digest']) {
+test('explicit sparse, failed or edited previous receipts are not accepted as installation facts', async t => {
+  for (const mode of ['sparse', 'failed', 'wrong host', 'wrong profile', 'digest']) {
     const f = await updateFixture(t)
-    if (mode !== 'missing') {
-      const receipt = JSON.parse(await readFile(f.first.receiptFile, 'utf8'))
-      if (mode === 'sparse') { delete receipt.product; receipt.schemaVersion = 1 }
-      if (mode === 'failed') receipt.status = 'failed-partial-state-retained'
-      if (mode === 'wrong host') receipt.host = 'other'
-      if (mode === 'wrong profile') {
-        receipt.planSnapshot.profile = 'other'
-        const { planSha256, ...body } = receipt.planSnapshot
-        receipt.planSha256 = receipt.planSnapshot.planSha256 = digest(body)
-      }
-      if (mode === 'digest') receipt.source.observed.installed.patchSha256 = '0'.repeat(64)
-      else {
-        const { receiptSha256, ...body } = receipt
-        receipt.receiptSha256 = digest(body)
-      }
-      await f.put(f.first.receiptFile, json(receipt))
+    const receipt = JSON.parse(await readFile(f.first.receiptFile, 'utf8'))
+    if (mode === 'sparse') { delete receipt.product; receipt.schemaVersion = 1 }
+    if (mode === 'failed') receipt.status = 'failed-partial-state-retained'
+    if (mode === 'wrong host') receipt.host = 'other'
+    if (mode === 'wrong profile') {
+      receipt.planSnapshot.profile = 'other'
+      const { planSha256, ...body } = receipt.planSnapshot
+      receipt.planSha256 = receipt.planSnapshot.planSha256 = digest(body)
     }
-    const args = mode === 'missing' ? f.args : f.nextArgs
+    if (mode === 'digest') receipt.source.observed.installed.patchSha256 = '0'.repeat(64)
+    else {
+      const { receiptSha256, ...body } = receipt
+      receipt.receiptSha256 = digest(body)
+    }
+    await f.put(f.first.receiptFile, json(receipt))
+    const args = f.nextArgs
     await assert.rejects(installerMain([...args, '--dry-run'], f.nextContext))
     assert.equal(f.calls.length, 1)
+  }
+})
+
+test('a consistent Host-managed registry install upgrades without a historical wrapper receipt', async t => {
+  const f = await productFixture(t)
+  // Seed the existing native Host state, without ever running this wrapper.
+  await f.install('1.2.2')
+  const manifest = JSON.parse(await readFile(f.manifestPath, 'utf8'))
+  manifest.models.provider = 'current user choice'
+  await f.put(f.manifestPath, json(manifest))
+  const plan = await installerMain([...f.args, '--dry-run'], f.context)
+  assert.equal(plan.action, 'update')
+  assert.equal(plan.before.installed.version, '1.2.2')
+  assert.equal(plan.previousReceipt, undefined)
+  assert.equal(f.calls.length, 0)
+  const result = await installerMain([...f.args, '--apply', '--plan', plan.planFile], f.context)
+  assert.equal(result.operation, 'update')
+  assert.equal(result.status, 'registered-config-parsed')
+  assert.equal(result.readback.installed.version, '1.2.3')
+  assert.equal(result.userConfigurationPreserved, true)
+  assert.equal(result.ownershipEstablished, true) // This actual operation, not the previous installation.
+  assert.equal(f.calls.length, 1)
+  assert.equal(JSON.parse(await readFile(f.manifestPath)).models.provider, 'current user choice')
+  const observation = await installerMain(f.args, f.context)
+  assert.equal(observation.operation, 'already-registered')
+  assert.equal(observation.ownershipEstablished, false)
+  const repeat = await installerMain([...f.args, '--previous-receipt', result.receiptFile], f.context)
+  assert.equal(repeat.operation, 'already-registered')
+  assert.equal(repeat.ownershipEstablished, true)
+  assert.equal(f.calls.length, 1)
+})
+
+test('receipt-free registry updates retain plan-drift and actual target readback checks', async t => {
+  for (const mode of ['patch drift', 'installed drift', 'wrong result']) {
+    const f = await productFixture(t)
+    await f.install('1.2.2')
+    const plan = await installerMain([...f.args, '--dry-run'], f.context)
+    if (mode === 'patch drift') await f.put(join(f.home, 'cordis.patch.yml'), '[]\n')
+    if (mode === 'installed drift') await f.put(join(f.profileDir, 'node_modules/@release/design-system-dsh/patch.json'), '[]\n')
+    if (mode !== 'wrong result') {
+      await assert.rejects(installerMain([...f.args, '--apply', '--plan', plan.planFile], f.context), /drifted/)
+      assert.equal(f.calls.length, 0)
+    } else {
+      f.setAction(() => f.install('1.2.5'))
+      const result = await installerMain([...f.args, '--apply', '--plan', plan.planFile], f.context)
+      assert.equal(result.status, 'failed-partial-state-retained')
+      assert.equal(result.ownershipEstablished, false)
+      assert.match(result.readbackError, /Installed version conflict/)
+      assert.equal(f.calls.length, 1)
+    }
+  }
+})
+
+test('normal pnpm ranges and registry tags upgrade from the actual current version without old receipts', async t => {
+  for (const selector of ['^1.2.0', '~1.2.2', 'latest']) {
+    const f = await productFixture(t)
+    await f.install('1.2.2')
+    const manifest = JSON.parse(await readFile(f.manifestPath, 'utf8'))
+    manifest.dependencies['@release/design-system-dsh'] = selector
+    await f.put(f.manifestPath, json(manifest))
+    const plan = await installerMain([...f.args, '--dry-run'], f.context)
+    assert.equal(plan.action, 'update'); assert.equal(plan.before.dependency, selector)
+    const result = await installerMain([...f.args, '--apply', '--plan', plan.planFile], f.context)
+    assert.equal(result.status, 'registered-config-parsed')
+    assert.equal(result.readback.installed.version, '1.2.3')
+    assert.equal(result.userConfigurationPreserved, true); assert.equal(f.calls.length, 1)
+  }
+  const f = await productFixture(t)
+  await f.install('1.2.2')
+  for (const selector of ['^2.0.0', 'npm:@foreign/other@1.2.2', 'file:../other']) {
+    const manifest = JSON.parse(await readFile(f.manifestPath, 'utf8'))
+    manifest.dependencies['@release/design-system-dsh'] = selector
+    await f.put(f.manifestPath, json(manifest))
+    await assert.rejects(installerMain([...f.args, '--dry-run'], f.context))
+    assert.equal(f.calls.length, 0)
   }
 })
 

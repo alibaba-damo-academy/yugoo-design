@@ -36,15 +36,13 @@ AI 像专业顾问一样，结合你的目标、已有成果和反馈，帮助�
 
 统一 npm 产品包和命令行入口均为 `yugoo-design`。安装前请核对[发行状态](docs/wiki/preview-status.md#current-release-and-use)；所需精确版本不存在时停止安装。下列步骤说明安装与首次协作。
 
-1. **安装插件。** 将下面的提示词复制给当前宿主的智能体（Agent）。它会按[安装指南](packages/companion/HOSTS.md#default-prompt-any-supported-host)检查环境、安装并引导你完成必要的启用操作。
+1. **安装插件。** 将下面的[通用提示词](packages/companion/HOSTS.md#default-prompt-any-supported-host)复制给当前宿主的智能体（Agent）。它会获取 npm 产品包，再完成当前宿主的接入与启用。
 
    ```text
-   请从 npm 正式包 yugoo-design，在我当前的 Agent 宿主中安装或更新语构设计系统（Yugoo Design）。
-   先读取官方安装指南，按当前宿主的步骤操作：
-   https://github.com/alibaba-damo-academy/yugoo-design/blob/main/packages/companion/HOSTS.md#agent-led-installation-and-updates
-   优先使用我明确指定的版本。未指定版本时，将 npm 的 latest 解析为一个精确已发布的稳定版本；如果 latest 指向预发布版本，请说明情况并停止，不自行改选其他版本。核对完整性，复用匹配的已有安装；需要新版本时按指南获取。GitHub 链接只用于读取公开指南，无需登录、克隆仓库或源码构建。
-   请完成环境检查、安装、宿主导入或启用及验证，保留已有项目、配置与安装回执。需要我授权、下载模型、启用插件或重启宿主时，给出必要操作，等我完成后继续核验。
-   最后分别说明取得的包版本、宿主实际加载版本和未就绪能力，并给出当前宿主的 yugoo 入口，以及使用 Web App Kit 创建第一个设计项目的一条可复制请求。
+   请在我当前的 Agent 宿主中安装或更新语构设计系统（Yugoo Design）。
+   先复用匹配的已有安装；需要新版本时，在持久目录使用 pnpm 获取 npm 正式包 yugoo-design。优先使用我指定的版本，否则将 latest 解析为精确稳定版本，核对该版本的安装前提及完整性，准备缺少的 Node、pnpm 后执行 pnpm add --save-exact yugoo-design@<解析版本>。如果 latest 指向预发布版本，请说明并停止。
+   读取安装目录下 node_modules/yugoo-design/README.md，运行 pnpm exec yugoo-design --help，识别当前宿主并使用对应的 install --host 路径。自行发现本机所需参数，完成注册或导入及启用。需要我操作界面时，给出准确位置和本次生成的文件或配置，完成后继续验证 yugoo 入口与工具。
+   保留项目、设置与安装回执。只有随包说明未解决的具体问题才查 GitHub 文档，不克隆或源码构建。最后报告安装及实际加载版本、未完成步骤，并给出第一条 Web App Kit 项目请求。
    ```
 
    选择你实际使用的宿主。DSH 将对话与设计面板放在同一工作区；Codex Desktop 使用 macOS arm64 的原生插件入口。Codex CLI、Claude Code CLI、Qoder CLI、千问办公（QwenWork）和 WorkBuddy 的安装方式、面板呈现与后台审查支持有所不同，见[宿主指南](docs/wiki/hosts.md)。

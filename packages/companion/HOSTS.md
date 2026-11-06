@@ -6,12 +6,17 @@ before installing; adapter contracts for maintainers follow the setup instructio
 
 ## Agent-led installation and updates
 
-The GitHub URL is the public installation guide; reading it does not require a
-GitHub account. Normal installation acquires the released **`yugoo-design` npm
-package**, then uses its host adapter. Do not clone this repository or build from
-source for a normal installation. If the GitHub page cannot be read, the
-[same guide as plain text](https://raw.githubusercontent.com/alibaba-damo-academy/yugoo-design/main/packages/companion/HOSTS.md)
-contains the same host sections; select the requested section by its heading.
+Installation has two steps: acquire the released **`yugoo-design` npm package**,
+then connect it to the selected host. The npm entry is shared; registration,
+native import and activation differ by host. DSH's adapter uses its official CLI
+to install the matching native modules; the user does not select internal packages.
+
+Start with pnpm acquisition, then the acquired package's `README.md` and
+`pnpm exec yugoo-design --help`. Reading GitHub is not a prerequisite for normal
+installation. This guide supplies additional host and recovery details when
+needed; it does not require a GitHub account, repository clone or source build.
+Its [plain-text version](https://raw.githubusercontent.com/alibaba-damo-academy/yugoo-design/main/packages/companion/HOSTS.md)
+is an alternative when a specific question needs the online guide.
 
 The default route is **one prompt in the current host → reuse a matching runtime
 or acquire an exact npm version → that host's installation adapter → normal host
@@ -21,37 +26,25 @@ current or explicitly selected host is targeted, not every application on the
 machine. The Agent chooses the host from its actual execution context or an
 explicit user choice; installed executables alone cannot identify it.
 
-The initial package acquisition may use npm or pnpm 11 in a durable, separate
-version directory; both invoke the same acquired `yugoo-design` entry. See the
-[package guide](README.md#npm-candidate-and-native-installation-boundary) for
-pnpm's explicit dependency build permissions and CPU policy. Do not mix package
-managers within one installation directory. An explicitly requested HTTPS mirror
-may be used for acquisition; for DSH, also pass the same `--registry` to the
-product installer. It preserves the release's exact aggregate and canonical
-origin while recording the effective download source in the plan and receipt.
-DSH's internal package operation remains owned by its official CLI, not by a
-second installer. No implicit registry fallback or global configuration change
-is performed. Other adapters do not accept DSH-only registry flags.
+Use pnpm for initial acquisition in a durable version directory and retain its
+complete default dependency layout. npm remains supported; keep one package
+manager per directory. The [package guide](README.md#npm-candidate-and-native-installation-boundary)
+provides the normal one-command acquisition. Prebuilt releases include the
+upstream Node/CPU runtime and need no source compilation, extra build approval
+or hand-written pnpm configuration. This also lets the official DSH operation
+reuse pnpm's existing store.
 
-First-release local embedding uses CPU inference. Before the first npm/npx
-acquisition, set `ONNXRUNTIME_NODE_INSTALL_CUDA=skip` in that child process's
-environment and keep dependency lifecycle scripts enabled (`--ignore-scripts=false`
-for npm install). This is ONNX Runtime's supported way to skip the extra CUDA
-download; it does not replace the upstream package or skip other dependencies'
-scripts. Apply the same environment to later host-installation subprocesses that
-acquire dependencies. The maintained DSH adapter supplies it to the official CLI
-for both Web and Desktop; an older installed adapter may require the caller to
-supply it. Preserve the environment's other values and restore any temporary
-shell setting afterwards. The [package guide](README.md#npm-candidate-and-native-installation-boundary)
-shows POSIX and PowerShell acquisition examples.
+An explicitly requested HTTPS mirror may be used for acquisition; for DSH, pass
+the same `--registry` to the product installer. It preserves the exact aggregate
+and canonical release origin while recording the download source in the plan and
+receipt. DSH's package operation remains owned by its official CLI. Other
+adapters do not accept DSH-only registry flags.
 
-The package cannot set the environment of the npm/npx process acquiring it:
-dependency installation happens before its CLI can run. Bare npm/npx acquisition
-does not select this CPU installation policy automatically. Do not use a later
-parent-package postinstall or blanket script suppression as a substitute.
-CPU policy does not eliminate the separate embedding-model download/cache step.
-GPU support and configurable or user-local model selection remain future work;
-the default product does not provision a GPU environment.
+Embedding model preparation is separate from installing the CPU runtime.
+Check the selected release's own metadata and instructions. Older immutable
+archives, including `0.2.8`, do not gain the new prebuilt packaging and may retain
+CPU environment and native build-policy repair steps. Do not change global
+permissions or enable future dependency scripts to hide an old installation error.
 
 **Product package:** the npm package and CLI are both `yugoo-design`.
 Resolve the requested release from npm to its exact version and integrity before
@@ -90,27 +83,26 @@ current host, or you want to target a different one. This is the shared prompt;
 the host-specific sections below are optional overrides and adapter details.
 
 ```text
-请从 npm 正式包 yugoo-design，在我当前的 Agent 宿主中安装或更新语构设计系统（Yugoo Design）。
-先读取官方安装指南，按当前宿主的步骤操作：
-https://github.com/alibaba-damo-academy/yugoo-design/blob/main/packages/companion/HOSTS.md#agent-led-installation-and-updates
-优先使用我明确指定的版本。未指定版本时，将 npm 的 latest 解析为一个精确已发布的稳定版本；如果 latest 指向预发布版本，请说明情况并停止，不自行改选其他版本。核对完整性，复用匹配的已有安装；需要新版本时按指南获取。GitHub 链接只用于读取公开指南，无需登录、克隆仓库或源码构建。
-请读取当前宿主对应章节及其中链接的专用指南，根据实际系统、架构和可用工具选择路径与命令。缺少 Node 等依赖时先帮我准备，再继续安装。完成安装、宿主导入或启用及验证，保留已有项目、配置与回执。需要我操作原生界面（如导入套件、添加 MCP 连接器）、授权或重启时，给出准确位置和本次生成的文件或配置，等我完成后继续核验；不要只生成安装材料就结束。
-最后分别说明取得的包版本、宿主实际加载版本和未就绪能力，并给出当前宿主的 yugoo 入口，以及使用 Web App Kit 创建第一个设计项目的一条可复制请求。
+请在我当前的 Agent 宿主中安装或更新语构设计系统（Yugoo Design）。
+先复用匹配的已有安装；需要新版本时，在持久目录使用 pnpm 获取 npm 正式包 yugoo-design。优先使用我指定的版本，否则将 latest 解析为精确稳定版本，核对该版本的安装前提及完整性，准备缺少的 Node、pnpm 后执行 pnpm add --save-exact yugoo-design@<解析版本>。如果 latest 指向预发布版本，请说明并停止。
+读取安装目录下 node_modules/yugoo-design/README.md，运行 pnpm exec yugoo-design --help，识别当前宿主并使用对应的 install --host 路径。自行发现本机所需参数，完成注册或导入及启用。需要我操作界面时，给出准确位置和本次生成的文件或配置，完成后继续验证 yugoo 入口与工具。
+保留项目、设置与安装回执。只有随包说明未解决的具体问题才查 GitHub 文档，不克隆或源码构建。最后报告安装及实际加载版本、未完成步骤，并给出第一条 Web App Kit 项目请求。
 ```
 
 ```text
-Install or update Yugoo Design in my current Agent host using the official npm package yugoo-design.
-Read this host's section and linked guide (no login, clone or source build):
-https://github.com/alibaba-damo-academy/yugoo-design/blob/main/packages/companion/HOSTS.md#agent-led-installation-and-updates
-Use my requested version or resolve npm latest once to an exact stable release; if it is a prerelease, report and stop. Verify integrity and reuse a matching install. Adapt commands to the actual system, architecture and tools; prepare missing prerequisites such as Node, then continue.
-Preserve projects, settings and receipts. Complete installation and activation. For manual suite/MCP import, authorization or restart, give the exact UI location and generated file/configuration; wait, then verify. Preparing files alone is not completion.
-Report acquired and loaded versions, remaining limits, the host's yugoo entry and a copyable first-project request using Web App Kit.
+Install or update Yugoo Design in my current Agent host.
+Reuse a matching installation, or acquire the npm package in a persistent directory. Use my requested version or resolve latest to an exact stable release; if latest is a prerelease, report and stop. Check its prerequisites and integrity, prepare missing Node/pnpm, then run pnpm add --save-exact yugoo-design@<resolved-version>.
+Read node_modules/yugoo-design/README.md and run pnpm exec yugoo-design --help. Identify this host and use its install --host route. Discover local inputs and complete registration/import and activation. For required manual actions, give the exact UI location and generated file/configuration, then verify the yugoo entry and tools.
+Preserve projects, settings and receipts. Consult GitHub only for a specific question unanswered by the packaged help; no clone or source build. Report acquired/loaded versions and remaining setup, then provide a first Web App Kit project request.
 ```
 
 For an explicit override, append “Target host: Codex CLI”, “Target host:
 DeepSeek Harness”, or the intended host below; append an exact version if needed.
-A website host selector should include that selected host explicitly in the copied
-prompt, not only change its guide URL. An explicit target takes precedence over
+A website host selector must put the selected host's actual `install --host`
+route, registration/import steps, any manual activation and success checks in
+the copied prompt. Changing only a host name or guide URL is insufficient.
+Use the same acquisition instructions for every host and keep online guide links
+as optional references. An explicit target takes precedence over
 the current conversation's host; confirm an ambiguous target before changing setup.
 The same prompt supports updates, but each adapter retains its own update and
 recovery limits. It does not authorize blanket uninstalls, a replacement host,
@@ -269,15 +261,17 @@ See [Qoder persistent registration](README.md#claude-code-and-qoder-cli-persiste
 
 See [DSH installer and recovery limits](../dsh/README.md#candidate-npm-installer-dsh-route-and-recovery-limits).
 
-DSH's own package manager may separately ask to approve dependency build scripts,
-for example with `ERR_PNPM_IGNORED_BUILDS`. Show the user the packages and action
-requested by the host, then obtain approval only for those dependencies through
-its native approval flow, such as the suggested `pnpm approve-builds` command.
-A current release may request `onnxruntime-node`,
-`protobufjs` and `sharp`; follow the actual error rather than treating this as a
-permanent allowlist. Keep the CPU acquisition policy above when following the
-host's repair instructions; do not suppress all scripts or approve future builds
-indiscriminately. Retain the initial failed result and logs. Native repair is a
+For an existing DSH registry installation, use the same installation entry to
+update the selected exact release. The Agent inspects the current Host profile;
+an installation made by DSH's CLI or Plugins interface needs no historical Yugoo
+installer receipt. If a previous successful receipt is supplied, the installer
+checks that history separately. Keep current projects, models, search and Studio
+content; a missing old receipt is not a reason to ask again for update permission.
+
+An older acquired release may report `ERR_PNPM_IGNORED_BUILDS` for its external
+ONNX, protobuf or sharp dependencies. Follow that exact archive's guide and the
+official Host's scoped repair; new prebuilt releases do not require those scripts.
+Retain the initial failed result and logs. Native repair is a
 separate action: do not rerun the failed installation plan or turn its receipt
 into a successful owned installation. If dependencies are installed but the
 Yugoo plugin is disabled, open DSH's Plugins page and enable the installed
@@ -288,93 +282,7 @@ version actually loaded and report the original failure and repair separately.
 
 #### DSH configuration file and receipts
 
-The Agent prepares `--dsh-config` from the **existing official DSH installation**;
-the user does not need to guess its fields. Save an absolute JSON file with the
-following eight required keys. Replace every example path, version and hash
-with values read from that installation:
-
-```json
-{
-  "dshHome": "/absolute/existing/dsh-home",
-  "node": {
-    "path": "/absolute/official-runtime/node",
-    "sha256": "<sha256-of-runtime-executable>"
-  },
-  "cli": {
-    "path": "/absolute/official-dsh/<bin.dsh-entry>",
-    "sha256": "<sha256-of-cli-file>"
-  },
-  "hostManifest": {
-    "path": "/absolute/official-dsh/package.json",
-    "sha256": "<sha256-of-host-package-json>"
-  },
-  "loader": {
-    "path": "/absolute/official-dsh-app-boot/<main-entry>",
-    "sha256": "<sha256-of-loader-file>"
-  },
-  "loaderManifest": {
-    "path": "/absolute/official-dsh-app-boot/package.json",
-    "sha256": "<sha256-of-loader-package-json>"
-  },
-  "hostVersion": "<hostManifest.version>",
-  "loaderVersion": "<loaderManifest.version>"
-}
-```
-
-Use absolute file paths and each file's actual SHA-256: 64 lowercase hexadecimal
-characters, computed from its resolved bytes. Each file pin accepts only `path`
-and `sha256`. Locate the installed packages through the host's existing entry
-point or native installation information; do not use a source checkout, a shell
-shim or a separately downloaded replacement.
-
-| Field | Value to read from the installed host |
-| --- | --- |
-| `dshHome` | The existing DSH configuration root for the intended host, resolved to its real directory. It contains `profiles/`; it is not the profile directory itself. |
-| `node` | For Web, the compatible Node executable used to run the official CLI. For Desktop, the official Electron executable, as described below. |
-| `hostManifest` | `package.json` for `@deepseek-ai/dsh`; check its package name and read `version` into `hostVersion`. |
-| `cli` | For Web, resolve `hostManifest`'s `bin.dsh` relative to that package directory. Desktop has a different entry below. |
-| `loaderManifest` | `package.json` for the installed `@deepseek-ai/dsh-app-boot`; read `version` into `loaderVersion`. |
-| `loader` | Resolve `loaderManifest`'s `main` relative to its package directory. |
-
-These version strings identify DSH and its Loader, not the Yugoo npm product.
-
-For **Desktop**, also add `desktopHostManifest` as a `{ "path": "...", "sha256": "..." }`
-pin for the installed `@deepseek-ai/dsh-desktop-host/package.json`. Its version,
-`hostVersion` and `loaderVersion` must match. Set `cli` to that Desktop package's
-`lib/cli.js`, with the DSH and Loader packages from the same installed tree.
-Set `node` to the official Electron executable; the installer uses its existing
-Electron Node bridge to read ASAR resources and run the official CLI. Keep the
-installed tree intact rather than extracting it or substituting ordinary Node.
-Read and hash any files inside ASAR through Electron's filesystem; the archive
-location depends on the actual installation. Use the existing `desktop` profile.
-
-Pass the existing profile's **name** separately with `--profile`; the installer
-does not create a profile. Do not add `nodeExecutable`, `cliExecutable`, `scope`
-or runner overrides to the JSON. DSH does not accept `--node-executable`,
-`--disable-embedding` or Codex's `--runtime-receipt`; model settings remain owned
-by the host.
-
-Choose an absolute, private `--receipt-dir` outside the retained product package,
-DSH home, every pinned input directory and any previous product installation.
-It must not contain or overlap those roots or the config file. Keep the config
-file outside the receipt directory. For example, use separate user-owned
-`install-config/` and `install-receipts/` directories outside those roots, with
-a new receipt directory for this operation. On Windows, an existing receipt
-directory must already have the required private permissions; the installer
-does not repair unsafe shared directories.
-
-Use these inputs with the acquired `yugoo-design install --host dsh` route.
-An explicit `--dry-run` writes `<planSha256>.dsh-plan.json` in the receipt
-directory and returns its `planFile`; `--apply --plan <absolute-planFile>` consumes
-that saved file with the same config and profile. The direct route without
-either flag orchestrates these stages and uses a fresh receipt subdirectory.
-Use the returned `planFile`, not a copy of the CLI's display object. For an owned
-update, retain the previous successful receipt and supply `--previous-receipt`
-to both stages. Keep the returned plan and result paths. Before native apply,
-the installer retains `<id>.dsh-prepared.json`; a completed result is stored as
-`<id>.dsh-result.json`, with command logs alongside it. A prepared record or
-failed result does not establish a successful installation. Follow the linked
-recovery limits before retrying a partial operation.
+The maintained [DSH inputs and native activation](README.md#dsh-inputs-and-native-activation) section is included in the package guide, covering configuration fields, official Web/Desktop entry points and receipts. Read it locally when available; an older immutable package may need the linked section for missing field details. Follow that acquired version's CLI behavior. The Agent discovers inputs from the existing host instead of asking the user to write configuration.
 
 ### Install or update: QwenWork
 
@@ -402,41 +310,7 @@ See [desktop preparation](README.md#desktop-npm-package-preparation) and
 
 **Native import and MCP activation:**
 
-First use the installation capabilities advertised by the current QwenWork
-conversation. Its bundled `qwenwork-guidance/guide-mcp.md` describes discovering
-the actual settings keys with `qw_query({key: "qwenwork"})`. When the returned
-plugin entry advertises `install_from_path`, follow its schema with the prepared
-suite. When the connector entry advertises `add`, use the generated
-`design-system-mcp.json` connector's `command`, `args` and `env` as its `config`.
-Reuse an existing working connector. Query the returned detail key to confirm
-connection and tools, then make a real tool call. These are native Host actions,
-not another Yugoo CLI or desktop-control endpoint.
-
-If the Agent cannot complete a required action through those native tools, give
-the user these UI steps and the corresponding generated files/configuration:
-
-1. Open **Extensions → Expert Kits → Add → Upload suite**, select the generated
-   `yugoo-design.zip`, install it and enable the suite.
-2. Check its `design-system` connector. If tools are not connected and no working
-   connector already exists, open **Extensions → Connectors → Add → Paste JSON
-   configuration**. Paste the contents of the generated `design-system-mcp.json`,
-   import it and enable it. With `--separate-mcp`, this separate step is required.
-   Keep one active connector rather than importing it twice.
-3. After adding/enabling the connector, start a new QwenWork task so the tools
-   load, select the `yugoo` skill and continue verification there. Verify a real
-   tool call; a ZIP or successful Skill import alone does not establish readiness.
-
-Native connector actions can reload the tool pool. If the current conversation
-already exposes and successfully calls the new tools, continue there; otherwise
-use the host's new-task activation step above. A connected pool alone does not
-prove that this Agent can call its tools.
-
-These native UI steps follow QwenWork's [suite import guide](https://docs.qwenwork.cn/desktop/expert-kits)
-and [connector guide](https://docs.qwenwork.cn/features/connectors).
-The Agent adapts prerequisites, paths and shell commands to the actual environment;
-historical test-machine details below are not additional installation requirements.
-An acquired adapter's concrete unsupported-platform error still needs a product
-fix; do not manufacture another machine's paths or claim success from preparation.
+Follow [QwenWork import and MCP activation](README.md#qwenwork-import-and-mcp-activation), reading the acquired package README first and using this reference if an older package lacks that section. The prompt must state that suite import and a working MCP connector are separate steps, including the manual connector path when required.
 
 The inspected QwenWorkCN `1.3.2-26101704` desktop disables background Agent
 Sessions. A restart needed to load the suite does not restore that capability.

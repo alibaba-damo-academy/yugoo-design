@@ -17,6 +17,7 @@ import { validateReleaseHosts } from '../packages/companion/src/npm-installer.mj
 import { stageDesktopPreparationMaterials } from '../packages/companion/npm-desktop-materials.mjs'
 import { copyNativeExecutionReference } from '../packages/companion/build-plugin.mjs'
 import { verifyCompanionNativeGit } from './companion-native-git.mjs'
+import { prebuiltEmbeddingManifest, stagePrebuiltEmbedding } from './prebuilt-embedding-runtime.mjs'
 
 const HOSTS = { codex: '.codex-plugin', 'claude-code': '.claude-plugin', qoder: '.qoder-plugin' }
 export const OFFICIAL_SMALL_INPUTS = OFFICIAL_DSH_JSON_AUTHORITY
@@ -35,7 +36,8 @@ export function validateCompanionDistribution(distribution, { fixture, version }
   }
 }
 
-async function productReadme(packageName, version) {
+export async function productReadme(packageName, version, distribution = 'stable') {
+  assert.ok(['candidate', 'stable'].includes(distribution), 'Distribution must be candidate or stable')
   const source = 'packages/companion/README.md'
   const bytes = await readFile(new URL('../' + source, import.meta.url))
   const text = bytes.toString('utf8')
@@ -46,21 +48,26 @@ async function productReadme(packageName, version) {
   assert.ok(stop > start, 'Maintained npm guide boundaries are reversed')
   const section = text.slice(start, stop).trim()
   assert.ok(section.includes('<package-selector>'), 'Maintained npm guide requires an exact package selector')
+  const candidate = distribution === 'candidate'
+  const selector = candidate ? '/absolute/path/to/received-exact-candidate.tgz' : `${packageName}@${version}`
+  const heading = candidate
+    ? `# Yugoo Design — unpublished npm candidate\n\nCandidate: \`${packageName}@${version}\`. This package is not a published or approved release.\n\nUse the received exact archive path in the acquisition commands below. Registry availability, native activation and release acceptance remain unverified.\n\n`
+    : `# Yugoo Design\n\nPackage: \`${packageName}@${version}\`.\n\n`
   return {
-    text: `# Yugoo Design\n\nPackage: \`${packageName}@${version}\`.\n\n` + section.replaceAll('<package-selector>', `${packageName}@${version}`) + '\n',
+    text: heading + section.replaceAll('<package-selector>', selector) + '\n',
     source: { path: source, sourceSha256: sha(bytes), sectionSha256: sha(section) },
   }
 }
 
-async function files(root, prefix = '') {
+async function files(root, prefix = '', prebuiltEmbedding = false) {
   assert.ok((await lstat(join(root, prefix))).isDirectory(), 'Payload root must be a regular directory, not a symlink')
   const result = []
   for (const name of (await readdir(join(root, prefix))).sort()) {
-    assert.notEqual(name, 'node_modules', 'Build-machine node_modules must not enter the payload')
+    assert.ok(name !== 'node_modules' || prebuiltEmbedding && prefix === '', 'Build-machine node_modules must not enter the payload')
     const path = join(prefix, name)
     const info = await lstat(join(root, path))
     assert.ok(!info.isSymbolicLink(), `Symlink input rejected: ${path}`)
-    if (info.isDirectory()) result.push(...await files(root, path))
+    if (info.isDirectory()) result.push(...await files(root, path, prebuiltEmbedding))
     else { assert.ok(info.isFile(), 'Only regular payload files accepted'); result.push(path) }
   }
   return result
@@ -103,12 +110,11 @@ export async function readCompanionReleaseHosts({ licenseRoot, releaseHostsFile,
   return { bytes, source, selection: validateReleaseHosts(JSON.parse(bytes)) }
 }
 
-export async function buildCompanionCandidate({ payloadSource, destination, licenseRoot, officialInputRoot, scope, packageName, version, ladybugVersion, ladybugDependency, fixture, distribution = 'candidate', releaseHostsFile, releaseHostsSha256 }) {
+export async function buildCompanionCandidate({ payloadSource, destination, licenseRoot, officialInputRoot, scope, packageName, version, ladybugVersion, ladybugDependency, fixture, distribution = 'candidate', releaseHostsFile, releaseHostsSha256, prebuiltEmbedding }) {
   assert.equal(typeof fixture, 'boolean', 'Explicit fixture or non-fixture candidate mode required')
   assert.match(scope ?? '', /^@[a-z0-9][a-z0-9._-]*$/u)
   assert.ok(typeof version === 'string' && valid(version) === version, 'Explicit canonical versions required')
   validateCompanionDistribution(distribution, { fixture, version })
-  const maintainedReadme = distribution === 'stable' ? await productReadme(packageName, version) : undefined
   const selectedLadybug = selectCandidateLadybug({ ladybugDependency, ladybugVersion, scope })
   if (!fixture) {
     assert.match(packageName ?? '', /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/u, 'Non-fixture candidate requires an explicit npm package name')
@@ -116,6 +122,8 @@ export async function buildCompanionCandidate({ payloadSource, destination, lice
     assert.ok(!scope.startsWith('@fixture'), 'Fixture scopes cannot identify a non-fixture candidate')
     assert.equal(selectedLadybug, '0.21.1', 'Non-fixture candidate requires the official exact Ladybug dependency')
   } else assert.equal(packageName, undefined, 'Fixture names are generated from the fixture scope')
+  const maintainedReadme = distribution === 'stable' || !fixture && prebuiltEmbedding
+    ? await productReadme(packageName, version, distribution) : undefined
   const releaseHosts = await readCompanionReleaseHosts({ licenseRoot, releaseHostsFile, releaseHostsSha256 })
   if (distribution === 'stable') {
     const product = await readProductRelease(licenseRoot)
@@ -143,7 +151,8 @@ export async function buildCompanionCandidate({ payloadSource, destination, lice
   const browserLicenseEntries = await prepareBrowserLicenseMaterials(licenseRoot)
   const ladybugLicenseEntries = selectedLadybug === '0.21.1' ? await prepareLadybugLicenseMaterials(licenseRoot) : null
   const releaseHostsBytes = releaseHosts.bytes
-  const template = JSON.parse(await readFile(new URL('../release/product-package-template.json', import.meta.url), 'utf8'))
+  const sourceTemplate = JSON.parse(await readFile(new URL('../release/product-package-template.json', import.meta.url), 'utf8'))
+  const template = prebuiltEmbedding ? prebuiltEmbeddingManifest(sourceTemplate) : sourceTemplate
   template.name = fixture ? `${scope}/design-system-companion` : packageName
   template.version = version
   if(releaseHostsBytes)template.files=[...new Set([...template.files,'release-hosts.json'])]
@@ -268,8 +277,9 @@ try {
   await writeFile(join(target, 'bin/yugoo-design.mjs'), bin, { flag: 'wx', mode: 0o755 })
   const currentReleaseHosts = await readCompanionReleaseHosts({ licenseRoot, releaseHostsFile, releaseHostsSha256 })
   assert.deepEqual(currentReleaseHosts.source, releaseHosts.source, 'Release hosts input drift during assembly')
+  if (prebuiltEmbedding) await stagePrebuiltEmbedding({ ...prebuiltEmbedding, target, sourceRoot: licenseRoot })
   const assets = {}
-  for (const path of await files(target)) assets[path.split(sep).join('/')] = sha(await readFile(join(target, path)))
+  for (const path of await files(target, '', Boolean(prebuiltEmbedding))) assets[path.split(sep).join('/')] = sha(await readFile(join(target, path)))
   const inventory = {
     schemaVersion: 1, fixture, distribution, publishReady: false, version,
     ...(maintainedReadme ? { readmeSource: maintainedReadme.source } : {}),

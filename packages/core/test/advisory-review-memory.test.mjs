@@ -33,6 +33,41 @@ test('memory contains disposition and evidence, explicitly not source truth or p
   assert.match(prompt,/New evidence is allowed even at an unchanged checkpoint/)
 })
 
+test('review memory retains a persisted follow-up choice and its reason after restart', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'gra-follow-up-memory-'))
+  const value = {
+    ...advisory, schemaVersion: 2, profile: 'io.deepseek.design.advisory.alignment/v2',
+    resultRef: 'result-a1', inputs: [{ source: 'design-state', revision: 'state-1' }],
+    kind: 'reminder', attention: 'human-review', summary: 'Clarify the product goal',
+    acceptanceInstruction: 'Review the current need before choosing a follow-up',
+    actionSpec: { kind: 'review-choice', profile: 'alignment', entityRefs: ['i1'] },
+    blocksConversation: false, authorizesDesignWrite: false,
+  }
+  try {
+    for (const [kind, reason] of [
+      ['no-action', 'The user confirmed the current scope and asked to continue with flows. Revisit only if a conflicting need appears.'],
+      ['host-question', 'Ask which audience the user wants to prioritize before changing the scope.'],
+    ]) {
+      const journal = new DesignAdvisoryJournal(new DesignJournalStorage(root))
+      await journal.publish(kind, value)
+      const [accepted] = await journal.decide(kind, { advisoryId: value.id, decision: 'accepted' })
+      const selected = await journal.selectReviewAction(kind, {
+        advisoryId: value.id, acceptanceReceiptId: accepted.acceptanceReceiptId, kind, reason,
+      })
+      const restored = await new DesignAdvisoryJournal(new DesignJournalStorage(root)).list(kind)
+      const prompt = renderAdvisoryReviewMemory(restored)
+      const [record] = JSON.parse(prompt.split('\n')[1])
+      assert.equal(record.status, 'accepted', 'Acceptance is distinct from the follow-up choice')
+      assert.deepEqual(record.selection, { kind, reason, journalRevision: selected.selection.journalRevision })
+      assert.equal(record.executionStatus, selected.executionStatus)
+      assert.doesNotMatch(prompt, new RegExp(accepted.acceptanceReceiptId), 'Review memory must not transport executable receipts')
+    }
+    const prompt = renderAdvisoryReviewMemory([])
+    assert.match(prompt, /no-action.*material new fact/)
+    assert.match(prompt, /Host-question\/research selection alone does not prove completion/)
+  } finally { await rm(root, { recursive: true, force: true }) }
+})
+
 test('journal serializes duplicate publications and restores rejection memory after restart',async()=>{
   const root=await mkdtemp(join(tmpdir(),'gra-memory-'))
   const value=id=>({...advisory,id,profile:'io.deepseek.design.advisory.alignment/v1',resultRef:`${id}-result`,inputs:[{source:'design-state',revision:'state-1'}],kind:'reminder',attention:'human-review',summary:'Check permissions',acceptanceInstruction:'Ask user',blocksConversation:false,authorizesDesignWrite:false})

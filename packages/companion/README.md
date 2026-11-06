@@ -496,8 +496,8 @@ all Panel interactions, or final release acceptance.
 ### Maintained npm package guide
 
 The product package README derives this section from the formal Companion README.
-Replace `<package-selector>` with the exact package identity printed by the
-release or installed package. The assembler records the source and section hashes;
+The assembler replaces `<package-selector>` with the exact published package
+identity or the received archive path for a prebuilt candidate. It records the source and section hashes;
 this guide does not grant publication approval or complete host acceptance.
 The guide below describes the maintained installation routes; the acquired
 version's bundled help determines its actual commands. The dated npm checkpoints
@@ -522,7 +522,7 @@ system Git. Its supported targets are Windows x64 MSVC, Linux x64 GNU and macOS
 arm64; host acceptance remains version-specific. System Git is separate and
 needed only for the explicit CLI diagnostic backend and development fixtures.
 Missing native support is reported rather than silently spawning system Git.
-Resolve the required product release to its exact version and integrity before acquisition;
+For published packages, resolve the required release to its exact version and integrity before acquisition;
 keep the previous installed version available during updates. Stop if that exact
 release is missing; do not substitute another package, channel or arbitrary version.
 If a retained installation already matches that exact release and provides the
@@ -558,37 +558,27 @@ Windows desktop preparation validates an existing Node on Windows. Preparation
 from another operating system requires an explicit Windows path and reports that
 locator as unverified; it does not establish target runtime acceptance.
 
-```sh
-ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm install --ignore-scripts=false --save-exact <package-selector> --registry=https://registry.npmjs.org
-npx --no-install yugoo-design --help
-```
-
-Alternatively, use an existing pnpm 11 installation (npm remains supported).
-In the dedicated, empty version directory, create `pnpm-workspace.yaml` with
-these local settings before acquisition:
-
-```yaml
-nodeLinker: hoisted
-allowBuilds:
-  onnxruntime-node: true
-  protobufjs: true
-  sharp: true
-```
+In a dedicated retained version directory, use normal pnpm installation:
 
 ```sh
-ONNXRUNTIME_NODE_INSTALL_CUDA=skip pnpm add --save-exact <package-selector> --registry=https://registry.npmjs.org
+pnpm add --save-exact <package-selector> --registry=https://registry.npmjs.org
 pnpm exec yugoo-design --help
 ```
 
-Run either acquisition in its own retained version directory, not the Design
-Project or host profile. Do not mix npm and pnpm lockfiles in that directory.
-The hoisted layout is the compatibility route for Companion's current native
-dependency inspection; other pnpm layouts are not certified for every host.
-pnpm's explicit build permissions above allow the current native dependencies'
-installation scripts; do not disable all scripts or enable all future dependency
-builds. Review any newly reported build requirement before allowing it. Retain
-the complete pnpm installation layout; do not copy just a linked
-package directory or invoke Node with `--preserve-symlinks` flags.
+The prebuilt package carries the upstream Transformers.js Node entry, ONNX CPU
+runtime and sharp JavaScript. npm installs only the selected platform's sharp
+binary and the remaining runtime dependencies. No source build, `approve-builds`,
+`allowBuilds`, `ignore-scripts` flag or hand-written workspace configuration is
+needed for these bundled runtime packages. Default pnpm dependency links are
+supported; retain the complete installation layout. The same pnpm store serves
+initial acquisition and the native DSH package operation, so shared dependencies
+can be reused. Existing npm installation remains supported with
+`npm install --save-exact <package-selector>`.
+
+Run acquisition in its own retained version directory, outside the Design Project
+or host profile. Keep one package manager per directory. The prebuilt CPU targets
+are Linux x64 GNU, Windows x64 and macOS arm64; actual installed-host and model
+readiness still require their own checks.
 
 An explicitly selected HTTPS npm mirror is supported, for example
 `--registry=https://registry.npmmirror.com`. Use it both when acquiring this
@@ -604,32 +594,17 @@ missing or stale mirror packages are not permission to change version or source.
 Registry selection does not redirect separate embedding-model or upstream
 installation-script downloads to that mirror.
 
-First-release local embedding runs on CPU. Set the supported
-`ONNXRUNTIME_NODE_INSTALL_CUDA=skip` environment before acquisition to skip ONNX
-Runtime's extra CUDA download while retaining normal dependency lifecycle
-scripts. Preserve the upstream packages and other environment values. The
-installed package cannot configure its acquiring parent npm/npx process; a bare
-npm/npx acquisition does not apply this policy automatically. Keep the same
-policy on later host-installation children that acquire dependencies. The
-maintained DSH adapter passes it to the official CLI in Web and Desktop; older
-installed adapters may need the caller to supply it. This does not establish
-installation success or remove the separate
-[embedding-model preparation step](#local-embedding-model-preparation).
-The default product does not provision GPU runtimes; optional GPU support and
-configurable or user-local model selection are future work.
+Local embedding runs on CPU. The prebuilt release does not run ONNX's extra CUDA
+acquisition script. Model files are prepared separately through the
+[embedding-model preparation step](#local-embedding-model-preparation); package
+installation alone does not establish semantic indexing. GPU provisioning and
+configurable or user-local model selection remain future work.
 
-In Windows PowerShell, scope the setting to acquisition and restore its previous
-process value:
-
-```powershell
-$previousOrtCuda = [Environment]::GetEnvironmentVariable('ONNXRUNTIME_NODE_INSTALL_CUDA', 'Process')
-try {
-  $env:ONNXRUNTIME_NODE_INSTALL_CUDA = 'skip'
-  npm install --ignore-scripts=false --save-exact <package-selector> --registry=https://registry.npmjs.org
-} finally {
-  [Environment]::SetEnvironmentVariable('ONNXRUNTIME_NODE_INSTALL_CUDA', $previousOrtCuda, 'Process')
-}
-```
+Older published archives, including `0.2.8`, keep their original installation
+behavior. Their included guide may require `ONNXRUNTIME_NODE_INSTALL_CUDA=skip`
+and a native pnpm build-policy repair. New release assembly does not change those
+immutable archives. Check the acquired release's `bundledDependencies` and its
+own instructions rather than applying new packaging assumptions to an old version.
 
 ### Local embedding model preparation
 
@@ -779,20 +754,204 @@ installation path or automatically repeat an uncertain operation.
 Same-version retries and updates must follow the owning adapter's receipt rules;
 this entry does not introduce a universal replacement or rollback mechanism.
 
-Start the host normally, then invoke Yugoo Design in the intended conversation.
-Confirm the actual loaded skill and tools, open a project, edit and save a Panel,
+Start the host normally, then confirm the loaded Yugoo Design entry and tools
+in the intended conversation. Offer a first-project request; let the user start
+that design task. During the first design cycle, edit and save a Panel, reopen it
 and check that the original host conversation receives the saved result. Report
 unsupported Workers, GRA or other host capabilities explicitly. Follow the owning
 host's supported diagnostics, update, recovery and uninstall routes and retain
-their receipts; availability differs by host.
+their receipts; availability differs by host. Read only the relevant host section
+below; fetching the full online guide is not required for ordinary setup.
+
+#### CLI registration and activation
+
+Run commands from the retained npm installation's consumer directory. Use
+`pnpm exec yugoo-design install --host HOST` with an external `--receipt-dir`
+and the actual native executable: `--codex-executable` for `codex`,
+`--claude-executable` for `claude-code`, or `--qoder-executable` for `qoder`.
+The Agent discovers these paths from the active host. Codex CLI and Claude Code's
+direct entries run the existing runtime check and registration transaction;
+users do not assemble those stages manually. Follow the acquired version's help
+if it requires a saved plan. Qoder performs native registration and readback;
+use its separate `check-runtime --host qoder` diagnostic for runtime readiness.
+
+After registration, use the host's normal reload/new-session step when necessary
+and check the loaded Skill and tools. Codex CLI uses `$yugoo`; Claude Code and
+Qoder use `/yugoo-design:yugoo`. Qoder's same-version owned registration is a no-op;
+a different version uses its native uninstall/re-registration procedure. Preserve
+existing settings, the previous runtime and the owning receipt on an update.
+
+#### DSH inputs and native activation
+
+The Agent prepares `--dsh-config` from the **existing official DSH installation**;
+the user does not need to guess its fields. Save an absolute JSON file with the
+following eight required keys. Replace every example path, version and hash
+with values read from that installation:
+
+```json
+{
+  "dshHome": "/absolute/existing/dsh-home",
+  "node": {
+    "path": "/absolute/official-runtime/node",
+    "sha256": "<sha256-of-runtime-executable>"
+  },
+  "cli": {
+    "path": "/absolute/official-dsh/<bin.dsh-entry>",
+    "sha256": "<sha256-of-cli-file>"
+  },
+  "hostManifest": {
+    "path": "/absolute/official-dsh/package.json",
+    "sha256": "<sha256-of-host-package-json>"
+  },
+  "loader": {
+    "path": "/absolute/official-dsh-app-boot/<main-entry>",
+    "sha256": "<sha256-of-loader-file>"
+  },
+  "loaderManifest": {
+    "path": "/absolute/official-dsh-app-boot/package.json",
+    "sha256": "<sha256-of-loader-package-json>"
+  },
+  "hostVersion": "<hostManifest.version>",
+  "loaderVersion": "<loaderManifest.version>"
+}
+```
+
+Use absolute file paths and each file's actual SHA-256: 64 lowercase hexadecimal
+characters, computed from its resolved bytes. Each file pin accepts only `path`
+and `sha256`. Locate the installed packages through the host's existing entry
+point or native installation information; do not use a source checkout, a shell
+shim or a separately downloaded replacement.
+
+| Field | Value to read from the installed host |
+| --- | --- |
+| `dshHome` | The existing DSH configuration root for the intended host, resolved to its real directory. It contains `profiles/`; it is not the profile directory itself. |
+| `node` | For Web, the compatible Node executable used to run the official CLI. For Desktop, the official Electron executable, as described below. |
+| `hostManifest` | `package.json` for `@deepseek-ai/dsh`; check its package name and read `version` into `hostVersion`. |
+| `cli` | For Web, resolve `hostManifest`'s `bin.dsh` relative to that package directory. Desktop has a different entry below. |
+| `loaderManifest` | `package.json` for the installed `@deepseek-ai/dsh-app-boot`; read `version` into `loaderVersion`. |
+| `loader` | Resolve `loaderManifest`'s `main` relative to its package directory. |
+
+These version strings identify DSH and its Loader, not the Yugoo npm product.
+
+For **Desktop**, also add `desktopHostManifest` as a `{ "path": "...", "sha256": "..." }`
+pin for the installed `@deepseek-ai/dsh-desktop-host/package.json`. Its version,
+`hostVersion` and `loaderVersion` must match. Set `cli` to that Desktop package's
+`lib/cli.js`, with the DSH and Loader packages from the same installed tree.
+Set `node` to the official Electron executable; the installer uses its existing
+Electron Node bridge to read ASAR resources and run the official CLI. Keep the
+installed tree intact rather than extracting it or substituting ordinary Node.
+Read and hash any files inside ASAR through Electron's filesystem; the archive
+location depends on the actual installation. Use the existing `desktop` profile.
+
+Pass the existing profile's **name** separately with `--profile`; the installer
+does not create a profile. Do not add `nodeExecutable`, `cliExecutable`, `scope`
+or runner overrides to the JSON. DSH does not accept `--node-executable`,
+`--disable-embedding` or Codex's `--runtime-receipt`; model settings remain owned
+by the host.
+
+Choose an absolute, private `--receipt-dir` outside the retained product package,
+DSH home, every pinned input directory and any previous product installation.
+It must not contain or overlap those roots or the config file. Keep the config
+file outside the receipt directory. For example, use separate user-owned
+`install-config/` and `install-receipts/` directories outside those roots, with
+a new receipt directory for this operation. On Windows, an existing receipt
+directory must already have the required private permissions; the installer
+does not repair unsafe shared directories.
+
+Use these inputs with the acquired `yugoo-design install --host dsh` route.
+An explicit `--dry-run` writes `<planSha256>.dsh-plan.json` in the receipt
+directory and returns its `planFile`; `--apply --plan <absolute-planFile>` consumes
+that saved file with the same config and profile. The direct route without
+either flag orchestrates these stages and uses a fresh receipt subdirectory.
+Use the returned `planFile`, not a copy of the CLI's display object. Ordinary
+Host-managed registry updates inspect the current profile and need no historical
+Yugoo receipt. When supplying optional successful history with `--previous-receipt`,
+use the same receipt in both stages. Older acquired versions retain their own
+receipt requirements; use their actual help. Keep the returned plan and result
+paths. Before native apply,
+the installer retains `<id>.dsh-prepared.json`; a completed result is stored as
+`<id>.dsh-result.json`, with command logs alongside it. A prepared record or
+failed result does not establish a successful installation. Inspect the retained
+partial state before retrying; this adapter does not automatically roll back an
+interrupted native package operation.
+
+After the official CLI operation, check the selected profile's Plugins page and
+enable `@yugoo-design/dsh-design-system-dsh` if it is installed but disabled.
+Use normal host restart/reload only when needed, then verify `/yugoo` and the
+embedded Design Panel. The adapter acquires its exact native module dependencies;
+users do not manually install each internal package or modify host sources.
+
+#### QwenWork import and MCP activation
+
+Use `pnpm exec yugoo-design install --host qwenwork` with the real public
+`--node-executable`, verified `--qwenwork-runtime` JSON, an external
+`--destination` and a numeric `--suite-version`. The runtime JSON contains
+`executable`, `worker`, `nodeExecutable`, `executableSha256` and `workerSha256`
+from the intended native installation; the Agent discovers and verifies them.
+An owned update uses its `--previous-receipt` and a greater native suite version.
+The returned suite and connector paths identify the materials for activation.
+
+First use the installation capabilities advertised by the current QwenWork
+conversation. Its bundled `qwenwork-guidance/guide-mcp.md` describes discovering
+the actual settings keys with `qw_query({key: "qwenwork"})`. When the returned
+plugin entry advertises `install_from_path`, follow its schema with the prepared
+suite. When the connector entry advertises `add`, use the generated
+`design-system-mcp.json` connector's `command`, `args` and `env` as its `config`.
+Reuse an existing working connector. Query the returned detail key to confirm
+connection and tools, then make a real tool call. These are native Host actions,
+not another Yugoo CLI or desktop-control endpoint.
+
+If the Agent cannot complete a required action through those native tools, give
+the user these UI steps and the corresponding generated files/configuration:
+
+1. Open **Extensions → Expert Kits → Add → Upload suite**, select the generated
+   `yugoo-design.zip`, install it and enable the suite.
+2. Check its `design-system` connector. If tools are not connected and no working
+   connector already exists, open **Extensions → Connectors → Add → Paste JSON
+   configuration**. Paste the contents of the generated `design-system-mcp.json`,
+   import it and enable it. With `--separate-mcp`, this separate step is required.
+   Keep one active connector rather than importing it twice.
+3. After adding/enabling the connector, verify a real tool call in the current
+   task. If the tools are not exposed there, start a new QwenWork task, select
+   the `yugoo` skill and continue verification. A ZIP or successful Skill import
+   alone does not establish readiness.
+
+Native connector actions can reload the tool pool. If the current conversation
+already exposes and successfully calls the new tools, continue there; otherwise
+use the host's new-task activation step above. A connected pool alone does not
+prove that this Agent can call its tools.
+
+These native UI steps follow QwenWork's [suite import guide](https://docs.qwenwork.cn/desktop/expert-kits)
+and [connector guide](https://docs.qwenwork.cn/features/connectors).
+The Agent adapts prerequisites, paths and shell commands to the actual environment;
+historical test-machine paths are not additional installation requirements.
+An acquired adapter's concrete unsupported-platform error still needs a product
+fix; do not manufacture another machine's paths or claim success from preparation.
+
+#### WorkBuddy market activation
+
+Use `pnpm exec yugoo-design install --host workbuddy` with the real public
+`--node-executable`, an external persistent `--destination` and a numeric
+`--suite-version`. Import the returned `nativeImport.market` directory through
+the native marketplace importer and enable `yugoo-design` and its MCP connection.
+In the inspected desktop, the path was **Skills → Skill Market → Suites → +
+(Add Marketplace)**; use the equivalent control advertised by the current host.
+A full plugin belongs in the marketplace importer, not the standalone Skill ZIP
+importer. On update, keep the same owned market directory, supply its
+`--previous-receipt` and a greater suite version, then use the market's **Refresh**
+and **Update** controls in that order. Verify the loaded `yugoo` Skill and tools
+in the original host after any required normal reload or new-session action.
+
 <!-- npm-package-guide:end -->
 
-The marked npm guide above remains the assembler's maintained source, with
-`<package-selector>` replaced by the exact candidate identity and version. The
-unified product's release preparation and publication are separate operations.
+The marked npm guide above is shared by stable packages and non-fixture prebuilt
+candidates. Candidate copy identifies the unpublished version and uses the
+received archive path for acquisition; host setup remains the same maintained
+guide. Fixtures and legacy candidates without prebuilt dependencies retain their
+own setup instructions. Product release preparation and publication are separate.
 Assembly defaults to candidate copy. The current `--distribution stable` mode
-uses the maintained guide for the exact non-fixture product name and stable
-version, and sets public access with the `latest` tag. It neither publishes nor
+uses the exact product name and stable version and sets public access with the
+`latest` tag. It neither publishes nor
 marks runtime, registry or release validation complete. Historical beta assembly
 records retain their original options; beta is no longer the current release mode.
 
@@ -815,6 +974,12 @@ credential-free HTTPS `--registry` selects a download mirror without changing
 that exact aggregate or the canonical release origin. Pass the same choice to
 dry-run and apply; existing receipt-owned updates must retain both their origin
 and effective registry. Registry migration is not implicit.
+Normal DSH registry updates use the current Host profile, including installations
+made through the official CLI or Plugins interface. They do not require an old
+Yugoo installer receipt or the old acquired installer directory. An optional
+`--previous-receipt` verifies supplied successful history; it does not authorize
+the user's new update. Current package identity, saved-plan drift and preservation
+of unrelated configuration are checked independently.
 The maintained DSH mapping keeps the internal
 `@yugoo-design/dsh-design-system-dsh` identity and `https://registry.npmjs.org`
 origin. The unified release preparation derives its exact aggregate version from
@@ -847,8 +1012,8 @@ Use the current release tooling and declared product version; historical beta bu
 Use the [shared prompt in the current host](HOSTS.md#default-prompt-any-supported-host).
 The Agent first checks the required exact `yugoo-design` version,
 records the exact release and integrity, then acquires it in a durable,
-version-specific directory. The GitHub guide describes the procedure; the
-runtime is acquired from npm. With no version specified, resolve `latest` once
+version-specific directory. The acquired package README and CLI help describe host setup; online
+guides are supplementary references, not an acquisition prerequisite. With no version specified, resolve `latest` once
 to an exact published stable version and keep its integrity for the remaining
 steps. If the tag points to a prerelease, report the mismatch and stop rather
 than choosing another version. An explicit version request takes precedence;
@@ -867,15 +1032,13 @@ that directory in the same shell. A missing release stops installation;
 metadata alone does not prove archive acquisition or native activation.
 
 ```sh
-ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm install --ignore-scripts=false --save-exact "yugoo-design@$yugoo_version" --registry=https://registry.npmjs.org || exit
-npx --no-install yugoo-design --help
+pnpm add --save-exact "yugoo-design@$yugoo_version" --registry=https://registry.npmjs.org || exit
+pnpm exec yugoo-design --help
 ```
 
-This current acquisition example applies the CPU policy from the
-[package guide](#npm-candidate-and-native-installation-boundary) without changing
-the published package. Use that guide's PowerShell form on Windows. Keep the
-same policy on host-installation children; new source behavior is not evidence
-that an older installed adapter supplies it automatically.
+Use the same package manager and retained installation for subsequent commands.
+The selected release's own metadata and instructions describe whether it carries
+the prebuilt runtime; older archives retain their original behavior.
 
 Continue through the host's real registration adapter below. On update, acquire
 the new exact version in a new durable directory, retaining the old package and
@@ -1161,11 +1324,15 @@ and installed-host Skill activation require their own acceptance.
 Focused checks (no installation or host credentials):
 `node --import tsx --test test/component-skill-package.test.mjs test/component-skill-resource.test.mjs`.
 
-Use the repository's existing installed dependencies. Build Core before the
-browser, and finish building before starting tests/the companion.
+Use the repository's existing installed dependencies. Build Core and refresh
+the shared Panel stylesheet before the browser, then finish building before
+starting tests/the companion. The plugin and same-source npm candidate builders
+run the existing Panel CSS build themselves. When invoking tsdown directly,
+include the CSS step below so the browser uses the current shared styles.
 
 ```sh
 pnpm --filter dsh-design-core build
+pnpm --filter dsh-design-panel build:css
 cd packages/companion
 ../../node_modules/.bin/tsdown --config tsdown.config.ts
 ../../node_modules/.bin/tsc --project tsconfig.typecheck.json

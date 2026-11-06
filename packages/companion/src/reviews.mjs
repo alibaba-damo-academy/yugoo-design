@@ -177,6 +177,7 @@ export function createCompanionReviews({ project, stateRoot, threadId, host = 'c
       if(typeof userContext!=='string' || userContext.length>8192 || !Array.isArray(activeWork) || canonical(activeWork).length>16384)throw new Error('Invalid review context')
       activeWork=normalizeWork(activeWork)
       const state=await read(), revision=suppliedRevision ?? await currency()
+      const depth = profile === 'clarity' ? undefined : core.designReviewDepth((await core.readDesignReviewPolicy(join(recordsRoot, 'reviews'), project.project.root)).depth)
       if(manualRequestId!==undefined && !/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,63}$/.test(manualRequestId))throw new Error('Invalid manual review request ID')
       const relationVocabulary = project.kit.relationVocabulary === undefined ? undefined : clone(project.kit.relationVocabulary)
       if ((relationVocabulary?.revision ?? 'legacy-unavailable') !== revision.relationVocabularyRevision) {
@@ -184,7 +185,9 @@ export function createCompanionReviews({ project, stateRoot, threadId, host = 'c
       }
       // Old requests instructed reviewers to exclude active Bundles entirely.
       // Do not reuse that obsolete instruction for the new scope semantics.
-      const requestKey=digest({method:knowledge?'observed-work-kag-v1':'observed-work',profile,revision:await evidenceIdentity(revision),userContext,activeWork,
+      const method = depth ? (knowledge ? 'scoped-investigation-kag-v2' : 'scoped-investigation-v2')
+        : (knowledge ? 'observed-work-kag-v1' : 'observed-work')
+      const requestKey=digest({...(depth ? {depth} : {}),method,profile,revision:await evidenceIdentity(revision),userContext,activeWork,
         ...(inForeground?{executionMode:'foreground',host,threadId}:{}),
         ...(exactPublication?{publicationCheckpoint:revision.checkpoint}:{})})
       const allRequests=await projectRequests()
@@ -206,7 +209,22 @@ export function createCompanionReviews({ project, stateRoot, threadId, host = 'c
       const reviewId=randomUUID(), sequence=Math.max(state.sequence, ...allRequests.map(item=>item.sequence), 0)+1
       state.sequence=sequence
       const contract=profile==='clarity' ? undefined : core.officialAdvisoryProfile(PROFILE_IDS[profile])
+      let startingPoints = ''
+      if (depth) {
+        try {
+          const latest = (await project.readDesignJournal?.())?.snapshot.latestDesignChange
+          const publishedFocus = latest?.commit && await project.store.sameDesignEvidenceAt(latest.commit, revision.checkpoint)
+            ? [{ skill: latest.skill }] : []
+          const targets = [...publishedFocus, ...activeWork]
+          if (targets.length) startingPoints = core.renderDesignReviewStartingPoints(targets,
+            (await project.store.listPathsAt(revision.checkpoint)).map(path => `design_files/${path}`))
+        } catch {
+          // Optional locators never gate review. The existing pinned evidence
+          // reader still owns concrete read failures and coverage limitations.
+        }
+      }
       const input={schemaVersion:1,runId:reviewId,resultId:'result',pins:[
+        ...(depth ? [{source:'review-depth',revision:depth}] : []),
         {source:'design-worktree',revision:digest(await evidenceIdentity(revision))},
         {source:'relation-vocabulary',revision:revision.relationVocabularyRevision},
       ],facetRefs:project.kit.skills.map(skill=>skill.name),...(userContext?{userContextSummary:userContext}:{})}
@@ -216,6 +234,7 @@ export function createCompanionReviews({ project, stateRoot, threadId, host = 'c
         catch (error) { knowledgeError = String(error.message ?? error) }
       }
       const request={reviewId,profile,sequence,requestKey,revision,status:'prepared',createdAt:Date.now(),input,activeWork,
+        ...(depth ? {depth} : {}),
         ...(inForeground?{executionMode:'foreground',host,threadId}:{}),
         ...(exactPublication?{exactPublication:true}:{}),
         ...(manualRequestId?{manualRequestId}:{}),
@@ -226,6 +245,8 @@ export function createCompanionReviews({ project, stateRoot, threadId, host = 'c
         ...(knowledgeError ? { knowledgeError } : {}),
         schema:graphContext && contract ? core.knowledgeReviewSchema(contract.outputSchema, relationVocabulary) : contract?.outputSchema ?? core.DESIGN_CLARITY_OUTPUT_SCHEMA,
         prompt:[contract?.prompt ?? core.DESIGN_CORE_CLARITY_RUBRIC_PROMPT,
+          ...(depth ? [core.renderDesignReviewDepth(depth)] : []),
+          ...(startingPoints ? [startingPoints] : []),
           ...(profile==='clarity' ? [core.renderDesignClarityKitContext(project.kit)] : []),
           `Design Project: ${project.project.root}\nDesign Files: ${project.project.designFilesRoot}`,
           `Bound review: ${reviewId}; revision: ${canonical(revision)}.`,

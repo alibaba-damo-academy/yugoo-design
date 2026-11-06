@@ -10,10 +10,11 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { build } from 'tsdown'
 import { buildFlowScripts as buildPortableFlowScripts, buildWebAppContent } from '../packages/skills-web-app/build.mjs'
 import { valid } from 'semver'
+import { prebuiltEmbeddingManifest } from './prebuilt-embedding-runtime.mjs'
 import { buildCompanionCandidate, validateCompanionDistribution, readCompanionReleaseHosts } from './companion-npm-candidate.mjs'
 import { validateLadybugDependency } from './companion-ladybug-dependency.mjs'
 import { packageKnowledge } from '../packages/companion/package-knowledge.mjs'
-import { copyNativeHookModules } from '../packages/companion/build-plugin.mjs'
+import { copyNativeHookModules, buildCompanionPanelStyles } from '../packages/companion/build-plugin.mjs'
 import { copyComponentSkill } from '../packages/companion/component-skill-package.mjs'
 import { OWN_LICENSE_FILES } from './release-own-license.mjs'
 import { inspectBundledModuleLicense, LADYBUG_MATERIAL_FILES, LADYBUG_MATERIAL_DIRECTORY, EMBEDDED_PICA_LICENSE_SOURCE_PATHS } from './companion-bundled-license.mjs'
@@ -33,8 +34,9 @@ const inputRoots = [
   'packages/git-native', 'scripts/companion-native-git.mjs', 'scripts/companion-source-labels.mjs',
   'packages/companion/build-plugin.mjs', 'packages/companion/codex-desktop-package.mjs', 'packages/companion/qwenwork-package.mjs',
   'packages/companion/README.md',
+  'packages/panel/tailwind.config.cjs',
   'scripts/companion-output-module-map.mjs', 'scripts/normal-build-module-evidence.mjs',
-  'scripts/companion-bundled-license.mjs', 'third-party/companion',
+  'scripts/companion-bundled-license.mjs', 'scripts/prebuilt-embedding-runtime.mjs', 'third-party/companion',
   ...EMBEDDED_PICA_LICENSE_SOURCE_PATHS,
   ...LADYBUG_MATERIAL_FILES.map(path => `third-party/native/${LADYBUG_MATERIAL_DIRECTORY}/${path}`),
   'packages/companion/src', 'packages/companion/index.html', 'packages/companion/tsdown.config.ts', 'packages/companion/tsdown.server.config.ts', 'packages/companion/package-knowledge.mjs',
@@ -148,7 +150,7 @@ async function copyTree(source, target) {
 /** Select an explicit package identity; selection never grants release acceptance. */
 export function parseSameSourceBuildArgs(args) {
   const flags = {}
-  const allowed = ['--ladybug-dependency', '--candidate-mode', '--package-name', '--version', '--distribution', '--native-git-artifacts', '--release-hosts-file', '--release-hosts-sha256']
+  const allowed = ['--ladybug-dependency', '--candidate-mode', '--package-name', '--version', '--distribution', '--native-git-artifacts', '--release-hosts-file', '--release-hosts-sha256', '--npm-cli']
   assert.ok(args.length % 2 === 0, 'Build options require values')
   for (let index = 0; index < args.length; index += 2) {
     const key = args[index], value = args[index + 1]
@@ -157,6 +159,9 @@ export function parseSameSourceBuildArgs(args) {
     flags[key] = value
   }
   const ladybugDependency = validateLadybugDependency(flags['--ladybug-dependency'])
+  const npmCli = flags['--npm-cli']
+  if (npmCli !== undefined) assert.ok(isAbsolute(npmCli), 'Existing npm CLI must be an absolute path')
+  const npm = npmCli === undefined ? {} : { npmCli }
   const nativeGitArtifactRoot = flags['--native-git-artifacts']
   if (nativeGitArtifactRoot !== undefined) assert.ok(isAbsolute(nativeGitArtifactRoot), 'Native Git artifact root must be absolute')
   const releaseHostsFile = flags['--release-hosts-file'], releaseHostsSha256 = flags['--release-hosts-sha256']
@@ -173,7 +178,7 @@ export function parseSameSourceBuildArgs(args) {
   if (version !== undefined) assert.equal(valid(version), version, 'Explicit canonical candidate version required')
   if (mode === 'fixture') {
     assert.equal(flags['--package-name'], undefined, 'Fixture names are generated, not supplied')
-    return { ladybugDependency, ...(nativeGitArtifactRoot ? { nativeGitArtifactRoot } : {}), ...releaseHosts, candidate: { fixture: true, scope: '@fixture-design-release', ...(version ? { version } : {}), ...(distribution ? { distribution } : {}) } }
+    return { ladybugDependency, ...(nativeGitArtifactRoot ? { nativeGitArtifactRoot } : {}), ...releaseHosts, ...npm, candidate: { fixture: true, scope: '@fixture-design-release', ...(version ? { version } : {}), ...(distribution ? { distribution } : {}) } }
   }
   const packageName = flags['--package-name']
   assert.match(packageName ?? '', /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/u, 'Explicit candidate package name required')
@@ -181,25 +186,37 @@ export function parseSameSourceBuildArgs(args) {
   assert.ok(!scope.startsWith('@fixture'), 'Fixture scopes cannot identify a non-fixture candidate')
   assert.ok(version, 'Non-fixture candidate requires an explicit version')
   assert.equal(ladybugDependency, '0.21.1', 'Non-fixture candidate requires the official exact Ladybug dependency')
-  return { ladybugDependency, ...(nativeGitArtifactRoot ? { nativeGitArtifactRoot } : {}), ...releaseHosts, candidate: { fixture: false, scope, packageName, version, ...(distribution ? { distribution } : {}) } }
+  return { ladybugDependency, ...(nativeGitArtifactRoot ? { nativeGitArtifactRoot } : {}), ...releaseHosts, ...npm, candidate: { fixture: false, scope, packageName, version, ...(distribution ? { distribution } : {}) } }
 }
 
-export async function buildSameSourceCandidate({ ladybugDependency, nativeGitArtifactRoot, releaseHostsFile, releaseHostsSha256, candidate = { fixture: true, scope: '@fixture-design-release' } } = {}) {
+/** Real candidates exercise release dependency preparation before publication. */
+export function selectCompanionBuildInputs(sourceTemplate, { candidate, npmCli, embeddingInputsDirectory }) {
+  const prebuiltEmbedding = candidate.fixture === false ? { npmCli, inputsDirectory: embeddingInputsDirectory } : undefined
+  return { template: prebuiltEmbedding ? prebuiltEmbeddingManifest(sourceTemplate) : structuredClone(sourceTemplate), prebuiltEmbedding }
+}
+
+export async function buildSameSourceCandidate({ ladybugDependency, nativeGitArtifactRoot, releaseHostsFile, releaseHostsSha256, npmCli, embeddingInputsDirectory, candidate = { fixture: true, scope: '@fixture-design-release' } } = {}) {
   const selectedLadybug = validateLadybugDependency(ladybugDependency)
   const root = await mkdtemp(join(await realpath(tmpdir()), 'dsh-companion-same-source-build-'))
   const report = { root, kind: 'same-source-exploratory-build', candidateAccepted: false, dynamicClosureVerified: false, publishReady: false, registryChecked: false, nativeDependenciesVerified: false, dependencyLicensesVerified: false, platformsVerified: [], steps: [], moduleInputs: [], emittedModuleMaps: [] }
   const save = name => writeFile(join(root, name), JSON.stringify(report, null, 2) + '\n')
+  const stage = async (name, work) => { const start = Date.now(); try { await work(); report.steps.push({ name, status: 'completed', elapsedMs: Date.now() - start }) } catch (error) { report.steps.push({ name, status: 'failed', message: error.message }); throw error } }
   let before
   try {
     const releaseHosts = await readCompanionReleaseHosts({ licenseRoot: workspace, releaseHostsFile, releaseHostsSha256 })
     report.releaseHostsInput = releaseHosts.source
+    // Generated CSS is a build input to both hosts. Refresh it before freezing
+    // inputs; an unchanged old cache is not evidence that it matches its source.
+    await stage('panel-css', () => buildCompanionPanelStyles())
     before = await snapshotCompanionInputs(nativeGitArtifactRoot, { releaseHostsFile })
     await writeFile(join(root, 'inputs-before.json'), JSON.stringify(before, null, 2) + '\n', { flag: 'wx' })
     report.head = spawnSync('git', ['--no-optional-locks', 'rev-parse', 'HEAD'], { cwd: workspace, encoding: 'utf8' }).stdout.trim()
     report.dirty = Boolean(spawnSync('git', ['--no-optional-locks', 'status', '--porcelain'], { cwd: workspace, encoding: 'utf8' }).stdout.trim())
     report.node = process.versions.node
     report.toolchain = { tsdownEntry: rootRequire.resolve('tsdown'), rolldownUtils: createRequire(rootRequire.resolve('tsdown')).resolve('rolldown/utils') }
-    const template = JSON.parse(await readFile(join(workspace, 'release/product-package-template.json'), 'utf8'))
+    const sourceTemplate = JSON.parse(await readFile(join(workspace, 'release/product-package-template.json'), 'utf8'))
+    const { template, prebuiltEmbedding } = selectCompanionBuildInputs(sourceTemplate,
+      { candidate, npmCli, embeddingInputsDirectory })
     template.dependencies['@ladybugdb/wasm-core'] = selectedLadybug
     report.runtimeDependencies = template.dependencies
     report.ladybugDependency = selectedLadybug
@@ -220,7 +237,6 @@ export async function buildSameSourceCandidate({ ladybugDependency, nativeGitArt
     const web = (await import(pathToFileURL(join(companion, 'tsdown.config.ts')))).default
     assert.equal(server.failOnWarn, true); assert.equal(web.failOnWarn, true)
     assert.ok((await readFile(join(workspace, 'scripts/graph-layout-worker.ts'), 'utf8')).includes('write: false'), 'Nested graph worker must not write to source output')
-    const stage = async (name, work) => { const start = Date.now(); try { await work(); report.steps.push({ name, status: 'completed', elapsedMs: Date.now() - start }) } catch (error) { report.steps.push({ name, status: 'failed', message: error.message }); throw error } }
     await stage('server', () => buildInto('server', { ...server, config: false, entry: Object.fromEntries(Object.entries(server.entry).map(([name, path]) => [name, resolve(companion, path)])), outDir: join(shared, 'scripts'), clean: false }, report.moduleInputs, report.emittedModuleMaps))
     await stage('web', () => buildInto('web', { ...web, config: false, entry: { client: join(companion, 'src/client.tsx') }, outDir: join(shared, 'web'), clean: false }, report.moduleInputs, report.emittedModuleMaps))
     await cp(join(companion, 'index.html'), join(shared, 'web/index.html'))
@@ -253,7 +269,7 @@ export async function buildSameSourceCandidate({ ladybugDependency, nativeGitArt
       report.nonliteralLoadCallsVerified = false
     })
     await stage('candidate', async () => {
-      const candidate = await buildCompanionCandidate({ payloadSource: source, destination: join(root, 'candidate'), licenseRoot: workspace, officialInputRoot: join(workspace, 'scripts/test-fixtures/official-dsh-json'), ...report.candidateSelection, ladybugDependency: selectedLadybug, releaseHostsFile, releaseHostsSha256 })
+      const candidate = await buildCompanionCandidate({ payloadSource: source, destination: join(root, 'candidate'), licenseRoot: workspace, officialInputRoot: join(workspace, 'scripts/test-fixtures/official-dsh-json'), ...report.candidateSelection, ladybugDependency: selectedLadybug, releaseHostsFile, releaseHostsSha256, prebuiltEmbedding })
       report.candidate = candidate.target
       assert.deepEqual(candidate.inventory.dependencies, template.dependencies)
       const runtime = JSON.parse(await readFile(join(candidate.target, 'payload/shared/knowledge/runtime-manifest.json'), 'utf8'))

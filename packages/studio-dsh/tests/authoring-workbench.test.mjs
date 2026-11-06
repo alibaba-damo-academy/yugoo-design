@@ -693,21 +693,30 @@ test('unmount consumes a late start response without cancelling native work, sav
   assert.equal(f.calls.cancel.length, 0); assert.equal(f.calls.save.length, 0); assert.equal(f.calls.changed.length, 0)
 })
 
-test('committed save with a lost response remains uncertain, keeps intent and cannot retry', async t => {
-  const f = await fixture(t); await f.ask()
+for (const kind of ['bundle', 'kit']) test(`${kind} lost save response verifies without discarding source or unsent intent`, async t => {
+  const f = await fixture(t, { kit: kind === 'kit', noKitPreview: true }); await f.ask()
   await until(() => button('Save') && !button('Save').disabled)
+  await change(intent(), 'Retain this unsent follow-up.')
+  await click('Source Files'); await click(kind === 'kit' ? 'mindset.md' : 'SKILL.md'); await until(() => source())
+  const edited = source().value + '\nRetain this human correction.\n'
+  await change(source(), edited); await until(() => button('Save') && !button('Save').disabled)
   f.saveLost(true); await click('Save'); await until(() => document.body.textContent.includes('Verify the save result')); await click('View issues'); assert.match(document.body.textContent, /Save response lost/)
   assert.equal(button('Save').disabled, true)
   assert.equal(f.calls.changed.length, 0); assert.equal(f.calls.save.length, 1)
+  assert.doesNotMatch(document.getElementById('root').textContent, /Changes saved to the working copy/)
   assert.equal((await f.service.read({ id: f.record.id })).revision, f.record.revision + 1)
   assert.equal(button('Revert').disabled, true, 'an unknown save cannot discard its receipt guard')
-  await click('Refresh working copy')
+  const confirm = window.confirm; let confirms = 0
+  window.confirm = () => { confirms++; return false }; t.after(() => { window.confirm = confirm })
+  await click('Verify saved copy')
   await until(() => f.calls.changed.length === 1 && button('Source Files') && !button('Source Files').disabled)
-  await click('Source Files'); await click('SKILL.md'); await until(() => source())
+  await click('Source Files'); await click(kind === 'kit' ? 'mindset.md' : 'SKILL.md'); await until(() => source())
   assert.equal(f.calls.save.length, 1, 'refresh only observes the durable result')
-  assert.doesNotMatch(document.getElementById('root').textContent, /Changes saved to the working copy/)
-  assert.equal(intent().value, '')
-  assert.equal(button('Review proposed changes').disabled, true)
+  assert.equal(confirms, 0)
+  assert.equal(source().value, edited)
+  assert.match(document.getElementById('root').textContent, /Changes saved to the working copy/)
+  assert.equal(intent().value, 'Retain this unsent follow-up.')
+  assert.equal(button('Review proposed changes'), undefined)
 })
 
 test('connection replacement during review cannot redirect or repeat an in-flight save', async t => {

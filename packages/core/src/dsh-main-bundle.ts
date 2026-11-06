@@ -3,6 +3,19 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { DshProducerAgentRequest, DshProducerSkillAgentRuntime } from './dsh-producer-agent.ts'
 import { registerDshProducerDesignTools, type DesignProducerFinishReceipt } from './dsh-producer-design-tools.ts'
 import { renderResult, type RunDesignSkillPort, type RunDesignSkillResult } from './dsh-run-design-skill-tool.ts'
+import { DESIGN_EXECUTOR_EVIDENCE_GUIDANCE, DESIGN_SKILL_RESOURCE_GUIDANCE } from './design-generation-guidance.ts'
+import { KNOWLEDGE_AGENTIC_GUIDANCE } from './design-knowledge-query.ts'
+
+/** Omit only known shared pre-method blocks actually supplied by Core here. */
+function withoutRepeatedCoreGuidance(prompt: string, progression: string): string {
+  const methodStart = Math.min(prompt.length, ...['<design_skill_body>', '<reconstruction_task>']
+    .map(marker => prompt.indexOf(marker)).filter(index => index >= 0))
+  let prefix = prompt.slice(0, methodStart)
+  for (const guidance of [DESIGN_SKILL_RESOURCE_GUIDANCE, KNOWLEDGE_AGENTIC_GUIDANCE, DESIGN_EXECUTOR_EVIDENCE_GUIDANCE]) {
+    if (progression.includes(guidance)) prefix = prefix.replace(`\n\n${guidance}\n\n`, '\n\n')
+  }
+  return prefix + prompt.slice(methodStart)
+}
 
 function deferred<T>() {
   let resolve!: (value: T) => void
@@ -50,6 +63,14 @@ export function createMainBundleBridge(fallback: DshProducerSkillAgentRuntime) {
       const fiber = request.parent.ctx.plugin({ inject: ['tools', 'systemPrompt'], apply(ctx) {
         ctx.tools.restrict({ allow: [...request.allowedInheritedTools] })
         ctx.systemPrompt.section({ name: 'design:main-bundle', order: 550, text: request.systemPrompt })
+        ctx.on('system-prompt/assemble', (assembly, context, next) => {
+          if (context.agent === request.parent && slots.get(request.parent) === slot) {
+            const progression = assembly.sections.find(section => section.name === 'design:progression')
+            const bundle = assembly.sections.find(section => section.name === 'design:main-bundle')
+            if (progression && bundle) bundle.text = withoutRepeatedCoreGuidance(bundle.text, progression.text)
+          }
+          return next()
+        })
         registerDshProducerDesignTools(ctx, request.workspace, request.resources, request.handoff,
           request.activity, request.delegation?.settlementDiagnostics, request.scripts,
           request.allowedInheritedTools, request.reconstructionSourceRoot, async receipt => {

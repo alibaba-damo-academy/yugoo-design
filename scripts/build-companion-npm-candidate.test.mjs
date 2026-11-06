@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { cp, mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, symlink, writeFile } from 'node:fs/promises'
 import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -8,13 +8,44 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createRequire } from 'node:module'
 import { once } from 'node:events'
 import { build } from 'tsdown'
-import { buildFlowScripts, inspectStagedPayload, verifySameSourceCandidateEvidence, verifyStagedUiCandidateAssociations, recordCompletedBuildOutputs, resolveBundledLicenseSource, parseSameSourceBuildArgs } from './build-companion-npm-candidate.mjs'
+import { buildFlowScripts, inspectStagedPayload, verifySameSourceCandidateEvidence, verifyStagedUiCandidateAssociations, recordCompletedBuildOutputs, resolveBundledLicenseSource, parseSameSourceBuildArgs, selectCompanionBuildInputs } from './build-companion-npm-candidate.mjs'
+import { buildCompanionCandidate } from './companion-npm-candidate.mjs'
+import { buildCompanionPanelStyles } from '../packages/companion/build-plugin.mjs'
 import { stageNativeInventoryFixture } from './test-fixtures/companion-native-inventory.mjs'
 import { checkEmitted, BROWSERIFY_DISPATCHER } from './emitted-loader-check.mjs'
 import { EXCALIDRAW_REQUIRE_SHIM } from './known-browser-loader-proof.mjs'
 import { artifactInventory, inventorySha256, sha256 } from './pica-worker-evidence.mjs'
 
 const fixture = fileURLToPath(new URL('./test-fixtures/pica-worker/', import.meta.url))
+
+test('Companion refreshes stale generated Panel CSS through the owning pipeline and propagates CSS failures', async t => {
+  const root = await mkdtemp(join(await realpath(tmpdir()), 'companion panel css '))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const workspace = fileURLToPath(new URL('../', import.meta.url)), panel = join(root, 'packages/panel')
+  await mkdir(join(panel, 'src/client/ported'), { recursive: true })
+  await mkdir(join(panel, 'src/client/generated'))
+  const owner = JSON.parse(await readFile(join(workspace, 'packages/panel/package.json')))
+  const packageManager = JSON.parse(await readFile(join(workspace, 'package.json'))).packageManager
+  await writeFile(join(root, 'package.json'), JSON.stringify({ private: true, packageManager }))
+  await writeFile(join(root, 'pnpm-workspace.yaml'), 'packages:\n  - packages/*\n')
+  await writeFile(join(panel, 'package.json'), JSON.stringify({ name: owner.name, type: owner.type, private: true, scripts: { 'build:css': owner.scripts['build:css'] } }))
+  // Reuse the installed toolchain; the fixture contains only CSS inputs, not a
+  // second source checkout or copied dependency installation.
+  await symlink(join(workspace, 'packages/panel/node_modules'), join(panel, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir')
+  for (const path of ['tailwind.config.cjs', 'src/client/ported/design.css', 'src/client/ported/token.css', 'src/visual-components.css'])
+    await cp(join(workspace, 'packages/panel', path), join(panel, path))
+  const output = join(panel, 'src/client/generated/design.tw.css')
+  await writeFile(output, '.dsh-panel-workspace-nav-label{white-space:nowrap}/* stale cache */')
+  await buildCompanionPanelStyles({ workspaceRoot: root })
+  const css = await readFile(output, 'utf8')
+  assert.match(css, /\.dsh-panel-workspace-nav-label\{[^}]*white-space:normal;[^}]*overflow-wrap:anywhere/)
+  assert.match(css, /\.dsh-panel-workspace-nav-description\{[^}]*-webkit-line-clamp:2/)
+  assert.doesNotMatch(css, /stale cache|\.dsh-question-workspace \.dsh-panel-workspace-nav/)
+  await writeFile(output, 'unchanged output on failed generation')
+  await writeFile(join(panel, 'src/visual-components.css'), '.broken {')
+  await assert.rejects(buildCompanionPanelStyles({ workspaceRoot: root }), /Command failed/)
+  assert.equal(await readFile(output, 'utf8'), 'unchanged output on failed generation')
+})
 
 test('non-fixture build identity requires exact public package and official dependency', () => {
   const args = ['--ladybug-dependency', '0.21.1', '--candidate-mode', 'non-fixture', '--package-name', 'yugoo-design', '--version', '0.1.0']
@@ -24,6 +55,8 @@ test('non-fixture build identity requires exact public package and official depe
   assert.equal(parseSameSourceBuildArgs([...args, '--distribution', 'stable']).candidate.distribution, 'stable')
   assert.throws(() => parseSameSourceBuildArgs([...betaArgs, '--distribution', 'stable']))
   assert.equal(parseSameSourceBuildArgs([...args, '--native-git-artifacts', '/pinned/native']).nativeGitArtifactRoot, '/pinned/native')
+  assert.equal(parseSameSourceBuildArgs([...args, '--npm-cli', '/existing/npm-cli.js']).npmCli, '/existing/npm-cli.js')
+  assert.throws(() => parseSameSourceBuildArgs([...args, '--npm-cli', './relative']))
   assert.throws(() => parseSameSourceBuildArgs([...args, '--native-git-artifacts', './relative']))
   const selected = parseSameSourceBuildArgs([...args, '--release-hosts-file', '/pinned/local-hosts.json', '--release-hosts-sha256', 'a'.repeat(64)])
   assert.equal(selected.releaseHostsFile, '/pinned/local-hosts.json')
@@ -47,6 +80,45 @@ test('non-fixture build identity requires exact public package and official depe
   for (const input of invalid) assert.throws(() => parseSameSourceBuildArgs(input))
   assert.deepEqual(parseSameSourceBuildArgs(['--ladybug-dependency', '0.21.1']), { ladybugDependency: '0.21.1', candidate: { fixture: true, scope: '@fixture-design-release' } })
   assert.throws(() => parseSameSourceBuildArgs(args.filter(value => !['--candidate-mode', 'non-fixture'].includes(value))))
+})
+
+test('real prerelease candidates use the same prebuilt dependencies as stable while fixtures retain their inputs', async () => {
+  const source = JSON.parse(await readFile(new URL('../release/product-package-template.json', import.meta.url)))
+  const original = structuredClone(source)
+  const options = parseSameSourceBuildArgs(['--ladybug-dependency', '0.21.1', '--candidate-mode', 'non-fixture',
+    '--package-name', 'yugoo-design', '--version', '0.2.9-dev.local', '--distribution', 'candidate', '--npm-cli', '/existing/npm-cli.js'])
+  options.embeddingInputsDirectory = '/verified/registry-inputs'
+  const candidate = selectCompanionBuildInputs(source, options)
+  const stable = selectCompanionBuildInputs(source, { ...options, candidate: { ...options.candidate, version: '0.2.9', distribution: 'stable' } })
+  assert.deepEqual(candidate, stable, 'delivery copy does not select a different dependency preparation')
+  const { distribution: _distribution, ...defaultMode } = options.candidate
+  assert.deepEqual(selectCompanionBuildInputs(source, { ...options, candidate: defaultMode }), candidate)
+  assert.deepEqual(candidate.prebuiltEmbedding, { npmCli: '/existing/npm-cli.js', inputsDirectory: '/verified/registry-inputs' })
+  assert.deepEqual(candidate.template.bundledDependencies, ['@huggingface/transformers', 'onnxruntime-node', 'sharp'])
+  assert.equal(candidate.template.dependencies['onnxruntime-node'], '1.21.0')
+  assert.equal(candidate.template.dependencies.sharp, '0.34.5')
+  assert.equal(candidate.template.optionalDependencies['@img/sharp-linux-x64'], '0.34.5')
+  const fixture = selectCompanionBuildInputs(source, parseSameSourceBuildArgs(['--ladybug-dependency', '0.21.1']))
+  assert.equal(fixture.prebuiltEmbedding, undefined)
+  assert.deepEqual(fixture.template, original)
+  assert.deepEqual(source, original, 'selection does not mutate the shared source template')
+})
+
+test('stable product identity and host mapping remain required after candidate prebuilt selection', async t => {
+  const root = await realpath(await mkdtemp(join(tmpdir(), 'companion-stable-identity-')))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const workspace = fileURLToPath(new URL('../', import.meta.url))
+  const product = JSON.parse(await readFile(join(workspace, 'release/product.json')))
+  const options = { payloadSource: join(root, 'unused-payload'), destination: join(root, 'refused'), licenseRoot: workspace,
+    fixture: false, scope: '@yugoo-design', packageName: product.name, version: product.version, distribution: 'stable', ladybugDependency: '0.21.1' }
+  const wrongVersion = `${Number(product.version.split('.')[0]) + 1}.0.0`
+  await assert.rejects(buildCompanionCandidate({ ...options, version: wrongVersion }), /Stable package version must match/)
+  await assert.rejects(buildCompanionCandidate({ ...options, packageName: 'other-product' }), /Stable package identity must match/)
+  const releaseHostsFile = join(root, 'release-hosts.json')
+  const bytes = JSON.stringify({ schemaVersion: 1, hosts: { dsh: { aggregatePackage: '@yugoo-design/dsh-design-system-dsh',
+    aggregateVersion: wrongVersion, registry: 'https://registry.npmjs.org' } } })
+  await writeFile(releaseHostsFile, bytes)
+  await assert.rejects(buildCompanionCandidate({ ...options, releaseHostsFile, releaseHostsSha256: sha256(bytes) }), /Stable host mapping must use the product version/)
 })
 
 test('portable ws bundle has only builtin loaders and preserves masking and UTF-8 validation', { timeout: 30000 }, async t => {

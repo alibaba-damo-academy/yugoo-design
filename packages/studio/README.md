@@ -56,6 +56,9 @@ Other incomplete or malformed definitions remain editable with locatable readine
 diagnostics. Imports get independent catalog identities and retain original bytes,
 methods, runtime names and resources. Repeated display names receive numeric suffixes.
 Kit imports preserve supplied Bundle trees; absent dependencies remain explicit.
+Mount cards read titles and descriptions from the selected saved sources, including
+imported trees without a separate library entry. Display metadata does not create
+library records or change mount bindings.
 
 `exportArchive({id, expectedRevision})` exports the current complete saved source
 and mounted Bundle resources through the existing source-archive format. It supports

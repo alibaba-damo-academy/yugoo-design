@@ -3,7 +3,7 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, realpath, rename, rm, symlink, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { inspectRuntime, checkRuntime } from '../src/npm-runtime-check.mjs'
@@ -100,6 +100,21 @@ test('workspace, NODE_PATH and symlink dependency fallback are rejected',async t
   const path=join(f.root,`node_modules/@img/sharp-${f.label}`)
   await mkdir(dirname(path),{recursive:true});await symlink(join(foreign,`@img/sharp-${f.label}`),path)
   const bad=await inspectRuntime(f);assert.equal(bad.status,'failed');assert.match(bad.reason,/symlink/)
+})
+
+test('default pnpm keeps bundled sharp and resolves its native assets inside the same virtual store',async t=>{
+  const f=await fixture(t),store=join(f.root,'node_modules/.pnpm')
+  const modules=join(store,'@fixture+companion@1.0.0/node_modules'),npmRoot=join(modules,'@fixture/companion')
+  await mkdir(dirname(npmRoot),{recursive:true});await rename(f.npmRoot,npmRoot)
+  await mkdir(join(npmRoot,'node_modules'));await rename(f.sharp,join(npmRoot,'node_modules/sharp'))
+  const nativeRoot=join(store,`@img+sharp-${f.label}@1.0.0/node_modules/@img/sharp-${f.label}`)
+  await mkdir(dirname(nativeRoot),{recursive:true});await rename(dirname(dirname(f.native)),nativeRoot)
+  const link=join(modules,`@img/sharp-${f.label}`)
+  await mkdir(dirname(link),{recursive:true});await symlink(nativeRoot,link,'junction')
+  const result=await inspectRuntime({...f,npmRoot})
+  assert.equal(result.status,'present');assert.equal(result.prerequisites[0].root,nativeRoot)
+  assert.equal(result.native.path,join(nativeRoot,`lib/sharp-${f.label}.node`))
+  assert.ok(result.pins.some(pin=>pin.path===result.native.path))
 })
 
 test('real stalled loader is killed within the production bound and leaves no child',async t=>{

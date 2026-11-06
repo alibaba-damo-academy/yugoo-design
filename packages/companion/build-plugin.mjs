@@ -20,6 +20,13 @@ import { prepareCompanionNativeGit, stageCompanionNativeGit, verifyCompanionNati
 const here = dirname(fileURLToPath(import.meta.url))
 const run = promisify(execFile)
 
+/** Refresh the shared Panel stylesheet through its owning build before bundling. */
+export async function buildCompanionPanelStyles({ workspaceRoot = join(here, '../..') } = {}) {
+  const result = await run('pnpm', ['--config.verify-deps-before-run=false', '--filter', 'dsh-design-panel', 'build:css'], { cwd: workspaceRoot, maxBuffer: 1024 * 1024 })
+  process.stderr.write(result.stdout)
+  process.stderr.write(result.stderr)
+}
+
 async function copyTree(source, target) {
   const info = await lstat(source)
   if (info.isSymbolicLink()) throw new Error(`Plugin source must not include symlinks: ${source}`)
@@ -145,6 +152,7 @@ async function main() {
     nodeExecutable = resolve(args.shift())
   }
   if (args.length > 1 || args.some(arg => arg.startsWith('--'))) throw new Error('Usage: node build-plugin.mjs [--codex-desktop|--qoder|--claude|--qwenwork --runtime-config PATH] [--native-git-artifacts PATH] [--node-executable PUBLIC_NODE] [new-output-directory/yugoo-design]')
+  await buildCompanionPanelStyles()
   for (const config of ['tsdown.config.ts', 'tsdown.server.config.ts']) {
     const result = await run('pnpm', ['exec', 'tsdown', '--config', config], { cwd: here, maxBuffer: 1024 * 1024 })
     process.stderr.write(result.stdout)

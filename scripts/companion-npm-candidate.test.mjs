@@ -15,6 +15,7 @@ import { preparePanelAuthoringMaterial } from './companion-authoring-material.mj
 import { prepareStudioAuthoringMaterial, writeStudioAuthoringMaterial } from './studio-authoring-material.mjs'
 import { copyNativeExecutionReference } from '../packages/companion/build-plugin.mjs'
 import { stageNativeInventoryFixture } from './test-fixtures/companion-native-inventory.mjs'
+import { PREBUILT_EMBEDDING_INPUTS, prebuiltEmbeddingManifest } from './prebuilt-embedding-runtime.mjs'
 
 const workspace = fileURLToPath(new URL('../', import.meta.url))
 const productVersion = JSON.parse(await readFile(new URL('../release/product.json', import.meta.url), 'utf8')).version
@@ -55,6 +56,45 @@ async function setup(t) {
     scope: '@fixture-design-release', version: '0.1.0-review.1', ladybugVersion: '0.19.1-walfix.1', fixture: true }
   return { root, source, options, put }
 }
+
+test('verified prebuilt archives enter the actual candidate pack without copying an installed dependency tree',
+  { skip: !process.env.YUGOO_TEST_EMBEDDING_INPUTS }, async t => {
+    const { root, options, put } = await setup(t)
+    assert.ok(isAbsolute(process.env.YUGOO_TEST_EMBEDDING_INPUTS), 'Explicit verified archive input directory required')
+    assert.ok(isAbsolute(process.env.YUGOO_TEST_NPM_CLI ?? ''), 'Explicit npm CLI required for pack verification')
+    const { ladybugVersion: _legacy, ...candidateOptions } = options
+    const template = prebuiltEmbeddingManifest(JSON.parse(await readFile(new URL('../release/product-package-template.json', import.meta.url))))
+    await put('shared/knowledge/runtime-manifest.json', JSON.stringify({ runtimeDependencies: template.dependencies }))
+    const result = await buildCompanionCandidate({ ...candidateOptions, fixture: false, scope: '@yugoo-design',
+      packageName: 'yugoo-design', version: '0.2.9-dev.prebuilt', ladybugDependency: '0.21.1', prebuiltEmbedding: {
+      inputsDirectory: process.env.YUGOO_TEST_EMBEDDING_INPUTS,
+    } })
+    const manifest = JSON.parse(await readFile(join(result.target, 'package.json'), 'utf8'))
+    const readme = await readFile(join(result.target, 'README.md'), 'utf8')
+    assert.equal(result.inventory.fixture, false)
+    assert.match(readme, /pnpm add --save-exact \/absolute\/path\/to\/received-exact-candidate\.tgz/)
+    assert.match(readme, /prebuilt package carries the upstream Transformers\.js Node entry/)
+    assert.match(readme, /### Local embedding model preparation/)
+    assert.doesNotMatch(readme, /(?:pnpm add|npm install)[^\n]*(?:--ignore-scripts|--allow-build)/u)
+    assert.match(readme, /#### DSH inputs and native activation/)
+    assert.match(readme, /#### QwenWork import and MCP activation/)
+    assert.match(readme, /#### WorkBuddy market activation/)
+    assert.equal(result.inventory.readmeSource.sourceSha256, sha(await readFile(join(workspace, 'packages/companion/README.md'))))
+    assert.deepEqual(manifest.bundledDependencies, PREBUILT_EMBEDDING_INPUTS.map(input => input.name))
+    const pack = spawnSync(process.execPath, [process.env.YUGOO_TEST_NPM_CLI, 'pack', '--ignore-scripts', '--dry-run', '--json'],
+      { cwd: result.target, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 })
+    assert.equal(pack.status, 0, pack.stderr)
+    const inventory = JSON.parse(pack.stdout)[0]
+    assert.deepEqual(inventory.bundled.sort(), [...manifest.bundledDependencies].sort())
+    assert.deepEqual(inventory.files.map(file => file.path).sort(), [...Object.keys(result.inventory.assets), 'release-manifest.json'].sort())
+    const source = JSON.parse(await readFile(join(result.target, 'licenses/prebuilt-embedding/SOURCE.json'), 'utf8'))
+    assert.deepEqual(source.packages.map(input => input.integrity), PREBUILT_EMBEDDING_INPUTS.map(input => input.integrity))
+    assert.equal(source.runtimeVerified, false) // Packing proves the file boundary, not Host acceptance.
+    assert.ok(inventory.files.some(file => file.path.endsWith('/darwin/arm64/onnxruntime_binding.node')))
+    assert.ok(inventory.files.some(file => file.path.endsWith('/win32/x64/onnxruntime_binding.node')))
+    assert.ok(!inventory.files.some(file => file.path.includes('onnxruntime-web')))
+    assert.ok(root !== result.target)
+  })
 
 test('candidate installer bin carries the closed shared Windows helpers outside the repository', async t => {
   const { root, options } = await setup(t)
@@ -382,9 +422,10 @@ test('official engine selection keeps package, payload manifest and inventory co
   assert.deepEqual(stableManifest.publishConfig, { access: 'public', tag: 'latest' })
   assert.equal(stable.inventory.publishReady, false)
   const stableCopy = await readFile(join(stable.target, 'README.md'), 'utf8')
-  assert.ok(stableCopy.includes(`ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm install --ignore-scripts=false --save-exact yugoo-design@${productVersion}`))
-  assert.match(stableCopy, /\$env:ONNXRUNTIME_NODE_INSTALL_CUDA/u)
-  assert.doesNotMatch(stableCopy, /npm install --ignore-scripts\s/u)
+  assert.ok(stableCopy.includes(`pnpm add --save-exact yugoo-design@${productVersion}`))
+  assert.match(stableCopy, /Default pnpm dependency links are\s+supported/u)
+  assert.match(stableCopy, /Older published archives, including `0\.2\.8`/u)
+  assert.doesNotMatch(stableCopy, /(?:pnpm add|npm install)[^\n]*(?:--ignore-scripts|--allow-build)/u)
   assert.doesNotMatch(stableCopy, /unpublished|tarball|<package-selector>/iu)
   const maintained = await readFile(join(workspace, 'packages/companion/README.md'), 'utf8')
   const section = maintained.split('<!-- npm-package-guide:start -->')[1].split('<!-- npm-package-guide:end -->')[0].trim()
@@ -592,18 +633,55 @@ test('existing output, source descendants, native copied closures, symlinks and 
 })
 
 
-test('installation prompts stay short and delegate acquisition policy to the official guide', async () => {
+test('prebuilt candidate README carries maintained host setup without claiming registry publication', async () => {
+  const packageName = 'yugoo-design', version = '0.2.9-dev.readme'
+  const candidate = await candidateAssembly.productReadme(packageName, version, 'candidate')
+  const stable = await candidateAssembly.productReadme(packageName, productVersion, 'stable')
+  assert.match(candidate.text, /unpublished npm candidate/u)
+  assert.ok(candidate.text.includes(`Candidate: \`${packageName}@${version}\``))
+  assert.match(candidate.text, /pnpm add --save-exact \/absolute\/path\/to\/received-exact-candidate\.tgz/u)
+  assert.doesNotMatch(candidate.text, /(?:pnpm add|npm install)[^\n]*yugoo-design@/u)
+  assert.match(candidate.text, /Registry availability, native activation and release acceptance remain unverified/u)
+  for (const guide of [candidate, stable]) {
+    for (const host of ['dsh', 'codex-desktop', 'codex', 'claude-code', 'qoder', 'qwenwork', 'workbuddy']) {
+      assert.ok(guide.text.includes(`--host ${host}`), `Missing ${host} setup`)
+    }
+    assert.match(guide.text, /Extensions → Connectors → Add → Paste JSON/u)
+    assert.match(guide.text, /market's \*\*Refresh\*\*[\s\S]*\*\*Update\*\*/u)
+    assert.doesNotMatch(guide.text, /<package-selector>/u)
+  }
+  assert.deepEqual(candidate.source, stable.source)
+  assert.ok(stable.text.includes(`pnpm add --save-exact yugoo-design@${productVersion}`))
+  assert.doesNotMatch(stable.text, /unpublished npm candidate|received-exact-candidate\.tgz/u)
+})
+
+test('installation prompts separate npm acquisition from native setup without requiring GitHub', async () => {
   const hostGuide = await readFile(join(workspace, 'packages/companion/HOSTS.md'), 'utf8')
   const prompts = [...hostGuide.matchAll(/```text\n([\s\S]*?)\n```/gu)].map(match => match[1])
   const owningGuide = hostGuide.replaceAll(/```text\n[\s\S]*?\n```/gu, '')
   assert.equal(prompts.length, 2)
   for (const prompt of prompts) {
     assert.ok(prompt.length < 1000, 'Default installation prompt must remain short enough to copy')
-    assert.match(prompt, /https:\/\/(?:github\.com\/alibaba-damo-academy\/yugoo-design\/blob|raw\.githubusercontent\.com\/alibaba-damo-academy\/yugoo-design)\/main\/packages\/companion\/HOSTS\.md#agent-led-installation-and-updates/u)
+    assert.match(prompt, /pnpm add --save-exact yugoo-design@/u)
+    assert.match(prompt, /node_modules\/yugoo-design\/README\.md/u)
+    assert.match(prompt, /pnpm exec yugoo-design --help/u)
+    assert.match(prompt, /install --host/u)
+    assert.doesNotMatch(prompt, /https:\/\/(?:github\.com|raw\.githubusercontent\.com)/u)
     assert.doesNotMatch(prompt, /ONNXRUNTIME_NODE_INSTALL_CUDA|--ignore-scripts/u)
   }
-  // The installation child needs this policy before acquiring the product.
-  // Moving the rule out of a user prompt must not erase its owning instructions.
-  assert.match(owningGuide, /Before the first npm\/npx[\s\S]{0,160}ONNXRUNTIME_NODE_INSTALL_CUDA=skip/u)
-  assert.match(owningGuide, /keep dependency lifecycle scripts enabled/u)
+  // Native activation remains explicit. Package acquisition is not a claim
+  // that every host is registered or that older immutable releases changed.
+  assert.match(owningGuide, /pnpm for initial acquisition/u)
+  assert.match(owningGuide, /Prebuilt releases[\s\S]{0,160}need no source compilation/u)
+  assert.match(owningGuide, /Older immutable[\s\S]{0,200}CPU environment/u)
+  const maintained = await readFile(join(workspace, 'packages/companion/README.md'), 'utf8')
+  const shipped = maintained.split('<!-- npm-package-guide:start -->')[1].split('<!-- npm-package-guide:end -->')[0]
+  // Necessary adapter inputs and manual activation must be available after
+  // npm acquisition, not only through a source-repository link.
+  assert.match(shipped, /#### DSH inputs and native activation/u)
+  assert.match(shipped, /"dshHome"[\s\S]*"loaderVersion"/u)
+  assert.match(shipped, /#### QwenWork import and MCP activation/u)
+  assert.match(shipped, /Extensions → Connectors → Add → Paste JSON/u)
+  assert.match(shipped, /#### WorkBuddy market activation/u)
+  assert.match(shipped, /market's \*\*Refresh\*\*[\s\S]*\*\*Update\*\*/u)
 })

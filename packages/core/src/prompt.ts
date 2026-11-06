@@ -5,6 +5,23 @@
  */
 import type { PromptAssemblyLike, SystemPromptLike } from './dsh-contracts.ts'
 
+/** Re-evaluate live text at assembly and Host request refresh. Transport literal
+ * opening braces through a constant variable: the Host replaces each once and
+ * never rescans the value. The model receives the exact original evidence.
+ */
+export function registerLiteralDesignContext(
+  systemPrompt: SystemPromptLike,
+  name: string,
+  order: number,
+  variable: string,
+  render: (context: PromptAssemblyLike) => string,
+): () => void {
+  const removeVariable = systemPrompt.variable(variable, () => '{{')
+  const removeContext = systemPrompt.context({ name, order,
+    text: context => render(context).replaceAll('{{', `{{${variable}}}`) })
+  return () => { removeContext(); removeVariable() }
+}
+
 /**
  * Register the design-state runtime context.
  * @param systemPrompt - the system-prompt service.
@@ -15,9 +32,5 @@ export function registerDesignStateContext(
   systemPrompt: SystemPromptLike,
   render: (context: PromptAssemblyLike) => string,
 ): () => void {
-  return systemPrompt.context({
-    name: 'design:state',
-    order: 600,
-    text: (context) => render(context),
-  })
+  return registerLiteralDesignContext(systemPrompt, 'design:state', 600, 'design_state', render)
 }

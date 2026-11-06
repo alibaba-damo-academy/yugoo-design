@@ -6,6 +6,43 @@ import { join } from 'node:path'
 const { register } = await import('tsx/esm/api'); register()
 const { DEFAULT_DESIGN_REVIEW_POLICY, parseDesignReviewPolicy, readDesignReviewPolicy, writeDesignReviewPolicy,
   DesignReviewPublicationQueue, DesignContinuousReviewClock } = await import('../src/design-review-policy.ts')
+const { designReviewDepth, renderDesignReviewDepth, renderDesignReviewStartingPoints } = await import('../src/design-review-depth.ts')
+
+test('depth changes investigation scope and stopping conditions without a finding quota or read barrier', () => {
+  for (const depth of ['light', 'standard', 'thorough']) {
+    const text = renderDesignReviewDepth(depth)
+    assert.match(text, /Stop/)
+    assert.match(text, /known consequential risk beyond/)
+    assert.match(text, /every substantiated material finding/)
+    assert.doesNotMatch(text, /single most useful|up to (three|five)|suggested finding count/)
+  }
+  assert.match(renderDesignReviewDepth('light'), /directly involved saved facts/)
+  assert.match(renderDesignReviewDepth('standard'), /relevant neighboring evidence/)
+  assert.match(renderDesignReviewDepth('thorough'), /project-wide responsibilities and dependency chains/)
+  const paths = ['design_files/changed/changed.json', 'design_files/related/detail.svg', 'design_files/_experiences/demo.json']
+  const text = renderDesignReviewStartingPoints([{skill:'changed'}, {skill:'related',artifactFile:'related/detail.svg'},
+    {skill:'related',artifactFile:'related/missing.svg'}, {skill:'unknown'}, {skill:'_experiences'}], paths)
+  const points = JSON.parse(text.split('\n')[0].split(': ').at(-1))
+  assert.deepEqual(points, [{bundle:'changed',file:paths[0]}, {bundle:'related',file:paths[1]}, {bundle:'related',prefix:'design_files/related/'}])
+  assert.match(text, /do not exclude other necessary evidence/)
+  assert.doesNotMatch(text.split('\n')[0], /unknown|missing|_experiences/)
+  assert.equal(renderDesignReviewStartingPoints([{skill:'unknown'}], paths), '')
+})
+
+test('manual review depth persists per project without enabling reviews or changing cadence', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'gra-depth-'))
+  t.after(() => rm(root, {recursive: true, force: true}))
+  assert.equal(designReviewDepth((await readDesignReviewPolicy(root)).depth), 'standard')
+  for (const depth of ['light', 'standard', 'thorough']) {
+    const policy = {mode: 'off', autoMergeWindowMs: 45000, depth}
+    await writeDesignReviewPolicy(root, policy)
+    assert.deepEqual(await readDesignReviewPolicy(root), policy)
+    assert.equal(new DesignReviewPublicationQueue(policy).publish({checkpoint: depth}, 0), false)
+    assert.match(renderDesignReviewDepth(depth), new RegExp(`User-selected review depth: ${depth}`))
+  }
+  for (const depth of [null, 'auto', 'unlimited', 1]) assert.throws(() => parseDesignReviewPolicy({mode:'auto',autoMergeWindowMs:30000,depth}), /depth/)
+  assert.equal(designReviewDepth((await readDesignReviewPolicy(join(root, 'other'))).depth), 'standard')
+})
 
 test('continuous cadence repeats without publications, preserves timer on reread, and stops when disabled', async t=>{
   t.mock.timers.enable({apis:['setTimeout']})

@@ -211,7 +211,11 @@ copy and its new saved revision in place, so the existing export action reads
 the saved source. A proposal arriving during human edits waits without reloading
 or replacing them. A stale base cannot save; an uncertain save receipt disables
 resubmission and export until the existing refresh/reopen path verifies the copy.
-A failed reopen leaves that uncertainty intact. Late receipts cannot switch the
+Verification reads the current revision and changed file contents without asking
+to discard source or conversation drafts. If the save never committed, the exact
+draft remains available for an explicit retry; matching saved contents complete
+the existing save flow. Different saved contents retain the draft and report a
+conflict. A failed read leaves the uncertainty intact. Late receipts cannot switch the
 selected copy or candidate.
 
 Operation failures use contextual `StudioFeedback` cards with recovery actions.

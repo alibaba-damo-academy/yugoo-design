@@ -79,6 +79,16 @@ async function activationFixture(t, { missing = false, runtime = true, acquireEr
   return { service, ctx, agent, selected, counts, activate, prompt, project, file, saved }
 }
 
+async function assertStableKnowledgeRules(f) {
+  const assembled = await f.ctx.systemPrompt.assemble({ agent: f.agent })
+  const rules = assembled.sections.find(section => section.name === 'design:knowledge-orchestration')?.text
+  assert.match(rules, /auto combines.*publication-triggered/)
+  assert.match(rules, /continuous uses the online periodic scheduler even when Design Files are unchanged/)
+  assert.match(rules, /off forbids.*not explicit human rechecks or Clarity/)
+  assert.match(rules, /do not repeat pending\/rejected issues without new evidence/)
+  assert.match(rules, /never invoke this manual path on your own initiative/)
+}
+
 test('native activation with a missing Kit preserves the session, Panel recovery and the original lease for switching and closing', async t => {
   const f = await activationFixture(t, { missing: true })
   await f.activate()
@@ -87,6 +97,7 @@ test('native activation with a missing Kit preserves the session, Panel recovery
   assert.deepEqual(f.counts.acquire, [f.selected.projectId], 'Kit absence cannot prevent the original provider lease restoration')
   assert.match(f.service.knowledgeRestoreFailures.get(f.agent).message, /original Kit source unavailable/)
   assert.match(await f.prompt(), /design_kit_unavailable/)
+  await assertStableKnowledgeRules(f)
   const { DesignPanelRemote } = await import('../src/panel-remote.ts')
   const remote = Object.create(DesignPanelRemote.prototype)
   Object.assign(remote, { design: f.service, worktreeProjections: new Map() })
@@ -109,6 +120,7 @@ test('native activation with a missing Kit preserves the session, Panel recovery
   assert.equal(closed.kind, 'success', closed.text)
   assert.deepEqual(f.counts.release, [f.selected.projectId, healthy.projectId])
   assert.equal(await f.service.currentSelection(f.agent), undefined)
+  await assertStableKnowledgeRules(f)
 })
 
 for (const runtime of [true, false]) test(`healthy native activation prepares the current project Kit before prompt assembly (knowledge runtime: ${runtime})`, async t => {
@@ -116,6 +128,7 @@ for (const runtime of [true, false]) test(`healthy native activation prepares th
   await f.activate()
   assert.match(await f.prompt(), /Current project-only cold method\./)
   assert.match(await f.prompt(), /active_design_mindset/)
+  await assertStableKnowledgeRules(f)
   assert.deepEqual(f.counts.acquire, runtime ? [f.selected.projectId] : [])
   assert.equal(f.service.knowledgeRestoreFailures.get(f.agent), undefined)
 })
