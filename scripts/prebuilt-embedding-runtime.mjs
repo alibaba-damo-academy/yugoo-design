@@ -27,6 +27,21 @@ const notices = Object.freeze({
   'onnxruntime-1.21.0.ThirdPartyNotices.txt': '8c06e8cff286a4a117b3b246a4c7da68428a144af757823db50e3d6520941ec6',
 })
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
+const installLifecycles = ['preinstall', 'install', 'postinstall', 'prepublish', 'preprepare', 'prepare', 'postprepare']
+
+/** Selected registry binaries are already built; installation must not rebuild or download them. */
+export function projectPrebuiltDependencyManifest(input, originalBytes) {
+  assert.ok(PREBUILT_EMBEDDING_INPUTS.includes(input), 'Reviewed registry input required')
+  const manifest = JSON.parse(originalBytes.toString('utf8'))
+  assert.equal(manifest.name, input.name); assert.equal(manifest.version, input.version)
+  const removedScripts = {}
+  for (const name of installLifecycles) if (Object.hasOwn(manifest.scripts ?? {}, name)) {
+    removedScripts[name] = manifest.scripts[name]
+    delete manifest.scripts[name]
+  }
+  const bytes = Object.keys(removedScripts).length ? Buffer.from(JSON.stringify(manifest, null, 2) + '\n') : originalBytes
+  return { bytes, projection: { originalSha256: sha256(originalBytes), packagedSha256: sha256(bytes), removedScripts } }
+}
 
 /** Apply only to release metadata; development packages keep ordinary upstream dependencies. */
 export function prebuiltEmbeddingManifest(original) {
@@ -111,15 +126,16 @@ export async function stagePrebuiltEmbedding({ target, npmCli, inputsDirectory, 
       await mkdir(dirname(destination), { recursive: true }); await mkdir(destination)
       const selected = join(temporary, 'members.txt'); await writeFile(selected, members.join('\n') + '\n')
       execFileSync('tar', ['-xzf', archive, '--strip-components=1', '-C', destination, '-T', selected])
-      const manifest = JSON.parse(await readFile(join(destination, 'package.json'), 'utf8'))
-      assert.equal(manifest.name, input.name); assert.equal(manifest.version, input.version)
-      // Upstream manifests and scripts remain byte-identical. npm/pnpm treat the
-      // enclosing bundle as prebuilt and do not run nested dependency lifecycles.
+      // npm can execute bundled dependency lifecycles. Project their install
+      // hooks explicitly, preserving runtime files and recording the exact change.
+      const manifestPath = join(destination, 'package.json')
+      const { bytes: manifestBytes, projection: manifestProjection } = projectPrebuiltDependencyManifest(input, await readFile(manifestPath))
+      await writeFile(manifestPath, manifestBytes)
       const files = await inventory(destination)
       if (input.name === 'onnxruntime-node') for (const platform of PREBUILT_EMBEDDING_PLATFORMS)
         assert.ok(files['bin/napi-v3/' + platform + '/onnxruntime_binding.node'], 'Missing CPU platform: ' + platform)
       if (input.name === '@huggingface/transformers') assert.ok(files['dist/transformers.node.mjs'], 'Missing prebuilt Node entry')
-      records.push({ ...input, registry: 'https://registry.npmjs.org', archiveBytes: bytes.length,
+      records.push({ ...input, registry: 'https://registry.npmjs.org', archiveBytes: bytes.length, manifestProjection,
         selectedBytes: Object.values(files).reduce((total, file) => total + file.bytes, 0), files })
     }
     const licenseRoot = join(target, 'licenses/prebuilt-embedding'); await mkdir(licenseRoot, { recursive: true })

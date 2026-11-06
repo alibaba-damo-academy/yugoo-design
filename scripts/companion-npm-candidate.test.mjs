@@ -89,6 +89,14 @@ test('verified prebuilt archives enter the actual candidate pack without copying
     assert.deepEqual(inventory.files.map(file => file.path).sort(), [...Object.keys(result.inventory.assets), 'release-manifest.json'].sort())
     const source = JSON.parse(await readFile(join(result.target, 'licenses/prebuilt-embedding/SOURCE.json'), 'utf8'))
     assert.deepEqual(source.packages.map(input => input.integrity), PREBUILT_EMBEDDING_INPUTS.map(input => input.integrity))
+    for (const input of source.packages) {
+      const bytes = await readFile(join(result.target, 'node_modules', input.name, 'package.json'))
+      assert.equal(sha(bytes), input.manifestProjection.packagedSha256)
+      const scripts = JSON.parse(bytes).scripts ?? {}
+      for (const key of ['preinstall', 'install', 'postinstall', 'prepublish', 'preprepare', 'prepare', 'postprepare'])
+        assert.equal(scripts[key], undefined)
+    }
+    assert.equal(source.packages.find(input => input.name === 'onnxruntime-node').manifestProjection.removedScripts.postinstall, 'node ./script/install')
     assert.equal(source.runtimeVerified, false) // Packing proves the file boundary, not Host acceptance.
     assert.ok(inventory.files.some(file => file.path.endsWith('/darwin/arm64/onnxruntime_binding.node')))
     assert.ok(inventory.files.some(file => file.path.endsWith('/win32/x64/onnxruntime_binding.node')))

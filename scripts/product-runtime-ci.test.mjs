@@ -35,6 +35,35 @@ test('failed product consumer exposes its stage and error while retaining the co
   assert.equal(receipt.commandLog, failure.commandLog)
   assert.match(await readFile(failure.commandLog, 'utf8'), /TAR_BAD_ARCHIVE/u)
 })
+test('consumer isolation rejects ancestor dependencies that HOME and NODE_PATH cannot isolate', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'product-runtime-ancestor-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  await mkdir(join(root, 'node_modules', 'tar'), { recursive: true })
+  const output = join(root, 'consumer-check')
+  const result = spawnSync(process.execPath, [fileURLToPath(new URL('./check-product-node-runtime.mjs', import.meta.url)),
+    fileURLToPath(import.meta.url), '0.1.0', output], { encoding: 'utf8' })
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /ancestor node_modules/u)
+  await assert.rejects(access(output), { code: 'ENOENT' })
+})
+test('consumer isolation follows physical ancestors through directory links', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'product-runtime-linked-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const physical = join(root, 'physical')
+  await mkdir(join(physical, 'node_modules'), { recursive: true })
+  for (const [name, target, message] of [
+    ['ancestor', physical, /ancestor node_modules/u],
+    ['checkout', fileURLToPath(new URL('../', import.meta.url)), /outside the checkout/u],
+  ]) {
+    const link = join(root, name), output = join(link, 'unused-consumer-output')
+    await symlink(target, link, process.platform === 'win32' ? 'junction' : 'dir')
+    const result = spawnSync(process.execPath, [fileURLToPath(new URL('./check-product-node-runtime.mjs', import.meta.url)),
+      fileURLToPath(import.meta.url), '0.1.0', output], { encoding: 'utf8' })
+    assert.equal(result.status, 1)
+    assert.match(result.stderr, message)
+    await assert.rejects(access(output), { code: 'ENOENT' })
+  }
+})
 test('only reviewed exact native dependency versions are permitted; denials survive', async () => {
   const { allowBuilds } = YAML.parse(await read('pnpm-workspace.yaml'))
   for (const name of ['@deepseek-ai/dsh-subprocess-local@0.2.0-rc.2', 'koffi@3.1.1', 'node-pty@1.2.0-beta.15', 'esbuild@0.28.2']) assert.equal(allowBuilds[name], true)

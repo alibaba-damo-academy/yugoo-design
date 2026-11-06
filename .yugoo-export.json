@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "886b4edbef0e8ba2528d9ed7070759464a866bb5",
+  "revision": "288143e97523259eec98f00a8de3e03698028d79",
   "policySha256": "15525b708eea653e1895ec72d431af8d298db47ef529a4f1158cab5642858109",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -92,7 +92,7 @@
       "mode": "100644"
     },
     ".github/workflows/publish-product.yml": {
-      "sha256": "7d39662b344c42b4cc6649f47b489fea26abbc4ce4610b0c406dd798246d5276",
+      "sha256": "af95d5b92164315ef7546e3d17fba204f7167b13bf7fdb8605a183dbe7b4f731",
       "mode": "100644"
     },
     ".gitignore": {
@@ -104,7 +104,7 @@
       "mode": "100644"
     },
     "CONTRIBUTING.md": {
-      "sha256": "31366f8f610c2e83ab138de17131665511197700515e8c1a22c5c55e1942e2ed",
+      "sha256": "11bdfca9ca112a83a498734714269b8b0e169eb89fbae464f02988bd3f0be15e",
       "mode": "100644"
     },
     "LICENSE": {
@@ -284,7 +284,7 @@
       "mode": "100644"
     },
     "docs/testing/agentic-e2e.md": {
-      "sha256": "24230ba878ccef35b88a485f152a9f5ef7aec2c28e380064a5ea713b2274e169",
+      "sha256": "797948ac48dc5bc9a1ec87fa53043f3c1c965caa74d5fedcdfe1005ebd674822",
       "mode": "100644"
     },
     "docs/ust-score-explanations.md": {
@@ -9484,7 +9484,7 @@
       "mode": "100644"
     },
     "release/product.json": {
-      "sha256": "6dab6861fb7eba68b64c56cef241cb3e63bf39c8559d57aa61028956ec2ea656",
+      "sha256": "a77bb2e015df4d95f98c65ec44e9a458ac094b6ef863989ed316cc04cb71e197",
       "mode": "100644"
     },
     "release/public-source-baseline.json": {
@@ -9532,7 +9532,7 @@
       "mode": "100644"
     },
     "scripts/check-product-node-runtime.mjs": {
-      "sha256": "7acd130503d656318e1a329d8584b53d174fca1155d64b6fd738941db4392e77",
+      "sha256": "688ac136de5736ddcd66942e6ddb279235f3c42143af65eb27d885165046bfec",
       "mode": "100644"
     },
     "scripts/companion-authoring-material.mjs": {
@@ -9572,7 +9572,7 @@
       "mode": "100644"
     },
     "scripts/companion-npm-candidate.test.mjs": {
-      "sha256": "1fd1f065b2aaa86df8d9990f2fca9428b7b350b64dd9dec735c0759d8b3a9e1a",
+      "sha256": "f533f0fe60eaacbde357a609917be4201c90c233bf8f33e24e9b0446a82ca003",
       "mode": "100644"
     },
     "scripts/companion-output-module-map.mjs": {
@@ -9792,11 +9792,11 @@
       "mode": "100644"
     },
     "scripts/prebuilt-embedding-runtime.mjs": {
-      "sha256": "57a4ce31244b31c6e5650273e87881bfa6decaeb1ce3f7ff47751d14c657184b",
+      "sha256": "5a972503fd128c69ebb54b1eec7285f94936d83eebd7a098386c75bf1dfbbe82",
       "mode": "100644"
     },
     "scripts/prebuilt-embedding-runtime.test.mjs": {
-      "sha256": "50a9544369577c0a81a16f1bb0171df16b905ee6880c8187f4f0e3ebaca6e452",
+      "sha256": "b100201128f37395b06ff094b3c2d22695f688112d17441f7a71c0c9771e46c3",
       "mode": "100644"
     },
     "scripts/prepare-product-release.mjs": {
@@ -9824,7 +9824,7 @@
       "mode": "100644"
     },
     "scripts/product-runtime-ci.test.mjs": {
-      "sha256": "b4aca8c36d8ba17c820c7f6a1766dfdd6619913381fff011169844eedd02307d",
+      "sha256": "f48c6d30ffc59b73918a7520872a4ad68131d9954a09d22a0e2351907b69a3a4",
       "mode": "100644"
     },
     "scripts/public-canonical-documents.test.mjs": {

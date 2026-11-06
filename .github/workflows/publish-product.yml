@@ -97,7 +97,7 @@ jobs:
           fi
           pnpm install --frozen-lockfile --strict-peer-dependencies --registry=https://registry.npmjs.org
       - name: Check product publication, material and normal-build guards
-        run: node --test scripts/npm-release-tags.test.mjs scripts/product-release.test.mjs scripts/product-release-ci.test.mjs scripts/product-runtime-ci.test.mjs scripts/dsh-release-observations.test.mjs scripts/dsh-distribution-materials.test.mjs scripts/normal-build-module-evidence.test.mjs scripts/known-browser-loader-proof.test.mjs scripts/companion-authoring-material.test.mjs
+        run: node --test scripts/npm-release-tags.test.mjs scripts/product-release.test.mjs scripts/product-release-ci.test.mjs scripts/product-runtime-ci.test.mjs scripts/prebuilt-embedding-runtime.test.mjs scripts/dsh-release-observations.test.mjs scripts/dsh-distribution-materials.test.mjs scripts/normal-build-module-evidence.test.mjs scripts/known-browser-loader-proof.test.mjs scripts/companion-authoring-material.test.mjs
       - name: Build the fixed source once, bind current observations and pack eleven archives
         if: steps.route.outputs.mode == 'prepare'
         env:

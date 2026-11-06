@@ -130,11 +130,24 @@ separate diagnostic artifact, including when later release steps are skipped.
 This artifact contains no package archives and cannot be used to resume a release;
 the failed runtime check still prevents publication.
 
+The shared prebuilt-dependency staging step removes automatic installation
+lifecycles from its verified upstream package manifests. Bundling alone does not
+prevent npm from executing those hooks. Runtime binaries, source files and
+licenses stay unchanged; `licenses/prebuilt-embedding/SOURCE.json` records each
+original and packaged manifest hash and the removed script declarations. Both
+DSH and Companion use this step, so installation needs no user build approval or
+environment flag to suppress a second build or binary download.
+
 The isolated archive check is also available locally under each selected Node:
 
 ```sh
 node scripts/check-product-node-runtime.mjs /absolute/PREPARED.tgz X.Y.Z /absolute/NEW_OUTPUT
 ```
+
+Choose a new output directory outside the checkout and without an ancestor
+`node_modules` directory, such as a fresh directory under `/tmp`. Node can resolve
+missing dependencies from filesystem ancestors even when `HOME` and `NODE_PATH`
+are isolated; the checker rejects such an input instead of reporting a false pass.
 
 Public exports currently omit the internal lockfile: on that input,
 CI first resolves a public-registry lock, then performs a strict frozen install.

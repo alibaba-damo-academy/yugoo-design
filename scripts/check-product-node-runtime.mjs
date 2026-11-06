@@ -4,9 +4,9 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { execFile } from 'node:child_process'
-import { mkdir, readFile, realpath, stat, writeFile } from 'node:fs/promises'
+import { lstat, mkdir, readFile, realpath, stat, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
-import { delimiter, dirname, isAbsolute, join, resolve } from 'node:path'
+import { basename, delimiter, dirname, isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { isPathWithin } from '../packages/companion/src/npm-installer-paths.mjs'
@@ -19,6 +19,17 @@ assert.ok(version && typeof version === 'string', 'Expected package version requ
 assert.ok(output && isAbsolute(output), 'Absolute fresh output directory required')
 const workspace = fileURLToPath(new URL('../', import.meta.url))
 assert.ok(!isPathWithin(workspace, output), 'Install output must be outside the checkout')
+const physicalParent = await realpath(dirname(resolve(output)))
+assert.ok(!isPathWithin(await realpath(workspace), join(physicalParent, basename(output))), 'Install output must be outside the checkout')
+// HOME and NODE_PATH do not isolate Node's filesystem ancestor resolution.
+// A missing bundled dependency must not be supplied by another local install.
+for (let parent = physicalParent; ; parent = dirname(parent)) {
+  try {
+    await lstat(join(parent, 'node_modules'))
+    throw new Error('Install output has an ancestor node_modules; choose an isolated temporary directory')
+  } catch (error) { if (error.code !== 'ENOENT') throw error }
+  if (parent === dirname(parent)) break
+}
 assert.equal((await stat(tarball)).isFile(), true)
 await mkdir(output) // Exclusive: never replace previous installs or evidence.
 const directories = Object.fromEntries(['consumer', 'home', 'tmp', 'cache', 'receipts', 'appdata', 'localappdata', 'xdg-cache', 'xdg-config', 'xdg-data', 'xdg-state'].map(key => [key, join(output, key)]))
@@ -30,7 +41,7 @@ const npmCli = process.platform === 'win32'
   ? join(dirname(node), 'node_modules/npm/bin/npm-cli.js')
   : resolve(dirname(node), '../lib/node_modules/npm/bin/npm-cli.js')
 assert.equal((await stat(npmCli)).isFile(), true, 'Use npm bundled with the tested Node')
-const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/^npm_config_|^(?:PATH|NODE_OPTIONS|NODE_PATH|NPM_TOKEN|NODE_AUTH_TOKEN)$/iu.test(key)))
+const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/^npm_config_|^(?:PATH|NODE_OPTIONS|NODE_PATH|NPM_TOKEN|NODE_AUTH_TOKEN|ONNXRUNTIME_NODE_INSTALL_CUDA)$/iu.test(key)))
 Object.assign(env, {
   PATH: dirname(node) + delimiter + (process.env.PATH ?? ''),
   HOME: directories.home, USERPROFILE: directories.home,
@@ -38,7 +49,6 @@ Object.assign(env, {
   XDG_CACHE_HOME: directories['xdg-cache'], XDG_CONFIG_HOME: directories['xdg-config'],
   XDG_DATA_HOME: directories['xdg-data'], XDG_STATE_HOME: directories['xdg-state'],
   TMPDIR: directories.tmp, TMP: directories.tmp, TEMP: directories.tmp,
-  ONNXRUNTIME_NODE_INSTALL_CUDA: 'skip',
 })
 const receipt = {
   scope: 'isolated-product-node-install', version,
