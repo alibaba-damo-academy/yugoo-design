@@ -187,6 +187,19 @@ test('public Markdown autolinks retain the tested build and original-material id
   assert.equal(lock.overrides[selector], '2.0.1')
   assert.ok(satisfies('2.0.1', '^2.0.0'))
   assert.equal(lock.snapshots['mdast-util-gfm@3.1.0'].dependencies['mdast-util-gfm-autolink-literal'], '2.0.1')
+  // The same fresh public resolution exposed four additional changes in
+  // modules actually bound into the tested Panel/provider browser outputs.
+  for (const [selector, version] of Object.entries({
+    'hast-util-raw@^9.0.0': '9.1.0',
+    'mdast-util-gfm-task-list-item@^2.0.0': '2.0.0',
+    'vfile-location@^5.0.0': '5.0.3',
+    'vfile-message@^4.0.0': '4.0.3',
+  })) {
+    assert.equal(workspace.overrides[selector], version)
+    assert.equal(baseline.reviewedWorkspaceOverrides[selector], version)
+    assert.equal(lock.overrides[selector], version)
+    assert.ok(satisfies(version, selector.slice(selector.lastIndexOf('@') + 1)))
+  }
 })
 
 test('reviewed public D3 inputs pin moving parents and preserve coexisting majors', () => {

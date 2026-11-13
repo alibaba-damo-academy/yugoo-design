@@ -187,11 +187,21 @@
     "min-dash@^4.0.0": "4.2.3",
     "bpmn-moddle@9.0.4>moddle": "7.2.0",
     "moddle-xml@^11.0.0": "11.0.0",
-    "saxen@^10.0.0": "10.0.0"
+    "saxen@^10.0.0": "10.0.0",
+    "hast-util-raw@^9.0.0": "9.1.0",
+    "mdast-util-gfm-task-list-item@^2.0.0": "2.0.0",
+    "vfile-location@^5.0.0": "5.0.3",
+    "vfile-message@^4.0.0": "4.0.3"
   },
   "ladybugSource": "registry",
   "ladybugIntegrity": "sha512-DEPxsl0f974p++WonWK868jXZraWCsRURG8LWNQyLiop0p8AYMx3QWRhF/bmv9MPEHWreplEuRgmzb306mDyaQ==",
-  "rootScripts": ["build", "typecheck", "test:public-contracts", "test:canvas-worker-adapter", "test:public-documents"],
+  "rootScripts": [
+    "build",
+    "typecheck",
+    "test:public-contracts",
+    "test:canvas-worker-adapter",
+    "test:public-documents"
+  ],
   "notes": [
     "Explicit source-build selections, not a list of supported host releases.",
     "Direct exact versions were found in the public registry; the full lock, integrity graph, installation and runtime gates remain pending.",
