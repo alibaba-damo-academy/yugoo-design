@@ -275,7 +275,7 @@
         "@huggingface/transformers": "3.8.1",
         "@ladybugdb/wasm-core": "0.21.1",
         "proper-lockfile": "4.1.2",
-        "undici": "8.10.2"
+        "undici": "8.12.2"
       },
       "externalPeers": {
         "@deepseek-ai/cordis": "^4.0.1",
@@ -6373,6 +6373,25 @@
             "topLevelNoticeMembers": [],
             "scope": "Exact target package bytes and retained original grant; no upstream Git-head, complete inventory or release license acceptance claim"
           }
+        },
+        {
+          "name": "katex",
+          "version": "0.18.2",
+          "declaredLicense": "MIT",
+          "packageMetadataSha256": "f08f8f645c791b2eb6b8629b51c6e566b65b30aded742c73526d1f0b4aff50b9",
+          "author": null,
+          "outputs": [],
+          "materials": [
+            {
+              "path": "licenses/bundled-js/katex@0.18.2/LICENSE",
+              "sha256": "766ccc1f306c885aa45542a9846bbd0a505b27a0374f146778171c2254ce18e3"
+            },
+            {
+              "path": "licenses/bundled-js/katex@0.18.2/SOURCE.json",
+              "sha256": "b9346065871ed924a93c49f185a87fab0cda1447f29dbe3cbf6cc207a2d20bca"
+            }
+          ],
+          "correspondence": "exact-original-bytes-from-current-installed-package; output associations require current normal-build observations"
         }
       ],
       "materials": [
@@ -7665,6 +7684,16 @@
           "source": "third-party/companion/bundled-js/@radix-ui/react-compose-refs@1.1.5/LICENSE",
           "path": "licenses/bundled-js/@radix-ui/react-arrow@1.1.15/LICENSE",
           "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138"
+        },
+        {
+          "source": "third-party/companion/bundled-js/katex@0.18.2/LICENSE",
+          "path": "licenses/bundled-js/katex@0.18.2/LICENSE",
+          "sha256": "766ccc1f306c885aa45542a9846bbd0a505b27a0374f146778171c2254ce18e3"
+        },
+        {
+          "source": "third-party/companion/bundled-js/katex@0.18.2/SOURCE.json",
+          "path": "licenses/bundled-js/katex@0.18.2/SOURCE.json",
+          "sha256": "b9346065871ed924a93c49f185a87fab0cda1447f29dbe3cbf6cc207a2d20bca"
         }
       ],
       "fonts": [
@@ -13969,6 +13998,25 @@
             "topLevelNoticeMembers": [],
             "scope": "Exact target package bytes and retained original grant; no upstream Git-head, complete inventory or release license acceptance claim"
           }
+        },
+        {
+          "name": "katex",
+          "version": "0.18.2",
+          "declaredLicense": "MIT",
+          "packageMetadataSha256": "f08f8f645c791b2eb6b8629b51c6e566b65b30aded742c73526d1f0b4aff50b9",
+          "author": null,
+          "outputs": [],
+          "materials": [
+            {
+              "path": "licenses/bundled-js/katex@0.18.2/LICENSE",
+              "sha256": "766ccc1f306c885aa45542a9846bbd0a505b27a0374f146778171c2254ce18e3"
+            },
+            {
+              "path": "licenses/bundled-js/katex@0.18.2/SOURCE.json",
+              "sha256": "b9346065871ed924a93c49f185a87fab0cda1447f29dbe3cbf6cc207a2d20bca"
+            }
+          ],
+          "correspondence": "exact-original-bytes-from-current-installed-package; output associations require current normal-build observations"
         }
       ],
       "materials": [
@@ -15436,6 +15484,16 @@
           "source": "third-party/companion/bundled-js/@radix-ui/react-compose-refs@1.1.5/LICENSE",
           "path": "licenses/bundled-js/@radix-ui/react-arrow@1.1.15/LICENSE",
           "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138"
+        },
+        {
+          "source": "third-party/companion/bundled-js/katex@0.18.2/LICENSE",
+          "path": "licenses/bundled-js/katex@0.18.2/LICENSE",
+          "sha256": "766ccc1f306c885aa45542a9846bbd0a505b27a0374f146778171c2254ce18e3"
+        },
+        {
+          "source": "third-party/companion/bundled-js/katex@0.18.2/SOURCE.json",
+          "path": "licenses/bundled-js/katex@0.18.2/SOURCE.json",
+          "sha256": "b9346065871ed924a93c49f185a87fab0cda1447f29dbe3cbf6cc207a2d20bca"
         }
       ],
       "fonts": [
@@ -16009,7 +16067,7 @@
           "declaredLicense": "EPL-2.0",
           "packageMetadataSha256": "c6b0154cf890fde4c3db3426f7b60ee7853a89764d3c42652a846eb985417642",
           "author": {
-            "name": "Ulf R\u00fcegg",
+            "name": "Ulf Rüegg",
             "email": "uruurumail@gmail.com"
           },
           "outputs": [

@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { createServer } from 'node:net'
+import { spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { mkdtemp, readFile, readdir, rm, writeFile, symlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -195,4 +197,72 @@ test('downloader and model child retain identical explicit empty and mixed-case 
     assert.equal(options.httpsProxy ?? env.https_proxy ?? env.HTTPS_PROXY, child.https_proxy ?? child.HTTPS_PROXY)
     assert.deepEqual(env, before)
   })
+})
+
+
+test('malformed model response fails the download without terminating its Node process', { timeout: 20000 }, async t => {
+  const f = await fixture(t)
+  const sockets = new Set()
+  let requests = 0
+  const server = createServer(socket => {
+    sockets.add(socket)
+    socket.once('data', () => {
+      requests++
+      socket.write('HTTP/1.1 200 OK\r\nContent-Encoding: gzip, gzip, gzip, gzip, gzip, gzip\r\nContent-Length: 100\r\nConnection: close\r\n\r\n')
+      const close = setTimeout(() => socket.destroy(), 30)
+      close.unref()
+    })
+    socket.on('close', () => sockets.delete(socket))
+    socket.on('error', () => {})
+  })
+  await new Promise(resolve => server.listen({ host: '127.0.0.1', port: 0 }, resolve))
+  t.after(async () => {
+    for (const socket of sockets) socket.destroy()
+    await new Promise(resolve => server.close(resolve))
+  })
+  const entry = new URL('../src/embedding-model-assets.ts', import.meta.url).href
+  const childSource = `
+    const { prepareEmbeddingAssetSet } = await import(process.argv[1]);
+    try {
+      await prepareEmbeddingAssetSet(process.argv[2], [{ path: 'model.bin', bytes: 100,
+        hash: '0'.repeat(64), kind: 'sha256' }], false, { signal: new AbortController().signal,
+        baseUrl: process.argv[3] });
+      throw new Error('malformed response unexpectedly succeeded');
+    } catch (error) {
+      if (error.code !== 'download') throw error;
+      console.log('handled-download-failure');
+    }
+    // Also keep a caller-owned transport alive after rejection. Immediate
+    // downloader cleanup must not hide an orphaned upstream body-stream error.
+    const { createRequire } = await import('node:module');
+    const { fetch, EnvHttpProxyAgent } = createRequire(process.argv[1])('undici');
+    const dispatcher = new EnvHttpProxyAgent({ noProxy: '*' });
+    let rejected = false;
+    try { await fetch(process.argv[3], { dispatcher, redirect: 'follow' }) }
+    catch { rejected = true; console.log('handled-fetch-failure') }
+    if (!rejected) throw new Error('malformed transport unexpectedly succeeded');
+    setTimeout(async () => {
+      await dispatcher.close(); console.log('remained-alive'); process.exit(0)
+    }, 250);
+  `
+  const result = await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, ['--import', 'tsx', '--input-type=module', '--eval', childSource,
+      entry, f.root, `http://127.0.0.1:${server.address().port}/model`], {
+      env: { PATH: process.env.PATH, SystemRoot: process.env.SystemRoot, NO_PROXY: '*', no_proxy: '*' },
+      stdio: ['ignore', 'pipe', 'pipe'], timeout: 15000,
+    })
+    let stdout = '', stderr = ''
+    child.stdout.on('data', bytes => { stdout = (stdout + bytes).slice(-8192) })
+    child.stderr.on('data', bytes => { stderr = (stderr + bytes).slice(-8192) })
+    child.once('error', reject)
+    child.once('close', (code, signal) => resolve({ code, signal, stdout, stderr }))
+  })
+  assert.equal(result.code, 0, result.stderr)
+  assert.equal(result.signal, null)
+  assert.match(result.stdout, /handled-download-failure/)
+  assert.match(result.stdout, /remained-alive/)
+  assert.match(result.stdout, /handled-fetch-failure/)
+  assert.equal(requests, 2, 'both downloader and caller-owned transport reached the malformed server')
+  assert.doesNotMatch(result.stderr, /Unhandled 'error' event/)
+  await assert.rejects(readFile(join(f.root, 'model.bin')), { code: 'ENOENT' })
 })

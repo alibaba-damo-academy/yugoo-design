@@ -13,6 +13,7 @@ This round focuses on consistent Design Panels, suggestions that are easier to a
 - **Clearer design suggestions.** Automatic review (GRA) uses concise, actionable advice to explain the proposed change and its evidence. Clarify the three review scopes—Current design, Related designs and Entire project—and shorten review output and repeated context while retaining Accept, Reject and Later decisions.
 - **More readable relationships and clarity signals.** Reduce visual clutter in the knowledge graph (KAG), simplify tools and filters, and improve access to nodes, relationships and original evidence. Keep the Ideation index's individual U/S/T progress bars and explanations while removing the combined score.
 - **Better generation and recovery feedback.** Correct subagent log placement and remove logs after completion, temporarily hide the previous PRD while it is being updated, and improve Studio error, cancellation and retry feedback, alongside bilingual empty states when no Kit is selected.
+- **Dependency security.** Upgrade Undici and KaTeX to address process termination on malformed network responses, inherited formula-rendering settings and other dependency vulnerabilities. Update transitive dependencies and original license materials together.
 
 Existing projects retain their complete Kit and Bundle definitions; updating the plugin does not replace them automatically. To adopt structures such as the revised flow nodes, update the relevant Bundle as needed and have the Agent supplement the design while preserving existing results.
 

@@ -166,8 +166,8 @@
     "third-party/native/whiteboard-fonts/licenses/JetBrainsMono-OFL.txt",
     "third-party/native/whiteboard-fonts/licenses/source-han-sans-LICENSE.txt",
     "third-party/native/whiteboard-fonts/manifest.json",
-    "third-party/native/katex-0.16.47/LICENSE",
-    "third-party/native/katex-0.16.47/SOURCE.md"
+    "third-party/native/katex-0.18.2/LICENSE",
+    "third-party/native/katex-0.18.2/SOURCE.md"
   ],
   "dependencies": {
     "@radix-ui/react-select": "2.3.7",
@@ -189,6 +189,6 @@
     "yaml": "^2.9.0",
     "@excalidraw/excalidraw": "0.18.1",
     "bpmn-js": "18.24.0",
-    "katex": "0.16.47"
+    "katex": "0.18.2"
   }
 }

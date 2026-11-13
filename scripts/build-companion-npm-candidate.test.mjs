@@ -31,6 +31,7 @@ test('Companion refreshes stale generated Panel CSS through the owning pipeline 
   await writeFile(join(panel, 'package.json'), JSON.stringify({ name: owner.name, type: owner.type, private: true, scripts: { 'build:css': owner.scripts['build:css'] } }))
   // Reuse the installed toolchain; the fixture contains only CSS inputs, not a
   // second source checkout or copied dependency installation.
+  await symlink(join(workspace, 'node_modules'), join(root, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir')
   await symlink(join(workspace, 'packages/panel/node_modules'), join(panel, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir')
   for (const path of ['tailwind.config.cjs', 'src/client/ported/design.css', 'src/client/ported/token.css', 'src/visual-components.css'])
     await cp(join(workspace, 'packages/panel', path), join(panel, path))

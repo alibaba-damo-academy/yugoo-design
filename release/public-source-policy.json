@@ -7073,6 +7073,18 @@
     },
     {
       "kind": "file",
+      "path": "third-party/companion/bundled-js/katex@0.18.2/LICENSE",
+      "action": "include",
+      "reason": "Exact original KaTeX 0.18.2 MIT license and installed-registry source identity for the security update; preserves original attribution and records current normal-build associations separately from retained historical inputs."
+    },
+    {
+      "kind": "file",
+      "path": "third-party/companion/bundled-js/katex@0.18.2/SOURCE.json",
+      "action": "include",
+      "reason": "Exact original KaTeX 0.18.2 MIT license and installed-registry source identity for the security update; preserves original attribution and records current normal-build associations separately from retained historical inputs."
+    },
+    {
+      "kind": "file",
       "path": "third-party/companion/bundled-js/katex@0.16.47/LICENSE",
       "action": "include",
       "reason": "Original attribution material for identified emitted Companion code; exact package/version and archive-member correspondence in emitted-originals-index.json. Source inclusion only, not complete release licensing or publication acceptance."
@@ -11498,6 +11510,12 @@
       "path": "packages/companion/test/notification-feedback-owner.test.mjs",
       "action": "include",
       "reason": "Behavior regressions for ordinary chat and saved-event feedback ownership; no private runtime evidence."
+    },
+    {
+      "kind": "file",
+      "path": "packages/companion/test/core-entry.test.mjs",
+      "action": "include",
+      "reason": "Regression for the Companion build-time Host-neutral Core selection retaining canonical text/opaque Kit resource projection; no Host credentials or new execution authority."
     },
     {
       "kind": "file",

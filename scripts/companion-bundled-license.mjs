@@ -456,6 +456,8 @@ export const BUNDLED_JS_LICENSE_FILES = Object.freeze([
   "dayjs@1.11.23/LICENSE",
   "image-blob-reduce@3.0.1/LICENSE",
   "katex@0.16.47/LICENSE",
+  "katex@0.18.2/LICENSE",
+  "katex@0.18.2/SOURCE.json",
   "uuid@14.0.2/LICENSE.md",
   "pica@7.1.1/LICENSE",
   "roughjs@4.6.6/LICENSE",
