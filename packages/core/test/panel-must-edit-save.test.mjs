@@ -1,7 +1,7 @@
 /** Source Remote integration with real Files/Git/journal, not host/model E2E. */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
@@ -13,6 +13,8 @@ const { DesignFilesStore } = await import('../src/design-files.ts')
 const { GitVersioning } = await import('../src/git.ts')
 const { nodeDesignProjectSpawn } = await import('../src/design-project.ts')
 const { nodeFs } = await import('../src/service-tools.ts')
+const { executeNativeGit } = await import('../src/git-native.ts')
+const { DshLibraryGitScope } = await import('../src/dsh-library-git-scope.ts')
 const { DesignJournalStorage } = await import('../src/design-journal-storage.ts')
 const { DesignExecutionHandoffJournal } = await import('../src/design-execution-handoff-journal.ts')
 const { deriveCurrentDesignExecutionGate } = await import('../src/design-execution-derivation.ts')
@@ -53,10 +55,22 @@ async function handoffFixture(handoff, run) {
           stateStatus, handoff: stateStatus === 'pending' ? handoff : 'none' } }).then(() => {}),
     })
     const published = await publish('Original plan')
+    let beforeSaveNative
     const remote = Object.create(DesignPanelRemote.prototype)
     remote.design = {
-      withSelectedDesignFilesMutation: async (_agent, _fs, _signal, operation, entered) => {
-        entered?.(); return operation(project, store)
+      withSelectedDesignFilesMutation: async (_agent, _fs, signal, operation, entered) => {
+        // Exercise the real native adapter and its per-save fail-stop scope.
+        const scope = new DshLibraryGitScope(root, signal, async () => {}, undefined,
+          async (request, beforeExecute) => {
+            await beforeExecute?.()
+            await beforeSaveNative?.(request.operation)
+            return executeNativeGit(root, request.operation, request.signal)
+          })
+        try {
+          entered?.()
+          const scopedGit = new GitVersioning(scope.spawn, root, undefined, false, 'native')
+          return await operation(project, new DesignFilesStore(nodeFs, scopedGit, root))
+        } finally { await scope.close() }
       },
       recordSettledPanelSave() {}, requireKitForAgent: () => kit,
       readDesignJournal: () => journal.read(conversation), assertProjectSelection() {},
@@ -67,7 +81,7 @@ async function handoffFixture(handoff, run) {
       consumeExecutionHandoff: (_agent, candidate) => handoffs.consume(conversation, candidate),
     }
     const agent = { session: { header: { origin: 'user' }, snapshotEvents: () => [] }, inject() {} }
-    const save = (title, eventId) => remote.savePanel(agent, skill.name, { title }, [], eventId, new AbortController().signal)
+    const save = (title, eventId, signal = new AbortController().signal) => remote.savePanel(agent, skill.name, { title }, [], eventId, signal)
     const gate = async () => deriveCurrentDesignExecutionGate({ projectId: project.projectId,
       records: (await journal.read(conversation)).records, kit, skill,
       stateRevision: await store.head(), state: await store.readPublished(skill.name), store,
@@ -81,9 +95,98 @@ async function handoffFixture(handoff, run) {
         ['design_records/reviews/background.json', content],
       ]), await store.head())
     }
-    await run({ root, store, git, remote, journal, conversation, project, published, publish, save, gate, recordsOnly })
+    await run({ root, store, git, remote, journal, conversation, project, published, publish, save, gate, recordsOnly,
+      beforeSaveNative: callback => { beforeSaveNative = callback } })
   } finally { await rm(root, { recursive: true, force: true }) }
 }
+
+test('cancelling a native historical probe preserves content and must-edit authority for retry', async () => {
+  await handoffFixture('must_edit', async ({ store, published, recordsOnly, save, journal, conversation, beforeSaveNative }) => {
+    await recordsOnly()
+    const head = await store.head(), before = await journal.read(conversation)
+    const cancelled = new AbortController()
+    beforeSaveNative(operation => {
+      if (operation.kind === 'entry' && operation.commit === published.commit) cancelled.abort(Error('cancel historical probe'))
+    })
+    await assert.rejects(save('Cancelled answer', 'cancelled-answer', cancelled.signal), /cancel historical probe/)
+    assert.equal(await store.head(), head)
+    assert.deepEqual(await store.readPublished('sample'), { title: 'Original plan' })
+    assert.deepEqual(await journal.read(conversation), before)
+    beforeSaveNative(undefined)
+    const saved = await save('Retried answer', 'retry-after-cancel')
+    const consumed = (await journal.read(conversation)).snapshot.consumedExecutionHandoffs
+    assert.equal(consumed.length, 1)
+    assert.equal(consumed[0].pin.stateRevision, published.commit)
+    assert.equal(consumed[0].panelStateRevision, saved.commit)
+  })
+})
+
+for (const latest of ['agent', 'panel']) {
+  test(`missing old ${latest} publication history does not poison native Panel saves`, async () => {
+    await handoffFixture('must_edit', async ({ root, store, git, published, save, journal, conversation }) => {
+      if (latest === 'panel') await save('Before recovery', 'before-recovery')
+      const before = await journal.read(conversation)
+      const canonical = await readFile(join(root, 'sample/sample.json'))
+      // Reproduce a recovered repository whose external Journal still pins the
+      // original publications. Only this disposable fixture's Git is replaced.
+      await rm(join(root, '.git'), { recursive: true })
+      await git.ensureRepo()
+      await git.commitExact('Recovered current files', new Map([['sample/sample.json', canonical]]), await git.head())
+      assert.equal(await git.blobOidAt(published.commit, 'sample/sample.json'), undefined)
+      for (const [title, event] of [['After recovery', 'after-recovery'], ['Next edit', 'next-edit']]) {
+        const saved = await save(title, event)
+        assert.ok(saved.commit)
+        assert.deepEqual(await store.readPublished('sample'), { title })
+      }
+      const after = await journal.read(conversation)
+      assert.deepEqual(after.records.slice(0, before.records.length), before.records, 'historical facts are preserved')
+      assert.deepEqual(after.snapshot.consumedExecutionHandoffs, before.snapshot.consumedExecutionHandoffs,
+        'missing publication history cannot invent or release an old gate')
+    })
+  })
+}
+
+test('a missing earliest Panel release cannot be replaced by a later save when the agent pin survives', async () => {
+  await handoffFixture('must_edit', async ({ root, store, git, remote, published, save, journal, conversation }) => {
+    const consume = remote.design.consumeExecutionHandoff
+    remote.design.consumeExecutionHandoff = () => { throw Error('Injected consumption failure') }
+    await assert.rejects(save('Original release', 'original-release'), /Injected consumption failure/)
+    remote.design.consumeExecutionHandoff = consume
+    const missingPanel = await store.head()
+    const canonical = await readFile(join(root, 'sample/sample.json'))
+    // Keep the real agent publication, but recover onto a branch that no longer
+    // contains the Journal's earliest Panel release. Prune only fixture history.
+    await exec('git', ['update-ref', 'HEAD', published.commit, missingPanel], { cwd: root })
+    await git.commitExact('Recovered current files', new Map([['sample/sample.json', canonical]]), published.commit)
+    await exec('git', ['reflog', 'expire', '--expire=now', '--all'], { cwd: root })
+    await exec('git', ['prune', '--expire=now'], { cwd: root })
+    assert.ok(await git.blobOidAt(published.commit, 'sample/sample.json'))
+    assert.equal(await git.blobOidAt(missingPanel, 'sample/sample.json'), undefined)
+    const before = await journal.read(conversation)
+    await save('After recovery', 'recovered-release')
+    await save('Next edit', 'next-release')
+    const after = await journal.read(conversation)
+    assert.deepEqual(after.records.slice(0, before.records.length), before.records)
+    assert.deepEqual(after.snapshot.consumedExecutionHandoffs, [], 'no later release can stand in for the missing first one')
+    assert.deepEqual(await store.readPublished('sample'), { title: 'Next edit' })
+  })
+})
+
+test('a competing publication still rejects native Panel Save without consuming must-edit', async () => {
+  await handoffFixture('must_edit', async ({ store, git, save, journal, conversation, beforeSaveNative }) => {
+    const before = await journal.read(conversation)
+    let winner
+    beforeSaveNative(async operation => {
+      if (operation.kind !== 'publish') return
+      beforeSaveNative(undefined)
+      winner = await git.commitExact('Competing publication', new Map([['sample/sample.json', '{"title":"Competing answer"}\n']]), await git.head())
+    })
+    await assert.rejects(save('Losing answer', 'losing-answer'), /stale-publication/)
+    assert.equal(await store.head(), winner)
+    assert.deepEqual(await store.readPublished('sample'), { title: 'Competing answer' })
+    assert.deepEqual(await journal.read(conversation), before)
+  })
+})
 
 test('records-only HEAD advancement does not lose the first must-edit save disposition', async () => {
   await handoffFixture('must_edit', async ({ published, recordsOnly, save, journal, conversation }) => {

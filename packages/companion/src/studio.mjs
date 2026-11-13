@@ -8,7 +8,7 @@ import { StudioBinaryContentError } from '../../studio/src/types.ts'
 import { snapshotKit } from '../../studio/src/snapshot.ts'
 import { loadStudioKit } from '../../studio/src/load.ts'
 import { finalizeStudioPanelPreview } from '../../studio/src/panel-preview.ts'
-import { readStudioContentArchive, STUDIO_SOURCE_MAX_BYTES } from '../../studio/src/content-archive.ts'
+import { readStudioContentArchive, readStudioArchiveResource, STUDIO_SOURCE_MAX_BYTES } from '../../studio/src/content-archive.ts'
 
 export async function createCompanionStudio(kit, kitRoot, stateRoot, contentLibrary) {
   const currentKit = async () => typeof kit === 'function' ? kit() : kit
@@ -110,8 +110,7 @@ export async function createCompanionStudio(kit, kitRoot, stateRoot, contentLibr
       if (input.kit === undefined) {
         const selected = (await installedBundles()).find(skill => (skill.catalogName ?? skill.name) === bundlePin.name && String(skill.version) === bundlePin.version)
         if (!selected) throw new Error('Select the exact registered Bundle version.')
-        const retained = contentLibrary ? await contentLibrary.store.resolveBundle(bundlePin) : undefined
-        const base = retained?.resourceRoot ?? selected.resourceRoot
+        const base = selected.resourceRoot
         if (!base) throw new Error('Independent Bundle source is unavailable.')
         const { createStudioInstanceAdapters } = await import('./studio-instance-composition.mjs')
         const { composition } = createStudioInstanceAdapters({
@@ -120,7 +119,7 @@ export async function createCompanionStudio(kit, kitRoot, stateRoot, contentLibr
           captureBundle: async () => { throw new Error('Standalone preview uses only its captured source.') },
         })
         return composition.preview({ kind: 'bundle', bundle: bundlePin, runtimeName: selected.name,
-          bundleFiles: await captureRegisteredTree(base), sourceId: retained?.sourceId ?? 'companion:explicit-kit', revision,
+          bundleFiles: await captureRegisteredTree(base), sourceId: selected.sourceId ?? 'companion:explicit-kit', revision,
           ...(requestedSample === undefined ? {} : { sampleSource: requestedSample }) })
       }
       const selected = await selectedKit(kitPin)
@@ -128,35 +127,33 @@ export async function createCompanionStudio(kit, kitRoot, stateRoot, contentLibr
       const locations = []
       for (const skill of selected.skills) {
         const pin = { name: skill.catalogName ?? skill.name, version: String(skill.version) }
-        const retained = contentLibrary ? await contentLibrary.store.resolveBundle(pin) : undefined
-        locations.push({ ...pin, rootDir: retained?.resourceRoot ?? skill.resourceRoot ?? join(root, 'skills', skill.name), sourceId: retained?.sourceId ?? 'companion:explicit-kit' })
+        locations.push({ ...pin, rootDir: skill.resourceRoot ?? join(root, 'skills', skill.name), sourceId: skill.sourceId ?? 'companion:explicit-kit' })
       }
-      const loadOptions = { sourceId: 'companion:explicit-kit', bundles: locations }
+      const loadOptions = { sourceId: selected.sourceId ?? 'companion:explicit-kit', bundles: locations }
       const capturedRoots = [...new Set([root, ...locations.map(location => location.rootDir)])]
       const files = []
       for (const base of capturedRoots) for (const path of await source.listFiles(base)) files.push({ base, path })
       if (files.length > 4096) throw new Error('Installed preview source exceeds 4096 files.')
-      const texts = new Map(), binary = new Set(), directories = new Set(capturedRoots)
+      const texts = new Map(), resources = new Map(), binary = new Set(), directories = new Set(capturedRoots)
       let bytes = 0
       for (const { base, path } of files) {
-        const absolute = join(base, path), info = await lstat(await safe(absolute))
-        bytes += info.size
+        const absolute = join(base, path), file = await safe(absolute), info = await lstat(file)
+        if (!info.isFile()) throw new Error('Studio expects a regular file.')
+        if (bytes + info.size > STUDIO_SOURCE_MAX_BYTES) throw new Error('Installed preview source exceeds 32 MiB.')
+        const content = await readFile(file)
+        bytes += content.length
         if (bytes > STUDIO_SOURCE_MAX_BYTES) throw new Error('Installed preview source exceeds 32 MiB.')
-        try {
-          const text = await source.readText(absolute)
-          if (text !== undefined) texts.set(absolute, text)
-          // Recheck decoded byte count if a source changed after lstat.
-          if (text !== undefined && Buffer.byteLength(text) > info.size) {
-            bytes += Buffer.byteLength(text) - info.size
-            if (bytes > STUDIO_SOURCE_MAX_BYTES) throw new Error('Installed preview source exceeds 32 MiB.')
-          }
-        } catch (error) { if (error instanceof StudioBinaryContentError) binary.add(absolute); else throw error }
+        const resource = readStudioArchiveResource(absolute, content)
+        resources.set(absolute, resource)
+        if (resource.kind === 'text' && !resource.content.includes('\0')) texts.set(absolute, resource.content)
+        else binary.add(absolute)
         const parts = path.split('/')
         for (let count = 1; count < parts.length; count++) directories.add(join(base, ...parts.slice(0, count)))
       }
       const paths = new Set([...texts.keys(), ...binary, ...directories])
       const captured = {
         readText: async path => { const key = resolve(path); if (binary.has(key)) throw new StudioBinaryContentError(key); return texts.get(key) },
+        readResource: async path => resources.get(resolve(path)),
         isDirectory: async path => directories.has(resolve(path)),
         listDir: async path => {
           const base = resolve(path)
@@ -226,9 +223,8 @@ export async function createCompanionStudio(kit, kitRoot, stateRoot, contentLibr
         captureBundle: async pin => {
           const selected = (await installedBundles()).find(skill => (skill.catalogName ?? skill.name) === pin.name && String(skill.version) === pin.version)
           if (!selected) throw new Error('Select the exact registered Bundle.')
-          const retained = contentLibrary ? await contentLibrary.store.resolveBundle(pin) : undefined
-          const base = retained?.resourceRoot ?? selected.resourceRoot ?? join(root, 'skills', selected.name)
-          return { files: await captureRegisteredTree(base), sourceId: retained?.sourceId ?? 'companion:explicit-kit' }
+          const base = selected.resourceRoot ?? join(root, 'skills', selected.name)
+          return { files: await captureRegisteredTree(base), sourceId: selected.sourceId ?? 'companion:explicit-kit' }
         },
       })
       return createStudioInstances({ stateRoot, ...ports })

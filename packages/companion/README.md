@@ -39,6 +39,14 @@ a concurrent edit during execution cannot silently substitute a different
 schema at settlement. Design Files publication, Git history, human handoff and
 npm package versions retain their separate responsibilities.
 
+Installed Studio capture and previews read the selected registered Kit and
+Bundle sources. An older retained snapshot with the same upstream pin does not
+replace those sources. Saved Studio edits use their current instance source;
+historical snapshots remain available to restore the exact existing project.
+Package updates do not require clearing either store.
+Installed previews keep ordinary image, font and binary resources outside the
+text projection; authored definitions and unknown text resources remain UTF-8.
+
 The released npm product package and CLI are `yugoo-design`. Companion names the internal
 host integration and shared browser runtime, not a second product to install.
 The former `@yugoo-design/companion` package and its beta versions remain historical

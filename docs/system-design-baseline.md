@@ -482,6 +482,15 @@ The Page Producer gives each optional Page Worker the same resolved visual token
 
 A Panel save updates a pending plan's content pin without settling its explicit continue action. System-record-only commits do not replace the preceding Bundle publication: the store verifies unchanged Design evidence, ancestry and absence of a newer Bundle publication before reusing its authority. Actual content changes, newer executions and completion retain their existing conflict and lifecycle checks.
 
+When a recovered repository no longer contains a Journal-pinned publication,
+the missing canonical blob is an unavailable historical fact, not a failed
+current-content save. Handoff reconstruction verifies the original Agent
+publication and each Panel revision needed to prove the earliest release before
+reading its diff. Missing history leaves that old authority unproven: preserve
+the Journal, allow ordinary current-content saves, and never substitute a later
+save for the missing release. Cancellation, selection guards, actual Git failures
+and publication compare-and-swap remain unchanged.
+
 Validation occurs inside the selected executor's lifecycle, in either main or subagent placement. Working-copy edits are visible filesystem facts but are not a publication. An optional Worker repairs and revalidates its exact artifact before returning a file receipt. The selected executor integrates that receipt without re-reading or retransmitting large artifact bytes merely to record completion. It reads a landed artifact only when its content is a real input to downstream synthesis or repair, and otherwise uses file-path scripts for compact validation or metadata. At publication, the trusted Provider contribution's `preparePublication` operation first normalizes state and materializes deterministic or Host-owned artifacts without writing Design Files; schema, state, completion, ownership, and cross-Bundle validation then evaluate that prepared write; private dependency pins and the project revision are rechecked immediately before the atomic commit. Validators report facts and repair targets without choosing delegation, retry, or regeneration policy. A handoff gate controls continuation of the existing workflow; it never prevents a new user instruction.
 
 The main Agent's generic filesystem or shell tools do not grant Design write

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { cp, mkdir, mkdtemp, readFile, writeFile, rm } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, writeFile, rm, symlink } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { execFile } from 'node:child_process'
@@ -121,6 +121,73 @@ function commandFixture(kitRoot, stateRoot, projectsRoot) {
     '--kit', kitRoot, '--state-root', stateRoot, '--projects-root', projectsRoot,
     '--host', 'codex', '--thread', 'isolated-retained-selection', '--input', input], { timeout: 30_000 })).stdout)
 }
+
+for (const retained of [false, true]) {
+  test(`current Kit selection captures installed Bundle sources with ${retained ? 'retained history' : 'fresh state'}`, async t => {
+    const root = await mkdtemp(join(tmpdir(), 'companion-retained-selection-'))
+    t.after(() => rm(root, { recursive: true, force: true }))
+    const installed = await contentFixture(root, 'current_fixture')
+    const stateRoot = join(root, 'state')
+    const library = createCompanionContentLibrary({ fs: companionFs, kitRoot: installed.kitRoot, stateRoot })
+    const bundleRoot = join(installed.kitRoot, 'bundles', installed.bundleName)
+    const original = await readFile(join(bundleRoot, 'SKILL.md'))
+    const historical = retained ? await library.store.retainBundle(bundleRoot, { sourceId: 'fixture:historical' }) : undefined
+    await writeFile(join(bundleRoot, 'SKILL.md'), original + '\nCurrent installed method.\n')
+    const selected = await library.latestInstalled('current_fixture')
+    assert.match(selected.skills[0].content, /Current installed method/)
+    assert.notEqual(selected.skills[0].sourceId, 'fixture:historical')
+    if (historical) assert.deepEqual(await readFile(join(historical.resourceRoot, 'SKILL.md')), original)
+    const command = commandFixture(installed.kitRoot, stateRoot, join(root, 'projects'))
+    await command('new Retained upgrade selection')
+    const result = await command('kit current_fixture')
+    assert.equal(result.selected.kit.name, 'current_fixture')
+  })
+}
+
+for (const retained of [false, true]) {
+  test(`installed Kit and standalone previews preserve text and opaque resources with ${retained ? 'retained history' : 'fresh state'}`, async t => {
+    const root = await mkdtemp(join(tmpdir(), 'companion-retained-preview-'))
+    t.after(() => rm(root, { recursive: true, force: true }))
+    const installed = await contentFixture(root, 'preview_current')
+    const stateRoot = join(root, 'state')
+    const library = createCompanionContentLibrary({ fs: companionFs, kitRoot: installed.kitRoot, stateRoot })
+    const bundleRoot = join(installed.kitRoot, 'bundles', installed.bundleName)
+    const historical = retained ? await library.store.retainBundle(bundleRoot, { sourceId: 'fixture:historical' }) : undefined
+    const panel = await readFile(join(bundleRoot, 'panel.yaml'), 'utf8')
+    await writeFile(join(bundleRoot, 'panel.yaml'), panel.replace('Retained fixture panel', 'Current installed panel'))
+    const kit = await library.loadInstalled()
+    const studio = await createCompanionStudio(kit, installed.kitRoot, stateRoot, library)
+    const bundle = { name: installed.bundleName, version: '1.0' }
+    for (const input of [{}, { kit: { name: kit.name, version: String(kit.version) } }]) {
+      const result = await studio.previewInstalledPanel({ ...input, bundle, revision: 0, sampleSource: '{"summary":"Preview"}' })
+      assert.deepEqual(result.diagnostics, [])
+      assert.ok(JSON.stringify(result.preview).includes('Current installed panel'))
+    }
+    if (historical) assert.equal(await readFile(join(historical.resourceRoot, 'panel.yaml'), 'utf8'), panel)
+    for (const path of ['reference/sample.bin', 'assets/pixel.png']) {
+      assert.deepEqual(await readFile(join(bundleRoot, path)), installed.files[`bundles/${installed.bundleName}/${path}`])
+    }
+  })
+}
+
+test('installed Bundle reads still reject traversal and source symlinks with retained history', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'companion-retained-confinement-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const installed = await contentFixture(root, 'confined_current')
+  const { library, kit, studio } = await studioFixture(installed.kitRoot, join(root, 'state'))
+  await library.store.retainBundle(kit.skills[0].resourceRoot, { sourceId: 'fixture:historical' })
+  const outside = join(root, 'outside.md')
+  await writeFile(outside, 'Synthetic private source outside the registered Bundle.')
+  await symlink(outside, join(kit.skills[0].resourceRoot, 'reference', 'external.md'))
+  const pin = { name: installed.bundleName, version: '1.0' }
+  assert.deepEqual((await studio.readBundleFile({ ...pin, path: 'SKILL.md' })).diagnostics, [])
+  for (const path of ['../../outside.md', 'reference/external.md']) {
+    const rejected = await studio.readBundleFile({ ...pin, path })
+    assert.equal(rejected.file, undefined)
+    assert.ok(rejected.diagnostics.length > 0)
+  }
+  assert.equal(await readFile(outside, 'utf8'), 'Synthetic private source outside the registered Bundle.')
+})
 
 test('ordinary binary assets survive source import, S2 Kit edit, preview and durable reopen', async t => {
   const root = await mkdtemp(join(tmpdir(), 'companion-binary-draft-'))

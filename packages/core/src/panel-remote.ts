@@ -955,7 +955,8 @@ export class DesignPanelRemote extends TypertRemoteService {
       const mustEditAuthority = skillDef.execution.handoff === 'must_edit'
         ? await pendingMustEditAuthorityForSave(journal.records, kit.name, kit.version, skill, priorHead,
           commit => store.diffCommit(commit, signal),
-          (commit, head) => store.isCurrentPublicationAt(commit, head, skill, signal))
+          (commit, head) => store.isCurrentPublicationAt(commit, head, skill, signal),
+          commit => store.hasPublishedStateAt(commit, skill, signal))
         : undefined
       const manifest = skillDef.metadata?.skillManifest
       const runtimeDeclaration = typeof manifest === 'object' && manifest !== null && !Array.isArray(manifest)

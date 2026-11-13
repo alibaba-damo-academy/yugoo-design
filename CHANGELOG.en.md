@@ -4,6 +4,14 @@
 
 This log summarizes major features, noticeable experience changes, and installation or upgrade improvements in the Yugoo Design repository, organized by version. It omits small adjustments and internal refactoring. See the [Git commit history](https://github.com/alibaba-damo-academy/yugoo-design/commits/main/) for the full changes.
 
+## [0.3.1](https://github.com/alibaba-damo-academy/yugoo-design/tree/v0.3.1)
+
+Fix Panel saving and content loading.
+
+- Keep current Panel content editable and saveable when an old publication's Git commit is missing, without treating an unverifiable historical record as a completed user-edit handoff.
+- Use the selected Kit and Bundle for new projects when an upgrade retains the old content library, rather than substituting a historical snapshot.
+- Preserve images and binary resources when previewing installed Kits instead of reading them as text.
+
 ## [0.3.0](https://github.com/alibaba-damo-academy/yugoo-design/tree/v0.3.0)
 
 This round focuses on consistent Design Panels, suggestions that are easier to act on, and clearer Web App Kit design and research.

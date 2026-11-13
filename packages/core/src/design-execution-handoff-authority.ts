@@ -70,6 +70,7 @@ export async function pendingMustEditAuthorityForSave(
   head: string | undefined,
   readCommitDiff: (commit: string) => Promise<string>,
   matchesCurrentPublication?: (commit: string, head: string) => Promise<boolean>,
+  hasPublishedState?: (commit: string) => Promise<boolean>,
 ): Promise<PendingMustEditAuthority | undefined> {
   // Journal publications keep their original commit pins. A caller may prove
   // that later system records advanced HEAD without replacing that publication
@@ -88,7 +89,11 @@ export async function pendingMustEditAuthorityForSave(
     }
   }
   const initial = pendingMustEditAuthority(records, kitName, kitVersion, skillName, publicationHead)
-  if (initial === undefined || initial.panelStateRevision === undefined) return initial
+  if (initial === undefined) return undefined
+  // A new Panel commit cannot reconnect Journal authority across missing Git
+  // history. Keep those facts, but do not consume an unprovable old handoff.
+  if (hasPublishedState !== undefined && !await hasPublishedState(initial.stateRevision)) return undefined
+  if (initial.panelStateRevision === undefined) return initial
   const commits: string[] = []
   for (let index = records.length - 1; index >= 0; index -= 1) {
     const record = records[index]
@@ -105,6 +110,8 @@ export async function pendingMustEditAuthorityForSave(
   for (const commit of commits.reverse()) {
     if (seen.has(commit)) continue
     seen.add(commit)
+    // Do not skip a missing earlier release and substitute a later save for it.
+    if (hasPublishedState !== undefined && !await hasPublishedState(commit)) return undefined
     if ((await readCommitDiff(commit)).trim() !== '') { release = commit; break }
   }
   return pendingMustEditAuthority(records, kitName, kitVersion, skillName, publicationHead, commit => commit === release)

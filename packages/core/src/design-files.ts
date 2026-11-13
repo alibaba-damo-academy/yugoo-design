@@ -366,10 +366,18 @@ export class DesignFilesStore {
    */
   async isCurrentPublicationAt(commit: string, head: string, skill: string, signal?: AbortSignal): Promise<boolean> {
     requireSkillName(skill)
+    if (!await this.hasPublishedStateAt(commit, skill, signal)) return false
     if (!await this.sameDesignEvidenceAt(commit, head, signal) || !await this.isAncestor(commit, head, signal)) return false
     const latest = await this.access.read(() => this.git.latestCommitWithMessage(head, publishedSkillMarker(skill), signal))
     // Legacy unmarked saves may follow the last marked Bundle commit.
     return latest === undefined || latest === commit || await this.isAncestor(latest, commit, signal)
+  }
+
+  /** A recovered repository may retain Journal pins whose canonical blob is absent. */
+  async hasPublishedStateAt(commit: string, skill: string, signal?: AbortSignal): Promise<boolean> {
+    requireSkillName(skill)
+    // Entry lookup reports missing commits/files without failing a save scope.
+    return this.access.read(async () => (await this.git.blobOidAt(commit, `${skill}/${skill}.json`, signal)) !== undefined)
   }
 
   /**

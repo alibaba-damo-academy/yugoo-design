@@ -114,8 +114,8 @@ Agent 按 Kit 的方法澄清背景，或直接展开可讨论的结果。设计
 这些说明用于安装准备和排查，宿主的具体命令仍以[统一安装入口](../../packages/companion/HOSTS.md#agent-led-installation-and-updates)为准。
 
 - **版本管理：** 运行库随包提供，正常设计操作无需另装 Git。当前源码支持 Windows x64/MSVC、Linux x64/GNU 和 macOS arm64；具体安装候选与宿主范围见[预览状态](preview-status.md)。DSH 使用官方 profile 和同一产品安装器选择原生集成，无需额外运行 Companion 服务或逐个补装内部模块；Ladybug 是固定版本的第三方运行时依赖。
-- **本地向量化（Embedding）：** KAG 使用 CPU，无需 GPU。首次通过 npm/npx 获取包前，按统一入口为安装进程设置 `ONNXRUNTIME_NODE_INSTALL_CUDA=skip`，跳过 CUDA 下载并保留依赖所需的正常安装脚本。已经取得的包不能替先前的获取进程补设环境；GPU 加速不在首发支持范围内。
-- **本地模型文件：** 使用该版本要求的完整缓存，或在支持的入口显式允许下载固定模型。模型名称、缓存位置与各宿主的下载限制见[本地向量模型准备](../../packages/companion/README.md#local-embedding-model-preparation)。跳过 CUDA 不等于无需模型；宿主的对话模型也不能替代本地向量模型。
+- **本地向量化（Embedding）：** KAG 使用 CPU，无需 GPU。当前预构建发行包已包含 Node/CPU 运行依赖，正常 npm/pnpm 安装无需设置 CUDA 环境变量或另行配置依赖构建授权；GPU 加速不在当前支持范围内。`0.2.8` 等旧版归档保留其原安装行为，按所取得版本的[随包指南](../../packages/companion/README.md#maintained-npm-package-guide)处理。
+- **本地模型文件：** 使用该版本要求的完整缓存，或在支持的入口显式允许下载固定模型。模型名称、缓存位置与各宿主的下载限制见[本地向量模型准备](../../packages/companion/README.md#local-embedding-model-preparation)。安装运行依赖不等于已取得向量模型；宿主的对话模型也不能替代本地向量模型。
 - **宿主模型与搜索：** 用户在宿主侧配置，插件不提供共享密钥或额度。跳过搜索配置不代表调研能力已验证；安装了某个 CLI 也不能证明当前会话正在该宿主中运行。
 - **版本与更新：** 可安装版本见[预览状态](preview-status.md)。安装器负责获取该版本需要的组件，无需按旧记录手工补装。无法取得所需版本时，请保留错误信息，不用其他包或源码构建替代。
 
@@ -124,7 +124,7 @@ Agent 按 Kit 的方法澄清背景，或直接展开可讨论的结果。设计
 本地 tarball 用于发布前验证所提供的精确候选，不是正式安装的主教程。核对随包名称、版本与完整性后，在独立、可长期保留的测试目录安装；`RECEIVED_EXACT_TARBALL` 表示本次收到并验证的文件，不能猜测文件名。以下为 POSIX shell 示例；Windows PowerShell 与 Agent 安装方式见[统一安装入口](../../packages/companion/HOSTS.md#agent-led-installation-and-updates)：
 
 ```sh
-ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm install --ignore-scripts=false --save-exact /absolute/path/to/RECEIVED_EXACT_TARBALL.tgz
+npm install --save-exact /absolute/path/to/RECEIVED_EXACT_TARBALL.tgz
 npx --no-install yugoo-design --help
 ```
 

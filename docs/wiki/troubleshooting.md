@@ -26,7 +26,7 @@ CLI 安装版可按[Companion 指南](../../packages/companion/README.md#npm-can
 
 如果决定停用或卸载，先按[宿主移除说明](../../packages/companion/HOSTS.md#disable-uninstall-and-retained-files)处理原生登记与单独连接器，保留设计项目、匹配回执和仍被引用的 runtime。直接删除安装目录或状态目录不是通用修复步骤。
 
-首发本地向量化使用 CPU，不要求先配置 GPU。若失败发生在额外的 CUDA 依赖下载，按[CPU 安装方式](../../packages/companion/HOSTS.md#agent-led-installation-and-updates)在获取包之前设置 `ONNXRUNTIME_NODE_INSTALL_CUDA=skip`，保留正常安装脚本。不要用全局跳过脚本代替运行依赖安装，也不要把一次依赖加载成功视为语义索引已可用。
+当前预构建发行包的本地向量化使用 CPU，随包提供运行依赖，不执行额外的 CUDA 下载脚本。正常安装无需设置 CUDA 环境变量、手写依赖构建许可或全局跳过脚本。`0.2.8` 等旧版归档保留原安装行为；若它报告 CUDA 下载或构建脚本错误，按该版本的[随包指南](../../packages/companion/README.md#maintained-npm-package-guide)和宿主实际提示处理。运行依赖安装成功后，仍需按[本地向量模型准备](../../packages/companion/README.md#local-embedding-model-preparation)检查模型文件，不能据此推定语义索引已可用。
 
 ## 会话或浏览器连接失效
 
