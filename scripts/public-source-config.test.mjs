@@ -176,6 +176,19 @@ test('the reviewed Mermaid edge keeps Cytoscape peer consumers on their compatib
   assert.equal(mermaid.dependencies.cytoscape, '3.34.2')
 })
 
+test('public Markdown autolinks retain the tested build and original-material identity', () => {
+  const repo = new URL('../', import.meta.url)
+  const workspace = YAML.parse(readFileSync(new URL('pnpm-workspace.yaml', repo), 'utf8'))
+  const lock = YAML.parse(readFileSync(new URL('pnpm-lock.yaml', repo), 'utf8'))
+  const baseline = JSON.parse(readFileSync(new URL('release/public-source-baseline.json', repo), 'utf8'))
+  const selector = 'mdast-util-gfm-autolink-literal@^2.0.0'
+  assert.equal(workspace.overrides[selector], '2.0.1')
+  assert.equal(baseline.reviewedWorkspaceOverrides[selector], '2.0.1')
+  assert.equal(lock.overrides[selector], '2.0.1')
+  assert.ok(satisfies('2.0.1', '^2.0.0'))
+  assert.equal(lock.snapshots['mdast-util-gfm@3.1.0'].dependencies['mdast-util-gfm-autolink-literal'], '2.0.1')
+})
+
 test('reviewed public D3 inputs pin moving parents and preserve coexisting majors', () => {
   const repo = new URL('../', import.meta.url)
   const workspace = YAML.parse(readFileSync(new URL('pnpm-workspace.yaml', repo), 'utf8'))

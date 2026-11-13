@@ -10,7 +10,7 @@
 [![Qoder CLI](https://img.shields.io/badge/Qoder_CLI-6AD86C)](docs/wiki/hosts.md#qoder-cli)
 [![千问办公 QwenWork](https://img.shields.io/badge/%E5%8D%83%E9%97%AE%E5%8A%9E%E5%85%AC_QwenWork-39D377)](docs/wiki/hosts.md#千问办公-qwenwork)
 [![WorkBuddy](https://img.shields.io/badge/WorkBuddy-00C29A)](docs/wiki/hosts.md#workbuddy)
-[![npm 发布](https://img.shields.io/badge/npm_%E5%8F%91%E5%B8%83-2088FF?logo=githubactions&logoColor=white)](https://github.com/alibaba-damo-academy/yugoo-design/actions/workflows/publish-product.yml)
+[![npm 版本](https://img.shields.io/npm/v/yugoo-design/latest?logo=npm)](https://www.npmjs.com/package/yugoo-design)
 
 **让构思看得见，让细节有把握。**
 

@@ -90,6 +90,7 @@
     "immer@^11.0.0": "11.1.18",
     "mdast-util-find-and-replace": "3.0.2",
     "mdast-util-from-markdown": "2.0.3",
+    "mdast-util-gfm-autolink-literal@^2.0.0": "2.0.1",
     "mdast-util-gfm-strikethrough": "2.0.0",
     "mdast-util-to-markdown": "2.1.2",
     "micromark": "4.0.2",
