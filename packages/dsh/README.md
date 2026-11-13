@@ -64,9 +64,12 @@ Design data publication, human handoff and npm versions remain distinct.
 ## Daily entry
 
 DSH Web and Desktop use the same Core message producers. Plugin-authored
-context, notices and delegated tasks carry the producer-owned source kind
-`yugoo-design`; explicit user commands retain `kind: user`. Delivery still uses
-the existing non-waking `agent.inject()` or delegated `followup()` operation.
+inbox messages and delegated tasks carry the producer-owned source kind
+`yugoo-design`; explicit user commands retain `kind: user`. Pure KAG/GRA status
+is assembled into the current request's runtime context. Notices and delegated
+tasks use the existing `agent.inject()` or `followup()` operation. Inject does
+not wake an idle Agent, but pending input can extend a running turn; pure status
+therefore does not enter that inbox.
 The plugin does not rewrite Session history, replace the Host codec or translate
 retired `kind: plugin` messages at runtime. UI presentation and Session protocol
 version are separate compatibility boundaries.

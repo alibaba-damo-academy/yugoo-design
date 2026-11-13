@@ -5,10 +5,23 @@
     "moduleResolution": "nodenext",
     "jsx": "react-jsx",
     "paths": {
-      "dsh-design-core": ["../../core/src/index.ts"],
-      "dsh-design-core/dsl": ["../../core/src/panel-dsl.ts"],
-      "dsh-design-studio": ["../../studio/src/index.ts"]
+      "dsh-design-core": [
+        "../../core/src/index.ts"
+      ],
+      "dsh-design-core/dsl": [
+        "../../core/src/panel-dsl.ts"
+      ],
+      "dsh-design-studio": [
+        "../../studio/src/index.ts"
+      ],
+      "dsh-design-studio/types": [
+        "../../studio/src/types.ts"
+      ]
     }
   },
-  "include": ["../src", "../../core/src", "../../studio/src"]
+  "include": [
+    "../src",
+    "../../core/src",
+    "../../studio/src"
+  ]
 }

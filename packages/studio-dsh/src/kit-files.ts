@@ -1,7 +1,7 @@
 /** Installed source reads share the same DSH filesystem containment boundary. */
 import { isAbsolute, join } from 'node:path'
 import type { FileSystem, FsTarget } from '@deepseek-ai/dsh-fs'
-import { StudioBinaryContentError, type StudioBundleSourcePort } from 'dsh-design-studio'
+import { STUDIO_SOURCE_MAX_BYTES, StudioBinaryContentError, type StudioBundleSourcePort } from 'dsh-design-studio'
 import type { StudioSourceEntry } from 'dsh-design-studio/node'
 
 const MAX_TEXT_BYTES = 1024 * 1024
@@ -73,11 +73,11 @@ export async function openInstalledSourceFiles(fs: FileSystem, root: string, kin
             || (entry.size !== undefined && before.size !== undefined && entry.size !== before.size)) throw kitFileError('studio.source_changed', 'Listed source metadata differs from its first stat.')
           if (entry.type === 'directory') await walk(entry.target, path, before)
           else if (entry.type === 'file') {
-            if (files.length >= 4096 || (before.size ?? entry.size ?? 0) > 16 * 1024 * 1024 - total) throw limit('Installed source exceeds 4096 files or 16 MiB.')
+            if (files.length >= 4096 || (before.size ?? entry.size ?? 0) > STUDIO_SOURCE_MAX_BYTES - total) throw limit('Installed source exceeds 4096 files or 32 MiB.')
             let bytes: Uint8Array
-            try { bytes = await fs.readBytes(entry.target, undefined, 16 * 1024 * 1024 - total) }
-            catch (error) { if (code(error) === 'FS_TOO_LARGE') throw limit('Installed source exceeds 16 MiB.'); throw error }
-            if (!(bytes instanceof Uint8Array) || bytes.byteLength > 16 * 1024 * 1024 - total) throw limit('Installed source exceeds its byte budget.')
+            try { bytes = await fs.readBytes(entry.target, undefined, STUDIO_SOURCE_MAX_BYTES - total) }
+            catch (error) { if (code(error) === 'FS_TOO_LARGE') throw limit('Installed source exceeds 32 MiB.'); throw error }
+            if (!(bytes instanceof Uint8Array) || bytes.byteLength > STUDIO_SOURCE_MAX_BYTES - total) throw limit('Installed source exceeds its byte budget.')
             if ((before.size !== undefined && bytes.byteLength !== before.size)
               || (entry.size !== undefined && bytes.byteLength !== entry.size)) throw kitFileError('studio.source_changed', 'Source byte length differs from its observed metadata.')
             await unchanged(entry.target, before)

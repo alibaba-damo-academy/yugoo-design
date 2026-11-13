@@ -15,6 +15,7 @@ const state = { config: {
   icons: { navigation_search: { label: 'Search', svg: '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/></svg>', asset: 'assets/icons/search.svg' } },
   brand: { name: 'Research Desk', mark_id: 'primary', mark_svg: '<svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg>' },
   preview_page: { name: 'workspace', title: 'Workspace', rationale: 'Representative research screen', html_file: 'design_style/preview_workspace.html' },
+  notes: '  Keep dense reading comfortable.\nRetain the user-selected contrast.  ',
 } }
 const html = '<html><head><link rel="stylesheet" href="./tokens.css"></head><body style="color:var(--ds-text);background:var(--ds-background);font-family:var(--ds-body-font);border:1px solid var(--ds-border);border-radius:var(--ds-radius)"><svg aria-label="Search"></svg></body></html>'
 const designMd = run('render-design-md', JSON.stringify(state))
@@ -23,6 +24,15 @@ assert.equal(designMd.status, 0, designMd.stderr || designMd.stdout)
 assert.equal(tokensCss.status, 0, tokensCss.stderr || tokensCss.stdout)
 assert.match(designMd.stdout, /## Overview/)
 assert.match(designMd.stdout, /## brand/)
+assert.ok(designMd.stdout.includes(state.config.notes), 'user design notes remain verbatim in the handoff')
+assert.match(designMd.stdout, /- Rationale: Representative research screen/)
+const withoutExplanation = structuredClone(state)
+delete withoutExplanation.config.preview_page.rationale
+delete withoutExplanation.config.notes
+const withoutExplanationMd = run('render-design-md', JSON.stringify(withoutExplanation))
+assert.equal(withoutExplanationMd.status, 0, withoutExplanationMd.stderr || withoutExplanationMd.stdout)
+assert.doesNotMatch(withoutExplanationMd.stdout, /Rationale:|## Design Notes/,
+  'optional explanations do not introduce empty prompts into the handoff')
 assert.match(designMd.stdout, /"mark_id": "primary"/)
 assert.match(tokensCss.stdout, /--ds-primary: #2457d6/)
 assert.match(tokensCss.stdout, /--ds-font-size-2xl: 28px/)

@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "skills": {
-    "S-A-draft-review": {
-      "id": "S-A-draft-review",
+    "S-001": {
+      "id": "S-001",
       "name": "用户自写核对方法",
       "body": "# 核对方法\n\n保留原文限定、逐条核对，不覆盖草稿。",
       "source": "用户手动提供",
@@ -10,14 +10,14 @@
     }
   },
   "tools": {
-    "T-capability-only": {
-      "id": "T-capability-only",
+    "T-001": {
+      "id": "T-001",
       "name": "扫描材料识别",
       "purpose": "识别用户提供的扫描页，返回文字、页码和无法辨认的位置。",
       "notes": "合成示例：只定义能力需求，工具与接入方式待选。"
     },
-    "T-A-draft-mcp-source": {
-      "id": "T-A-draft-mcp-source",
+    "T-002": {
+      "id": "T-002",
       "tool_kind": "mcp",
       "name": "用户配置的材料索引",
       "purpose": "只读查找材料",
@@ -26,8 +26,8 @@
     }
   },
   "agents": {
-    "A-draft": {
-      "id": "A-draft",
+    "A-001": {
+      "id": "A-001",
       "name": "草稿核对助手",
       "model_connection": "existing",
       "model_service": "合成示例：使用企业提供的模型服务；地址和模型待确认。配置模板：api_key = ${MODEL_API_KEY}，真实密钥在产品使用时提供。本示例未连接服务。",
@@ -42,10 +42,10 @@
       "system_prompt": "核对用户提供的草稿与原文。缺少依据则说明未知，不编造引用。",
       "notes": "可不选择 harness，不搜索资源也可以保存。",
       "skill_refs": [
-        "S-A-draft-review"
+        "S-001"
       ],
       "tool_refs": [
-        "T-A-draft-mcp-source"
+        "T-002"
       ],
       "context": "只建议，不发布或覆盖原材料。\n需要用户授权的可读草稿与材料；MCP 连接仍未建立，可手动提供材料。",
       "collaborations": {
@@ -62,40 +62,40 @@
           "handling": "不可读的材料明确标出，保留已核对部分，不将部分核对说成全部完成。"
         }
       },
-      "model_source_ref": "M-product",
+      "model_source_ref": "M-001",
       "model_selection": "材料理解模型（待产品选型）",
       "knowledge_resource_refs": [
-        "K-material",
-        "K-memory"
+        "K-001",
+        "K-002"
       ]
     },
-    "A-direct": {
-      "id": "A-direct",
+    "A-002": {
+      "id": "A-002",
       "name": "标题建议",
       "description": "将输入文本概括为标题。",
-      "model_source_ref": "M-product",
+      "model_source_ref": "M-001",
       "model_selection": "轻量标题模型（待产品选型）"
     }
   },
   "model_sources": {
-    "M-product": {
-      "id": "M-product",
+    "M-001": {
+      "id": "M-001",
       "name": "产品模型入口（合成示例）",
       "model_connection": "runtime",
       "description": "产品提供使用时设置；本示例未配置、未连接。"
     }
   },
   "knowledge_resources": {
-    "K-material": {
-      "id": "K-material",
+    "K-001": {
+      "id": "K-001",
       "name": "授权材料库（合成示例）",
       "kind": "knowledge_base",
       "description": "用户提供的草稿依据、文献原文和项目笔记，供核对助手定位支持或反驳草稿的证据。",
       "source_and_maintenance": "由用户在项目中添加、替换和移除资料；助手只读参考，不自动联网补充。",
       "access_scope": "仅限当前用户获准使用的项目资料。"
     },
-    "K-memory": {
-      "id": "K-memory",
+    "K-002": {
+      "id": "K-002",
       "name": "用户长期笔记（合成示例）",
       "kind": "long_term_memory",
       "description": "用户确认的写作偏好与项目约定，供跨会话延续核对任务；不保存原始对话全文。",

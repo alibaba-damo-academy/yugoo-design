@@ -54,11 +54,15 @@ assert.match(DOCK_CSS, /\.dsh-execution-log-toggle:focus-visible\{outline:none;[
 const collapsedMarkup = renderToStaticMarkup(createElement(ExecutionRollingLog, {
   runId: 'run-1',
   active: false,
+  retainHistory: true,
   presentation: 'conversation',
   readExecutionLog: async () => ({ found: true, revision: 'run-1:1', reset: false, entries: [] }),
 }))
 assert.match(collapsedMarkup, /class="dsh-execution-log-toggle"/)
 assert.match(collapsedMarkup, /aria-expanded="false"/)
+assert.equal(renderToStaticMarkup(createElement(ExecutionRollingLog, {
+  runId: 'settled-run', active: false, readExecutionLog: async () => assert.fail('settled progress cannot read'),
+})), '', 'runtime progress leaves no terminal header')
 const toggleStyle = collapsedMarkup.match(/<button[^>]*style="([^"]*)"/)[1]
 assert.match(toggleStyle, /border-bottom:0/)
 assert.doesNotMatch(toggleStyle, /(?:^|;)border:/, 'do not mix border shorthand with the dynamic bottom edge')

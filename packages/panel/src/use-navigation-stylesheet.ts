@@ -14,7 +14,8 @@ export function useNavigationStylesheet(raw: string | undefined, options?: Rende
   const read = options?.readArtifact
   const hash = path ? options?.artifactFiles?.[path] : undefined
   const available = !!path && (options?.artifactFiles === undefined || hash !== undefined)
-  const key = JSON.stringify([path, hash, options?.sourceRevision, options?.collapseToken])
+  const fallbackVersion = options?.artifactFiles === undefined ? [options?.sourceRevision, options?.collapseToken] : undefined
+  const key = JSON.stringify([path, hash, fallbackVersion])
   const [result, setResult] = useState<{ key: string; read: typeof read; content?: string }>()
   useEffect(() => {
     let active = true

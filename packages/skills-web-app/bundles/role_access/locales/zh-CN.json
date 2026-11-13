@@ -10,7 +10,6 @@
   "title": "角色名称",
   "titleExample": "例如：销售经理",
   "assignment": "如何授予这个角色？",
-  "assignmentHelp": "选择角色的授予方式；选择“其他”时，请填写授予规则。",
   "assignmentExample": "例如：受邀加入项目后拥有，离开项目时失去",
   "registered": "注册用户",
   "granted": "由管理员授予",
@@ -27,7 +26,6 @@
   "other": "其他",
   "customRequirement": "其他额外步骤说明",
   "customHelp": "说明执行前还需要做什么",
-  "policiesHelp": "每条权限只回答允许或禁止哪项能力；有边界时再补一句适用条件。",
   "inheritances": "角色继承",
   "inheritance": "继承关系",
   "inherits": "继承权限",
@@ -35,7 +33,6 @@
   "parentRole": "来源角色",
   "inheritanceReason": "继承依据",
   "addChildRole": "添加子角色",
-  "guidance": "检查各角色能做什么、作用于哪些数据，是否存在权限过多或遗漏；仅在确需复用时指定一个来源角色，授予规则仍独立。",
   "graphHint": "从子角色连向来源角色；返回详情查看本角色权限及只读的继承来源。",
-  "inheritanceHelp": "继承权限保留原适用条件与确认、身份验证要求；不会继承角色授予规则，也不自动决定冲突优先级。"
+  "inheritanceHelp": "沿用权限的适用条件及确认、身份验证要求；授予规则和冲突优先级不随继承确定。"
 }

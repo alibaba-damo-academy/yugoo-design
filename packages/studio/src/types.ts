@@ -1,5 +1,10 @@
 import type { KitResourceContent } from 'dsh-design-core'
 
+/** Complete source bytes, matching Core's Bundle resource budget. */
+export const STUDIO_SOURCE_MAX_BYTES = 32 * 1024 * 1024
+/** Base64 plus the bounded source/archive envelope. Safe for browser transports. */
+export const STUDIO_ARCHIVE_MAX_JSON_BYTES = STUDIO_SOURCE_MAX_BYTES * 2
+
 /**
  * Host-neutral Design Studio ports and read-model vocabulary.
  *

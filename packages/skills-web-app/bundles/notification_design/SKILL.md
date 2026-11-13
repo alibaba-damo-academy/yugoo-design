@@ -10,6 +10,8 @@ description: |-
 
 # Notification Design
 
+See the [record ID guidance](reference/artifact-contract.md#record-ids) for this Bundle's numbering suggestions and existing identity boundaries.
+
 Use this skill to answer one product question:
 
 > When should the product proactively remind somebody, who should receive it, and what should they understand or do?
@@ -17,6 +19,9 @@ Use this skill to answer one product question:
 The saved `notification_design` state is the authority for proactive human communication. It does not own the underlying event, business rule, recipient role, or destination page. It reads those facts from their owning designs and records only the decision to notify.
 
 ## Ownership and tools
+
+Before authoring, read [the output contract](reference/artifact-contract.md)
+for field meanings, examples and checks shared by design and reconstruction.
 
 `notification_design/notification_design.json` is the only canonical state. The
 foreground Producer uses project-scoped `list` and `read` to inspect that state,
@@ -89,22 +94,16 @@ Review the established flow and keep only moments where proactive communication 
 
 If the user already sees an immediate result on the current page, do not add a notification just to repeat it.
 
-### 2. Answer “when” in one natural sentence
-
-Read [the shared output contract](reference/artifact-contract.md) for these field meanings, examples and checks; it is used by both ordinary design and reconstruction.
+### 2. Choose audience and delivery
 
 For a new design, choose the smallest necessary audience and prefer `in_app`
 for ordinary product work. Add external delivery only when people need attention
 outside the product. Remove convenience audiences and avoid noisy repetition.
 These are design choices, not permission to change behavior during restoration.
 
-### 6. Review the set as a whole
+### 3. Review the set as a whole
 
 Before saving, remove duplicate or noisy moments and check whether multiple records notify the same audience about the same event. A notification set is better because every record has a reason to exist, not because it has more rows.
-
-## State contract
-
-Read [the shared output contract](reference/artifact-contract.md) for these field meanings, examples and checks; it is used by both ordinary design and reconstruction.
 
 ## Close-out evidence
 

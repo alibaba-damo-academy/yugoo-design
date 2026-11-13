@@ -204,9 +204,13 @@ test('permission panel uses atomic declared summaries and conditional clearing w
   let next = edit(original, 'applies_when', 'Own records')
   assert.equal(next.policies.a.title, 'Saved wording')
   next = edit(next, 'effect', 'deny')
-  assert.equal(next.policies.a.title, '禁止Read')
+  assert.equal(next.policies.a.title, 'Saved wording', 'an effect change is not a declared title dependency and preserves authored wording')
   next = edit(next, 'capability', 'Export')
-  assert.equal(next.policies.a.title, '禁止Export')
+  assert.equal(next.policies.a.title, 'Export', 'the declared capability dependency derives the title without adding localized effect text')
+  next = edit(next, 'capability', '  Approve – 审核  ')
+  assert.equal(next.policies.a.title, '  Approve – 审核  ', 'derived summaries preserve the exact authored capability text')
+  next = edit(next, 'effect', 'allow')
+  assert.equal(next.policies.a.title, '  Approve – 审核  ', 'later effect edits do not rewrite the existing summary')
   next = edit(next, 'requirements', ['confirm'])
   assert.equal(next.policies.a.custom_requirement, '')
   assert.deepEqual(next.policies.a.requirements, ['confirm'])
@@ -307,6 +311,19 @@ test('creation defaults and canonical ids are declared, not guessed from Bundle 
   assert.deepEqual(draft.items[id].tags, ['preset'])
   assert.deepEqual(draft.order, [id])
   assert.equal(draft.preserved, true)
+})
+
+test('a contextual Add uses its canonical owner business prefix and preserves both scopes', () => {
+  const manifest = { sections: [
+    { id: 'models', create: { id_field: 'id', id_prefix: 'M', defaults: { name: 'New model' } } },
+    { id: 'configuration', records_path: 'models', fields_path: 'configuration', create: { defaults: { temperature: 1 } } },
+  ], fields: [] }
+  const data = { models: { 'M-004': { id: 'M-004', name: 'Keep', configuration: { temperature: 0 } } } }
+  let update
+  const id = insertVisualRecord({ manifest, data, options: { editable: true, onPanelUpdate: value => { update = value } } }, 'configuration', {})
+  assert.equal(id, 'M-005')
+  assert.deepEqual(update.models['M-005'], { id: 'M-005', name: 'New model', configuration: { temperature: 1 } })
+  assert.deepEqual(update.models['M-004'], data.models['M-004'])
 })
 
 test('deletion follows explicit child ownership only and preserves other records and order', () => {

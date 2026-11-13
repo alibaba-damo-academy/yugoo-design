@@ -9,6 +9,8 @@ interface PanelSelectProps extends Omit<ComponentPropsWithoutRef<typeof Select.T
   value: string
   options: readonly PanelSelectOption[]
   onValueChange: (value: string) => void
+  /** Display an unselected value without inserting an extra empty menu option. */
+  placeholder?: string
   /** Compact tool actions retain the same accessible value, menu and keyboard behavior. */
   triggerIcon?: ReactNode
 }
@@ -28,12 +30,12 @@ export function panelPopupTheme(trigger: HTMLElement): CSSProperties {
 
 /** Shared single-value choice. Values remain caller-owned, including unknown
  * stored values; Radix owns keyboard navigation, focus and popup positioning. */
-export function PanelSelect({ value, options, onValueChange, triggerIcon, className, disabled, ...props }: PanelSelectProps) {
+export function PanelSelect({ value, options, onValueChange, placeholder, triggerIcon, className, disabled, ...props }: PanelSelectProps) {
   const trigger = useRef<HTMLButtonElement>(null)
   const [theme, setTheme] = useState<CSSProperties>()
   const unique = [...new Map(options.map(option => [option.value, option])).values()]
   const values = new Set(unique.map(option => option.value))
-  const choices = values.has(value) ? unique : [{ value, label: value, disabled: value !== '' }, ...unique]
+  const choices = values.has(value) || (value === '' && placeholder !== undefined) ? unique : [{ value, label: value, disabled: value !== '' }, ...unique]
   // Radix reserves the empty string for its placeholder. Keep that translation
   // internal and collision-free; callers still read and write the exact value.
   let empty = '__ygd_empty__'
@@ -48,8 +50,8 @@ export function PanelSelect({ value, options, onValueChange, triggerIcon, classN
   }}>
     <Select.Trigger {...props} ref={trigger} value={value} disabled={disabled} className={`dsh-panel-select-trigger${triggerIcon ? ' is-icon-only' : ''}${className ? ` ${className}` : ''}`}>
       {triggerIcon
-        ? <span className='dsh-panel-select-hidden-value'><Select.Value>{selected?.label || '\u00a0'}</Select.Value></span>
-        : <Select.Value>{selected?.label || '\u00a0'}</Select.Value>}
+        ? <span className='dsh-panel-select-hidden-value'><Select.Value>{selected?.label || placeholder || '\u00a0'}</Select.Value></span>
+        : <Select.Value>{selected?.label || placeholder || '\u00a0'}</Select.Value>}
       {triggerIcon ?? <Select.Icon className="dsh-panel-select-icon"><ChevronDown size={16} aria-hidden="true" /></Select.Icon>}
     </Select.Trigger>
     <Select.Portal container={trigger.current?.closest<HTMLDialogElement>('dialog[open]') ?? trigger.current?.ownerDocument.body}>

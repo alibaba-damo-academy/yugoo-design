@@ -43,16 +43,38 @@ try {
   const good = expect(stdin('validate-html-file', context), 0)
   assert.deepEqual(expect(native(), 0), good)
   assert.deepEqual(good.bindings, { open: { elementId: 'open', label: 'Open' } })
+  // Copied standalone script rejects fake elements and duplicate document wrappers
+  // identically through both file interfaces, without mutating the candidate.
+  for (const [candidate, pattern] of [
+    ['<html><body>Ready<!--' + html.slice(12, -14) + '--></body></html>', /does not bind outgoing/],
+    ['<html><body><script/>' + html.slice(12, -14) + '</body></html>', /unsupported self-closing/],
+    ['<html><body><xmp>' + html.slice(12, -14) + '</xmp></body></html>', /does not bind outgoing/],
+    [html + html, /exactly one <html>/],
+    ['<html><body>First</body><body>Second</body></html>', /exactly one <body>/],
+  ]) {
+    const rejected = expect(stdin('validate-html-file', context, candidate), 1, pattern)
+    write(htmlPath, candidate)
+    assert.deepEqual(expect(native(), 1, pattern), rejected)
+    assert.equal(readFileSync(join(root, htmlPath), 'utf8'), candidate)
+  }
+  write(htmlPath, html)
   const map = expect(stdin('validate-map-file', { input_files: { [stylePath]: files[stylePath] } }, files[pagePath]), 0)
   assert.deepEqual(expect(native('validate-map-file', pagePath), 0), map)
 
-  // Actual installed resource map and actual generic tool transport, not a
-  // model-crafted envelope. No new permission or Bundle-specific Core logic.
+  // Source Kit resource loading and actual generic tool transport, not a
+  // packaged-Kit acceptance or model-crafted envelope. The copied script above
+  // still runs as standalone Node, without the test process's source loader.
+  const packageRoot = fileURLToPath(new URL('../', import.meta.url))
   const kit = await loadDesignKit({
     async readText(path) { try { return readFileSync(path, 'utf8') } catch (e) { if (e.code === 'ENOENT') return undefined; throw e } },
     async listDir(path) { return readdirSync(path) },
     async isDirectory(path) { return statSync(path).isDirectory() },
-  }, fileURLToPath(new URL('../', import.meta.url)), { sourceId: 'fixture:page-file-contract' })
+  }, { rootDir: packageRoot,
+    mindsetPath: join(packageRoot, 'kits/web_app/mindset.md'),
+    manifestPath: join(packageRoot, 'kits/web_app/kit.yaml'),
+    relationsPath: join(packageRoot, 'kits/web_app/relations.yaml'),
+    bundlesDir: join(packageRoot, 'bundles'),
+  }, { sourceId: 'fixture:page-file-contract' })
   assert.equal(kit.version, '1.2')
   assert.equal(kit.skills.length, 15)
   assert.equal(kit.skills.find(skill => skill.name === 'flow_design').version, '1.1')

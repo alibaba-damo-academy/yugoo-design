@@ -17,7 +17,7 @@ const { nodeDesignProjectSpawn } = await import('../src/design-project.ts')
 
 /** Real Core constructor and public Host activation event before any Panel read.
  * Source/CLI and finite provider ports; not a running native Host or model check. */
-async function activationFixture(t, { missing = false, runtime = true, acquireError, statusNotice = true } = {}) {
+async function activationFixture(t, { missing = false, runtime = true, acquireError } = {}) {
   const { Context } = await import('@deepseek-ai/cordis')
   const { default: AgentRegistry } = await import('@deepseek-ai/dsh-agent')
   const { default: SystemPrompt } = await import('@deepseek-ai/dsh-system-prompt')
@@ -40,7 +40,6 @@ async function activationFixture(t, { missing = false, runtime = true, acquireEr
   ctx.provide('subprocess', {})
   const service = new DesignService(ctx, { stateRoot: join(root, 'state'), projectsRoot: join(root, 'projects'), hostInstanceId: 'activation-test' })
   service.spawnAdapter = () => nodeDesignProjectSpawn
-  if (!statusNotice) service.injectKnowledgeOrchestrationSnapshot = async () => {}
   const agent = { id: 'original-cold-session', ctx, session: { id: 'original-cold-session', header: {} }, inject() {} }
   const counts = { acquire: [], release: [] }
   if (runtime) disposeRuntime = service.registerDesignKnowledgeRuntime({
@@ -85,7 +84,8 @@ async function assertStableKnowledgeRules(f) {
   assert.match(rules, /auto combines.*publication-triggered/)
   assert.match(rules, /continuous uses the online periodic scheduler even when Design Files are unchanged/)
   assert.match(rules, /off forbids.*not explicit human rechecks or Clarity/)
-  assert.match(rules, /do not repeat pending\/rejected issues without new evidence/)
+  assert.match(rules, /respect recorded suggestion dispositions/)
+  assert.match(rules, /publication handles exact duplicate findings/)
   assert.match(rules, /never invoke this manual path on your own initiative/)
 }
 
@@ -134,8 +134,8 @@ for (const runtime of [true, false]) test(`healthy native activation prepares th
 })
 
 test('provider restoration failure remains visible without hiding an available project Kit or aborting native activation', async t => {
-  // An optional notice must not be responsible for loading the healthy Kit.
-  const f = await activationFixture(t, { acquireError: new Error('provider open failed'), statusNotice: false })
+  // Optional derived status must not be responsible for loading the healthy Kit.
+  const f = await activationFixture(t, { acquireError: new Error('provider open failed') })
   await f.activate()
   assert.equal(f.ctx.agents.get(f.agent.id), f.agent)
   assert.match(f.service.knowledgeRestoreFailures.get(f.agent).message, /provider open failed/)
@@ -146,7 +146,7 @@ test('provider restoration failure remains visible without hiding an available p
 })
 
 for (const closeFirst of [false, true]) test(`a failed provider restore permits normal navigation without a fabricated lease (close first: ${closeFirst})`, async t => {
-  const f = await activationFixture(t, { acquireError: new Error('provider open failed'), statusNotice: false })
+  const f = await activationFixture(t, { acquireError: new Error('provider open failed') })
   await f.activate()
   const signal = new AbortController().signal
   if (closeFirst) {

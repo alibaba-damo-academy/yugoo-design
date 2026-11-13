@@ -60,7 +60,7 @@ test('native disclosure activation keeps its default action beside a retained Re
   }
 })
 
-test('visible scalar labels activate unique controls across repeated forms and locale updates', async () => {
+test('ordinary scalar captions retain unique accessible controls and reachable help without disclosure', async () => {
   const root = createRoot(document.getElementById('root'))
   const manifest = { version: 1, panel_kind: 'document', sections: [{ id: 'items', title: 'Items' }], fields: [
     { key: 'name', label: 'Name', control: 'text', applies_to: ['items'] },
@@ -76,7 +76,12 @@ test('visible scalar labels activate unique controls across repeated forms and l
     assert.equal(labels.length, 6)
     assert.equal(new Set(labels.map(label => label.htmlFor)).size, labels.length)
     assert.equal(document.querySelector('label button'), null, 'help is not another labelable control nested in a field label')
-    assert.equal(document.querySelectorAll('[data-field="notes"] .dsh-design-field-label > .dsh-panel-help').length, 2)
+    const noteFields = [...document.querySelectorAll('[data-field="notes"]')]
+    assert.equal(noteFields.length, 2)
+    for (const field of noteFields) {
+      assert.equal(field.closest('details'), null, 'ordinary fields do not become disclosures')
+      assert.equal(field.querySelectorAll('.dsh-panel-help button').length, 1, 'the visible caption owns reachable help once')
+    }
     for (const label of labels) {
       assert.ok(label.control, 'the visible caption has a native labelable control')
       assert.equal(label.control.closest('[data-field]'), label.closest('[data-field]'))
@@ -106,14 +111,24 @@ test('semantic groups disclose independently of property count or populated fiel
     for (const locale of ['en-US', 'zh-CN']) {
       await React.act(async () => root.render(renderNode(manifest.ui, manifest, data, { locale, editable: true })))
       const groups = [...document.querySelectorAll('.dsh-design-form-group')]
+      assert.equal(groups.length, 2)
       assert.equal(groups[0].open, true)
       assert.equal(groups[0].querySelector('summary').getAttribute('role'), null)
-      assert.match(groups[0].querySelector('.dsh-design-form-group-preview').textContent, /1/)
+      // Filled-field counts were replaced by actual collection counts in
+      // af2cc77a. A semantic scalar group is not a completeness indicator.
+      assert.equal(groups[0].querySelector('.dsh-design-form-group-preview,.dsh-panel-collection-count'), null)
       assert.equal(groups[1].querySelector('.dsh-design-form-group-preview'), null)
       await React.act(async () => groups[0].querySelector('summary').click())
+      assert.equal(groups[0].open, false)
+      assert.equal(groups[1].open, true, 'collapsing one group leaves its peer open')
       assert.equal(groups[0].querySelector('textarea').value, 'Existing context')
       assert.deepEqual(data, before)
       await React.act(async () => groups[0].querySelector('summary').click())
+      assert.equal(groups[0].open, true)
+      await React.act(async () => groups[1].querySelector('summary').click())
+      assert.equal(groups[1].open, false, 'an unfilled group uses the same disclosure')
+      assert.equal(groups[0].open, true)
+      await React.act(async () => groups[1].querySelector('summary').click())
     }
   } finally { await React.act(async () => root.unmount()) }
 })
@@ -165,6 +180,55 @@ test('initially open sections keep complete field bodies and native disclosure s
     assert.equal(group.querySelector('[data-field="notes"] textarea').value, 'Retain this draft')
     assert.deepEqual(writes, [])
     assert.deepEqual(data, before)
+  } finally { await React.act(async () => root.unmount()) }
+})
+
+test('ordinary declared and fallback fields stay plain while explicit groups and child cards retain edits', async () => {
+  const root = createRoot(document.getElementById('root'))
+  const manifest = { version: 1, panel_kind: 'document', sections: [{ id: 'items', title: 'Items', form: { body: [
+    { kind: 'field', field: 'condition' },
+    { kind: 'group', title: 'Outcome', items: [{ kind: 'field', field: 'outcome' }] },
+  ] } }], fields: [
+    { key: 'condition', label: 'Condition', required: true, control: 'textarea' },
+    { key: 'outcome', label: 'Outcome', control: 'textarea' },
+    { key: 'notes', label: 'Notes', control: 'textarea' },
+    { key: 'children', label: 'Examples', control: 'record_map', item_collapsible: true, item_fields: [
+      { key: 'name', label: 'Name', control: 'text' }, { key: 'detail', label: 'Detail', control: 'textarea' },
+    ] },
+  ].map(field => ({ ...field, applies_to: ['items'] })), ui: { id: 'form', component: 'record_form', source: 'items' } }
+  let data = { items: { a: { condition: 'Keep original', outcome: 'Preserve history', notes: 'User wording', children: { one: { name: 'Example', detail: 'Inner record' } } } } }
+  const updates = []
+  const show = editable => React.act(async () => root.render(renderNode(manifest.ui, manifest, data,
+    { editable, onPanelUpdate: patch => { updates.push(patch); data = { ...data, ...patch } } })))
+  try {
+    await show(true)
+    for (const key of ['condition', 'notes']) {
+      const field = document.querySelector(`[data-field="${key}"]`)
+      assert.equal(field.closest('.dsh-panel-content-group'), null, `${key} does not acquire a synthetic group`)
+      assert.equal(field.classList.contains('is-label-visually_hidden'), false, 'ordinary labels remain visible')
+    }
+    const group = document.querySelector('[data-field="outcome"]').closest('details')
+    assert.ok(Boolean(group), 'the explicit Outcome scope remains a semantic disclosure')
+    assert.equal(group.querySelectorAll('.dsh-panel-content-group').length, 0, 'an existing group is not wrapped again')
+    const child = document.querySelector('[data-child-record="one"]')
+    assert.equal(child.querySelector('.dsh-panel-content-group'), null, 'white record entries retain ordinary inner fields')
+    const input = document.querySelector('[data-field="condition"] textarea')
+    await React.act(async () => {
+      Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set.call(input, 'Changed by user\nKeep this line')
+      input.dispatchEvent(new window.Event('input', { bubbles: true }))
+    })
+    assert.equal(updates.length, 1)
+    assert.equal(data.items.a.condition, 'Changed by user\nKeep this line')
+    assert.equal(data.items.a.notes, 'User wording')
+    await show(true)
+    await React.act(async () => group.querySelector(':scope > summary').click())
+    assert.equal(group.open, false)
+    assert.equal(document.querySelector('[data-field="condition"] textarea'), input, 'folding a peer group retains ordinary editors')
+    await show(false)
+    assert.equal(document.querySelector('[data-field="condition"]').closest('details'), null)
+    assert.equal(group.open, false, 'changing reading mode does not reopen the user’s group')
+    assert.match(document.querySelector('[data-field="condition"]').textContent, /Changed by user/)
+    assert.equal(updates.length, 1, 'presentation and disclosure do not write data')
   } finally { await React.act(async () => root.unmount()) }
 })
 
@@ -344,29 +408,36 @@ test('card collections own one group and caption help without changing edits or 
   } finally { await React.act(async () => root.unmount()) }
 })
 
-test('shared help rhythm uses one owner in stacked and inline fields', async () => {
+test('ordinary field captions and inline rows each own one reachable help', async () => {
   const root = createRoot(document.getElementById('root'))
   const manifest = { version: 1, panel_kind: 'document', sections: [{ id: 'items', title: 'Items', form: { body: [
     { kind: 'field', field: 'stacked' }, { kind: 'field', field: 'inline', label: 'inline' },
+    { kind: 'row', items: [{ kind: 'field', field: 'row_inline', label: 'inline' }] },
   ] } }], fields: [
     { key: 'stacked', label: 'Stacked', description: 'Stacked help', control: 'text', applies_to: ['items'] },
     { key: 'inline', label: 'Inline', description: 'Inline help', control: 'text', applies_to: ['items'] },
+    { key: 'row_inline', label: 'Row inline', description: 'Row help', control: 'text', applies_to: ['items'] },
   ], ui: { id: 'neutral-rhythm', component: 'record_form', source: 'items' } }
   assert.deepEqual(validatePanelManifest(manifest), [])
   try {
     await React.act(async () => root.render(React.createElement('div', { className: 'dsh-design-panel' },
-      renderNode(manifest.ui, manifest, { items: { a: { stacked: 'First', inline: 'Second' } } }, { editable: true }))))
+      renderNode(manifest.ui, manifest, { items: { a: { stacked: 'First', inline: 'Second', row_inline: 'Third' } } }, { editable: true }))))
     const stacked = document.querySelector('[data-field="stacked"]')
     const inline = document.querySelector('[data-field="inline"]')
-    for (const field of [stacked, inline]) {
+    const rowInline = document.querySelector('[data-field="row_inline"]')
+    for (const field of [stacked, inline, rowInline]) {
       assert.equal(field.querySelector('.dsh-design-field-description'), null)
-      const help = field.querySelector('.dsh-panel-help button')
+      const owner = field
+      assert.equal(owner.querySelectorAll('.dsh-panel-help button').length, 1)
+      assert.equal(field.closest('.dsh-panel-content-group'), null, 'help does not require a synthetic group')
+      const help = owner.querySelector('.dsh-panel-help button')
       await React.act(async () => help.focus())
-      assert.equal(document.querySelector('[role="tooltip"]').textContent, field === stacked ? 'Stacked help' : 'Inline help')
+      assert.equal(document.querySelector('[role="tooltip"]').textContent, field === stacked ? 'Stacked help' : field === inline ? 'Inline help' : 'Row help')
       await React.act(async () => document.dispatchEvent(new window.KeyboardEvent('keydown', {key:'Escape',bubbles:true})))
       assert.equal(document.querySelector('[role="tooltip"]'), null)
       assert.equal(document.activeElement, help)
     }
+    assert.ok(rowInline.classList.contains('is-label-inline'), 'inner row composition retains its declared inline label')
 
   } finally { await React.act(async () => root.unmount()) }
 })
@@ -412,7 +483,10 @@ test('required presentation follows sections, hidden headings, composites and ne
     assert.equal(field('notes').querySelector('.dsh-design-required-mark'), null)
     await React.act(async () => field('children').querySelector('.dsh-record-map-add').click()); await show()
     const child = field('children').querySelector('[data-child-record]')
-    assert.equal(child.querySelector('[data-field="name"] input').getAttribute('aria-required'), 'true')
+    const childTitle = child.querySelector('input[data-panel-title="editable"]')
+    assert.equal(childTitle.getAttribute('aria-required'), 'true')
+    assert.equal(childTitle.getAttribute('aria-label'), 'Name 1')
+    assert.equal(child.querySelector('[data-field="name"] input'), null, 'the editable record header is the single name editor')
     assert.equal(child.querySelector('[data-field="detail"]'), null)
     await React.act(async () => child.querySelectorAll('input[type="radio"]')[1].click()); await show()
     assert.equal(field('children').querySelector('[data-field="detail"] input').getAttribute('aria-required'), 'true')
@@ -478,7 +552,8 @@ test('shared field foundations keep native input geometry across plain and compo
     assert.equal(style('[data-field="mode"] [role="combobox"]').height, '36px')
     assert.equal(style('[data-field="mode"] [role="combobox"]').borderRadius, '8px')
     assert.equal(style('[data-field="notes"] textarea').borderRadius, '8px')
-    assert.equal(style('[data-field="name"] .dsh-design-field-label').marginBottom, 'var(--ygd-panel-detail-control-gap, 8px)')
+    assert.notEqual(style('[data-field="name"] .dsh-design-field-label').position, 'absolute', 'ordinary field labels remain visible')
+    assert.equal(document.querySelector('[data-field="name"]').closest('.dsh-panel-content-group'), null)
     assert.notEqual(style('[data-field="enabled"] input').height, '36px', 'choice controls are excluded')
     assert.equal(writes, 0); assert.deepEqual(data, before)
   } finally { await React.act(async () => root.unmount()) }
@@ -497,9 +572,17 @@ test('business-rule groups retain localized descriptions, accessible fields and 
     for(const locale of ['zh-CN','en-US']) {
       await show(locale)
       assert.equal(patch,undefined,'localization/mount cannot write canonical facts')
-      assert.equal(document.querySelectorAll('.dsh-panel-content-group').length,0,'one flat rule form, not a highlighted remarks exception')
+      const groups=[...document.querySelectorAll('.dsh-panel-content-group')]
+      assert.equal(groups.length,3,'condition, result and remarks share peer group surfaces')
+      for(const key of ['condition','outcome','notes']) {
+        const field=document.querySelector(`[data-field="${key}"]`)
+        const group=field.closest('.dsh-panel-content-group')
+        assert.ok(groups.includes(group))
+        assert.ok(field.closest('.dsh-panel-content-card'),'each peer has a complete base body')
+        assert.equal(group.querySelector('.dsh-panel-content-group'),null,'ordinary fields do not acquire nested gray groups')
+      }
       assert.equal(document.querySelector('.dsh-panel-header-context'),null,'generic writing instructions do not occupy the record context')
-      const help=document.querySelector('[data-field="notes"] .dsh-panel-help button')
+      const help=document.querySelector('[data-field="notes"]').closest('.dsh-panel-content-group').querySelector(':scope > summary .dsh-panel-help button')
       await React.act(async()=>help.click())
       assert.equal(document.querySelector('[role="tooltip"]').textContent,manifest.i18n.messages[locale].notesHelp)
       await React.act(async()=>document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Escape',bubbles:true})))
@@ -544,7 +627,8 @@ test('native composition and neutral records preserve binding, conditional clean
   const show = () => React.act(async () => paint())
   const click = element => React.act(async () => element.click())
   const input = (element, text) => React.act(async () => {
-    Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(element, text)
+    const prototype = element instanceof window.HTMLTextAreaElement ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype
+    Object.getOwnPropertyDescriptor(prototype, 'value').set.call(element, text)
     element.dispatchEvent(new window.Event('input', { bubbles: true }))
   })
   const change = (element, text) => chooseSelectValue(React, element, text)
@@ -575,9 +659,10 @@ test('native composition and neutral records preserve binding, conditional clean
     await change(field('effect').querySelector('[role="combobox"]'), 'deny')
     assert.equal(data.policies.p.effect, 'deny')
     assert.equal(data.policies.p.capability, 'Submit')
-    assert.equal(data.policies.p.title, '禁止Submit', 'existing deterministic summary remains canonical')
-    await input(field('capability').querySelector('input'), 'Approve')
-    assert.equal(data.policies.p.title, '禁止Approve')
+    assert.deepEqual(manifest.sections.find(section => section.id === 'policies').derived_fields.title.parts, [{field:'capability'}])
+    assert.equal(data.policies.p.title, initial.policies.p.title, 'effect is not a declared title dependency and must not rewrite a saved title')
+    await input(field('capability').querySelector('textarea'), 'Approve')
+    assert.equal(data.policies.p.title, 'Approve', 'editing the declared dependency derives the canonical title without adding localized effect text')
     assert.equal(data.policies.p.applies_when, 'Own request')
 
     const otherRadio = () => [...field('assignment_rule').querySelectorAll('input[type="radio"]')].at(-1)
@@ -594,7 +679,7 @@ test('native composition and neutral records preserve binding, conditional clean
     outside(); locale = 'zh-CN'; await show()
     assert.equal(document.activeElement.id, 'outside', 'locale change cannot refocus custom input')
     assert.equal(edits.length, count)
-    assert.match(document.querySelector('.dsh-design-form-group-title').textContent, /谁会拥有/)
+    assert.equal(document.querySelector('.dsh-design-form-group-title').textContent, `${manifest.i18n.messages[locale].assignment} *`)
     assert.match(field('effect').closest('.dsh-design-form-row').textContent, /这个角色/)
     await show()
     assert.equal(document.activeElement.id, 'outside', 'same-data refresh cannot refocus')
@@ -717,8 +802,14 @@ test('record artifact sibling views keep one original editable header above tabs
   // The title has a minimum height and grows with optional context. Real
   // Chromium checks its resulting box in host-theme-browser.test.mjs.
   assert.equal(window.getComputedStyle(header.querySelector('.dsh-design-record-header')).minHeight, '44px')
+  const normalizedPadding = () => window.getComputedStyle(header.querySelector('.dsh-design-record-header')).padding.replace(/\b0px\b/g, '0')
+  const originalPadding = normalizedPadding()
+  // JSDOM does not resolve custom properties in padding shorthands. Check the
+  // owning gutter declaration and preserve computed parity across the wrapper;
+  // actual Chromium verifies its resolved geometry.
+  assert.match(document.head.querySelector('style').textContent, /\.dsh-design-panel \.dsh-design-record-header \{[^}]*padding: 0 var\(--ygd-panel-content-gutter, 16px\)/)
   container.parentElement.classList.add('dsh-design-auto-surface')
-  assert.equal(window.getComputedStyle(header.querySelector('.dsh-design-record-header')).padding, '0px 16px', 'auto surface cannot restyle a framed shared title')
+  assert.equal(normalizedPadding(), originalPadding, 'auto surface cannot restyle a framed shared title')
   container.parentElement.classList.remove('dsh-design-auto-surface')
   const note = document.querySelector('[data-field=note] textarea')
   await React.act(() => document.querySelectorAll('[role=tab]')[1].click())
@@ -779,4 +870,61 @@ test('collection collapse preserves edits, nested expansion and editor identity 
     await click(summary);assert.equal(group.open,true)
     assert.equal(writes,1,'presentation and count transitions do not emit canonical edits')
   } finally {await React.act(async()=>root.unmount())}
+})
+
+test('ordinary reading fields retain complete bodies while editable controls and table cells retain native boundaries', async () => {
+  const root = createRoot(document.getElementById('root'))
+  const manifest = { version: 1, panel_kind: 'document', sections: [{ id: 'items', title: 'Items' }], fields: [
+    { key: 'notes', label: 'Notes', control: 'textarea', applies_to: ['items'] },
+    { key: 'kind', label: 'Kind', control: 'select', options: [{ value: 'saved', label: 'Saved kind' }], readonly: true, applies_to: ['items'] },
+    { key: 'entries', label: 'Entries', control: 'list', applies_to: ['items'] },
+    { key: 'participants', label: 'Participants', control: 'token_list', applies_to: ['items'] },
+    { key: 'history', label: 'History', control: 'rows', columns: [{ key: 'event', label: 'Event', control: 'text' }], applies_to: ['items'] },
+  ] }
+  const data = { items: { one: { notes: 'First line\nSecond line', kind: 'saved', entries: ['Keep\nnewlines', 'Duplicate', 'Duplicate'], participants: ['Designer', 'Client'], history: [{ event: 'Saved' }] } } }
+  const before = structuredClone(data), edits = []
+  const node = { id: 'form', component: 'record_form', source: 'items' }
+  const show = (next = node, editable = false) => React.act(async () => root.render(renderNode(next, manifest, data, { editable, onEdit: edit => edits.push(edit) })))
+  try {
+    await show()
+    for (const key of ['notes', 'kind', 'entries', 'participants']) {
+      const field = document.querySelector(`[data-field="${key}"]`)
+      const surface = field.querySelector('.dsh-panel-field-reading')
+      assert.ok(Boolean(surface), key)
+      assert.equal(field.closest('details'), null, 'ordinary readings do not need disclosure')
+      assert.equal(surface.querySelector('input,textarea,button,[tabindex]'), null, 'reading content does not pretend to be an input')
+    }
+    assert.equal(document.querySelector('[data-field=notes] .dsh-design-field-value').textContent, data.items.one.notes)
+    assert.deepEqual([...document.querySelectorAll('[data-field=entries] li')].map(element => element.textContent), data.items.one.entries)
+    assert.match(document.querySelector('[data-field=kind]').textContent, /Saved kind/)
+    assert.equal(document.querySelector('[data-field=history] .dsh-panel-field-reading'), null, 'a table owns its existing boundary')
+    await show(node, true)
+    assert.ok(Boolean(document.querySelector('[data-field=notes] textarea')))
+    assert.equal(document.querySelector('[data-field=notes] .dsh-panel-field-reading'), null)
+    assert.equal(document.querySelector('[data-field=kind] input, [data-field=kind] button'), null, 'declared readonly fields remain readings in an editable form')
+    assert.equal(document.querySelector('[data-field=kind] .dsh-design-field-value').textContent, 'Saved kind')
+    await show({ ...node, record_table: { columns: [{ fields: ['notes'] }, { fields: ['kind'] }] } })
+    assert.ok(document.querySelectorAll('tbody td').length > 0)
+    assert.equal(document.querySelector('tbody .dsh-panel-field-reading'), null, 'table headers and cell borders already express the relationship')
+    await show({ id: 'schema-note', component: 'schema_field', control: 'textarea', path: 'items.one.notes', title: 'Notes' })
+    assert.equal(document.querySelector('.dsh-panel-field-reading').textContent, data.items.one.notes)
+    assert.equal(edits.length, 0)
+    assert.deepEqual(data, before)
+  } finally { await React.act(async () => root.unmount()) }
+})
+
+test('record header metadata shares the title row while longer context keeps its separate place', async () => {
+  const { PanelRecordHeader } = await import('../src/panel-workspace.tsx')
+  const root = createRoot(document.getElementById('root'))
+  try {
+    await React.act(async () => root.render(React.createElement('div', { className: 'dsh-design-panel' }, React.createElement(PanelRecordHeader, { titleRole: 'record', meta: 'Responsible: Designer', context: 'Longer record context' }, 'Review feedback'))))
+    const header = document.querySelector('[data-panel-title-role=record]')
+    assert.equal(header.querySelector('.dsh-panel-header-main').textContent, 'Review feedback')
+    assert.equal(header.querySelector('.dsh-panel-header-meta').textContent, 'Responsible: Designer')
+    assert.equal(header.querySelector('.dsh-panel-header-context').textContent, 'Longer record context')
+    assert.equal(header.querySelector('button,input'), null)
+    const metadataStyle = window.getComputedStyle(header.querySelector('.dsh-panel-header-meta'))
+    assert.equal(metadataStyle.flexShrink, '1', 'brief metadata can shrink and wrap beside a long title')
+    assert.equal(metadataStyle.maxWidth, '100%')
+  } finally { await React.act(async () => root.unmount()) }
 })

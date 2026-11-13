@@ -79,7 +79,7 @@ export function TokenList(props: {
         aria-label={t('addTokens', { item: props.label })}
         hidden={customOpen} onClick={() => setMenuOpen(!menuOpen)}
         onKeyDown={event => { if (['ArrowDown', 'ArrowUp'].includes(event.key)) { event.preventDefault(); setMenuOpen(true) } }}>
-        <Plus size={16} aria-hidden="true" /><span className="dsh-token-copy"><strong>{t('add')}</strong>{props.addDescription ? <small>{props.addDescription}</small> : null}</span><ChevronDown size={16} aria-hidden="true" />
+      <Plus size={16} aria-hidden="true" /><span className="dsh-token-copy"><span className="dsh-token-add-label">{t('add')}</span>{props.addDescription ? <small>{props.addDescription}</small> : null}</span><ChevronDown size={16} aria-hidden="true" />
       </button>
       {menuOpen ? <div ref={menu} role="menu" aria-label={t('chooseTokens', { item: props.label })} className="dsh-token-menu"
         onKeyDown={event => {

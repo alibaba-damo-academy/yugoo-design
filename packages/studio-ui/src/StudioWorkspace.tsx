@@ -34,7 +34,7 @@ export interface StudioWorkspaceProps {
   readonly controller?: StudioWorkspaceController
   /** Explicit host capability; omitted hosts remain read-only. */
   readonly authoring?: StudioAuthoring
-  /** Sample-only rendering for saved instances, including ordinary read-only Open. */
+  /** Sample-only rendering for installed sources and saved instances, including read-only Open. */
   readonly renderPreview?: StudioAuthoring['renderPreview']
   readonly trials?: StudioTrialClient
   readonly instances?: StudioInstanceClient
@@ -241,12 +241,13 @@ function StudioDialog({ title, children, close, busy = false }: { title: string;
 
 
 /** Installed content is a reading surface; edits use the same current-content editor. */
-function InstalledPreview({ authoring, client, kit, bundle, locale, declarative, onEdit }: { onEdit?: () => void; authoring?: StudioAuthoring; client: StudioManagementClient; kit?: DesignKitVersionPin; bundle: DesignBundleVersionPin; locale: StudioLocale; declarative: boolean }): ReactElement {
+function InstalledPreview({ authoring, renderPreview: render, client, kit, bundle, locale, declarative, onEdit }: { onEdit?: () => void; authoring?: StudioAuthoring; renderPreview?: StudioAuthoring['renderPreview']; client: StudioManagementClient; kit?: DesignKitVersionPin; bundle: DesignBundleVersionPin; locale: StudioLocale; declarative: boolean }): ReactElement {
   const [result, setResult] = useState<StudioPanelPreviewResult>()
   const [busy, setBusy] = useState(false), [error, setError] = useState('')
   const [sourceError, setSourceError] = useState(''), [panelSource, setPanelSource] = useState<string>()
   const [retry, setRetry] = useState(0)
-  const previewInstalled = authoring?.client.previewInstalled
+  const renderPreview = render ?? authoring?.renderPreview
+  const previewInstalled = renderPreview ? client.previewInstalled ?? authoring?.client.previewInstalled : undefined
   useEffect(() => {
     let active = true
     setResult(undefined); setError(''); setBusy(!!previewInstalled)
@@ -282,7 +283,7 @@ function InstalledPreview({ authoring, client, kit, bundle, locale, declarative,
       {!!result?.diagnostics.length && (result.diagnostics.every(item => item.code === 'preview.sample_missing')
         ? <StudioEmptyState title={locale === 'zh' ? '缺少预览样例' : 'Preview sample is missing'} description={locale === 'zh' ? '添加 reference/preview.json 后，可在这里查看面板效果。' : 'Add reference/preview.json to preview the Panel here.'} />
         : <StudioFeedback feedbackId={`preview:${retry}:${JSON.stringify(result.diagnostics)}`} tone="error" locale={locale} title={locale === 'zh' ? '面板预览未能生成' : 'Panel preview could not be generated'} details={result.diagnostics.map(item => ({ message: item.message }))} />)}
-      {result?.preview && authoring?.renderPreview(result.preview, () => {}, { readOnly: false, toolbarTarget: null })}
+      {result?.preview && renderPreview?.(result.preview, () => {}, { readOnly: true, toolbarTarget: null })}
     </div></section>
   </section>
 }
@@ -398,7 +399,7 @@ export function StudioWorkspace({ client, controller: supplied, authoring, rende
     finally { archiveLock.current = false; setArchiveBusy(false) }
   }
   const exportInstance = (record: StudioInstance) => {
-    if (!contentClient || record.deletedAt || (record.id === instanceId && sourceDirty.current)) return
+    if (!contentClient || record.deletedAt) return
     void exportContent({ id: record.id, expectedRevision: record.revision }, record.title[locale])
   }
   // A completed adoption stays completed if a subsequent read fails. Retry reads,
@@ -711,7 +712,7 @@ export function StudioWorkspace({ client, controller: supplied, authoring, rende
     </div>
 
     <div className="ygd-studio-trial-slot" ref={setTrialTarget} hidden={bundleTab !== 'preview' || previewMode !== 'trial'} />
-    {previewOpened && <div className="ygd-studio-preview-slot" hidden={bundleTab !== 'preview' || previewMode !== 'sample'}><InstalledPreview key={`${bundleWorkspace.name}@${bundleWorkspace.version}`} client={client} authoring={authoring} onEdit={instances?.editCurrent ? () => { void editInstalled('bundle', bundleWorkspace) } : undefined} locale={locale} bundle={{ name: bundleWorkspace.name, version: bundleWorkspace.version }} kit={bundleContextKit()} declarative={bundleWorkspace.panel?.kind === 'declarative'} /></div>}
+    {previewOpened && <div className="ygd-studio-preview-slot" hidden={bundleTab !== 'preview' || previewMode !== 'sample'}><InstalledPreview key={`${bundleWorkspace.name}@${bundleWorkspace.version}`} client={client} authoring={authoring} renderPreview={renderPreview} onEdit={instances?.editCurrent ? () => { void editInstalled('bundle', bundleWorkspace) } : undefined} locale={locale} bundle={{ name: bundleWorkspace.name, version: bundleWorkspace.version }} kit={bundleContextKit()} declarative={bundleWorkspace.panel?.kind === 'declarative'} /></div>}
   </main>
 
   const bundleCard = (bundle: { name: string; version: string; description: string; title?: Readonly<{ zh: string; en: string }>; displayDescription?: Readonly<{ zh: string; en: string }> }, uses: number, inKit = false): ReactElement => <BundleCard key={`${bundle.name}@${bundle.version}`} bundle={bundle} locale={locale}

@@ -48,9 +48,22 @@ export interface DesignExecutionSelection {
   readonly stateRevision: string
 }
 
+/** A native question's context and the user's actual answer, not a caller summary. */
+export interface DesignExecutionQuestionAnswer {
+  readonly kind: 'question-answer'
+  readonly questionId: string
+  /** The calling Agent's visible question, not a human-authored statement. */
+  readonly question: string
+  readonly selected: readonly string[]
+  readonly custom?: string
+}
+
 /** Focused user context supplied only for a new Bundle engagement. */
 export interface DesignExecutionProducerInput {
+  /** Calling Agent’s task plan; not a replacement for the human request. */
   readonly brief: string
+  /** Current-turn direct text and native question answers in arrival order; no old history or generated summaries. */
+  readonly currentUserInput?: readonly (string | DesignExecutionQuestionAnswer)[]
   readonly currentDesignState: string
   readonly userContext: string
   /** Source-evidence reconstruction strategy for this engagement only. */

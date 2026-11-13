@@ -62,3 +62,14 @@ test('nested conjunctions can reference only declared fields of the same child r
   assert.ok(validatePanelManifest(panel).some(error => error.includes('item_fields') && error.includes('visible_when')),
     'a parent field cannot satisfy a missing child dependency')
 })
+
+
+test('empty reading surfaces are opt-in and cannot hide editable or required inputs', () => {
+  const panel = fixture()
+  panel.fields = [{ key: 'events', control: 'rows', readonly: true, hide_when_empty: true, applies_to: ['items'], columns: [{ key: 'event', label: 'Event', control: 'text' }] }]
+  assert.deepEqual(validatePanelManifest(panel), [])
+  for (const patch of [{ readonly: false }, { required: true }, { required_in: ['items'] }, { control: 'text' }, { hide_when_empty: 'true' }]) {
+    const bad = structuredClone(panel); Object.assign(bad.fields[0], patch)
+    assert.ok(validatePanelManifest(bad).some(message => message.includes('hide_when_empty')))
+  }
+})

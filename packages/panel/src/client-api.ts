@@ -9,6 +9,7 @@ export {
 export { resolveIconGlyph } from './client/ported/ui/icon-glyph-map.js'
 export { loadBpmnRuntime, type BpmnRuntimeModule } from './bpmn-runtime-loader.ts'
 export { loadBpmnStyles } from './bpmn-styles-loader.ts'
+export { BPMN_NATIVE_LABEL_SIZE, BPMN_TEXT_RENDERER } from './bpmn-viewport.ts'
 export type {
   NativePanelActionHost,
   NativePanelDefinition,

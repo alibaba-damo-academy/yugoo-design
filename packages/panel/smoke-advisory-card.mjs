@@ -1,26 +1,27 @@
 /**
  * Advisory Review Card acceptance smoke (node, SSR + pure helpers): renders
  * only current pending/deferred human-review advisories deduplicated by id
- * (stale entries are hidden by default); acceptance awaits
- * the host sendPrompt delivery before any local accepted state and keeps the
+ * (stale pending entries remain reviewable); acceptance saves its receipt before
+ * confirming the Host continuation delivery and keeps the
  * card retryable on failure; reject/defer never deliver a prompt. The inbox
  * stays on the host composer card width when the Design dock is open. Run (from
- * packages/panel): node smoke-advisory-card.mjs
+ * packages/panel): node smoke-advisory-card.mjs. Source-only checks:
+ * PANEL_ADVISORY_SOURCE=1 node --import tsx smoke-advisory-card.mjs
  */
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import {
+const {
   AdvisoryReviewCard,
   adjacentAdvisoryIndex,
   completeAdvisoryAcceptance,
   deliverAdvisoryAcceptance,
-  resolveAdvisoryExpandedRect,
   resolveAdvisoryIndex,
   renderAdvisoryAcceptancePrompt,
   selectPendingAdvisories,
-} from './lib/index.js'
+} = await import(process.env.PANEL_ADVISORY_SOURCE === '1'
+  ? './src/client/ported/design/AdvisoryReviewCard.tsx' : './lib/index.js')
 import { advisoryEntries, alignmentAdvisory, reflectionAdvisory } from './fixtures/advisory-review.mjs'
 
 const noop = async () => {}
@@ -62,44 +63,14 @@ assert.match(
   'advisory inbox must use the composer card maximum width instead of the viewport or Design dock width',
 )
 assert.match(advisoryRule, /align-self:center/)
-assert.match(advisoryComponent, /createPortal\(<div className='dsh-advisory-expanded-layer' style=\{expandedStyle\}>\{carousel\}<\/div>, document\.body/)
-assert.match(advisoryComponent, /querySelector<HTMLElement>\('\[data-conversation-scroll\]'\)/)
-assert.match(advisoryComponent, /querySelector<HTMLElement>\('\[data-composer-card\]'\)/)
-assert.match(styles, /\.dsh-advisory-expanded-layer\{position:fixed;/)
-assert.doesNotMatch(styles, /\.dsh-advisory-expanded-layer\{[^}]*inset:0/)
-assert.match(styles, /\.dsh-advisory-expanded-layer>\.dsh-advisory-carousel\{max-height:100%;pointer-events:auto;background:var\(--dsw-alias-bg-base,#fff\);border-radius:10px\}/)
-assert.match(styles, /\.dsh-advisory-expanded-layer \.dsh-advisory-card\{min-height:0;max-height:none;flex:0 1 auto/)
-assert.match(styles, /\.dsh-advisory-expanded-layer\{[^}]*justify-content:flex-end;pointer-events:none/,
-  'only the content-sized review card covers history, not an opaque full-height layer')
-assert.match(styles, /\.dsh-advisory-card\{[^}]*font:400 14px\/1\.5/,
-  'the portaled card retains the same readable typography as the inline card')
+assert.doesNotMatch(advisoryComponent, /createPortal|expandedRect|ResizeObserver/, 'details do not leave the inbox or maintain a second layout')
+assert.doesNotMatch(styles, /dsh-advisory-expanded-layer/, 'the superseded expanded layer has no styling authority')
+assert.match(styles, /\.dsh-advisory-card\{[^}]*font:400 14px\/1\.5/, 'the same card owns reading typography')
 assert.match(styles, /\.dsh-advisory-card\[data-expanded\] \.dsh-advisory-details\{display:flex;min-height:0;flex:1;flex-direction:column;overflow:hidden/)
-assert.match(styles, /\.dsh-advisory-card\[data-expanded\] \.dsh-advisory-details::details-content\{display:flex;min-height:0;flex:1;flex-direction:column;overflow:hidden/)
 assert.match(styles, /\.dsh-advisory-card\[data-expanded\] \.dsh-advisory-items-scroll\{min-height:0;max-height:none;flex:1;overflow-y:auto/)
 assert.match(advisoryComponent, /<div className='dsh-advisory-items-scroll'>\s*<ul className='dsh-advisory-items'>/)
-assert.deepEqual(
-  resolveAdvisoryExpandedRect(
-    { left: 56, top: 76, width: 584 },
-    { left: 72, top: 916, width: 544 },
-  ),
-  { left: 72, top: 76, width: 544, height: 840 },
-  'expanded details must use the composer width and the conversation-history height',
-)
-assert.equal(
-  resolveAdvisoryExpandedRect(
-    { left: 56, top: 76, width: 584 },
-    { left: 72, top: 76, width: 544 },
-  ),
-  null,
-  'unsettled host geometry must not open a viewport-sized layer',
-)
 
 // --- SSR: pending human-review only, deduplicated, accessible actions -----------
-assert.deepEqual(resolveAdvisoryExpandedRect(
-  { left: 0, top: -80, width: 400 }, { left: 0, top: 600, width: 400 },
-  { left: 10, top: 20, width: 380, height: 300 },
-), { left: 10, top: 20, width: 380, height: 300 }, 'optional scrolling-host boundary clips the overlay without changing default DSH geometry')
-
 const html = renderToStaticMarkup(createElement(AdvisoryReviewCard, {
   entries: advisoryEntries,
   onAccept: noop,
@@ -119,7 +90,7 @@ assert.ok(html.includes('aria-label="Defer advisory advisory-stale-1"'))
 assert.ok(html.includes('aria-label="Show advisory details for advisory-stale-1"'))
 assert.ok(html.includes('<details class="dsh-advisory-details">'), 'details are collapsed by default')
 assert.ok(!html.includes('<details class="dsh-advisory-details" open=""'))
-assert.ok(html.includes('Reflection review'))
+assert.ok(!html.includes('Reflection review'), 'the profile does not repeat the surrounding advisory context')
 assert.ok(html.includes('Contradicting refund paths'))
 assert.ok(
   html.indexOf('</article>') < html.indexOf('dsh-advisory-carousel-controls'),
@@ -128,11 +99,15 @@ assert.ok(
 const paginationRule = styles.match(/\.dsh-advisory-carousel-controls\{([^}]+)\}/)?.[1]
 assert.notEqual(paginationRule, undefined, 'advisory pagination CSS rule must exist')
 assert.match(paginationRule, /justify-content:center/, 'pagination must be centered below the card')
-assert.match(styles, /\.dsh-advisory-card-header\{flex-wrap:wrap\}/, 'header controls wrap within narrow card widths')
-const arrivalRule = styles.match(/\.dsh-advisory-new-arrival\{([^}]+)\}/)?.[1]
-assert.match(arrivalRule, /max-width:100%/)
-assert.match(arrivalRule, /overflow-wrap:anywhere/, 'long localized unread text stays inside narrow card headers')
-assert.doesNotMatch(arrivalRule, /align-self:center|width:\d+px|white-space:nowrap/, 'unread action must not reserve a separate fixed-size row')
+assert.doesNotMatch(html, /dsh-advisory-card-header|dsh-advisory-profile|dsh-advisory-status|dsh-advisory-new-arrival/, 'the stale selected card starts with its actual advice rather than a second title/status row')
+assert.doesNotMatch(styles, /\.dsh-advisory-(?:card-header|profile|status|new-arrival|unread)(?:\{|:|,)/, 'superseded header styles are removed at their owner')
+const actionRule = styles.match(/\.dsh-advisory-actions button\{([^}]+)\}/)?.[1]
+assert.match(actionRule, /display:inline-flex/)
+assert.match(actionRule, /box-sizing:border-box/)
+assert.match(actionRule, /height:32px/)
+assert.match(actionRule, /align-items:center/)
+assert.match(actionRule, /justify-content:center/)
+assert.match(actionRule, /padding:0 12px/, 'ordinary actions have no vertical padding added to the shared height')
 
 // Empty state: nothing pending renders nothing unless emptyText is provided.
 assert.equal(renderToStaticMarkup(createElement(AdvisoryReviewCard, {

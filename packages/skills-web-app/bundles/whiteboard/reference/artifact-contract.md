@@ -1,5 +1,16 @@
 # Whiteboard file contract
 
+## Record IDs
+
+For new boards prefer `WB-001`, `WB-002`, and so on. A board rename keeps its identity and scene path; native Excalidraw element, file and binding IDs are outside this convention.
+
+Existing IDs, including older formats, remain valid during ordinary edits and reconstruction. If the user explicitly requests business renumbering, revise actual record keys/IDs and current references/orders together through their existing owners; keep technical IDs and history unchanged. Names and titles remain readable content, separate from identity.
+
+For explicitly requested board renumbering, update its `artifact_file` and
+`whiteboard/boards/<id>.json` scene path with the board identity. Preserve the
+scene content, native element/file/binding IDs and geometry; renumbering does
+not authorize redrawing the board.
+
 For canvas generation or revision, read [the canvas guide](canvas-guide.md).
 It supplements the existing methods and output contract; it applies to both
 new design and reconstruction without replacing domain-specific rules.
@@ -47,6 +58,13 @@ Validation (Node only, no project/host imports or npm dependencies):
 ```sh
 node /absolute/bundle/scripts/validate.mjs /absolute/project/design_files
 ```
+
+`valid` reports structure and file checks. Optional `geometryWarnings` identify
+explicit text-line height underflow or text outside an unrotated bound rectangle;
+they do not reject a valid scene, edit it, or prevent saving. Read their element
+IDs with [geometry.md](geometry.md). Wrapped text, fonts, rotated containment,
+curved shapes and overall readability still need visual inspection. No warnings
+does not mean the scene has passed that inspection.
 
 The index schema/declarative validator is also used by the common host. The
 scene format helper lives in this Bundle and remains its CLI authority. The

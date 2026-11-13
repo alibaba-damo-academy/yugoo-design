@@ -3,7 +3,7 @@
 This is the authoritative contract for one `flow_design` BPMN artifact. The
 foreground Producer reads it for serial authorship and supplies it with any
 bounded delegated assignment. A Worker writes only its exact pre-bound BPMN
-file, runs the Bundle layout and final validator, and repairs it in the same
+file, follows the existing/new file route in [artifact-contract.md](artifact-contract.md), and repairs it in the same
 active Worker loop. The Producer reads the landed file receipt and updates
 canonical JSON, or authors and repairs the same XML itself when delegation is
 not useful.
@@ -12,12 +12,14 @@ not useful.
 
 - Output one complete `<bpmn:definitions>` document containing exactly one
   `<bpmn:process>`.
-- Author structure first. The same Agent then runs the Bundle layout script and
-  persists its `bpmndi:*`, `dc:*`, and `di:*` output as the final file.
-- Use Chinese for visible `name` values and ASCII-only machine ids.
+- For a new diagram, author structure first and run the Bundle layout script;
+  its `bpmndi:*`, `dc:*`, and `di:*` output becomes the final file. Revise an
+  existing diagram in place using the output contract's existing-file route.
+- Use the authored language for visible `name` values and ASCII-only machine ids.
 - Every node and sequence-flow id uses `{ElementType}_{process_id}_{number}`.
   Every lane id uses `Lane_{process_id}_{number}`. Role names belong only in
-  lane `name`, never in ids.
+  lane `name`, never in ids. Keep retained entities' IDs during revisions;
+  order changes or removing a sibling do not renumber them or reuse their IDs.
 - Include exactly one start event and at least one named end event. Every
   `sourceRef`, `targetRef`, and `flowNodeRef` resolves inside this process.
 - Every flow node is reachable from that start and every active path reaches a
@@ -86,7 +88,9 @@ message, error, condition, or signal that is absent from `trigger_hints`.
 
 Before the first file mutation, settle a compact inventory of lanes, semantic
 nodes, event definitions, and sequence paths against the canonical process
-descriptor. Write one coherent structure-only BPMN candidate. After a
+descriptor. For a new diagram write one coherent structure-only BPMN candidate;
+for an existing diagram reconcile those entities with their current IDs and paths.
+After a
 validator diagnostic, repair the existing candidate with a targeted edit;
 do not repeatedly replace the whole file merely to reconsider modeling that
 should have been resolved from the descriptor first.
@@ -182,8 +186,9 @@ the structure to the brief; never copy its business facts or ids blindly.
 
 ## Final self-check before submit
 
-1. One connected process, one start, at least one named end. The structure input
-   has no DI/layout elements; the final file has the layout script's DI output.
+1. One connected process, one start, at least one named end. A new structure
+   candidate has no DI; a revised/final file retains or regenerates the layout
+   script's DI through the output contract's applicable route.
 2. All ids are ASCII and process-prefixed; all references resolve.
 3. Lane names exactly match supplied stakeholders; every node belongs to one
    responsible lane.
@@ -192,8 +197,8 @@ the structure to the brief; never copy its business facts or ids blindly.
 5. Every supplied trigger hint is realized, and no ungrounded trigger appears.
 6. Exclusive outcomes are named; parallel/event-driven shapes use the matching
    gateways.
-7. Follow [artifact-contract.md](artifact-contract.md) to validate, lay out and
-   validate the final file in place. Repair that file in the active author loop;
+7. Follow the new/existing route in [artifact-contract.md](artifact-contract.md)
+   and validate the final file in place; layout is required when geometry changes. Repair that file in the active author loop;
    return its receipt, not the complete XML through model messages. A serial
    Producer follows the same repair loop directly.
    Treat XML parser diagnostics as local syntax defects: repair the reported

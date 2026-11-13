@@ -2,8 +2,24 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 const { register } = await import('tsx/esm/api'); register()
 const { projectRecords, scopeGraph, structuralGroups, componentCenters, edgeSpring, relationshipGroups, readableLayout, contentDetail, edgeReading, filterRelations, graphNodeMatches, relationDirectionLabel, relationMeaningLabel } = await import('../src/client/graph-model.ts')
+const { relationDisplayLabel } = await import('../src/client/graph-model.ts')
+const { shortGraphLabel } = await import('../src/client/graph-labels.ts')
 const node = (id, owner = 'a', record = true) => ({ id, owner, record, label: id, file: owner, pointer: '/' + id, context: '' })
 const edge = (from, to, kind = 'contains') => ({ id: from + to, from, to, kind, label: kind, evidence: 'original' })
+test('graph display localizes generated counts and identifier matches without rewriting source facts', () => {
+  const record = { ...node('a'), label: '客户请求' }
+  const match = { ...edge('a', 'b', 'identifier-match'), label: '标识符匹配（非业务确认）' }
+  const authored = { ...edge('a', 'b', 'knowledge'), label: '客户确认的关系' }
+  const before = structuredClone({ record, match, authored })
+  assert.equal(shortGraphLabel(record, true, 3, 'en-US'), '客户请求 · Items: 3')
+  assert.equal(shortGraphLabel(record, true, 3, 'zh-CN'), '客户请求 · 3项')
+  assert.equal(shortGraphLabel(record, true, 0, 'en-US'), '客户请求')
+  assert.equal(relationDisplayLabel(match, 'en-US'), 'Identifier match (unconfirmed)')
+  assert.equal(relationDisplayLabel({ ...match, members: [match] }, 'en-US'), 'Identifier match (unconfirmed)')
+  assert.equal(relationDisplayLabel(match, 'zh-CN'), match.label)
+  assert.equal(relationDisplayLabel(authored, 'en-US'), authored.label)
+  assert.deepEqual({ record, match, authored }, before)
+})
 test('container detail groups persisted units and two-state expansion preserves exact endpoints', () => {
   const container = { ...node('config'), contentKind: 'container', recordId: 'config' }
   const unit = { ...node('typography', 'a', false), contentKind: 'unit', recordId: 'config', parentId: 'config', context: '/baseFontSize: 14px' }

@@ -4,7 +4,7 @@ import { experienceFeedback, experienceFreshness, experienceResource, readExperi
 import type { SkillPanelProps } from './panels/shared.ts'
 import { useTextArtifactContents } from './panels/artifact-text-hydration.ts'
 import { useHtmlImageContents } from './panels/artifact-html-images.ts'
-import { secureDesignSrcDoc } from './srcdoc-security.ts'
+import { INTERACTIVE_PREVIEW_SANDBOX, secureDesignSrcDoc } from './srcdoc-security.ts'
 import { Button } from './ported/ui/button.tsx'
 import { Info } from 'lucide-react'
 import { EXPERIENCE_CSS } from './experience-styles.ts'
@@ -110,7 +110,7 @@ export function ExperiencePanel(props: ExperiencePanelProps): ReactElement {
           </div>
         </details>
         <div className='dsh-experience-canvas'>
-          {srcDoc ? <iframe key={`${view.id}:${view.version}:${section.id}:${generation}`} title={t('experienceFrameTitle', { title: section.title })} sandbox='allow-scripts' referrerPolicy='no-referrer' srcDoc={srcDoc} />
+          {srcDoc ? <iframe key={`${view.id}:${view.version}:${section.id}:${generation}`} title={t('experienceFrameTitle', { title: section.title })} sandbox={INTERACTIVE_PREVIEW_SANDBOX} referrerPolicy='no-referrer' srcDoc={srcDoc} />
             : <p role='status' className='p-6 text-sm text-gray-500'>{t(contents.html === null || styles.css === null ? 'experienceUnavailable' : 'experienceFrameLoading')}</p>}
         </div>
         {sendError && <p role='alert' className='dsh-experience-error'>{t('experienceSendFailedRetained', { error: sendError })}</p>}

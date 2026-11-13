@@ -62,6 +62,9 @@ test('Graph locale changes retain the transport, reading context and canvas inpu
     const alert = () => container.querySelector('.graph-notice[role="alert"]')?.textContent ?? ''
     await render()
     assert.equal(reads, 1, 'initial status sampling does not duplicate the initial graph read')
+    assert.doesNotMatch(container.querySelector('.graph-legend').parentElement.textContent, /虚线/)
+    assert.ok(container.textContent.includes('关系状态见关联详情。'))
+    assert.equal(container.querySelector('.graph-legend').parentElement.querySelectorAll('p').length, 1, 'the legend keeps one interaction hint rather than a tutorial')
     const search = container.querySelector('.graph-search input')
     await React.act(async () => {
       Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value').set.call(search, 'Alpha')
@@ -81,6 +84,20 @@ test('Graph locale changes retain the transport, reading context and canvas inpu
     assert.equal(container.querySelector('.graph-inspector h4').textContent, base.nodes[0].label)
     assert.equal(container.querySelector('.design-graph-view').getAttribute('aria-label'), 'Design relationships')
     assert.equal(container.querySelector('.graph-title'), null, 'the named region does not repeat a visible page title in its toolbar')
+    assert.doesNotMatch(container.querySelector('.graph-legend').parentElement.textContent, /dashed lines/i)
+    assert.ok(container.textContent.includes('Status is shown in relationship details.'))
+    assert.equal(container.querySelector('.graph-legend').parentElement.querySelector('p').textContent, 'Drag the background to pan · Scroll to zoom')
+
+    const settings = container.querySelector('.graph-settings-trigger')
+    settings.focus()
+    await React.act(async () => settings.click())
+    const drawer = container.querySelector('.graph-settings-drawer')
+    assert.deepEqual([...drawer.querySelectorAll('legend')].map(e => e.textContent), ['Layout', 'Relationship filters', 'Content'])
+    assert.deepEqual(Array.from([...drawer.querySelectorAll('fieldset')][1].querySelectorAll('label > span'), e => e.textContent), ['Meaning', 'Origin'])
+    await React.act(async () => drawer.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
+    assert.equal(container.querySelector('.graph-settings-drawer'), null)
+    assert.equal(document.activeElement, settings, 'closing view options returns focus to its original icon')
+    assert.equal(globalThis.__graphLocaleProbe.graph, canvasGraph, 'opening view options does not recreate or rewrite graph input')
 
     statusMode = 'throw'; await sample()
     assert.match(alert(), /Graph status is unavailable/)

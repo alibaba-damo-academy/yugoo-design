@@ -10,6 +10,8 @@ description: |-
 
 # Business Objects
 
+See the [record ID guidance](reference/artifact-contract.md#record-ids) for this Bundle's numbering suggestions and existing identity boundaries.
+
 For canvas generation or revision, read [the canvas guide](reference/canvas-guide.md).
 It supplements the existing methods and output contract; it applies to both
 new design and reconstruction without replacing domain-specific rules.
@@ -28,10 +30,10 @@ Read [the output contract](reference/artifact-contract.md) before authoring and
 Bundle's installed resource root, never a guessed development checkout.
 
 Use the current Host adapter's actual validate/publish or main-Bundle finish tools.
-In DSH, for a proposal that requires panel review, the executor runs `design_validate`,
+In DSH, the executor runs `design_validate({outcome:"complete"})`,
 repairs every schema or declarative validation diagnostic in the same WorkingCopy,
-and repeats until valid. It then calls `design_publish({action:"handoff"})` to publish the
-canonical state before the review gate. A panel save already persists the
+and repeats until valid. It then calls `design_publish({action:"complete"})` to publish the
+reviewable proposal. A panel save already persists the
 user's edits; later runs read and preserve them.
 
 ## Maintaining existing design
@@ -59,6 +61,10 @@ Keep neighboring concerns with their owners: capabilities with `function_modules
 3. Give each object a singular user-facing name and one-sentence business meaning.
 4. Add the minimum information users must recognize, enter, compare, search, decide with, or exchange.
 5. Give every field a user-facing name, meaning, natural value form, requirement, and only a useful example.
+   Distinguish an assessment of impact, a person's decision and the object's
+   current state. They answer different questions. Facts that can hold together
+   must remain expressible together rather than becoming mutually exclusive
+   because a single-choice field was selected.
 6. Add states only when users must see the current situation or product behavior depends on it. Store a fact-like name and meaning, never transitions or actions.
 7. Remove pages, actions, rules, permissions, technical helpers, and speculative completeness fields.
 8. Add an association only when a real scenario needs it. Give it a readable verb
@@ -75,18 +81,20 @@ Keep neighboring concerns with their owners: capabilities with `function_modules
     directions. A user reads “one project may reference multiple papers; one
     paper may belong to multiple projects”, not cardinality notation alone.
     Self-associations can be legitimate, for example task-to-task dependency.
+    Revisit the same instance after a later submission or decision. When the
+    user needs each earlier submission's content, model those meaningful
+    business records, not only the latest text or accumulated reasons. Check
+    that an update still leaves earlier content identifiable. Business-relevant
+    authorship and timing are not speculative audit columns; technical Git
+    history does not by itself define the product's business history.
 11. Preserve stable IDs and exact object/field/state order lists, then validate
     and repair every completion issue. Never persist canvas positions,
     collapsed state, UI selections or an OWL document in this JSON.
-
-## State contract
-
-Read [the shared output contract](reference/artifact-contract.md) for these field meanings, examples and checks; it is used by both ordinary design and reconstruction.
 
 ## Close-out evidence
 
 Close only after important business things have understandable boundaries and the smallest information set needed by established scenarios, with every completion issue repaired. Assess U/S/T from persisted evidence under the shared rubric, without fixed increments. Explain which boundaries or relationship decisions became understandable and what remains open. Item count, speculative fields, and database dumps add no clarity.
 
-## Interaction gate
+## Present the proposal
 
-After producing a valid proposal, present the native panel and pause for the user to review and save it. Explain one material modeling choice in ordinary language. The form holds object details; the canvas shows types and relationships, with hover details returning to that object's form. Do not demand a full ontology, all possible relations, or completion of unrelated Bundles. Do not self-confirm the shared object vocabulary or rewrite a successful panel save.
+After producing a valid proposal, present the native panel for review and optional editing. Explain one material modeling choice in ordinary language. The form holds object details; the canvas shows types and relationships, with hover details returning to that object's form. Do not demand a full ontology, all possible relations, or completion of unrelated Bundles. Do not self-confirm the shared object vocabulary or rewrite a successful panel save. A consequential unknown goes back through the existing conversation; editing an arbitrary field is not confirmation and is not required to continue the user's request.

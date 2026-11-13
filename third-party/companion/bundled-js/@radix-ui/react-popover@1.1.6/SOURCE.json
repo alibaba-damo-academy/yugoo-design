@@ -1,0 +1,12 @@
+{
+  "name": "@radix-ui/react-popover",
+  "version": "1.1.6",
+  "repository": "radix-ui/primitives",
+  "commit": "e1bdb77ea2445407b239558f2902c2e1950586fe",
+  "gitHead": "e1bdb77ea2445407b239558f2902c2e1950586fe",
+  "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/e1bdb77ea2445407b239558f2902c2e1950586fe/LICENSE",
+  "licenseSha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+  "licenseBytes": 1063,
+  "packageMetadataSha256": "10322a8520443d178aa3874693c1a90819772be98189d48ededebc2015dce2f0",
+  "correspondence": "Official repository LICENSE at the exact gitHead disclosed by npm version metadata. No substitution from another version."
+}

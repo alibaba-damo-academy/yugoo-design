@@ -120,7 +120,8 @@ ${CONVERSATION_ACTIVITY_CSS}
   box-sizing:border-box;position:relative;display:flex;flex-direction:column;width:100%;height:100%;min-height:24rem;
   background:var(--ds-background);color:var(--ds-text);
   font-family:var(--ds-body-font);font-size:var(--ds-base-font-size);line-height:var(--ds-line-height)}
-.ygd-studio-workspace *{box-sizing:border-box}
+.ygd-studio-workspace *{box-sizing:border-box;scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--ds-text-secondary) 55%,transparent) transparent}
+.ygd-studio-workspace :hover,.ygd-studio-workspace :focus-visible{scrollbar-color:var(--ds-text-secondary) transparent}
 .ygd-studio-workspace .ygd-studio-select{
   --ds-bg-white:var(--ds-surface);--ds-fill-5:var(--ds-border);--ds-border-default:var(--ds-border);
   --ds-text-primary:var(--ds-text);--ds-icon-outline-default:var(--ds-text-secondary);
@@ -250,7 +251,7 @@ button.ygd-studio-select>span:last-child{display:flex;flex:none;align-items:cent
 .ygd-studio-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:var(--ds-space-6);text-align:center;color:var(--ds-text-secondary);font-size:14px}
 
-.ygd-studio-mounts-editor{display:flex;flex:1;min-height:0;min-width:0;flex-direction:column;padding:2px 20px 16px;gap:12px;container-type:inline-size;container-name:studio-mounts}
+.ygd-studio-mounts-editor{display:flex;flex:1;min-height:0;min-width:0;flex-direction:column;padding:var(--ds-space-4) 20px;gap:12px;container-type:inline-size;container-name:studio-mounts}
 .ygd-studio-mounts-columns{display:grid;grid-template-columns:minmax(240px,300px) minmax(0,1fr);gap:24px;flex:1;min-height:0;min-width:0}
 .ygd-studio-mounts-column{display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0}
 .ygd-studio-mounts-heading{display:flex;align-items:center;gap:8px;min-height:32px}

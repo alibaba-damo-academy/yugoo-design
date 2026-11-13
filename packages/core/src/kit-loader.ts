@@ -4,8 +4,9 @@
  * This is what makes a community design system a zero-code content package: the
  * loader is shared machinery, the kit is data.
  */
+import { createHash } from 'node:crypto'
 import { dataTableSchemaMatches } from './data-table.ts'
-import { isAbsolute, relative, resolve } from 'node:path'
+import { extname, isAbsolute, relative, resolve } from 'node:path'
 import { parse, stringify } from 'yaml'
 import { DesignBundleVersion, DesignKitVersion, deriveDesignBundleAuthorityId, DesignResumeActionId, type DesignBilingualText, type DesignKit, type DesignExecutionPolicy, type DesignResumeAction, type DesignSkill } from './types.ts'
 import { parseSchemaYaml, compileSchema, type SchemaSpec } from './schema.ts'
@@ -36,7 +37,19 @@ export interface KitFsLike {
 /** Binary resources stay on disk/in transport, not in the model-facing text map. */
 export type KitResourceContent =
   | { readonly kind: 'text'; readonly content: string }
-  | { readonly kind: 'opaque'; readonly byteLength: number }
+  | { readonly kind: 'opaque'; readonly byteLength: number; readonly sha256?: string }
+
+// Known byte assets remain complete in storage/copies, outside model-facing
+// resource text. Methods, scripts and unknown extensions remain strict UTF-8.
+const OPAQUE_RESOURCE_EXTENSIONS = new Set(['.bin', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.ico', '.bmp',
+  '.pdf', '.woff', '.woff2', '.ttf', '.otf', '.eot', '.wasm'])
+
+/** One resource projection for virtual captures and their retained Node files. */
+export function projectKitResource(path: string, bytes: Uint8Array): KitResourceContent {
+  return OPAQUE_RESOURCE_EXTENSIONS.has(extname(path).toLowerCase())
+    ? { kind: 'opaque', byteLength: bytes.byteLength, sha256: createHash('sha256').update(bytes).digest('hex') }
+    : { kind: 'text', content: new TextDecoder('utf-8', { fatal: true }).decode(bytes) }
+}
 
 /** Resolved content paths for a package-backed Design Kit. */
 export interface DesignKitLocation {
@@ -506,6 +519,14 @@ function assertDeclarativeConsistency(
         if (key && (schemaAt(record, key)?.type !== 'array' || schemaAt(record, key)?.items?.type !== 'string')) throw new Error(`design kit: ${path}/panel.yaml artifact list binding ${key} must be a string list`)
       }
       if (config.current_path && schemaAt(schema, config.current_path)?.type !== 'string') throw new Error(`design kit: ${path}/panel.yaml artifact current binding must be a string`)
+      for (const [record, fields] of [[parent, config.fields], [child, config.children.fields]] as const) {
+        if (!fields) continue
+        assertDeclarativeConsistency({ type: 'object', properties: { artifact: { type: 'map', value: record } } }, {
+          version: 1, panel_kind: 'document', sections: [{ id: 'artifact', title: 'Artifact' }],
+          fields: fields.map(field => ({ ...field, applies_to: ['artifact'] })),
+          ui: { id: 'artifact-fields', component: 'record_form', source: 'artifact' },
+        }, { version: 1, renderer: 'pilot-design/v2' }, path)
+      }
     }
     if (node.component === 'document_workspace' && node.document) {
       const doc = node.document
@@ -797,11 +818,14 @@ interface ResourceBudget {
   bytes: number
   readonly realRoot?: string
   readonly visited: Set<string>
+  readonly opaque: Record<string, { byteLength: number; sha256?: string }>
 }
 
 const MAX_RESOURCE_NODES = 10_000
 const MAX_RESOURCE_DEPTH = 32
-const MAX_RESOURCE_BYTES = 16 * 1024 * 1024
+// Retained resources include complete executable browser/font closures, not
+// only method text. Keep one bounded budget for every Bundle and opaque asset.
+const MAX_RESOURCE_BYTES = 32 * 1024 * 1024
 
 async function collectResourceInputs(
   fs: KitFsLike,
@@ -815,6 +839,7 @@ async function collectResourceInputs(
     bytes: 0,
     ...(fs.realPath === undefined ? {} : { realRoot: confinementRoot ?? await fs.realPath(root) }),
     visited: new Set<string>(),
+    opaque: {},
   }
   state.nodes += 1
   if (state.nodes > MAX_RESOURCE_NODES) throw new Error(`design kit: Bundle resources exceed ${MAX_RESOURCE_NODES} files and directories`)
@@ -856,6 +881,10 @@ async function collectResourceInputs(
   if (!Number.isSafeInteger(byteLength) || byteLength < 0) throw new Error(`design kit: invalid Bundle resource byte length ${path}`)
   state.bytes += byteLength
   if (state.bytes > MAX_RESOURCE_BYTES) throw new Error(`design kit: Bundle resources exceed ${MAX_RESOURCE_BYTES} bytes`)
+  if (resource.kind === 'opaque') {
+    if (resource.sha256 !== undefined && !/^[a-f0-9]{64}$/u.test(resource.sha256)) throw new Error(`design kit: invalid resource digest ${path}`)
+    state.opaque[rel] = { byteLength, ...(resource.sha256 === undefined ? {} : { sha256: resource.sha256 }) }
+  }
   return resource.kind === 'opaque' ? [] : [{ path: rel, content: resource.content.replace(/\r\n?/g, '\n') }]
 }
 
@@ -1013,7 +1042,12 @@ export async function loadDesignBundle(
       throw new Error('design bundle: invalid independent identity')
     }
     const authority = deriveDesignBundleAuthorityId(location.sourceId, catalogName)
-    const bundleResources = await collectResourceInputs(fs, base, '', undefined, realBundleRootConfinement)
+    const resourceBudget: ResourceBudget = { nodes: 0, bytes: 0, visited: new Set(), opaque: {},
+      ...(realBundleRootConfinement === undefined ? {} : { realRoot: realBundleRootConfinement }) }
+    const bundleResources = await collectResourceInputs(fs, base, '', resourceBudget, realBundleRootConfinement)
+    // Byte assets stay outside resource text while still participating in the
+    // existing definition fingerprint and source-consistency comparisons.
+    if (Object.keys(resourceBudget.opaque).length) metadata.opaqueResources = resourceBudget.opaque
     const skill: DesignSkill = {
       resourceRoot: base, sourceId: location.sourceId, sourceFs: fs,
       ...(manifest.identity === undefined ? {} : {catalogName}),

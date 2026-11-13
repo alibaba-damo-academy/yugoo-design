@@ -151,6 +151,36 @@ const button = '<button data-prototype-id="open-button" data-prototype-connectio
 const bound = '<html><body>'+button+'</body></html>';
 const boundResult = check(bound, 0, connectedContext);
 assert.deepEqual(boundResult.bindings, { open: { elementId: 'open-button', label: 'Open' } });
+// Only authored elements bind hotspots; examples in comments/raw-text/RCDATA do not.
+const inertWrappers = [
+  text => '<!--' + text + '-->',
+  text => '<script>const sample = \'' + text + '\';</script>',
+  text => '<style>/*' + text + '*/</style>',
+  text => '<textarea>' + text + '</textarea>',
+  text => '<title>' + text + '</title>',
+  ...['iframe', 'xmp', 'noembed', 'noframes', 'noscript'].map(tag => text => '<' + tag + '>' + text + '</' + tag + '>'),
+];
+const fakeElement = button.replace('<button ', '<button id="dsh-design-preview-context" data-prototype-page="missing" data-design-icon="missing" data-design-brand="missing" style="color:var(--ds-missing)" ');
+for (const wrap of inertWrappers) {
+  const fakeOnly = check('<html><body>Ready' + wrap(button) + '</body></html>', 1, connectedContext, /does not bind outgoing/);
+  assert.deepEqual(fakeOnly.bindings, {});
+  assert.deepEqual(check('<html><body>' + button + wrap(fakeElement) + '</body></html>', 0, connectedContext).bindings, boundResult.bindings);
+}
+for (const tag of ['script', 'iframe']) {
+  const unsupported = check('<html><body><' + tag + '/>' + button + '</body></html>', 1, connectedContext, /unsupported self-closing/);
+  assert.deepEqual(unsupported.bindings, {});
+}
+const plaintext = check('<html><body><plaintext>' + button + '</body></html>', 1, connectedContext, /unsupported <plaintext>/);
+assert.deepEqual(plaintext.bindings, {});
+const quotedLabel = check(bound.replace('label="Open"', 'label="Open > details"'), 0, connectedContext);
+assert.equal(quotedLabel.bindings.open.label, 'Open > details');
+assert.deepEqual(check(bound.replace('<button ', '<button title=\'' + fakeElement + '\' '), 0, connectedContext).bindings, boundResult.bindings);
+assert.deepEqual(check('<html><body>' + button + '<svg><![CDATA[' + fakeElement + ']]><path d="M0 0"/></svg></body></html>', 0, connectedContext).bindings, boundResult.bindings);
+check('<!doctype html><html><head><title>Example <html><body></body></html></title><script>const example = \'<html><body></body></html>\';</script></head><body><svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z"/><text>Example</text></svg><ul><li>First<li>Second</ul><p>End</body></html>', 0);
+check(simple + simple, 1, context, /exactly one <html>/);
+check('<html><body>First</body><body>Second</body></html>', 1, context, /exactly one <body>/);
+check('<html><body><html>Nested</html></body></html>', 1, context, /exactly one <html>/);
+check('<html><script>const example = \'<body>Example</body>\';</script></html>', 1, context, /exactly one <body>/);
 check(simple, 1, connectedContext, /does not bind outgoing/);
 check(bound.replace('connection="open"', 'connection="missing"'), 1, connectedContext, /unknown connections/);
 check(bound.replace('<button ', '<button data-prototype-page="home" '), 1, connectedContext, /target conflicts with connection/);

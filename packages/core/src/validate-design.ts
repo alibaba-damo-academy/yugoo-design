@@ -35,6 +35,8 @@ export interface ValidateDesignOptions {
   candidate?: DesignValidationCandidate
   /** Read one artifact relative to `design_files/` for state and completion audits. */
   artifactText?: (relPath: string) => Promise<string | undefined>
+  /** Read exact historical evidence for completion-scoped source locators. */
+  sourceTextAt?: (revision: string, relPath: string) => Promise<string | undefined>
   /** Resolve trusted procedural validation referenced by this skill. */
   resolveValidationDriver?: (id: DesignDriverId) => DesignValidationDriver
 }
@@ -87,6 +89,7 @@ export async function validateSkillDesign(
       skill: skill.name,
       state: stateRecord,
       ...(options.artifactText === undefined ? {} : { artifactText: options.artifactText }),
+      ...(options.sourceTextAt === undefined ? {} : { sourceTextAt: options.sourceTextAt }),
     }
     if (scopes.has('state')) {
       issues.push(...await evaluateValidationRules(doc, stateEnv, 'state', options.resolveValidationDriver))

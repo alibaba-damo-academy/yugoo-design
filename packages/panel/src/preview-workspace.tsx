@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { sidebarIcon } from './sidebar-icon.tsx'
 import type { ComponentNode } from './dsl.ts'
 import type { DesignData, RenderOptions } from './interpreter.ts'
-import { PanelWorkspace, PanelWorkspaceSidebar, PanelWorkspaceChoice } from './panel-workspace.tsx'
-import { LivePreview } from './live-preview.tsx'
+import { PanelRecordHeader, PanelWorkspace, PanelWorkspaceSidebar, PanelWorkspaceChoice } from './panel-workspace.tsx'
+import { LivePreview, type PreviewViewportMode } from './live-preview.tsx'
+import { PanelSelect } from './panel-select.tsx'
 import { previewVariables, previewValue, inlinePreviewStylesheet } from './preview-tokens.ts'
 import { confinedEditableArtifact } from './text-artifact-edit.ts'
 import { useHtmlImageContents } from './client/panels/artifact-html-images.ts'
@@ -27,6 +28,7 @@ export function PreviewWorkspace({ node, data, options, children }: {
   const [reload, setReload] = useState(0), [busy, setBusy] = useState(false), [failed, setFailed] = useState(false)
   const [loaded, setLoaded] = useState<{ path: string; html: string; hasContent: boolean }>()
   const [tuning, setTuning] = useState(false)
+  const [viewportMode, setViewportMode] = useState<PreviewViewportMode>('fit-width')
   const [original, setOriginal] = useState<Record<string, unknown>>()
   // Capture once per mounted workspace; later save echoes must not replace the
   // initial palette with a user-selected preset. Do not manufacture absent data.
@@ -72,13 +74,16 @@ export function PreviewWorkspace({ node, data, options, children }: {
       </PanelWorkspaceChoice>
     })}
   </PanelWorkspaceSidebar>}>
-    <header className="dsh-preview-toolbar"><strong>{title}</strong>
+    <PanelRecordHeader placement="workspace" className="dsh-preview-toolbar"><strong>{title}</strong>
+      <PanelSelect aria-label={t('previewSize')} value={viewportMode} disabled={!hasContent}
+        options={[{ value: 'fit-width', label: t('fitWidth') }, { value: 'actual-size', label: t('previewActualSize') }]}
+        onValueChange={value => setViewportMode(value as PreviewViewportMode)} />
       <button type="button" disabled={!path || busy} onClick={() => setReload(value => value + 1)}>{busy ? t('refreshing') : t('refresh')}</button>
       {options?.onPanelUpdate ? <button type="button" disabled={!editable} aria-expanded={editable && tuning} onClick={() => setTuning(value => !value)}>{t('previewAdjust')}</button> : null}
-    </header>
+    </PanelRecordHeader>
     {typeof description === 'string' && description ? <p className="dsh-preview-description">{description}</p> : null}
     <div className="dsh-preview-main" aria-busy={busy}>
-      {hasContent && contents.preview ? <LivePreview html={contents.preview} variables={previewVariables(data, config.tokens)} title={title} designWidth={config.design_width} />
+      {hasContent && contents.preview ? <LivePreview html={contents.preview} variables={previewVariables(data, config.tokens)} title={title} designWidth={config.design_width} viewportMode={viewportMode} />
         : <PanelContentState kind="preview" state={raw && !path || failed ? 'error' : busy ? 'loading' : path && !options?.readArtifact ? 'unavailable' : 'empty'}
           message={raw && !path ? t('invalidDocumentPath') : failed || path && !options?.readArtifact ? t('documentUnavailable') : busy ? t('refreshing') : node.description ?? t('emptyContent')} />}
       {editable && tuning ? <aside className="dsh-preview-adjustments" aria-label={t('previewAdjust')}>

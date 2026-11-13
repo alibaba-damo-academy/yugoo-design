@@ -3,6 +3,13 @@
     "target": "es2024",
     "module": "nodenext",
     "moduleResolution": "nodenext",
-    "paths": { "dsh-design-core": ["../../core/src/index.ts"] }
+    "paths": {
+      "dsh-design-core": [
+        "../../core/src/index.ts"
+      ],
+      "dsh-design-studio/types": [
+        "../../studio/src/types.ts"
+      ]
+    }
   }
 }

@@ -134,7 +134,8 @@ export interface StudioInstanceComposition {
   preview?(input: StudioInstancePreviewInput): Promise<StudioPanelPreviewResult>
 }
 export interface StudioInstanceTrustedCaptures {
-  listBundles(): StudioAwaitable<readonly DesignBundleVersionPin[]>
+  /** Already loaded catalog metadata; discovery must not capture complete sources. */
+  listBundles(): StudioAwaitable<readonly StudioInstanceBundleChoice[]>
   captureBundle(pin: DesignBundleVersionPin): StudioAwaitable<StudioBundleCapture>
   captureKit(pin: DesignKitVersionPin): StudioAwaitable<{ readonly files: readonly StudioSourceEntry[]; readonly title?: StudioDisplayTitle }>
   preview?(input: StudioInstancePreviewInput): StudioAwaitable<StudioPanelPreviewResult>

@@ -106,6 +106,44 @@ async function fixture({ bad = false } = {}) {
 const bytesAt = (capture, path) => Buffer.from(capture.files.find(entry => entry.path === path).base64, 'base64')
 async function state(t) { const root = await realpath(await mkdtemp(join(tmpdir(), 'ygd-dsh-sources-'))); t.after(() => rm(root, { recursive: true, force: true })); return root }
 
+test('installed management preview reuses exact captures and Core samples without creating or saving library content', async () => {
+  const { Context } = await import('@deepseek-ai/cordis')
+  const { DshStudioManagementService } = await import('../src/service.ts')
+  const f = await fixture({ bad: true })
+  const put = (path, text) => f.fs.files.set(B + '/' + path, Buffer.from(text))
+  put('skill.yaml', bundleFiles['skill.yaml'].replace('presentation: {mode: none}', 'presentation: {mode: declarative}'))
+  put('schema.yaml', bundleFiles['schema.yaml'] + '  general:\n    type: map\n    value:\n      type: object\n      properties:\n        summary: {type: string}\n')
+  put('panel.yaml', 'version: 1\npanel_kind: document\nsections: [{id: general, title: General}]\nfields: [{key: summary, label: Summary, control: textarea, applies_to: [general]}]\nui: {component: record_form, id: general, source: general}\n')
+  put('reference/preview.json', JSON.stringify({ summary: 'Installed sample' }))
+  put('reference/preview-artifacts.json', JSON.stringify({ version: 1, files: { 'alpha/artifacts/example.html': 'reference/preview-artifacts/example.html' } }))
+  f.fs.directories.add(B + '/reference/preview-artifacts')
+  put('reference/preview-artifacts/example.html', '<p>Confined sample document</p>')
+  const before = [...f.fs.files].map(([path, bytes]) => [path, Buffer.from(bytes)])
+  const ctx = new Context(); ctx.provide('design', f.design); ctx.provide('fs', f.fs)
+  const fiber = ctx.plugin(DshStudioManagementService, { followInstalledSources: true }); await fiber
+  try {
+    const service = ctx.get('studioManagement')
+    const standalone = await service.previewInstalled({ bundle: pin, revision: 3 })
+    assert.deepEqual(standalone.diagnostics, [])
+    assert.deepEqual(standalone.preview.bundle, pin)
+    assert.equal(standalone.preview.kit, undefined)
+    assert.deepEqual(standalone.preview.sample, { summary: 'Installed sample' })
+    assert.equal(standalone.preview.artifacts['alpha/artifacts/example.html'], '<p>Confined sample document</p>')
+    const mounted = await service.previewInstalled({ kit: kitPin, bundle: pin, revision: 4 })
+    assert.deepEqual(mounted.diagnostics, [])
+    assert.deepEqual(mounted.preview.kit, kitPin)
+    assert.equal((await service.previewInstalled({ bundle: pin, revision: 5, sampleSource: '{' })).diagnostics[0].code, 'preview.sample_json')
+    assert.equal((await service.previewInstalled({ bundle: pin, revision: 6, sampleSource: '{"summary":123}' })).diagnostics[0].code, 'preview.sample_schema')
+    const missing = await service.previewInstalled({ bundle: { ...pin, version: '9.0' }, revision: 7 })
+    assert.equal(missing.preview, undefined)
+    assert.equal(missing.diagnostics[0].code, 'studio.source_unavailable')
+    assert.match(missing.diagnostics[0].message, /not registered/)
+    assert.throws(() => service.previewInstalled({ bundle: pin, revision: 0, id: 'must-not-use-a-local-instance' }))
+    assert.deepEqual([...f.fs.files], before, 'installed source bytes remain unchanged')
+    assert.ok(!f.fs.calls.some(([, path]) => path.startsWith(BAD)), 'unrelated broken source is never read')
+  } finally { await fiber.dispose() }
+})
+
 test('exact independent Bundle capture retains raw bytes/method/assets/notices and trusted sourceId', async () => {
   const f = await fixture({ bad: true }), captured = await f.adapters.catalog.captureBundle(pin)
   assert.equal(captured.sourceId, sourceId); assert.equal(captured.runtimeName, 'alpha')
@@ -126,14 +164,21 @@ test('old exact Kit capture uses resolveKit, keeps only Kit-owned bytes and exac
   assert.ok(!f.fs.calls.some(([, path]) => path.startsWith('/installed/latest-kit')))
 })
 
-test('existing S2 list compiles independent sources, excludes legacy and diagnoses broken independent registrations', async () => {
-  const healthy = await fixture(); assert.deepEqual((await healthy.adapters.catalog.listBundles()).map(({ name, version }) => ({ name, version })), [pin])
+test('catalog enumerates loaded metadata without source I/O; broken registrations fail only when selected', async () => {
   const f = await fixture({ bad: true })
-  await assert.rejects(f.adapters.catalog.listBundles(), /FS_NOT_FOUND/)
-  f.contents.delete('bad@1.0') // Isolate the next failure instead of masking it behind the first broken pin.
+  const choices = await f.adapters.catalog.listBundles()
+  assert.deepEqual(choices.map(({ name, version }) => ({ name, version })), [pin, { name: 'bad', version: '1.0' }].sort((a, b) => a.name.localeCompare(b.name)))
+  const selected = choices.find(value => value.name === pin.name)
+  assert.deepEqual(selected.title, f.content.skill.title)
+  assert.equal(selected.runtimeName, f.content.skill.name)
+  assert.equal(selected.description, f.content.skill.description)
+  assert.deepEqual(selected.displayDescription, f.content.skill.pickerDescription)
+  assert.equal(f.fs.calls.length, 0, 'discovery never captures or compiles installed trees')
+  await assert.rejects(f.adapters.catalog.captureBundle({ name: 'bad', version: '1.0' }), /FS_NOT_FOUND/)
   for (const value of [undefined, '']) {
     f.contents.set(pin.name + '@' + pin.version, { ...f.content, sourceId: value })
-    await assert.rejects(f.adapters.catalog.listBundles(), /sourceId/)
+    await f.adapters.catalog.listBundles()
+    await assert.rejects(f.adapters.catalog.captureBundle(pin), /sourceId/)
   }
 })
 
@@ -224,7 +269,7 @@ test('capture bounds total bytes/file count/entries/depth and detects changing f
     const seed = kind === 'files' ? Object.fromEntries(Array.from({ length: 4097 }, (_, i) => ['/root/f' + i, '']))
       : kind === 'depth' ? { ['/root/' + 'd/'.repeat(32) + 'a']: 'a' } : { '/root/a': 'a' }
     const { fs } = memoryFs(seed), source = await openInstalledSourceFiles(fs, '/root')
-    if (kind === 'bytes') { const stat = fs.stat; fs.stat = async target => { const info = await stat(target); return info?.type === 'file' ? { ...info, size: 16 * 1024 * 1024 + 1 } : info } }
+    if (kind === 'bytes') { const stat = fs.stat; fs.stat = async target => { const info = await stat(target); return info?.type === 'file' ? { ...info, size: 32 * 1024 * 1024 + 1 } : info } }
     if (kind === 'entries') fs.listDir = async () => Array.from({ length: 20001 }, (_, i) => ({ name: 'f' + i, type: 'file', target: fs.target('/root/a') }))
     if (kind === 'changed') { const read = fs.readBytes; fs.readBytes = async (...args) => { const bytes = await read(...args); fs.versions.set('/root/a', 'v2'); return bytes } }
     await assert.rejects(source.captureTree(), kind === 'changed' ? /source_changed/ : /source_limit/)
@@ -265,4 +310,24 @@ test('listed optional metadata accepts absent/matching values and an unknown sta
     if (kind === 'listed-size-stat-unknown') fs.stat = async target => { const info = await stat(target); if (info?.type !== 'file') return info; const { size, ...unknownSize } = info; return unknownSize }
     assert.deepEqual(bytesAt({ files: await source.captureTree() }, 'd/a'), binary)
   })
+})
+
+test('selected complete Bundle above 16 MiB survives capture, composition, save and retained reopen', async t => {
+  const f = await fixture(), stateRoot = await state(t)
+  const bytes = Buffer.alloc(24 * 1024 * 1024, 0xa5)
+  f.fs.files.set(B + '/assets/large.bin', bytes)
+  const instances = await createStudioInstances({ stateRoot, ...f.adapters })
+  const record = await instances.copy({ kind: 'bundle', bundle: pin })
+  const content = bundleFiles['reference/method.md'] + '\nSaved after complete capture.\n'
+  const saved = await instances.saveFile({ id: record.id, expectedRevision: record.revision, path: 'reference/method.md', content })
+  assert.equal(saved.revision, record.revision + 1)
+  await assert.rejects(instances.saveFile({ id: record.id, expectedRevision: record.revision, path: 'reference/method.md', content: 'stale' }), /changed/)
+  const ports = await createStudioDraftPorts({ stateRoot }, 'instance')
+  const snapshot = await ports.sources.open(record.baseSnapshot)
+  assert.deepEqual(await snapshot.fs.readBytes(join(snapshot.root, 'assets/large.bin')), bytes)
+  f.fs.files.clear(); f.fs.calls.length = 0
+  const reopened = await createStudioInstances({ stateRoot, ...f.adapters })
+  assert.equal((await reopened.readFile({ id: saved.id, path: 'reference/method.md' })).content, content)
+  assert.equal((await reopened.read(saved.id)).files.find(file => file.path === 'assets/large.bin').bytes, bytes.length)
+  assert.equal(f.fs.calls.length, 0, 'saved source does not fall back to the installed tree')
 })

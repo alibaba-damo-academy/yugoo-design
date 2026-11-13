@@ -1,6 +1,7 @@
 /** Finite independent Bundle; actual Core adapter over retained bytes, no installed files. */
 import { createStudioInstanceAdapters } from '../../src/studio-instance-composition.mjs'
 export const pin = { name: 'observations', version: '1.0' }
+export const choice = { ...pin, title: { zh: '观察记录', en: 'Observations' }, runtimeName: 'observations', description: 'Record supplied observations without inventing missing facts.' }
 export const entry = (path, content) => ({ path, base64: Buffer.from(content, 'utf8').toString('base64') })
 export const originalFiles = [
   entry('SKILL.md', '---\nname: observations\ndescription: Record supplied observations without inventing missing facts.\n---\nPreserve observation text and select one declared status.\n'),
@@ -22,7 +23,7 @@ export const additions = () => [
 ]
 export function adapters({ captureKit } = {}) {
   return createStudioInstanceAdapters({
-    listBundles: async () => [pin],
+    listBundles: async () => [structuredClone(choice)],
     captureBundle: async requested => { if (requested.name !== pin.name || requested.version !== pin.version) throw new Error('Missing fixture pin.'); return { files: structuredClone(originalFiles), sourceId: 'trusted:studio-changes-fixture' } },
     captureKit: captureKit ?? (async () => { throw new Error('This fixture has no installed Kit.') }),
   })

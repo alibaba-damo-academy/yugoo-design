@@ -55,6 +55,7 @@
     }
   },
   "scripts": {
+    "test:preview-forms:browser": "TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx test/preview-forms.browser.mjs",
     "test:sample-preview": "TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx --test test/sample-preview.test.mjs",
     "test:browser-esm-peer:built": "node --test test/browser-esm-peer.test.mjs",
     "test:sample-preview:built": "node --test test/sample-preview-package.test.mjs && PANEL_SAMPLE_PREVIEW_BUILT=1 TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx --test test/sample-preview.test.mjs",
@@ -71,7 +72,7 @@
     "test:sidebar-icons": "TSX_TSCONFIG_PATH=tsconfig.json node --import tsx --test test/sidebar-icon.test.mjs",
     "test:visual:browser": "node smoke-visual-records-browser.mjs",
     "build:css": "tailwindcss -c tailwind.config.cjs -i src/client/ported/design.css -o src/client/generated/design.tw.css --minify",
-    "build": "pnpm run build:css && tsdown",
+    "build": "pnpm run build:css && tsdown --concurrency 1",
     "typecheck": "tsc --noEmit",
     "test:graph": "node --test test/graph-dependencies.test.mjs test/graph-layout.test.mjs test/graph-model.test.mjs test/graph-presentation.test.mjs",
     "test:graph:browser": "node smoke-graph-browser.mjs",

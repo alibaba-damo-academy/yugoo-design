@@ -5,6 +5,8 @@ description: Draw and revise a topic-based freeform whiteboard in the same scene
 
 # Freeform whiteboards
 
+See the [record ID guidance](reference/artifact-contract.md#record-ids) for this Bundle's numbering suggestions and existing identity boundaries.
+
 For canvas generation or revision, read [the canvas guide](reference/canvas-guide.md).
 It supplements the existing methods and output contract; it applies to both
 new design and reconstruction without replacing domain-specific rules.
@@ -40,8 +42,11 @@ but persist only the native scene, not a second diagram model or generator state
 
 Who generates validates and repairs: run the Bundle's `scripts/validate.mjs`
 against the Design Files directory after writing scene files and the index.
-The script checks representation, references and ownership, not diagram meaning
-or aesthetics. Also perform the geometry and reading-order checks in the two
+The script checks representation, references and ownership, and reports limited
+non-blocking `geometryWarnings` for declared text bounds. Review these warnings
+against the changed elements; repair unintended overflow without discarding
+text or unrelated layout. They do not measure font widths or establish visual
+quality. Also perform the geometry and reading-order checks in the two
 references. With available browser/preview tools, inspect the rendered board at
 overview and readable zoom, repair problems, and inspect again. A valid JSON
 result is not visual acceptance. Without preview access, explicitly report that

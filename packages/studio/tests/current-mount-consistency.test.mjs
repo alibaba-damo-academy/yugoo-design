@@ -7,7 +7,7 @@ import { createStudioInstances } from '../src/node/studio-instances.mjs'
 import { createStudioInstanceAdapters } from '../src/node/studio-instance-composition.mjs'
 import { createStudioDraftPorts } from '../src/node/studio-panel-drafts.mjs'
 import { ensureProjectKit } from '../../core/src/project-kit-source.ts'
-import { originalFiles, entry, textOf, pin } from '../../companion/test/fixtures/studio-changes-fixture.mjs'
+import { originalFiles, entry, textOf, pin, choice } from '../../companion/test/fixtures/studio-changes-fixture.mjs'
 
 const kit = { name: 'current_mount_fixture', version: '1.0' }
 const kitFiles = [
@@ -31,7 +31,7 @@ async function fixture(t) {
     throw new Error('Unavailable declared source.')
   }
   const adapters = createStudioInstanceAdapters({
-    listBundles: async () => [pin, { name: 'research', version: '1.0' }, { name: 'research', version: '1.1' }],
+    listBundles: async () => [choice, ...['1.0', '1.1'].map(version => ({ name: 'research', version, title: { zh: '调研', en: 'Research' }, runtimeName: 'research' }))],
     captureKit: async () => ({ files: kitFiles }),
     captureBundle,
   })

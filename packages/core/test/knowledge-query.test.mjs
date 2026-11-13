@@ -1,11 +1,12 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { getEventListeners } from 'node:events'
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 const { register } = await import('tsx/esm/api'); register()
 const { default: DesignService } = await import('../src/design-service.ts')
-const { boundedKnowledgeQuery, registerKnowledgeQueryTool } = await import('../src/dsh-knowledge-query-tool.ts')
+const { cancellableKnowledgeQuery, registerKnowledgeQueryTool } = await import('../src/dsh-knowledge-query-tool.ts')
 const { knowledgeReadResult, queryKnowledgeSnapshot } = await import('../src/design-knowledge-query.ts')
 const { GitVersioning } = await import('../src/git.ts')
 const { DesignFilesStore } = await import('../src/design-files.ts')
@@ -75,35 +76,69 @@ test('registered read tool executes through a child native binding without expos
   assert.equal(tool.parameters.entities, undefined)
   assert.equal(tool.parameters.properties.designRoles, undefined)
   for (const name of ['relationMeanings', 'relationOrigins']) assert.ok(tool.parameters.properties[name])
-  const result = await tool.execute({ project: projectId, checkpoint: 'c', revision: 'rev:7' }, { agent: child, signal: new AbortController().signal })
-  assert.equal(JSON.parse(result.content).revision, 'rev:7')
+  const result = await tool.execute({ text: 'scope' }, { agent: child, signal: new AbortController().signal })
+  assert.equal(JSON.parse(result.content).revision, 'rev:8')
+  assert.equal(reads[0].projectId, projectId)
+  assert.equal(reads[0].text, 'scope')
   await tool.execute({project:projectId,checkpoint:'c',revision:'rev:7',relationMeanings:['references'],relationOrigins:['file']}, {agent:child})
   assert.deepEqual(reads[1].relationMeanings,['references'])
   assert.deepEqual(reads[1].relationOrigins,['file'])
   await assert.rejects(tool.execute({}, { signal: new AbortController().signal }), /calling Agent/)
 })
-test('optional native Knowledge reads have a local deadline even when storage never settles', async () => {
-  let observedSignal
-  await assert.rejects(
-    boundedKnowledgeQuery(async signal => {
-      observedSignal = signal
-      await new Promise(() => {})
-    }, undefined, 5),
-    /timed out after 5ms/,
-  )
-  assert.equal(observedSignal.aborted, true)
-
+test('ordinary native Knowledge queries have no plugin deadline and follow the caller cancellation signal', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] })
   const parent = new AbortController()
-  const cancelled = boundedKnowledgeQuery(async () => new Promise(() => {}), parent.signal, 1_000)
-  parent.abort(new Error('parent stopped'))
-  await assert.rejects(cancelled, /parent stopped/)
+  let tool, observedSignal, release, settled = false
+  registerKnowledgeQueryTool({ tools: { register: definition => { tool = definition } } }, {
+    queryStoredKnowledge: async (_agent, _args, signal) => { observedSignal = signal; return new Promise(resolve => { release = resolve }) },
+  })
+  const outcome = tool.execute({ text: 'source keyword' }, { agent: {}, signal: parent.signal }).then(
+    value => { settled = true; return value },
+    error => { settled = true; return error },
+  )
+  t.mock.timers.tick(300_001)
+  await new Promise(setImmediate)
+  assert.equal(settled, false, 'the query must not impose a fixed wall-clock deadline')
+  assert.equal(observedSignal, parent.signal, 'the native caller owns cancellation')
+  release({ entities: [], relations: [] })
+  assert.deepEqual(JSON.parse((await outcome).content), { entities: [], relations: [] }, 'a read can still complete after five minutes')
+  assert.equal(getEventListeners(parent.signal, 'abort').length, 0, 'a completed read removes its cancellation listener')
 })
-test('missing child pins, foreign project, stale checkpoint and unpinned continuation fail before reading', async () => {
+
+test('native Knowledge reads preserve cancellation and real read failures', async () => {
+  const parent = new AbortController()
+  const cancelled = cancellableKnowledgeQuery(async () => new Promise(() => {}), parent.signal)
+  const rejected = assert.rejects(cancelled, /parent stopped/)
+  assert.equal(getEventListeners(parent.signal, 'abort').length, 1)
+  parent.abort(new Error('parent stopped'))
+  await rejected
+  assert.equal(getEventListeners(parent.signal, 'abort').length, 0, 'cancelled waits release their listener even when the read never settles')
+  let started = false
+  await assert.rejects(cancellableKnowledgeQuery(async () => { started = true }, parent.signal), /parent stopped/)
+  assert.equal(started, false, 'an already cancelled caller does not start another read')
+  const failure = new Error('storage read failed')
+  await assert.rejects(cancellableKnowledgeQuery(async () => { throw failure }, new AbortController().signal), error => error === failure)
+  await assert.rejects(cancellableKnowledgeQuery(async () => { throw failure }), error => error === failure)
+})
+test('first child and Worker queries use their actual native ancestor without model-copied pins', async () => {
   const { parent, child, reads, run } = fixture()
-  for (const args of [{}, { project: 'other', checkpoint: 'c', revision: 'rev:7' }, { project: projectId, checkpoint: 'old', revision: 'rev:7' }]) {
+  const worker = { session: { header: { parentSession: 'producer' } },
+    ctx: { agents: { get: id => id === 'producer' ? child : undefined } } }
+  for (const caller of [parent, child, worker]) {
+    const result = await run(caller, { text: 'scope' })
+    assert.equal(result.project, projectId)
+    assert.equal(result.checkpoint, 'c')
+    assert.equal(result.revision, 'rev:8')
+  }
+  assert.ok(reads.every(read => read.projectId === projectId && read.revision === 'rev:8' && read.text === 'scope'))
+})
+test('foreign project, stale checkpoint and unpinned continuation fail before reading', async () => {
+  const { parent, child, reads, run } = fixture()
+  for (const args of [{ project: 'other', checkpoint: 'c', revision: 'rev:7' }, { project: projectId, checkpoint: 'old', revision: 'rev:7' }]) {
     await assert.rejects(run(child, args), /pins|binding/)
   }
   await assert.rejects(run(parent, { offset: 20 }), /pinned revision/)
+  await assert.rejects(run(child, { offset: 20 }), /pinned revision/)
   assert.equal(reads.length, 0)
   assert.equal((await run(parent, {})).revision, 'rev:8')
 })

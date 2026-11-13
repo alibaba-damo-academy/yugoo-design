@@ -1,0 +1,33 @@
+{
+  "name": "@radix-ui/react-presence",
+  "version": "1.0.0",
+  "repository": "radix-ui/primitives",
+  "commit": "3e5644edadcded918db177368c3fe9654ce9885f",
+  "tag": null,
+  "publishedGitHead": null,
+  "correspondence": "Official New release: V1 commit package.json has exact version; all published npm source-map sources compared byte-for-byte. No npm gitHead or matching version tag available.",
+  "sourceMatches": [
+    {
+      "path": "packages/react/presence/src/index.ts",
+      "exactMatch": true,
+      "sha256": "4acaebb42f9a72cb0a8fe0ebd302f81406fb1a9bec49cde316acf976ca04e2c1"
+    },
+    {
+      "path": "packages/react/presence/src/Presence.tsx",
+      "exactMatch": true,
+      "sha256": "0bd0200880d0d6df51de9e488a62cc31ff79998ffee5c97df090782e2da6a72d"
+    },
+    {
+      "path": "packages/react/presence/src/useStateMachine.tsx",
+      "exactMatch": true,
+      "sha256": "2da4b651d16dfe7066b4ba5850dd9789fff8c3aadace565be38d6089a1d3f4c5"
+    }
+  ],
+  "tarball": "https://registry.npmjs.org/@radix-ui/react-presence/-/react-presence-1.0.0.tgz",
+  "tarballIntegrity": "sha512-A+6XEvN01NfVWiKu38ybawfHsBjWum42MRPnEuqPsBZ4eV7e/7K321B5VgYMPv3Xx5An6o1/l9ZuDBgmcmWK3w==",
+  "tarballSha1": "814fe46df11f9a468808a6010e3f3ca7e0b2e84a",
+  "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/3e5644edadcded918db177368c3fe9654ce9885f/LICENSE",
+  "licenseSha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+  "licenseBytes": 1063,
+  "packageMetadataSha256": "252fc7dc37ffc269321f7afee4fc80248faea00217eb009c116f44967cd1b575"
+}

@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { createRequire } from 'node:module'
 const { register } = await import('tsx/esm/api')
 register()
 const { createCompanionLocale, COMPANION_LANGUAGE_KEY, companionChromeText, companionDocumentLanguage } = await import('../src/locale.ts')
@@ -92,4 +93,50 @@ test('Settings and Studio text follows language changes and preserves the native
   assert.equal(companionChromeText('connecting', 'en'), 'Connecting')
   assert.equal(companionChromeText('settingsSaved', 'en'), 'Settings saved')
   unsubscribe()
+})
+
+test('Companion appearance changes do not rewrite the selected interface language', () => {
+  const locale = createCompanionLocale(undefined, 'zh-CN')
+  locale.setAppearance('dark')
+  assert.equal(locale.getSnapshot().appearance, 'dark')
+  assert.equal(locale.getSnapshot().active, 'zh')
+  locale.setPreference('en', false)
+  assert.equal(locale.getSnapshot().appearance, 'dark')
+  assert.equal(locale.getSnapshot().active, 'en')
+  assert.throws(() => locale.setAppearance('unsupported'), /Unsupported/)
+})
+
+test('Companion system appearance follows media and releases only its document presentation', async () => {
+  const { JSDOM } = createRequire(new URL('../../panel/package.json', import.meta.url))('jsdom')
+  const { applyCompanionAppearance, resolveCompanionAppearance } = await import('../src/locale.ts')
+  assert.equal(resolveCompanionAppearance('system', true), 'dark')
+  assert.equal(resolveCompanionAppearance('light', true), 'light')
+  assert.equal(resolveCompanionAppearance('dark', false), 'dark')
+  const doc = new JSDOM('<!doctype html><body></body>').window.document
+  doc.documentElement.style.colorScheme = 'light dark'
+  const listeners = new Set()
+  let dark = false
+  const media = { get matches() { return dark }, addEventListener: (_name, fn) => listeners.add(fn), removeEventListener: (_name, fn) => listeners.delete(fn) }
+  const resolved = []
+  const onResolved = value => {
+    assert.equal(doc.documentElement.style.colorScheme, value, 'the reported scheme must match the actual applied document')
+    resolved.push(value)
+  }
+  const release = applyCompanionAppearance(doc, 'system', media, onResolved)
+  assert.equal(doc.documentElement.style.colorScheme, 'light')
+  dark = true
+  for (const notify of listeners) notify()
+  assert.equal(doc.documentElement.style.colorScheme, 'dark')
+  assert.equal(doc.body.hasAttribute('data-ds-dark-theme'), true)
+  assert.deepEqual(resolved, ['light', 'dark'])
+  release()
+  assert.equal(listeners.size, 0)
+  assert.equal(doc.documentElement.style.colorScheme, 'light dark')
+  assert.equal(doc.body.hasAttribute('data-ds-dark-theme'), false)
+  const releaseLight = applyCompanionAppearance(doc, 'light', media, onResolved)
+  assert.equal(doc.documentElement.style.colorScheme, 'light')
+  for (const notify of listeners) notify()
+  assert.equal(doc.documentElement.style.colorScheme, 'light')
+  assert.equal(resolved.at(-1), 'light', 'an explicit light preference overrides a dark system theme')
+  releaseLight()
 })

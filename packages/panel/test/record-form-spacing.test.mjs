@@ -22,6 +22,28 @@ const { renderNode } = await import('../src/interpreter.ts')
 const { PanelLocaleContext } = await import('../src/panel-i18n.tsx')
 const { parsePanelManifest } = await import('../../core/src/panel-dsl.ts')
 
+test('function and acceptance cards keep the first labeled field close to their title while later fields retain section spacing', async () => {
+  const root = createRoot(document.getElementById('root'))
+  const cases = [
+    ['function_modules', { functions: { a: { function_id: 'F-001', function_name: 'Review scope', function_description: 'Understand the chosen scope', function_epic: 'Review', priority: 'High' } }, function_order: ['a'] }],
+    ['quality_acceptance', { requirements: { a: { id: 'a', title: 'Save preferences', condition: 'After choosing a depth', pass_criteria: 'The saved choice remains after reopening', verification: 'Save and reopen' } }, requirement_order: ['a'] }],
+  ]
+  try {
+    for (const [bundle, data] of cases) {
+      const manifest = parsePanelManifest(readFileSync(new URL(`../../skills-web-app/bundles/${bundle}/panel.yaml`, import.meta.url), 'utf8'))
+      await React.act(async () => root.render(React.createElement('div', { className: 'dsh-design-panel' },
+        renderNode(manifest.ui, manifest, data, { editable: true, onEdit() {} }))))
+      const card = document.querySelector('[data-board-record="a"]')
+      assert.ok(card, `${bundle} uses the shared card`)
+      const body = card.querySelector('header').nextElementSibling
+      assert.equal(window.getComputedStyle(body).marginTop, 'var(--ygd-panel-detail-control-gap, 8px)', `${bundle} does not separate the first labeled content as another section`)
+      const fields = card.querySelector('.dsh-record-board-fields')
+      if (fields) assert.equal(window.getComputedStyle(fields).gap, 'var(--ygd-panel-detail-section-gap, 16px)', 'later independent fields retain their own rhythm')
+      assert.ok(card.querySelector('input[data-panel-title="editable"]'), 'the original title editor remains available')
+    }
+  } finally { await React.act(async () => root.unmount()) }
+})
+
 test('ordinary record forms own one gutter and stacks without changing related edits or other workspace layouts', async () => {
   const root = createRoot(document.getElementById('root'))
   const role = parsePanelManifest(readFileSync(new URL('../../skills-web-app/bundles/role_access/panel.yaml', import.meta.url), 'utf8'))

@@ -49,6 +49,77 @@ const {
   PanelWorkspaceTreeItem,
 } = await import('../src/panel-workspace.tsx')
 
+test('question business IDs are opt-in, exclude fixed semantic questions and retain canonical answers across rounds', async () => {
+  const container = document.getElementById('root'), root = createRoot(container)
+  let questions = [
+    { id: 'Q-009', prompt: 'Current question', kind: 'text', answer: '' },
+    { id: 'const_identity_needs', prompt: 'App identity needs', kind: 'text', answer: 'Existing fixed answer' },
+    { id: 'Q-002', prompt: 'Earlier question', kind: 'text', answer: 'Existing earlier answer' },
+  ]
+  const original = structuredClone(questions), changes = []
+  const show = showIds => React.act(async () => root.render(React.createElement(StandardQuestionWorkspace, {
+    questions, showIds, editable: true, historyReadonly: true, firstRoundIds: ['const_identity_needs'],
+    groups: [{ id: 'current', label: 'Current', current: true, questionIds: ['Q-009'] },
+      { id: 'initial', label: 'Initial', questionIds: ['const_identity_needs', 'Q-002'] }],
+    cardGroups: [{ id: 'basics', title: 'App basics', questionIds: ['const_identity_needs'], presentation: { alwaysExpanded: true } }],
+    onAnswerChange(id, answer) { changes.push([id, answer]); questions = questions.map(question => question.id === id ? { ...question, answer } : question) },
+  })))
+  try {
+    await show()
+    assert.equal(container.querySelector('.dsh-record-board-id'), null, 'saved keys remain hidden without display intent')
+    await show(true)
+    const card = container.querySelector('[data-question-id="Q-009"]')
+    assert.equal(card.querySelector('h3 .dsh-record-board-id').textContent, 'Q-009')
+    assert.equal(card.querySelectorAll('.dsh-record-board-id').length, 1)
+    assert.equal(container.querySelector('.dsh-panel-header-meta').textContent.includes('0/1'), true, 'the collection count remains independent')
+    const editor = card.querySelector('textarea')
+    await React.act(async () => {
+      Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set.call(editor, 'My current answer')
+      editor.dispatchEvent(new window.Event('input', { bubbles: true }))
+    })
+    await show(false)
+    assert.equal(card.querySelector('textarea'), editor, 'display changes do not replace the draft editor')
+    assert.equal(editor.value, 'My current answer')
+    assert.equal(card.querySelector('.dsh-record-board-id'), null)
+    await show(true)
+    const initial = [...container.querySelectorAll('.dsh-panel-workspace-nav-items button')].find(button => button.textContent === 'Initial')
+    await React.act(async () => initial.click())
+    assert.equal(container.querySelector('[data-question-id="const_identity_needs"] .dsh-record-board-id'), null)
+    assert.equal(container.querySelector('[data-question-id="Q-002"] .dsh-record-board-id').textContent, 'Q-002')
+    assert.equal(container.querySelector('[data-question-id="Q-002"] textarea'), null, 'historical questions keep their reading state')
+    assert.deepEqual(changes, [['Q-009', 'My current answer']])
+    assert.deepEqual(questions.slice(1), original.slice(1), 'fixed semantic identities and earlier answers are unchanged')
+    assert.deepEqual(questions.map(question => question.id), original.map(question => question.id))
+  } finally { await React.act(async () => root.unmount()) }
+})
+
+test('question business IDs use the shared title treatment in ordinary and compact questions without renumbering', async () => {
+  const container = document.getElementById('root'), root = createRoot(container)
+  const questions = [
+    { id: 'Q-127', prompt: 'Ordinary question', kind: 'text', answer: '' },
+    { id: 'Saved legacy key', prompt: 'Compact question', kind: 'text', answer: '' },
+    { id: ' ', prompt: 'No authored number', kind: 'text', answer: '' },
+  ]
+  const original = structuredClone(questions)
+  const show = (items, editable) => React.act(async () => root.render(React.createElement(StandardQuestionList, {
+    questions: items, showIds: true, editable,
+    cardGroups: [{ id: 'compact', title: 'Compact', questionIds: ['Saved legacy key'], presentation: { alwaysExpanded: true } }],
+  })))
+  try {
+    await show(questions, true)
+    assert.equal(container.querySelector('[data-question-id="Q-127"] h3').firstElementChild.textContent, 'Q-127')
+    const compact = container.querySelector('[data-question-id="Saved legacy key"] label')
+    assert.equal(compact.firstElementChild.className, 'dsh-record-board-id')
+    assert.equal(compact.firstElementChild.textContent, 'Saved legacy key', 'explicit values are shown exactly, without format guessing or aliases')
+    assert.equal(compact.control.tagName, 'TEXTAREA', 'the compact label retains its native control association')
+    assert.equal(container.querySelector('[data-question-id=" "] .dsh-record-board-id'), null, 'absence does not generate a number')
+    await show([...questions].reverse(), false)
+    assert.deepEqual([...container.querySelectorAll('.dsh-record-board-id')].map(node => node.textContent), ['Saved legacy key', 'Q-127'])
+    assert.equal(container.querySelector('input:not([disabled]), textarea:not([disabled])'), null)
+    assert.deepEqual(questions, original)
+  } finally { await React.act(async () => root.unmount()) }
+})
+
 test('optional colors show absence without writing the native picker fallback and preserve authored CSS values', async () => {
   const root = createRoot(document.getElementById('root'))
   let value = '', calls = 0, disabled = false
@@ -892,7 +963,7 @@ test('authored card groups frame contiguous cards and preserve answers, actions 
   assert.equal(group.querySelector('h3').textContent, 'Settings')
   assert.deepEqual([...group.querySelectorAll('.is-embedded')].map(node => node.dataset.questionId), ['b', 'c'])
   assert.equal(group.querySelector('[data-question-id="b"] [data-testid="standard-question-to-multiple"]'), null)
-  const skipButton = id => [...group.querySelectorAll(`[data-question-id="${id}"] button`)].find(button => button.textContent === '跳过问题')
+  const skipButton = id => [...group.querySelectorAll(`[data-question-id="${id}"] button`)].find(button => button.textContent === '跳过')
   assert.equal(skipButton('b'), undefined)
   assert.ok(skipButton('c'))
   await React.act(async () => skipButton('c').click())
@@ -965,70 +1036,71 @@ test('declarative card groups preserve official earliest-round placement and map
   await React.act(async () => root.unmount())
 })
 
-test('official fixed card presentation stays expanded after save and hides supplements without deleting facts', async () => {
+test('official fixed groups use dropdowns and preserve context after a save echo', async () => {
   const container = document.getElementById('root'), root = createRoot(container)
   const manifest = parsePanelManifest(await readFile(new URL('../../skills-web-app/bundles/smart_questions/panel.yaml', import.meta.url), 'utf8'))
   const choices = [{ value: 'one', label: 'One' }, { value: 'two', label: 'Two' }]
   const attachment = { type: 'file', file_md5: 'a'.repeat(32), filename: 'kept.txt', mime_type: 'text/plain', size_bytes: 4, artifact_file: 'smart_questions/attachments/kept.txt' }
   const data = { questions: Object.fromEntries(['const_auth_mode', 'const_storage_mode'].map(id => [id,
     { prompt: id, kind: 'single', choices, answer: 'one', detail: 'Keep the saved context', multimodal_answer: [attachment] }])) }
-  const before = structuredClone(data), edits = []
-  const show = collapseToken => root.render(renderManifest(manifest, data, { editable: true, collapseToken, onEdit: edit => edits.push(edit) }))
-  await React.act(async () => show(1))
-  assert.equal(container.querySelectorAll('input[type="radio"]').length, 4)
-  assert.equal(container.querySelector('[data-testid="standard-question-edit"]'), null)
-  assert.equal(container.querySelector('[data-testid="standard-question-detail"]'), null)
-  assert.equal(container.querySelector('input[type="file"]'), null)
-  assert.ok(!container.textContent.includes('kept.txt'))
-  await React.act(async () => container.querySelectorAll('input[type="radio"]')[1].click())
-  assert.deepEqual(edits, [{ section: 'questions', record: 'const_auth_mode', field: 'answer', value: 'two' }])
-  await React.act(async () => show(2))
-  assert.equal(container.querySelectorAll('input[type="radio"]').length, 4)
-  assert.equal(container.querySelector('[data-testid="standard-question-edit"]'), null)
-  assert.deepEqual(data, before)
-  await React.act(async () => root.unmount())
+  const before = structuredClone(data), edits = [], transactions = []
+  const show = collapseToken => root.render(renderManifest(manifest, data, { editable: true, collapseToken, onEdit: edit => edits.push(edit), onTransaction: changes => transactions.push(changes) }))
+  try {
+    await React.act(async () => show(1))
+    assert.equal(container.querySelectorAll('[role=combobox]').length, 2)
+    assert.equal(container.querySelector('.dsh-standard-question-field details'), null, 'fixed fields do not create separate disclosure cards')
+    assert.equal(container.querySelector('[data-testid="standard-question-edit"]'), null)
+    assert.equal(container.querySelector('[data-testid="question-group-context"]').value, 'Keep the saved context\n\nKeep the saved context')
+    assert.ok(container.querySelector('[data-testid="question-group-context"]').classList.contains('dsh-standard-question-detail'), 'fixed context reuses the ordinary question supplement')
+    assert.equal(container.querySelector('[data-question-card-group] details'), null, 'a supplement is not another disclosure or card')
+    assert.equal(container.querySelector('input[type="file"]'), null)
+    assert.ok(!container.textContent.includes('kept.txt'))
+    await chooseSelectValue(React, container.querySelector('[role=combobox]'), 'two')
+    assert.deepEqual(edits, [{ section: 'questions', record: 'const_auth_mode', field: 'answer', value: 'two' }])
+    await React.act(async () => show(2))
+    assert.equal(container.querySelectorAll('[role=combobox]').length, 2)
+    const context = container.querySelector('[data-testid=question-group-context]')
+    const reactProps = context[Object.keys(context).find(key => key.startsWith('__reactProps$'))]
+    await React.act(async () => reactProps.onChange({ target: { value: 'One shared context' } }))
+    assert.deepEqual(transactions, [[
+      { section: 'questions', record: 'const_auth_mode', field: 'detail', value: 'One shared context' },
+      { section: 'questions', record: 'const_storage_mode', field: 'detail', value: '' },
+    ]], 'consolidation is one existing draft transaction, not separate saves')
+    assert.deepEqual(data, before, 'presentation and callbacks never mutate the canonical input')
+  } finally { await React.act(async () => root.unmount()) }
 })
 
-test('expanded presentation respects readonly disabled rejected and restore permissions even for direct callbacks', async () => {
+test('compact presentation retains readonly disabled rejected and restore permissions', async () => {
   const container = document.getElementById('root'), root = createRoot(container)
   const edits = [], rejections = []
   const question = { id: 'a', prompt: 'A', kind: 'single', answer: 'one', detail: 'Saved detail', choices: [{ value: 'one', label: 'One' }, { value: 'two', label: 'Two' }] }
   const cardGroups = [{ id: 'group', title: 'Group', questionIds: ['a'], presentation: { alwaysExpanded: true } }]
   const reactProps = node => node[Object.keys(node).find(key => key.startsWith('__reactProps$'))]
-  for (const policy of [{ editable: false }, { editable: true, disabled: true }, { editable: true, rejected: true }]) {
-    await React.act(async () => root.render(React.createElement(StandardQuestionList, { ...policy,
-      questions: [{ ...question, rejected: policy.rejected }], cardGroups,
-      onAnswerChange: (...args) => edits.push(args), onDetailChange: (...args) => edits.push(args),
-      onKindChange: (...args) => edits.push(args), allowChoiceActions: true,
-      onRejectedChange: (...args) => rejections.push(args),
-    })))
-    const options = [...container.querySelectorAll('input[type="radio"]')]
-    assert.equal(options.length, 2)
-    assert.ok(options.every(node => node.disabled))
-    assert.equal(container.querySelector('[data-testid="standard-question-to-multiple"]'), null)
-    const detail = container.querySelector('[data-testid="standard-question-detail"]')
-    assert.ok(detail.disabled)
-    await React.act(async () => {
-      reactProps(options[1]).onChange()
-      reactProps(detail).onChange({ target: { value: 'Do not write' } })
-    })
-    assert.deepEqual(edits, [])
-    const restore = [...container.querySelectorAll('button')].find(node => node.textContent === '恢复问题')
-    if (policy.rejected) {
-      assert.ok(restore && !restore.disabled)
-      await React.act(async () => restore.click())
-      assert.deepEqual(rejections, [['a', false]])
-    } else {
-      assert.equal(restore, undefined)
-      const skip = [...container.querySelectorAll('button')].find(node => node.textContent === '跳过问题')
-      if (skip) {
-        assert.ok(skip.disabled)
-        await React.act(async () => reactProps(skip).onClick())
-      }
-      assert.deepEqual(rejections, [])
+  try {
+    for (const policy of [{ editable: false }, { editable: true, disabled: true }, { editable: true, rejected: true }]) {
+      await React.act(async () => root.render(React.createElement(StandardQuestionList, { ...policy,
+        questions: [{ ...question, rejected: policy.rejected }], cardGroups,
+        onAnswerChange: (...args) => edits.push(args), onDetailChange: (...args) => edits.push(args),
+        onKindChange: (...args) => edits.push(args), allowChoiceActions: true,
+        onRejectedChange: (...args) => rejections.push(args),
+      })))
+      const select = container.querySelector('[role=combobox]')
+      assert.ok(select.disabled)
+      await React.act(async () => select.click())
+      assert.equal(document.querySelector('[role=listbox]'), null)
+      assert.equal(container.querySelector('[data-testid="standard-question-to-multiple"]'), null)
+      const detail = container.querySelector('[data-testid="question-group-context"]')
+      assert.ok(detail.disabled)
+      await React.act(async () => reactProps(detail).onChange({ target: { value: 'Do not write' } }))
+      assert.deepEqual(edits, [])
+      const restore = [...container.querySelectorAll('button')].find(node => node.textContent === '恢复问题')
+      if (policy.rejected) {
+        assert.ok(restore && !restore.disabled)
+        await React.act(async () => restore.click())
+        assert.deepEqual(rejections, [['a', false]])
+      } else assert.deepEqual(rejections, [])
     }
-  }
-  await React.act(async () => root.unmount())
+  } finally { await React.act(async () => root.unmount()) }
 })
 
 test('presentation switches preserve text answers and default cards while invalid groups ignore presentation', async () => {
@@ -1070,7 +1142,7 @@ test('expanded group remains readonly in historical workspace rounds', async () 
   })))
   const history = [...container.querySelectorAll('button')].find(node => node.textContent.includes('基础问题'))
   await React.act(async () => history.click())
-  const input = container.querySelectorAll('input[type="radio"]')[1]
+  const input = container.querySelector('[role=combobox]')
   assert.ok(input.disabled)
   await React.act(async () => input.click())
   assert.deepEqual(changes, [])
@@ -1209,35 +1281,34 @@ test('question disclosure is independent of editing, sibling actions, rejection 
   } finally { await React.act(async () => root.unmount()); container.remove() }
 })
 
-test('fixed and readonly questions keep independent accessible disclosure without relaxing edit guards', async () => {
+test('fixed questions share one compact frame with labeled controls and preserve multi-choice order', async () => {
   const container = document.createElement('div'); document.body.append(container)
   const root = createRoot(container), writes = []
-  const questions = ['first', 'second'].map(id => ({ id, prompt: id, kind: 'single', answer: 'a', choices: [{ value: 'a', label: 'A' }] }))
+  const choices = [{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }]
+  let questions = [{ id: 'first', prompt: 'First', kind: 'single', answer: 'external', choices },
+    { id: 'second', prompt: 'Devices', kind: 'multiple', answer: ['b'], choices }]
+  const before = structuredClone(questions)
   const show = policy => root.render(React.createElement(StandardQuestionList, {
     questions, cardGroups: [{ id: 'fixed', title: 'Fixed configuration', questionIds: ['first', 'second'], presentation: { alwaysExpanded: true } }],
     onAnswerChange: (...args) => writes.push(args), ...policy,
   }))
   try {
     await React.act(async () => show({ editable: false }))
-    const toggles = [...container.querySelectorAll('.dsh-standard-question-toggle')]
-    const bodies = toggles.map(toggle => document.getElementById(toggle.getAttribute('aria-controls')))
-    assert.notEqual(bodies[0].id, bodies[1].id)
-    assert.ok(toggles.every(toggle => toggle.tagName === 'SUMMARY' && toggle.parentElement.tagName === 'DETAILS' && toggle.getAttribute('aria-expanded') === 'true'))
-    assert.ok([...container.querySelectorAll('input[type=radio]')].every(input => input.disabled))
-    await clickQuestionControl(toggles[0])
-    assert.equal(bodies[0].hidden, true)
-    assert.equal(bodies[1].hidden, false)
+    const group = container.querySelector('[data-question-card-group]')
+    assert.ok(group.classList.contains('dsh-panel-content-group'))
+    assert.equal(group.querySelector('.dsh-standard-question-field details'), null)
+    const select = group.querySelector('[role=combobox]')
+    assert.equal(document.getElementById(select.getAttribute('aria-labelledby')).textContent, 'First')
+    assert.equal(select.textContent, 'external', 'unknown saved answers remain visible')
+    assert.ok(select.disabled)
+    assert.ok([...group.querySelectorAll('input[type=checkbox]')].every(input => input.disabled))
+    await React.act(async () => show({ editable: true }))
+    await chooseSelectValue(React, group.querySelector('[role=combobox]'), 'a')
+    await React.act(async () => group.querySelector('input[type=checkbox]').click())
+    assert.deepEqual(writes, [['first', 'a'], ['second', ['b', 'a']]])
+    assert.deepEqual(questions, before)
     await React.act(async () => show({ editable: true, disabled: true }))
-    assert.equal(bodies[0].hidden, true)
-    toggles[0].focus()
-    for (const key of ['Enter', ' ']) {
-      const event = new dom.window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
-      assert.equal(toggles[0].dispatchEvent(event), true, 'disclosure leaves native summary keyboard activation intact')
-    }
-    await clickQuestionControl(toggles[0])
-    assert.equal(bodies[0].hidden, false)
-    assert.ok(document.activeElement === toggles[0])
-    assert.deepEqual(writes, [])
+    assert.ok(group.querySelector('[role=combobox]').disabled)
   } finally { await React.act(async () => root.unmount()); container.remove() }
 })
 
@@ -1272,4 +1343,27 @@ test('native question summary uses the complete header and excludes its child ac
     await summary.click({ position: { x: 2, y: 2 } })
     assert.equal(await card.evaluate(node => node.open), true, 'header whitespace belongs to the same native target')
   } finally { await browser.close() }
+})
+
+
+test('compact empty choices show uncertainty without duplicate unanswered options or inferred answers', async () => {
+  const container = document.getElementById('root'), root = createRoot(container), writes = []
+  const question = { id: 'need', prompt: 'Need identity?', kind: 'single', answer: '', choices: [
+    { value: 'needed', label: 'Needed' }, { value: 'not_needed', label: 'Not needed' }, { value: 'undecided', label: 'Not sure yet' },
+  ] }
+  try {
+    await React.act(async () => root.render(React.createElement(StandardQuestionList, {
+      editable: true, questions: [question], cardGroups: [{ id: 'needs', title: 'Needs', questionIds: ['need'], presentation: { alwaysExpanded: true } }],
+      onAnswerChange: (...args) => writes.push(args),
+    })))
+    const trigger = container.querySelector('[role=combobox]')
+    assert.equal(trigger.textContent, '暂不确定')
+    assert.equal(standardQuestionAnswered(question), false)
+    assert.deepEqual(writes, [])
+    await React.act(async () => trigger.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true })))
+    const options = [...document.querySelectorAll('[role=option]')]
+    assert.deepEqual(options.map(option => option.dataset.value), ['needed', 'not_needed', 'undecided'])
+    await React.act(async () => options[2].dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true })))
+    assert.deepEqual(writes, [['need', 'undecided']])
+  } finally { await React.act(async () => root.unmount()) }
 })

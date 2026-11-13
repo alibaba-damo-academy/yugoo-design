@@ -6,7 +6,7 @@ import { stringify } from 'yaml'
 import { contentNodeFs, copyTree } from './content-store.ts'
 import { loadDesignBundle, loadDesignKit, type DesignKitLocation, type KitFsLike } from './kit-loader.ts'
 import type { DesignKit } from './types.ts'
-import { projectKitContentHash } from './project-content.ts'
+import { captureProjectKitContentHash, projectKitContentHash } from './project-content.ts'
 
 export const DESIGN_PROJECT_KIT_DIRECTORY = 'design_kit'
 export interface ProjectKitSource { readonly kit: DesignKit; readonly revision: string }
@@ -81,8 +81,9 @@ async function revisionOf(root: string): Promise<string> {
 }
 
 /** Existing but invalid source is diagnosed; a library fallback never hides edits. */
-export async function loadProjectKit(projectRoot: string): Promise<ProjectKitSource> {
+export async function loadProjectKit(projectRoot: string, previous?: ProjectKitSource): Promise<ProjectKitSource> {
   const root = rootOf(projectRoot), revision = await revisionOf(root)
+  if (previous?.revision === revision && previous.kit.sourceRoot === join(root, 'kit')) return previous
   const layout = JSON.parse(await readFile(join(root, 'source.json'), 'utf8')) as SourceLayout
   if (layout.format !== 1 || !Array.isArray(layout.bundles) || typeof layout.kit?.sourceId !== 'string') throw new Error('project Kit: invalid source layout')
   const kitRoot = join(root, 'kit')
@@ -97,13 +98,17 @@ export async function loadProjectKit(projectRoot: string): Promise<ProjectKitSou
     return loadDesignBundle(contentNodeFs, { rootDir: join(root, 'bundles', identity(source.name)), sourceId: source.sourceId, current: true }, { name: source.name })
   } })
   if (revision !== await revisionOf(root)) throw new Error('project Kit: source changed while loading; retry using the current files')
+  captureProjectKitContentHash(kit)
   return { kit, revision }
 }
 
 /** Initialize once from the actual selected/retained closure; later reads use project files. */
-export async function ensureProjectKit(projectRoot: string, options: { readonly loadSource: () => Promise<DesignKit> }): Promise<ProjectKitSource> {
+export async function ensureProjectKit(projectRoot: string, options: {
+  readonly loadSource: () => Promise<DesignKit>
+  readonly previous?: ProjectKitSource
+}): Promise<ProjectKitSource> {
   const root = rootOf(projectRoot)
-  if (await exists(root)) return loadProjectKit(projectRoot)
+  if (await exists(root)) return loadProjectKit(projectRoot, options.previous)
   if (!(await lstat(projectRoot)).isDirectory()) throw new Error('project Kit: project directory unavailable')
   const kit = await options.loadSource()
   if (!kit.sourceRoot || !kit.sourceId) throw new Error('project Kit: original complete Kit source is unavailable')

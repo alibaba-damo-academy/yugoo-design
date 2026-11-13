@@ -1,24 +1,30 @@
 {
   "schema_version": 3,
-  "object_order": ["project", "experimental-project", "paper"],
+  "object_order": ["BO-001", "BO-002", "BO-003", "BO-004"],
   "objects": {
-    "project": {
-      "id": "project", "name": "项目", "description": "围绕研究目标组织任务和参考资料的工作单元。",
+    "BO-001": {
+      "id": "BO-001", "name": "项目", "description": "围绕研究目标组织任务和参考资料的工作单元。",
       "fields": {"title": {"id": "title", "name": "项目名称", "meaning": "用于识别和查找项目的名称。", "value_type": "text", "requirement": "always", "required_when": "", "example": "开放数据分析", "options": []}},
       "field_order": ["title"], "states": {}, "state_order": []
     },
-    "experimental-project": {
-      "id": "experimental-project", "name": "实验项目", "description": "通过实验推进研究的项目类型，沿用项目的通用定义与信息。",
+    "BO-002": {
+      "id": "BO-002", "name": "实验项目", "description": "通过实验推进研究的项目类型，沿用项目的通用定义与信息。",
       "fields": {}, "field_order": [], "states": {}, "state_order": []
     },
-    "paper": {
-      "id": "paper", "name": "文献", "description": "独立保存且可被不同项目引用的学术资料。",
+    "BO-003": {
+      "id": "BO-003", "name": "文献", "description": "独立保存且可被不同项目引用的学术资料。",
       "fields": {"title": {"id": "title", "name": "文献标题", "meaning": "用户阅读和查找文献时看到的标题。", "value_type": "text", "requirement": "always", "required_when": "", "example": "开放科研实践", "options": []}},
       "field_order": ["title"], "states": {}, "state_order": []
+    },
+    "BO-004": {
+      "id": "BO-004", "name": "阅读笔记", "description": "合成示例：针对一篇文献保存的一条阅读记录，每条笔记只属于一篇文献。",
+      "fields": {"text": {"id": "text", "name": "笔记内容", "meaning": "用户阅读后记录的理解，便于日后回看。", "value_type": "long_text", "requirement": "always", "required_when": "", "example": "这篇文献说明了数据公开的适用边界。", "options": []}},
+      "field_order": ["text"], "states": {}, "state_order": []
     }
   },
   "relations": {
-    "inherits-project": {"id": "inherits-project", "kind": "generalization", "name": "是一种", "source": "experimental-project", "target": "project", "description": "实验项目是项目的一种，不是项目中的一个实例。"},
-    "references-paper": {"id": "references-paper", "kind": "association", "name": "引用", "source": "project", "target": "paper", "source_count": "0..*", "target_count": "0..*", "description": "项目可引用多篇文献，文献可被多个项目引用。移除引用不删除文献。"}
+    "REL-001": {"id": "REL-001", "kind": "generalization", "name": "是一种", "source": "BO-002", "target": "BO-001", "description": "实验项目是项目的一种，不是项目中的一个实例。"},
+    "REL-002": {"id": "REL-002", "kind": "association", "name": "引用", "source": "BO-001", "target": "BO-003", "source_count": "0..*", "target_count": "0..*", "description": "项目可引用多篇文献，文献可被多个项目引用。移除引用不删除文献。"},
+    "REL-003": {"id": "REL-003", "kind": "association", "name": "包含阅读笔记", "source": "BO-003", "target": "BO-004", "source_count": "1", "target_count": "0..*", "description": "一篇文献可有零条或多条笔记，每条笔记只属于一篇文献。"}
   }
 }

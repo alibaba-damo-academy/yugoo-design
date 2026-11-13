@@ -22,7 +22,7 @@ const panel = async name => {
 }
 const research = await panel('research'), roles = await panel('role_access')
 const roleState = JSON.parse(await readFile(new URL('../../skills-web-app/bundles/role_access/reference/preview.json', import.meta.url), 'utf8'))
-roleState.roles['R-PREVIEW-A'].title = 'Reader with a deliberately long synthetic role title for narrow-container editing'
+roleState.roles['ROLE-001'].title = 'Reader with a deliberately long synthetic role title for narrow-container editing'
 const fixture = { panels: { research, roles }, states: { roles: roleState, research: {
   rounds: { R1: { topic: 'Synthetic Research', conclusion_file: 'research/report.md', directions: {
     D1: { title: 'HTML document', findings_file: 'research/report.html', research_points: ['Synthetic point'] },
@@ -117,7 +117,7 @@ try {
     if (evidence) await page.screenshot({ path: join(evidence, `roles-${width}.png`) })
   }
   await page.locator('[data-field=capability] input').fill('Edited synthetic capability')
-  assert.equal(await page.evaluate(() => window.r1UI.data.roles.policies['AP-PREVIEW-A'].capability), 'Edited synthetic capability')
+  assert.equal(await page.evaluate(() => window.r1UI.data.roles.policies['AP-001'].capability), 'Edited synthetic capability')
   await page.locator('[aria-label="Source role"]').focus(); await page.keyboard.press('Enter')
   await page.locator('[role=option]').first().waitFor()
   assert.ok(await page.locator('[role=option]').count() >= 1)
@@ -146,7 +146,7 @@ try {
   assert.ok(enlarged.scroll <= enlarged.client + 1, JSON.stringify(enlarged))
   assert.equal(await page.locator('.dsh-record-parent-inline [role=combobox]').isVisible(), true)
   await page.locator('[data-field=capability] input').fill('Enlarged synthetic field')
-  assert.equal(await page.evaluate(() => window.r1UI.data.roles.policies['AP-PREVIEW-A'].capability), 'Enlarged synthetic field')
+  assert.equal(await page.evaluate(() => window.r1UI.data.roles.policies['AP-001'].capability), 'Enlarged synthetic field')
   if (evidence) await page.screenshot({ path: join(evidence, 'roles-enlarged-360.png') })
   assert.deepEqual(errors, [])
   const result = { sourceOnly: true, hostStarted: false, measurements, browserErrors: errors, assertions: 'toolbar/density/headings/narrow table/keyboard/edit/read-only/late-file/HTML preservation/theme/enlarged typography stress', nativeZoomCertified: false }

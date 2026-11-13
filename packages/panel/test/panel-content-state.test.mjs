@@ -12,7 +12,7 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true
 const React = await import('react'); globalThis.React = React
 const { createRoot } = await import('react-dom/client')
 const { PanelContentState } = await import('../src/panel-content-state.tsx')
-const { PanelLocaleContext } = await import('../src/panel-i18n.tsx')
+const { PanelLocaleContext, panelText } = await import('../src/panel-i18n.tsx')
 const { NavigationPreview } = await import('../src/navigation-preview.tsx')
 const { DocumentWorkspace } = await import('../src/document-workspace.tsx')
 const { ArtifactWorkspace } = await import('../src/artifact-workspace.tsx')
@@ -33,6 +33,24 @@ test('shared region states have readable names, decorative icons and retained re
       assert.equal(state().querySelector('p').textContent, `${value} content`)
       assert.equal(state().querySelector('button')?.textContent, value === 'error' ? 'Retry' : undefined)
     }
+  } finally { await React.act(async () => view.unmount()) }
+})
+
+test('empty Panel workspace has a decorative illustration, localized title and one conversation action', async () => {
+  const view = root()
+  let focused = 0
+  try {
+    for (const locale of ['en-US', 'zh-CN']) {
+      await React.act(async () => view.render(React.createElement(PanelContentState, {
+        state: 'empty', kind: 'panel', title: panelText('panelEmptyTitle', locale), message: panelText('panelEmptyDescription', locale),
+      }, React.createElement('button', { onClick: () => focused++ }, panelText('panelContinueInChat', locale)))))
+      assert.equal(state().querySelector('h3').textContent, panelText('panelEmptyTitle', locale))
+      assert.equal(state().querySelector('p').textContent, panelText('panelEmptyDescription', locale))
+      assert.equal(state().querySelector('.dsh-panel-empty-illustration').getAttribute('aria-hidden'), 'true')
+      assert.equal(state().querySelectorAll('button').length, 1)
+      await React.act(async () => state().querySelector('button').click())
+    }
+    assert.equal(focused, 2)
   } finally { await React.act(async () => view.unmount()) }
 })
 
@@ -164,18 +182,71 @@ test('artifact read errors retain retry and cannot masquerade as an empty docume
   const data = { reports: { r: { title: 'Report', file: 'bundle/report.md', parts: {} } } }, original = structuredClone(data)
   const options = { skill: 'bundle', readArtifact: () => new Promise((resolve, reject) => pending.push({ resolve, reject })) }
   const show = () => React.act(async () => view.render(localized(React.createElement(ArtifactWorkspace, { node, data, options }))))
+  const refresh = () => [...document.querySelectorAll('.dsh-document-toolbar button')].find(button => button.textContent === 'Refresh')
   try {
     await show()
     assert.equal(state().dataset.contentState, 'loading')
     await React.act(async () => pending.shift().reject(new Error('Read failed')))
     assert.equal(state().dataset.contentState, 'error')
-    assert.equal(document.querySelector('.dsh-artifact-preview-toolbar button').disabled, false)
-    await React.act(async () => document.querySelector('.dsh-artifact-preview-toolbar button').click())
+    assert.ok(refresh(), 'retry stays on the shared document toolbar')
+    assert.equal(refresh().disabled, false)
+    await React.act(async () => refresh().click())
     assert.equal(state().dataset.contentState, 'loading')
     await React.act(async () => pending.shift().resolve({ found: true, content: '# Published report' }))
     assert.match(document.querySelector('.dsh-artifact-markdown').textContent, /Published report/)
     assert.equal(state(), null)
     assert.deepEqual(data, original)
+  } finally { await React.act(async () => view.unmount()) }
+})
+
+for (const kind of ['artifact', 'preview']) test(`active ${kind} waiting has one progress surface and preserves real read failures`, async () => {
+  const view = root(), pending = [], logReads = []
+  const file = kind === 'artifact' ? 'bundle/report.md' : 'bundle/page.html'
+  const node = { id: 'reports', artifacts: { records_path: 'reports', title_field: 'title', file_field: 'file', artifact_kind: 'report',
+    children: { records_field: 'parts', title_field: 'title', file_field: 'file', artifact_kind: 'part' } } }
+  const initial = { reports: { r: { title: 'Report', parts: {} } } }, original = structuredClone(initial)
+  const readArtifact = () => new Promise((resolve, reject) => pending.push({ resolve, reject }))
+  const readExecutionLog = async runId => { logReads.push(runId); return { found: true, revision: 'one', entries: [{ seq: 1, timestamp: 1, eventType: 'message', message: 'Preparing this artifact' }] } }
+  const show = (phase, path, reader = readExecutionLog, contentReader = readArtifact) => React.act(async () => {
+    const options = { skill: 'bundle', readArtifact: contentReader, readExecutionLog: reader,
+      executionAttempts: [{ projectId: 'test', artifactId: 'r', artifactKind: 'report', invocationId: 'generation', attemptId: 'worker', runId: 'exact-worker', role: 'worker', phase, sequence: 1, timestamp: 1 }],
+      onPanelUpdate: () => assert.fail('waiting does not modify canonical records') }
+    view.render(localized(kind === 'artifact' ? React.createElement(ArtifactWorkspace, {
+      node, data: path ? { reports: { r: { ...initial.reports.r, file: path } } } : initial, options,
+    }) : React.createElement(NavigationPreview, { path, title: 'Page', artifactId: 'r', artifactKind: 'report', options })))
+  })
+  const retry = () => document.querySelector('[data-preview-refresh]')
+    ?? [...document.querySelectorAll('.dsh-document-toolbar button')].find(button => button.textContent === 'Refresh')
+  try {
+    for (const phase of ['queued', 'working']) {
+      await show(phase)
+      assert.equal(document.querySelectorAll('.dsh-artifact-placeholder [data-content-state]').length, 0, 'active logs replace ordinary empty/loading placeholders')
+      assert.equal(document.querySelectorAll('.dsh-artifact-placeholder [data-execution-log]').length, 1)
+    }
+    await show('working', undefined, null)
+    assert.equal(state().dataset.contentState, 'loading', 'missing log capability still gives truthful active feedback')
+    assert.equal(document.querySelectorAll('[data-content-state]').length, 1)
+    assert.equal(document.querySelector('[data-execution-log]'), null, 'no log association is fabricated')
+    await show('failed')
+    assert.equal(document.querySelector('[data-execution-log]'), null)
+    assert.notEqual(state().dataset.contentState, 'loading', 'settled generation cannot keep spinning')
+    await show('working', file, readExecutionLog, null)
+    assert.equal(state().dataset.contentState, 'unavailable', 'an absent content reader remains a real capability limit')
+    await show('working', file)
+    await React.act(async () => pending.shift().reject(new Error('Network read failed')))
+    assert.equal(state().dataset.contentState, 'error', 'actual read failure cannot hide behind active generation')
+    assert.ok(retry() && !retry().disabled)
+    await React.act(async () => retry().click())
+    assert.equal(document.querySelector('.dsh-artifact-placeholder [data-content-state]'), null)
+    await React.act(async () => pending.shift().resolve({ found: true, content: kind === 'artifact' ? '# Saved report' : '<h1>Saved page</h1>' }))
+    assert.equal(state(), null)
+    const readable = document.querySelector(kind === 'artifact' ? '.dsh-artifact-markdown' : '.dsh-live-preview')
+    assert.ok(readable, 'recovery retains the available result beside actual progress')
+    await show('completed', file)
+    assert.equal(document.querySelector('[data-execution-log]'), null)
+    assert.equal(document.querySelector(kind === 'artifact' ? '.dsh-artifact-markdown' : '.dsh-live-preview'), readable, 'execution settlement keeps the readable result mounted')
+    assert.ok(logReads.length > 0 && logReads.every(id => id === 'exact-worker'))
+    assert.deepEqual(initial, original)
   } finally { await React.act(async () => view.unmount()) }
 })
 

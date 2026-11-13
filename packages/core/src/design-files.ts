@@ -178,13 +178,7 @@ export class DesignFilesStore {
     this.fs = fs
     this.git = git
     this.rootDir = rootDir
-    this.access = {
-      read: operation => access.read(operation),
-      mutate: operation => access.mutate(async () => {
-        try { return await operation() }
-        finally { git.invalidatePolledHead() }
-      }),
-    }
+    this.access = access
   }
 
   /** Absolute canonical JSON path for one Bundle. */
@@ -364,6 +358,18 @@ export class DesignFilesStore {
         return undefined
       }
     })
+  }
+
+  /**
+   * Prove a recorded Bundle publication is still current after system records
+   * advance HEAD. Equal bytes do not admit a newer execution with its own marker.
+   */
+  async isCurrentPublicationAt(commit: string, head: string, skill: string, signal?: AbortSignal): Promise<boolean> {
+    requireSkillName(skill)
+    if (!await this.sameDesignEvidenceAt(commit, head, signal) || !await this.isAncestor(commit, head, signal)) return false
+    const latest = await this.access.read(() => this.git.latestCommitWithMessage(head, publishedSkillMarker(skill), signal))
+    // Legacy unmarked saves may follow the last marked Bundle commit.
+    return latest === undefined || latest === commit || await this.isAncestor(latest, commit, signal)
   }
 
   /**

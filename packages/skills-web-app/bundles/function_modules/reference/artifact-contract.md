@@ -1,10 +1,23 @@
 # function_modules output contract
 
+## Record IDs
+
+For new functions prefer `F-001`, `F-002`, and so on. Epic is only a grouping label; local detail rows keep their existing keys and do not become independent functions.
+
+Existing IDs, including older formats, remain valid during ordinary edits and reconstruction. If the user explicitly requests business renumbering, revise actual record keys/IDs and current references/orders together through their existing owners; keep technical IDs and history unchanged. Names and titles remain readable content, separate from identity.
+
 For canvas generation or revision, read [the canvas guide](canvas-guide.md).
 It supplements the existing methods and output contract; it applies to both
 new design and reconstruction without replacing domain-specific rules.
 
 ## Source-to-capability judgment
+
+Apply the current request's evidence scope first. If it excludes a source, do
+not use that source to justify capabilities or their rationale merely because
+it remains in the project. Use actual saved QA answers/details, not unselected
+options. Reconcile the affected cards with the allowed evidence while preserving
+unaffected content and explicit user decisions; qualify or remove unsupported
+inferences rather than replacing confirmed decisions with source suggestions.
 
 For new design, derive candidate capabilities from established user outcomes;
 a source product is evidence or inspiration, not automatic approval to copy its
@@ -80,8 +93,10 @@ do not send it to a differently pinned validator or rewrite its retained state.
   changing unaffected positions. If absent, existing map order is used; the Panel
   writes an order only when the user actually moves a card. Grouping still comes
   from `function_epic`, not another membership list.
-- `function_id`, `function_name`, `function_description`, `function_epic`
-  are required for every function. `priority` is optional (panel default Medium).
+- The `function_id`, `function_name`, `function_description` and `function_epic`
+  string keys remain required for every function. `function_epic` may be empty
+  while a function is ungrouped; do not invent a group just to save a draft.
+  `priority` is optional (panel default Medium).
 - `rejected` means the user rejected the function. It remains visible in the
   rejected filter and may be restored. It is not deletion.
 - `source` identifies the card's origin. Optional `reason`, shown as Notes, can
@@ -129,6 +144,10 @@ retain their existing owning Bundles. Refer to them only when actually present.
 Do not force those Bundles to run just to explain known local behavior.
 
 ### Optional pinned sources
+
+These technical locators remain in canonical state for Agent/source inspection;
+the ordinary function Panel does not present a separate Source references field.
+Notes retain useful human explanations without requiring users to maintain pins.
 
 `references` is a stable-key map. Each closed record has required `file` and
 `revision`, optional `pointer`, `note`, and `subject_pointer` strings. No other

@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { zipSync, unzipSync } from 'fflate'
-import { readStudioContentArchive } from '../../studio/lib/index.js'
+import { readStudioContentArchive } from 'dsh-design-studio'
 import { encodeStudioContentZip, decodeStudioContentZip } from '../src/content-zip.ts'
 import { formatStudioImportError } from '../src/content-transfer.ts'
 import { archiveFixture } from './content-archive-fixture.mjs'
@@ -31,7 +31,7 @@ test('incomplete, unexpected and unsafe ZIP contents fail before preparing an im
 })
 
 test('expanded-size limits and existing SHA checks reject bombs and tampered source', () => {
-  assert.throws(() => decodeStudioContentZip(zipSync({ 'studio-manifest.json': new Uint8Array(19 * 1024 * 1024) })), /exceeds/)
+  assert.throws(() => decodeStudioContentZip(zipSync({ 'studio-manifest.json': new Uint8Array(65 * 1024 * 1024) })), /exceeds/)
   const files = unzipSync(encodeStudioContentZip(archiveFixture()))
   files['content/SKILL.md'][0] = 33
   assert.throws(() => readStudioContentArchive(decodeStudioContentZip(zipSync(files))), /integrity mismatch/)

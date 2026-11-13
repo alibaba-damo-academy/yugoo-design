@@ -11,7 +11,7 @@ import { fixture as sdkFixture, call, stop, deferred } from './fixtures/authorin
 const { createStudioAuthoringSession } = await import(process.env.STUDIO_AUTHORING_AGENT_BUILT === '1' ? '../lib/authoring-session.js' : '../src/authoring-session.ts')
 const { createStudioInstances } = await import('../../companion/src/studio-instances.mjs')
 const { createStudioInstanceAdapters } = await import('dsh-design-studio/node')
-const { adapters, additions, originalFiles, textOf, pin } = await import('../../companion/test/fixtures/studio-changes-fixture.mjs')
+const { adapters, additions, originalFiles, textOf, pin, choice } = await import('../../companion/test/fixtures/studio-changes-fixture.mjs')
 const { PANEL_COMPONENT_CATALOG, GENERATED_COMPONENT_KINDS } = await import('../../core/src/panel-component-catalog.ts')
 const catalog = () => ({ components: Object.entries(PANEL_COMPONENT_CATALOG).map(([name, entry]) => ({ name,
   description: entry.description, sourceBound: entry.sourceBound === true, ownsWorkspace: entry.ownsWorkspace === true,
@@ -301,7 +301,7 @@ test('Kit source authoring preserves mounted membership and requires an exact pi
   const f = await fixture(t, { step: n => sequence(changes, n) }), kit = { name: 'neutral_kit', version: '1.0' }
   const entry = (path, content) => ({ path, base64: Buffer.from(content).toString('base64') })
   let files = [entry('mindset.md', '---\nname: neutral_kit\nversion: "1.0"\n---\nUser purpose.\n<design_skills>\n## observations\n\nRecord observations.\n</design_skills>\n')]
-  const adapter = createStudioInstanceAdapters({ listBundles: async () => [pin],
+  const adapter = createStudioInstanceAdapters({ listBundles: async () => [choice],
     captureBundle: async () => ({ files: structuredClone(originalFiles), sourceId: 'trusted:session-kit' }),
     captureKit: async requested => { assert.deepEqual(requested, kit); return { files } },
   })

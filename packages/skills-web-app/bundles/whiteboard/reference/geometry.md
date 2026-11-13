@@ -3,6 +3,7 @@
 The scene is the editable authority. A structurally valid element can still have
 incorrect geometry. Resolve geometry before serialization and check it after
 changes; the Bundle validator does not measure fonts or route connectors.
+Its optional `geometryWarnings` are limited diagnostics, not a rendering verdict.
 
 ## Text and containers
 
@@ -24,6 +25,17 @@ Example: 10 explicit lines at font size 20 and line height 1.25 need about 250
 units of text height before padding. A 160-high card cannot accommodate that by
 declaring the text height to be 140. Shorten, wrap/reflow with adequate space, or
 separate the explanation; do not falsify its dimensions.
+
+The CLI flags a text element shorter than its explicit line-count minimum when
+positive native `fontSize` and `lineHeight` are present. CRLF and LF each count
+as one line break. This local-height check also applies to rotated text; it does
+not compare rotated screen bounds. A separate containment warning checks only
+text explicitly bound to an unrotated rectangle, with both elements unrotated.
+It does not guess a container from overlap, estimate character widths, measure
+automatic wrapping, infer missing metrics, or check diamond/ellipse interiors.
+Deleted elements are ignored. A one-unit tolerance avoids rounding noise.
+Warnings preserve the scene as written. Inspect the named elements, repair the
+affected geometry or explain an intentional overlap, then recheck the rendering.
 
 ## Connectors: intent and coordinates must agree
 

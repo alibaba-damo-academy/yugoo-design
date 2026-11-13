@@ -87,6 +87,7 @@
     "test:bundle-contributions": "node --test smoke-bundle-contributions.mjs",
     "test:execution-delegation": "node smoke-dsh-design-execution-delegation.mjs",
     "test:execution-provenance": "node --import tsx --test test/dsh-execution-provenance.test.mjs test/dsh-run-design-skill-session.test.mjs",
+    "test:advisory-execution-start": "node --test test/advisory-execution-start.test.mjs",
     "test:session-compat": "node --test --test-concurrency=1 test/dsh-child-session-meta.test.mjs test/dsh-session-events.test.mjs test/dsh-design-resume.test.mjs test/dsh-run-design-skill-session.test.mjs test/knowledge-recovery-progress.test.mjs test/advisory-knowledge-warmup.test.mjs test/execution-log-session-api.test.mjs test/file-worker-delegation.test.mjs",
     "test:panel-handoff": "node --test --test-concurrency=1 test/design-execution-handoff-authority.test.mjs test/panel-must-edit-save.test.mjs test/auto-panel-remote-save.test.mjs",
     "test:git-versioning": "node smoke-git-versioning.mjs",

@@ -3,32 +3,32 @@
   "title": "合成预览示例：请求处理角色",
   "summary": "合成示例：单父多级继承保留原权限条件与验证；不是用户项目的授权事实。",
   "roles": {
-    "R-PREVIEW-A": {
-      "id": "R-PREVIEW-A",
+    "ROLE-001": {
+      "id": "ROLE-001",
       "title": "申请人",
       "assignment_rule": "注册后自动拥有"
     },
-    "R-PREVIEW-B": {
-      "id": "R-PREVIEW-B",
+    "ROLE-002": {
+      "id": "ROLE-002",
       "title": "审核人",
       "assignment_rule": "由管理员授予"
     },
-    "R-PREVIEW-C": {
-      "id": "R-PREVIEW-C",
+    "ROLE-003": {
+      "id": "ROLE-003",
       "title": "主审核人",
       "assignment_rule": "由管理员明确授予主审角色"
     }
   },
   "role_order": [
-    "R-PREVIEW-A",
-    "R-PREVIEW-B",
-    "R-PREVIEW-C"
+    "ROLE-001",
+    "ROLE-002",
+    "ROLE-003"
   ],
   "policies": {
-    "AP-PREVIEW-A": {
-      "id": "AP-PREVIEW-A",
+    "AP-001": {
+      "id": "AP-001",
       "title": "允许修改请求",
-      "role_ref": "R-PREVIEW-A",
+      "role_ref": "ROLE-001",
       "capability": "修改请求",
       "effect": "allow",
       "applies_when": "仅限本人创建且尚未通过的请求",
@@ -39,10 +39,10 @@
       ],
       "custom_requirement": "核对请求归属后才能修改"
     },
-    "AP-PREVIEW-B": {
-      "id": "AP-PREVIEW-B",
+    "AP-002": {
+      "id": "AP-002",
       "title": "允许审核请求",
-      "role_ref": "R-PREVIEW-B",
+      "role_ref": "ROLE-002",
       "capability": "审核请求",
       "effect": "allow",
       "applies_when": "请求处于待审核状态",
@@ -51,10 +51,10 @@
       ],
       "custom_requirement": ""
     },
-    "AP-PREVIEW-C": {
-      "id": "AP-PREVIEW-C",
+    "AP-003": {
+      "id": "AP-003",
       "title": "允许导出审核记录",
-      "role_ref": "R-PREVIEW-C",
+      "role_ref": "ROLE-003",
       "capability": "导出审核记录",
       "effect": "allow",
       "applies_when": "仅限本人负责的审核范围",
@@ -65,25 +65,25 @@
     }
   },
   "policy_order": [
-    "AP-PREVIEW-A",
-    "AP-PREVIEW-B",
-    "AP-PREVIEW-C"
+    "AP-001",
+    "AP-002",
+    "AP-003"
   ],
   "inheritances": {
-    "RI-PREVIEW-B-A": {
-      "id": "RI-PREVIEW-B-A",
+    "RI-001": {
+      "id": "RI-001",
       "title": "继承权限",
       "kind": "inherits",
-      "source": "R-PREVIEW-B",
-      "target": "R-PREVIEW-A",
+      "source": "ROLE-002",
+      "target": "ROLE-001",
       "description": "合成例：审核人保留申请人自有请求的操作条件与验证要求。"
     },
-    "RI-PREVIEW-C-B": {
-      "id": "RI-PREVIEW-C-B",
+    "RI-002": {
+      "id": "RI-002",
       "title": "继承权限",
       "kind": "inherits",
-      "source": "R-PREVIEW-C",
-      "target": "R-PREVIEW-B",
+      "source": "ROLE-003",
+      "target": "ROLE-002",
       "description": "合成例：主审核人复用审核权限，不继承审核人的授予规则。"
     }
   }

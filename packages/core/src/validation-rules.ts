@@ -11,7 +11,7 @@ import { parse } from 'yaml'
 import type { ValidationIssue } from './validate-design.ts'
 import { DesignDriverId, type DesignValidationDriver } from './runtime-drivers.ts'
 import { requireDesignFileRelativePath } from './design-files.ts'
-import { validateDesignSourceReferenceSubject, type DesignSourceReference } from './design-source-reference.ts'
+import { readDesignSourceReference, validateDesignSourceReferenceSubject, type DesignSourceReference } from './design-source-reference.ts'
 
 /** One parsed validation rule. */
 export interface ValidationRule {
@@ -40,6 +40,8 @@ export interface ValidationEnv {
   state: Record<string, unknown>
   /** Read one artifact relative to `design_files/`; absent in candidate scope. */
   artifactText?: (relPath: string) => Promise<string | undefined>
+  /** Read an exact historical source; used only by completion locator checks. */
+  sourceTextAt?: (revision: string, relPath: string) => Promise<string | undefined>
   /** Delegated result payload (candidate scope only). */
   candidate?: { content: string; metadata?: Record<string, unknown> }
 }
@@ -718,6 +720,7 @@ export async function evaluateValidationRules(
   resolveDriver?: (id: DesignDriverId) => DesignValidationDriver,
 ): Promise<ValidationIssue[]> {
   const issues: ValidationIssue[] = []
+  const sourceReads = new Map<string, Promise<string | undefined>>()
   for (const rule of doc.rules) {
     if (!rule.scope.includes(scope)) continue
     if (scope === 'candidate' && !appliesToCandidate(rule, env.candidate)) continue
@@ -793,6 +796,48 @@ export async function evaluateValidationRules(
         ...(rule.artifact === undefined ? {} : { artifact: rule.artifact }),
         ...(rule.repair_hint === undefined ? {} : { repair_hint: rule.repair_hint }),
       })
+    }
+    // Saving a draft needs only the local locator guards above. A completed
+    // deliverable also needs real evidence at the version it claims to cite.
+    if (scope === 'completion' && 'source_reference_map' in rule.check) {
+      let subjects: Array<{ key: string; subject: Record<string, unknown> }>
+      let readField: typeof statePath = statePath
+      if ('for_each_in_map' in rule.check || 'for_each_in_order' in rule.check) {
+        const spec = rule.check.for_each_in_order as { order: string; map: string } | undefined
+        const map = statePath(env.state, spec?.map ?? String(rule.check.for_each_in_map))
+        const keys = spec === undefined ? Object.keys(isRecord(map) ? map : {}) : statePath(env.state, spec.order)
+        subjects = (Array.isArray(keys) ? keys : []).flatMap(key =>
+          isRecord(map) && isRecord(map[String(key)]) ? [{ key: String(key), subject: map[String(key)] as Record<string, unknown> }] : [])
+        readField = entryField
+      } else subjects = [{ key: '', subject: env.state }]
+      for (const { key, subject } of subjects) {
+        if (failures.includes(key)) continue
+        const references = readField(subject, String(rule.check.source_reference_map))
+        if (!isRecord(references)) continue
+        for (const [id, value] of Object.entries(references)) {
+          const reference = value as unknown as DesignSourceReference
+          let reason: string | undefined
+          if (env.sourceTextAt === undefined) reason = 'historical source reader unavailable; pinned evidence has not been verified'
+          else {
+            const result = await readDesignSourceReference(reference, reference.revision, (revision, path) => {
+              const identity = JSON.stringify([revision, path])
+              let read = sourceReads.get(identity)
+              if (read === undefined) {
+                read = env.sourceTextAt!(revision, path)
+                sourceReads.set(identity, read)
+              }
+              return read
+            })
+            if (result.historical !== 'found') reason = result.message
+          }
+          if (reason !== undefined) issues.push({
+            code: rule.code,
+            message: `${[key, String(rule.check.source_reference_map), id].filter(Boolean).join('.')}: ${reference.file}@${reference.revision}${reference.pointer ?? ''} — ${reason}`,
+            artifact: reference.file,
+            repair_hint: 'Inspect the cited version and correct the locator only from verified evidence. Preserve the original reference while editing; an unfinished draft can still be saved.',
+          })
+        }
+      }
     }
   }
   return issues

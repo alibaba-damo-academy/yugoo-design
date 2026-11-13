@@ -116,7 +116,6 @@ function maintenanceFixture() {
     knowledgeIndexer: { retry() {} },
     knowledgeMaintenanceTarget: () => target,
     knowledgeIndexStatus: () => state,
-    injectKnowledgeOrchestrationSnapshot: async () => {},
     refreshPublishedKnowledge: async agent => {
       calls.push([target, agent])
       if (calls.length === 1) await new Promise(resolve => { release = resolve })

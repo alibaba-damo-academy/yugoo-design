@@ -1,3 +1,5 @@
+import { collectionFieldCount } from './record-state.ts'
+import { PanelFieldCaption } from './panel-workspace.tsx'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { EditorField } from './dsl.ts'
@@ -12,7 +14,7 @@ export function RecordFacts({ fields, value, rows, chips = [], inline = false }:
     const keys = row.filter(key => fieldOf(key) && (hasValue(key) || (inline && fieldOf(key)?.required)))
     return keys.length ? <div className="dsh-record-facts-row" key={index}>{keys.map(key => {
       const field = fieldOf(key)!, content = value[key]
-      return <section key={key}><h5>{field.label ?? key}</h5>
+      return <section key={key}><h5><PanelFieldCaption label={field.label ?? key} count={collectionFieldCount(field, content)} /></h5>
         {Array.isArray(content) ? field.columns ? <div className="dsh-record-facts-entries">{content.map((entry, ordinal) => <dl key={ordinal}>
           {field.columns!.map(column => <div key={column.key}><dt>{column.label}</dt><dd>{column.options?.find(option => option.value === entry?.[column.key])?.label ?? String(entry?.[column.key] ?? '')}</dd></div>)}
         </dl>)}</div> : chips.includes(key) ? <div className="dsh-record-facts-chips">{content.map((item, ordinal) => <span key={ordinal}>{String(item)}</span>)}</div>

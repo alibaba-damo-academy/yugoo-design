@@ -162,10 +162,11 @@ test('Host scheme and semantic overrides reach shared surfaces, form controls an
     // Explicit Host light must win even on an OS reporting dark.
     const page = await browser.newPage({ colorScheme: 'dark' })
     const css = await readFile(new URL('../src/client/generated/design.tw.css', import.meta.url), 'utf8')
+      + await readFile(new URL('../src/visual-components.css', import.meta.url), 'utf8')
     const questions = renderToStaticMarkup(createElement(StandardQuestionWorkspace, {
       questions: [{ id: 'question', prompt: 'A real editable question', kind: 'text', answer: '', round: 1 }], editable: true,
     }))
-    await page.setContent(`<style>${css}${DOCK_CSS}${ADVISORY_CSS}${PANEL_SELECT_MENU_CSS}${STUDIO_WORKSPACE_CSS}${graphStyles}${TOGGLE_CSS}</style><button class="dsh-design-toggle dsh-design-toggle-active">Yugoo Design</button>
+    await page.setContent(`<style>${css}${DOCK_CSS}${ADVISORY_CSS}${PANEL_SELECT_MENU_CSS}${STUDIO_WORKSPACE_CSS}${graphStyles}${TOGGLE_CSS}</style><button type="button" id="collapsed-entry" class="dsh-design-toggle" aria-expanded="false">Yugoo Design</button><button type="button" class="dsh-design-toggle dsh-design-toggle-active" aria-expanded="true">Yugoo Design</button>
       <div class="dsh-design-root dsh-design-dock" style="position:relative;width:700px;height:500px">
         <div class="dsh-design-project-header">Project</div><div class="dsh-design-panel">${questions}
         <button class="dsh-standard-question-detail" id="trigger">Choose</button><div class="dsh-record-board-cards"><article class="dsh-panel-content-card">Record card</article></div></div>
@@ -176,7 +177,7 @@ test('Host scheme and semantic overrides reach shared surfaces, form controls an
     const colors = () => page.evaluate(() => Object.fromEntries([
       ['dock', '.dsh-design-dock'], ['header', '.dsh-design-project-header'], ['footer', '.dsh-design-view-footer'],
       ['input', '#trigger'], ['studio', '.ygd-studio-workspace'], ['studioHeader', '.ygd-studio-topbar'],
-      ['toggle', '.dsh-design-toggle-active'], ['selected', '[aria-current="page"]'], ['card', '.dsh-record-board-cards > article'], ['graphToolbar', '.graph-toolbar'], ['graphRefresh', '.graph-refresh'], ['graphSection', '.graph-settings-section'],
+      ['toggle', '.dsh-design-toggle-active'], ['collapsedToggle', '#collapsed-entry'], ['selected', '[aria-current="page"]'], ['card', '.dsh-record-board-cards > article'], ['graphToolbar', '.graph-toolbar'], ['graphRefresh', '.graph-refresh'], ['graphSection', '.graph-settings-section'],
       ['projectMenu', '.dsh-project-catalog'], ['projectCurrent', '.dsh-project-row[data-current]'], ['projectInput', '.dsh-project-create input'],
     ].map(([name, selector]) => { const node = document.querySelector(selector); if (!node) throw Error(selector); const s = getComputedStyle(node); return [name, { bg: s.backgroundColor, color: s.color, border: s.borderBottomColor }] })))
     await page.evaluate(() => { document.documentElement.style.colorScheme = 'light' })
@@ -202,9 +203,16 @@ test('Host scheme and semantic overrides reach shared surfaces, form controls an
     await page.locator('.dsh-review-settings-close').hover()
     assert.equal(await page.locator('.dsh-review-settings-close').evaluate(x => getComputedStyle(x).backgroundColor), 'rgb(32, 40, 47)', 'another shared popup action uses the same current layer priority')
     assert.equal(dark.dock.color, 'rgb(237, 243, 250)')
-    assert.equal(dark.toggle.bg, 'rgb(32, 40, 47)', 'boot toggle outside the dock uses the current Host layer token')
+    assert.equal(light.toggle.bg, 'rgb(255, 255, 255)', 'expanded entry uses its white CTA surface')
+    assert.equal(dark.toggle.bg, light.toggle.bg, 'expanded entry remains white in a dark Host')
+    assert.equal(dark.toggle.color, 'rgb(39, 39, 39)', 'expanded entry retains a dark label on white')
+    assert.equal(light.collapsedToggle.color, 'rgb(255, 255, 255)', 'collapsed entry uses a white label')
+    assert.equal(light.collapsedToggle.bg, 'rgb(124, 90, 246)', 'collapsed entry uses the standard primary background')
+    assert.equal(dark.collapsedToggle.color, 'rgb(24, 17, 34)', 'dark entry follows the standard primary foreground')
+    assert.equal(dark.collapsedToggle.bg, 'rgb(166, 139, 255)', 'dark entry follows the standard primary background')
+    assert.notEqual(dark.collapsedToggle.bg, dark.toggle.bg, 'entry state remains distinct from the expanded panel')
     await page.locator('.dsh-design-toggle-active').hover()
-    assert.equal((await colors()).toggle.bg, dark.toggle.bg, 'hover also prefers the current layer over the conflicting legacy alias')
+    assert.equal((await colors()).toggle.bg, dark.toggle.bg, 'hover preserves the expanded CTA state')
     assert.equal(dark.graphRefresh.color, 'rgb(187, 165, 255)', 'refresh uses the dark-readable graph accent')
     assert.equal(dark.graphSection.border, 'rgb(70, 70, 78)', 'settings use the same graph border')
     assert.notEqual(dark.selected.bg, light.selected.bg, 'selected navigation does not keep a light-only fill')
@@ -213,7 +221,7 @@ test('Host scheme and semantic overrides reach shared surfaces, form controls an
       document.body.style.removeProperty('--dsw-alias-bg-layer-1')
       document.body.style.setProperty('--dsw-alias-bg-secondary', '#263445')
     })
-    assert.equal((await colors()).toggle.bg, 'rgb(38, 52, 69)', 'an older Host without the current layer retains its legacy fallback')
+    assert.equal((await colors()).toggle.bg, light.toggle.bg, 'legacy Host layer aliases do not change the expanded CTA surface')
     await page.evaluate(() => {
       document.body.style.setProperty('--dsw-alias-bg-layer-1', '#20282f')
       document.body.style.setProperty('--dsw-alias-bg-secondary', '#fff')
@@ -528,7 +536,7 @@ test('related collection headings keep the same level as form groups in a real r
     const data = JSON.parse(await readFile(new URL('reference/preview.json', bundle), 'utf8'))
     // Select the existing descendant on the initial render to include its two
     // inherited collections and its own collection without replacing the UI.
-    data.role_order = ['R-PREVIEW-C', 'R-PREVIEW-A', 'R-PREVIEW-B']
+    data.role_order = ['ROLE-003', 'ROLE-001', 'ROLE-002']
     data.roles = Object.fromEntries(data.role_order.map(id => [id, data.roles[id]]))
     for (const locale of ['zh-CN', 'en-US']) {
       const html = renderToStaticMarkup(createElement('div', { className: 'dsh-design-root', id: 'related-workspace', style: { height: 700 } },
@@ -902,7 +910,7 @@ test('a detail form and its own and inherited permission groups fill the allocat
   const { manifest, data } = await loadTypographyBundle('role_access')
   // Select the deepest role on initial render, retaining the actual hierarchy,
   // related editor and table declarations rather than fabricating CSS boxes.
-  const child = Object.values(data.inheritances).find(edge => edge.source === 'R-PREVIEW-C').source
+  const child = Object.values(data.inheritances).find(edge => edge.source === 'ROLE-003').source
   data.role_order = [child, ...data.role_order.filter(id => id !== child)]
   const browser = await chromium.launch({ headless: true })
   try {
@@ -1285,8 +1293,8 @@ test('direct record cards share persistent title actions and semantic body spaci
   for (const locale of ['zh-CN', 'en-US']) for (const name of ['function_modules', 'quality_acceptance']) {
     const { manifest, data } = await loadTypographyBundle(name)
     if (locale === 'en-US' && name === 'quality_acceptance') {
-      data.requirements['Q-PREVIEW-001'].title = 'Request missing information first'
-      data.requirements['Q-PREVIEW-002'].title = 'Return is different from decline'
+      data.requirements['AC-001'].title = 'Request missing information first'
+      data.requirements['AC-002'].title = 'Return is different from decline'
     }
     for (const editable of [true, false]) snapshots.push({ locale, name, editable,
       html: renderToStaticMarkup(renderManifest(manifest, data, { locale, editable,
@@ -1733,5 +1741,49 @@ test('shared typography reaches actual grouped and nested catalog examples and D
         assert.deepEqual(example.sample, before)
       }
     }
+  } finally { await browser.close() }
+})
+
+test('shared footer and controls keep semantic colors with either native provider stylesheet order', async () => {
+  const browser = await chromium.launch({ headless: true })
+  try {
+    const page = await browser.newPage()
+    const panelCss = await readFile(new URL('../src/client/generated/design.tw.css', import.meta.url), 'utf8')
+    const providerCss = await readFile(new URL('../../provider-web-app/src/client/generated/design.tw.css', import.meta.url), 'utf8')
+    const footer = renderToStaticMarkup(createElement(FooterButtons, { disabled: false, saveVariant: 'outline', saveText: 'Save', regenerateText: 'Cancel' }))
+    const question = renderToStaticMarkup(createElement(StandardQuestionList, { editable: false,
+      questions: [{ id: 'Q-001', prompt: 'Reading surface', kind: 'text', answer: 'Saved answer' }] }))
+    const colors = {}
+    for (const [order, css] of [['panel-first', panelCss + providerCss], ['provider-first', providerCss + panelCss]]) {
+      for (const scheme of ['light', 'dark']) {
+        await page.setContent(`<style>${css}</style><div class="dsh-design-root"><span id="semantic-reference" style="background-color:var(--ds-bg-white);color:var(--ds-text-primary)">Theme reference</span><div class="dsh-design-panel">${question}</div>${footer}</div>`)
+        await page.evaluate(value => { document.documentElement.style.colorScheme = value }, scheme)
+        await page.waitForFunction(() => {
+          void document.body.offsetHeight
+          return document.getAnimations().every(animation => animation.playState !== 'running')
+        })
+        const result = await page.evaluate(() => {
+          const rgba = color => {
+            const context = document.createElement('canvas').getContext('2d')
+            context.fillStyle = color; context.fillRect(0, 0, 1, 1)
+            return Array.from(context.getImageData(0, 0, 1, 1).data).join(',')
+          }
+          const reference = getComputedStyle(document.querySelector('#semantic-reference'))
+          const footer = document.querySelector('[data-testid="dsh-design-save"]').parentElement.parentElement
+          return { footer: rgba(getComputedStyle(footer).backgroundColor),
+            controls: [...footer.querySelectorAll('button')].map(node => rgba(getComputedStyle(node).backgroundColor)),
+            expected: rgba(reference.backgroundColor),
+            documentPalette: getComputedStyle(document.documentElement).getPropertyValue('--ds-bg-white').trim(),
+            answer: document.querySelector('[data-question-id="Q-001"]')?.textContent }
+        })
+        assert.equal(result.footer, result.expected, `${order}/${scheme}: the footer follows the shared semantic surface`)
+        assert.ok(result.controls.every(value => value === result.expected), `${order}/${scheme}: outline controls follow that same surface ${JSON.stringify(result)}`)
+        assert.equal(result.documentPalette, '', 'a native provider never publishes a palette on the Host document root')
+        assert.match(result.answer, /Saved answer/, 'the same style composition keeps the adjacent shared reading surface')
+        colors[`${order}/${scheme}`] = result.footer
+      }
+    }
+    assert.notEqual(colors['panel-first/light'], colors['panel-first/dark'])
+    assert.equal(colors['panel-first/dark'], colors['provider-first/dark'])
   } finally { await browser.close() }
 })

@@ -54,7 +54,7 @@ export function appendDeclarativeAttachments(draft: Record<string, unknown>, man
 }
 
 /** The DSL panel: manifest parse + editable interpreter render. */
-export function DslPanel({ skill, draft, originalState, onChange, panelYaml, panelData, readArtifact, sourceRevision, readBinaryArtifact, artifactFiles, readOnly = false, allowAttachments = true, locale, artifactActivities, executionAttempts, readExecutionLog, registerBeforeSave, selectPanel, onSaveAndContinue, sendPrompt, running }: SkillPanelProps & {
+export function DslPanel({ skill, draft, originalState, onChange, panelYaml, panelData, readArtifact, sourceRevision, readBinaryArtifact, artifactFiles, readOnly = false, allowAttachments = true, locale, artifactActivities, executionAttempts, readExecutionLog, readArtifactHistory, registerBeforeSave, selectPanel, onSaveAndContinue, sendPrompt, running }: SkillPanelProps & {
   skill: string
   readOnly?: boolean
   locale?: string
@@ -137,6 +137,7 @@ export function DslPanel({ skill, draft, originalState, onChange, panelYaml, pan
     artifactActivities,
     executionAttempts,
     readExecutionLog,
+    readArtifactHistory,
     registerBeforeSave: registerEditor,
     onStageArtifact: edit => {
       if (!uploadScope.current.live || uploadScope.current.skill !== skill || (!uploadScope.current.editorWritable && !savingEditor.current)) {

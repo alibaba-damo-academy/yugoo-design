@@ -5,9 +5,9 @@ i18n:
   locales: {zh-CN: locales/zh-CN.json, en-US: locales/en-US.json}
 initial_values: {schema_version: 7, stage: mapped}
 sections:
-  - {id: pages, form: {header: {variant: detail, title: {field: name, editable: true}}}, title: $t:pages, order: page_order, confirm_delete: true, create: {id_field: id, defaults: {name: '', purpose: '', page_type: other}}}
-  - {id: connections, title: $t:connections, order: connection_order, form: {header: {variant: detail, title: {field: label, editable: true}}}, create: {id_field: id, defaults: {label: ''}}}
-  - {id: canvas_sections, title: $t:frames, form: {header: {variant: detail, title: {field: label, editable: true}}}, create: {id_field: id, defaults: {label: ''}}}
+  - {id: pages, form: {header: {show_id: true, variant: detail, title: {field: name, editable: true}}}, title: $t:pages, order: page_order, confirm_delete: true, create: {id_field: id, id_prefix: PG, defaults: {name: '', purpose: '', page_type: other}}}
+  - {id: connections, title: $t:connections, order: connection_order, form: {header: {show_id: true, variant: detail, title: {field: label, editable: true}}}, create: {id_field: id, id_prefix: PC, defaults: {label: ''}}}
+  - {id: canvas_sections, title: $t:frames, item_name: $t:frameItem, form: {header: {variant: detail, title: {field: label, editable: true}}}, create: {id_field: id, defaults: {label: ''}}}
 fields:
   - {key: id, control: text, readonly: true, hidden: true, applies_to: [pages, connections, canvas_sections]}
   - {key: name, label: $t:pageName, control: text, required: true, applies_to: [pages]}

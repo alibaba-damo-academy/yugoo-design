@@ -1,11 +1,12 @@
 import { PanelTextarea } from './panel-textarea.tsx'
 import { Children, useState, type ReactNode } from 'react'
-import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { browserRandomUuid } from './browser-uuid.ts'
 import type { EditorField } from './dsl.ts'
 import { usePanelI18n } from './panel-i18n.tsx'
-import { PanelDisclosureIcon, PanelFieldCaption } from './panel-workspace.tsx'
-import { moveRecordMapItem, newRecordMapItem, recordMapPatch, recordMapState } from './record-map-state.ts'
+import { PanelCollectionActions, PanelDisclosureIcon, PanelEditableTitle, PanelFieldCaption } from './panel-workspace.tsx'
+import { applyRecordFieldEdit, fieldDisplayLabel, fieldIsVisible } from './record-state.ts'
+import { moveRecordMapItem, newRecordMapItem, recordMapItemManifest, recordMapPatch, recordMapState } from './record-map-state.ts'
 
 /** Shared by field rendering and its containing form: compact rows do not own record cards. */
 export function isCompactRecordMap(field: EditorField, compactFields = false): boolean {
@@ -14,7 +15,7 @@ export function isCompactRecordMap(field: EditorField, compactFields = false): b
 
 /** Ordered nested records. Writes map + sibling order together, with opaque ids. */
 export function RecordMap(props: { field: EditorField; record: Record<string, unknown>; editable: boolean; compact?: boolean; onPatch: (patch: Record<string, unknown>) => void;
-  renderItem?: (id: string, value: Record<string, unknown>, change: (next: Record<string, unknown>) => void) => ReactNode }) {
+  renderItem?: (id: string, value: Record<string, unknown>, change: (next: Record<string, unknown>) => void, titleField?: string) => ReactNode }) {
   const { field, record } = props, { t } = usePanelI18n()
   const [expanded, setExpanded] = useState<string | null>()
   const state = recordMapState(field, record)
@@ -24,17 +25,14 @@ export function RecordMap(props: { field: EditorField; record: Record<string, un
   const columns = field.columns ?? []
   const addLabel = t('addItem', { item: field.row_name ?? field.label ?? field.key })
   const tabular = props.compact && columns.length > 1 && !field.item_collapsible && !field.item_fields && !props.renderItem
-  const renderActions = (id: string, index: number, open: boolean) => props.editable ? <div className="dsh-record-map-actions dsh-design-record-actions dsh-panel-record-actions">
-    {field.order_field ? <><button type="button" aria-label={`${t('moveUp')} ${index + 1}`} disabled={index === 0}
-      onClick={event => { event.preventDefault(); emit(items, moveRecordMapItem(ids, id, -1)) }}><ArrowUp size={16} aria-hidden="true" /></button>
-    <button type="button" aria-label={`${t('moveDown')} ${index + 1}`} disabled={index === ids.length - 1}
-      onClick={event => { event.preventDefault(); emit(items, moveRecordMapItem(ids, id, 1)) }}><ArrowDown size={16} aria-hidden="true" /></button></> : null}
-    <button type="button" aria-label={t('remove', { item: `${field.row_name ?? field.label} ${index + 1}` })} onClick={event => {
-      event.preventDefault()
+  const renderActions = (id: string, index: number, open: boolean) => props.editable ? <PanelCollectionActions
+    className="dsh-record-map-actions dsh-panel-record-actions" label={`${field.row_name ?? field.label} ${index + 1}`}
+    first={index === 0} last={index === ids.length - 1}
+    onMove={field.order_field ? delta => emit(items, moveRecordMapItem(ids, id, delta)) : undefined}
+    onRemove={() => {
       const next = { ...items }; delete next[id]; const order = ids.filter(key => key !== id); emit(next, order)
       if (open) setExpanded(order[0] ?? null)
-    }}><Trash2 size={16} aria-hidden="true" /></button>
-  </div> : null
+    }} /> : null
   const renderColumn = (column: NonNullable<EditorField['columns']>[number], id: string, index: number) => {
     const text = String(items[id]![column.key] ?? '')
     const change = (text: string) => emit({ ...items, [id]: { ...items[id], [column.key]: column.format === 'upper_identifier' ? text.toUpperCase().replace(/[^A-Z0-9_]/g, '_') : text } })
@@ -59,11 +57,24 @@ export function RecordMap(props: { field: EditorField; record: Record<string, un
         </tr>)}</tbody>
       </table>
     </div> : ids.map((id, index) => {
-      const label = field.item_label_field && typeof items[id]![field.item_label_field] === 'string' && items[id]![field.item_label_field]
-        ? String(items[id]![field.item_label_field]) : `${field.row_name ?? field.label ?? field.key} ${index + 1}`
+      const declaredTitle = field.item_fields?.find(child => child.key === field.item_label_field)
+      const titleField = declaredTitle?.control === 'text' && declaredTitle.key !== field.id_field
+        && !declaredTitle.hidden && fieldIsVisible(declaredTitle, items[id]!) ? declaredTitle : undefined
+      const labelVisible = !declaredTitle || (!declaredTitle.hidden && fieldIsVisible(declaredTitle, items[id]!))
+      const fallbackLabel = `${field.row_name ?? field.label ?? field.key} ${index + 1}`
+      const label = labelVisible && field.item_label_field && typeof items[id]![field.item_label_field] === 'string' && items[id]![field.item_label_field]
+        ? String(items[id]![field.item_label_field]) : fallbackLabel
+      const title = titleField && props.editable && !titleField.readonly ? <PanelEditableTitle
+        aria-label={`${fieldDisplayLabel(titleField, items[id]!)} ${index + 1}`}
+        aria-required={titleField.required || undefined}
+        size={Math.min(50, Math.max(8, String(items[id]![titleField.key] ?? titleField.placeholder ?? '').length))}
+        maxLength={titleField.max_length} placeholder={titleField.placeholder ?? fallbackLabel}
+        type={titleField.input_type ?? 'text'} value={String(items[id]![titleField.key] ?? '')}
+        onChange={event => emit({ ...items, [id]: applyRecordFieldEdit(recordMapItemManifest(field), 'items', items[id]!, titleField.key, event.target.value) })}
+      /> : label
       const open = !field.item_collapsible || (expanded === undefined ? ids[0] : expanded) === id
       const content = [
-        ...Children.toArray(field.item_fields ? props.renderItem?.(id, items[id]!, next => emit({ ...items, [id]: next })) : null),
+        ...Children.toArray(field.item_fields ? props.renderItem?.(id, items[id]!, next => emit({ ...items, [id]: next }), titleField?.key) : null),
         ...columns.map(column => <label key={column.key}><span><PanelFieldCaption label={column.label} required={column.required} /></span>{renderColumn(column, id, index)}</label>),
       ]
       const cardClass = `dsh-panel-record-action-context${props.compact ? '' : ' dsh-panel-content-card'}${props.editable ? ' is-editing' : ''}`
@@ -78,14 +89,14 @@ export function RecordMap(props: { field: EditorField; record: Record<string, un
           })
         }}>
         <summary className="dsh-record-map-heading dsh-panel-disclosure">
-          <span className="dsh-panel-disclosure-label">{label}</span>
+          <span className="dsh-panel-disclosure-label">{title}</span>
           {renderActions(id, index, open)}
           <PanelDisclosureIcon expanded={false} />
         </summary>
         {props.compact ? content : content.length > 0 ? <div className="dsh-record-map-body">{content}</div> : null}
       </details>
       return <section key={id} data-child-record={id} className={cardClass}>
-      <header><strong>{props.compact ? `${index + 1}.` : label}</strong>
+      <header>{titleField ? <span className="dsh-record-map-heading">{title}</span> : <strong>{props.compact ? `${index + 1}.` : label}</strong>}
         {renderActions(id, index, open)}</header>
       {props.compact ? content : content.length > 0 ? <div className="dsh-record-map-body">{content}</div> : null}
     </section>})}

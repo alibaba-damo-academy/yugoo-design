@@ -1,5 +1,11 @@
 # business_data output contract
 
+## Record IDs
+
+For new business objects prefer `BO-001`, `BO-002`, and so on; new object relations use `REL-001`, `REL-002`. Object fields, local state keys and enum values are outside this numbering convention.
+
+Existing IDs, including older formats, remain valid during ordinary edits and reconstruction. If the user explicitly requests business renumbering, revise actual record keys/IDs and current references/orders together through their existing owners; keep technical IDs and history unchanged. Names and titles remain readable content, separate from identity.
+
 For canvas generation or revision, read [the canvas guide](canvas-guide.md).
 It supplements the existing methods and output contract; it applies to both
 new design and reconstruction without replacing domain-specific rules.
@@ -26,6 +32,14 @@ design change. Preserve unaffected saved vocabulary and IDs; explain conflicts
 with user decisions instead of silently importing a new database-shaped model.
 Check the result against a concrete source-backed usage situation, separately
 from schema validation.
+
+Preserve the source's distinction between a replaceable current value and
+business submissions or decisions that users must revisit individually. A single
+current text or accumulated reason list does not represent every prior submission.
+Keep impact assessments, human decisions and current states distinguishable;
+facts that can coexist must not become exclusive merely through the chosen value
+form. These are fidelity checks, not required history objects, fields or statuses
+for every product.
 
 Canonical state is `business_data/business_data.json`. This contract is shared
 by ordinary design, saved-panel continuation and reconstruction. Read it through
@@ -94,6 +108,16 @@ For “project references paper”, `target_count` describes papers per project;
 sentences rather than symbols. A same-type association can be valid
 (e.g. task depends on task); do not apply inheritance restrictions to it.
 
+Check an asymmetric case before writing the quantities. In the synthetic
+example, a paper can have no notes or several notes; each note belongs to
+exactly one paper. For `source: paper`, `target: note`, write
+`source_count: "1"`, `target_count: "0..*"`. Read it back in both directions:
+one note has one paper; one paper has zero or more notes. Reversing those values
+would allow one note to belong to several papers while limiting each paper to
+one note. The quantity field names identify the end being counted, not the
+starting point of the sentence. Neither this example nor a single observed
+record establishes quantities for the user's design.
+
 Generalization connects subtype `source` to parent `target` and contains
 no quantity fields. It means “an experimental project is a kind of project”.
 It does not mean “a project contains an experimental project”, a concrete
@@ -137,8 +161,9 @@ including unknown quantities, instead of inferring unsupported inheritance.
 
 ## Example and checks
 
-Read [the complete example](example.json): Project, Experimental Project and
-Paper, including inheritance and a many-to-many association. It is not a
+Read [the complete example](example.json): Project, Experimental Project,
+Paper and Note, including inheritance, many-to-many and asymmetric one-to-many
+associations. It is not a
 proposal for the user's scope.
 
 Validate shape, map-key identity, object order, endpoint resolution, absence

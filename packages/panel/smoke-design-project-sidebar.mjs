@@ -45,6 +45,19 @@ globalThis.Node = dom.window.Node
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 const root = createRoot(document.querySelector('#root'))
 const commands = []
+let trigger = { left: 16, right: 176, bottom: 64 }
+let popup = { width: 360, height: 420 }
+let observedResize
+let observerDisconnected = false
+globalThis.ResizeObserver = class {
+  constructor(callback) { observedResize = callback }
+  observe() {}
+  disconnect() { observerDisconnected = true }
+}
+dom.window.HTMLElement.prototype.getBoundingClientRect = function () {
+  return this.classList.contains('dsh-project-catalog') ? popup : trigger
+}
+Object.assign(window, { innerWidth: 1280, innerHeight: 800 })
 try {
   for (const [language, title, action] of [['en-US', 'Kit', 'Select kit'], ['zh-CN', '设计套件', '选择设计套件']]) {
     Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { language } })
@@ -72,8 +85,25 @@ try {
   }
   assert.deepEqual(commands, ['/yugoo kit web_app', '/yugoo migrate /old', '/yugoo kit web_app', '/yugoo migrate /old'],
     'Kit selection and bilingual migration use the canonical Host commands')
+  const catalogStyle = () => document.querySelector('.dsh-project-catalog').style
+  assert.equal(catalogStyle().top, '8px', 'a top sidebar trigger keeps the catalog header onscreen')
+  assert.equal(catalogStyle().left, '184px')
+  assert.equal(catalogStyle().bottom, '', 'top positioning replaces the legacy bottom anchor')
+  trigger = { left: 16, right: 176, bottom: 784 }
+  await act(async () => window.dispatchEvent(new window.Event('resize')))
+  assert.equal(catalogStyle().top, '364px', 'a bottom sidebar trigger retains bottom alignment')
+  popup = { width: 360, height: 500 }
+  await act(async () => observedResize())
+  assert.equal(catalogStyle().top, '284px', 'catalog growth repositions its header')
+  Object.assign(window, { innerWidth: 390, innerHeight: 700 })
+  trigger = { left: 16, right: 176, bottom: 64 }
+  await act(async () => window.dispatchEvent(new window.Event('resize')))
+  assert.equal(catalogStyle().left, '22px', 'narrow viewports keep the right edge visible')
+  assert.equal(catalogStyle().top, '8px')
 } finally {
   await act(async () => root.unmount())
+  assert.ok(observerDisconnected, 'unmount releases the catalog observer')
+  delete globalThis.ResizeObserver
   dom.window.close()
 }
 

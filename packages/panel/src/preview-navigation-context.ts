@@ -18,13 +18,18 @@ export function validatePreviewNavigationContext(value: unknown): PreviewNavigat
   return Object.freeze(result)
 }
 
+/** DOM-independent bootstrap shared by interactive and offline projections. */
+export function previewNavigationContextDataMarkup(value?: PreviewNavigationContext): string {
+  if (value === undefined) return ''
+  const context = validatePreviewNavigationContext(value)
+  return `<script type="application/json" id="${PREVIEW_CONTEXT_ELEMENT_ID}">${JSON.stringify(context).replace(/</g, '\\u003c')}</script>`
+}
+
 /** Reserved host bootstrap data is never executable artifact-owned markup. */
 export function previewNavigationContextMarkup(html: string, value?: PreviewNavigationContext): string {
   const document = new DOMParser().parseFromString(html, 'text/html')
   const hasReservedId = (root: ParentNode): boolean => Array.from(root.querySelectorAll('[id],template')).some(element =>
     element.id === PREVIEW_CONTEXT_ELEMENT_ID || element.tagName === 'TEMPLATE' && hasReservedId((element as HTMLTemplateElement).content))
   if (hasReservedId(document)) throw new Error(`Preview artifact uses reserved id: ${PREVIEW_CONTEXT_ELEMENT_ID}`)
-  if (value === undefined) return ''
-  const context = validatePreviewNavigationContext(value)
-  return `<script type="application/json" id="${PREVIEW_CONTEXT_ELEMENT_ID}">${JSON.stringify(context).replace(/</g, '\\u003c')}</script>`
+  return previewNavigationContextDataMarkup(value)
 }

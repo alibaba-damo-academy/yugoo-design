@@ -129,6 +129,46 @@ const fileCandidate = run(validateScript, ['validate-bpmn-file'], `${JSON.string
 assert.equal(fileCandidate.status, 0, fileCandidate.stdout || fileCandidate.stderr)
 assert.deepEqual(JSON.parse(fileCandidate.stdout), { valid: true, diagnostics: [] })
 
+const annotation = `<bpmn:textAnnotation id="TextAnnotation_P-001_1"><bpmn:text>Preserve the request wording.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_P-001_1" sourceRef="UserTask_P-001_1" targetRef="TextAnnotation_P-001_1" />`
+const withAnnotation = content => content.replace('</bpmn:process>', `${annotation}</bpmn:process>`)
+for (const candidate of [withAnnotation(xml), withAnnotation(xml).replaceAll('"', "'")]) {
+  const result = run(validateScript, ['validate-bpmn-file'], `${JSON.stringify({ process_id: 'P-001', process: processRecord })}\n${candidate}`)
+  assert.equal(result.status, 0, result.stdout || result.stderr)
+  assert.deepEqual(JSON.parse(result.stdout), { valid: true, diagnostics: [] }, 'annotation associations are not sequence-flow endpoints, including valid single-quoted XML')
+}
+const missingEndpoint = content => content.replace('targetRef="UserTask_P-001_1"', 'targetRef="Missing_P-001_node"')
+const brokenSequence = run(validateScript, ['validate-bpmn-file'], `${JSON.stringify({ process_id: 'P-001', process: processRecord })}\n${missingEndpoint(xml)}`)
+assert.equal(brokenSequence.status, 1)
+assert.match(JSON.parse(brokenSequence.stdout).diagnostics.join('\n'), /Undeclared ids referenced by flows: Missing_P-001_node/)
+
+// Exact bindings may be repeated in another process. Unmapped user text is
+// retained and reported, while two supplements for one live element are
+// rejected rather than allowing the diagram to select an arbitrary record.
+const supplements = {
+  submit: { process_ref: 'P-001', bpmn_element_ref: 'UserTask_P-001_1', activity: 'Retain the request until it is saved.', remarks: 'Saved user text' },
+  other: { process_ref: 'P-002', bpmn_element_ref: 'UserTask_P-001_1', activity: 'Different process' },
+}
+const supplementInput = nodes => `${JSON.stringify({ process_id: 'P-001', process: processRecord, roles: state.roles, nodes })}\n${xml}`
+const beforeSupplements = JSON.stringify(supplements)
+const mapped = run(validateScript, ['validate-bpmn-file'], supplementInput(supplements))
+assert.equal(mapped.status, 0, mapped.stdout || mapped.stderr)
+assert.deepEqual(JSON.parse(mapped.stdout), { valid: true, diagnostics: [], unmapped_nodes: [] })
+const retained = { ...supplements, orphan: { process_ref: 'P-001', bpmn_element_ref: 'Removed_P-001_1', activity: 'Do not delete this saved explanation.' } }
+const orphan = run(validateScript, ['validate-bpmn-file'], supplementInput(retained))
+assert.equal(orphan.status, 0, orphan.stdout || orphan.stderr)
+assert.deepEqual(JSON.parse(orphan.stdout).unmapped_nodes, ['orphan'])
+assert.equal(retained.orphan.activity, 'Do not delete this saved explanation.')
+const duplicate = run(validateScript, ['validate-bpmn-file'], supplementInput({ ...supplements, duplicate: { ...supplements.submit } }))
+assert.equal(duplicate.status, 1, duplicate.stdout || duplicate.stderr)
+assert.match(JSON.parse(duplicate.stdout).diagnostics.join('\n'), /ambiguous_node_binding.*submit.*duplicate/)
+assert.equal(JSON.stringify(supplements), beforeSupplements)
+const malformedNodes = run(validateScript, ['validate-bpmn-file'], supplementInput([]))
+assert.equal(malformedNodes.status, 2)
+assert.match(malformedNodes.stderr, /nodes must be a JSON object/)
+console.log('Flow node mapping OK: process-scoped identity, ambiguous bindings rejected, orphan text retained')
+if (process.argv.includes('--node-supplements-only')) process.exit(0)
+
 const laidOut = run(layoutScript, [], xml)
 assert.equal(laidOut.status, 0, laidOut.stderr)
 assert.match(laidOut.stdout, /<bpmndi:BPMNDiagram/)
@@ -141,6 +181,33 @@ const fileFinal = run(validateScript, ['validate-final-bpmn-file'], `${JSON.stri
 })}\n${laidOut.stdout}`)
 assert.equal(fileFinal.status, 0, fileFinal.stdout || fileFinal.stderr)
 assert.deepEqual(JSON.parse(fileFinal.stdout), { valid: true, diagnostics: [] })
+
+const annotatedFinal = withAnnotation(laidOut.stdout).replace('</bpmndi:BPMNPlane>', `<bpmndi:BPMNShape id="AnnotationShape_P-001_1" bpmnElement="TextAnnotation_P-001_1"><dc:Bounds x="100" y="100" width="100" height="50" /></bpmndi:BPMNShape>
+  <bpmndi:BPMNEdge id="AnnotationLink_P-001_1" bpmnElement="Association_P-001_1"><di:waypoint x="100" y="100" /><di:waypoint x="160" y="160" /></bpmndi:BPMNEdge></bpmndi:BPMNPlane>`)
+const acceptedAnnotation = run(validateScript, ['validate-final-bpmn-file'], `${JSON.stringify({ process_id: 'P-001', process: processRecord })}\n${annotatedFinal}`)
+assert.equal(acceptedAnnotation.status, 0, acceptedAnnotation.stdout || acceptedAnnotation.stderr)
+assert.deepEqual(JSON.parse(acceptedAnnotation.stdout), { valid: true, diagnostics: [] }, 'a valid annotation may have its own edge id and a diagonal association')
+const brokenFinalSequence = run(validateScript, ['validate-final-bpmn-file'], `${JSON.stringify({ process_id: 'P-001', process: processRecord })}\n${missingEndpoint(annotatedFinal)}`)
+assert.equal(brokenFinalSequence.status, 1)
+assert.match(JSON.parse(brokenFinalSequence.stdout).diagnostics.join('\n'), /Undeclared ids referenced by flows: Missing_P-001_node/)
+console.log('Flow endpoint ownership OK: annotation associations accepted, real sequence-flow dangling endpoints rejected')
+
+// A local wording edit keeps the valid diagram and semantic identities. It must
+// use the final-file route, not discard DI or rebuild the process to satisfy the
+// new-candidate validator.
+const revisedFinal = laidOut.stdout.replace('name="提交订单"', 'name="提交申请"')
+assert.notEqual(revisedFinal, laidOut.stdout)
+const ids = content => [...content.matchAll(/\bid="([^"]+)"/g)].map(match => match[1])
+assert.deepEqual(ids(revisedFinal), ids(laidOut.stdout))
+const revisedResult = run(validateScript, ['validate-final-bpmn-file'], `${JSON.stringify({
+  process_id: 'P-001', process: processRecord, roles: state.roles,
+})}\n${revisedFinal}`)
+assert.equal(revisedResult.status, 0, revisedResult.stdout || revisedResult.stderr)
+assert.deepEqual(JSON.parse(revisedResult.stdout), { valid: true, diagnostics: [] })
+const wrongRoute = run(validateScript, ['validate-bpmn-file'], `${JSON.stringify({
+  process_id: 'P-001', process: processRecord, roles: state.roles,
+})}\n${revisedFinal}`)
+assert.notEqual(wrongRoute.status, 0, 'structure-only input still rejects existing DI')
 
 // Use the actual normal package builder; source-only success misses relocated
 // bare-package resolution guards left behind after imports are bundled.

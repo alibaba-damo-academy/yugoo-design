@@ -2,17 +2,25 @@ import assert from 'node:assert/strict'
 import { readFile, writeFile, mkdtemp, mkdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { spawnSync } from 'node:child_process'
+import { execFile, spawnSync } from 'node:child_process'
+import { createServer } from 'node:http'
 import { pathToFileURL } from 'node:url'
+import { createHash } from 'node:crypto'
+import { buildPrdScript } from '../build.mjs'
 
 // Isolated dependency-boundary regression, not browser/visual acceptance.
 async function dependencyBoundary() {
   const root = await mkdtemp(join(tmpdir(), 'prd-renderer-dependencies-'))
   try {
-    const renderer = join(root, 'visual-renderer.mjs')
+    const scriptRoot = join(root, 'scripts')
+    await mkdir(scriptRoot)
+    const renderer = join(scriptRoot, 'visual-renderer.mjs')
     await writeFile(renderer, await readFile(new URL('../bundles/web_app_prd_assembly/scripts/visual-renderer.mjs', import.meta.url)))
-    const prd = join(root, 'prd.mjs')
-    await writeFile(prd, await readFile(new URL('../bundles/web_app_prd_assembly/scripts/prd.mjs', import.meta.url)))
+    const prd = join(scriptRoot, 'prd.mjs')
+    await buildPrdScript(new URL('../bundles/web_app_prd_assembly/scripts/prd.mjs', import.meta.url).pathname, scriptRoot)
+    // The relocated script retains its complete Bundle-relative template.
+    await mkdir(join(root, 'reference'))
+    await writeFile(join(root, 'reference/prd-template.html'), await readFile(new URL('../bundles/web_app_prd_assembly/reference/prd-template.html', import.meta.url)))
     const validation = spawnSync(process.execPath, [prd, 'validate-html-file'], {
       cwd: root, input: '{}\n', encoding: 'utf8', timeout: 10000,
       env: { PATH: process.env.PATH, NODE_PATH: '', NODE_OPTIONS: '' },
@@ -24,6 +32,14 @@ async function dependencyBoundary() {
     const diagnostics = JSON.parse(validation.stdout)
     assert.equal(diagnostics.valid, false)
     assert.ok(diagnostics.diagnostics.includes('schema_version must equal 8'))
+    await rm(join(root, 'reference/prd-template.html'))
+    const missingTemplate = spawnSync(process.execPath, [prd, 'validate-html-file'], {
+      cwd: root, input: '{}\n', encoding: 'utf8', timeout: 10000,
+      env: { PATH: process.env.PATH, NODE_PATH: '', NODE_OPTIONS: '' },
+    })
+    assert.equal(missingTemplate.status, 1)
+    assert.equal(missingTemplate.stderr, '')
+    assert.match(JSON.parse(missingTemplate.stdout).diagnostics.join('\n'), /cannot read Bundle resource reference\/prd-template\.html/)
     const check = source => {
       const result = spawnSync(process.execPath, ['--input-type=module', '-e', source], {
         cwd: root, encoding: 'utf8', timeout: 10000,
@@ -38,7 +54,7 @@ async function dependencyBoundary() {
       assert.equal(BPMN_RENDERER,'bpmn-js@18.24.0');
       assert.deepEqual(PAGE_VIEWPORT,{width:1440,height:900,deviceScaleFactor:1});`
     check(`${setup}
-      assert.deepEqual(await renderPrdVisuals({bpmnItems:[],htmlItems:[]}),{bpmnSvgs:[],htmlScreenshots:[]});
+      assert.deepEqual(await renderPrdVisuals({bpmnItems:[],htmlItems:[]}),{bpmnSvgs:[],htmlScreenshots:[],whiteboardImages:[]});
       await assert.rejects(renderPrdVisuals({bpmnItems:[{path:'flow.bpmn',content:'unused'}],htmlItems:[]}),
         error=>error.code==='MODULE_NOT_FOUND'&&error.message.includes('bpmn-js/'));
       await assert.rejects(renderPrdVisuals({bpmnItems:[],htmlItems:[{path:'page.html',ownerHtml:'unused'}]}),
@@ -50,25 +66,74 @@ async function dependencyBoundary() {
     await writeFile(join(playwright, 'package.json'), JSON.stringify({ name:'playwright', type:'module', exports:'./index.mjs' }))
     await writeFile(join(playwright, 'index.mjs'), `import assert from 'node:assert/strict';
       export const events=[];
+      export const launchFailures=[];
       export const chromium={launch:async options=>{
-        events.push('launch');
-        assert.deepEqual(options,{headless:true});
+        events.push(options.channel ? 'launch:'+options.channel : 'launch');
+        assert.deepEqual(options,{headless:true,...(options.channel ? {channel:options.channel} : {})});
+        assert.ok(!options.channel || ['chrome','msedge'].includes(options.channel));
+        const failure=launchFailures.shift();
+        if(failure) throw new Error(failure);
         return {newPage:()=>assert.fail('HTML-only must not open BPMN page'),
           newContext:async options=>{
-            assert.deepEqual(options,{javaScriptEnabled:false,viewport:{width:1440,height:900},deviceScaleFactor:1});
+            assert.deepEqual(options,{javaScriptEnabled:true,viewport:{width:1440,height:900},deviceScaleFactor:1});
             return {route:async(pattern,handler)=>{assert.equal(pattern,'**/*');handler({abort:()=>events.push('abort')});},
               newPage:async()=>({setContent:async(html,options)=>{assert.equal(html,'<h1>Original owner</h1>');assert.deepEqual(options,{waitUntil:'load'});events.push('content');},
-                screenshot:async options=>{assert.deepEqual(options,{type:'png',fullPage:false,animations:'disabled'});events.push('screenshot');return Buffer.from('synthetic');}}),
+                evaluate:async()=>900,
+                screenshot:async options=>{assert.deepEqual(options,{type:'png',fullPage:true,animations:'disabled'});events.push('screenshot');return Buffer.from('synthetic');},close:async()=>events.push('page-close')}),
               close:async()=>events.push('context-close')};},
           close:async()=>events.push('browser-close')};}};`)
     check(`${setup}
       const {events}=await import('playwright');
       assert.deepEqual(await renderPrdVisuals({bpmnItems:[],htmlItems:[{path:'page.html',ownerHtml:'<h1>Original owner</h1>'}]}),
-        {bpmnSvgs:[],htmlScreenshots:['data:image/png;base64,c3ludGhldGlj']});
-      assert.deepEqual(events,['launch','abort','content','screenshot','context-close','browser-close']);
+        {bpmnSvgs:[],htmlScreenshots:['data:image/png;base64,c3ludGhldGlj'],whiteboardImages:[]});
+      assert.deepEqual(events,['launch','abort','content','screenshot','page-close','context-close','browser-close']);
       await assert.rejects(renderPrdVisuals({bpmnItems:[{path:'flow.bpmn',content:'unused'}],htmlItems:[]}),
         error=>error.code==='MODULE_NOT_FOUND'&&error.message.includes('bpmn-js/'));
-      assert.equal(events.length,6,'Missing BPMN must fail before browser launch');`)
+      assert.equal(events.length,7,'Missing BPMN must fail before browser launch');`)
+    check(`${setup}
+      const {events,launchFailures}=await import('playwright');
+      const input={bpmnItems:[],htmlItems:[{path:'page.html',ownerHtml:'<h1>Original owner</h1>'}]};
+      const missingChromium="browserType.launch: Executable doesn't exist at /missing/cache/chromium-headless-shell\\nInstall instructions";
+      const missingChrome="browserType.launch: Chromium distribution 'chrome' is not found at /missing/google-chrome\\nInstall instructions";
+      const missingEdge="Chromium distribution 'msedge' is not found at /missing/msedge";
+      const rendered=['abort','content','screenshot','page-close','context-close','browser-close'];
+      launchFailures.push(missingChromium);
+      await renderPrdVisuals(input);
+      assert.deepEqual(events,['launch','launch:chrome',...rendered]);
+      events.length=0;
+      launchFailures.push(missingChromium,missingChrome);
+      await renderPrdVisuals(input);
+      assert.deepEqual(events,['launch','launch:chrome','launch:msedge',...rendered]);
+      events.length=0;
+      launchFailures.push(missingChromium,missingChrome,missingEdge);
+      await assert.rejects(renderPrdVisuals(input),error=>{
+        assert.match(error.message,/No executable was found for Playwright Chromium, installed Chrome or installed Microsoft Edge/);
+        for(const text of [missingChromium,missingChrome,missingEdge]) assert.ok(error.message.includes(text));
+        assert.match(error.message,/No browser was installed or downloaded/);
+        return true;
+      });
+      assert.deepEqual(events,['launch','launch:chrome','launch:msedge']);
+      for(const failure of ['browserType.launch: Target page, context or browser has been closed',
+          'browserType.launch: spawn /opt/chrome EACCES',
+          'browserType.launch: error while loading shared libraries: libnss3.so',
+          'browserType.launch: Unsupported chromium channel "chrome"',
+          "browserType.launch: crashed; log: Executable doesn't exist at /unrelated"]) {
+        events.length=0;
+        launchFailures.push(failure);
+        await assert.rejects(renderPrdVisuals(input),error=>error.cause.message===failure);
+        assert.deepEqual(events,['launch'],'Other launch errors must not try another channel');
+      }
+      events.length=0;
+      const chromeCrash='browserType.launch: installed Chrome process exited with SIGSEGV';
+      launchFailures.push(missingChromium,chromeCrash);
+      await assert.rejects(renderPrdVisuals(input),error=>error.cause.message===chromeCrash);
+      assert.deepEqual(events,['launch','launch:chrome'],'Chrome failure must not be hidden by Edge');`)
+    await mkdir(join(scriptRoot, 'assets'), { recursive: true })
+    await writeFile(join(scriptRoot, 'assets/bpmn-viewer.js'), '/* synthetic bundled asset */')
+    await writeFile(join(scriptRoot, 'assets/bpmn-presentation.json'), '{}')
+    check(`${setup}
+      await assert.rejects(renderPrdVisuals({bpmnItems:[],htmlItems:[{path:'page.html',ownerHtml:'unused'}]}),
+        /Packaged browser runtime is missing/);`)
     console.log('PRD renderer dependency boundary OK (HTML transport synthetic; no browser acceptance)')
   } finally {
     await rm(root, { recursive: true, force: true })
@@ -79,12 +144,159 @@ if (process.argv.includes('--dependency-only')) {
   process.exit(0)
 }
 
-const script = new URL('../bundles/web_app_prd_assembly/scripts/prd.mjs', import.meta.url)
-const template = await readFile(new URL('../bundles/web_app_prd_assembly/reference/prd-template.html', import.meta.url), 'utf8')
+const testBundleRoot = process.env.YUGOO_PRD_TEST_BUNDLE_ROOT
+const script = testBundleRoot ? pathToFileURL(join(testBundleRoot, 'scripts/prd.mjs')) : new URL('../bundles/web_app_prd_assembly/scripts/prd.mjs', import.meta.url)
+const template = await readFile(testBundleRoot ? join(testBundleRoot, 'reference/prd-template.html') : new URL('../bundles/web_app_prd_assembly/reference/prd-template.html', import.meta.url), 'utf8')
 
 function run(action, html, context) {
   const result = spawnSync(process.execPath, [script.pathname, action], { input: `${JSON.stringify(context)}\n${html}`, encoding: 'utf8', maxBuffer: 128 * 1024 * 1024 })
   return { ...result, output: action === 'validate-html-file' || result.status !== 0 ? JSON.parse(result.stdout) : result.stdout }
+}
+
+async function htmlInitializationBoundary() {
+  const root = await mkdtemp(join(tmpdir(), 'prd-html-initialization-'))
+  const requests = []
+  const server = createServer((request, response) => {
+    requests.push(request.url)
+    response.end('window.remoteOwnerScriptRan = true')
+  })
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+  try {
+    const remote = `http://127.0.0.1:${server.address().port}/owner-resource`
+    const local = join(root, 'local-canary.txt')
+    await writeFile(local, 'LOCAL_FILE_MUST_NOT_ENTER_THE_PREVIEW')
+    const rows = ['Request submitted', 'Lead returned with a reason', 'Revised request resubmitted']
+    const body = label => `<main id="timeline"><h1 data-prototype-id="context-first">${label}</h1><ol data-prototype-id="context-second">${rows.map(row => `<li>${row}</li>`).join('')}</ol></main>`
+    const document = (label, dynamic, contextual = false) => `<!doctype html><html><head><style>
+      body{margin:0;background:#fff;font:24px sans-serif;color:var(--ds-primary)}
+      main{padding:32px}li{padding:12px}
+      </style></head><body>${dynamic ? '<main id="timeline"></main>' : body(label)}${dynamic ? `
+      <script src="${remote}"></script><script>
+      const ownerLabel = ${contextual ? `JSON.parse(document.getElementById('dsh-design-preview-context')?.textContent || '{}').selection || 'No selection'` : JSON.stringify(label)};
+      (async () => {
+        const previousOwner = window.previousOwner;
+        window.previousOwner = ownerLabel;
+        const reads = await Promise.allSettled([fetch(${JSON.stringify(remote)}), fetch(${JSON.stringify(pathToFileURL(local).href)})]);
+        if (previousOwner !== undefined || window.remoteOwnerScriptRan || reads.some(read => read.status === 'fulfilled')) {
+          document.body.style.background = '#ff00ff';
+          return;
+        }
+        document.getElementById('timeline').outerHTML = ${JSON.stringify(body(label))};
+        document.getElementById('timeline').querySelector('h1').textContent = ownerLabel;
+      })();
+      </script>` : ''}</body></html>`
+    const paths = ['page_design/pages/request-detail.html', 'page_design/pages/another-request.html']
+    const labels = ['Request Detail', 'Another Request']
+    const sources = dynamic => ({
+      'page_design/page_design.json': JSON.stringify({ pages: Object.fromEntries(paths.map((path, index) =>
+        [`page-${index}`, { id: `page-${index}`, name: labels[index], artifact_file: path }])), page_order: ['page-0', 'page-1'] }),
+      'design_style/tokens.css': ':root{--ds-primary:#243c34}',
+      ...Object.fromEntries(paths.map((path, index) => [path, document(labels[index], dynamic)])),
+    })
+    const regions = [...new Set([...template.matchAll(/<!--\s*prd-visual:([A-Za-z0-9_-]+):start\s*-->/gu)].map(match => match[1]))]
+    const skeleton = `<!doctype html><html><body>${regions.map(name => `<!-- prd-visual:${name}:start -->${name === 'all_page_prototypes'
+      ? paths.map(path => `<!-- prd-visual-item:${path}:start --><!-- prd-visual-item:${path}:end -->`).join('') : ''}<!-- prd-visual:${name}:end -->`).join('')}</body></html>`
+    const materialize = input_files => new Promise((resolve, reject) => {
+      const child = execFile(process.execPath, [script.pathname, 'materialize-visuals'], { maxBuffer: 8 * 1024 * 1024 }, (error, stdout, stderr) => {
+        if (error) reject(new Error(`${error.message}\n${stderr}\n${stdout.slice(0, 1500)}`))
+        else resolve(stdout)
+      })
+      child.stdin.end(`${JSON.stringify({ input_files })}\n${skeleton}`)
+    })
+    const images = html => new Map([...html.matchAll(/<figure\b([^>]*)>([\s\S]*?)<\/figure>/giu)].flatMap(match => {
+      const path = /data-prd-source-ref="([^"]+)"/u.exec(match[1])?.[1]
+      const png = /src="(data:image\/png;base64,[^"]+)"/u.exec(match[2])?.[1]
+      return path && png ? [[path, png]] : []
+    }))
+    const expected = images(await materialize(sources(false)))
+    const initialized = images(await materialize(sources(true)))
+    assert.equal(expected.size, 2)
+    assert.equal(initialized.size, 2)
+    for (const [index, path] of paths.entries()) {
+      const actual = initialized.get(path), control = expected.get(path)
+      if (process.env.YUGOO_PRD_TEST_OUTPUT_DIR) {
+        await mkdir(process.env.YUGOO_PRD_TEST_OUTPUT_DIR, { recursive: true })
+        await writeFile(join(process.env.YUGOO_PRD_TEST_OUTPUT_DIR, `initialized-${index + 1}.png`), Buffer.from(actual.split(',')[1], 'base64'))
+        await writeFile(join(process.env.YUGOO_PRD_TEST_OUTPUT_DIR, `expected-${index + 1}.png`), Buffer.from(control.split(',')[1], 'base64'))
+      }
+      assert.ok(actual === control, `${path}: initialized DOM must enter the PNG in a fresh page (actual ${createHash('sha256').update(actual).digest('hex')}, expected ${createHash('sha256').update(control).digest('hex')})`)
+    }
+    const contextual = sources(true)
+    contextual[paths[0]] = document(labels[0], true, true)
+    const pageIndex = JSON.parse(contextual['page_design/page_design.json'])
+    pageIndex.connections = Object.fromEntries(labels.map((label, index) => [`choice-${index}`, {
+      source_page_id: 'page-1', target_page_id: 'page-0', label,
+      source_element_id: index === 0 ? 'context-first' : 'context-second', preview_context: { selection: label },
+    }]))
+    pageIndex.connection_order = ['choice-0', 'choice-1']
+    contextual['page_design/page_design.json'] = JSON.stringify(pageIndex)
+    const firstProjection = await materialize(contextual)
+    assert.equal(images(firstProjection).get(paths[0]), expected.get(paths[0]), 'canonical first arrival initializes the target before owner JS')
+    assert.ok(firstProjection.includes(`data-prd-source-dependencies="design_style/tokens.css,page_design/page_design.json"`))
+    pageIndex.connection_order.reverse()
+    contextual['page_design/page_design.json'] = JSON.stringify(pageIndex)
+    const secondProjection = await materialize(contextual)
+    if (process.env.YUGOO_PRD_TEST_OUTPUT_DIR) {
+      await writeFile(join(process.env.YUGOO_PRD_TEST_OUTPUT_DIR, 'context-second-actual.png'), Buffer.from(images(secondProjection).get(paths[0]).split(',')[1], 'base64'))
+      await writeFile(join(process.env.YUGOO_PRD_TEST_OUTPUT_DIR, 'context-second-expected.png'), Buffer.from(expected.get(paths[1]).split(',')[1], 'base64'))
+    }
+    assert.ok(images(secondProjection).get(paths[0]) === expected.get(paths[1]), 'changing canonical arrival selects the other existing content without changing owner HTML')
+    const sourceDigest = html => new RegExp(`data-prd-source-ref="${paths[0]}" data-prd-source-digest="([^"]+)"`).exec(html)?.[1]
+    assert.notEqual(sourceDigest(firstProjection), sourceDigest(secondProjection), 'context-only changes invalidate the old figure input digest')
+    pageIndex.connections['choice-1'].preview_context = { selection: {} }
+    contextual['page_design/page_design.json'] = JSON.stringify(pageIndex)
+    await assert.rejects(materialize(contextual), /Invalid preview navigation context/)
+
+    const longSources = sources(false)
+    longSources[paths[0]] = '<!doctype html><html><head><style>body{margin:0}main{height:2200px}footer{height:100px;background:rgb(17,204,85)}</style></head><body><aside style="position:fixed;top:0;bottom:0;left:0;width:64px;background:rgb(36,72,108)"><div style="position:absolute;bottom:0;height:32px;width:100%;background:rgb(255,170,0)">Nav end</div></aside><main>Long request history</main><footer>END OF LONG PAGE</footer></body></html>'
+    const longProjection = await materialize(longSources)
+    const longImage = images(longProjection).get(paths[0])
+    const png = Buffer.from(longImage.split(',')[1], 'base64')
+    assert.equal(png.readUInt32BE(16), 1440)
+    assert.equal(png.readUInt32BE(20), 2300, 'the PNG must include the footer below the original 900px viewport')
+    assert.match(longProjection, /class="prd-page-image"[^>]*width="1440"[^>]*height="2300"/)
+    if (process.env.YUGOO_PRD_TEST_OUTPUT_DIR) await writeFile(join(process.env.YUGOO_PRD_TEST_OUTPUT_DIR, 'full-page.png'), png)
+
+    const { chromium } = await import('playwright')
+    const browser = await chromium.launch({ headless: true })
+    try {
+      const page = await browser.newPage({ viewport: { width: 1000, height: 700 } })
+      const imageTag = /<img\b[^>]*class="prd-page-image"[^>]*>/u.exec(longProjection)[0]
+      await page.setContent(`<!doctype html><html><head>${fixedStyle}</head><body class="prd-document"><main class="prd-container">${imageTag}</main></body></html>`)
+      for (const width of [1000, 425]) {
+        await page.setViewportSize({ width, height: 700 })
+        const rendered = await page.locator('img').evaluate(async image => {
+          await image.decode()
+          const box = image.getBoundingClientRect(), style = getComputedStyle(image)
+          const canvas = document.createElement('canvas')
+          canvas.width = image.naturalWidth; canvas.height = image.naturalHeight
+          const context = canvas.getContext('2d'); context.drawImage(image, 0, 0)
+          return {
+            width: box.width - parseFloat(style.borderLeftWidth) - parseFloat(style.borderRightWidth),
+            height: box.height - parseFloat(style.borderTopWidth) - parseFloat(style.borderBottomWidth),
+            footer: [...context.getImageData(100, image.naturalHeight - 50, 1, 1).data],
+            sidebarMiddle: [...context.getImageData(20, Math.floor(image.naturalHeight / 2), 1, 1).data],
+            sidebarBottom: [...context.getImageData(20, image.naturalHeight - 16, 1, 1).data],
+          }
+        })
+        assert.deepEqual(rendered.footer, [17, 204, 85, 255], 'the embedded PNG contains the actual bottom content')
+        assert.deepEqual(rendered.sidebarMiddle, [36, 72, 108, 255], 'fixed sidebar covers the middle of the full-height capture')
+        assert.deepEqual(rendered.sidebarBottom, [255, 170, 0, 255], 'fixed sidebar footer stays at the captured bottom')
+        assert.ok(Math.abs(rendered.height - rendered.width * 2300 / 1440) < 1, 'wide and narrow report layouts retain the image ratio')
+      }
+    } finally {
+      await browser.close()
+    }
+    assert.deepEqual(requests, [], 'owner initialization must not fetch external scripts or network data')
+    console.log('PRD actual PNG initialization, full-page footer, natural report ratio and offline network/file boundary OK')
+  } finally {
+    await new Promise(resolve => server.close(resolve))
+    await rm(root, { recursive: true, force: true })
+  }
+}
+if (process.argv.includes('--html-initialization-only')) {
+  await htmlInitializationBoundary()
+  process.exit(0)
 }
 
 const sectionMatches = [...template.matchAll(/<!--\s*prd-section\s*\n(?<meta>[\s\S]*?)-->\s*\n<h2\b[^>]*\bdata-prd-section-id\s*=\s*(["'])(?<headingId>.*?)\2[^>]*>(?<title>[\s\S]*?)<\/h2\s*>/giu)]
@@ -101,7 +313,8 @@ const sourceText = '{"answers":{"audience":"researchers"}}'
 const body = sections.map((section, index) => `<h2 data-prd-section-id="${section.id}" data-prd-sources="${index === 0 ? 'smart_questions' : 'user'}" data-prd-provenance-ids="">${section.title}</h2>${section.id === 'capability_architecture' ? '<h3>Core capability</h3><section class="prd-function"><h4>F-001 Example</h4><p class="prd-function-summary">Grounded product content.</p><ul class="prd-function-meta"><li>Actor and entry.</li></ul><ol class="prd-function-flow"><li>Core step.</li></ol><ul class="prd-function-notes"><li>Rule and exception.</li></ul></section>' : '<p>Grounded product content.</p>'}${section.visuals.map(name => `<!-- prd-visual:${name}:start --><!-- prd-visual:${name}:end -->`).join('')}`).join('')
 const fixedStyle = /<style\b[^>]*\bdata-prd-document-style\b[^>]*>[\s\S]*?<\/style\s*>/iu.exec(template)?.[0]
 assert.ok(fixedStyle)
-assert.match(fixedStyle, /\.prd-page-image\s*\{[^}]*width:\s*100%[^}]*aspect-ratio:\s*16\s*\/\s*10/)
+assert.match(fixedStyle, /\.prd-page-image\s*\{[^}]*width:\s*100%[^}]*height:\s*auto/)
+assert.doesNotMatch(fixedStyle, /\.prd-page-image\s*\{[^}]*aspect-ratio:/)
 assert.doesNotMatch(fixedStyle, /\.prd-page-image\s*\{[^}]*height:\s*640px/)
 const html = `<!doctype html><html><head><meta charset="utf-8">${fixedStyle}</head><body class="prd-document"><main class="prd-container">${body}</main></body></html>`
 const state = { schema_version: 8, title: 'Product PRD', detail_level: 'concise', ai_provenance: [], html_file: 'web_app_prd_assembly/prd.html' }
@@ -109,6 +322,10 @@ const authorityFiles = Object.fromEntries(['business_data', 'business_rules', 'r
 const input_files = { 'smart_questions/smart_questions.json': sourceText, ...authorityFiles }
 
 const prepared = run('validate-html-file', html, { state, template, input_files })
+const mistakenTitle = { ...state, product_title: state.title }
+delete mistakenTitle.title
+const titleDiagnostic = JSON.parse(run('validate-html-file', html, { state: mistakenTitle, template, input_files }).stdout)
+assert.ok(titleDiagnostic.diagnostics.some(text => text.startsWith('state.title must not be empty') && text.includes('JSON state')))
 assert.equal(prepared.status, 0, prepared.stderr || prepared.stdout)
 assert.equal(prepared.output.valid, true)
 
@@ -160,6 +377,11 @@ assert.match(tableOnlyCapabilityResult.output.diagnostics.join('\n'), /capabilit
 const restyled = run('validate-html-file', html.replace('</style>', 'body { background: pink; }</style>'), { state, template, input_files })
 assert.equal(restyled.status, 1)
 assert.match(restyled.output.diagnostics.join('\n'), /stylesheet must exactly match/)
+const forgedTemplate = run('validate-html-file', html.replace('</style>', 'body { background: pink; }</style>'), {
+  state, template: template.replace('</style>', 'body { background: pink; }</style>'), input_files,
+})
+assert.equal(forgedTemplate.status, 1, 'caller-supplied template cannot redefine the Bundle validation baseline')
+assert.match(forgedTemplate.output.diagnostics.join('\n'), /stylesheet must exactly match/)
 
 const inlineStyled = run('validate-html-file', html.replace('<p>Grounded product content.</p>', '<p style="color:red">Grounded product content.</p>'), { state, template, input_files })
 assert.equal(inlineStyled.status, 1)
@@ -199,6 +421,84 @@ assert.match(misplacedVisual.output.diagnostics.join('\n'), /wrong chapter|must 
 const unavailable = run('validate-html-file', html, { state, template, input_files: {} })
 assert.equal(unavailable.status, 1)
 assert.match(unavailable.output.diagnostics.join('\n'), /unavailable source/)
+
+// The default finalizer accepts only a complete projected/validated document.
+// No visuals means this format boundary requires no browser capability.
+const finalized = run('finalize-html-file', html, { state, template, input_files })
+assert.equal(finalized.status, 0, finalized.stderr || finalized.stdout)
+assert.equal(run('validate-html-file', finalized.output, { state, template, input_files }).status, 0)
+assert.equal(run('validate-html-file', finalized.output, { state, input_files }).status, 0,
+  'validation reads the Bundle template without a duplicate context field')
+const validationWithOutput = run('validate-html-file', finalized.output, {
+  state, input_files, script_io: { input_file: 'web_app_prd_assembly/prd.html', output_file: 'web_app_prd_assembly/validation-probe.html' },
+})
+assert.equal(validationWithOutput.status, 1, 'read-only diagnostics must not be accepted as artifact output')
+assert.match(validationWithOutput.output.diagnostics.join('\n'), /returns JSON diagnostics.*omit output_file/)
+assert.doesNotMatch(validationWithOutput.stdout, /<!doctype html>/i)
+assert.equal(run('validate-html-file', finalized.output, {
+  state, input_files, script_io: { input_file: 'web_app_prd_assembly/prd.html', output_file: null },
+}).status, 0, 'read-only validation still succeeds with no artifact destination')
+const rejectedFinal = run('finalize-html-file', html.replace('data-prd-provenance-ids=""', ''), { state, template, input_files })
+assert.equal(rejectedFinal.status, 1)
+assert.equal(rejectedFinal.output.valid, false)
+assert.match(rejectedFinal.output.diagnostics.join('\n'), /provenance/)
+assert.doesNotMatch(rejectedFinal.stdout, /<!doctype html>/i, 'failure returns diagnostics, never partial output HTML')
+// An omitted owner index must not turn supplied source visuals into an empty
+// plan, even if a retry has removed their inline figure directives.
+for (const [indexPath, artifactPath, content] of [
+  ['flow_design/flow_design.json', 'flow_design/P001.bpmn', '<definitions/>'],
+  ['page_design/page_design.json', 'page_design/pages/home.html', '<h1>Source page</h1>'],
+  ['design_style/design_style.json', 'design_style/preview.html', '<h1>Source style</h1>'],
+  ['whiteboard/whiteboard.json', 'whiteboard/boards/idea.json', '{"elements":[]}'],
+]) {
+  const sources = { ...input_files, [artifactPath]: content }
+  for (const action of ['finalize-html-file', 'validate-html-file']) {
+    const missingIndex = run(action, html, { state, template, input_files: sources })
+    assert.equal(missingIndex.status, 1, `${action} must reject the missing ${indexPath}`)
+    const diagnostic = missingIndex.output.diagnostics.find(message => message.includes('missing its canonical owner index'))
+    assert.ok(diagnostic?.includes(indexPath) && diagnostic.includes(artifactPath), missingIndex.stdout)
+    assert.doesNotMatch(missingIndex.stdout, /<!doctype html>/i)
+  }
+}
+const whiteboardIndex = { boards: { idea: { id: 'idea', title: 'Source board', artifact_file: 'whiteboard/boards/idea.json' } }, board_order: ['idea'] }
+const missingWhiteboard = run('finalize-html-file', html, { state, template, input_files: {
+  ...input_files, 'whiteboard/whiteboard.json': JSON.stringify(whiteboardIndex),
+} })
+assert.equal(missingWhiteboard.status, 1)
+assert.match(missingWhiteboard.output.diagnostics.join('\n'), /whiteboard.*missing/)
+const pathOnlyImage = run('finalize-html-file', html, { state, template, input_files: {
+  ...input_files, 'whiteboard/whiteboard.json': JSON.stringify(whiteboardIndex),
+  'whiteboard/boards/idea.json': JSON.stringify({ elements: [{ type: 'image', fileId: 'img' }], appState: {}, files: { img: { path: 'whiteboard/attachments/img.png', mimeType: 'image/png' } } }),
+} })
+assert.equal(pathOnlyImage.status, 1)
+assert.match(pathOnlyImage.output.diagnostics.join('\n'), /needs exact image bytes.*path-only attachments/)
+// Synthetic empty-scene projection checks the persisted source/dimension
+// binding only; it is not evidence that a native browser rendered a scene.
+const emptyScene = JSON.stringify({ elements: [], appState: {}, files: {} })
+const emptyPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/h9sAAAAASUVORK5CYII='
+const sha = value => createHash('sha256').update(value).digest('hex')
+const whiteboardSources = { ...input_files, 'whiteboard/whiteboard.json': JSON.stringify(whiteboardIndex), 'whiteboard/boards/idea.json': emptyScene }
+const whiteboardFigure = `<section data-prd-entity-ref="whiteboard/boards/idea.json"><p>Source board is intentionally empty.</p><!-- prd-visual-item:whiteboard/boards/idea.json:start --><figure class="prd-visual-figure" data-prd-source-ref="whiteboard/boards/idea.json" data-prd-source-digest="${sha(emptyScene)}" data-prd-projection-digest="${sha(emptyPng)}"><figcaption class="prd-visual-caption">Source board</figcaption><img class="prd-whiteboard-image" data-prd-whiteboard-renderer="excalidraw@0.18.1" alt="Source board" width="1" height="1" src="${emptyPng}"></figure><!-- prd-visual-item:whiteboard/boards/idea.json:end --></section>`
+const whiteboardHtml = html.replace('data-prd-section-id="design_explanations" data-prd-sources="user"', 'data-prd-section-id="design_explanations" data-prd-sources="whiteboard"')
+  .replace('<!-- prd-visual:all_whiteboards:start --><!-- prd-visual:all_whiteboards:end -->', `<!-- prd-visual:all_whiteboards:start -->${whiteboardFigure}<!-- prd-visual:all_whiteboards:end -->`)
+const boardValidation = run('validate-html-file', whiteboardHtml, { state, template, input_files: whiteboardSources })
+assert.equal(boardValidation.status, 0, boardValidation.stdout)
+const unusedSceneImage = JSON.stringify({ elements: [], appState: {}, files: { old: { path: 'whiteboard/attachments/old.png', mimeType: 'image/png' } } })
+const unusedImageValidation = run('validate-html-file', whiteboardHtml.replace(sha(emptyScene), sha(unusedSceneImage)), { state, template, input_files: { ...whiteboardSources, 'whiteboard/boards/idea.json': unusedSceneImage } })
+assert.equal(unusedImageValidation.status, 0, 'retained undo image refs do not obstruct projection of an empty scene')
+const changedBoard = run('validate-html-file', whiteboardHtml, { state, template, input_files: { ...whiteboardSources, 'whiteboard/boards/idea.json': emptyScene + ' ' } })
+assert.equal(changedBoard.status, 1)
+assert.match(changedBoard.output.diagnostics.join('\n'), /stale relative to its owner scene/)
+const wrongBoardRatio = run('validate-html-file', whiteboardHtml.replace('width="1" height="1"', 'width="2" height="1"'), { state, template, input_files: whiteboardSources })
+assert.equal(wrongBoardRatio.status, 1)
+assert.match(wrongBoardRatio.output.diagnostics.join('\n'), /native image ratio and dimensions/)
+const extraBoardImage = run('validate-html-file', whiteboardHtml.replace('</figure>', '<img class="prd-whiteboard-image" src="data:image/png;base64,extra"></figure>'), { state, template, input_files: whiteboardSources })
+assert.equal(extraBoardImage.status, 1)
+assert.match(extraBoardImage.output.diagnostics.join('\n'), /exactly 1 rendered Whiteboard image/)
+if (process.argv.includes('--format-only')) {
+  console.log('PRD format/finalization/source boundaries OK (no browser rendering)')
+  process.exit(0)
+}
 
 const bpmn = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI">
@@ -317,7 +617,20 @@ assert.match(tamperedBpmnSvg.output.diagnostics.join('\n'), /projection integrit
 
 const stalePageImage = run('validate-html-file', materialized.output.replace('width="1440"', 'width="720"'), { state, template, input_files: visualSources })
 assert.equal(stalePageImage.status, 1)
-assert.match(stalePageImage.output.diagnostics.join('\n'), /must preserve the 1440x900 design viewport/)
+assert.match(stalePageImage.output.diagnostics.join('\n'), /must preserve its actual PNG dimensions and aspect ratio/)
+
+const wrongPageHeight = run('validate-html-file', materialized.output.replace(/(<img\b[^>]*class="prd-page-image"[^>]*height=")900"/u, (_match, prefix) => `${prefix}901"`), { state, template, input_files: visualSources })
+assert.equal(wrongPageHeight.status, 1)
+assert.match(wrongPageHeight.output.diagnostics.join('\n'), /must preserve its actual PNG dimensions and aspect ratio/)
+
+const brokenPagePng = run('validate-html-file', materialized.output.replace(/(<img\b[^>]*class="prd-page-image"[^>]*src=")data:image\/png;base64,[^"]+/u, '$1data:image/png;base64,bm90LWEtcG5n'), { state, template, input_files: visualSources })
+assert.equal(brokenPagePng.status, 1)
+assert.match(brokenPagePng.output.diagnostics.join('\n'), /must be embedded as a rendered PNG preview/)
+
+const oldCaptureDigest = createHash('sha256').update(visualSources['page_design/pages/home.html']).digest('hex')
+const oldCapture = run('validate-html-file', materialized.output.replace(/(data-prd-source-ref="page_design\/pages\/home.html" data-prd-source-digest=")[^"]+/u, (_match, prefix) => prefix + oldCaptureDigest), { state, template, input_files: visualSources })
+assert.equal(oldCapture.status, 1)
+assert.match(oldCapture.output.diagnostics.join('\n'), /stale relative to its owner artifact, preview context or capture settings/)
 
 const changedPageSource = { ...visualSources, 'page_design/pages/home.html': `${visualSources['page_design/pages/home.html']}\n<!-- changed -->` }
 const tamperedOwnerHtml = run('validate-html-file', materialized.output, { state, template, input_files: changedPageSource })
@@ -354,4 +667,5 @@ const noDi = run('materialize-visuals', visualSkeleton, { input_files: noDiSourc
 assert.equal(noDi.status, 1)
 assert.match(noDi.output.diagnostics.join('\n'), /cannot render BPMN visual/)
 
+await htmlInitializationBoundary()
 console.log('WEB APP PRD AGENT SCRIPT OK')

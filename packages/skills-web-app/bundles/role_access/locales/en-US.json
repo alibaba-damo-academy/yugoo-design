@@ -10,7 +10,6 @@
   "title": "Role name",
   "titleExample": "For example: sales manager",
   "assignment": "How is this role assigned?",
-  "assignmentHelp": "Choose how this role is assigned. If you select Other, describe how the role is assigned.",
   "assignmentExample": "For example: granted on invitation and revoked on leaving the project",
   "registered": "Registered users",
   "granted": "Granted by an administrator",
@@ -27,7 +26,6 @@
   "other": "Other",
   "customRequirement": "Additional steps",
   "customHelp": "Explain what else must happen before the action",
-  "policiesHelp": "Each permission allows or denies one capability. Add an applicability condition only when necessary.",
   "inheritances": "Role inheritance",
   "inheritance": "Inheritance",
   "inherits": "Inherits permissions",
@@ -35,7 +33,6 @@
   "parentRole": "Source role",
   "inheritanceReason": "Evidence for inheritance",
   "addChildRole": "Add child role",
-  "guidance": "Check what each role can do and which data it can access, looking for excessive or missing permissions. Set one source role only when reuse is needed; grants remain independent.",
   "graphHint": "Connect the child to its source role. Return to details for local permissions and read-only inherited sources.",
-  "inheritanceHelp": "Inherited permissions retain their original applicability, confirmation and identity verification. Role assignment and conflict precedence are not inherited."
+  "inheritanceHelp": "Inherited permissions keep applicability, confirmation and identity-verification requirements. Inheritance does not determine grants or conflict precedence."
 }

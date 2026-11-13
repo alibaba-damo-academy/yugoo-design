@@ -14,12 +14,15 @@ ui:
   title: $t:title
   description: $t:empty
   artifacts:
+    show_ids: true
     records_path: rounds
     order_path: round_order
     current_path: current_round_id
     title_field: topic
     file_field: conclusion_file
     artifact_kind: research_conclusion
+    fields:
+      - {key: topic, label: "$t:topic", control: text}
     children:
       records_field: directions
       order_field: direction_order
@@ -29,3 +32,6 @@ ui:
       links_field: source_urls
       artifact_kind: research_direction
       scoped_ids: true
+      fields:
+        - {key: title, label: "$t:directionTitle", control: text, required: true}
+        - {key: research_points, label: "$t:researchPoints", control: list}

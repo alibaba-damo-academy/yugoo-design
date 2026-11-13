@@ -13,5 +13,5 @@ rules:
     scope: [completion]
     code: smart_questions.empty
     message: "At least one question is required before completing the Bundle."
-    repair_hint: "Keep the fixed questions and add only the smallest useful current round."
+    repair_hint: "Preserve existing answers and include only the smallest useful current question set."
     check: { non_empty_map: questions }

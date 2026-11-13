@@ -178,6 +178,7 @@ export async function main(args = process.argv.slice(2)) {
   const issues = await validateSkillDesign(skill, JSON.parse(stateText), {
     scopes: values.scope === 'completion' ? ['state', 'completion'] : ['state'],
     artifactText: path => project.store.readWorktreeText(path),
+    sourceTextAt: (revision, path) => project.store.readTextAt(revision, path),
   })
   console.log(JSON.stringify({ valid: issues.length === 0, skill: skill.name, issues }, null, 2))
   if (issues.length) process.exitCode = 1

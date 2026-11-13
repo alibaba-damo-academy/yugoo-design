@@ -4,7 +4,7 @@ title: {zh: AI 能力, en: AI Capabilities}
 label: {zh: 设计 Agent 与模型直调, en: Design Agents and model calls}
 order: 15
 icon: functions
-execution: {handoff: must_edit}
+execution: {handoff: none}
 presentation: {mode: declarative}
 
 # Optional derived context, never a second design authority.

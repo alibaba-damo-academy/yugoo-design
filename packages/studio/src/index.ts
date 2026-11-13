@@ -14,7 +14,7 @@ export type {
   StudioReadFs,
   StudioValidationReport,
 } from './types.ts'
-export { StudioBinaryContentError } from './types.ts'
+export { StudioBinaryContentError, STUDIO_SOURCE_MAX_BYTES, STUDIO_ARCHIVE_MAX_JSON_BYTES } from './types.ts'
 export type {
   DesignBundleSnapshot,
   DesignCatalogSnapshot,

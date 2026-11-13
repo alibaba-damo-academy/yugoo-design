@@ -6,9 +6,9 @@ import { ReactFlow, Background, Controls, ConnectionMode, applyNodeChanges, type
 import type { ComponentNode, PanelManifest } from './dsl.ts'
 import type { RenderOptions } from './interpreter.ts'
 import { navigationPreviewLinks, bindNavigationHotspot, unbindNavigationHotspot } from './navigation-map-state.ts'
-import { freshRecordId, pathGet, recordsAtPath } from './record-state.ts'
+import { freshRecordId, pathGet, recordIdentityOf, recordsAtPath } from './record-state.ts'
 import { navigationFormUpdates, translateNavigationFrame } from './navigation-map-edits.ts'
-import { PanelWorkspace, PanelWorkspaceTree, PanelWorkspaceTreeGroup, PanelWorkspaceTreeItem, PanelWorkspaceTreeAdd, PanelWorkspaceCover, PanelWorkspaceCanvasToggle, PanelCanvasToolbar } from './panel-workspace.tsx'
+import { PanelWorkspace, PanelWorkspaceTree, PanelWorkspaceTreeGroup, PanelWorkspaceTreeItem, PanelWorkspaceTreeAdd, PanelWorkspaceCover, PanelWorkspaceCanvasToggle, PanelCanvasToolbar, PanelRecordId } from './panel-workspace.tsx'
 import { ComponentTabs } from './component-tabs.tsx'
 import { RELATION_GRAPH_AUTO_FIT } from './relation-graph-layout.ts'
 import { usePanelI18n } from './panel-i18n.tsx'
@@ -55,7 +55,7 @@ export function NavigationWorkspace({ node, manifest, data, options, render, chi
     hadPages.current = map.nodes.length > 0
   }, [map.nodes.length])
   const [selection, setSelection] = useState<{ section: string; id: string } | undefined>(() => artifactMode && map.nodes[0] ? { section: binding.nodes.path, id: map.nodes[0].id } : undefined)
-  const [arrival, setArrival] = useState<{ target: string; version: string; read: RenderOptions['readArtifact']; context?: PreviewNavigationContext }>()
+  const [arrival, setArrival] = useState<{ source: string; edge: string; target: string; version: string; read: RenderOptions['readArtifact']; context?: PreviewNavigationContext }>()
   // All sidebar/canvas/form selections are manual and discard prior arrivals.
   const select = (value: typeof selection) => {
     setArrival(undefined); setSelection(value)
@@ -74,12 +74,22 @@ export function NavigationWorkspace({ node, manifest, data, options, render, chi
   const [activeEdgeId, setActiveEdgeId] = useState<string>()
   const [bindingPick, setBindingPick] = useState<{ edge: string; source: string; version: string }>()
   const previewVersion = JSON.stringify([binding, options?.skill, options?.sourceRevision, options?.collapseToken, options?.artifactFiles, options?.editable, data[binding.nodes.path], data[binding.edges.path]])
-  const arrivalContext = preview && arrival?.version === previewVersion && arrival.read === options?.readArtifact
+  // Keep full transaction fences below. An arrived document instead depends on
+  // its actual incoming edge/context and target, not unrelated project files.
+  const arrivalKey = (source: string, target: string, edgeId: string) => {
+    if (options?.artifactFiles === undefined) return previewVersion
+    const targetRecord = recordsAtPath(data, binding.nodes.path)[target]
+    const file = binding.nodes.artifact ? targetRecord?.[binding.nodes.artifact] : undefined
+    const edge = navigationPreviewLinks(data, binding, source).find(link => link.id === edgeId && link.target === target)
+    return JSON.stringify([binding, options.skill, source, target, edge, !!targetRecord, file, typeof file === 'string' ? options.artifactFiles[file] : undefined])
+  }
+  const arrivalVersion = arrival ? arrivalKey(arrival.source, arrival.target, arrival.edge) : undefined
+  const arrivalContext = arrival && arrival.version === arrivalVersion && arrival.read === options?.readArtifact
     && selection?.section === binding.nodes.path && arrival.target === selection.id ? arrival.context : undefined
   useEffect(() => {
-    if (arrival && (!preview || arrival.version !== previewVersion || arrival.read !== options?.readArtifact
+    if (arrival && (arrival.version !== arrivalVersion || arrival.read !== options?.readArtifact
       || selection?.section !== binding.nodes.path || arrival.target !== selection.id)) setArrival(undefined)
-  }, [arrival, preview, previewVersion, options?.readArtifact, selection, binding.nodes.path])
+  }, [arrival, arrivalVersion, options?.readArtifact, selection, binding.nodes.path])
   const activePick = preview && bindingPick?.version === previewVersion && selection?.section === binding.nodes.path
     && selection.id === bindingPick.source ? bindingPick : undefined
   useEffect(() => { if (bindingPick && !activePick) setBindingPick(undefined) }, [bindingPick, activePick])
@@ -112,7 +122,7 @@ export function NavigationWorkspace({ node, manifest, data, options, render, chi
   const add = (section: string, values: Record<string, unknown> = {}) => {
     if (!editable) return
     const definition = manifest.sections.find(item => item.id === section), current = recordsAtPath(displayData, section)
-    const id = freshRecordId(section, current), identity = definition?.create?.id_field
+    const id = freshRecordId(section, current, definition?.create?.id_prefix), identity = definition?.create?.id_field
     const updates: Record<string, unknown> = { [section]: { ...current, [id]: { ...definition?.create?.defaults, ...values, ...(identity ? { [identity]: id } : {}) } } }
     if (definition?.order) {
       const before = pathGet(data, definition.order)
@@ -165,7 +175,10 @@ export function NavigationWorkspace({ node, manifest, data, options, render, chi
   const orderedIds = (section: string) => section === binding.nodes.path ? map.nodes.map(item => item.id)
     : section === binding.edges.path ? map.edges.map(item => item.id) : map.frames.map(item => item.id)
   const selectedRecord = selection?.section === binding.nodes.path ? recordsAtPath(data, binding.nodes.path)[selection.id] : undefined
-  const showingPreview = Boolean(preview && selectedRecord && binding.nodes.artifact && (!artifactMode || !mapOpen))
+  const execution = selectedRecord && selection ? navigationNodeExecution(selection.id, selectedRecord, binding, options) : undefined
+  const previewAvailable = Boolean(selectedRecord && binding.nodes.artifact
+    && (selectedRecord[binding.nodes.artifact] || (execution && execution.status !== 'pending')))
+  const showingPreview = Boolean(preview && previewAvailable && (!artifactMode || !mapOpen))
   const entries = binding.entry_ids ? pathGet(data, binding.entry_ids) : undefined
   const entryIds = Array.isArray(entries) ? entries : []
   useEffect(() => {
@@ -305,6 +318,9 @@ export function NavigationWorkspace({ node, manifest, data, options, render, chi
       </div>)
   const edgeLabelField = manifest.fields?.find(field => field.key === binding.edges.label && field.applies_to?.includes(binding.edges.path))
   const selectedEdge = selection?.section === binding.edges.path ? map.edges.find(edge => edge.id === selection.id) : undefined
+  const selectedEdgeIdentity = selectedEdge && recordIdentityOf(manifest,
+    manifest.sections.find(section => (section.records_path ?? section.id) === binding.edges.path)?.id ?? binding.edges.path,
+    recordsAtPath(data, binding.edges.path)[selectedEdge.id])
   const outgoing = selectedRecord && selection ? map.edges.filter(edge => edge.source === selection.id && !map.invalidEdges.includes(edge.id)) : []
   const activeEdge = outgoing.find(edge => edge.id === activeEdgeId) ?? outgoing[0]
   const hasHotspot = activeEdge && binding.edges.hotspot && recordsAtPath(data, binding.edges.path)[activeEdge.id]?.[binding.edges.hotspot]
@@ -345,15 +361,16 @@ export function NavigationWorkspace({ node, manifest, data, options, render, chi
         disabled={section === binding.frames.path && (!flow || showingPreview)} onAdd={() => {
         if (section !== binding.frames.path) { add(section); return }
         addFrameAtViewport()
-      }}>{t('addItem', { item: manifest.sections.find(item => item.id === section)?.title ?? section })}</PanelWorkspaceTreeAdd> : null}
+      }}>{t('addItem', { item: manifest.sections.find(item => item.id === section)?.item_name ?? manifest.sections.find(item => item.id === section)?.title ?? section })}</PanelWorkspaceTreeAdd> : null}
     </PanelWorkspaceTreeGroup>)}
     {artifactMode ? <PanelWorkspaceCanvasToggle className="dsh-navigation-map-toggle" label={t('mindMap')} expanded={mapOpen} onOpen={() => { setArrival(undefined); setMapOpen(true) }} /> : null}
   </PanelWorkspaceTree>}>
     <div className="dsh-navigation-workspace" style={artifactMode ? { display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 } : undefined}>
-      {preview && selectedRecord && binding.nodes.artifact ? <div style={{ flex: 1, minHeight: 0, order: 2 }}><NavigationPreview
+      {selectedRecord && binding.nodes.artifact && previewAvailable && (artifactMode || preview) ? <div hidden={!preview} style={{ flex: 1, minHeight: 0, order: 2 }}><NavigationPreview
         artifactId={selection!.id} artifactKind={binding.nodes.artifact_kind}
+        recordId={recordIdentityOf(manifest, manifest.sections.find(section => (section.records_path ?? section.id) === binding.nodes.path)?.id ?? binding.nodes.path, selectedRecord)?.value}
         titleBadge={artifactMode && entryIds.includes(selection!.id) ? <span className="dsh-navigation-entry-badge">{t('navigationEntry')}</span> : undefined}
-        actions={artifactMode ? previewActions : undefined}
+        actions={artifactMode ? <>{previewActions}<button type="button" onClick={() => setPreview(false)}>{t('details')}</button></> : undefined}
         stylesheet={binding.stylesheet} sharedStylesheet={sharedStylesheet}
         path={selectedRecord[binding.nodes.artifact]} title={String(selectedRecord[binding.nodes.label] ?? selection!.id)} options={options}
         links={navigationPreviewLinks(data, binding, selection!.id)}
@@ -377,12 +394,13 @@ export function NavigationWorkspace({ node, manifest, data, options, render, chi
           const edge = navigationPreviewLinks(live.data, live.binding, selection!.id).find(item => item.id === navigation.id)
           if (!edge || edge.target !== id || edge.contextError || !Object.hasOwn(recordsAtPath(live.data, live.binding.nodes.path), id)) return
           setError('')
-          setArrival({ target: id, version, read: live.options?.readArtifact, context: edge.context })
+          setArrival({ source: selection!.id, edge: edge.id, target: id, version: arrivalKey(selection!.id, id, edge.id), read: live.options?.readArtifact, context: edge.context })
           setSelection({ section: live.binding.nodes.path, id })
         }} /></div> : null}
       {!artifactMode ? mapCanvas : null}
-      {artifactMode ? <>{error ? <p role="alert">{error}</p> : null}{activePick ? <div className="dsh-navigation-binding-hint" role="status">{t('pickHotspot')}</div> : null}
-        {!selectedRecord ? <div className="dsh-navigation-detail-header"><p role="status">{node.description ?? t('emptyFilter')}</p></div> : null}</> : <aside className="dsh-navigation-inspector">{error ? <p role="alert">{error}</p> : null}
+      {artifactMode && previewAvailable && preview ? <>{error ? <p role="alert">{error}</p> : null}{activePick ? <div className="dsh-navigation-binding-hint" role="status">{t('pickHotspot')}</div> : null}</> : null}
+      {artifactMode && !selectedRecord ? <div className="dsh-navigation-detail-header"><p role="status">{node.description ?? t('emptyFilter')}</p></div> : null}
+      {!artifactMode || selectedRecord ? <aside hidden={artifactMode && previewAvailable && preview} className="dsh-navigation-inspector">{error ? <p role="alert">{error}</p> : null}
         <div className="dsh-navigation-actions">
         {selectedRecord && selection && binding.entry_ids ? <label className="dsh-navigation-entry">
           <input type="checkbox" checked={entryIds.includes(selection.id)}
@@ -405,10 +423,10 @@ export function NavigationWorkspace({ node, manifest, data, options, render, chi
             try { commit(unbindNavigationHotspot(latest.current.data, binding, selection.id)); setBindingPick(undefined) }
             catch (failure) { setError(String(failure)) }
           }}>{t('unbindHotspot')}</button> : null}
-        {selectedRecord && binding.nodes.artifact ? <button type="button" aria-expanded={artifactMode ? mapOpen : undefined} aria-pressed={artifactMode ? undefined : preview} onClick={() => { if (artifactMode) { setArrival(undefined); setMapOpen(true) } else setPreview(value => !value) }}>{t(artifactMode ? 'mindMap' : 'preview')}</button> : null}
+        {previewAvailable ? <button type="button" aria-pressed={preview} onClick={() => setPreview(value => !value)}>{t('preview')}</button> : null}
         </div>
         {map.invalidEdges.length ? <p role="alert">{t('navigationInvalidEdges', { ids: map.invalidEdges.join(', ') })}</p> : null}
-        {selection ? render(selection.section, selection.id, { ...options, onPanelUpdate: commit }, displayData) : node.description}</aside>}
+        {selection ? render(selection.section, selection.id, { ...options, onPanelUpdate: commit }, displayData) : node.description}</aside> : null}
     </div>
   </PanelWorkspace>
   const toolbar = (controls?: ReactElement, active = 'map') => {
@@ -418,7 +436,7 @@ export function NavigationWorkspace({ node, manifest, data, options, render, chi
       title={<><MapIcon size={16} aria-hidden="true" />{node.title ?? t('mindMap')}</>}
       counts={<><span>{map.nodes.length} {manifest.sections.find(item => item.id === binding.nodes.path)?.title}</span>
         <span>{map.edges.length} {manifest.sections.find(item => item.id === binding.edges.path)?.title}</span></>}>
-      {editable && manifest.sections.find(item => item.id === binding.frames.path)?.add_mode !== 'none' ? <button type="button" aria-hidden={active !== 'map' || undefined} disabled={active !== 'map' || !flow || (artifactMode && !mapOpen)} onClick={addFrameAtViewport}>{t('addItem', { item: manifest.sections.find(item => item.id === binding.frames.path)?.title ?? binding.frames.path })}</button> : null}
+      {editable && manifest.sections.find(item => item.id === binding.frames.path)?.add_mode !== 'none' ? <button type="button" aria-hidden={active !== 'map' || undefined} disabled={active !== 'map' || !flow || (artifactMode && !mapOpen)} onClick={addFrameAtViewport}>{t('addItem', { item: manifest.sections.find(item => item.id === binding.frames.path)?.item_name ?? manifest.sections.find(item => item.id === binding.frames.path)?.title ?? binding.frames.path })}</button> : null}
       {controls}
     </PanelCanvasToolbar>
   }
@@ -430,7 +448,7 @@ export function NavigationWorkspace({ node, manifest, data, options, render, chi
     {map.invalidEdges.length ? <p role="alert">{t('navigationInvalidEdges', { ids: map.invalidEdges.join(', ') })}</p> : null}
     <div className="dsh-navigation-map-stage">{mapCanvas}
       {selectedEdge ? <aside className="dsh-navigation-connection-editor">
-        <header><strong>{String(recordsAtPath(data, binding.nodes.path)[selectedEdge.source]?.[binding.nodes.label] ?? selectedEdge.source)} → {String(recordsAtPath(data, binding.nodes.path)[selectedEdge.target]?.[binding.nodes.label] ?? selectedEdge.target)}</strong>
+        <header><span className="dsh-design-record-header-label"><PanelRecordId value={selectedEdgeIdentity?.value} /><strong>{String(recordsAtPath(data, binding.nodes.path)[selectedEdge.source]?.[binding.nodes.label] ?? selectedEdge.source)} → {String(recordsAtPath(data, binding.nodes.path)[selectedEdge.target]?.[binding.nodes.label] ?? selectedEdge.target)}</strong></span>
           <button type="button" disabled={!editable} aria-label={t('remove', { item: selectedEdge.label })} onClick={() => {
             const records = { ...recordsAtPath(data, binding.edges.path) }; delete records[selectedEdge.id]
             const order = pathGet(data, binding.edges.order)

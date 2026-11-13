@@ -94,7 +94,7 @@ try {
   await check('window.experienceTest.prompts.at(-1).includes("reading") && window.experienceTest.prompts.at(-1).includes("notes")')
   await page.evaluate(() => window.experienceTest.prompts.pop())
   await mainScene.click()
-  await check('document.querySelector("iframe").sandbox.value==="allow-scripts" && document.querySelector("iframe").srcdoc.includes("default-src")')
+  await check('document.querySelector("iframe").sandbox.value==="allow-scripts allow-forms" && document.querySelector("iframe").srcdoc.includes("default-src")')
   await check('window.experienceTest.reads.filter(r=>r.path.startsWith("_experiences/")).every(r=>!r.revision.startsWith("worktree:"))')
   await check('window.experienceTest.prompts.length===1')
   await browser('snapshot', '-i')

@@ -37,6 +37,7 @@ import {
   PanelContentGroup,
   PanelHelp,
   PanelFieldCaption,
+  PanelCollectionCount,
 } from './panel-workspace.tsx'
 
 interface Selection { section: string; record: string }
@@ -158,8 +159,10 @@ export function insertVisualRecord(props: Props, section: string, values: Record
   if (!props.options?.editable || !props.options.onPanelUpdate) return
   const binding = sectionBindingOf(props.manifest, section)
   const current = recordsAtPath(props.data, binding.recordsPath)
-  const id = freshRecordId(section, current)
   const creation = props.manifest.sections.find(item => item.id === section)?.create
+  const owner = binding.fieldsPath ? props.manifest.sections.find(item => !item.fields_path
+    && (item.records_path ?? item.id) === binding.recordsPath && item.create) : undefined
+  const id = freshRecordId(section, current, owner?.create?.id_prefix ?? creation?.id_prefix)
   const initial = { ...creation?.defaults, ...values, ...(creation?.id_field ? { [creation.id_field]: id } : {}) }
   const label = creation?.initial_label
   if (label) {
@@ -177,8 +180,6 @@ export function insertVisualRecord(props: Props, section: string, values: Record
   }
   // A nested editor may be the contextual creation entrance of a canonical
   // record. Preserve the explicitly declared root owner’s identity/defaults.
-  const owner = binding.fieldsPath ? props.manifest.sections.find(item => !item.fields_path
-    && (item.records_path ?? item.id) === binding.recordsPath && item.create) : undefined
   const root = owner ? { ...owner.create?.defaults, ...(owner.create?.id_field ? { [owner.create.id_field]: id } : {}) } : {}
   const record = binding.fieldsPath ? pathSet(root, binding.fieldsPath, initial) : initial
   const updates: Record<string, unknown> = { [binding.recordsPath]: { ...current, [id]: record } }
@@ -873,13 +874,13 @@ export function RecordRelatedEditor(props: Props & { render: (ids: readonly stri
   return <section className="dsh-record-related-editor" aria-label={props.node.title ?? definition.title}>
     {inherited.map(({ parent, entries, label }) => <PanelContentGroup key={`${selected.section}:${selected.record}:${parent}`}
       className="dsh-record-inherited-related" aria-label={t('inheritedFrom', { item: label })}
-      title={<>{t('inheritedFrom', { item: label })}<button type="button" className="dsh-record-inherited-source"
+      title={<>{t('inheritedFrom', { item: label })}<PanelCollectionCount count={entries.length} /><button type="button" className="dsh-record-inherited-source"
         aria-label={t('viewSourceRecord', { item: label })} title={t('viewSourceRecord', { item: label })}
         onClick={event => { event.preventDefault(); select({ section: graph!.nodes, record: parent }) }}><ArrowUpRight size={14} aria-hidden="true" />{t('recordDetails')}</button></>}>
       <div className="dsh-design-form-group-content">{props.render(entries, true)}</div>
     </PanelContentGroup>)}
     <PanelContentGroup key={`${selected.section}:${selected.record}`} className="dsh-record-related-collection"
-      title={<>{props.node.title ?? definition.title}{props.node.description
+      title={<>{props.node.title ?? definition.title}<PanelCollectionCount count={ids.length} />{props.node.description
         ? <PanelHelp label={t('fieldHelp', { field: props.node.title ?? definition.title })}>{props.node.description}</PanelHelp> : null}</>}>
       <div className="dsh-design-form-group-content">
         {props.render(ids)}

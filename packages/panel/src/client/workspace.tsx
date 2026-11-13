@@ -64,9 +64,15 @@ import { DesignPanelSurface } from './design-panel-surface.tsx'
 import { ExperiencePanel } from './experience-panel.tsx'
 import { GraphPanel } from './graph-panel.tsx'
 import { PanelSaveError } from './panel-save-error.tsx'
+import { PanelContentState } from '../panel-content-state.tsx'
+import { Button } from './ported/ui/button.tsx'
+import { DesignWorkspacePreferenceControls, type DesignWorkspacePreferences } from './workspace-preferences.tsx'
+export type { DesignWorkspacePreferences } from './workspace-preferences.tsx'
 
 /** Client runtime services the workspace needs. */
 export interface DesignRuntime {
+  /** Return the existing session-owned input focus action when the Host provides it. */
+  composerFocus?: (sessionId: string) => (() => void) | undefined
   /** Native Host capability; never constructs file: URLs or starts a model turn. */
   canOpenProjectFolder?: () => Promise<boolean>
   openProjectFolder?: (path: string) => Promise<void>
@@ -95,6 +101,7 @@ export interface DesignRuntime {
   readArtifact: (sessionId: string, relPath: string, stateRevision: string) => Promise<{ found: boolean; content: string }>
   readBinaryArtifact: (sessionId: string, relPath: string, stateRevision: string) => Promise<BinaryArtifactRead>
   readExecutionLog: (sessionId: string, executionRef: string, afterSeq?: number, target?: import('./types.ts').DesignArtifactLogTarget) => Promise<DesignExecutionLogRead>
+  readArtifactHistory?: (sessionId: string, skill: string) => Promise<readonly import('./types.ts').DesignArtifactHistoryEntry[]>
   /** Open a main-Agent turn with an explicit host-generated instruction. */
   sendPrompt: (sessionId: string, text: string, requestId?: string,
     saved?: readonly { readonly eventId: string; readonly commit?: string }[]) => Promise<void>
@@ -171,10 +178,12 @@ function SkillPanel(props: {
   sourceRevision?: string
   readBinaryArtifact: (relPath: string) => Promise<BinaryArtifactRead>
   readExecutionLog: (executionRef: string, afterSeq?: number, target?: import('./types.ts').DesignArtifactLogTarget) => Promise<DesignExecutionLogRead>
+  readArtifactHistory?: import('./panels/shared.ts').SkillPanelProps['readArtifactHistory']
   artifactActivities?: DesignPanelWorkspaceRead['artifactActivities']
   executionAttempts: DesignPanelWorkspaceRead['executionAttempts']
   registerBeforeSave: (skill: string, flush: () => Promise<void>, discard?: () => void) => import('./panels/shared.ts').BeforeSaveRegistration
   sendPrompt?: (text: string) => void | Promise<void>
+  /** Actual Bundle execution; save busy locks editing through readOnly. */
   running?: boolean
   onSaveAndRegenerate?: () => void
   selectPanel: (skill: string) => void
@@ -196,6 +205,7 @@ function SkillPanel(props: {
     sourceRevision: props.sourceRevision,
     readBinaryArtifact: props.readBinaryArtifact,
     readExecutionLog: props.readExecutionLog,
+    readArtifactHistory: props.readArtifactHistory,
     executionAttempts: props.executionAttempts,
     artifactActivities: props.artifactActivities,
     registerBeforeSave,
@@ -325,6 +335,8 @@ export function DesignWorkspace(props: {
   compactHeader?: boolean
   /** Host renders the same project metadata elsewhere (for example in a sidebar). */
   hideProjectHeader?: boolean
+  /** Host-owned interface preferences; omitted in embedded Panel previews. */
+  preferences?: DesignWorkspacePreferences
   sessionId: string | undefined
   runtime: DesignRuntime
   dockOpen: boolean
@@ -332,10 +344,8 @@ export function DesignWorkspace(props: {
   experienceAvailable?: boolean
   experienceFiles?: Readonly<Record<string, string>>
   focus?: { readonly skill: string; readonly nonce: number }
-  /** Close the dock; renders the × at the far right of the Chrome-style tab strip. */
-  onClose?: () => void
 }): ReactElement {
-  const { design: sourceDesign, projectId, checkpoint, worktreeRevision, executionAttempts, access, clarity, projectName, projectPath, sessionId, runtime, dockOpen, focus, onClose } = props
+  const { design: sourceDesign, projectId, checkpoint, worktreeRevision, executionAttempts, access, clarity, projectName, projectPath, sessionId, runtime, dockOpen, focus } = props
   const demo = useMemo(() => createPanelDemoSave(), [sessionId, projectId, projectPath, props.demonstrationSave])
   const [demoRevision, setDemoRevision] = useState(0)
   const design = useMemo(() => props.demonstrationSave ? demo.project(sourceDesign) : sourceDesign, [sourceDesign, demo, demoRevision, props.demonstrationSave])
@@ -436,6 +446,12 @@ export function DesignWorkspace(props: {
       ? Promise.resolve({ found: false, revision: null, reset: false, entries: [] })
       : runtime.readExecutionLog(sessionId, executionRef, afterSeq, target),
     [runtime, sessionId],
+  )
+
+  const readArtifactHistory = useCallback(
+    (skill: string) => sessionId === undefined || runtime.readArtifactHistory === undefined
+      ? Promise.resolve([]) : runtime.readArtifactHistory(sessionId, skill),
+    [runtime, sessionId, projectId],
   )
 
   const sendPrompt = useCallback(
@@ -650,15 +666,7 @@ export function DesignWorkspace(props: {
     flushBeforeNavigation(() => selectTab(target))
   }, [store.skills, flushBeforeNavigation])
 
-  const accessNotice = projectId === null || writable
-    ? null
-    : (
-      <div
-        data-testid='dsh-design-workspace-readonly'
-        className='mx-4 mt-3 shrink-0 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900'
-        role='status'
-      >
-        {props.publicationError
+  const accessMessage = props.publicationError
           ? (isZh ? `当前项目内容暂时无法读取，已保存的设计数据仍会保留。请检查项目原始定义和文件后重新打开：${props.publicationError}`
             : `The current project's content could not be read. Saved design data is preserved. Check the original project definitions and files, then reopen the project: ${props.publicationError}`)
           : access.mode === 'recovery'
@@ -667,31 +675,27 @@ export function DesignWorkspace(props: {
               : "This project's Design Kit content is unavailable. Restore its original project definitions, then reopen the project. Saved design data is preserved.")
           : (isZh
               ? '当前项目尚未选择设计套件，设计面板暂时只读。请在对话中输入 /yugoo kit <kit>。'
-              : 'This project has no selected Kit. The Design Panel is read-only until you run /yugoo kit <kit> in the conversation.')}
-      </div>
-    )
-  const closeButton = panelOnly || onClose === undefined
+              : 'This project has no selected Kit. The Design Panel is read-only until you run /yugoo kit <kit> in the conversation.')
+  const accessNotice = projectId === null || writable
     ? null
     : (
-      <button
-        type='button'
-        data-testid='dsh-design-dock-close'
-        onClick={() => flushBeforeNavigation(onClose)}
-        title={isZh ? '关闭设计面板' : 'Close design dock'}
-        aria-label={isZh ? '关闭设计面板' : 'Close design dock'}
-        className='dsh-design-dock-close'
+      <div
+        data-testid='dsh-design-workspace-readonly'
+        className='mx-4 mt-3 shrink-0 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900'
+        role='status'
       >
-        ×
-      </button>
+        {accessMessage}
+      </div>
     )
+  const preferences = props.preferences ? <DesignWorkspacePreferenceControls preferences={props.preferences} /> : null
   const projectHeader = panelOnly ? null : props.hideProjectHeader
-    ? (closeButton ? <div className='dsh-design-dock-toolbar'>{closeButton}</div> : null) : (
+    ? (preferences ? <div className='dsh-design-dock-toolbar'>{preferences}</div> : null) : (
     <div className='dsh-design-project-header' data-testid='design-project-header' data-compact={props.compactHeader || undefined}>
       {hasDockMeta(clarity, projectPath, projectName)
         ? <DesignDockMeta compact={props.compactHeader} clarity={clarity} projectName={projectName} projectPath={projectPath}
             canOpenProjectFolder={runtime.canOpenProjectFolder} openProjectFolder={runtime.openProjectFolder} />
         : null}
-      {closeButton}
+      {preferences}
     </div>
   )
   const viewSwitcher = !panelOnly && (props.experienceAvailable || runtime.readGraph) && projectId !== null ? (
@@ -711,18 +715,25 @@ export function DesignWorkspace(props: {
   </div></PanelLocaleContext.Provider>
 
   if (store.skills.length === 0) {
+    const locale = isZh ? 'zh-CN' : 'en-US'
+    const unavailable = !!props.publicationError || access.mode === 'recovery'
+    const needsKit = access.mode === 'unconfigured'
+    const focusChat = sessionId ? runtime.composerFocus?.(sessionId) : undefined
     return (
-      <div className='relative flex h-full min-h-0 flex-col'>
+      <PanelLocaleContext.Provider value={isZh ? 'zh-CN' : 'en-US'}><div className='relative flex h-full min-h-0 flex-col'>
         {projectHeader}
-        {accessNotice}
-        <div className='dsh-design-dock-empty flex-1'>{access.mode === 'recovery' ? null : t.design_empty_panels}</div>
+        <PanelContentState state={unavailable ? 'unavailable' : 'empty'} kind='panel'
+          title={panelText(unavailable ? 'panelUnavailableTitle' : needsKit ? 'panelChooseKitTitle' : 'panelEmptyTitle', locale)}
+          message={unavailable ? accessMessage : panelText(needsKit ? 'panelChooseKitDescription' : 'panelEmptyDescription', locale)}>
+          {focusChat ? <Button variant='outline' onClick={focusChat}>{panelText('panelContinueInChat', locale)}</Button> : null}
+        </PanelContentState>
         {viewSwitcher && <div className='dsh-design-view-footer'>{viewSwitcher}</div>}
-      </div>
+      </div></PanelLocaleContext.Provider>
     )
   }
 
   return (
-    <div className='flex h-full min-h-0 flex-col'>
+    <PanelLocaleContext.Provider value={isZh ? 'zh-CN' : 'en-US'}><div className='flex h-full min-h-0 flex-col'>
       {projectHeader}
       {!panelOnly && <div className='relative shrink-0'>
         <DesignTabsBar
@@ -784,7 +795,6 @@ export function DesignWorkspace(props: {
               data-testid={`dsh-design-panel-${skill}`}
               data-scroll-owner={scrollOwner}
               className={`h-full min-h-0 ${scrollOwner === 'workspace' ? 'overflow-y-auto' : 'overflow-hidden'}`}
-              {...(writable ? {} : { inert: '' })}
             >
               <SkillPanel
                 skill={skill}
@@ -804,16 +814,17 @@ export function DesignWorkspace(props: {
                 sourceRevision={checkpoint ?? undefined}
                 readBinaryArtifact={readBinaryArtifact}
                 readExecutionLog={readExecutionLog}
+                readArtifactHistory={runtime.readArtifactHistory === undefined ? undefined : readArtifactHistory}
                 executionAttempts={executionAttempts.filter(attempt => attempt.skill === skill)}
                 artifactActivities={props.artifactActivities?.filter(activity => activity.skill === skill)}
                 registerBeforeSave={registerBeforeSave}
                 sendPrompt={sendPrompt}
-                running={store.saving || hasActiveExecution(executionAttempts, skill)
+                running={hasActiveExecution(executionAttempts, skill)
                   || props.activeMainBundles?.some(bundle => bundle.skill === skill) === true}
                 onSaveAndRegenerate={() => saveSkillAndContinue(skill)}
                 selectPanel={selectPanel}
                 panelData={panelData}
-                readOnly={!writable || (presentation.mode === 'auto' && props.autoPanelManifests?.[skill] === undefined)}
+                readOnly={!writable || store.saving || (presentation.mode === 'auto' && props.autoPanelManifests?.[skill] === undefined)}
               />
             </div>
           )
@@ -831,7 +842,7 @@ export function DesignWorkspace(props: {
       >
         {viewSwitcher}
       </FooterButtons>}
-    </div>
+    </div></PanelLocaleContext.Provider>
   )
 }
 

@@ -8,6 +8,8 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { studioAuthoringLocation, studioPreparedUrl, studioAuthoringSessionLocator } from '../src/page-path.ts'
 import { createSameOriginStudioAuthoringClient } from '../src/authoring.page-rpc.ts'
+import { createSameOriginStudioRemote } from '../src/page-rpc.ts'
+import { createDshStudioClient } from '../src/client-adapter.tsx'
 import { createDshStudioContent } from '../src/authoring-content.ts'
 import { createStudioInstances } from 'dsh-design-studio/node'
 import { encodeStudioContentZip, decodeStudioContentZip } from '../../studio-ui/src/content-zip.ts'
@@ -77,6 +79,41 @@ const client = {
   readBundleWorkspace: async () => { throw new Error('Copy uses the exact catalog pin, not a fixture workspace') },
   readBundleFile: async () => { throw new Error('No installed file read in this page fixture') },
 }
+
+test('installed catalog Open renders the real sample through session-free preview without instance or native calls', async () => {
+  const calls = [], source = adapters(), captured = await source.catalog.captureBundle(pin)
+  const prepared = await source.composition.preview({ kind: 'bundle', bundle: pin, revision: 0,
+    bundleFiles: captured.files, sourceId: captured.sourceId, runtimeName: captured.runtimeName,
+    sampleSource: JSON.stringify({ items: { sample: { title: 'Installed sample observation', status: 'open' } } }) })
+  assert.ok(prepared.preview)
+  const preview = prepared.preview, panelYaml = preview.panelYaml
+  const root = createRoot(document.getElementById('root'))
+  const remote = createSameOriginStudioRemote(async (url, init) => {
+    const request = JSON.parse(init.body), method = url.pathname.split('/').at(-1)
+    assert.equal(url.pathname, '/api/studioManagement/' + method)
+    calls.push({ method, args: request.payload.args })
+    assert.ok(['workspace', 'readBundleWorkspace', 'readBundleFile', 'previewInstalled'].includes(method), 'only installed reads are used')
+    const value = method === 'workspace' ? await client.workspace(request.payload.args.query)
+      : method === 'readBundleWorkspace' ? { workspace: { ...pin, description: 'Installed method.', files: [{ path: 'panel.yaml', bytes: panelYaml.length }], panel: { kind: 'declarative' } }, diagnostics: [] }
+      : method === 'readBundleFile' ? { file: { path: 'panel.yaml', content: panelYaml }, diagnostics: [] }
+      : { preview, diagnostics: [] }
+    return new Response(JSON.stringify({ type: 'server-response', rpcId: request.rpcId, result: { ok: true, value } }))
+  })
+  try {
+    await React.act(async () => root.render(React.createElement(DshStudioPageWorkspace, { client: createDshStudioClient(remote), desktop: false })))
+    await click('Bundles'); await until(() => button('Open'))
+    await click('Open'); await until(() => button('Panel Preview'))
+    await click('Panel Preview'); await until(() => document.querySelector('.dsh-panel-sample-preview'))
+    assert.match(document.querySelector('.dsh-panel-sample-preview').textContent, /Installed sample observation/)
+    assert.equal(document.querySelector('.dsh-panel-sample-preview input:not([readonly]):not([disabled])'), null, 'installed sample is read-only')
+    assert.deepEqual(calls.find(call => call.method === 'previewInstalled').args, { request: { bundle: pin, revision: 0 } })
+    assert.doesNotMatch(document.body.textContent, /Panel preview is unavailable here/)
+    assert.equal(remote.start, undefined)
+    const descriptor = (await import('../src/typert.remote-client.ts')).TYPERT_REMOTE.descriptors.find(item => item.method === 'previewInstalled')
+    for (const input of [{ bundle: pin, revision: -1 }, { bundle: pin, revision: 0, id: 'copy' }, { bundle: { ...pin, name: '\n' }, revision: 0 }]) assert.throws(() => descriptor.parameters[0].codec.create().parse(input))
+    assert.throws(() => descriptor.result.create().parse({ preview: { ...preview, hostPath: '/no-access' }, diagnostics: [] }), 'strict preview result rejects extra capability')
+  } finally { await React.act(async () => root.unmount()) }
+})
 
 test('only one explicit page Session locator enables a scoped client; URL hints supply no other authority', () => {
   assert.equal(studioAuthoringSessionLocator('https://host/design-studio/?returnTo=https://elsewhere/#agentId=other'), undefined)

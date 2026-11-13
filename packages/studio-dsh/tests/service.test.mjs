@@ -97,7 +97,7 @@ async function mount({ fs, design, config } = {}) {
   return { ctx, fiber, service }
 }
 
-// The public Remote surface is exactly six read methods: no create, save,
+// The public Remote surface contains only inspection/sample reads: no create, save,
 // edit, or working-copy endpoint exists.
 const first = await mount()
 assert.deepEqual(remoteMethods(first.service), [
@@ -107,11 +107,12 @@ assert.deepEqual(remoteMethods(first.service), [
   { method: 'readKitFile', invocation: { kind: 'direct' } },
   { method: 'readBundleWorkspace', invocation: { kind: 'direct' } },
   { method: 'readBundleFile', invocation: { kind: 'direct' } },
-], 'the Gateway discovers only the six read-only methods')
+  { method: 'previewInstalled', invocation: { kind: 'direct' } },
+], 'the Gateway discovers only read-only methods')
 for (const name of Object.getOwnPropertyNames(Object.getPrototypeOf(first.service))) {
   assert.equal(/save|create|write|edit|working/iu.test(name), false, `no mutation method may exist: ${name}`)
 }
-console.log('the public surface is read-only: six methods, no mutation vocabulary')
+console.log('the public surface is read-only: inspection and sample methods, no mutation vocabulary')
 
 assert.deepEqual((await first.service.workspace('')).kits, [{ name: 'demo_kit', version: '1.0' }], 'workspace requires no Session or Agent service')
 

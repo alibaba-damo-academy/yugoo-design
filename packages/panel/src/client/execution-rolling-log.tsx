@@ -3,10 +3,27 @@ import ReactMarkdown, { type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { DesignExecutionLogRead, DesignArtifactLogTarget } from './types.ts'
 import { requestLivePoll, subscribeLivePoll } from './live-poll.ts'
+import { panelText, type PanelMessageKey } from '../panel-i18n.tsx'
+
+type ExecutionLogEntry = DesignExecutionLogRead['entries'][number]
+const ACTIVITY_TEXT: Record<NonNullable<ExecutionLogEntry['activity']>['kind'], PanelMessageKey> = {
+  search: 'traceSearch', fetch: 'traceFetch', 'read-file': 'traceReadFile', 'write-file': 'traceWriteFile',
+  'run-script': 'traceRunScript', 'structured-output': 'traceStructuredOutput', 'run-tool': 'traceRunTool',
+  'tool-failed': 'traceToolFailed',
+}
+/** Localize only explicitly identified system labels, never infer a label from native prose. */
+function executionActivityText(entry: ExecutionLogEntry, locale: string): string {
+  const key = entry.activity === undefined ? undefined : ACTIVITY_TEXT[entry.activity.kind]
+  return entry.eventType === 'message' || key === undefined
+    ? entry.message
+    : panelText(key, locale, { detail: entry.activity!.detail })
+}
 
 export interface ExecutionRollingLogProps {
   runId?: string
   active?: boolean
+  /** Explicit history readers remain available after execution; runtime progress unmounts. */
+  retainHistory?: boolean
   /** Host-verified artifact association; never a transcript path. */
   logTarget?: DesignArtifactLogTarget
   /** Monotonic Producer attempt sequence present only after this run settles. */
@@ -103,12 +120,13 @@ export function isExecutionLogAtBottom(element: Pick<HTMLElement, 'scrollHeight'
 export function useExecutionLogTail<T extends HTMLElement = HTMLDivElement>(
   revision: unknown,
   resetKey?: unknown,
+  followByDefault = true,
 ): Readonly<{ scrollRef: RefObject<T>; onScroll: (event: UIEvent<T>) => void }> {
   const scrollRef = useRef<T>(null)
-  const followTailRef = useRef(true)
+  const followTailRef = useRef(followByDefault)
   useEffect(() => {
-    followTailRef.current = true
-  }, [resetKey])
+    followTailRef.current = followByDefault
+  }, [resetKey, followByDefault])
   useEffect(() => {
     const element = scrollRef.current
     if (element !== null && followTailRef.current) element.scrollTop = element.scrollHeight
@@ -156,8 +174,14 @@ export function ExecutionLogMessage({ message }: { message: string }): ReactElem
   )
 }
 
+/** Runtime progress exists only while its observed executor is active. */
+export function ExecutionRollingLog(props: ExecutionRollingLogProps): ReactElement | null {
+  if (!props.active && !props.retainHistory) return null
+  return <ExecutionLogReader {...props} />
+}
+
 /** Poll one Host-authorized native Agent log and preserve the last readable entries. */
-export function ExecutionRollingLog({
+function ExecutionLogReader({
   runId,
   logTarget,
   active = false,
@@ -181,6 +205,7 @@ export function ExecutionRollingLog({
   const previousTerminalSequence = useRef(terminalSequence)
   const { scrollRef, onScroll: handleScroll } = useExecutionLogTail(
     `${identity}:${read?.revision}:${conversationExpanded}`, identity,
+    active || presentation === 'conversation',
   )
   useEffect(() => {
     if (presentation === 'conversation') {
@@ -279,7 +304,7 @@ export function ExecutionRollingLog({
             <span style={{ flex: '0 0 auto', marginTop: 2, color: ENTRY_ICON_COLOR[entry.eventType] ?? '#8b8498' }}><ActivityIcon type={entry.eventType} /></span>
             <span style={{ flex: '0 0 auto', marginTop: 1, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', fontSize: 11, color: '#a49db2' }}>{formatExecutionTimestamp(entry.timestamp)}</span>
             <div style={{ flex: 1, minWidth: 0, color: entry.eventType === 'error' ? 'var(--k-color-danger, #b42318)' : 'rgba(16,8,43,0.78)', overflowWrap: 'anywhere' }}>
-              {entry.eventType === 'message' ? <ExecutionLogMessage message={entry.message} /> : <span style={{ whiteSpace: 'pre-wrap' }}>{entry.message}</span>}
+              {entry.eventType === 'message' ? <ExecutionLogMessage message={entry.message} /> : <span style={{ whiteSpace: 'pre-wrap' }}>{executionActivityText(entry, locale)}</span>}
               {entry.url && isHttpLogUrl(entry.url) ? <a href={entry.url} target='_blank' rel='noopener noreferrer' aria-label={locale === 'zh' ? '打开链接' : 'Open link'} style={{ marginLeft: 6, color: '#663AE8', display: 'inline-flex', verticalAlign: 'middle' }}><ExternalLinkIcon /></a> : null}
             </div>
           </div>)}
@@ -292,23 +317,24 @@ export function ExecutionRollingLog({
     )
   }
   return (
-    <section aria-label={title} aria-live='polite' style={{ width: '100%', maxWidth: 560, marginTop: 8, border: '1px solid #e5e1ef', borderRadius: 8, background: '#fff', overflow: 'hidden', textAlign: 'left' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 10px', borderBottom: entries.length > 0 ? '1px solid #eeeaf5' : undefined, color: '#625879', fontSize: 12, fontWeight: 600 }}>
-        {active ? <svg aria-hidden viewBox='0 0 16 16' width='12' height='12' fill='none' stroke='#8b5cf6' strokeWidth='2'>
+    <section aria-label={title} aria-live='polite' className='dsh-execution-activity'>
+      <div className='dsh-execution-activity-heading'>
+        {active ? <svg aria-hidden viewBox='0 0 16 16' width='12' height='12' fill='none' stroke='currentColor' strokeWidth='2'>
           <circle cx='8' cy='8' r='6' opacity='.24' />
           <path d='M8 2a6 6 0 0 1 6 6'><animateTransform attributeName='transform' type='rotate' from='0 8 8' to='360 8 8' dur='1s' repeatCount='indefinite' /></path>
         </svg> : null}
         <span>{title}</span>
-        {retrying ? <span role='status' style={{ marginLeft: 'auto', color: '#8b8498', fontWeight: 400 }}>{unavailableLabel ?? (locale === 'zh' ? '正在连接…' : 'Connecting…')}</span> : null}
+        {retrying ? <span role='status'>{unavailableLabel ?? (locale === 'zh' ? '正在连接…' : 'Connecting…')}</span> : null}
       </div>
-      {entries.length > 0 ? <div ref={scrollRef} onScroll={handleScroll} style={{ maxHeight: 150, overflow: 'auto', padding: '3px 0' }}>
-        {entries.map(entry => <div key={`${entry.seq}:${entry.timestamp}`} style={{ display: 'flex', alignItems: 'flex-start', gap: 7, padding: '2px 10px', color: entry.eventType === 'error' ? '#b42318' : '#5f576c', fontSize: 12, lineHeight: '17px' }}>
-          <span style={{ flex: '0 0 auto', marginTop: 1 }}><ActivityIcon type={entry.eventType} /></span>
-          <div style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
-            {entry.eventType === 'message' ? <ExecutionLogMessage message={entry.message} /> : <span style={{ whiteSpace: 'pre-wrap' }}>{entry.message}</span>}
+      {entries.length > 0 ? <div ref={scrollRef} onScroll={handleScroll} className='dsh-execution-activity-entries'>
+        {entries.map(entry => <div key={`${entry.seq}:${entry.timestamp}`} className='dsh-execution-activity-entry' data-event-type={entry.eventType}>
+          <span><ActivityIcon type={entry.eventType} /></span>
+          <div className='dsh-execution-activity-text'>
+            {entry.eventType === 'message' ? <ExecutionLogMessage message={entry.message} /> : <span>{executionActivityText(entry, locale)}</span>}
+            {entry.url && isHttpLogUrl(entry.url) ? <a href={entry.url} target='_blank' rel='noopener noreferrer' aria-label={locale === 'zh' ? '打开链接' : 'Open link'}><ExternalLinkIcon /></a> : null}
           </div>
         </div>)}
-      </div> : active && !retrying ? <div style={{ padding: '8px 10px', color: '#8b8498', fontSize: 12 }}>{locale === 'zh' ? 'Agent 正在准备下一步…' : 'Agent is preparing the next step…'}</div> : null}
+      </div> : active && !retrying ? <div className='dsh-execution-activity-text' role='status'>{locale === 'zh' ? 'Agent 正在准备下一步…' : 'Agent is preparing the next step…'}</div> : null}
     </section>
   )
 }

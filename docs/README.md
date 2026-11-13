@@ -2,7 +2,7 @@
 
 按你现在想完成的事情选择入口。使用指南、创作教程与技术参考各有用途，下面的链接指向各自维护的原文。
 
-[项目首页](../README.md) · [English README](../README.en.md) · [用户 Wiki](wiki/README.md) · [贡献指南](../CONTRIBUTING.md)
+[项目首页](../README.md) · [English README](../README.en.md) · [用户 Wiki](wiki/README.md) · [English Wiki](wiki/README.en.md) · [贡献指南](../CONTRIBUTING.md)
 
 ## 选择阅读路径
 
@@ -22,7 +22,7 @@
 | 跟着一个案例开始设计 | [Web App 协作教程](wiki/web-app-demo.md)、[官方套件用户指南](wiki/official-kits.md) |
 | 创建项目、修改面板、保存后继续 | [使用指南](wiki/usage.md) |
 | 查阅全部 `/yugoo` 命令与参数 | [完整命令参考](wiki/commands.md) |
-| 使用清晰度、知识关联、主动审查及版本恢复 | [项目手册能力索引](wiki/README.md#能力与原理)、[日常使用](wiki/usage.md) |
+| 使用清晰度、知识关联、自动审查及版本恢复 | [项目手册能力索引](wiki/README.md#能力与原理)、[日常使用](wiki/usage.md) |
 | 查看版本与可用范围 | [预览状态](wiki/preview-status.md)、[套件清单与获取](wiki/kit-sharing.md#official-kits) |
 | 排查问题或反馈建议 | [故障排查](wiki/troubleshooting.md)、[问题反馈](wiki/support.md) |
 

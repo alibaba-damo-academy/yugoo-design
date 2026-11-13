@@ -50,7 +50,7 @@ export function createPanelComponentExample(kind: ComponentKind, locale: Compone
   const workspace = (child: ComponentNode): ComponentNode => ({ id: 'workspace', component: 'record_workspace', title: text('记录', 'Records'), sidebar_icon: 'blocks', sources: ['items'], children: [child] })
   const graph: ComponentNode = { id: 'graph', component: 'relation_graph', graph: { nodes: 'items', edges: 'links', source_field: 'from', target_field: 'to', label_field: 'title', edge_kind_field: 'kind' } }
   const question: ComponentNode = { id: 'questions', component: kind, source: 'questions',
-    ...(['question_workspace', 'question_rounds'].includes(kind) ? { rounds_source: 'rounds', question_policy: { numbered_rounds: true } } : {}) }
+    ...(['question_workspace', 'question_rounds'].includes(kind) ? { rounds_source: 'rounds', question_policy: { numbered_rounds: true, show_ids: true } } : {}) }
   let ui: ComponentNode
   switch (kind) {
     case 'stack': ui = { id: 'stack', component: kind, children: [note, field] }; break
@@ -84,8 +84,15 @@ export function createPanelComponentExample(kind: ComponentKind, locale: Compone
     case 'data_table': ui = workspace({ id: 'table', component: kind, source: 'items', table: { field: 'table' } }); break
     case 'record_matrix': ui = workspace({ id: 'matrix', component: kind, source: 'items', matrix: { field: 'cells', row: 'material', column: 'progress', value: 'value' } }); break
     case 'record_artifact': ui = workspace({ id: 'artifact', component: kind, source: 'items', artifact: { field: 'file' } }); break
-    case 'artifact_workspace': ui = { id: 'artifacts', component: kind, sidebar_icon: 'search', artifacts: { records_path: 'reports', title_field: 'title', file_field: 'file', artifact_kind: 'report', children: { records_field: 'directions', title_field: 'title', file_field: 'file', artifact_kind: 'direction', scoped_ids: true } } }; break
-    case 'diagram_workspace': ui = { id: 'diagram', component: kind, source: 'items', sidebar_icon: 'workflow', diagram: { format: 'bpmn', file_field: 'file', label_field: 'title', artifact_kind: 'process', summary_fields: ['description'] } }; break
+    case 'artifact_workspace': ui = { id: 'artifacts', component: kind, sidebar_icon: 'search', artifacts: {
+      records_path: 'reports', show_ids: true, title_field: 'title', file_field: 'file', artifact_kind: 'report',
+      fields: [{ key: 'title', label: text('调研主题', 'Research topic'), control: 'text' }],
+      children: { records_field: 'directions', title_field: 'title', file_field: 'file', points_field: 'points', artifact_kind: 'direction', scoped_ids: true,
+        fields: [{ key: 'title', label: text('调研方向', 'Research direction'), control: 'text' },
+          { key: 'points', label: text('调研问题与范围', 'Questions and scope'), control: 'list' }] },
+    } }; break
+    case 'diagram_workspace': ui = { id: 'diagram', component: kind, source: 'items', sidebar_icon: 'workflow', diagram: { format: 'bpmn', file_field: 'file', label_field: 'title', artifact_kind: 'process', summary_fields: ['description'],
+      inspector: { presentation: 'document', process_sections: ['items'], nodes: { source: 'steps', process_field: 'process', element_field: 'element', label_field: 'activity', sections: ['steps'] }, migration: { message: text('此已有流程尚无节点说明，可根据原图补充。', 'This existing flow has no step details yet. Add them from its saved diagram.'), action_label: text('添加节点详情', 'Add step details'), prompt: text('请根据本 Bundle 补充该流程的节点说明。', 'Use this Bundle to add step details to this flow.') } } } }; break
     case 'canvas_workspace': ui = { id: 'canvas', component: kind, source: 'items', sidebar_icon: 'pen-tool', canvas: { format: 'excalidraw', file_field: 'file', label_field: 'title', id_field: 'id', scene_directory: 'scenes', asset_directory: 'images', new_title: text('阅读计划', 'Reading Plan') } }; break
     case 'preview_workspace': ui = { id: 'preview', component: kind, live_preview: { file_path: 'preview.file', title_path: 'preview.title', design_width: 640, tokens: [] } }; break
     case 'navigation_workspace': ui = { id: 'navigation', component: kind, sidebar_icon: 'map', navigation_map: { nodes: { path: 'items', order: 'item_order', label: 'title', position: 'position' }, edges: { path: 'links', order: 'link_order', source: 'from', target: 'to', label: 'title' }, frames: { path: 'frames', label: 'title', members: 'members', position: 'position', size: 'size' } } }; break
@@ -118,8 +125,8 @@ export function createPanelComponentExample(kind: ComponentKind, locale: Compone
     },
     links: { relation: { title: text('形成', 'Produces'), from: 'first', to: 'second', kind: text('关联', 'Related') } },
     questions: {
-      question_one: { prompt: text('你更希望先整理什么？', 'What would you like to organize first?'), kind: 'single', options: { plan: text('阅读计划', 'Reading plan'), notes: text('笔记', 'Notes') }, round: 1, answer: 'plan', detail: '' },
-      question_two: { prompt: text('还有哪些需要补充？', 'What else should be included?'), kind: 'text', round: 2, answer: text('保留每篇材料的重点笔记。', 'Keep key notes for each document.'), detail: '' },
+      'Q-001': { prompt: text('你更希望先整理什么？', 'What would you like to organize first?'), kind: 'single', options: { plan: text('阅读计划', 'Reading plan'), notes: text('笔记', 'Notes') }, round: 1, answer: 'plan', detail: '' },
+      'Q-002': { prompt: text('还有哪些需要补充？', 'What else should be included?'), kind: 'text', round: 2, answer: text('保留每篇材料的重点笔记。', 'Keep key notes for each document.'), detail: '' },
     },
     rounds: { '1': { title: text('整理重点', 'Reading Focus'), description: text('明确希望优先整理的阅读材料。', 'Identify which reading material to organize first.') }, '2': { title: text('补充需求', 'Additional Needs'), description: text('补充阅读整理时需要保留的信息。', 'Clarify which information should be kept.') } },
     folders: { folder: { title: text('资料', 'Material'), children: { document: { title: text('阅读笔记', 'Reading Notes'), description: text('一条嵌套记录', 'A nested record') } } } },
@@ -172,12 +179,31 @@ export function createPanelComponentExample(kind: ComponentKind, locale: Compone
     manifest.fields = [...manifest.fields, { key: 'file', label: text('文件', 'File'), control: 'artifact_ref', applies_to: ['items'] }]
     // Keep the document surface focused on a populated example, not an empty sibling.
     delete items.second
-    items.first!.file = kind === 'diagram_workspace' ? 'component_example/reading.bpmn' : kind === 'canvas_workspace' ? 'component_example/scenes/first.json' : 'component_example/document.html'
+    items.first!.file = kind === 'diagram_workspace' ? 'component_example/reading.bpmn' : kind === 'canvas_workspace' ? 'component_example/scenes/WB-001.json' : 'component_example/document.html'
   }
   if (kind === 'canvas_workspace') {
-    manifest.sections.find(section => section.id === 'items')!.order = 'item_order'
-    manifest.fields = [...manifest.fields, { key: 'id', label: text('标识', 'Identifier'), control: 'text', applies_to: ['items'] }]
-    items.first!.id = 'first'; sample.item_order = ['first']
+    const section = manifest.sections.find(section => section.id === 'items')!
+    section.order = 'item_order'
+    section.form!.header!.show_id = true
+    manifest.fields = [...manifest.fields, { key: 'id', label: text('编号', 'Record number'), control: 'text', readonly: true, hidden: true, applies_to: ['items'] }]
+    items['WB-001'] = { ...items.first!, id: 'WB-001', file: 'component_example/scenes/WB-001.json' }
+    delete items.first
+    sample.item_order = ['WB-001']
+  }
+  if (kind === 'diagram_workspace') {
+    items.existing = { title: text('已有阅读流程', 'Existing reading flow'), description: text('此合成样例保留已有图，还没有节点补充说明。', 'This synthetic example keeps an existing diagram without step supplements.'), file: 'component_example/existing-reading.bpmn' }
+    manifest.sections = [...manifest.sections, { id: 'steps', title: text('节点', 'Steps'), order: 'step_order', add_mode: 'none' }]
+    manifest.fields = [...manifest.fields,
+      { key: 'process', control: 'record_select', options_from_section: 'items', hidden: true, readonly: true, applies_to: ['steps'] },
+      { key: 'element', control: 'text', hidden: true, readonly: true, applies_to: ['steps'] },
+      { key: 'activity', label: text('处理说明', 'What happens'), control: 'textarea', applies_to: ['steps'] },
+      { key: 'result', label: text('完成结果', 'Completion result'), control: 'textarea', applies_to: ['steps'] },
+    ]
+    sample.steps = {
+      read: { process: 'first', element: 'Read', activity: text('阅读所选材料并保留重点。', 'Read the selected material and keep the key points.'), result: text('需要回顾的内容已经标出。', 'Important passages are marked for review.') },
+      summarize: { process: 'first', element: 'Summarize', activity: text('将重点整理为可回顾的笔记。', 'Organize the key points into useful notes.'), result: text('笔记和原始材料关联，可继续修订。', 'Notes retain their source material and can be revised.') },
+    }
+    sample.step_order = ['read', 'summarize']
   }
   if (kind === 'navigation_workspace') {
     manifest.sections = [...manifest.sections, { id: 'frames', title: text('区域', 'Frames') }]
@@ -197,9 +223,21 @@ export function createPanelComponentExample(kind: ComponentKind, locale: Compone
     sample.actions = { complete: { title: text('整理完成', 'Complete Summary'), details: { process_node_ref: text('阅读整理 / 保存笔记', 'Reading / Keep Notes'), axis_effects: { status: text('草稿 → 已完成', 'Draft → Completed') } } } }
   }
   sample.preview = { title: text('阅读卡片', 'Reading Card'), file: 'component_example/card.html' }
-  sample.reports = { reading: { title: text('阅读资料整理', 'Reading Review'), file: 'component_example/report.md', directions: { summary: { title: text('重点摘要', 'Key Summary'), file: 'component_example/summary.md' } } } }
+  sample.reports = { 'R-001': { title: text('阅读资料整理', 'Reading Review'), file: 'component_example/report.md', directions: {
+    'D-001': { title: text('重点摘要', 'Key Summary'), file: 'component_example/summary.md', points: [text('哪些信息有助于再次理解材料？', 'Which information helps readers return to the material?')] },
+    'D-002': { title: text('待调研的整理方式', 'Planned organization research'), file: null,
+      points: [text('比较主题整理和标题检索。\n保留各自适用的场景。', 'Compare topic organization with title search.\nKeep the contexts in which each is useful.')] },
+  } } }
+  if (kind === 'record_workspace') {
+    manifest.sections[0]!.form!.header!.show_id = true
+    manifest.fields = [...manifest.fields, { key: 'id', label: text('编号', 'Record number'), control: 'text', readonly: true, hidden: true, applies_to: ['items'] }]
+    sample.items = { 'REC-001': { ...items.first!, id: 'REC-001' }, 'REC-002': { ...items.second!, id: 'REC-002' } }
+    const links = sample.links as Record<string, Record<string, unknown>>
+    links.relation = { title: text('形成', 'Produces'), from: 'REC-001', to: 'REC-002', kind: text('关联', 'Related') }
+  }
   const previewLayout = panelComponentCategory(ui.component) === 'workspace' || ui.component === 'mind_map' ? 'workspace'
     : ui.component === 'question_rounds' ? 'navigation' : 'inline'
+  const readingBpmn = `<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_Example" targetNamespace="urn:component-example"><bpmn:process id="Reading" isExecutable="false"><bpmn:startEvent id="Start"/><bpmn:task id="Read" name="${text('阅读材料', 'Read Material')}"/><bpmn:task id="Summarize" name="${text('整理重点', 'Summarize')}"/><bpmn:endEvent id="End"/><bpmn:sequenceFlow id="Flow_1" sourceRef="Start" targetRef="Read"/><bpmn:sequenceFlow id="Flow_2" sourceRef="Read" targetRef="Summarize"/><bpmn:sequenceFlow id="Flow_3" sourceRef="Summarize" targetRef="End"/></bpmn:process><bpmndi:BPMNDiagram id="Diagram"><bpmndi:BPMNPlane id="Plane" bpmnElement="Reading"><bpmndi:BPMNShape id="Start_di" bpmnElement="Start"><dc:Bounds x="50" y="112" width="36" height="36"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="Read_di" bpmnElement="Read"><dc:Bounds x="130" y="90" width="120" height="80"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="Summarize_di" bpmnElement="Summarize"><dc:Bounds x="300" y="90" width="120" height="80"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="End_di" bpmnElement="End"><dc:Bounds x="470" y="112" width="36" height="36"/></bpmndi:BPMNShape><bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1"><di:waypoint x="86" y="130"/><di:waypoint x="130" y="130"/></bpmndi:BPMNEdge><bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2"><di:waypoint x="250" y="130"/><di:waypoint x="300" y="130"/></bpmndi:BPMNEdge><bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3"><di:waypoint x="420" y="130"/><di:waypoint x="470" y="130"/></bpmndi:BPMNEdge></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>`
   return { panelYaml: stringify(manifest), sample, previewLayout, ...(kind === 'execution_log' ? { logEntries: [
     { seq: 1, timestamp: 1791676800000, eventType: 'message' as const, message: text('正在整理阅读材料，先确认需要保留的信息。', 'Review reading material and identify the information to retain.') },
     { seq: 2, timestamp: 1791676801000, eventType: 'search' as const, message: text('从样例材料中查找相关要点。', 'Find relevant points in the sample material.') },
@@ -210,8 +248,9 @@ export function createPanelComponentExample(kind: ComponentKind, locale: Compone
     'component_example/report.md': text('# 阅读资料整理\n\n## 整理目标\n\n将阅读材料转化为可回顾的知识。\n\n## 整理结果\n\n- 建立阅读计划\n- 保留重点笔记', '# Reading Review\n\n## Goal\n\nTurn reading material into reusable knowledge.\n\n## Result\n\n- Create a reading plan\n- Keep key notes'),
     'component_example/summary.md': text('# 重点摘要\n\n每天安排十五分钟阅读；读完后记录三个关键观点。', '# Key Summary\n\nRead for fifteen minutes daily and capture three key points.'),
     'component_example/card.html': `<html><head><style>body{margin:0;padding:36px;font:16px/1.6 system-ui,sans-serif;background:#f6f4fa;color:#292333}article{max-width:480px;margin:auto;background:white;padding:28px;border:1px solid #e6e0ee;border-radius:12px}h1{font-size:24px;margin:0 0 12px}p{margin:0;color:#695f75}small{display:block;margin-top:24px;color:#663ae8}</style></head><body><article><h1>${text('阅读计划', 'Reading Plan')}</h1><p>${text('每天十五分钟，积累可回顾的知识。', 'Fifteen minutes a day to build reusable knowledge.')}</p><small>${text('固定组件样例', 'Fixed Component Example')}</small></article></body></html>`,
-    'component_example/reading.bpmn': `<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_Example" targetNamespace="urn:component-example"><bpmn:process id="Reading" isExecutable="false"><bpmn:startEvent id="Start"/><bpmn:task id="Read" name="${text('阅读材料', 'Read Material')}"/><bpmn:task id="Summarize" name="${text('整理重点', 'Summarize')}"/><bpmn:endEvent id="End"/><bpmn:sequenceFlow id="Flow_1" sourceRef="Start" targetRef="Read"/><bpmn:sequenceFlow id="Flow_2" sourceRef="Read" targetRef="Summarize"/><bpmn:sequenceFlow id="Flow_3" sourceRef="Summarize" targetRef="End"/></bpmn:process><bpmndi:BPMNDiagram id="Diagram"><bpmndi:BPMNPlane id="Plane" bpmnElement="Reading"><bpmndi:BPMNShape id="Start_di" bpmnElement="Start"><dc:Bounds x="50" y="112" width="36" height="36"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="Read_di" bpmnElement="Read"><dc:Bounds x="130" y="90" width="120" height="80"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="Summarize_di" bpmnElement="Summarize"><dc:Bounds x="300" y="90" width="120" height="80"/></bpmndi:BPMNShape><bpmndi:BPMNShape id="End_di" bpmnElement="End"><dc:Bounds x="470" y="112" width="36" height="36"/></bpmndi:BPMNShape><bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1"><di:waypoint x="86" y="130"/><di:waypoint x="130" y="130"/></bpmndi:BPMNEdge><bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2"><di:waypoint x="250" y="130"/><di:waypoint x="300" y="130"/></bpmndi:BPMNEdge><bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3"><di:waypoint x="420" y="130"/><di:waypoint x="470" y="130"/></bpmndi:BPMNEdge></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>`,
-    'component_example/scenes/first.json': JSON.stringify({ elements: [
+    'component_example/reading.bpmn': readingBpmn,
+    'component_example/existing-reading.bpmn': readingBpmn,
+    'component_example/scenes/WB-001.json': JSON.stringify({ elements: [
       { id: 'reading-card', type: 'rectangle', x: 60, y: 60, width: 320, height: 140, angle: 0, strokeColor: '#663ae8', backgroundColor: '#f1eafd', fillStyle: 'solid', strokeWidth: 1, strokeStyle: 'solid', roughness: 0, opacity: 100, groupIds: [], frameId: null, roundness: { type: 3 }, seed: 1, version: 1, versionNonce: 1, isDeleted: false, boundElements: null, updated: 1, link: null, locked: true },
       { id: 'reading-text', type: 'text', x: 88, y: 108, width: 264, height: 50, angle: 0, strokeColor: '#292333', backgroundColor: 'transparent', fillStyle: 'solid', strokeWidth: 1, strokeStyle: 'solid', roughness: 0, opacity: 100, groupIds: [], frameId: null, roundness: null, seed: 2, version: 1, versionNonce: 2, isDeleted: false, boundElements: null, updated: 1, link: null, locked: true, text: text('阅读计划\n每天十五分钟', 'Reading Plan\nFifteen minutes each day'), originalText: text('阅读计划\n每天十五分钟', 'Reading Plan\nFifteen minutes each day'), fontSize: 20, fontFamily: 6, textAlign: 'left', verticalAlign: 'top', containerId: null, autoResize: true, lineHeight: 1.25 },
     ], appState: { viewBackgroundColor: '#ffffff' }, files: {} }),

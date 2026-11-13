@@ -134,6 +134,29 @@ test('current project source changes refresh subsequent methods and invalidate a
   assert.match(host.service.requireKitForAgent(host.agent).skills.find(skill => skill.name === 'alpha').content, /New project instruction/)
 })
 
+test('file-backed workspace reads reuse the Kit snapshot and still load edited project methods', async t => {
+  const f = await fixture(t), host = await f.start()
+  const project = await host.create(); await host.accept()
+  const root = host.service.requireKitForAgent(host.agent).skills.find(skill => skill.name === 'alpha').resourceRoot
+  await writeFile(join(root, 'reference/large.js'), '/* captured resource */\n' + 'x'.repeat(1024 * 1024))
+  await host.service.refreshProjectKit(host.agent)
+  const first = host.service.requireKitForAgent(host.agent)
+  const fingerprint = projectKitContentHash(first)
+  for (let index = 0; index < 3; index++) {
+    await host.service.readProjectWorkspaceSnapshot(host.agent, project.projectId, host.signal)
+    assert.equal(host.service.requireKitForAgent(host.agent), first,
+      'ordinary file-backed workspace polling must not rebuild the same Kit')
+    assert.equal(projectKitContentHash(first), fingerprint)
+  }
+  const method = join(root, 'SKILL.md')
+  await writeFile(method, await readFile(method, 'utf8') + '\nCurrent user-authored method.\n')
+  await host.service.readProjectWorkspaceSnapshot(host.agent, project.projectId, host.signal)
+  const next = host.service.requireKitForAgent(host.agent)
+  assert.notEqual(next, first)
+  assert.match(next.skills.find(skill => skill.name === 'alpha').content, /Current user-authored method/)
+  assert.notEqual(projectKitContentHash(next), fingerprint)
+})
+
 test('new project selection uses Host current-source port; existing projects never reconsult it', async t => {
   const f = await fixture(t), host = await f.start()
   const library = host.service.listKits()[0]
@@ -208,7 +231,7 @@ test('Panel clarity follows project definitions after library removal; system re
 })
 
 // Real selected project, actual canonical filesystem paths and registered Core guard.
-test('ordinary definition edits pass the Service guard while data, patch moves and symlink escapes remain protected', async t => {
+test('ordinary Host edits pass the Service guard while managed data and patch moves remain protected', async t => {
   const f = await fixture(t), active = await f.start()
   const project = await active.create(); await active.accept()
   active.agent.ctx = { tools: { get: () => undefined } }
@@ -222,8 +245,39 @@ test('ordinary definition edits pass the Service guard while data, patch moves a
   }
   await symlink(join(project.root, 'design_files'), join(project.root, 'design_kit/alias'))
   assert.equal((await active.guard({ name: 'write', arguments: { file_path: 'design_kit/alias/new.json', content: '{}' } })).kind, 'deny')
+  await symlink(join(project.root, 'design_files/alpha/alpha.json'), join(project.root, 'notes-alias.md'))
+  assert.equal((await active.guard({ name: 'write', arguments: { file_path: 'notes-alias.md', content: '{}' } })).kind, 'deny', 'a plain project filename cannot redirect to managed data')
+  await symlink(join(project.root, 'design_files'), join(f.root, 'outside-alias'))
+  assert.equal((await active.guard({ name: 'write', arguments: { file_path: join(f.root, 'outside-alias/new.json'), content: '{}' } })).kind, 'deny', 'a new target uses its real existing ancestor')
   await symlink(f.root, join(project.root, 'design_kit/outside'))
-  assert.equal((await active.guard({ name: 'write', arguments: { file_path: 'design_kit/outside/new.txt', content: 'x' } })).kind, 'deny')
+  assert.equal((await active.guard({ name: 'write', arguments: { file_path: 'design_kit/outside/new.txt', content: 'x' } })).kind, 'allow', 'ordinary outside targets retain Host authorization')
+  assert.equal((await active.guard({ name: 'write', arguments: { file_path: 'notes.md', content: 'Design Files use design_files/.' } })).kind, 'allow')
+  assert.equal((await active.guard({ name: 'write', arguments: { file_path: join(project.root, 'ordinary-notes.md'), content: file } })).kind, 'allow')
   assert.equal((await active.guard({ name: 'apply_patch', arguments: { patch: '*** Update File: design_kit/kit/mindset.md\n*** Move to: project.json' } })).kind, 'deny')
   assert.equal(await readFile(file, 'utf8'), before, 'pre-execute admission itself writes no files')
+})
+
+test('unrelated Host tools do not depend on selected project metadata', async t => {
+  const f = await fixture(t), active = await f.start()
+  const project = await active.create(); await active.accept()
+  active.agent.ctx = { tools: { get: () => undefined } }
+  active.agent.session.header.cwd = project.root
+  const metadataPath = join(project.root, 'project.json')
+  const metadata = await readFile(metadataPath, 'utf8')
+  await writeFile(metadataPath, '{')
+  await assert.rejects(active.service.projects.require(project.projectId))
+
+  for (const call of [
+    { name: 'read', arguments: { file_path: join(f.root, 'notes.md') } },
+    { name: 'glob', arguments: { pattern: '*.md' } },
+    { name: 'grep', arguments: { pattern: 'Design Files' } },
+    { name: 'bash', arguments: { command: 'pwd' } },
+    { name: 'web_search', arguments: { query: 'product documentation' } },
+  ]) assert.equal((await active.guard(call)).kind, 'allow', call.name)
+
+  await assert.rejects(active.guard({ name: 'write', arguments: { file_path: 'design_files/alpha/alpha.json', content: '{}' } }),
+    'a real managed mutation still needs readable project identity')
+  await writeFile(metadataPath, metadata)
+  assert.equal((await active.guard({ name: 'write', arguments: { file_path: 'design_files/alpha/alpha.json', content: '{}' } })).kind, 'deny')
+  assert.equal((await active.guard({ name: 'write', arguments: { file_path: 'notes.md', content: 'Ordinary Host work.' } })).kind, 'allow')
 })

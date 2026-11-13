@@ -43,9 +43,15 @@ export function relationLifecycleLabel(lifecycle: string, locale = 'zh-CN'): str
  */
 export function relationDisplayLabel(edge: GraphEdge, locale = 'zh-CN'): string {
   const members = edge.members
-  return members && members.length > 1
-    ? panelText('knowledgeGraphOriginalRelations', locale, { meaning: relationMeaningLabel(edgeReading(edge).meaning, locale), count: members.length })
-    : members?.[0]?.label ?? edge.label
+  if (members && members.length > 1) return panelText('knowledgeGraphOriginalRelations', locale, { meaning: relationMeaningLabel(edgeReading(edge).meaning, locale), count: members.length })
+  const source = members?.[0] ?? edge
+  const reading = edgeReading(source)
+  if (source.kind === 'contains') return relationMeaningLabel('contains', locale)
+  if (source.kind === 'semantic') return relationMeaningLabel('similar', locale)
+  if (source.kind === 'identifier-match') return panelText(reading.meaning === 'references' ? 'knowledgeGraphSourceReference' : 'knowledgeGraphIdentifierMatch', locale)
+  if (source.kind === 'knowledge' && reading.origin === 'file' && reading.relationType === 'references' && source.id.startsWith('source-ref:')) return panelText('knowledgeGraphSourceReference', locale)
+  if (source.kind === 'knowledge' && reading.origin === 'file' && reading.relationType === 'references-artifact') return panelText('knowledgeGraphArtifactReference', locale)
+  return source.label
 }
 /** Independent filters, applied before neighborhood expansion and display limits. */
 export function filterRelations(graph: GraphScope, meaning = 'all', origin = 'all'): GraphScope {

@@ -26,8 +26,9 @@ assert.deepEqual(
     { method: 'readKitFile', invocation: 'direct', hasScope: false, parameterSources: ['json', 'json', 'json'] },
     { method: 'readBundleWorkspace', invocation: 'direct', hasScope: false, parameterSources: ['json', 'json'] },
     { method: 'readBundleFile', invocation: 'direct', hasScope: false, parameterSources: ['json', 'json', 'json'] },
+    { method: 'previewInstalled', invocation: 'direct', hasScope: false, parameterSources: ['json'] },
   ],
-  'the read-only surface keeps six scope-free methods with their business inputs on the JSON wire',
+  'inspection and isolated sample reads keep scope-free business inputs on the JSON wire',
 )
 
 for (const [method, names] of [
@@ -69,6 +70,12 @@ const client = createDshStudioClient({
   async readBundleFile() { return { ok: true, value: bundleFileResult } },
 })
 assert.deepEqual(Object.keys(client).sort(), ['readBundleFile', 'readBundleWorkspace', 'readKitFile', 'readKitFiles', 'readKitWorkspace', 'workspace'], 'the shared client exposes exactly the six read-only methods')
+assert.equal(client.previewInstalled, undefined, 'older remotes do not advertise a missing preview capability')
+const previewInput = { bundle: { name: 'flows', version: '1.0' }, revision: 2 }, previewCalls = []
+const previewValue = { preview: { ...previewInput, panelYaml: 'version: 1', sample: {} }, diagnostics: [] }
+const previewClient = createDshStudioClient({ previewInstalled: async input => { previewCalls.push(input); return { ok: true, value: previewValue } } })
+assert.deepEqual(await previewClient.previewInstalled(previewInput), previewValue)
+assert.deepEqual(previewCalls, [previewInput])
 assert.equal((await client.workspace('flow')).query, 'flow')
 assert.deepEqual(await client.readKitWorkspace('web_app', '1.0'), normalizedKitWorkspaceResult, 'older hosts are normalized only at the browser adapter boundary')
 assert.deepEqual(await client.readKitFiles({ name: 'web_app', version: '1.0' }), kitFilesResult)

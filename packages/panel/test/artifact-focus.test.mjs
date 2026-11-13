@@ -10,6 +10,27 @@ const { createRoot } = await import('react-dom/client')
 const { ExecutionTrace, ArtifactWorkspace, artifactGroups } = await import('../src/artifact-workspace.tsx')
 const { PanelLocaleContext } = await import('../src/panel-i18n.tsx')
 after(() => dom.window.close())
+
+test('Details prefers a current artifact run over a loaded historical run', async () => {
+  const root = createRoot(document.getElementById('root')), logs = []
+  const node = { id: 'history-current', component: 'artifact_workspace', artifacts: { records_path: 'rounds', title_field: 'title', file_field: 'file', artifact_kind: 'summary',
+    children: { records_field: 'directions', title_field: 'title', file_field: 'file', artifact_kind: 'direction', scoped_ids: true } } }
+  const data = { rounds: { R: { title: 'Round', directions: { D: { title: 'Direction', file: 'research/R/D.md' } } } } }
+  const options = { skill: 'research', artifactFiles: { 'research/R/D.md': 'current-bytes' },
+    readArtifact: async () => ({ found: true, content: '# Result' }),
+    executionAttempts: [{ skill: 'research', role: 'worker', artifactKind: 'direction', artifactId: 'R/D', artifactFile: 'research/R/D.md',
+      invocationId: 'current', attemptId: 'current-attempt', runId: 'current-run', phase: 'completed', sequence: 1 }],
+    readArtifactHistory: async () => [{ skill: 'research', artifactId: 'R/D', artifactKind: 'direction', artifactFile: 'research/R/D.md', invocationId: 'old', runId: 'old-run', phase: 'completed', timestamp: 1 }],
+    readExecutionLog: async run => { logs.push(run); return { found: true, revision: 'native', reset: true, entries: [{ seq: 1, timestamp: 1, eventType: 'search', message: 'Current search' }] } },
+  }
+  try {
+    await React.act(async () => root.render(React.createElement(PanelLocaleContext.Provider, { value: 'en-US' }, React.createElement(ArtifactWorkspace, { node, data, options }))))
+    await React.act(async () => document.querySelector('button[aria-label="Direction"]').click())
+    assert.deepEqual(logs, [])
+    await React.act(async () => [...document.querySelectorAll('button')].find(button => button.textContent === 'Details').click())
+    assert.deepEqual(logs, ['current-run'])
+  } finally { await React.act(async () => root.unmount()) }
+})
 test('serial fallback files remain readable and counted while failed Worker records stay failed', async () => {
   const root = createRoot(document.getElementById('root'))
   const summary = 'research/R/summary.html', first = 'research/R/A.md', second = 'research/R/B.md'
@@ -183,7 +204,12 @@ test('real shared artifact consumer shows unknown activity in both locales while
             artifactFiles: { [file]: 'observed-digest' }, readArtifact,
             artifactActivities: [{ ...a, nativeStatus, active, available }] } }))))
         const header = document.querySelector('.dsh-document-toolbar [role="status"]')
-        assert.equal(header.textContent, expected)
+        // Completed files use the existing navigation icon instead of a
+        // redundant toolbar status. Unknown/active states remain explicit.
+        if (expected === availableLabel) {
+          assert.equal(header, null)
+          assert.equal(document.querySelector('[data-execution-status="completed"]').getAttribute('aria-label'), expected)
+        } else assert.equal(header.textContent, expected)
         assert.equal(document.querySelector('.dsh-panel-workspace-tree-record-toggle'), null, 'a report without directions has no empty disclosure')
         assert.match(document.querySelector('iframe').srcdoc, /EXISTING-READABLE-CONTENT/)
       }
@@ -251,5 +277,94 @@ test('artifact navigation restores rightmost native lifecycle icons and does not
     assert.equal(document.querySelector('button[aria-label="Round"] .dsh-panel-workspace-tree-trailing [data-execution-status]').dataset.executionStatus, 'working',
       'active direction remains visible beside an existing conclusion')
     assert.deepEqual(data, before)
+  } finally { await React.act(async () => root.unmount()) }
+})
+
+
+test('Producer terminal observations stop an older Worker but do not hide a newer retry when old events arrive late', () => {
+  const producer = { role: 'producer', skill: 'test_bundle', invocationId: 'current', attemptId: 'producer', runId: 'producer', sequence: 1, phase: 'working' }
+  const worker = { ...producer, role: 'worker', artifactKind: 'document', artifactId: 'item', artifactFile: 'test_bundle/item.html', attemptId: 'worker', runId: 'worker', sequence: 2 }
+  const project = attempts => projectArtifactExecution('item', attempts, 'document', true, 'pending', worker.artifactFile)
+  assert.equal(project([producer, worker]).status, 'working')
+  for (const phase of ['completed', 'failed', 'cancelled']) {
+    const terminal = { ...producer, phase, sequence: 3 }
+    assert.equal(project([terminal, worker, producer]).status, 'failed', 'a closed Producer cannot keep its older Worker spinner alive')
+    const retry = { ...worker, attemptId: 'retry', runId: 'retry-run', sequence: 4, phase: 'queued' }
+    const observed = project([retry, terminal, worker, producer])
+    assert.equal(observed.status, 'queued')
+    assert.equal(observed.runId, 'retry-run', 'an older Producer completion arriving later in the array cannot replace the actual newer retry')
+  }
+})
+
+
+test('published Details retains the real scoped search history after runtime progress has ended', async () => {
+  const root = createRoot(document.getElementById('root'))
+  const file = 'example/round/A.md'
+  const node = { id: 'history', component: 'artifact_workspace', artifacts: {
+    records_path: 'rounds', title_field: 'title', file_field: 'file', artifact_kind: 'round',
+    children: { records_field: 'directions', title_field: 'title', file_field: 'file', artifact_kind: 'direction', scoped_ids: true, points_field: 'questions' },
+  } }
+  const data = { rounds: { R: { title: 'Round', directions: { A: { title: 'Direction', file, questions: ['Preserved saved question'] } } } } }
+  const before = structuredClone(data), calls = []
+  const logTarget = { artifactId: 'R/A', invocationId: 'finished-invocation' }
+  const options = { skill: 'example', locale: 'en-US', artifactFiles: { [file]: 'saved' },
+    artifactActivities: [{ executor: 'main', projectId: 'project', skill: 'example', invocationId: logTarget.invocationId,
+      runId: 'finished-run', artifactId: 'R/A', artifactKind: 'direction', artifactFile: file,
+      sequence: 1, active: false, available: true, nativeStatus: 'completed', logTarget }],
+    readArtifact: async () => ({ found: true, content: '# Saved findings' }),
+    readExecutionLog: async (...args) => { calls.push(args); return { found: true, revision: 'saved', reset: true,
+      entries: [{ seq: 1, timestamp: 1, eventType: 'search', message: 'Actual saved search', url: 'https://example.com/source' }] } },
+  }
+  try {
+    await React.act(async () => root.render(React.createElement(PanelLocaleContext.Provider, { value: 'en-US' }, React.createElement(ArtifactWorkspace, { node, data, options }))))
+    await React.act(async () => document.querySelector('button[aria-label="Direction"]').click())
+    assert.equal(calls.length, 0, 'reading the saved artifact does not mount a permanent trace')
+    const details = [...document.querySelectorAll('button')].find(button => button.textContent === 'Details')
+    await React.act(async () => details.click())
+    const region = document.querySelector('.dsh-artifact-details')
+    assert.match(region.textContent, /Preserved saved question/)
+    assert.match(region.textContent, /Actual saved search/)
+    assert.ok(region.querySelector('.dsh-execution-activity'), 'the explicit Details history keeps its reader after completion')
+    assert.deepEqual(calls[0], ['finished-run', undefined, logTarget])
+    assert.deepEqual(data, before)
+  } finally { await React.act(async () => root.unmount()) }
+})
+
+
+test('ordinary artifact parent and child use real runtime logs, centered without output and beside landed reports', async () => {
+  const root = createRoot(document.getElementById('root')), file = 'example/R/A.md', calls = []
+  const node = { id: 'runtime-artifact', component: 'artifact_workspace', artifacts: {
+    records_path: 'rounds', title_field: 'title', file_field: 'file', artifact_kind: 'round',
+    children: { records_field: 'directions', title_field: 'title', file_field: 'file', artifact_kind: 'direction', scoped_ids: true },
+  } }
+  const data = { rounds: { R: { title: 'Round', directions: { A: { title: 'Direction', file: null } } } } }, before = structuredClone(data)
+  const producer = { skill: 'example', role: 'producer', invocationId: 'actual', artifactId: 'example', attemptId: 'producer', runId: 'producer-run', phase: 'working', sequence: 1 }
+  const worker = { ...producer, role: 'worker', artifactId: 'R/A', artifactKind: 'direction', artifactFile: file, attemptId: 'worker', runId: 'worker-run', phase: 'queued', sequence: 2 }
+  let executionAttempts = [producer, worker], artifactFiles = {}
+  const readArtifact = async () => ({ found: true, content: '# LANDED-REPORT-CONTENT' })
+  const readExecutionLog = async runId => { calls.push(runId); return { found: true, reset: true, revision: runId, entries: [{ seq: 1, timestamp: 1, eventType: 'message', message: `actual-${runId}` }] } }
+  const show = () => React.act(async () => root.render(React.createElement(PanelLocaleContext.Provider, { value: 'en-US' },
+    React.createElement(ArtifactWorkspace, { node, data, options: { skill: 'example', artifactFiles, executionAttempts, readArtifact, readExecutionLog } }))))
+  try {
+    await show()
+    assert.match(document.querySelector('.dsh-artifact-placeholder').textContent, /actual-producer-run/, 'a parent binds the real active Producer, never the main conversation')
+    await React.act(async () => document.querySelector('button[aria-label="Direction"]').click())
+    const placeholder = document.querySelector('.dsh-artifact-output .dsh-artifact-placeholder')
+    assert.ok(placeholder?.querySelector('[data-content-state]'))
+    assert.match(placeholder.textContent, /actual-worker-run/, 'the selected child uses its exact queued Worker')
+    assert.equal(calls.at(-1), worker.runId)
+    artifactFiles = { [file]: 'landed' }
+    executionAttempts = [producer, { ...worker, phase: 'working', sequence: 3 }]
+    await show()
+    const report = document.querySelector('.dsh-artifact-markdown')
+    assert.match(report.textContent, /LANDED-REPORT-CONTENT/)
+    assert.ok(document.querySelector('.dsh-artifact-preview > [data-execution-log]'), 'progress is beside readable content, not overlaid on it')
+    for (const phase of ['completed', 'failed', 'cancelled']) {
+      executionAttempts = [{ ...producer, phase, sequence: 5 }, { ...worker, phase, sequence: 4 }]
+      await show()
+      assert.equal(document.querySelector('.dsh-artifact-output [data-execution-log]') === null, true, `${phase} clears the ordinary runtime region`)
+      assert.equal(document.querySelector('.dsh-artifact-markdown'), report, 'settling retains the readable report')
+    }
+    assert.deepEqual(data, before, 'runtime logs and landed file projection do not write canonical data')
   } finally { await React.act(async () => root.unmount()) }
 })

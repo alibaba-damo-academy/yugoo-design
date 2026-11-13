@@ -45,8 +45,8 @@ export function planRelationHierarchyCreate(
   const rawNodes = rawMap(nodeBinding.recordsPath), rawEdges = rawMap(edgeBinding.recordsPath)
   if (!rawNodes || !rawEdges) return
   // Include malformed existing members in collision checks and preserve them for repair.
-  const nodeId = freshRecordId(graph.nodes, rawNodes as Record<string, Record<string, unknown>>)
-  const edgeId = freshRecordId(graph.edges, rawEdges as Record<string, Record<string, unknown>>)
+  const nodeId = freshRecordId(graph.nodes, rawNodes as Record<string, Record<string, unknown>>, nodeSection.create?.id_prefix)
+  const edgeId = freshRecordId(graph.edges, rawEdges as Record<string, Record<string, unknown>>, edgeSection.create?.id_prefix)
   const nodeValues = {
     ...structuredClone(nodeSection.create?.defaults ?? {}), [graph.label_field]: name.trim(),
     ...(nodeSection.create?.id_field ? { [nodeSection.create.id_field]: nodeId } : {}),

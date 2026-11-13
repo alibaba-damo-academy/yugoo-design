@@ -1,0 +1,27 @@
+{
+  "name": "@radix-ui/react-roving-focus",
+  "version": "1.0.2",
+  "repository": "radix-ui/primitives",
+  "commit": "21a7c97dc8efa79fecca36428eec49f187294085",
+  "tag": null,
+  "publishedGitHead": null,
+  "correspondence": "Nearest official New release commit whose package.json has exact version; all published npm source-map sources compared byte-for-byte. npm version has no gitHead; no tag claim.",
+  "sourceMatches": [
+    {
+      "path": "packages/react/roving-focus/src/index.ts",
+      "exactMatch": true,
+      "sha256": "f41b8c7f80874782362f7477d3b0b224c08b9889a2d6114908cd8fdbab645652"
+    },
+    {
+      "path": "packages/react/roving-focus/src/RovingFocusGroup.tsx",
+      "exactMatch": true,
+      "sha256": "e369bc5d214e688b8df5e3166845a1efbc7b685ac022a568587b6c06d33a7aa5"
+    }
+  ],
+  "tarball": "https://registry.npmjs.org/@radix-ui/react-roving-focus/-/react-roving-focus-1.0.2.tgz",
+  "tarballIntegrity": "sha512-HLK+CqD/8pN6GfJm3U+cqpqhSKYAWiOJDe+A+8MfxBnOue39QEeMa43csUn2CXCHQT0/mewh1LrrG4tfkM9DMA==",
+  "tarballSha1": "d8ac2e3b8006697bdfc2b0eb06bef7e15b6245de",
+  "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/21a7c97dc8efa79fecca36428eec49f187294085/LICENSE",
+  "licenseSha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+  "licenseBytes": 1063
+}

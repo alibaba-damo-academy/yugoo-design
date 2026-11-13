@@ -1,8 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile, readdir, stat, realpath } from 'node:fs/promises'
+import { parse as parseYaml } from 'yaml'
 const { register } = await import('tsx/esm/api'); register()
 const { DESIGN_CORE_PROGRESSION_PROMPT } = await import('../src/design-core-prompt.ts')
+const { DESIGN_PANEL_SAVE_ASSESSMENT_GUIDANCE } = await import('../src/panel-save.ts')
 const { DESIGN_EXECUTOR_EVIDENCE_GUIDANCE, DESIGN_WORKER_EVIDENCE_GUIDANCE } = await import('../src/design-generation-guidance.ts')
 const { KNOWLEDGE_AGENTIC_GUIDANCE } = await import('../src/design-knowledge-query.ts')
 const { producerSystemPrompt, producerEvidenceTools } = await import('../src/dsh-design-execution-plugin.ts')
@@ -14,7 +16,12 @@ const kitPromise = loadDesignKit(fs, new URL('../../skills-web-app/', import.met
 
 test('Panel save continuation consumes committed state without replaying settled Bundle tools', () => {
   assert.match(DESIGN_CORE_PROGRESSION_PROMPT, /After a successful meaningful Panel save, the Design service has already validated and committed the user's edits/)
-  assert.match(DESIGN_CORE_PROGRESSION_PROMPT, /assess the newly injected saved state before your final reply or next-step recommendation/)
+  assert.ok(DESIGN_CORE_PROGRESSION_PROMPT.includes(DESIGN_PANEL_SAVE_ASSESSMENT_GUIDANCE))
+  assert.match(DESIGN_PANEL_SAVE_ASSESSMENT_GUIDANCE, /latest saved Design evidence/)
+  assert.match(DESIGN_PANEL_SAVE_ASSESSMENT_GUIDANCE, /call report_design_clarity in this same main-conversation continuation before asking the next question, recommending another Bundle or ending your reply/)
+  assert.match(DESIGN_PANEL_SAVE_ASSESSMENT_GUIDANCE, /unchanged or replayed save does not require another score/)
+  assert.match(DESIGN_PANEL_SAVE_ASSESSMENT_GUIDANCE, /later user stop, cancellation or instruction not to assess takes priority/)
+  assert.match(DESIGN_PANEL_SAVE_ASSESSMENT_GUIDANCE, /reporting fails, state that limitation and preserve the saved result/)
   assert.match(DESIGN_CORE_PROGRESSION_PROMPT, /do not call design_validate or design_publish again for that save/)
   assert.match(DESIGN_CORE_PROGRESSION_PROMPT, /conversation history are not current capabilities/)
   assert.match(DESIGN_CORE_PROGRESSION_PROMPT, /scoped tools are revoked, including design_validate/)
@@ -74,11 +81,13 @@ test('Producer locates installed Bundle references and validators independently 
   }
 })
 
-test('loaded Page method reaches task synthesis resource without schema or version additions', async () => {
+test('loaded Page method reaches task synthesis resource and preserves declared versions', async () => {
   const kit = await kitPromise
   const page = kit.skills.find(s => s.name === 'page_design')
-  assert.equal(String(kit.version), '1.0')
-  assert.equal(String(page.version), '1.0')
+  const mindset = await readFile(new URL('../../skills-web-app/kits/web_app/mindset.md', import.meta.url), 'utf8')
+  const pageDeclaration = await readFile(new URL('../../skills-web-app/bundles/page_design/skill.yaml', import.meta.url), 'utf8')
+  assert.equal(String(kit.version), String(parseYaml(mindset.split('---')[1]).version))
+  assert.equal(String(page.version), String(parseYaml(pageDeclaration).version))
   assert.match(page.content, /reference\/task-to-page-method.md/)
   const method = kit.resources['page_design/reference/task-to-page-method.md']
   assert.equal(typeof method, 'string')
@@ -102,4 +111,46 @@ test('loaded Research method exposes the HTML contract as an Agent review duty',
   assert.match(contract, /Agent review duty/)
   assert.match(contract, /rules, which do not inspect HTML structure/)
   assert.doesNotMatch(contract, /settlement gate validates the tag structure/)
+})
+
+test('loaded evidence methods retain judgment and existing-file routes at their actual resource entries', async () => {
+  const kit = await kitPromise
+  const research = kit.skills.find(skill => skill.name === 'research')
+  const flow = kit.skills.find(skill => skill.name === 'flow_design')
+  const functions = kit.skills.find(skill => skill.name === 'function_modules')
+  // The delegated report assignment previously carried its outline without
+  // the preceding evidence acceptance. Keep both reachable in the loaded Kit.
+  assert.match(research.content, /copy \*\*User bounds and evidence\s+acceptance\*\* and \*\*Findings Markdown\*\*/)
+  // Normal execution must receive the critical method itself, even when it
+  // does not follow a resource link. Reconstruction keeps the readable contract.
+  for (const mode of ['main', 'subagent']) {
+    const prompt = producerSystemPrompt({ ...research, execution: { ...research.execution, mode } },
+      { allowed: [], unavailableOptional: [] }, '/app', false, kit.resources, '/project/design_files')
+    const body = prompt.split('<design_skill_body>')[1].split('</design_skill_body>')[0]
+    assert.match(body, /Silence\s+on a page means unverified/)
+    assert.match(body, /caller's provisional diagnosis/)
+    assert.match(body, /distinct cited document URLs/)
+    assert.match(body, /including the overview, comparison cells and conclusion/)
+  }
+  const researchContract = kit.resources['research/reference/artifact-contract.md']
+  const acceptance = researchContract.split('## User bounds and evidence acceptance')[1].split('## Findings Markdown')[0]
+  assert.match(acceptance, /silence on a page means unverified/)
+  assert.match(acceptance, /distinct cited document URLs/)
+  assert.match(acceptance, /retrieve the\s+original passages/)
+  assert.match(acceptance, /inline links, bibliography and `source_urls` together/)
+  const flowContract = kit.resources['flow_design/reference/artifact-contract.md']
+  assert.match(flow.content, /artifact-contract.md#structure-and-file-operations/)
+  assert.match(flowContract, /\*\*New diagram:\*\*/)
+  assert.match(flowContract, /\*\*Existing diagram:\*\*/)
+  assert.match(flowContract, /run the final validator directly/)
+  assert.match(flowContract, /reads? the relevant|follows its relevant/)
+  assert.match(kit.resources['function_modules/reference/artifact-contract.md'], /current request's evidence scope first/)
+  for (const skill of [research, flow, functions]) {
+    const prompt = producerSystemPrompt(skill, { allowed: [], unavailableOptional: [] },
+      '/app', true, kit.resources, '/project/design_files')
+    // Reconstruction must reach the same contract, not depend on ordinary
+    // design-only SKILL prose for its critical evidence/revision constraints.
+    assert.match(prompt, /reference\/artifact-contract.md/)
+    assert.ok(!prompt.includes(skill.content))
+  }
 })

@@ -41,7 +41,12 @@ test('chip and card removal share a borderless icon target without inheriting or
       assert.deepEqual(value, ['One', 'Two'], 'removal sends only the intended replacement and never mutates incoming data')
       if (config.addMode === 'menu') {
         const trigger = container.querySelector('[aria-haspopup="menu"]')
-        assert.equal(dom.window.getComputedStyle(trigger).minHeight, config.layout === 'chips' ? '32px' : '80px', 'compact collections do not inherit the card add target')
+        // The current foundation sizes card Add by its contents; only chips
+        // have an explicit compact minimum. Do not restore an obsolete 80px rule.
+        assert.equal(dom.window.getComputedStyle(trigger).minHeight, config.layout === 'chips' ? '32px' : 'auto')
+        assert.equal(dom.window.getComputedStyle(trigger).padding, config.layout === 'chips' ? '5px 8px' : '12px')
+        assert.equal(trigger.querySelector('strong'), null, 'an action label does not use the token heading role')
+        assert.equal(dom.window.getComputedStyle(trigger.querySelector('.dsh-token-add-label')).fontWeight, '400')
         await React.act(async () => trigger.click())
         const item = container.querySelector('[role="menuitem"]'), itemStyle = dom.window.getComputedStyle(item)
         assert.equal(itemStyle.borderTopWidth, '0px', 'menu rows do not inherit ordinary button borders')
@@ -115,7 +120,7 @@ test('optional menu preserves presets, cancellable custom draft, keyboard focus 
   const container = document.getElementById('root'), root = createRoot(container)
   const style = document.createElement('style')
   style.textContent = readFileSync(new URL('../src/visual-components.css', import.meta.url), 'utf8')
-  document.head.append(style)
+  document.head.append(style); container.className = 'dsh-design-panel'
   const changes = []; let value = ['internal'], editable = true, locale = 'en-US', identity = 'first'
   const render = () => root.render(React.createElement(PanelLocaleContext.Provider, { value: locale }, React.createElement(TokenList, {
     key: identity, label: 'Delivery', value, editable, addMode: 'menu', layout: 'cards', customDescription: 'External service', customIcon: 'plug', addDescription: 'Choose a delivery method',
@@ -133,7 +138,7 @@ test('optional menu preserves presets, cancellable custom draft, keyboard focus 
     await React.act(async () => render())
     assert.equal(container.querySelector('input, select'), null)
     assert.equal(container.querySelector('[aria-haspopup="menu"]').getAttribute('aria-label'), 'Add Delivery')
-    assert.equal(container.querySelector('[aria-haspopup="menu"] strong').textContent, 'Add')
+    assert.equal(container.querySelector('[aria-haspopup="menu"] .dsh-token-add-label').textContent, 'Add')
     assert.match(container.querySelector('[aria-haspopup="menu"] small').textContent, /Choose a delivery method/)
     assert.equal(container.querySelector('.dsh-token-menu-add').parentElement, container.querySelector('.dsh-token-items'))
     assert.ok(container.querySelector('.dsh-token-icon svg'))
@@ -188,7 +193,7 @@ test('optional menu preserves presets, cancellable custom draft, keyboard focus 
     editable = true; await React.act(async () => render())
     assert.equal(container.querySelector('input'), null, 'unlock does not revive abandoned draft')
     assert.equal(changes.length, 1)
-  } finally { await React.act(async () => root.unmount()); style.remove() }
+  } finally { await React.act(async () => root.unmount()); style.remove(); container.className = '' }
 })
 
 test('the shared interpreter forwards menu configuration and isolates entry drafts across record navigation', async () => {

@@ -10,7 +10,7 @@ import { createRequire } from 'node:module'
 import { dirname, isAbsolute, relative, resolve } from 'node:path'
 import type DesignService from './design-service.ts'
 import { loadDesignBundle, loadDesignKit, resolveDesignKitPackage, createDirectoryBundleResolver, type DesignKitLocation, type KitFsLike } from './kit-loader.ts'
-import { DesignContentStore } from './content-store.ts'
+import { contentNodeFs, DesignContentStore } from './content-store.ts'
 import { watch as watchFiles, type FSWatcher } from 'chokidar'
 import type { DesignKit } from './types.ts'
 import { startKitDiscovery } from './kit-discovery.ts'
@@ -116,6 +116,7 @@ export class KitReloadQueue {
 
 /** Node filesystem adapter for reading the kit content directory. */
 const kitFs: KitFsLike = {
+  readResource: contentNodeFs.readResource,
   readText: async (path) => {
     try {
       return await readFile(path, 'utf8')

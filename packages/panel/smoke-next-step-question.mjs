@@ -66,6 +66,14 @@ assert.equal(cancellations, 2, 'malformed or cross-session current Host facts ne
 
 const failedCancel = { ...nextStep, async cancel() { throw new Error('transport failed') } }
 assert.equal(await cancelPendingDesignNextStepQuestion(source(failedCancel), 'session-a'), false, 'cancel failure is non-fatal after a durable save')
+for (const unavailable of [
+  { getSnapshot() { throw new Error('snapshot unavailable') } },
+  { getSnapshot() { return { get() { throw new Error('session lookup unavailable') } } } },
+]) {
+  assert.equal(await cancelPendingDesignNextStepQuestion(unavailable, 'session-a'), false,
+    'an unavailable optional interaction lookup cannot block saved user intent')
+}
+assert.equal(cancellations, 2, 'an unavailable lookup cannot cancel an unrelated question')
 
 const workspace = await readFile(new URL('./src/client/workspace.tsx', import.meta.url), 'utf8')
 const saveBlock = /for \(const skill of dirty\)(?<body>[\s\S]*?)await runtime\.sendPrompt\(sessionId, isZh/du.exec(workspace)?.groups?.body ?? ''
@@ -75,6 +83,6 @@ assert.ok(saveBlock.indexOf('await runtime.savePanel') < saveBlock.indexOf('awai
 assert.equal(workspace.match(/await runtime\.cancelPendingNextStepQuestion\(sessionId\)/g)?.length, 2, 'ordinary save and save-and-regenerate must both release the stale next-step recommendation')
 
 const corePrompt = await readFile(new URL('../core/src/design-core-prompt.ts', import.meta.url), 'utf8')
-assert.match(corePrompt, /exactly one question whose machine id is exactly 'dsh-design-next-step'/)
+assert.match(corePrompt, /one native ask_user_question with exactly one machine-id 'dsh-design-next-step' question/)
 
 console.log('PANEL SAVE PREEMPTS ONLY NEXT-STEP QUESTION OK')

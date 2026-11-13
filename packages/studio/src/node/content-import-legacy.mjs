@@ -1,4 +1,5 @@
 /** Reuse Core's legacy migration before comparing immutable imported content. */
+import { STUDIO_SOURCE_MAX_BYTES } from '../content-archive.ts'
 import { createHash } from 'node:crypto'
 import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises'
 import { join, relative, sep } from 'node:path'
@@ -53,7 +54,7 @@ export async function normalizeLegacyKitImport(staged, { stagingRoot, sourceId, 
         if (entry.isDirectory()) await walk(path)
         else if (entry.isFile()) {
           const bytes = await readFile(path)
-          if (++count > 4096 || (total += bytes.length) > 16 * 1024 * 1024) throw new Error('Normalized content exceeds bounded archive limits.')
+          if (++count > 4096 || (total += bytes.length) > STUDIO_SOURCE_MAX_BYTES) throw new Error('Normalized content exceeds bounded archive limits.')
           files.push({ path: relative(rootDir, path).split(sep).join('/'), base64: bytes.toString('base64'),
             bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') })
         } else throw new Error('Normalized imported content must contain only regular files.')

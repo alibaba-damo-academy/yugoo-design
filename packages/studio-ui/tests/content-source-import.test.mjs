@@ -3,8 +3,9 @@ import assert from 'node:assert/strict'
 import { zipSync } from 'fflate'
 import { readStudioImportFiles } from '../src/content-source-import.ts'
 import { encodeStudioContentZip } from '../src/content-zip.ts'
-import { formatStudioImportError } from '../src/content-transfer.ts'
+import { formatStudioImportError, assertStudioImportRequestSize } from '../src/content-transfer.ts'
 import { readStudioContentArchive } from '../../studio/src/content-archive.ts'
+import { STUDIO_ARCHIVE_MAX_JSON_BYTES } from '../../studio/src/types.ts'
 import { createStudioInstances } from '../../studio/src/node/studio-instances.mjs'
 import { adapters, originalFiles, entry, pin } from '../../companion/test/fixtures/studio-changes-fixture.mjs'
 import { STUDIO_AUTHORING_RPC_SCHEMAS } from '../../studio-dsh/src/authoring.remote-client.ts'
@@ -119,4 +120,63 @@ test('Kit and Bundle display names survive actual saved-source ZIP export and re
     assert.equal(after, kind === 'kit' ? before.replaceAll(record.kit.name, copy.kit.name) : before)
     assert.deepEqual((await (await createStudioInstances(options)).read(copy.id)).title, copy.title)
   }
+})
+
+
+test('24 MiB complete source survives saved ZIP export, browser import, strict RPC and retained reopen', async t => {
+  const stateRoot = await mkdtemp(join(tmpdir(), 'studio-large-transfer-'))
+  t.after(() => rm(stateRoot, { recursive: true, force: true }))
+  const options = { stateRoot, ...adapters() }, service = await createStudioInstances(options)
+  const asset = Buffer.alloc(24 * 1024 * 1024, 0xa5).toString('base64')
+  const files = [...originalFiles, { path: 'assets/large.bin', base64: asset }]
+  const saved = await service.importSources({ kind: 'bundle', files })
+  const source = await service.exportArchive({ id: saved.id, expectedRevision: saved.revision })
+  assert.ok(Buffer.byteLength(source) > 32 * 1024 * 1024, 'serialized base64 must cross the old JSON ceiling')
+  assert.doesNotThrow(() => assertStudioImportRequestSize(source))
+  const bytes = encodeStudioContentZip(source)
+  const imported = await readStudioImportFiles('bundle', [{ name: 'saved.zip', size: bytes.length,
+    arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+    text: async () => { throw Error('Use binary ZIP bytes') } }], async value => {
+      const request = STUDIO_AUTHORING_RPC_SCHEMAS.readArchive.request.parse({ source: value })
+      return readStudioContentArchive(request.source)
+    })
+  assert.equal(imported.files.find(file => file.path === 'assets/large.bin').base64, asset)
+  const request = STUDIO_AUTHORING_RPC_SCHEMAS.importSources.request.parse(imported)
+  const copy = await service.importSources(request)
+  const reopened = await createStudioInstances(options)
+  const again = readStudioContentArchive(await reopened.exportArchive({ id: copy.id, expectedRevision: copy.revision }))
+  assert.equal(again.files.find(file => file.path === 'assets/large.bin').base64, asset)
+  assert.equal((await reopened.readFile({ id: copy.id, path: 'SKILL.md' })).content,
+    Buffer.from(originalFiles.find(file => file.path === 'SKILL.md').base64, 'base64').toString('utf8'))
+})
+
+test('browser and archive reader accept the same JSON byte boundary regardless of RPC wrapping', async t => {
+  const stateRoot = await mkdtemp(join(tmpdir(), 'studio-json-boundary-'))
+  t.after(() => rm(stateRoot, { recursive: true, force: true }))
+  const service = await createStudioInstances({ stateRoot, ...adapters() })
+  const saved = await service.importSources({ kind: 'bundle', files: originalFiles })
+  const source = await service.exportArchive({ id: saved.id, expectedRevision: saved.revision })
+  const expected = readStudioContentArchive(source).files.map(({ path, base64 }) => ({ path, base64 }))
+  const atLimit = source + ' '.repeat(STUDIO_ARCHIVE_MAX_JSON_BYTES - Buffer.byteLength(source))
+  assert.ok(Buffer.byteLength(JSON.stringify({ source: atLimit })) > STUDIO_ARCHIVE_MAX_JSON_BYTES,
+    'valid archive content is not rejected because its RPC envelope is larger')
+  const imported = await readStudioImportFiles('bundle', [text('saved.json', atLimit)], async value => {
+    assertStudioImportRequestSize(value)
+    return readStudioContentArchive(value)
+  })
+  assert.deepEqual(imported.files, expected)
+  assert.throws(() => assertStudioImportRequestSize(atLimit + ' '), /Archive JSON exceeds 64 MiB/)
+  assert.throws(() => readStudioContentArchive(atLimit + ' '), /Archive JSON exceeds 64 MiB/)
+})
+
+test('oversized source and transport still fail without truncating the selected files', async () => {
+  const bytes = Buffer.alloc(32 * 1024 * 1024 + 1)
+  await assert.rejects(readStudioImportFiles('bundle', [text('SKILL.md', '# Method'), {
+    name: 'large.bin', size: bytes.length, arrayBuffer: async () => bytes.buffer, text: async () => { throw Error('binary') },
+  }]), /source exceeds 32 MiB/)
+  let reads = 0
+  await assert.rejects(readStudioImportFiles('bundle', [{ name: 'large.zip', size: 64 * 1024 * 1024 + 1,
+    text: async () => { reads++; return '' },
+  }]), /64 MiB/)
+  assert.equal(reads, 0, 'known oversized transport is refused before loading')
 })

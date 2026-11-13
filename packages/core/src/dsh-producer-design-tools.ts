@@ -382,15 +382,15 @@ export function createDesignSkillScriptTool(
     description: 'Run one ordinary script bundled under the active Skill scripts/ directory. '
       + 'Call this executable directly; do not read its source before use. The Host binds the installed Skill and executes it outside the Design Project. '
       + 'Use input_json for a small structured request, or input_file when the script processes a Design Project file. '
-      + 'When the result is an artifact, use output_file so file bytes stay outside model context.',
+      + 'Use output_file only when stdout is an artifact, never for validation or diagnostic JSON.',
     parameters: {
       path: { type: 'string', required: true, description: 'Path below scripts/, for example layout.mjs.' },
       args: { type: 'array', items: { type: 'string' }, description: 'Optional literal argv entries; no shell expansion.' },
       input_json: { type: 'object', additionalProperties: true, description: 'Small structured script input. Use this or input_file, never both.' },
       input_file: { type: 'string', description: 'Working-copy UTF-8 file processed directly by the script.' },
       input_files: { type: 'array', items: { type: 'string' }, description: 'Optional additional Working-copy UTF-8 files. The Host supplies their exact bytes to the script as input_files keyed by project-relative path.' },
-      input_context: { type: 'object', additionalProperties: true, description: 'Optional small structured context accompanying input_file.' },
-      output_file: { type: 'string', description: 'On exit 0, write the script result to this WorkingCopy UTF-8 path and return only a compact receipt.' },
+      input_context: { type: 'object', additionalProperties: true, description: 'Optional small structured context accompanying input_file. In a structured file input, the Host owns script_io input_file/output_file metadata and overrides caller values.' },
+      output_file: { type: 'string', description: 'Only for artifact stdout: on exit 0, write it to this WorkingCopy UTF-8 path and return a compact receipt. Omit for validation or diagnostic JSON.' },
     },
     output: {
       schema: {
@@ -442,7 +442,12 @@ export function createDesignSkillScriptTool(
           ...args.input_context ?? {},
           ...Object.keys(additionalFiles).length === 0 ? {} : { input_files: additionalFiles },
         }
-        scriptInput = Object.keys(context).length === 0 ? file.content : `${JSON.stringify(context)}\n${file.content}`
+        // Preserve raw-file stdin. Only an existing structured file envelope
+        // receives the Host-owned paths, after all caller-supplied context.
+        scriptInput = Object.keys(context).length === 0 ? file.content : `${JSON.stringify({
+          ...context,
+          script_io: { input_file: inputFile, output_file: outputFile ?? null },
+        })}\n${file.content}`
       }
 
       const result = await scripts.run(path, args.args ?? [], scriptInput, exec.signal)
@@ -633,6 +638,7 @@ export function registerDshProducerDesignTools(
       render: (_args, value) => text(value.kind === 'preview'
         ? [
             `Restore preview ${value.revision} over ${value.current_revision}:`,
+            `preview_token: ${value.preview_token}`,
             ...(value.changed_paths.length === 0 ? ['no Bundle files change'] : value.changed_paths),
             ...(value.overwritten_unpublished_paths.length === 0
               ? []
@@ -671,9 +677,9 @@ export function registerDshProducerDesignTools(
   register(defineTool({
     name: 'design_focus_artifact',
     description: 'Focus one explicitly identified Bundle-owned artifact before doing serial Producer work on it. '
-      + 'The Host binds the real Producer attempt and native session log to that artifact until another artifact is focused. '
-      + 'This records execution association only; it does not write Design state or prove artifact acceptance. '
-      + 'Delegated workers are observed automatically and do not need this tool.',
+      + 'The Host associates the real Producer attempt and native session log and reserves the artifact ID and file for serial authorship until another artifact is focused or the invocation ends. '
+      + 'Continue an already focused artifact serially; choose design_delegate before serial focus for Worker work. '
+      + 'Focus does not write Design state or prove artifact acceptance. Delegated Workers are observed automatically.',
     parameters: {
       artifact_kind: { type: 'string', required: true, description: 'Opaque panel activity label.' },
       artifact_id: { type: 'string', required: true, description: 'Stable node id used to bind Producer activity to the panel.' },
@@ -749,8 +755,8 @@ export function registerDshProducerDesignTools(
   register(defineTool({
     name: READ_DESIGN_FILE_TOOL,
     description: 'Read one Design-Files-relative file from the current Design Project working copy. '
-      + 'Use this for canonical Design JSON and Design artifacts regardless of the native session cwd; '
-      + 'use inherited native read tools only for Host-authorized application/source evidence.',
+      + 'This reads canonical Design JSON and artifacts independently of the native session cwd. '
+      + 'For a long text file, you may also use an inherited Host-native reader on the same current file under the disclosed Design Files root, with its available range or pagination options.',
     parameters: {
       path: { type: 'string', required: true, description: 'Path relative to the bound Design Files root.' },
     },

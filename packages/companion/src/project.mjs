@@ -12,7 +12,7 @@ import {
   autoPanelGenerationPrompt, publishAutoPanelComponents,
   projectKitContentHash, sameProjectContentPin,
   ensureProjectKit,
-  readDesignGit,
+  readDesignGit, projectKitResource,
 } from '../../core/lib/index.js'
 import { createCompanionContentLibrary } from './content-library.mjs'
 import { createAutoPanelTickets } from './auto-panel-tickets.mjs'
@@ -27,6 +27,10 @@ const optionalRead = async (path, encoding) => {
 }
 export const companionFs = {
   readText: path => optionalRead(path, 'utf8'), readBytes: path => optionalRead(path),
+  readResource: async path => {
+    const bytes = await optionalRead(path)
+    return bytes === undefined ? undefined : projectKitResource(path, bytes)
+  },
   writeText: (path, text) => writeFile(path, text, 'utf8'), writeBytes: writeFile,
   ensureDir: path => mkdir(path, { recursive: true }), removeFile: path => rm(path),
   listDir: readdir, isDirectory: async path => (await stat(path)).isDirectory(),
@@ -188,7 +192,11 @@ export async function openCompanionProject({ projectRoot, kitRoot, stateRoot, co
         if (!['state', 'completion'].includes(scope)) throw new Error('Invalid validation scope.')
         const state = await store.read(name)
         if (!state) throw new Error('Canonical Design JSON is missing.')
-        const issues = await validateSkillDesign(skill, state, { scopes: scope === 'state' ? ['state'] : ['state', 'completion'], artifactText: path => store.readWorktreeText(path) })
+        const issues = await validateSkillDesign(skill, state, {
+          scopes: scope === 'state' ? ['state'] : ['state', 'completion'],
+          artifactText: path => store.readWorktreeText(path),
+          sourceTextAt: (revision, path) => store.readTextAt(revision, path),
+        })
         if (issues.length) throw new Error(JSON.stringify(issues))
         const artifacts = {}
         for (const path of await store.listWorktreePaths()) {
@@ -392,7 +400,8 @@ export async function openCompanionProject({ projectRoot, kitRoot, stateRoot, co
         if (issues.length) throw new Error(JSON.stringify(issues))
         const authority = skill.execution.handoff === 'must_edit'
           ? await pendingMustEditAuthorityForSave((await journal.read(journalId)).records,
-            kit.name, kit.version, name, await store.head(), commit => store.diffCommit(commit))
+            kit.name, kit.version, name, await store.head(), commit => store.diffCommit(commit),
+            (commit, head) => store.isCurrentPublicationAt(commit, head, name))
           : undefined
         let notificationPrepared = true
         try { await savedContinuation.prepare({ eventId, skill: name, payloadHash: createHash('sha256').update(payload).digest('hex'), kitHash: notificationKitHash() }) }

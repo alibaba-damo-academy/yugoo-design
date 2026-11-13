@@ -1,6 +1,9 @@
 import { CLARITY_DOCK_CSS } from './clarity-dock.tsx'
 import { ADVISORY_CSS, CONTINUATION_CSS, DOCK_CSS, TOGGLE_CSS } from './styles.ts'
 import '../panel-content-state.css'
+// Host-level shared controls can appear before the Design Dock is ever opened.
+// Load their one foundation through the existing plugin CSS/HMR lifetime.
+import '../visual-components.css'
 
 const TAG_ID = 'dsh-design-panel/shell.css'
 

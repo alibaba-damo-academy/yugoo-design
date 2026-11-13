@@ -6,6 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { join, resolve } from 'node:path'
 import React from 'react'
 import { JSDOM } from 'jsdom'
+import { cancelPendingDesignNextStepQuestion } from '../src/client/next-step-question.ts'
 
 const deferred = () => {
   let resolve, reject
@@ -90,7 +91,7 @@ test('mounted Workspace hands off only its fully saved, current batch', async t 
           calls.cancels.push(args)
           return overrides.cancel ? overrides.cancel(...args) : false
         },
-        sendPrompt: async (...args) => { calls.prompts.push(args) },
+        sendPrompt: async (...args) => { calls.prompts.push(args); return overrides.sendPrompt?.(...args) },
         readGraph: async () => ({ content: '{}' }),
       }
       const bundle = title => ({ state: { title }, skillManifest: {
@@ -127,6 +128,104 @@ test('mounted Workspace hands off only its fully saved, current batch', async t 
         }
       }
     }
+
+    const boardBundle = () => ({
+      panelYaml: `version: 1
+panel_kind: document
+sections: [{id: items, title: Items, add_mode: none}]
+fields:
+  - {key: title, label: Title, control: text, applies_to: [items]}
+  - {key: description, label: Description, control: textarea, applies_to: [items]}
+  - {key: group, label: Group, control: text, applies_to: [items]}
+ui:
+  {component: record_board, id: board, source: items, board: {label: title, description: description, group: group}}
+`,
+      state: { items: {
+        a: { title: 'Alpha', description: 'Saved A', group: 'First group' },
+        b: { title: 'Beta', description: 'Saved B', group: 'Second group' },
+        c: { title: 'Gamma', description: 'Saved C', group: 'Second group' },
+      } },
+      skillManifest: { title: { en: 'Records' }, presentation: { mode: 'declarative' } },
+    })
+    const click = element => React.act(async () => { assert.ok(element); element.click() })
+    const inputDescription = (container, text) => React.act(async () => {
+      const input = container.querySelector('[data-board-record="c"] textarea')
+      Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set.call(input, text)
+      input.dispatchEvent(new window.Event('input', { bubbles: true }))
+    })
+
+    for (const fail of [false, true]) await t.test(`board saving ${fail ? 'failure and retry' : 'success'} retains the chosen details scope`, async () => {
+      const pending = deferred()
+      let first = true
+      await withWorkspace(async fixture => {
+        const { container } = fixture
+        await click(container.querySelector('nav button[aria-label="Second group"]'))
+        const gamma = () => [...container.querySelectorAll('nav button')].find(button => button.textContent === 'Gamma')
+        await click(gamma())
+        const card = container.querySelector('[data-board-record="c"]')
+        const collapsed = container.querySelector('[data-board-record="b"] > details')
+        const content = container.querySelector('.dsh-record-board-content')
+        collapsed.open = false
+        content.scrollTop = 37
+        const assertDetails = () => {
+          assert.equal(container.querySelector('.dsh-workspace-cover-base').getAttribute('aria-hidden'), null, 'save must not open the mind map')
+          assert.equal(container.querySelector('[data-board-record="c"]'), card, 'the selected card stays mounted')
+          assert.equal(gamma().getAttribute('aria-current'), 'page')
+          assert.deepEqual([...container.querySelectorAll('[data-board-group]')].filter(page => !page.hidden).map(page => page.dataset.boardGroup), ['Second group'])
+          assert.equal(collapsed.open, false, 'manual disclosure survives save and readonly changes')
+          assert.equal(content.scrollTop, 37)
+        }
+        await inputDescription(container, 'Cancelled draft')
+        await React.act(async () => fixture.controls.retract())
+        assert.equal(card.querySelector('textarea').value, 'Saved C')
+        assertDetails()
+        assert.equal(fixture.calls.saves.length, 0, 'retract does not write or continue')
+        await inputDescription(container, 'Saved user marker')
+        await fixture.save()
+        await eventually(() => fixture.calls.saves.length === 1, 'save should reach the Host')
+        assert.equal(card.querySelector('textarea'), null, 'busy still prevents editing')
+        assertDetails()
+        await React.act(async () => fail ? pending.reject(new Error('Save unavailable')) : pending.resolve({ commit: 'saved' }))
+        await eventually(() => !fixture.controls.saving, 'save should settle')
+        assertDetails()
+        assert.equal(card.querySelector('textarea').value, 'Saved user marker')
+        if (fail) {
+          assert.equal(fixture.controls.error, 'Save unavailable')
+          assert.equal(fixture.controls.dirty, true)
+          assert.equal(fixture.calls.prompts.length, 0, 'failed save cannot continue')
+          await fixture.save()
+          await eventually(() => !fixture.controls.saving && fixture.calls.prompts.length === 1, 'retry should save and continue once')
+          assertDetails()
+        }
+        assert.equal(fixture.calls.saves.at(-1)[2].items.c.description, 'Saved user marker')
+        assert.equal(fixture.calls.prompts.length, 1)
+        const published = boardBundle()
+        published.state.items.c.description = 'Saved user marker'
+        await fixture.render({ design: { alpha: published }, checkpoint: 'saved' })
+        assertDetails()
+        assert.equal(fixture.controls.dirty, false)
+      }, { props: { design: { alpha: boardBundle() } }, savePanel: () => {
+        if (first) { first = false; return pending.promise }
+        return { commit: 'retry-saved' }
+      } })
+    })
+
+    await t.test('actual Producer and Main Bundle completion still opens the board mind map', async () => {
+      const producer = { projectId: 'project-a', skill: 'alpha', artifactId: 'alpha', invocationId: 'generation', attemptId: 'producer', role: 'producer', phase: 'working', sequence: 1, timestamp: 1 }
+      await withWorkspace(async fixture => {
+        const { container } = fixture
+        const covered = () => container.querySelector('.dsh-workspace-cover-base').getAttribute('aria-hidden') === 'true'
+        assert.equal(covered(), false)
+        await fixture.render({ executionAttempts: [{ ...producer, phase: 'completed', sequence: 2 }] })
+        assert.equal(covered(), true, 'real Producer completion keeps its existing overview transition')
+        await click(container.querySelector('.dsh-workspace-cover-return'))
+        await fixture.render({ activeMainBundles: [{ skill: 'alpha', invocationId: 'main-generation' }] })
+        assert.equal(covered(), false, 'starting a Main Bundle does not prematurely change the chosen view')
+        await fixture.render({ activeMainBundles: [] })
+        assert.equal(covered(), true, 'real Main Bundle completion keeps its existing overview transition')
+        assert.equal(fixture.calls.saves.length, 0)
+      }, { props: { design: { alpha: boardBundle() }, executionAttempts: [producer] } })
+    })
 
     await t.test('switching projects in one session retires its direct card draft before the new project can save', async () => {
       const panelYaml = `version: 1
@@ -168,6 +267,60 @@ ui:
       }, { props: { design: { alpha: bundle() } } })
     })
 
+    await t.test('read-only Workspace keeps its reading surface interactive while rejecting writes', async () => {
+      const panelYaml = `version: 1
+panel_kind: document
+sections: [{id: items, title: Items}]
+fields:
+  - {key: title, label: Title, control: text, applies_to: [items]}
+  - {key: description, label: Description, control: textarea, applies_to: [items]}
+ui:
+  component: record_workspace
+  id: workspace
+  sources: [items]
+  navigation_layout: tree
+  children: [{component: record_inspector, id: inspector}]
+`
+      const state = { items: { a: { title: 'Alpha', description: 'Original Alpha' }, b: { title: 'Beta', description: 'Original Beta' } } }
+      await withWorkspace(async fixture => {
+        const panel = fixture.container.querySelector('[data-testid="dsh-design-panel-alpha"]')
+        assert.ok(!panel.closest('[inert]'), 'read-only is not a blanket interaction lock')
+        await React.act(async () => panel.querySelector('button[aria-label="Beta"]').click())
+        assert.equal(panel.querySelector('button[aria-label="Beta"]').getAttribute('aria-current'), 'page')
+        assert.match(panel.textContent, /Original Beta/)
+        assert.ok(!panel.querySelector('input, textarea'), 'the shared interpreter renders readable values rather than writable inputs')
+        assert.equal(fixture.controls.saveDisabled, true)
+        await fixture.save()
+        assert.deepEqual(fixture.calls, { saves: [], prompts: [], cancels: [] })
+        assert.deepEqual(state.items.b, { title: 'Beta', description: 'Original Beta' })
+      }, { props: { access: { mode: 'recovery', writable: false, kit: { name: 'fixture', version: '1.0' } },
+        design: { alpha: { panelYaml, state, skillManifest: { title: { en: 'Records' }, presentation: { mode: 'declarative' } } } } } })
+    })
+
+    await t.test('an unavailable optional interaction snapshot still hands off the actual saved batch once', async () => {
+      await withWorkspace(async fixture => {
+        await fixture.edit('alpha', 'Saved despite unavailable question lookup')
+        await fixture.save()
+        await eventually(() => !fixture.controls.saving, 'save and ordinary continuation should settle')
+        assert.equal(fixture.controls.error, undefined)
+        assert.equal(fixture.calls.saves.length, 1)
+        assert.equal(fixture.calls.prompts.length, 1)
+        assert.deepEqual(fixture.calls.prompts[0][3], [{ eventId: fixture.calls.saves[0][4], commit: 'checkpoint-alpha' }])
+      }, { cancel: () => cancelPendingDesignNextStepQuestion({ getSnapshot() { throw new Error('Host snapshot unavailable') } }, 'session-a') })
+    })
+
+    await t.test('a real continuation delivery failure stays visible without resending or undoing the save', async () => {
+      await withWorkspace(async fixture => {
+        await fixture.edit('alpha', 'Durably saved')
+        await fixture.save()
+        await eventually(() => !fixture.controls.saving, 'failed delivery should settle')
+        assert.equal(fixture.controls.error, 'Native delivery failed')
+        assert.equal(fixture.calls.saves[0][2].title, 'Durably saved')
+        assert.equal(fixture.calls.saves.length, 1)
+        assert.equal(fixture.calls.prompts.length, 1, 'failure does not cause an automatic retry')
+      }, { sendPrompt: async () => { throw new Error('Native delivery failed') } })
+    })
+
     await t.test('two dirty Panels yield one prompt containing each actual save receipt', async () => {
       const second = deferred()
       await withWorkspace(async fixture => {
@@ -175,10 +328,12 @@ ui:
         await fixture.edit('beta', 'Edited Beta')
         await fixture.save()
         await eventually(() => fixture.calls.saves.length === 2, 'both sequential saves should start')
+        assert.equal(fixture.container.querySelector('[data-testid="regenerate-alpha"]').disabled, true, 'saving keeps native renderer actions locked')
         assert.equal(fixture.calls.prompts.length, 0, 'a partial batch must not submit its handoff')
         assert.equal(fixture.calls.cancels.length, 0, 'recommendation cancellation follows the complete batch')
         await React.act(async () => { second.resolve({ commit: 'checkpoint-beta' }) })
         await eventually(() => fixture.calls.prompts.length === 1 && !fixture.controls.saving, 'the complete batch should hand off once')
+        assert.equal(fixture.container.querySelector('[data-testid="regenerate-alpha"]').disabled, false, 'settling save restores native renderer actions')
         assert.deepEqual(fixture.calls.saves.map(args => args.slice(0, 3)), [
           ['session-a', 'alpha', { title: 'Edited Alpha' }],
           ['session-a', 'beta', { title: 'Edited Beta' }],

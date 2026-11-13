@@ -1,5 +1,14 @@
 # AI Agent design output contract
 
+## Record IDs
+
+For new Agents prefer `A-001`, Skills `S-001`, Tools `T-001`, model sources `M-001`, and knowledge resources `K-001`, continuing each type separately. Local entry/action/test/exception/collaboration keys and protocol/interface names are not new numbered entities.
+
+The Panel uses these same prefixes for newly added records. This is a creation
+default, not a saved-data format requirement or a request to rename existing IDs.
+
+Existing IDs, including older formats, remain valid during ordinary edits and reconstruction. If the user explicitly requests business renumbering, revise actual record keys/IDs and current references/orders together through their existing owners; keep technical IDs and history unchanged. Names and titles remain readable content, separate from identity.
+
 For canvas generation or revision, read [the canvas guide](canvas-guide.md).
 It supplements the existing methods and output contract; it applies to both
 new design and reconstruction without replacing domain-specific rules.
@@ -10,9 +19,9 @@ reconstruction, not permission to write another Bundle or invent missing facts.
 
 Shared by ordinary design and reconstruction. Canonical file:
 `ai_agent_capabilities/ai_agent_capabilities.json`. The active schema is
-authoritative. This capability is unreleased and has not been used. The manifest
-stays 1.0 and `schema_version` stays 1. No migration or version-management layer
-is part of this first release.
+authoritative. Use its current representation and the existing revision path;
+preserve saved user content and source pins without introducing a separate
+migration or version-management layer.
 
 ## Design and evidence
 
@@ -65,6 +74,10 @@ with a responsibility. Other dimensions are optional; notes are always optional.
 - `memory_retention`: optional long-term memory and access/update/deletion rules.
   Existing SDKs do not settle the product's retention policy. Omit when unneeded.
 - `system_prompt`: complete editable instruction text.
+  Its essential facts must be available through each applicable entry's inputs
+  or an established authorized retrieval path. General `context` access alone
+  does not establish that availability; preserve missing-input limits in the
+  existing exceptions or notes rather than inventing a capability.
 - `skill_refs`, `tool_refs`: references to independent resources, not copies.
   Even a direct model call may use Skills. Agent-specific loading/authorization
   belongs in its action conditions, material scope or complete prompt. Reuse
@@ -248,6 +261,10 @@ Design Files `file` and full exact Git `revision`; optional RFC6901 `pointer`,
 `subject_pointer` inside the owning record, and `note`. No absolute repository paths,
 HEAD/placeholders or positional array subjects. Missing/deleted source targets
 retain historical evidence; never guess a current target or rewrite a source pin.
+Before creating a new pin, verify the file and optional pointer at that exact
+revision, not just the commit's existence or today's file. An existing unresolved
+historical pin remains evidence to preserve and explain; it is not permission to
+create a new reference to a target that never existed there.
 
 ## Safe revision
 

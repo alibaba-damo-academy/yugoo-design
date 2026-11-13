@@ -64,7 +64,11 @@ export function createDshStudioInstanceAdapters({ design, fs }: DshStudioInstanc
       // Legacy Kit projections are not independent source registrations. A
       // resolved but broken independent registration stays visible and fails
       // honestly during S2 capture; it is never silently filtered as legacy.
-      return skills.map(skill => ({ name: skill.catalogName ?? skill.name, version: String(skill.version) }))
+      return skills.map(skill => ({ name: skill.catalogName ?? skill.name, version: String(skill.version),
+        title: { ...skill.title }, runtimeName: skill.name,
+        ...(typeof skill.description === 'string' ? { description: skill.description } : {}),
+        ...(skill.pickerDescription ? { displayDescription: { ...skill.pickerDescription } } : {}),
+      }))
         .filter(pin => design.resolveBundle(pin) !== undefined)
         .sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : a.version < b.version ? -1 : a.version > b.version ? 1 : 0)
     },

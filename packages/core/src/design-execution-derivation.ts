@@ -93,11 +93,13 @@ function latestRelevantChange(
   records: readonly DesignJournalRecord[],
   kit: DesignKit,
   skill: DesignSkill,
+  origin?: 'agent',
 ): Extract<DesignJournalRecord, { readonly type: 'design/changed' }> | undefined {
   for (let index = records.length - 1; index >= 0; index -= 1) {
     const record = records[index]
     if (record?.type !== 'design/changed') continue
-    if (record.data.kit === kit.name && record.data.version === kit.version && record.data.skill === skill.name) {
+    if (record.data.kit === kit.name && record.data.version === kit.version && record.data.skill === skill.name
+      && (origin === undefined || record.data.origin === origin)) {
       return record
     }
   }
@@ -145,12 +147,20 @@ export async function deriveCurrentDesignExecutionGate(input: {
     })
   } else {
     const latest = latestRelevantChange(input.records, input.kit, input.skill)
+    // Saving an edited plan changes its content pin, not the pending workflow.
+    // The latest Panel fact owns the saved bytes; the preceding Agent fact
+    // remains the lifecycle authority until a newer Agent publication settles.
+    const lifecycle = latest?.data.origin === 'panel' && input.skill.execution.handoff === 'user_continue'
+      ? latestRelevantChange(input.records, input.kit, input.skill, 'agent')
+      : latest
     if (latest === undefined
-      || latest.data.origin !== 'agent'
+      || lifecycle?.type !== 'design/changed'
+      || lifecycle.data.origin !== 'agent'
       || !isDeepStrictEqual(latest.data.state, input.state)
       || latest.data.commit === undefined
-      || latest.data.execution?.stateStatus !== 'pending'
-      || latest.data.execution.handoff !== input.skill.execution.handoff
+      || lifecycle.data.commit === undefined
+      || lifecycle.data.execution?.stateStatus !== 'pending'
+      || lifecycle.data.execution.handoff !== input.skill.execution.handoff
       || !await input.store.samePublishedFileAt(
         latest.data.commit,
         input.stateRevision,
@@ -158,7 +168,7 @@ export async function deriveCurrentDesignExecutionGate(input: {
         input.signal,
       )) return undefined
     change = Object.freeze({
-      recordId: latest.data.execution.invocationId,
+      recordId: lifecycle.data.execution.invocationId,
       projectId: input.projectId,
       kitName: input.kit.name,
       kitVersion: input.kit.version,

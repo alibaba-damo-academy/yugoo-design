@@ -14,7 +14,8 @@ let server
 try {
   await run('pnpm', ['exec','tsdown','--config','test/whiteboard-browser.config.ts'], {cwd:root,env:{...process.env,WHITEBOARD_TEST_OUT:out}})
   server = createServer(async (req,res) => {
-    if(req.url === '/') { res.setHeader('Content-Type','text/html'); res.end('<!doctype html><meta charset="utf-8"><body style="margin:0"><div id="root"></div><script type="module" src="/fixture.js"></script>'); return }
+    if(req.url === '/') { res.setHeader('Content-Type','text/html'); res.end('<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="/panel.css"><body style="margin:0"><div id="root"></div><script type="module" src="/fixture.js"></script>'); return }
+    if(req.url === '/panel.css') { res.setHeader('Content-Type','text/css'); res.end(await readFile(new URL('../panel/src/client/generated/design.tw.css',import.meta.url))); return }
     const path = {'/fixture.js':join(out,'fixture.js'),'/provider.js':join(root,'lib/client.js')}[req.url]
     if(!path) {res.writeHead(404);res.end();return}
     res.setHeader('Content-Type','text/javascript'); res.end(await readFile(path))

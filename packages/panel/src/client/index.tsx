@@ -34,14 +34,13 @@ import type { BinaryArtifactRead } from './panels/shared.ts'
 import {
   AdvisoryReviewCard,
   selectPendingAdvisories,
-  renderAdvisoryAcceptancePrompt,
   type AdvisoryAcceptanceAuthority,
   type AdvisoryReviewEntry,
 } from './ported/design/AdvisoryReviewCard.tsx'
 import { AdvisorySidebarEntry, hasVisibleAdvisorySidebarEntry, observeAdvisorySidebarVisibility, pendingAdvisoryCount } from './advisory-sidebar-entry.tsx'
 import { DesignProjectSidebarEntry } from './design-project-sidebar-entry.tsx'
 import { executeDesignCommand, type DesignCommandRemote } from './design-command.ts'
-import { currentLanguage, bindDesignHostLocale, useCurrentLanguage, type DesignHostLocale } from './ported/host.ts'
+import { currentLanguage, bindDesignHostLocale, bindDesignHostTheme, useDesignHostPreferences, useCurrentLanguage, type DesignHostLocale } from './ported/host.ts'
 import { ExecutionRollingLog } from './execution-rolling-log.tsx'
 import { requestLivePoll, subscribeLivePoll } from './live-poll.ts'
 import { cancelPendingDesignNextStepQuestion, createPendingDesignInteractionSource, type UiSessionPendingFace } from './next-step-question.ts'
@@ -70,6 +69,7 @@ import {
 } from './dock-session-state.ts'
 import {
   createPanelSessionAdapter,
+  panelComposerFocus,
   createPanelProjectFolderActions,
   type PanelProjectFolderRemote,
   type PanelSessions,
@@ -365,6 +365,7 @@ function DesignSkillToolView({ block }: ToolCallViewProps): ReactElement {
         ? running ? <div style={{ color: 'var(--k-color-text-light, #8b8498)', fontSize: 13 }}>{zh ? '正在准备设计技能…' : 'Preparing Design skill…'}</div> : null
         : <ExecutionRollingLog
             runId={root.runId}
+            retainHistory
             active={running && rootActive}
             terminalSequence={rootActive ? undefined : root.sequence}
             locale={zh ? 'zh' : 'en'}
@@ -493,6 +494,18 @@ export function apply(ctx: Context): void {
     const source = (scope as unknown as { locale: DesignHostLocale }).locale
     scope.effect(() => bindDesignHostLocale(source), 'design panel: host locale')
   })
+  // Optional public service: no new palette or persistence authority in Panel.
+  ctx.inject(['theme'], (scope: Context) => {
+    const face = scope as unknown as {
+      theme: { getTheme(): { preference: string; active: { colorScheme: 'light' | 'dark' } }; setTheme(id: string): void }
+      on(event: 'theme/change', listener: () => void): () => void
+    }
+    scope.effect(() => bindDesignHostTheme({
+      getSnapshot: () => face.theme.getTheme(),
+      subscribe: listener => face.on('theme/change', listener),
+      setTheme: value => face.theme.setTheme(value),
+    }), 'design panel: host theme')
+  })
   ctx.plugin(NativePanelRegistry)
   // Optional public capability: ordinary Panel loading never waits for a sidebar plugin.
   ctx.inject(['sidebarRight'], (scope: Context) => {
@@ -563,6 +576,7 @@ function mountPanelShell(ctx: Context): void {
         retryKnowledge(id: string): Promise<RemoteResult<{ accepted: boolean }>>
         queryKnowledge(id: string, args: import('../../../core/src/design-knowledge-query.ts').KnowledgeReadArguments): Promise<RemoteResult<import('../../../core/src/design-knowledge-query.ts').KnowledgeReadResult>>
         readArtifact(id: string, relPath: string, stateRevision: string): Promise<RemoteResult<{ found: boolean; content: string }>>
+        readArtifactHistory(id: string, skill: string): Promise<RemoteResult<readonly import('./types.ts').DesignArtifactHistoryEntry[]>>
         readExecutionLog(id: string, executionRef: string, afterSeq?: number): Promise<RemoteResult<DesignExecutionLogRead>>
         readBinaryArtifact(id: string, relPath: string, stateRevision: string): Promise<RemoteResult<BinaryArtifactRead>>
         listSkills(id: string): Promise<RemoteResult<{
@@ -586,6 +600,7 @@ function mountPanelShell(ctx: Context): void {
   const panelSession = createPanelSessionAdapter(face.sessions, face.uiSession.adapter?.current)
   const pendingInteractions = createPendingDesignInteractionSource(face.uiSession)
   const mountedRuntime: NonNullable<typeof runtime> = {
+    composerFocus: id => panelComposerFocus(face.sessions, ctx, id),
     ...createPanelProjectFolderActions(face.remote.session),
     nativePanels,
     readReviewPolicy: async id => unwrap('designPanel/readReviewPolicy', await face.remote.designPanel.readReviewPolicy(id)),
@@ -612,6 +627,7 @@ function mountPanelShell(ctx: Context): void {
     retryKnowledge: async sessionId => unwrap('designPanel/retryKnowledge', await face.remote.designPanel.retryKnowledge(sessionId)),
     queryKnowledge: async (sessionId, args) => unwrap('designPanel/queryKnowledge', await face.remote.designPanel.queryKnowledge(sessionId, args)),
     readArtifact: async (sessionId, relPath, stateRevision) => unwrap('designPanel/readArtifact', await face.remote.designPanel.readArtifact(sessionId, relPath, stateRevision)),
+    readArtifactHistory: async (sessionId, skill) => unwrap('designPanel/readArtifactHistory', await face.remote.designPanel.readArtifactHistory(sessionId, skill)),
     readExecutionLog: async (sessionId, executionRef, afterSeq) => unwrap(
       'designPanel/readExecutionLog',
       await face.remote.designPanel.readExecutionLog(sessionId, executionRef, afterSeq),
@@ -798,11 +814,6 @@ function useHostDockGeometry(sessionId: string | undefined): HostDockGeometry {
   return geometry
 }
 
-/** Focus the host composer input so the user can adjust the continuation request. */
-function focusHostComposer(): void {
-  document.querySelector<HTMLTextAreaElement>('[data-composer-card] textarea')?.focus()
-}
-
 let advisoryInboxVisibilityRevision = 0
 const advisoryInboxVisibilityBySession = new Map<string, boolean>()
 const advisoryOpeningTargetBySession = new Map<string, string>()
@@ -864,7 +875,7 @@ function DesignContinuationHost(): ReactElement | null {
     <DesignContinuationBar
       descriptor={descriptor}
       onContinue={(label) => { void runtime?.sendPrompt(sessionId, label) }}
-      onAdjust={focusHostComposer}
+      onAdjust={runtime?.composerFocus?.(sessionId)}
     />
   )
 }
@@ -938,6 +949,7 @@ function DesignToggle(): ReactElement | null {
       data-testid='design-toolbar-toggle'
       className={`dsh-design-toggle${snap.visible ? ' dsh-design-toggle-active' : ''}`}
       aria-pressed={snap.visible}
+      aria-expanded={snap.visible}
       onClick={() => { snap.visible ? closeDesignDock(info.sessionId) : openDesignDock(info.sessionId, {}, true) }}
     >
       {isZh ? 'Yugoo设计' : 'Yugoo Design'}
@@ -1168,7 +1180,7 @@ function DockResizeHandle(): ReactElement {
 
 /** Dock body bound to the current session's provide bundle. */
 function DockContent({ visible }: { readonly visible: boolean }): ReactElement | null {
-  useCurrentLanguage()
+  const preferences = useDesignHostPreferences()
   const info = useObservable(runtime?.sessions.currentProvideInfo ?? ABSENT) as ProvideInfo
   const geometry = useHostDockGeometry(info.sessionId)
   const workspace = usePanelWorkspace(info.sessionId, visible)
@@ -1194,6 +1206,7 @@ function DockContent({ visible }: { readonly visible: boolean }): ReactElement |
           <div className='min-h-0 flex-1'>
             <DesignWorkspace
               experienceAvailable
+              preferences={preferences}
               design={workspace?.design}
               projectId={workspace?.projectId ?? null}
               checkpoint={workspace?.checkpoint ?? null}
@@ -1215,7 +1228,6 @@ function DockContent({ visible }: { readonly visible: boolean }): ReactElement |
               runtime={runtime}
               dockOpen={visible}
               focus={rail.getSnapshot().focus}
-              onClose={() => { closeDesignDock(info.sessionId) }}
             />
           </div>
         </WorkspaceReadBoundary>
@@ -1284,7 +1296,6 @@ function AdvisoryComposerInbox(): ReactElement | null {
           {runtime.readReviewPolicy && runtime.updateReviewPolicy && <ReviewPolicyControl key={`${sessionId}:${workspace.projectId}`} sessionId={sessionId} runtime={runtime} />}
         </div>
         <div className='dsh-advisory-inbox-actions'>
-          <span>{isZh ? `${pending} 条待处理` : `${pending} pending`}</span>
           <button type='button' className='dsh-advisory-inbox-close' aria-label={isZh ? '关闭设计建议' : 'Close design advisories'} title={isZh ? '关闭设计建议' : 'Close design advisories'} onClick={() => advisoryInboxVisibility.setExpanded(sessionId, false)}>×</button>
         </div>
       </div>
@@ -1293,7 +1304,9 @@ function AdvisoryComposerInbox(): ReactElement | null {
         preferredAdvisoryId={advisoryOpeningTargetBySession.get(sessionId)}
         emptyText={isZh ? '暂无待处理的设计建议。' : 'No pending design advisories.'}
         entries={entries}
-        onAccept={async (advisory, authority) => { await runtime?.sendPrompt(sessionId, renderAdvisoryAcceptancePrompt(advisory, authority), authority.acceptanceReceiptId) }}
+        onAccept={async (_advisory, authority) => {
+          if (authority.notification !== 'sent') throw new Error(authority.notificationError ?? 'Advisory notice delivery is unconfirmed.')
+        }}
         onRecordAccepted={async (advisory) => {
           const entry = await runtime?.decideAdvisory(sessionId, advisory.id, 'accepted')
           if (entry?.acceptanceReceiptId === undefined) throw new Error('design advisory: accepted receipt was not returned')
@@ -1301,6 +1314,8 @@ function AdvisoryComposerInbox(): ReactElement | null {
             throw new Error('design advisory: accepted action receipt projection was not returned')
           }
           return {
+            notification: entry.notification,
+            notificationError: entry.notificationError,
             acceptanceReceiptId: entry.acceptanceReceiptId,
             actionReceipts: entry.actionReceipts,
             executionStatus: entry.executionStatus,

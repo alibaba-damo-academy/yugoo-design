@@ -20,6 +20,10 @@
 }
 .dsh-panel-content-state-icon { flex-shrink: 0; width: 28px; height: 28px; color: var(--ds-text-tertiary, #777); }
 .dsh-panel-content-state-message { max-width: 42ch; margin: 0; font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
+.dsh-panel-content-state-title { margin: 0; color: var(--ds-text-primary, #222); font: inherit; font-size: 16px; font-weight: 500; }
+.dsh-panel-empty-illustration { width: 176px; height: 112px; max-width: 100%; flex-shrink: 0; margin-bottom: 4px; stroke: var(--ds-border-default, #d6d6dc); stroke-width: 1.5; }
+.dsh-panel-empty-illustration-frame { fill: var(--ds-bg-white, #fff); }
+.dsh-panel-empty-illustration-accent { fill: var(--ds-brand-light-bg-default, #f3efff); stroke: var(--ds-brand-bg-disabled, #d8cdf4); }
 .dsh-panel-content-state-actions { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; }
 .dsh-panel-content-state[data-content-state="loading"] .dsh-panel-content-state-icon {
   color: var(--ds-brand-text-primary, #7c3aed);

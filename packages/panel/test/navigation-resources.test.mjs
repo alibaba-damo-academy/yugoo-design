@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 const { JSDOM } = await import('jsdom')
 const dom = new JSDOM('<div id="root"></div>', { url: 'https://panel.test/' })
-for (const key of ['window', 'document', 'HTMLElement', 'Element', 'Node', 'DOMParser']) globalThis[key] = dom.window[key]
+for (const key of ['window', 'document', 'HTMLElement', 'HTMLFormElement', 'DocumentFragment', 'getComputedStyle', 'Element', 'Node', 'DOMParser']) globalThis[key] = dom.window[key]
 globalThis.ResizeObserver = class { observe() {} disconnect() {} }
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 const React = await import('react')

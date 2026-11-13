@@ -1,7 +1,9 @@
 /** Strict JSON projections for an explicitly enabled, native-parent-scoped service. */
 import { z } from 'zod'
+import { STUDIO_ARCHIVE_MAX_JSON_BYTES } from 'dsh-design-studio/types'
 import type { InvocationDescriptor } from '@deepseek-ai/dsh-typert-protocol'
-import type { StudioInstanceCandidate, StudioInstanceChangeReceipt, StudioPanelPreview, StudioDiagnostic, StudioContentArchive } from 'dsh-design-studio'
+import type { StudioInstanceCandidate, StudioInstanceChangeReceipt, StudioDiagnostic, StudioContentArchive } from 'dsh-design-studio'
+import { STUDIO_PANEL_PREVIEW_SCHEMA as preview } from './typert.remote-client.ts'
 import type { StudioInstanceDescription, StudioInstanceMount, StudioInstanceBundleChoice } from 'dsh-design-studio/node'
 import type { StudioAuthoringReference, StudioAuthoringObservation, StudioAuthoringScope } from './authoring-agent.types.ts'
 
@@ -44,10 +46,6 @@ const instance = z.object({
 const diagnostic = z.object({
   code: text, message: text, subject: text.optional(), severity: z.literal('warning').optional(),
 } satisfies Record<keyof StudioDiagnostic, z.ZodType>).strict()
-const preview = z.object({
-  revision, kit: pin.optional(), bundle: pin, panelYaml: text, sample: z.record(text, z.json()),
-  artifacts: z.record(text, text).optional(),
-} satisfies Record<keyof StudioPanelPreview, z.ZodType>).strict()
 const previewResult = z.object({ preview: preview.optional(), diagnostics: z.array(diagnostic) }).strict()
 const candidate = z.object({
   id: identity, baseRevision: revision, revision, digest: text.regex(/^[a-f0-9]{64}$/u),
@@ -125,7 +123,8 @@ export const STUDIO_AUTHORING_RPC_SCHEMAS = {
   cancel: { request: address.extend({ expectedTurn: revision.nullable() }).strict(), result: observation },
   readPrepared: { request: z.union([address, preparedLocator]), result: z.object({ prepared: z.object({ request: changes, candidate }).strict().optional() }).strict() },
   listReferences: { request: undefined, result: z.array(reference) },
-  readArchive: { request: z.object({ source: text.max(32 * 1024 * 1024) }).strict(), result: archive },
+  // Match Studio archive JSON (base64 plus envelope); keep this browser codec free of Node archive imports.
+  readArchive: { request: z.object({ source: text.max(STUDIO_ARCHIVE_MAX_JSON_BYTES) }).strict(), result: archive },
   exportContentArchive: { request: z.union([z.object({ kind: z.enum(['kit', 'bundle']), pin,
     provenance: z.object({ source: text.optional(), license: text.optional() }).strict().optional() }).strict(), selected.extend({
       provenance: z.object({ source: text.optional(), license: text.optional() }).strict().optional(), dependencies: z.array(pin).optional(),

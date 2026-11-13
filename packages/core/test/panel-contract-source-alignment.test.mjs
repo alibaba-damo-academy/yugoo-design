@@ -12,6 +12,17 @@ const base = () => ({
   ui: { id: 'form', component: 'record_form', source: 'items' },
 })
 
+test('new-record business prefixes are optional creation defaults, independent of saved ID formats', () => {
+  const panel = base()
+  panel.sections[0].create = { id_field: 'id', id_prefix: 'M' }
+  assert.deepEqual(validatePanelManifest(panel), [])
+  for (const value of ['', false, 1]) {
+    const invalid = structuredClone(panel)
+    invalid.sections[0].create.id_prefix = value
+    assert.ok(validatePanelManifest(invalid).some(error => error.includes('id_prefix')))
+  }
+})
+
 test('DSL and authoring catalog share the same component vocabulary', () => {
   assert.equal(COMPONENT_KINDS, catalogKinds)
   assert.ok(COMPONENT_KINDS.includes('navigation_workspace'))

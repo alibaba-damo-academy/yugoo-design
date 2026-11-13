@@ -90,8 +90,9 @@ entries default to `"full"`. A page can override the default with
 `?view=panel-only` (`view=design` remains an alias) or `?view=full`.
 The panel-only page keeps the design workspace, project tools, settings, review
 status and suggestions. It omits history/composer and the conversation toggle.
-Its right sidebar starts collapsed. The workspace omits the project header;
-Bundle tabs start at its top edge. A "Current project" entry in the right sidebar
+Its right sidebar starts collapsed. The workspace omits the project metadata
+header and keeps compact language and light/dark icon toggles above the Bundle tabs.
+A "Current project" entry in the right sidebar
 opens on hover/focus and pins on click, showing the shared U/S/T assessment,
 project name and full wrapping path. Score explanations remain keyboard accessible;
 Escape, the close button and outside click dismiss the information popover.
@@ -173,6 +174,12 @@ loopback authentication, Origin checks and frame restrictions remain in force;
 DSH retains its own native Remote and authentication.
 
 ## Native Bundle execution mapping
+
+Referenced Bundle scripts run through the native command tool with their
+documented CLI and stdout contract. Keep validation and diagnostic JSON in the
+command result; redirect stdout to an artifact only when that operation returns
+artifact bytes. Companion shell calls do not add DSH's structured `script_io`
+metadata or its script-side output-target checks.
 
 Model-facing MCP and CLI `call` responses are compact views, not new authorities.
 Status carries one full assessment under `services.ust.assessment` and one review
@@ -271,6 +278,12 @@ Switching files, opening review and cancelling Back preserve the conversation
 input. Confirmed exit discards that object's unsent input and stops its history
 polling; the next object starts a fresh display interval in the same native thread.
 Late responses cannot change the next object's notices, candidate or input.
+
+Studio source import and archive reading support the shared 32 MiB complete
+source / 64 MiB serialized transport budget. The authenticated HTTP service uses
+that envelope only for `studioInstanceImportSources` and
+`studioContentReadArchive`; other methods retain their 12 MiB request limit.
+Browser and token/origin checks still run before reading the body.
 
 AI submission requires an available result from the existing bounded native
 connection check, plus usable conversation history. Binding metadata or readable

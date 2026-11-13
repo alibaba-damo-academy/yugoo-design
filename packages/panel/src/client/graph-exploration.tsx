@@ -127,7 +127,7 @@ export function GraphExploration({ graph, selected, relation, onNode, onEdge, on
           })}
           {visibleEdges.map(edge => { const reading = edgeReading(edge), emphasized = active(edge) || incident(edge), muted = Boolean((focusedId || sourceIds.size) && !emphasized)
             return <g key={edge.id}>
-              <path className='exploration-link' d={path(edge)} stroke={emphasized ? '#ecf6ff' : graphColor(own.get(edge.from)!)} strokeWidth={emphasized ? 2.4 : 1.1} strokeOpacity={muted ? .055 : reading.meaning === 'contains' ? .18 : emphasized ? .95 : .4} strokeDasharray={reading.meaning === 'similar' ? '4 4' : reading.meaning === 'contains' ? '2 5' : undefined} filter={emphasized ? 'url(#' + id + '-glow)' : undefined} pointerEvents='none' />
+              <path className='exploration-link' d={path(edge)} stroke={emphasized ? '#ecf6ff' : graphColor(own.get(edge.from)!)} strokeWidth={emphasized ? 1.8 : reading.meaning === 'contains' ? .75 : 1.1} strokeOpacity={muted ? .055 : emphasized ? .95 : reading.meaning === 'contains' ? .35 : .5} filter={emphasized ? 'url(#' + id + '-glow)' : undefined} pointerEvents='none' />
               <path d={path(edge)} stroke='transparent' strokeWidth='12' fill='none' role='button' tabIndex={0} aria-label={relationDisplayLabel(edge, locale)} onClick={event => { event.stopPropagation(); onEdge(edge) }} onKeyDown={event => keyboard(event, () => onEdge(edge))}><title>{relationDisplayLabel(edge, locale) + ' · ' + relationOriginLabel(reading.origin, locale) + ' · ' + relationLifecycleLabel(reading.lifecycle, locale)}</title></path>
             </g>
           })}

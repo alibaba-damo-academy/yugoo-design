@@ -8,7 +8,7 @@ import { StudioBinaryContentError } from '../../studio/src/types.ts'
 import { snapshotKit } from '../../studio/src/snapshot.ts'
 import { loadStudioKit } from '../../studio/src/load.ts'
 import { finalizeStudioPanelPreview } from '../../studio/src/panel-preview.ts'
-import { readStudioContentArchive } from '../../studio/src/content-archive.ts'
+import { readStudioContentArchive, STUDIO_SOURCE_MAX_BYTES } from '../../studio/src/content-archive.ts'
 
 export async function createCompanionStudio(kit, kitRoot, stateRoot, contentLibrary) {
   const currentKit = async () => typeof kit === 'function' ? kit() : kit
@@ -37,6 +37,11 @@ export async function createCompanionStudio(kit, kitRoot, stateRoot, contentLibr
     await checkCatalogKit()
     return bundleSnapshot ??= readInstalledBundles().catch(error => { bundleSnapshot = undefined; throw error })
   }
+  const bundleChoice = skill => ({ name: skill.catalogName ?? skill.name, version: String(skill.version),
+    title: { ...skill.title }, runtimeName: skill.name,
+    ...(typeof skill.description === 'string' ? { description: skill.description } : {}),
+    ...(skill.pickerDescription ? { displayDescription: { ...skill.pickerDescription } } : {}),
+  })
   const readInstalledBundles = async () => [...(await currentKit()).skills]
   const catalog = { snapshot: async () => {
     // Legacy directory authoring is mutable and keeps its existing fresh-read
@@ -110,7 +115,7 @@ export async function createCompanionStudio(kit, kitRoot, stateRoot, contentLibr
         if (!base) throw new Error('Independent Bundle source is unavailable.')
         const { createStudioInstanceAdapters } = await import('./studio-instance-composition.mjs')
         const { composition } = createStudioInstanceAdapters({
-          listBundles: async () => [bundlePin],
+          listBundles: async () => [bundleChoice(selected)],
           captureKit: async () => { throw new Error('Standalone preview has no Kit.') },
           captureBundle: async () => { throw new Error('Standalone preview uses only its captured source.') },
         })
@@ -136,14 +141,14 @@ export async function createCompanionStudio(kit, kitRoot, stateRoot, contentLibr
       for (const { base, path } of files) {
         const absolute = join(base, path), info = await lstat(await safe(absolute))
         bytes += info.size
-        if (bytes > 16 * 1024 * 1024) throw new Error('Installed preview source exceeds 16 MiB.')
+        if (bytes > STUDIO_SOURCE_MAX_BYTES) throw new Error('Installed preview source exceeds 32 MiB.')
         try {
           const text = await source.readText(absolute)
           if (text !== undefined) texts.set(absolute, text)
           // Recheck decoded byte count if a source changed after lstat.
           if (text !== undefined && Buffer.byteLength(text) > info.size) {
             bytes += Buffer.byteLength(text) - info.size
-            if (bytes > 16 * 1024 * 1024) throw new Error('Installed preview source exceeds 16 MiB.')
+            if (bytes > STUDIO_SOURCE_MAX_BYTES) throw new Error('Installed preview source exceeds 32 MiB.')
           }
         } catch (error) { if (error instanceof StudioBinaryContentError) binary.add(absolute); else throw error }
         const parts = path.split('/')
@@ -191,10 +196,10 @@ export async function createCompanionStudio(kit, kitRoot, stateRoot, contentLibr
     let total = 0
     for (const path of paths) {
       const file = await safe(join(base, path)), info = await lstat(file)
-      if (!info.isFile() || total + info.size > 16 * 1024 * 1024) throw new Error('Content snapshot exceeds 16 MiB or contains an invalid file.')
+      if (!info.isFile() || total + info.size > STUDIO_SOURCE_MAX_BYTES) throw new Error('Content snapshot exceeds 32 MiB or contains an invalid file.')
       const bytes = await readFile(file)
       total += bytes.length
-      if (total > 16 * 1024 * 1024) throw new Error('Content snapshot exceeds 16 MiB.')
+      if (total > STUDIO_SOURCE_MAX_BYTES) throw new Error('Content snapshot exceeds 32 MiB.')
       entries.push({ path, base64: bytes.toString('base64') })
     }
     return entries
@@ -203,7 +208,7 @@ export async function createCompanionStudio(kit, kitRoot, stateRoot, contentLibr
     if (!stateRoot) throw new Error('Studio authoring storage is not configured.')
     return instanceService ??= Promise.all([import('./studio-instances.mjs'), import('./studio-instance-composition.mjs')]).then(async ([{ createStudioInstances }, { createStudioInstanceAdapters }]) => {
       const ports = createStudioInstanceAdapters({
-        listBundles: async () => (await installedBundles()).map(skill => ({ name: skill.catalogName ?? skill.name, version: String(skill.version) })),
+        listBundles: async () => (await installedBundles()).map(bundleChoice),
         captureKit: async pin => {
           const selected = await selectedKit(pin)
           let files = await captureRegisteredTree(selected.sourceRoot ?? root)

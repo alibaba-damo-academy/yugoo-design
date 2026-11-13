@@ -100,7 +100,7 @@ test('previous scores remain explicit and unchanged, in the original two-line pr
       assert.equal(meta.children[0].dataset.singleLine, 'true')
       assert.equal(meta.children[0].querySelector('.dsh-clarity-dock-label').textContent, 'Previous')
       assert.equal(meta.children[0].querySelector('.dsh-clarity-dock-label').getAttribute('aria-label'), 'Previous assessment')
-      assert.equal(meta.querySelector('[data-testid="design-clarity-dock-score"]').textContent, '64')
+      assert.equal(meta.querySelector('[data-testid="design-clarity-dock-score"]'), null)
       for (const [key, score] of [['u', 80], ['s', 60], ['t', 40]]) {
         const dimension = meta.querySelector(`[data-testid="design-clarity-dock-${key}"]`)
         assert.equal(dimension.getAttribute('aria-valuenow'), String(score))
@@ -158,8 +158,13 @@ test('locale and real lifecycle updates preserve mounted project state and remov
     assert.equal(document.querySelector('[data-testid="design-dock-meta-name"]').textContent, 'Design project: 同一个项目')
     await render(undefined)
     assert.equal(indicator(), null)
-    assert.equal(document.querySelector('.dsh-clarity-dock-label').textContent, 'Ideation index')
-    assert.equal(document.querySelector('[data-testid="design-clarity-dock-score"]').textContent, '64')
+    assert.equal(document.querySelector('.dsh-clarity-dock-label').textContent, 'Ideation index:')
+    assert.deepEqual([...document.querySelectorAll('.dsh-clarity-dock-dim-readout > span:first-child')].map(node => node.textContent), ['U', 'S', 'T'])
+    assert.deepEqual([...document.querySelectorAll('.dsh-clarity-dock-dim')].map(node => node.getAttribute('aria-label').split(':')[0]), ['Understandable', 'Structured', 'Testable'])
+    await act(async () => document.querySelector('[data-testid="design-clarity-dock-u"]').focus())
+    assert.match(document.querySelector('[role="tooltip"] strong').textContent, /U · Understandable · 80\/100/)
+    assert.equal(document.querySelectorAll('.dsh-clarity-dock-track').length, 3)
+    assert.equal(document.querySelector('[data-testid="design-clarity-dock-score"]'), null)
     assert.equal(document.querySelector('[data-testid="design-clarity-dock-stale"]').textContent, 'Needs reassessment',
       'activity removal does not silently clear the Host currentness flag')
   } finally { await act(async () => root.unmount()); unbind() }
@@ -176,6 +181,7 @@ test('existing absent, unassessed and rejected render branches remain distinct; 
     assert.equal(document.querySelector('[data-testid="design-clarity-dock-unassessed"]').textContent, 'Not assessed yet')
     assert.match(CLARITY_DOCK_CSS, /prefers-reduced-motion: reduce[^}]+\.dsh-clarity-dock-activity \.animate-spin \{ animation: none;/)
     assert.match(CLARITY_DOCK_CSS, /\.dsh-clarity-dock-activity[^}]+font-size: 12px;/)
-    assert.match(CLARITY_DOCK_CSS, /\.dsh-clarity-dock\[data-single-line=true\]\{flex-wrap:nowrap\}/)
+    assert.match(CLARITY_DOCK_CSS, /\.dsh-clarity-dock\[data-single-line=true\]\{flex-wrap:wrap\}/, 'the readout can still wrap at narrow widths')
+    assert.match(CLARITY_DOCK_CSS, /\.dsh-clarity-dock-dim\s*\{[^}]*min-width: max-content;[^}]*grid-template-columns: auto 64px;/, 'the three abbreviated labels retain equal readable tracks')
   } finally { await act(async () => root.unmount()) }
 })

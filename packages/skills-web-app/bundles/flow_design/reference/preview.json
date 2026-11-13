@@ -1,22 +1,78 @@
 {
   "topic": "合成预览示例：请求审核计划（尚无 BPMN 产物）",
-  "roles": [{"id": "Applicant", "name": "申请人"}, {"id": "Reviewer", "name": "审核人"}, {"id": "System", "name": "系统"}],
+  "roles": [
+    {
+      "id": "Applicant",
+      "name": "申请人"
+    },
+    {
+      "id": "Reviewer",
+      "name": "审核人"
+    },
+    {
+      "id": "System",
+      "name": "系统"
+    }
+  ],
   "processes": {
-    "P-PREVIEW-001": {
-      "process_id": "P-PREVIEW-001",
+    "P-001": {
+      "process_id": "P-001",
       "title": "合成请求审核",
       "description": "仅用于预览：申请人提交请求，系统保存内容，审核人决定通过或退回；不是已确认流程，未生成 BPMN。",
       "tier": "core",
       "process_type": "approval",
-      "stakeholders": ["申请人", "审核人", "系统"],
-      "system_responsibilities": ["保存请求及审核结果", "向申请人展示处理结果"],
-      "key_features": ["提交请求", "审核决定", "查看结果"],
-      "business_rules": ["示例中退回请求可修改后重新提交"],
+      "stakeholders": [
+        "申请人",
+        "审核人",
+        "系统"
+      ],
+      "system_responsibilities": [
+        "保存请求及审核结果",
+        "向申请人展示处理结果"
+      ],
+      "key_features": [
+        "提交请求",
+        "审核决定",
+        "查看结果"
+      ],
+      "business_rules": [
+        "示例中退回请求可修改后重新提交"
+      ],
       "trigger_hints": [],
-      "exception_handling": [{"scenario": "提交内容不完整", "handling": "提示缺失内容，保留已填写的请求"}],
+      "exception_handling": [
+        {
+          "scenario": "提交内容不完整",
+          "handling": "提示缺失内容，保留已填写的请求"
+        }
+      ],
       "deleted": false,
       "bpmn_file": null
     }
   },
-  "process_order": ["P-PREVIEW-001"]
+  "process_order": [
+    "P-001"
+  ],
+  "nodes": {
+    "N-001": {
+      "process_ref": "P-001",
+      "bpmn_element_ref": "UserTask_P-PREVIEW-001_1",
+      "activity": "申请人填写并提交请求；系统保留已填写内容，避免校验失败时丢失。",
+      "entry_condition": "申请内容已填写。",
+      "exit_condition": "请求已保存并进入待审核。",
+      "failure_response": "缺少必填内容时提示缺失项，保留已填写内容。",
+      "remarks": "合成预览；当前无BPMN文件，实际项目需精确映射后展示图中名称与责任人。"
+    },
+    "N-002": {
+      "process_ref": "P-001",
+      "bpmn_element_ref": "UserTask_P-PREVIEW-001_2",
+      "activity": "审核人核对请求并记录通过或退回决定。",
+      "entry_condition": "请求已进入待审核。",
+      "exit_condition": "决定与说明已保存。",
+      "remarks": "示例中的分支应在实际BPMN表达，不另存连线。"
+    }
+  },
+  "node_order": [
+    "N-001",
+    "N-002"
+  ]
 }

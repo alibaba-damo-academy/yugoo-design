@@ -13,7 +13,6 @@
   "fields": [],
   "ui": {
     "component": "preview_workspace",
-    "guidance": "$t:guidance",
     "sidebar_icon": "palette",
     "id": "visual-preview",
     "title": "$t:title",
@@ -21,7 +20,6 @@
     "live_preview": {
       "file_path": "config.preview_page.html_file",
       "title_path": "config.preview_page.title",
-      "description_path": "config.preview_page.rationale",
       "stylesheet": "design_style/tokens.css",
       "design_width": 1280,
       "tokens": [
@@ -602,7 +600,6 @@
         "component": "stack",
         "id": "layout",
         "title": "$t:group.layout",
-        "description": "$t:regeneration",
         "children": [
           {
             "component": "schema_field",
@@ -719,7 +716,6 @@
         "component": "stack",
         "id": "components",
         "title": "$t:group.components",
-        "description": "$t:regeneration",
         "children": [
           {
             "component": "schema_field",

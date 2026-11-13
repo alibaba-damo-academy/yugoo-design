@@ -147,7 +147,7 @@
     margin: 0;
   }
 
-  :where(.dsh-design-root h1, .dsh-design-root h2, .dsh-design-root h3, .dsh-design-root h4, .dsh-design-root p, .dsh-design-root ul, .dsh-design-root ol) {
+  :where(.dsh-design-root h1, .dsh-design-root h2, .dsh-design-root h3, .dsh-design-root h4, .dsh-design-root h5, .dsh-design-root h6, .dsh-design-root p, .dsh-design-root ul, .dsh-design-root ol) {
     margin: 0;
   }
 

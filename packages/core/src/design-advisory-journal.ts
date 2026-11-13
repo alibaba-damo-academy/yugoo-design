@@ -204,7 +204,7 @@ export class DesignAdvisoryJournal {
         return undefined
       }
       if (expectedJournalRevision !== undefined && current.snapshot.revision !== expectedJournalRevision) {
-        throw new Error('design advisory journal: journal revision changed before selection')
+        throw new Error(`design advisory journal: journal revision changed before selection (expected ${expectedJournalRevision}, current ${current.snapshot.revision}). Call design_read_review_action for this advisory again, revalidate, and copy its top-level revision (DesignJournal), not the advisory's design-revision; waiting or retrying the same stale value cannot resolve this conflict.`)
       }
       return { type: 'design/advisory-action-selected', data: parsed }
     })

@@ -425,6 +425,7 @@ export function StudioConversationLayout({ rpc, readConversation, checkConnectio
     <Conversation locale={locale} key={`${context.id}:${authoring?.epoch ?? 0}`} hostLabel={hostLabel} value={error && conversation ? { ...conversation, available: false, recordedStatus: 'unknown', error } : conversation}
       initialDraft={context.initialPrompt} thread={binding?.threadId} visible={visible} onClose={() => setVisible(false)} send={send}
       onDraftChange={setDraft} composerDisabledReason={disabled} showDesignShortcut={false}
+      renderDisabledReason={reason => reason === fallbackReason ? null : <p role="status">{reason}</p>}
       renderError={(message, source) => source === 'history' || noticeTone === 'error' ? null : <StudioFeedback
         feedbackId={`studio-send:${context.id}:${message}`} tone="error" autoOpen={false} locale={locale} title={t('studioRequestFailed')}
         message={t('studioSendFailureHelp')} details={[{ message }]}
@@ -433,7 +434,7 @@ export function StudioConversationLayout({ rpc, readConversation, checkConnectio
         {scope?.record && <p>{t('studioCurrentCopy', { title: scope.record.title[locale], kind: scope.record.kind === 'kit' ? 'Kit' : 'Bundle' })}</p>}
         {scope?.currentFile && <p>{t('studioCurrentFile', { file: scope.currentFile })}</p>}
         <p>{t('studioConversationScope')}</p>
-        {fallbackReason && <StudioFeedback feedbackId={`studio-connection:${context.id}:${fallbackReason}`} tone={error || connectionStatus === 'unavailable' || historyStatus === 'unavailable' ? 'error' : 'info'} autoOpen={false} locale={locale}
+        {fallbackReason && <StudioFeedback feedbackId={`studio-connection:${context.id}:${fallbackReason}`} tone={error || connectionStatus === 'unavailable' || historyStatus === 'unavailable' ? 'error' : 'info'} autoOpen={false} dismissible={false} locale={locale}
           title={fallbackReason} details={conversation?.error ? [{ message: conversation.error }] : undefined} actions={[{ label: t('studioCheckConnection'), onClick: recheckConnection, disabled: connectionStatus === 'checking' }]} />}
         {fallbackReason && <p>{manualFallback}</p>}
         {!fallbackReason && <button type="button" className="ygd-studio-btn-secondary" disabled={connectionStatus === 'checking'} onClick={recheckConnection}>{t('studioCheckConnection')}</button>}

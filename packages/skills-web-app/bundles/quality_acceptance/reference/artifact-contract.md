@@ -1,5 +1,11 @@
 # quality_acceptance output contract
 
+## Record IDs
+
+For new acceptance records prefer `AC-001`, `AC-002`, and so on. Quality groups are labels, not additional numbered entities.
+
+Existing IDs, including older formats, remain valid during ordinary edits and reconstruction. If the user explicitly requests business renumbering, revise actual record keys/IDs and current references/orders together through their existing owners; keep technical IDs and history unchanged. Names and titles remain readable content, separate from identity.
+
 Shared by ordinary design and reconstruction. Canonical state is
 `quality_acceptance/quality_acceptance.json`; the installed schema and validation remain
 authoritative. This reference describes representation and semantic checks,

@@ -21,6 +21,8 @@ test('DSH registers callable read/select tools and forwards exact selection argu
   })
   const read=tools.find(t=>t.name==='design_read_review_action'),select=tools.find(t=>t.name==='design_select_review_action')
   assert.ok(read && select)
+  assert.match(select.parameters.properties.revision.description, /DesignJournal revision, not the design-revision/)
+  assert.match(select.parameters.properties.selectionRevision.description, /selected-project binding revision/)
   const agent={id:'a'},args={advisoryId:'advice',acceptanceReceiptId:'accepted',kitName:'custom',kitVersion:'1.0',kind:'no-action',projectId:'project',selectionRevision:1,revision:2,reason:'Resolved'}
   assert.equal(JSON.parse((await read.execute({advisoryId:'advice'},{agent})).content).revision,2)
   await select.execute(args,{agent})
@@ -105,11 +107,11 @@ test('restored advisory context preserves deferral without repeatedly routing th
   assert.equal(accepted.find(entry => entry.advisory.id === advisory.id).status, 'accepted', 'explicit later acceptance still works')
 })
 
-async function fixture() {
+async function fixture(questions = output.questions) {
   const root=await mkdtemp(join(tmpdir(),'gra-choice-service-'))
   const journals=new DesignJournalRegistry(()=>root)
   const kit={name:'custom',version:'1.0',skills:[{name:'interview',version:'2.0',description:'Clarify product choices',metadata:{}}]}
-  const advisory=officialAdvisoryProfile(OFFICIAL_ALIGNMENT_PROFILE).project(input,output)
+  const advisory=officialAdvisoryProfile(OFFICIAL_ALIGNMENT_PROFILE).project(input,{...output,questions})
   await journals.publish('scope','main',advisory)
   const entries=await journals.decide('scope','main',{advisoryId:advisory.id,decision:'accepted'},[])
   let binding={projectId:'project',revision:1}
@@ -120,6 +122,50 @@ async function fixture() {
   const request={advisoryId:advisory.id,acceptanceReceiptId:entries[0].acceptanceReceiptId,revision:options.revision,projectId:'project',selectionRevision:1,kitName:kit.name,kitVersion:kit.version,reason:'Current evidence requires a short interview'}
   return {read,select,request,kit,service,switchProject:()=>{binding={projectId:'other',revision:2}},close:async()=>{await rm(root,{recursive:true,force:true})}}
 }
+
+test('current selection identity and receipts stay ahead of long complete findings', async () => {
+  const questions = Array.from({length:10}, (_, i) => ({...output.questions[0], id:`question-${i}`,
+    rationale:`Evidence ${i}: ${'Confirmed user context. '.repeat(40)}`}))
+  const f = await fixture(questions)
+  try {
+    const before = await f.service.journals.read('scope', 'main')
+    const options = await f.read(), wire = JSON.stringify(options), prefix = wire.slice(0, 2000)
+    assert.ok(wire.length > 10000, 'exercise a finding large enough for Host result pruning')
+    for (const [key, value] of Object.entries({...f.request, revision:before.revision})) {
+      if (['projectId','selectionRevision','revision','kitName','kitVersion','acceptanceReceiptId'].includes(key)) {
+        assert.ok(prefix.includes(JSON.stringify(key)+':'+JSON.stringify(value)), `${key} remains in the short response head`)
+      }
+    }
+    assert.deepEqual(options.entry, before.snapshot.advisories[0], 'all findings, references, disposition and receipts remain complete')
+    assert.deepEqual(options.entry.advisory.items.map(item => item.rationale), questions.map(q => q.rationale))
+    assert.match(options.instruction, /top-level revision \(the current DesignJournal revision\)/)
+    assert.equal(options.revision, 2)
+    assert.equal(options.entry.advisory.inputs.find(pin => pin.source === 'design-revision').revision, '1')
+    assert.deepEqual(await f.service.journals.read('scope', 'main'), before, 'reading never changes the journal')
+  } finally { await f.close() }
+})
+
+test('wrong Design revision reports the exact conflict and rereading recovers the original acceptance', async () => {
+  const f = await fixture()
+  try {
+    const before = await f.service.journals.read('scope', 'main')
+    await assert.rejects(f.select({...f.request,kind:'no-action',revision:1}), error => {
+      assert.match(error.message, /journal revision changed before selection \(expected 1, current 2\)/)
+      assert.match(error.message, /design_read_review_action.*top-level revision \(DesignJournal\), not the advisory's design-revision/)
+      assert.match(error.message, /waiting or retrying the same stale value cannot resolve/)
+      return true
+    })
+    assert.deepEqual(await f.service.journals.read('scope', 'main'), before, 'failed choice retains the original accepted receipt and facts')
+    const current = await f.read()
+    const request = {...f.request,kind:'no-action',revision:current.revision}
+    const selected = await f.select(request)
+    assert.equal(selected.acceptanceReceiptId, f.request.acceptanceReceiptId)
+    assert.equal(selected.selection.kind, 'no-action')
+    assert.deepEqual(selected.actionReceipts, [], 'no-action still grants no Design write authority')
+    assert.deepEqual(await f.select(request), selected, 'lost-response retry remains idempotent after the journal advances')
+    assert.equal((await f.service.journals.read('scope', 'main')).revision, before.revision + 1)
+  } finally { await f.close() }
+})
 
 test('unmarked suitable Bundle can be selected; exact target is minted only after selection',async()=>{
   const f=await fixture()

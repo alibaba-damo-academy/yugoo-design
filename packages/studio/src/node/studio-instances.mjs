@@ -5,7 +5,7 @@ import { parse as parseYaml, stringify } from 'yaml'
 import { parseKitMounts } from 'dsh-design-core'
 import { createStudioDraftPorts } from './studio-panel-drafts.mjs'
 import { normalizeStudioInstanceChanges, STUDIO_INSTANCE_CHANGE_LIMITS } from '../instance-changes.ts'
-import { exportStudioSourceArchive, readStudioArchiveResource } from '../content-archive.ts'
+import { exportStudioSourceArchive, readStudioArchiveResource, STUDIO_SOURCE_MAX_BYTES } from '../content-archive.ts'
 
 /** Byte-complete virtual snapshot over canonical retained S2 files; no filesystem extraction. */
 function archiveSnapshot(root, entries, sourceId) {
@@ -348,7 +348,7 @@ export async function createStudioInstances(options) {
       if (previous !== (content ?? undefined)) diff.push({ path, ...(previous === undefined ? {} : { before: previous }), ...(content === null ? {} : { after: content }) })
     }
     const files = [...entries].map(([path, base64]) => ({ path, base64 }))
-    if (files.length > 4096 || files.reduce((bytes, file) => bytes + Buffer.byteLength(file.base64, 'base64'), 0) > 16 * 1024 * 1024) throw new Error('Instance source tree exceeds 4096 files or 16 MiB.')
+    if (files.length > 4096 || files.reduce((bytes, file) => bytes + Buffer.byteLength(file.base64, 'base64'), 0) > STUDIO_SOURCE_MAX_BYTES) throw new Error('Instance source tree exceeds 4096 files or 32 MiB.')
     const paths = new Set(entries.keys())
     for (const path of paths) {
       const parts = path.split('/')

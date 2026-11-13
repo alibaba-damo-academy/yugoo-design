@@ -7,10 +7,11 @@
  * explicit fit-all action keep the complete diagram reachable.
  */
 
-export const BPMN_NATIVE_LABEL_SIZE = 14;
-export const BPMN_TEXT_RENDERER = {
-  defaultStyle: { fontSize: BPMN_NATIVE_LABEL_SIZE },
-};
+import presentation from './bpmn-presentation.json' with { type: 'json' };
+
+/** Portable parameters are also carried by the PRD exporter at build time. */
+export const BPMN_TEXT_RENDERER = presentation;
+export const BPMN_NATIVE_LABEL_SIZE = presentation.defaultStyle.fontSize;
 
 // bpmn-js does not publish a narrow TypeScript interface for its canvas
 // service. Keep the local surface explicit instead of leaking `any` into both
@@ -95,7 +96,7 @@ export function applyBpmnLaneHeaderDividers(
  *
  * `fit-viewport` is the authoritative containment algorithm from bpmn-js. A
  * prior implementation applied a minimum scale afterwards; that made dense
- * diagrams extend beyond their host. The renderer keeps its native 14px
+ * diagrams extend beyond their host. The renderer keeps its shared native
  * label specification; manual zoom remains available when a dense diagram is
  * physically smaller than the available canvas.
  */

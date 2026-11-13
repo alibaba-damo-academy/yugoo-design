@@ -1,0 +1,28 @@
+{
+  "name": "@radix-ui/react-use-controllable-state",
+  "version": "1.0.0",
+  "repository": "radix-ui/primitives",
+  "commit": "3e5644edadcded918db177368c3fe9654ce9885f",
+  "tag": null,
+  "publishedGitHead": null,
+  "correspondence": "Official New release: V1 commit package.json has exact version; all published npm source-map sources compared byte-for-byte. No npm gitHead or matching version tag available.",
+  "sourceMatches": [
+    {
+      "path": "packages/react/use-controllable-state/src/index.ts",
+      "exactMatch": true,
+      "sha256": "f4388da03b8e3cd397102df80e5d25004cfe6fab1d640701a71c3444f2f25d6d"
+    },
+    {
+      "path": "packages/react/use-controllable-state/src/useControllableState.tsx",
+      "exactMatch": true,
+      "sha256": "6922a5dc08c579ea3222456a184f4d57d7799ec0dde2ddd19f74e077f1dda774"
+    }
+  ],
+  "tarball": "https://registry.npmjs.org/@radix-ui/react-use-controllable-state/-/react-use-controllable-state-1.0.0.tgz",
+  "tarballIntegrity": "sha512-FohDoZvk3mEXh9AWAVyRTYR4Sq7/gavuofglmiXB2g1aKyboUD4YtgWxKj8O5n+Uak52gXQ4wKz5IFST4vtJHg==",
+  "tarballSha1": "a64deaafbbc52d5d407afaa22d493d687c538b7f",
+  "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/3e5644edadcded918db177368c3fe9654ce9885f/LICENSE",
+  "licenseSha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+  "licenseBytes": 1063,
+  "packageMetadataSha256": "2145efc80cd06fad5d205b11340beb6402e1862893034f6954c92fde57a9b403"
+}

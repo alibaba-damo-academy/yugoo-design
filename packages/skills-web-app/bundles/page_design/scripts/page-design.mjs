@@ -1,10 +1,80 @@
 import { readFileSync, realpathSync, statSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 import { parseArgs } from "node:util";
-function validateHtmlStructure(content) {
-	const lowered = content.toLowerCase();
-	if (!lowered.includes("<html") || !lowered.includes("</html>")) return "HTML preview must contain a complete <html>...</html> document";
-	if (!lowered.includes("<body") || !lowered.includes("</body>")) return "HTML preview must contain a complete <body>...</body>";
+/** Scan authored elements once; text in comments and raw-text/RCDATA bodies is not markup. */
+function scanHtmlDocument(content) {
+	const tags = [], styles = [];
+	const rawText = new Set(["script", "style", "textarea", "title", "iframe", "xmp", "noembed", "noframes", "noscript"]);
+	function tagEnd(start) {
+		let quote;
+		for (let index = start; index < content.length; index++) {
+			const char = content[index];
+			if (quote) { if (char === quote) quote = undefined; }
+			else if (char === "\"" || char === "'") quote = char;
+			else if (char === ">") return index;
+		}
+		return -1;
+	}
+	let offset = 0;
+	while (offset < content.length) {
+		const start = content.indexOf("<", offset);
+		if (start < 0) break;
+		if (content.startsWith("<!--", start)) {
+			const end = content.indexOf("-->", start + 4);
+			if (end < 0) return { tags, styles, error: "HTML structure error: unclosed comment" };
+			offset = end + 3;
+			continue;
+		}
+		if (content.startsWith("<![CDATA[", start)) {
+			const end = content.indexOf("]]>", start + 9);
+			if (end < 0) return { tags, styles, error: "HTML structure error: unclosed CDATA section" };
+			offset = end + 3;
+			continue;
+		}
+		if (/^<[!?]/u.test(content.slice(start, start + 2))) {
+			const end = tagEnd(start + 2);
+			if (end < 0) return { tags, styles, error: "HTML structure error: unclosed declaration" };
+			offset = end + 1;
+			continue;
+		}
+		const opening = /^<(\/?)([A-Za-z][A-Za-z0-9:-]*)(?=[\s/>])/u.exec(content.slice(start));
+		if (!opening) { offset = start + 1; continue; }
+		const end = tagEnd(start + opening[0].length);
+		const name = opening[2].toLowerCase();
+		if (end < 0) return { tags, styles, error: `HTML structure error: unclosed <${name}> tag` };
+		const source = content.slice(start, end + 1);
+		const closing = opening[1] === "/";
+		const selfClosing = !closing && /\/\s*>$/u.test(source);
+		const tag = { name, closing, selfClosing, attributes: attributesOf(source.slice(opening[0].length, -1)) };
+		tags.push(tag);
+		offset = end + 1;
+		// This bounded scanner does not resolve foreign-content text-element modes.
+		// A slash cannot safely end HTML raw-text/RCDATA; diagnose this syntax instead
+		// of treating later text as authored elements. Ordinary SVG self-closing tags remain supported.
+		if (!closing && selfClosing && rawText.has(name)) return { tags, styles, error: `HTML structure error: unsupported self-closing <${name}/> text element; use explicit opening and closing tags` };
+		if (!closing && name === "plaintext") return { tags, styles, error: "HTML structure error: unsupported <plaintext> consumes the remaining document, including closing wrappers" };
+		if (!closing && !selfClosing && rawText.has(name)) {
+			const close = new RegExp("</" + name + "(?=[\\s/>])", "gi");
+			close.lastIndex = offset;
+			const match = close.exec(content);
+			if (!match) return { tags, styles, error: `HTML structure error: unclosed <${name}> tag` };
+			const closeEnd = tagEnd(match.index + match[0].length);
+			if (closeEnd < 0) return { tags, styles, error: `HTML structure error: unclosed </${name}> tag` };
+			if (name === "style") styles.push(content.slice(offset, match.index));
+			tags.push({ name, closing: true, selfClosing: false, attributes: {} });
+			offset = closeEnd + 1;
+		}
+	}
+	return { tags, styles };
+}
+function validateHtmlStructure(document) {
+	if (document.error) return document.error;
+	for (const name of ["html", "body"]) {
+		if (document.tags.filter(tag => tag.name === name && !tag.closing).length !== 1
+			|| document.tags.filter(tag => tag.name === name && tag.closing).length !== 1) {
+			return `HTML preview must contain exactly one <${name}>...</${name}> document wrapper`;
+		}
+	}
 	const voidTags = /* @__PURE__ */ new Set([
 		"area",
 		"base",
@@ -35,12 +105,8 @@ function validateHtmlStructure(content) {
 		"option"
 	]);
 	const stack = [];
-	const structural = content.replace(/<!--[\s\S]*?-->/g, "").replace(/(<(script|style|textarea|title)\b[^>]*>)[\s\S]*?(<\/\2\s*>)/gi, "$1$3");
-	for (const match of structural.matchAll(/<(\/?)([a-zA-Z][a-zA-Z0-9-]*)([^>]*)>/g)) {
-		const closing = match[1] === "/";
-		const tag = (match[2] ?? "").toLowerCase();
-		const attrs = match[3] ?? "";
-		if (!closing && attrs.trimEnd().endsWith("/")) continue;
+	for (const { name: tag, closing, selfClosing } of document.tags) {
+		if (selfClosing) continue;
 		if (voidTags.has(tag)) continue;
 		if (!closing) {
 			stack.push(tag);
@@ -57,15 +123,16 @@ function validateHtmlStructure(content) {
 	return remaining.length === 0 ? null : `HTML structure error: unclosed <${remaining.at(-1)}> tag`;
 }
 function attributesOf(tag) {
- const attributes = {};
- for (const match of tag.matchAll(ATTRIBUTE)) attributes[match[1]] = match[3];
+ const attributes = Object.create(null);
+ for (const match of tag.matchAll(ATTRIBUTE)) {
+  const name = match[1].toLowerCase();
+  if (!Object.hasOwn(attributes, name)) attributes[name] = match[2] ?? match[3] ?? match[4] ?? "";
+ }
  return attributes;
 }
 
-const REMOTE_ASSET = /(?:src|href)\s*=\s*['"](?:https?:)?\/\//i;
-const START_TAG = /<[A-Za-z][^>]*>/g;
-const ATTRIBUTE = /([:\w-]+)\s*=\s*(['"])(.*?)\2/g;
-const STYLE_BLOCK = /<style\b([^>]*)>([\s\S]*?)<\/style>/gi;
+const REMOTE_ASSET = /^(?:https?:)?\/\//i;
+const ATTRIBUTE = /([^\s=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g;
 const CSS_COMMENT = /\/\*[\s\S]*?\*\//g;
 const DS_TOKEN_DECLARATION = /(?:^|[{;\s])(--ds-[A-Za-z0-9-]+)\s*:/g;
 const DS_TOKEN_REFERENCE = /var\(\s*(--ds-[A-Za-z0-9-]+)/g;
@@ -76,15 +143,14 @@ function record$2(value) {
 	return isRecord$1(value) ? value : {};
 }
 /** Parse stable Page prototype IDs and connection bindings. */
-function parsePagePrototypeMarkup(html) {
+function parsePagePrototypeMarkup(document) {
 	const elementIds = /* @__PURE__ */ new Set();
 	const duplicateElementIds = /* @__PURE__ */ new Set();
 	const bindings = /* @__PURE__ */ new Map();
 	const duplicateBindings = /* @__PURE__ */ new Set();
 	const unaddressableBindings = /* @__PURE__ */ new Set();
-	for (const tag of html.match(START_TAG) ?? []) {
-		const attributes = {};
-		for (const match of tag.matchAll(ATTRIBUTE)) attributes[match[1] ?? ""] = match[3] ?? "";
+	for (const { closing, attributes } of document.tags) {
+		if (closing) continue;
 		const connectionId = attributes["data-prototype-connection"]?.trim();
 		const elementId = attributes["data-prototype-id"]?.trim();
 		if (elementId === void 0 || elementId === "") {
@@ -115,24 +181,24 @@ function parsePagePrototypeMarkup(html) {
 * @param html - candidate page HTML.
 * @returns the gate diagnostic, or undefined when the document is parseable.
 */
-function pageHtmlDocumentGate(html) {
+function pageHtmlDocumentGate(html, document) {
 	if (!/^(?:<!doctype\s+html(?:\s[^>]*)?>\s*)?<html\b[\s\S]*<\/html>\s*$/iu.test(html.trim())) return "artifact must contain one canonical HTML document only, without a Markdown fence or preamble";
-	return validateHtmlStructure(html) ?? void 0;
+	return validateHtmlStructure(document) ?? void 0;
 }
 /** Deterministic artifact checks; visual quality remains the author's review. */
-function pageHtmlDefectDiagnostics(html, markup, state, authoritativeTokens, styleAuthority) {
+function pageHtmlDefectDiagnostics(document, markup, state, authoritativeTokens, styleAuthority) {
  const diagnostics = [];
- if (/\bid\s*=\s*(?:["']dsh-design-preview-context["']|dsh-design-preview-context(?=[\s>]))/iu.test(html)) diagnostics.push("HTML must not author reserved Host context element dsh-design-preview-context");
+ if (document.tags.some(tag => !tag.closing && tag.attributes.id === "dsh-design-preview-context")) diagnostics.push("HTML must not author reserved Host context element dsh-design-preview-context");
  diagnostics.push(...pageNavigationContextDiagnostics(state));
- if (REMOTE_ASSET.test(html)) diagnostics.push("HTML contains a remote asset or navigation URL");
- if (authoritativeTokens !== undefined) diagnostics.push(...pageTokenConformanceDiagnostics(html, authoritativeTokens));
+ if (document.tags.some(tag => !tag.closing && [tag.attributes.src, tag.attributes.href].some(value => typeof value === "string" && REMOTE_ASSET.test(value)))) diagnostics.push("HTML contains a remote asset or navigation URL");
+ if (authoritativeTokens !== undefined) diagnostics.push(...pageTokenConformanceDiagnostics(document, authoritativeTokens));
  if (markup.duplicateElementIds.size) diagnostics.push("HTML contains duplicate data-prototype-id values: " + [...markup.duplicateElementIds].join(", "));
  if (markup.duplicateBindings.size) diagnostics.push("HTML binds a page connection more than once: " + [...markup.duplicateBindings].join(", "));
  if (markup.unaddressableBindings.size) diagnostics.push("HTML binds page connections without data-prototype-id: " + [...markup.unaddressableBindings].join(", "));
  const pages = record$2(state.pages);
  const authority = record$2(styleAuthority);
- for (const tag of html.match(START_TAG) ?? []) {
-  const attrs = attributesOf(tag);
+ for (const { closing, attributes: attrs } of document.tags) {
+  if (closing) continue;
   const target = attrs["data-prototype-page"];
   if (target !== undefined && !Object.hasOwn(pages, target)) diagnostics.push("HTML references unknown target page: " + target);
   const connection = record$2(record$2(state.connections)[attrs["data-prototype-connection"]]);
@@ -146,11 +212,12 @@ function pageHtmlDefectDiagnostics(html, markup, state, authoritativeTokens, sty
  return [...new Set(diagnostics)];
 }
 /** The --ds-* namespace belongs to Style; check ownership and reference resolution, not CSS taste. */
-function pageTokenConformanceDiagnostics(html, authoritativeTokens) {
+function pageTokenConformanceDiagnostics(document, authoritativeTokens) {
  const declared = new Set(), unknown = new Set();
- const styles = [...html.matchAll(STYLE_BLOCK)].map(block => (block[2] ?? ""));
- for (const tag of html.match(START_TAG) ?? []) {
-  const inline = attributesOf(tag).style;
+ const styles = [...document.styles];
+ for (const { closing, attributes } of document.tags) {
+  if (closing) continue;
+  const inline = attributes.style;
   if (inline !== undefined) styles.push(inline);
  }
  for (const css of styles.map(text => text.replace(CSS_COMMENT, ""))) {
@@ -234,13 +301,13 @@ function pageNavigationContextDiagnostics(state) {
 function isRecord(value) { return typeof value === "object" && value !== null && !Array.isArray(value); }
 function record$1(value) { return isRecord(value) ? value : {}; }
 /** Validate the landed file without rewriting it or inferring semantic quality. */
-function analyzePageHtmlCandidate(pageId, output, state, authoritativeTokens, styleAuthority) {
+function analyzePageHtmlCandidate(pageId, output, state, authoritativeTokens, styleAuthority, document) {
 	const html = typeof output === "string" ? output : output.content;
 	const diagnostics = [];
-	const gate = pageHtmlDocumentGate(html);
+	const gate = pageHtmlDocumentGate(html, document);
 	if (gate !== void 0) return { kind: "rejected", diagnostics: [gate] };
-	const markup = parsePagePrototypeMarkup(html);
-	diagnostics.push(...pageHtmlDefectDiagnostics(html, markup, state, authoritativeTokens, styleAuthority));
+	const markup = parsePagePrototypeMarkup(document);
+	diagnostics.push(...pageHtmlDefectDiagnostics(document, markup, state, authoritativeTokens, styleAuthority));
 	const connections = record$1(state.connections);
 	const outgoing = Object.entries(connections).filter(([, value]) => isRecord(value) && value.source_page_id === pageId);
 	const incomingIds = new Set(Object.entries(connections).filter(([, value]) => isRecord(value) && value.target_page_id === pageId).map(([id]) => id));
@@ -271,10 +338,10 @@ function analyzePageHtmlCandidate(pageId, output, state, authoritativeTokens, st
 * @param authoritativeTokens - optional token authority derived from the pinned Design Style source.
 * @returns actionable diagnostics; empty accepts the candidate.
 */
-function validatePageHtmlCandidate(pageId, candidate, state, authoritativeTokens, styleAuthority) {
+function validatePageHtmlCandidate(pageId, candidate, state, authoritativeTokens, styleAuthority, document) {
 	const page = record$1(state.pages)[pageId];
 	if (!isRecord(page)) return Object.freeze([`page ${JSON.stringify(pageId)} is absent from the current Page Design WorkingCopy`]);
-	const analysis = analyzePageHtmlCandidate(pageId, candidate, state, authoritativeTokens, styleAuthority);
+	const analysis = analyzePageHtmlCandidate(pageId, candidate, state, authoritativeTokens, styleAuthority, document);
 	return analysis.kind === "accepted" ? Object.freeze([]) : analysis.diagnostics;
 }
 //#endregion
@@ -361,9 +428,10 @@ try {
 		const state = record(context.state, "state");
 		const tokens = context.authoritative_tokens === void 0 ? void 0 : record(context.authoritative_tokens, "authoritative_tokens");
 		const styleAuthority = context.style_authority === void 0 ? void 0 : record(context.style_authority, "style_authority");
-		const rawGate = pageHtmlDocumentGate(html);
-		const diagnostics = rawGate === void 0 ? validatePageHtmlCandidate(pageId, { content: html }, state, tokens, styleAuthority) : [rawGate];
-		const markup = parsePagePrototypeMarkup(html);
+		const document = scanHtmlDocument(html);
+		const rawGate = pageHtmlDocumentGate(html, document);
+		const diagnostics = rawGate === void 0 ? validatePageHtmlCandidate(pageId, { content: html }, state, tokens, styleAuthority, document) : [rawGate];
+		const markup = parsePagePrototypeMarkup(document);
 		process.stdout.write(`${JSON.stringify({
 			valid: diagnostics.length === 0,
 			diagnostics,

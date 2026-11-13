@@ -2,11 +2,11 @@
 import { readFile, readdir, lstat, realpath, mkdir, open, rename, unlink, rmdir } from 'node:fs/promises'
 import { join, resolve, relative, sep, isAbsolute } from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
-import { readStudioArchiveResource } from '../content-archive.ts'
+import { readStudioArchiveResource, STUDIO_SOURCE_MAX_BYTES } from '../content-archive.ts'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
 const HASH = /^[0-9a-f]{64}$/
-const MAX_SOURCE_BYTES = 16 * 1024 * 1024
+const MAX_SOURCE_BYTES = STUDIO_SOURCE_MAX_BYTES
 const MAX_DOCUMENT_BYTES = 2 * 1024 * 1024
 const inside = (root, path) => { const rel = relative(root, path); return !isAbsolute(rel) && rel !== '..' && !rel.startsWith(`..${sep}`) }
 const hash = value => createHash('sha256').update(value).digest('hex')
@@ -185,7 +185,7 @@ export async function createStudioDraftPorts({ stateRoot, kitRoot, readInstalled
         || path.split('/').some(part => !part || ['.', '..', '.git', 'node_modules'].includes(part)) || seen.has(path)
         || typeof base64 !== 'string' || Buffer.from(base64, 'base64').toString('base64') !== base64) throw new Error('Invalid source tree entry.')
       seen.add(path); bytes += Buffer.byteLength(base64, 'base64')
-      if (bytes > MAX_SOURCE_BYTES) throw new Error('Source tree exceeds 16 MiB.')
+      if (bytes > MAX_SOURCE_BYTES) throw new Error('Source tree exceeds 32 MiB.')
       return [path, base64]
     }).sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)
   }
@@ -214,10 +214,10 @@ export async function createStudioDraftPorts({ stateRoot, kitRoot, readInstalled
           if (info.isSymbolicLink()) throw new Error('Studio cannot snapshot source symlinks.')
           if (info.isDirectory()) await walk(file, base, prefix)
           else if (info.isFile()) {
-            if (total + info.size > MAX_SOURCE_BYTES || entries.length >= 4096) throw new Error('Kit preview snapshot exceeds 16 MiB or 4096 files.')
+            if (total + info.size > MAX_SOURCE_BYTES || entries.length >= 4096) throw new Error('Kit preview snapshot exceeds 32 MiB or 4096 files.')
             const bytes = await readFile(file)
             total += bytes.length
-            if (total > MAX_SOURCE_BYTES) throw new Error('Kit preview snapshot exceeds 16 MiB.')
+            if (total > MAX_SOURCE_BYTES) throw new Error('Kit preview snapshot exceeds 32 MiB.')
             entries.push([prefix + relative(base, file).split(sep).join('/'), bytes.toString('base64')])
           } else throw new Error('Studio sources must be regular files or directories.')
         }

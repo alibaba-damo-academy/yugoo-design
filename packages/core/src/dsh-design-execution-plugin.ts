@@ -11,7 +11,7 @@ import { dirname, resolve, sep } from 'node:path'
 import type DesignService from './design-service.ts'
 import { DESIGN_FILES_UNBORN_REVISION, requireDesignFileRelativePath, type DesignWriteEvent } from './design-files.ts'
 import { designText, latestDirectHumanText, resolveConversationLocale, type DesignLocale } from './design-locale.ts'
-import { reconstructionContractPrompt } from './reconstruction-prompt.ts'
+import { designSkillResourceEntryPaths, reconstructionContractPrompt } from './reconstruction-prompt.ts'
 import { registerReconstructionKnowledgeTool } from './dsh-reconstruction-knowledge-tool.ts'
 import { KNOWLEDGE_AGENTIC_GUIDANCE } from './design-knowledge-query.ts'
 import { DESIGN_EXECUTOR_EVIDENCE_GUIDANCE, DESIGN_SKILL_RESOURCE_GUIDANCE, availableDesignKnowledgeTools } from './design-generation-guidance.ts'
@@ -30,6 +30,7 @@ import {
   type DesignExecutionPin,
   type DesignExecutionProducerPort,
   type DesignExecutionProducerSettlement,
+  type DesignExecutionQuestionAnswer,
   type DesignExecutionSelection,
   type DesignExecutionTransition,
 } from './design-execution-runtime.ts'
@@ -57,6 +58,7 @@ import {
 import { landedDesignArtifactSourceNames } from './design-artifact-publication.ts'
 import {
   apply as registerRunDesignSkillTool,
+  designSkillInvocationId,
   type RunDesignSkillPort,
   type RunDesignSkillResult,
 } from './dsh-run-design-skill-tool.ts'
@@ -308,10 +310,40 @@ interface CurrentTurnHumanInput {
   readonly hasTurn: boolean
   readonly hasHuman: boolean
   readonly controlTexts: readonly string[]
+  /** Direct text and native question answers, in current-turn arrival order. */
+  readonly requestInputs: readonly (string | DesignExecutionQuestionAnswer)[]
+  /** Actual accepted-action tool calls in the still-active Host turn. */
+  readonly advisoryCalls: ReadonlyMap<string, { readonly receiptId: string; readonly name: string }>
+}
+
+function questionAnswerInputs(argumentsText: string, resultText: string): readonly DesignExecutionQuestionAnswer[] {
+  try {
+    const args = JSON.parse(argumentsText) as { questions?: unknown }
+    const result = JSON.parse(resultText) as { answers?: unknown }
+    if (!Array.isArray(args?.questions) || !Array.isArray(result?.answers)) return []
+    const questions = new Map<string, string>()
+    for (const question of args.questions) {
+      if (typeof question?.id === 'string' && typeof question.question === 'string') {
+        questions.set(question.id, question.question)
+      }
+    }
+    return result.answers.flatMap(answer => {
+      if (typeof answer?.id !== 'string' || !questions.has(answer.id)
+        || !Array.isArray(answer.selected) || !answer.selected.every((item: unknown) => typeof item === 'string')
+        || (answer.custom !== undefined && typeof answer.custom !== 'string')
+        || (answer.selected.length === 0 && (answer.custom === undefined || answer.custom.trim() === ''))) return []
+      return [Object.freeze({ kind: 'question-answer' as const, questionId: answer.id,
+        question: questions.get(answer.id)!, selected: Object.freeze([...answer.selected]) as readonly string[],
+        ...(answer.custom === undefined ? {} : { custom: answer.custom as string }) })]
+    })
+  } catch {
+    return []
+  }
 }
 
 function currentTurnHumanInput(agent: Agent): CurrentTurnHumanInput {
   const events = designSessionEvents(agent.session)
+  const advisoryCalls = new Map<string, { readonly receiptId: string; readonly name: string }>()
   let turnStartIndex = -1
   for (let index = events.length - 1; index >= 0; index -= 1) {
     if (events[index]?.type === 'turn/start') {
@@ -320,26 +352,64 @@ function currentTurnHumanInput(agent: Agent): CurrentTurnHumanInput {
     }
   }
   if (turnStartIndex === -1) {
-    return Object.freeze({ hasTurn: false, hasHuman: false, controlTexts: Object.freeze([]) })
+    return Object.freeze({ hasTurn: false, hasHuman: false, controlTexts: Object.freeze([]), requestInputs: Object.freeze([]), advisoryCalls })
   }
   let hasHuman = false
   const controlTexts: string[] = []
+  const requestInputs: (string | DesignExecutionQuestionAnswer)[] = []
+  const questions = new Map<string, string>()
+  const answered = new Set<string>()
+  let ended = false
   for (let index = turnStartIndex + 1; index < events.length; index += 1) {
     const event = events[index]
+    if (event?.type === 'turn/end') {
+      ended = true
+      advisoryCalls.clear()
+    }
+    if (!ended && event?.type === 'tool/call' && event.data.name === 'run_design_skill') {
+      try {
+        const args = JSON.parse(event.data.arguments) as { name?: unknown; advisoryReceiptId?: unknown } | null
+        if (typeof args?.name === 'string' && typeof args.advisoryReceiptId === 'string'
+          && args.advisoryReceiptId.trim() !== '') {
+          advisoryCalls.set(designSkillInvocationId(event.data.callId), { name: args.name, receiptId: args.advisoryReceiptId.trim() })
+        }
+      } catch { /* Malformed tool input carries no accepted-action authority. */ }
+    }
+    if (event?.type === 'tool/call' && event.data.name === 'ask_user_question') {
+      questions.set(event.data.callId, event.data.arguments)
+      continue
+    }
+    if (event?.type === 'tool/result') {
+      const message = event.data.message
+      if (message === undefined) continue
+      const args = questions.get(message.toolCallId)
+      if (args === undefined || answered.has(message.toolCallId) || message.isError) continue
+      const content = message.content
+      if (content.length !== 1 || content[0]?.type !== 'text') continue
+      const inputs = questionAnswerInputs(args, content[0].text)
+      if (inputs.length === 0) continue
+      answered.add(message.toolCallId)
+      hasHuman = true
+      requestInputs.push(...inputs)
+      continue
+    }
     if (event?.type !== 'user/message' || event.data.source.kind !== 'user') continue
     hasHuman = true
+    for (const part of event.data.content) {
+      if (part.type === 'text') requestInputs.push(part.text)
+    }
     if (event.data.content.length === 1 && event.data.content[0]?.type === 'text') {
       controlTexts.push(event.data.content[0].text)
     }
   }
-  return Object.freeze({ hasTurn: true, hasHuman, controlTexts: Object.freeze(controlTexts) })
+  return Object.freeze({ hasTurn: true, hasHuman, controlTexts: Object.freeze(controlTexts), requestInputs: Object.freeze(requestInputs), advisoryCalls })
 }
 
 function currentHumanResumeCommand(
-  agent: Agent,
+  input: CurrentTurnHumanInput,
   gate: Extract<DesignExecutionGate, { readonly kind: 'user_continue' }>,
 ) {
-  for (const text of currentTurnHumanInput(agent).controlTexts) {
+  for (const text of input.controlTexts) {
     const resolved = resolveDesignExecutionInput(gate, { kind: 'chat', text })
     if (resolved.kind === 'command') return resolved.command
   }
@@ -670,7 +740,7 @@ async function bindProducerWorkspace(
       if (current === undefined) throw new Error(`design producer: edit target is absent: ${path}`)
       const occurrences = current.split(oldText).length - 1
       if (occurrences === 0) {
-        throw new Error(`design producer: edit old_text was not found in ${path}; read the current Design File with read_design_file before retrying`)
+        throw new Error(`design producer: edit old_text was not found in ${path}; read the current Design File before editing again`)
       }
       if (!replaceAll && occurrences !== 1) {
         throw new Error(`design producer: edit old_text occurs ${occurrences} times in ${path}; set replace_all or provide more context`)
@@ -854,11 +924,11 @@ export function producerSystemPrompt(skill: DesignSkill, tools: ProducerEvidence
       : 'Execute the complete Skill Body agentically.',
     'You may read the entire Design Project and the Host-authorized application workspace, but write, edit, move, or delete only files owned by the current Bundle; the tools enforce this authority.',
     skill.execution.mode === 'main'
-      ? `Your native session cwd is unchanged. Design Files are at ${JSON.stringify(designFilesRoot)}. Always use read_design_file with Design-Files-relative paths for canonical Design JSON and Design artifacts. Use inherited native read/read_image/glob/grep only for Host-authorized application/source evidence; in main mode, use absolute source paths rooted at ${JSON.stringify(applicationWorkspaceRoot)}.`
-      : `Your session cwd is the Design Files root. Always use read_design_file with Design-Files-relative paths for canonical Design JSON and Design artifacts so the method remains placement-independent. The application workspace root is ${applicationWorkspaceRoot === undefined ? 'not disclosed by this Host' : JSON.stringify(applicationWorkspaceRoot)}. Use the available inherited native read/read_image/glob/grep tools directly only to explore source code, documentation, and visual evidence; use absolute paths when leaving the Design Files cwd. Do not ask the main Agent to copy source contents into your prompt.`,
+      ? `Your native session cwd is unchanged. Design Files are at ${JSON.stringify(designFilesRoot)}. You can use absolute paths under this root for Host-native Design File reads. The application workspace root is ${JSON.stringify(applicationWorkspaceRoot)}.`
+      : `Your session cwd is the Design Files root. The application workspace root is ${applicationWorkspaceRoot === undefined ? 'not disclosed by this Host' : JSON.stringify(applicationWorkspaceRoot)}. Use absolute paths when leaving the Design Files cwd. Do not ask the main Agent to copy source contents into your prompt.`,
     `The canonical state file is ${skill.name}/${skill.name}.json. Read existing state and artifacts before deciding whether this is initial generation, continuation, or a targeted revision. Preserve correct material outside the requested change.`,
     'Canonical state is strict JSON: use double-quoted keys and strings, escape ASCII double quotes and control characters inside strings, and omit comments and trailing commas. Unicode text and punctuation are valid JSON. When parsing reports a line and column, inspect and repair the actual token in this same working copy; do not guess that valid Unicode punctuation is the cause.',
-    'Use the file tools that are actually available as ordinary file operations. read_design_file and scoped Design list/write/edit plus Bundle scripts use paths relative to the bound Design Files root, independent of native cwd. Inherited native read/read_image/glob/grep follow Host path semantics and are reserved for Host-authorized application/source evidence. Do not invent other renamed source-reading tools or deprecated Design-specific file tools. Mutations remain ordinary uncommitted Design Project changes until design_publish validates and commits them. A failed validation preserves the same files for repair; continue editing them and retry design_publish.',
+    'Use the file tools that are actually available as ordinary file operations. read_design_file and scoped Design list/write/edit plus Bundle scripts use paths relative to the bound Design Files root, independent of native cwd. Host-native read/read_image/glob/grep can also inspect current Design Files and application/source evidence using Host path semantics and permissions. For long files, you can use the Host reader\'s available range or pagination options to read relevant text. Do not invent other renamed source-reading tools or deprecated Design-specific file tools. Mutations remain ordinary uncommitted Design Project changes until design_publish validates and commits them. A failed validation preserves the same files for repair; continue editing them and retry design_publish.',
     'Treat implementation and documentation as evidence, not unquestionable product intent. Distinguish directly observed facts, reasonable inferences, and unresolved product decisions. Do not mechanically turn source folders, components, routes, or database tables into product structure.',
     reconstruct
       ? 'Report unresolved decisions without inventing answers.'
@@ -887,6 +957,7 @@ export function producerPrompt(
   skill: DesignSkill,
   input: {
     readonly brief?: string
+    readonly currentUserInput?: readonly (string | DesignExecutionQuestionAnswer)[]
     readonly currentDesignState?: string
     readonly userContext?: string
     readonly reconstruct?: true
@@ -900,9 +971,9 @@ export function producerPrompt(
         : `Resume ${skill.name} after the user accepted its current manifest handoff. Inspect the current Design Files, complete the remaining Skill Body work, validate, repair as needed, and settle through design_publish.`,
       'For delegated artifacts, integrate each successful receipt path into canonical Design JSON only after the artifact exists and its author completed the Bundle validation loop; completion publication rejects any current-invocation receipt that remains unreferenced.',
       ...input?.reconstruct === true ? [
-        '<user_brief>',
+        '<caller_task_plan>',
         input.brief ?? '',
-        '</user_brief>',
+        '</caller_task_plan>',
         '<reconstruction_strategy>',
         `Continue reconstructing from the exact read-only evidence file or directory ${JSON.stringify(input.reconstructionSourceRoot)}. Follow the reconstruction method's source and asset boundaries. Preserve the observed, inferred, and unknown distinctions from the initial run.`,
         '</reconstruction_strategy>',
@@ -911,9 +982,15 @@ export function producerPrompt(
   }
   return [
     `Engage Design skill ${skill.name}.`,
-    '<user_brief>',
+    ...input?.currentUserInput?.length ? [
+      'The following JSON array preserves this turn’s direct human text and native question answers in arrival order. In question-answer objects, question context is Agent-authored; selected and custom are the user’s actual answer, with custom text verbatim. Later answers and steering can revise earlier requests; interpret the complete sequence. The caller task plan is the Agent’s interpretation, not the user’s own words. For this Bundle, preserve the user’s requested outcomes and constraints; do not narrow or reinterpret them from the plan. Check current Design Files for saved facts, revising them when the user requests it. Requirements for other Bundles are coordination context only: edit only the current Bundle and report remaining owner work.',
+      '<current_user_request>',
+      JSON.stringify(input.currentUserInput),
+      '</current_user_request>',
+    ] : [],
+    '<caller_task_plan>',
     input?.brief ?? '',
-    '</user_brief>',
+    '</caller_task_plan>',
     '<current_bundle_state>',
     input?.currentDesignState ?? '{}',
     '</current_bundle_state>',
@@ -1158,6 +1235,7 @@ function createProducerPort(input: {
           ? undefined
           : createDshDesignDelegation({
             skillName: request.skill.name,
+            workerResourcePaths: designSkillResourceEntryPaths(request.skill.name, input.kit.resources),
             reconstruct: request.input?.reconstruct === true,
             provider: delegationConfig.provider,
             startSubagent,
@@ -1214,7 +1292,10 @@ function createProducerPort(input: {
               `path:${path}`,
             ])
             if (ownCurrent === undefined) {
-              artifactAttempts.claimAll(claims, attempt)
+              artifactAttempts.claimAll(claims, attempt, {
+                role: 'producer',
+                sessionId: producerRunId ?? String(input.agent.session.id),
+              })
               producerArtifactAttempts.set(attempt, {
                 attemptId: attempt,
                 artifactKind: kind,
@@ -1452,7 +1533,24 @@ function createController(
       const stateRevision = (await store.head(request.signal)) ?? DESIGN_FILES_UNBORN_REVISION
       const storedState = await store.readPublished(skill.name, request.signal)
       const currentState = storedState === undefined ? undefined : storedState as Readonly<Record<string, unknown>>
-      const journalRecords = (await host.design.readDesignJournal(request.agent)).records
+      const journal = await host.design.readDesignJournal(request.agent)
+      const journalRecords = journal.records
+      const humanInput = currentTurnHumanInput(request.agent)
+      // The ordinary tool has already atomically claimed this accepted action.
+      // Its effective invocation and exact target, not the notice's source or a
+      // model-supplied receipt alone, carry the recorded human authorization.
+      // Completing one Owner call does not end that turn's authorized work:
+      // ordinary same-target repair can reuse its actual call and this project's
+      // Journal. The explicit completed receipt remains non-replayable.
+      const acceptedAction = journal.snapshot.advisories.some(entry => entry.status === 'accepted'
+        && entry.actionReceipts?.some(action => (
+          (action.state === 'running' && action.logicalInvocationId === request.invocationId)
+          || (action.state === 'completed' && action.logicalInvocationId !== undefined
+            && action.logicalInvocationId !== request.invocationId
+            && humanInput.advisoryCalls.get(action.logicalInvocationId)?.receiptId === action.receiptId
+            && humanInput.advisoryCalls.get(action.logicalInvocationId)?.name === skill.name))
+          && action.target.kitName === kit.name && action.target.kitVersion === kit.version
+          && action.target.skillName === skill.name && action.target.bundleVersion === skill.version))
       const producer = createProducerPort({
         deploymentCtx,
         resolveSubagentStart,
@@ -1469,9 +1567,8 @@ function createController(
         subprocess: host.subprocess,
       })
 
-      const humanInput = currentTurnHumanInput(request.agent)
-      const revising = request.brief !== undefined && request.brief.trim() !== '' && humanInput.hasHuman
-      // A current human revision starts new work, including over legacy saved
+      const revising = request.brief !== undefined && request.brief.trim() !== '' && (humanInput.hasHuman || acceptedAction)
+      // A human-authorized revision starts new work, including over legacy saved
       // answers. Only acknowledgement of the old save requires its exact gate
       // disposition; revision must not invent or reconcile that old receipt.
       if (!revising && request.reconstruct !== true && request.action === undefined && skill.execution.handoff === 'must_edit' && currentState !== undefined) {
@@ -1539,7 +1636,7 @@ function createController(
         const resolvedControl = request.resumeControl === undefined ? undefined
           : resolveDesignExecutionInput(currentGate, { kind: 'chat', text: request.resumeControl.text })
         const command = request.resumeControl === undefined
-          ? currentHumanResumeCommand(request.agent, currentGate)
+          ? currentHumanResumeCommand(humanInput, currentGate)
           : resolvedControl?.kind === 'command' ? resolvedControl.command : undefined
         if (command === undefined) {
           return Object.freeze({
@@ -1569,14 +1666,14 @@ function createController(
       if (currentGate !== undefined && request.reconstruct !== true) {
         if (!revising) return finish(transitionResult({ kind: 'await_user', gate: currentGate }, project.root, kit, locale), currentGate.pin)
       }
-      if (humanInput.hasTurn && !humanInput.hasHuman) {
+      if (humanInput.hasTurn && !humanInput.hasHuman && !acceptedAction) {
         const title = designText(skill.title, locale)
         return Object.freeze({
           kind: 'invalid',
           summary: pickLocalized(
             locale,
-            `Design skill ${title} can start only from a current human message; background notices cannot start or re-plan Design work.`,
-            `设计技能「${title}」只能由当前人类消息启动；后台通知无法启动或重新规划设计工作。`,
+            `Design skill ${title} requires a current human message or a claimed accepted advisory action for this exact Bundle; a background notice alone cannot start or re-plan Design work.`,
+            `设计技能「${title}」需要当前人类消息或已领取且匹配当前 Bundle 的已接受建议执行凭据；仅有后台通知不能启动或重新规划设计工作。`,
           ),
         })
       }
@@ -1590,6 +1687,7 @@ function createController(
         stateRevision,
       }, {
         brief: request.brief ?? '',
+        ...(humanInput.requestInputs.length === 0 ? {} : { currentUserInput: humanInput.requestInputs }),
         currentDesignState: JSON.stringify(currentState ?? {}),
         userContext: host.design.renderDesignState(request.agent),
         ...(request.reconstruct === true ? { reconstruct: true } : {}),

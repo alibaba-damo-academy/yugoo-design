@@ -101,6 +101,16 @@ for(const backend of ['cli','native']) {
   })
 }
 
+test('native: publication invalidates an existing display reader without a Store wrapper',async t=>{
+  const f=await fixture(t,'native')
+  t.mock.timers.enable({apis:['Date'],now:Date.now()})
+  const reader=new GitVersioning(nodeDesignProjectSpawn,f.root,'design_files',false,'cli')
+  const before=await reader.pollHead()
+  const published=await f.git.commitExact('native direct publication',new Map([['sample/current.txt','current\n']]),before)
+  assert.notEqual(published,before)
+  assert.equal(await reader.pollHead(),published)
+})
+
 test('native: external winner before publication is retained and no receipt is fabricated',async t=>{
   const f=await fixture(t,'native'),baseline=await f.git.head();let winner
   f.beforeNative(async op=>{

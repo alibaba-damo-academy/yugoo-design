@@ -66,13 +66,13 @@ test('old data, blank labels and arbitrary free labels remain valid without new 
   for (const record of Object.values(legacy.requirements)) delete record.group
   for (const label of [undefined, '', '   ', 'AI 能力', '部署检查 / 用户自定', 'Ungrouped']) {
     const state = structuredClone(legacy)
-    if (label !== undefined) state.requirements['Q-PREVIEW-001'].group = label
+    if (label !== undefined) state.requirements['AC-001'].group = label
     assert.equal(validate(state).ok, true, String(label))
     assert.deepEqual(await validateSkillDesign(bundle, state, { scopes: ['state', 'completion'] }), [])
   }
   for (const label of [null, 42, false, [], {}]) {
     const invalid = structuredClone(legacy)
-    invalid.requirements['Q-PREVIEW-001'].group = label
+    invalid.requirements['AC-001'].group = label
     assert.equal(validate(invalid).ok, false, 'a label is not a second data model')
   }
   const invalidOrder = structuredClone(legacy)
@@ -80,11 +80,11 @@ test('old data, blank labels and arbitrary free labels remain valid without new 
   assert.ok((await validateSkillDesign(bundle, invalidOrder, { scopes: ['state'] }))
     .some(issue => issue.code === 'quality_acceptance.invalid_order'))
   const invalidId = structuredClone(legacy)
-  invalidId.requirements['Q-PREVIEW-001'].id = 'different'
+  invalidId.requirements['AC-001'].id = 'different'
   assert.ok((await validateSkillDesign(bundle, invalidId, { scopes: ['state'] }))
     .some(issue => issue.code === 'quality_acceptance.invalid_id'))
   const incomplete = structuredClone(legacy)
-  incomplete.requirements['Q-PREVIEW-001'].pass_criteria = ''
+  incomplete.requirements['AC-001'].pass_criteria = ''
   assert.deepEqual(await validateSkillDesign(bundle, incomplete, { scopes: ['state'] }), [])
   assert.ok((await validateSkillDesign(bundle, incomplete, { scopes: ['completion'] }))
     .some(issue => issue.code === 'quality_acceptance.missing_pass_criteria'))
@@ -95,9 +95,9 @@ test('summary locates real labels without adding categories to ungrouped records
   const summary = renderDeclarativeState(sample, bundle).join('\n')
   assert.ok(summary.includes('group=业务流程'))
   assert.ok(summary.includes('group=AI 能力'))
-  assert.ok(summary.includes(sample.requirements['Q-PREVIEW-002'].title))
+  assert.ok(summary.includes(sample.requirements['AC-002'].title))
   assert.deepEqual(sample, before)
-  assert.equal(Object.hasOwn(sample.requirements['Q-PREVIEW-002'], 'group'), false)
+  assert.equal(Object.hasOwn(sample.requirements['AC-002'], 'group'), false)
 })
 
 test('shared Panel save durably retains free labels, IDs/order and unedited criteria after reopen', async t => {
@@ -122,15 +122,15 @@ test('shared Panel save durably retains free labels, IDs/order and unedited crit
   const store = open()
   await applyPanelEdit(store, { skill: bundle.name, state: sample }, async () => {}, validate)
   const edited = structuredClone(sample)
-  edited.requirements['Q-PREVIEW-001'].group = 'AI 能力 / 用户自定'
-  edited.requirements['Q-PREVIEW-003'].group = ''
+  edited.requirements['AC-001'].group = 'AI 能力 / 用户自定'
+  edited.requirements['AC-003'].group = ''
   const saved = await applyPanelEdit(store, { skill: bundle.name, state: edited }, async () => {}, validate)
   assert.ok(saved.commit)
   assert.ok(saved.diff.includes('AI 能力 / 用户自定'))
   const reopened = await open().read(bundle.name)
   assert.deepEqual(reopened, edited)
   assert.deepEqual(reopened.requirement_order, sample.requirement_order)
-  assert.deepEqual(reopened.requirements['Q-PREVIEW-002'], sample.requirements['Q-PREVIEW-002'])
+  assert.deepEqual(reopened.requirements['AC-002'], sample.requirements['AC-002'])
   for (const id of sample.requirement_order) {
     assert.equal(reopened.requirements[id].id, id)
     for (const field of ['title', 'condition', 'pass_criteria', 'verification'])
@@ -138,7 +138,7 @@ test('shared Panel save durably retains free labels, IDs/order and unedited crit
   }
   const head = await store.head()
   const invalid = structuredClone(edited)
-  invalid.requirements['Q-PREVIEW-001'].group = { name: 'invalid' }
+  invalid.requirements['AC-001'].group = { name: 'invalid' }
   await assert.rejects(applyPanelEdit(store, { skill: bundle.name, state: invalid }, async () => {}, validate))
   assert.equal(await store.head(), head)
   assert.deepEqual(await open().read(bundle.name), edited)

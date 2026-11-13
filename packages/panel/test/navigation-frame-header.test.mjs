@@ -18,7 +18,7 @@ test('frame header edits use one projected authority and readonly blocks writes'
   const { renderManifest } = await import('../src/interpreter.ts')
   const { applyPanelUpdatesToDraft } = await import('../src/record-state.ts')
   const manifest = { version: 1, panel_kind: 'capability_map',
-    sections: ['items', 'links', 'groups'].map(id => ({ id, title: id, create: { id_field: 'id' } })), fields: [],
+    sections: ['items', 'links', 'groups'].map(id => ({ id, title: id, item_name: id === 'groups' ? 'group' : undefined, create: { id_field: 'id' } })), fields: [],
     ui: { id: 'map', component: 'navigation_workspace', navigation_map: {
       grouping: { path: 'menu', target: 'target', label: 'category' },
       nodes: { path: 'items', order: 'order', label: 'name', position: 'point' },
@@ -45,6 +45,9 @@ test('frame header edits use one projected authority and readonly blocks writes'
   })
   try {
     await act(async () => show())
+    assert.ok([...document.querySelectorAll('button')].some(button => button.textContent.endsWith('Add group')),
+      'canvas creation uses the same singular item name as ordinary record creation')
+    assert.ok(![...document.querySelectorAll('button')].some(button => button.textContent.endsWith('Add groups')))
     assert.equal(input().getAttribute('aria-label'), 'Group name')
     assert.equal(document.querySelector('.dsh-navigation-group-header span').textContent, 'Records: 1')
     assert.equal(writes, 0); assert.equal(Object.hasOwn(state, 'groups'), false)

@@ -74,6 +74,13 @@ for (const mindsetRule of [
   if (!kit.mindset.includes(mindsetRule)) throw new Error(`mindset missing Kit calibration rule: ${mindsetRule}`)
 }
 
+// Installed content must not resurrect obsolete Host instructions or fixed score gains.
+if (/先做构思|想再构思一下|开始构思/.test(kit.mindset)) throw new Error('Mindset retains legacy ideation trigger copy')
+const roles = kit.skills.find(skill => skill.name === 'role_access')
+if (roles.content.includes('The host appends the exact generated schema')) throw new Error('role method promises absent schema injection')
+const style = kit.skills.find(skill => skill.name === 'design_style')
+if (/\+\d+\.\.\+\d+/.test(style.content)) throw new Error('style method prescribes fixed score gains')
+
 // Capability copy has one owner: the mounted Bundle's SKILL.md frontmatter.
 // The Mindset retains domain reasoning, rather than duplicating catalog prose.
 const questionSkill = kit.skills.find(skill => skill.name === 'smart_questions')
@@ -332,6 +339,7 @@ const postWriteSelfCheckSkills = new Set([
   'web_app_prd_assembly',
 ])
 const forbiddenModelToolNames = [
+  'next_design_tool_skill',
   'write_design_json',
   'edit_design_json',
   'read_design_json',

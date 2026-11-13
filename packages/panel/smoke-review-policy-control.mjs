@@ -2,191 +2,208 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { JSDOM } from 'jsdom'
 import React, { act } from 'react'
-import { createRoot } from 'react-dom/client'
-import { ReviewPolicyControl } from './src/client/review-policy-control.tsx'
 import { ADVISORY_CSS } from './src/client/styles.ts'
 import { bindDesignHostLocale } from './src/client/ported/host.ts'
 
-const dom = new JSDOM('<div id="root" style="font-weight:600"></div>', { url: 'http://localhost' })
-// The advisory slot must work before a Dock ever mounts. Do not load the
-// Dock's utility sheet here: its presence used to conceal Host dependencies.
+const dom = new JSDOM('<!doctype html><div id="root" style="font-weight:600"></div>', { url: 'http://localhost' })
+// Settings must work before the Dock mounts; this exercises their own styles.
 const advisoryStyles = dom.window.document.createElement('style')
 advisoryStyles.textContent = ADVISORY_CSS
 dom.window.document.head.append(advisoryStyles)
 globalThis.window = dom.window
 globalThis.document = dom.window.document
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
+const { createRoot } = await import('react-dom/client')
+const { ReviewPolicyControl } = await import('./src/client/review-policy-control.tsx')
 dom.window.HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', '') }
 dom.window.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open') }
-const saved = [], prompts = []
+const saved = [], prompts = [], directRequests = []
 const policy = { mode: 'auto', autoMergeWindowMs: 30000, continuousIntervalMs: 600000 }
 const runtime = {
   readReviewPolicy: async () => policy,
   updateReviewPolicy: async (session, value) => { saved.push([session, value]); return value },
   sendPrompt: async (...args) => { prompts.push(args) },
+  requestManualReview: async (...args) => { directRequests.push(args); return { outcome: 'accepted' } },
 }
 const root = createRoot(document.getElementById('root'))
 let activeLanguage = 'zh-CN'
 const localeListeners = new Set()
 const releaseLocale = bindDesignHostLocale({ getSnapshot: () => ({ active: activeLanguage }), subscribe: listener => { localeListeners.add(listener); return () => localeListeners.delete(listener) } })
-const click = async selector => { await act(async () => document.querySelector(selector).click()) }
+const click = async selector => { await act(async () => { const element = document.querySelector(selector); assert.ok(element, selector); element.click() }) }
+const input = async (selector, value) => act(async () => {
+  const element = document.querySelector(selector)
+  assert.ok(element, selector)
+  Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value').set.call(element, String(value))
+  element.dispatchEvent(new dom.window.Event('input', { bubbles: true }))
+  element.dispatchEvent(new dom.window.Event('change', { bubbles: true }))
+})
+const chooseMode = value => act(async () => {
+  const select = document.querySelector('select')
+  select.value = value
+  select.dispatchEvent(new dom.window.Event('change', { bubbles: true }))
+})
+const chooseDepth = value => input('input[type=range]', value)
+const number = () => document.querySelector('input[type=number]')
+const checkHint = () => {
+  const hints = [...document.querySelectorAll('.dsh-review-scope-hints p')]
+  assert.equal(hints.length, 3, 'all scope hints reserve their layout space')
+  const visible = hints.filter(hint => hint.getAttribute('aria-hidden') === 'false')
+  assert.equal(visible.length, 1, 'only the selected hint is exposed to assistive technology')
+  assert.equal(document.getElementById(document.querySelector('input[type=range]').getAttribute('aria-describedby')), visible[0])
+}
 try {
   await act(async () => root.render(React.createElement(ReviewPolicyControl, { sessionId: 'test-session', runtime })))
   const dialog = document.querySelector('dialog')
-  assert.equal(dialog.open, false, 'the form is hidden initially')
-  assert.equal(document.querySelector('.dsh-review-settings-trigger').textContent.trim(), '设置')
-  const triggerStyle = dom.window.getComputedStyle(document.querySelector('.dsh-review-settings-trigger'))
-  assert.ok(parseFloat(triggerStyle.minHeight) >= 24, 'standalone settings retain a usable action target without Dock utilities')
-  assert.equal(document.querySelector('.dsh-design-dock'), null, 'the test must not borrow the Dock stylesheet lifetime')
-  assert.equal(document.querySelector('details'), null, 'settings do not expand the advisory inbox')
+  const depth = document.querySelector('input[type=range]')
+  assert.equal(dialog.open, false)
+  assert.equal(document.querySelector('.dsh-review-settings-trigger').textContent.trim(), '')
+  assert.equal(document.querySelector('.dsh-review-settings-trigger').getAttribute('aria-label'), '设计建议设置')
+  assert.equal(document.querySelector('.dsh-review-settings-trigger').getAttribute('title'), '设计建议设置')
+  assert.ok(parseFloat(dom.window.getComputedStyle(document.querySelector('.dsh-review-settings-trigger')).minHeight) >= 24)
+  assert.equal(document.querySelector('.dsh-design-dock'), null, 'standalone settings do not borrow the Dock stylesheet lifetime')
   await click('.dsh-review-settings-trigger')
   assert.equal(dialog.open, true)
-  assert.ok(['normal', '400'].includes(dom.window.getComputedStyle(dialog).fontWeight), 'modal copy must not inherit the inbox heading weight')
-  assert.equal(document.getElementById(dialog.getAttribute('aria-labelledby'))?.textContent, 'GRA 评审设置')
-  assert.equal(document.querySelector('input')?.value, '30')
+  assert.ok(['normal', '400'].includes(dom.window.getComputedStyle(dialog).fontWeight))
+  assert.equal(document.getElementById(dialog.getAttribute('aria-labelledby'))?.textContent, '设计建议设置')
+  assert.deepEqual([...document.querySelectorAll('.dsh-review-settings-actions button')].map(button => button.textContent), ['取消', '保存'])
+  assert.equal(document.querySelector('.dsh-review-settings-check'), null)
+  assert.equal(depth.value, '1', 'an absent saved depth still displays standard without rewriting it')
+  assert.equal(depth.min, '0'); assert.equal(depth.max, '2'); assert.equal(depth.step, '1')
+  assert.equal(document.querySelectorAll('.dsh-review-scope-stops > span').length, 3)
+  checkHint()
+  assert.equal(dom.window.getComputedStyle(document.querySelector('.dsh-review-off-hint')).display, 'none', 'inapplicable mode help does not leave an empty row')
   await click('.dsh-review-settings-save')
-  assert.equal(saved[0][0], 'test-session')
-  assert.deepEqual(saved[0][1], policy, 'saving preserves the existing policy contract')
-  assert.ok(document.querySelector('[role="status"]')?.textContent.includes('生效'))
-  const select = document.querySelector('select')
-  const depth = document.querySelectorAll('select')[1]
-  assert.equal(depth.value, 'standard', 'existing projects retain standard depth')
-  await act(async () => { depth.value = 'light'; depth.dispatchEvent(new dom.window.Event('change', { bubbles: true })) })
-  assert.equal(prompts.length, 0, 'choosing depth does not start a review')
-  await act(async () => { select.value = 'continuous'; select.dispatchEvent(new dom.window.Event('change', { bubbles: true })) })
-  assert.equal(document.querySelector('input')?.getAttribute('aria-label'), '检查间隔（分钟）')
-  assert.equal(document.querySelector('[role="status"]'), null, 'editing clears stale saved feedback')
-  await click('.dsh-review-settings-check')
-  assert.equal(saved[1][1].mode, 'continuous')
-  assert.equal(saved[1][1].depth, 'light', 'depth shares the existing project settings save')
-  assert.equal(prompts[0][0], 'test-session')
-  assert.match(prompts[0][1], /design_recheck_reviews/)
-  assert.match(prompts[0][1], /后台不可用或会占用主对话/)
-  assert.match(prompts[0][1], /只有明确确认同步后/)
-  assert.match(prompts[0][1], /executionMode="foreground"/)
-  assert.equal(saved.length, 2, 'save-and-check persists the selected policy before requesting review')
-  assert.equal(document.querySelector('[role="status"]').textContent, '手动检查请求已发送，请在原对话查看执行状态。')
-  await act(async () => { select.value = 'off'; select.dispatchEvent(new dom.window.Event('change', { bubbles: true })) })
-  await click('.dsh-review-settings-check')
-  assert.equal(saved[2][1].mode, 'off')
-  assert.equal(prompts.length, 2, 'policy off retains the same manual-check route')
-  assert.match(prompts[1][1], /未经用户选择不改变评审策略、不自动同步运行/)
-  assert.equal(saved.length, 3, 'save-and-check retains the explicitly selected off policy')
+  assert.equal(dialog.open, false, 'successful Save closes the settings dialog')
+  assert.deepEqual(saved[0], ['test-session', policy], 'saving an unchanged policy preserves its contract and absent depth')
+  await click('.dsh-review-settings-trigger')
+  await chooseDepth(0)
+  await chooseMode('continuous')
+  await input('input[type=number]', 12)
+  assert.equal(saved.length, 1, 'scope, mode and timing remain drafts until Save')
+  checkHint()
   await act(async () => { activeLanguage = 'en-US'; for (const notify of localeListeners) notify() })
-  assert.equal(document.querySelector('dialog'), dialog, 'switching language preserves the open dialog and draft policy')
-  assert.equal(select.value, 'off')
-  assert.equal(depth.value, 'light', 'language changes preserve the selected depth')
-  assert.equal(depth.getAttribute('aria-label'), 'Review depth')
-  assert.deepEqual([...depth.options].map(option => option.textContent), ['Light', 'Standard', 'Thorough'])
-  assert.equal(document.querySelector('.dsh-review-settings-trigger').textContent.trim(), 'Settings')
-  assert.equal(document.querySelector('[role="status"]').textContent, 'Review requested. Check its progress in the conversation.')
+  assert.equal(document.querySelector('dialog'), dialog, 'language changes preserve the dialog and draft')
+  assert.equal(dialog.open, true)
+  assert.equal(document.querySelector('select').value, 'continuous')
+  assert.equal(number().value, '12')
+  assert.equal(depth.value, '0')
+  assert.equal(depth.getAttribute('aria-valuetext'), 'Current design')
+  assert.deepEqual([...document.querySelectorAll('.dsh-review-scope-labels span')].map(span => span.textContent), ['Current design', 'Related designs', 'Entire project'])
+  assert.deepEqual([...document.querySelectorAll('.dsh-review-settings-actions button')].map(button => button.textContent), ['Cancel', 'Save'])
   assert.doesNotMatch(dialog.textContent, /[\u3400-\u9fff]/)
-  assert.equal(prompts.length, 2, 'switching language does not request another check')
-  await click('.dsh-review-settings-check')
-  assert.match(prompts[2][1], /design_recheck_reviews/)
-  assert.match(prompts[2][1], /only after explicit confirmation/)
-  assert.doesNotMatch(prompts[2][1], /[\u3400-\u9fff]/)
-  assert.equal(saved.length, 4, 'localized save-and-check uses the same policy save')
-  assert.equal(document.querySelector('.dsh-review-settings-check').textContent, 'Save & check')
+  await click('.dsh-review-settings-save')
+  assert.equal(dialog.open, false)
+  assert.deepEqual(saved.at(-1), ['test-session', { ...policy, mode: 'continuous', depth: 'light', continuousIntervalMs: 720000 }])
+  await click('.dsh-review-settings-trigger')
+  await chooseDepth(2)
+  await chooseMode('off')
+  checkHint()
+  const offHint = document.querySelector('.dsh-review-off-hint')
+  assert.equal(dom.window.getComputedStyle(offHint).visibility, 'visible')
+  assert.equal(offHint.parentElement.querySelector('select').value, 'off', 'Off help belongs directly to the mode field')
+  assert.equal(depth.matches(':disabled'), true, 'Off disables pointer and keyboard scope adjustment')
+  assert.equal(depth.value, '2', 'Off preserves the selected scope')
+  await chooseMode('auto')
+  assert.equal(depth.matches(':disabled'), false)
+  assert.equal(depth.value, '2', 'turning reviews on restores the saved draft scope')
+  await chooseMode('off')
+  await click('.dsh-review-settings-cancel')
+  assert.equal(dialog.open, false)
+  assert.equal(saved.length, 2, 'Cancel does not persist a draft')
+  await click('.dsh-review-settings-trigger')
+  assert.equal(depth.value, '0')
+  assert.equal(document.querySelector('select').value, 'continuous')
+  assert.equal(number().value, '12', 'Cancel restores the most recently saved timing too')
+  await chooseDepth(2)
+  await act(async () => dialog.dispatchEvent(new dom.window.Event('cancel', { cancelable: true })))
+  assert.equal(dialog.open, false, 'Escape follows the same cancel boundary')
+  await click('.dsh-review-settings-trigger')
+  assert.equal(depth.value, '0')
+  await chooseDepth(1)
+  await click('.dsh-review-settings-close')
+  await click('.dsh-review-settings-trigger')
+  assert.equal(depth.value, '0', 'the header close also cancels unsaved edits')
+
   const savePolicy = runtime.updateReviewPolicy
+  await chooseDepth(2)
   runtime.updateReviewPolicy = async () => { throw new Error('fixture connection lost') }
   await click('.dsh-review-settings-save')
-  assert.match(document.querySelector('[role="alert"]').textContent, /choices are preserved/)
-  assert.equal(document.querySelector('[role="alert"]').title, 'Error: fixture connection lost')
-  assert.equal(document.querySelector('[role="status"]'), null, 'a failed save cannot retain previous success feedback')
-  assert.equal(depth.value, 'light', 'failed saves retain the editable choice')
-  const sentBeforeFailure = prompts.length
-  await click('.dsh-review-settings-check')
-  assert.equal(prompts.length, sentBeforeFailure, 'failed save must never send a manual review request')
-  assert.equal(depth.value, 'light')
-  assert.match(document.querySelector('[role="alert"]').textContent, /choices are preserved/)
+  assert.equal(dialog.open, true, 'a failed save stays open for recovery')
+  assert.match(document.querySelector('[role=alert]').textContent, /choices are preserved/)
+  assert.equal(document.querySelector('[role=alert]').title, 'Error: fixture connection lost')
+  assert.equal(depth.value, '2')
+  assert.equal(document.querySelector('.dsh-review-settings-save').disabled, false)
   runtime.updateReviewPolicy = savePolicy
   await click('.dsh-review-settings-save')
-  assert.equal(document.querySelector('[role="alert"]'), null)
-  assert.equal(saved.at(-1)[1].depth, 'light')
-  const attempts = []
-  const sendPrompt = runtime.sendPrompt
-  runtime.sendPrompt = async (...args) => { attempts.push(args); throw new Error('fixture delivery unavailable') }
-  await click('.dsh-review-settings-check')
-  await click('.dsh-review-settings-check')
-  assert.equal(attempts[0][2], attempts[1][2], 'same selected policy retries the same manual request')
-  await act(async () => { depth.value = 'thorough'; depth.dispatchEvent(new dom.window.Event('change', { bubbles: true })) })
-  await click('.dsh-review-settings-check')
-  assert.notEqual(attempts[2][2], attempts[1][2], 'editing depth starts a new request instead of replaying old pinned effort')
-  await act(async () => root.render(React.createElement(ReviewPolicyControl, { sessionId: 'next-session', runtime })))
-  await click('.dsh-review-settings-check')
-  assert.equal(attempts[3][0], 'next-session')
-  assert.notEqual(attempts[3][2], attempts[2][2], 'failed request identity cannot follow another conversation')
+  assert.equal(dialog.open, false)
+  assert.equal(saved.at(-1)[1].depth, 'thorough', 'retry persists the retained draft')
+  await click('.dsh-review-settings-trigger')
+  assert.equal(document.querySelector('[role=alert]'), null)
+  await input('input[type=number]', 0)
+  await click('.dsh-review-settings-save')
+  assert.match(document.querySelector('[role=alert]').textContent, /whole number from 1 to 1440/)
+  const beforeInvalid = saved.length
+  await input('input[type=number]', 1.5)
+  await click('.dsh-review-settings-save')
+  assert.equal(saved.length, beforeInvalid, 'invalid intervals never reach the settings service')
+  await click('.dsh-review-settings-cancel')
+  await click('.dsh-review-settings-trigger')
+  await chooseMode('auto')
+  await input('input[type=number]', '')
+  await click('.dsh-review-settings-save')
+  assert.match(document.querySelector('[role=alert]').textContent, /0 to 3600 seconds/)
+  const savedTiming = { autoMergeWindowMs: saved.at(-1)[1].autoMergeWindowMs, continuousIntervalMs: saved.at(-1)[1].continuousIntervalMs }
+  await chooseMode('off')
+  await click('.dsh-review-settings-save')
+  assert.equal(dialog.open, false, 'an invalid hidden automatic draft cannot prevent turning reviews off')
+  assert.equal(saved.at(-1)[1].mode, 'off', 'Off only changes the saved policy')
+  assert.equal(saved.at(-1)[1].autoMergeWindowMs, savedTiming.autoMergeWindowMs)
+  assert.equal(saved.at(-1)[1].continuousIntervalMs, savedTiming.continuousIntervalMs)
+
+  await click('.dsh-review-settings-trigger')
+  await chooseMode('continuous')
+  await input('input[type=number]', '')
+  await chooseMode('auto')
+  await click('.dsh-review-settings-save')
+  assert.equal(dialog.open, false, 'Automatic ignores an invalid hidden scheduled draft')
+  assert.equal(saved.at(-1)[1].continuousIntervalMs, savedTiming.continuousIntervalMs)
+  await click('.dsh-review-settings-trigger')
+  await input('input[type=number]', '')
+  await chooseMode('continuous')
+  await click('.dsh-review-settings-save')
+  assert.equal(dialog.open, false, 'Scheduled ignores an invalid hidden automatic draft')
+  assert.equal(saved.at(-1)[1].autoMergeWindowMs, savedTiming.autoMergeWindowMs)
+
+  await click('.dsh-review-settings-trigger')
+  await chooseMode('off')
+  await click('.dsh-review-settings-save')
+
   const pendingSaves = []
   runtime.updateReviewPolicy = (_session, value) => new Promise(resolve => pendingSaves.push(() => resolve(value)))
-  await click('.dsh-review-settings-check')
-  assert.equal(pendingSaves.length, 1)
-  await act(async () => root.render(React.createElement(ReviewPolicyControl, { sessionId: 'newer-session', runtime })))
-  await act(async () => pendingSaves[0]())
-  assert.equal(attempts.length, 4, 'late save completion cannot dispatch a review from an obsolete conversation')
-  runtime.updateReviewPolicy = savePolicy
-  runtime.sendPrompt = sendPrompt
-  // A direct review capability dispatches the existing service operation, not
-  // a main-conversation prompt. Losing its success response must be retryable.
-  const directRequests = []
-  let scheduled = 0
-  const admitted = new Set()
-  runtime.requestManualReview = async (session, requestId) => {
-    directRequests.push([session, requestId])
-    assert.equal(saved.at(-1)[0], session, 'policy is saved before direct dispatch')
-    if (admitted.has(requestId)) return { outcome: 'noop', reason: 'already-active-or-requested' }
-    admitted.add(requestId)
-    scheduled += 1
-    throw new Error('fixture success response lost')
-  }
-  const promptsBeforeDirect = prompts.length
+  await click('.dsh-review-settings-trigger')
+  await chooseMode('auto')
+  await chooseDepth(0)
   await click('.dsh-review-settings-save')
-  assert.equal(directRequests.length, 0, 'saving settings alone never starts review or a main turn')
-  await click('.dsh-review-settings-check')
-  assert.match(document.querySelector('[role="alert"]').textContent, /confirm.*request/i)
-  await click('.dsh-review-settings-check')
-  assert.equal(directRequests.length, 2)
-  assert.equal(directRequests[0][1], directRequests[1][1], 'a lost receipt retries the same service operation')
-  assert.equal(scheduled, 1, 'the existing service owns deduplication')
-  assert.equal(prompts.length, promptsBeforeDirect, 'unknown delivery and retry never fall back to a main prompt')
-  assert.equal(document.querySelector('[role="alert"]'), null)
-  assert.match(document.querySelector('[role="status"]').textContent, /already.*requested/i)
-  runtime.requestManualReview = async (session, requestId) => {
-    directRequests.push([session, requestId])
-    return { outcome: 'accepted', reason: 'manual-reviews-triggered', target: { revision: 1 } }
-  }
-  await click('.dsh-review-settings-check')
-  assert.notEqual(directRequests[2][1], directRequests[1][1], 'a new acknowledged check gets a new operation identity')
-  assert.match(document.querySelector('[role="status"]').textContent, /queued/i)
-  runtime.requestManualReview = async () => ({ outcome: 'rejected', reason: 'no-design-change' })
-  await click('.dsh-review-settings-check')
-  assert.match(document.querySelector('[role="alert"]').textContent, /save.*design/i)
-  assert.equal(document.querySelector('[role="status"]'), null, 'rejection cannot look like a scheduled review')
-  assert.equal(prompts.length, promptsBeforeDirect, 'a business rejection never switches execution routes')
-  runtime.requestManualReview = async () => ({ outcome: 'noop', reason: 'no-configured-profiles' })
-  await click('.dsh-review-settings-check')
-  assert.match(document.querySelector('[role="alert"]').textContent, /no.*review.*configured/i)
-  runtime.requestManualReview = async () => ({ outcome: 'noop', reason: 'request-already-completed' })
-  await click('.dsh-review-settings-check')
-  assert.match(document.querySelector('[role="status"]').textContent, /already.*completed/i)
-  runtime.updateReviewPolicy = async () => { throw new Error('fixture save failed') }
-  runtime.requestManualReview = async () => { assert.fail('failed policy save must not dispatch a direct review') }
-  await click('.dsh-review-settings-check')
-  assert.match(document.querySelector('[role="alert"]').textContent, /choices are preserved/)
-  runtime.updateReviewPolicy = savePolicy
-  await act(async () => { activeLanguage = 'zh-CN'; for (const notify of localeListeners) notify() })
-  runtime.requestManualReview = async () => ({ outcome: 'accepted', reason: 'manual-reviews-triggered', target: { revision: 1 } })
-  await click('.dsh-review-settings-check')
-  assert.match(document.querySelector('[role="status"]').textContent, /已排队/)
-  await click('.dsh-review-settings-close')
-  assert.equal(dialog.open, false)
+  assert.equal(pendingSaves.length, 1)
+  assert.equal(document.querySelector('.dsh-review-settings-cancel').disabled, true)
+  await act(async () => dialog.dispatchEvent(new dom.window.Event('cancel', { cancelable: true })))
+  assert.equal(dialog.open, true, 'an in-flight save cannot appear cancelled while still persisting')
+  await act(async () => root.render(React.createElement(ReviewPolicyControl, { sessionId: 'next-session', runtime })))
+  const nextDepth = document.querySelector('input[type=range]')
+  assert.equal(nextDepth.value, '1')
+  await act(async () => pendingSaves[0]())
+  assert.equal(dialog.open, true, 'late completion from another session cannot close this dialog')
+  assert.equal(nextDepth.value, '1', 'late completion cannot replace this session’s settings')
+  assert.equal(document.querySelector('.dsh-review-settings-save').disabled, false)
+  assert.equal(prompts.length, 0, 'no settings action sends a main-conversation prompt')
+  assert.equal(directRequests.length, 0, 'no settings action starts a manual review')
+  await click('.dsh-review-settings-cancel')
   const css = await readFile(new URL('./src/client/styles.ts', import.meta.url), 'utf8')
   assert.match(css, /\.dsh-advisory-inbox-title\{display:flex;align-items:center;gap:8px\}/)
   const source = await readFile(new URL('./src/client/index.tsx', import.meta.url), 'utf8')
   assert.match(source, /className='dsh-advisory-inbox-title'>[\s\S]*?<ReviewPolicyControl[^\n]*\n\s*<\/div>/)
   assert.match(source, /className='dsh-advisory-inbox-close'[^\n]*onClick=\{\(\) => advisoryInboxVisibility\.setExpanded\(sessionId, false\)\}/)
   assert.match(css, /\.dsh-review-settings-dialog\{[^}]*width:360px;[^}]*max-width:calc\(100vw - 32px\)/)
-  assert.match(css, /\.dsh-review-settings-fields input,\.dsh-review-settings-fields select\{[^}]*border:1px[^}]*border-radius:7px/)
   assert.match(css, /\.dsh-review-settings-dialog::backdrop/)
 } finally {
   await act(async () => root.unmount())

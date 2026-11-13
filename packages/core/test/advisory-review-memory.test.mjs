@@ -5,10 +5,65 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 const { register } = await import('tsx/esm/api'); register()
 const { renderAdvisoryReviewMemory, suppressRepeatedAdvisoryItems } = await import('../src/advisory-review-memory.ts')
+const { renderDesignReviewDepth } = await import('../src/design-review-depth.ts')
 const { DesignAdvisoryJournal } = await import('../src/design-advisory-journal.ts')
 const { DesignJournalStorage } = await import('../src/design-journal-storage.ts')
+const { parseDesignAdvisory } = await import('../src/design-advisory.ts')
 const item = {id:'i1',title:'missing permission',detail:'source A lacks permission',references:['a#/permission']}
 const advisory = {schemaVersion:1,id:'a1',profile:'design.grounding',items:[item]}
+
+function memoryEntry(index, references = [`design_files/example/state.json#/decision-${index}`]) {
+  return {
+    advisory: parseDesignAdvisory({
+      schemaVersion: 1, id: `advice-${index}`, profile: 'io.deepseek.design.advisory.alignment/v1',
+      resultRef: `result-${index}`, inputs: [{ source: 'design-state', revision: `state-${index}` }],
+      kind: 'reminder', attention: 'human-review', summary: 'Clarify the current decision',
+      items: [{ id: 'decision', title: `Decision ${index}`, detail: 'Verify the current source.', references }],
+      acceptanceInstruction: 'Read the finding before selecting a follow-up.',
+      blocksConversation: false, authorizesDesignWrite: false,
+    }),
+    status: 'accepted', selection: { kind: 'no-action', reason: `Current user decision ${index}`, journalRevision: index + 1 },
+    executionStatus: 'completed',
+  }
+}
+
+test('memory budget keeps the newest complete records and their current dispositions', () => {
+  const entries = Array.from({ length: 64 }, (_, index) => memoryEntry(index,
+    Array.from({ length: 6 }, (_, ref) => `design_files/example/state.json#/objects/${'context/'.repeat(12)}${index}-${ref}`)))
+  const before = structuredClone(entries)
+  const payload = renderAdvisoryReviewMemory(entries).split('\n')[1]
+  const records = JSON.parse(payload)
+  assert.ok(payload.length <= 48_000)
+  assert.ok(records.length > 0 && records.length < entries.length, 'older records are omitted when complete recent records fill the budget')
+  assert.deepEqual(records.map(record => record.id), entries.slice(-records.length).map(entry => entry.advisory.id))
+  assert.deepEqual(records.at(-1).selection, entries.at(-1).selection)
+  assert.deepEqual(records.at(-1).items, entries.at(-1).advisory.items.map(({ id, title, references }) => ({ id, title, references })))
+  assert.deepEqual(entries, before, 'context budgeting never edits the complete durable advice')
+})
+
+test('oversized memory records retain disposition metadata and disclose omitted locators', () => {
+  const references = Array.from({ length: 128 }, (_, ref) => `design_files/example/state.json#/${'context/'.repeat(45)}${ref}`)
+  const newest = memoryEntry(1, references)
+  newest.selection.reason = 'Keep the user’s current decision; {{saved_example}} remains literal.'
+  const entries = [memoryEntry(0), newest]
+  const before = structuredClone(entries)
+  const payload = renderAdvisoryReviewMemory(entries).split('\n')[1]
+  const records = JSON.parse(payload)
+  assert.ok(payload.length <= 48_000)
+  const record = records.at(-1)
+  for (const key of ['id', 'profile']) assert.equal(record[key], newest.advisory[key])
+  for (const key of ['status', 'selection', 'executionStatus']) assert.deepEqual(record[key], newest[key])
+  assert.equal(record.items, undefined, 'oversized item locators are omitted rather than cut mid-JSON')
+  assert.equal(record.inputs, undefined)
+  assert.match(record.omittedDetails, /main Agent.*design_read_review_action/)
+  assert.deepEqual(entries, before)
+})
+
+test('memory budget retains the existing 64-record bound and chronological order', () => {
+  const entries = Array.from({ length: 70 }, (_, index) => memoryEntry(index))
+  const records = JSON.parse(renderAdvisoryReviewMemory(entries).split('\n')[1])
+  assert.deepEqual(records.map(record => record.id), entries.slice(-64).map(entry => entry.advisory.id))
+})
 test('pending and rejected exact findings are fenced, while new evidence and profiles survive',()=>{
   for(const status of ['pending','deferred','rejected']) {
     const entries=[{advisory,status}]
@@ -26,11 +81,33 @@ test('mixed findings keep their atomic action; changed actions are not discarded
   const changed={...v2,actionSpec:{kind:'bundle-revisions',commands:[]}}
   assert.equal(suppressRepeatedAdvisoryItems(changed,entries),changed)
 })
-test('memory contains disposition and evidence, explicitly not source truth or permanent rejection',()=>{
-  const prompt=renderAdvisoryReviewMemory([{advisory,status:'rejected'}])
-  assert.match(prompt,/"status":"rejected"/)
-  assert.match(prompt,/not a solved issue or permanent ban/)
-  assert.match(prompt,/New evidence is allowed even at an unchanged checkpoint/)
+test('review history preserves disposition locators without injecting past machine findings or repairs', () => {
+  const entries = ['pending', 'deferred', 'rejected', 'accepted'].map(status => ({
+    advisory: { ...advisory, id: status, inputs: [{ source: 'design-state', revision: 'state-1' }],
+      items: [{ ...item, detail: 'Rewrite the confirmed decision to match the derived diagram',
+        rationale: 'The diagram must be authoritative because it is detailed' }],
+      acceptanceInstruction: 'Apply the old proposed repair', actionSpec: { kind: 'none' } },
+    status, executionStatus: status === 'accepted' ? 'ready' : undefined,
+  }))
+  const before = structuredClone(entries)
+  const memory = renderAdvisoryReviewMemory(entries)
+  const records = JSON.parse(memory.split('\n')[1])
+  assert.deepEqual(records, entries.map(entry => ({
+    id: entry.advisory.id, profile: entry.advisory.profile, status: entry.status,
+    items: [{ id: item.id, title: item.title, references: item.references }],
+    inputs: entry.advisory.inputs,
+    ...(entry.executionStatus ? { executionStatus: entry.executionStatus } : {}),
+  })))
+  assert.deepEqual(entries, before, 'The persisted advice remains complete and unchanged')
+  assert.doesNotMatch(memory, /Rewrite the confirmed decision|diagram must be authoritative|Apply the old proposed repair/)
+  for (const depth of ['light', 'standard', 'thorough']) {
+    const prompt = `${renderDesignReviewDepth(depth)}\n${memory}`
+    assert.match(prompt, /Publication owns exact duplicate filtering/)
+    assert.match(prompt, /acceptance proves neither factual correctness nor repair/)
+    assert.match(prompt, /Respect a still-valid rejection or no-action reason/)
+    assert.match(prompt, /recorded Agent choice, not necessarily a direct user statement/)
+    assert.doesNotMatch(prompt, /Reuse valid existing advice|reuse the existing ID|Before treating old advice as coverage|Return no new findings when/)
+  }
 })
 
 test('review memory retains a persisted follow-up choice and its reason after restart', async () => {
@@ -63,7 +140,7 @@ test('review memory retains a persisted follow-up choice and its reason after re
       assert.doesNotMatch(prompt, new RegExp(accepted.acceptanceReceiptId), 'Review memory must not transport executable receipts')
     }
     const prompt = renderAdvisoryReviewMemory([])
-    assert.match(prompt, /no-action.*material new fact/)
+    assert.match(prompt, /source-backed correction/)
     assert.match(prompt, /Host-question\/research selection alone does not prove completion/)
   } finally { await rm(root, { recursive: true, force: true }) }
 })

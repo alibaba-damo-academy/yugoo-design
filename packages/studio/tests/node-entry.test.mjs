@@ -15,7 +15,7 @@ import * as sharedInstances from '../src/node/studio-instances.mjs'
 import * as sharedStorage from '../src/node/studio-panel-drafts.mjs'
 import * as sharedComposition from '../src/node/studio-instance-composition.mjs'
 import * as sharedAuthoring from '../src/node/studio-authoring.mjs'
-import { originalFiles, pin, additions } from '../../companion/test/fixtures/studio-changes-fixture.mjs'
+import { originalFiles, pin, choice, additions } from '../../companion/test/fixtures/studio-changes-fixture.mjs'
 
 test('Companion compatibility entries forward to the same shared implementation and retain no storage copy', async () => {
   for (const [compatibility, shared] of [[instances, sharedInstances], [storage, sharedStorage], [composition, sharedComposition], [authoring, sharedAuthoring]]) {
@@ -65,7 +65,7 @@ test('production Node entry runs without TS stripping, persists one record and s
       await fresh.repository.replace(record.id,0,{...record,overlays:{'SKILL.md':'human saved'}});
       await assert.rejects(repository.replace(record.id,0,record),/changed/);
       const originalFiles=${JSON.stringify(originalFiles)}, originalPin=${JSON.stringify(pin)}, changes=${JSON.stringify(additions())};
-      const adapters=createStudioInstanceAdapters({listBundles:async()=>[originalPin],captureBundle:async requested=>{assert.deepEqual(requested,originalPin);return {files:originalFiles,sourceId:'trusted:node-entry'}},captureKit:async()=>{throw Error('Bundle-only fixture')}});
+      const adapters=createStudioInstanceAdapters({listBundles:async()=>[${JSON.stringify(choice)}],captureBundle:async requested=>{assert.deepEqual(requested,originalPin);return {files:originalFiles,sourceId:'trusted:node-entry'}},captureKit:async()=>{throw Error('Bundle-only fixture')}});
       const instances=await createStudioInstances({stateRoot,...adapters});
       const copy=await instances.copy({kind:'bundle',bundle:originalPin});
       const scoped=createStudioAuthoring({scope:{id:copy.id,expectedRevision:copy.revision,allowedPaths:changes.map(change=>change.path)},instances,readComponents:()=>({components:[{name:'record_form'}]})});

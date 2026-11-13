@@ -1,5 +1,6 @@
 /** Shared import feedback and direct ZIP export. */
 import type { DesignKitVersionPin, StudioContentArchive } from 'dsh-design-studio'
+import { STUDIO_ARCHIVE_MAX_JSON_BYTES } from 'dsh-design-studio/types'
 import { encodeStudioContentZip } from './content-zip.ts'
 
 export interface StudioInstanceExportTarget { id: string; expectedRevision: number; title: string }
@@ -11,7 +12,7 @@ export interface StudioContentClient {
   export(input: StudioContentExportInput): Promise<string>
   readArchive(input: { source: string }): Promise<StudioContentArchive>
 }
-const HTTP_BYTES = 12 * 1024 * 1024
+const ARCHIVE_BYTES = STUDIO_ARCHIVE_MAX_JSON_BYTES
 /** Presentation only: preserve the validator's detail without exposing its virtual root. */
 export function formatStudioImportError(error: string, locale: 'zh' | 'en'): string {
   const detail = error.replaceAll('/studio-content-archive-virtual/', '')
@@ -25,16 +26,16 @@ export function formatStudioImportError(error: string, locale: 'zh' | 'en'): str
     ? `导入失败：${lines}\n请检查文件后重新导入。`
     : `Import failed: ${lines}\nCheck the file and import it again.`
 }
-/** HTTP counts the JSON wrapper and escaping too, not just the uploaded file. */
+/** Match the archive reader's content limit; host RPC envelopes are host-owned. */
 export function assertStudioImportRequestSize(source: string): void {
-  if (new TextEncoder().encode(JSON.stringify({ method: 'studioContentImport', params: { source } })).byteLength > HTTP_BYTES) throw Error('Archive request exceeds the 12 MiB HTTP limit. No content was truncated or sent.')
+  if (new TextEncoder().encode(source).byteLength > ARCHIVE_BYTES) throw Error('Archive JSON exceeds 64 MiB. No content was truncated or sent.')
 }
 
 /** Download the exact saved content. Export never requests metadata from the user. */
 export function downloadStudioContent(source: string, filename: string): void {
   assertStudioImportRequestSize(source)
   const zip = encodeStudioContentZip(source)
-  if (zip.byteLength > HTTP_BYTES) throw Error('ZIP exceeds the 12 MiB upload limit.')
+  if (zip.byteLength > ARCHIVE_BYTES) throw Error('ZIP exceeds the 64 MiB transport limit.')
   const url = URL.createObjectURL(new Blob([zip as Uint8Array<ArrayBuffer>], { type: 'application/zip' }))
   try {
     const anchor = document.createElement('a')

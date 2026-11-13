@@ -10,7 +10,9 @@ description: |-
 
 # Visual Style
 
-Create a product-specific visual system and prove it on one representative
+See the [record ID guidance](reference/artifact-contract.md#record-ids) for this Bundle's numbering suggestions and existing identity boundaries.
+
+Create a product-specific visual system and show it on one representative
 screen. This is a design artifact; it is not a substitute for implementing every function.
 
 This Bundle is the project's live visual-language control center, not a
@@ -135,6 +137,13 @@ screen where the product's distinctive interaction is clearest.
 
 Build the complete anchor using the installed schema and [shared artifact contract](reference/artifact-contract.md), then generate its projections and author the preview through that contract.
 
+Use `config.notes` for material visual choices, tradeoffs or unresolved points
+the user needs to judge. Record each explanation once. The representative screen
+shows the hierarchy and interaction; a paragraph claiming that it “proves” the
+design is not a required output. Preserve an existing `preview_page.rationale`
+when the request does not change it; it remains optional context in the saved
+state and generated `DESIGN.md`, outside the ordinary preview header.
+
 ### 3. Materialize the preview
 
 Read `reference/quality_rubric.md`, then prepare one compact, complete responsive
@@ -144,6 +153,11 @@ interaction in one representative viewport; compact does not mean a generic
 sidebar, toolbar, stock table, or empty shell. Do not block the first useful
 preview on image search, image generation, animation polish, secondary
 sections, or exhaustive copy.
+
+Apply the shared contract's [viewport and scrolling guidance](reference/artifact-contract.md#preview-file):
+default to a compact screen suited to the target device; use a long page when
+the actual task calls for it. Establish the shared shell and scrolling behavior
+for Page Design to reuse.
 
 Keep the complete canonical state, referenced HTML path, and complete HTML
 together in the current working copy. Publication atomically settles the state,
@@ -207,8 +221,7 @@ do not keep obsolete previews for compatibility.
 Close only after state, both generated projections, and a usable representative
 preview exist. A coherent system and preview normally add S/T evidence. Add U
 only when visible feedback actually settles scope or intent; never award a
-fixed increment merely because this skill ran. Typical confirmed work adds S
-`+10..+15`, T `+10..+20`; early visual elicitation may add U `+10..+20`.
+fixed increment merely because this skill ran.
 After the state, projections, and preview are persisted, report the evidence they add to U/S/T and any material uncertainty that remains.
 
 ## Attribution

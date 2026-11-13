@@ -21,7 +21,7 @@ export function GraphCanvas(props: GraphCanvasProps) {
   const hostScheme = useColorScheme(surface)
   const [override, setOverride] = useState<boolean | null>(null)
   const dark = override ?? hostScheme === 'dark'
-  const theme = { dark, onToggleDark: () => setOverride(!dark) }
+  const theme = { dark, followingPage: override === null, onToggleDark: () => setOverride(!dark), onFollowPage: () => setOverride(null) }
   return <div ref={surface} className='graph-canvas' style={{ position: 'relative', flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
     {mode.startsWith('stress3') ? <SpatialGraphCanvas {...props} {...theme} engine={mode} /> : <PlanarGraphCanvas {...props} {...theme} engine={mode} />}
   </div>
@@ -168,9 +168,8 @@ function PlanarGraphCanvas(props: GraphCanvasProps & GraphCanvasTheme & { engine
       edgeGlyphs.sort((a, b) => Number(hotEdge(a)) - Number(hotEdge(b)))
       separation.attr('stroke', dark ? '#141d29' : '#fafbfd').attr('stroke-width', 4 * glyphScale).attr('display', e => hotEdge(e) && !bundle ? null : 'none')
       lines.attr('stroke', e => hotEdge(e) || (ring && edgeReading(e).meaning !== 'contains') ? 'url(#' + instanceId + '-edge-' + edgeIndex.get(e.id) + ')' : dark ? '#aabbd4' : '#76859b')
-        .attr('stroke-width', e => glyphScale * (hotEdge(e) ? (bundle ? 1.15 : 1.55) : edgeReading(e).meaning === 'contains' ? .5 : ring ? .85 : .75))
-        .attr('stroke-opacity', e => focused ? (hotEdge(e) ? .94 : .065) : edgeReading(e).meaning === 'contains' ? (dark ? .26 : .18) : ring ? (dark ? .64 : .54) : dark ? .58 : .45)
-        .attr('stroke-dasharray', e => edgeReading(e).lifecycle === 'proposed' ? '5 4' : null)
+        .attr('stroke-width', e => glyphScale * (hotEdge(e) ? (bundle ? 1.15 : 1.55) : edgeReading(e).meaning === 'contains' ? .7 : ring ? .9 : .85))
+        .attr('stroke-opacity', e => focused ? (hotEdge(e) ? .94 : .065) : edgeReading(e).meaning === 'contains' ? (dark ? .42 : .38) : ring ? (dark ? .64 : .54) : dark ? .58 : .45)
         .attr('marker-end', e => hotEdge(e) && edgeReading(e).direction === 'forward' ? 'url(#' + instanceId + '-arrow)' : null)
       hits.attr('pointer-events', e => !focused || hotEdge(e) ? 'stroke' : 'none').attr('tabindex', e => !focused || hotEdge(e) ? 0 : -1)
       nodeEls.attr('opacity', n => (focused && !near.has(n.id)) || (matches && !matches.has(n.id) && !hotNode(n)) ? .22 : 1)
@@ -197,7 +196,7 @@ function PlanarGraphCanvas(props: GraphCanvasProps & GraphCanvasTheme & { engine
         const detailed = hot || neighbor || Boolean(matches?.has(n.id)), preview = !n.node.record && !detailed
         if (focused && !hot && !neighbor && !matches?.has(n.id)) continue
         if (preview && (fieldLabels.get(n.record) ?? 0) >= fieldBudget) continue
-        const font = hot ? 13 : preview ? 11 : 12, value = shortGraphLabel(n.node, detailed, latest.current.contentCounts?.get(n.id))
+        const font = hot ? 13 : preview ? 11 : 12, value = shortGraphLabel(n.node, detailed, latest.current.contentCounts?.get(n.id), locale)
         const width = [...value].reduce((w, c) => w + (/[^\x00-\x7f]/.test(c) ? font : font * .58), 6)
         const gap = Math.max(9, dotRadius(n) + 5)
         const choices = [[q.x + gap, q.y + 4], [q.x - width - gap, q.y + 4], [q.x - width / 2, q.y - gap - 1], [q.x - width / 2, q.y + font + gap + 1], [q.x + gap, q.y - gap], [q.x + gap, q.y + font + gap + 1], [q.x - width - gap, q.y - gap], [q.x - width - gap, q.y + font + gap + 1]]
@@ -311,7 +310,7 @@ function PlanarGraphCanvas(props: GraphCanvasProps & GraphCanvasTheme & { engine
     <canvas ref={nebulaRef} aria-hidden='true' style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: .9, pointerEvents: 'none' }} />
     <svg ref={svgRef} aria-label={t('graphFieldConnections')} tabIndex={0} style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, touchAction: 'none', userSelect: 'none', cursor: 'grab' }} />
     {layoutError && <p role='alert' style={{ position: 'relative', padding: 12 }}>{t('graphLayoutUnavailable', { error: layoutError })}</p>}
-    <GraphCameraTools dark={dark} onToggleDark={props.onToggleDark} onZoom={factor => actions.current.zoom(factor)} onFit={() => actions.current.fit()} onRestart={props.engine !== 'ring' ? () => actions.current.restart() : undefined}>
+    <GraphCameraTools dark={dark} onToggleDark={props.onToggleDark} followingPage={props.followingPage} onFollowPage={props.onFollowPage} onZoom={factor => actions.current.zoom(factor)} onFit={() => actions.current.fit()} onRestart={props.engine !== 'ring' ? () => actions.current.restart() : undefined}>
       {bundleFocus && props.engine === 'ring' && <button onClick={() => { bundleFocusRef.current = ''; setBundleFocus('') }}>{t('graphFullRing')}</button>}
     </GraphCameraTools>
   </div>

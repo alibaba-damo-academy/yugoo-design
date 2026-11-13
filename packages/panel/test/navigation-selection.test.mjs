@@ -4,11 +4,11 @@ import { JSDOM } from 'jsdom'
 
 test('shared workspace routes two hotspots to one target with host context and clears stale arrivals', async () => {
   const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost/' })
-  const keys = ['window', 'document', 'DOMParser', 'HTMLElement', 'Element', 'getComputedStyle', 'ResizeObserver',
+  const keys = ['window', 'document', 'DOMParser', 'HTMLElement', 'HTMLFormElement', 'DocumentFragment', 'Element', 'getComputedStyle', 'ResizeObserver',
     'requestAnimationFrame', 'cancelAnimationFrame', 'IS_REACT_ACT_ENVIRONMENT', 'React']
   const previous = new Map(keys.map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]))
   Object.assign(globalThis, { window: dom.window, document: dom.window.document, DOMParser: dom.window.DOMParser,
-    HTMLElement: dom.window.HTMLElement, Element: dom.window.Element, getComputedStyle: dom.window.getComputedStyle,
+    HTMLElement: dom.window.HTMLElement, HTMLFormElement: dom.window.HTMLFormElement, DocumentFragment: dom.window.DocumentFragment, Element: dom.window.Element, getComputedStyle: dom.window.getComputedStyle,
     ResizeObserver: class { observe() {} unobserve() {} disconnect() {} }, requestAnimationFrame: callback => setTimeout(callback, 0),
     cancelAnimationFrame: clearTimeout, IS_REACT_ACT_ENVIRONMENT: true })
   const { default: React, act } = await import('react'); globalThis.React = React
@@ -32,7 +32,7 @@ test('shared workspace routes two hotspots to one target with host context and c
     : '<h1>Detail</h1><button data-prototype-id="back">Back</button>' })
   const show = () => root.render(React.createElement(NavigationWorkspace, {
     node: { id: 'map', component: 'navigation_workspace', navigation_map: binding },
-    manifest: { sections: ['screens', 'links', 'groups'].map(id => ({ id, title: id })) }, data,
+    manifest: { fields: [], sections: ['screens', 'links', 'groups'].map(id => ({ id, title: id })) }, data,
     options: { skill: 'bundle', sourceRevision: revision, readArtifact: read, editable, onPanelUpdate: updates => { writes++; lastWrite = updates } },
     render: (section, id) => React.createElement('output', { 'data-selection': true }, `${section}:${id}`),
   }))
@@ -118,7 +118,7 @@ test('shared workspace routes two hotspots to one target with host context and c
     assert.equal(writes, 0, 'prototype navigation never saves canonical data')
     data.links.second.input = initial.links.second.input
     assert.deepEqual(data, initial)
-    assert.equal(frame().getAttribute('sandbox'), 'allow-scripts')
+    assert.equal(frame().getAttribute('sandbox'), 'allow-scripts allow-forms')
     assert.match(frame().srcdoc, /connect-src 'none'/)
     await clickItem('List')
     const selector = document.querySelector('.dsh-navigation-binding-controls select')
@@ -175,11 +175,11 @@ test('navigation gestures are readonly; explicit frame creation preserves existi
     return { x: 0, y: 0, left: 0, top: 0, right: hidden ? 0 : 800, bottom: hidden ? 0 : 600,
       width: hidden ? 0 : 800, height: hidden ? 0 : 600 }
   }
-  const keys = ['window', 'document', 'HTMLElement', 'Element', 'getComputedStyle', 'ResizeObserver',
+  const keys = ['window', 'document', 'HTMLElement', 'HTMLFormElement', 'DocumentFragment', 'Element', 'getComputedStyle', 'ResizeObserver',
     'requestAnimationFrame', 'cancelAnimationFrame', 'IS_REACT_ACT_ENVIRONMENT', 'React']
   const previous = new Map(keys.map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]))
   Object.assign(globalThis, { window: dom.window, document: dom.window.document,
-    HTMLElement: dom.window.HTMLElement, Element: dom.window.Element,
+    HTMLElement: dom.window.HTMLElement, HTMLFormElement: dom.window.HTMLFormElement, DocumentFragment: dom.window.DocumentFragment, Element: dom.window.Element,
     getComputedStyle: dom.window.getComputedStyle, IS_REACT_ACT_ENVIRONMENT: true,
     ResizeObserver: class { observe() {} unobserve() {} disconnect() {} },
     requestAnimationFrame: callback => setTimeout(callback, 0), cancelAnimationFrame: clearTimeout,
@@ -201,7 +201,7 @@ test('navigation gestures are readonly; explicit frame creation preserves existi
   let writes = 0, editable = true
   const show = () => root.render(React.createElement(NavigationWorkspace, {
     node: { id: 'map', component: 'navigation_workspace', navigation_map: binding },
-    manifest: { sections: ['items', 'links', 'groups'].map(id => ({ id, title: id })) }, data,
+    manifest: { fields: [], sections: ['items', 'links', 'groups'].map(id => ({ id, title: id })) }, data,
     options: { editable, onPanelUpdate: updates => { writes++; data = applyPanelUpdatesToDraft(data, updates); show() } },
     render: (section, id) => React.createElement('output', { 'data-selection': true }, `${section}:${id}`),
   }))
@@ -230,17 +230,17 @@ test('navigation gestures are readonly; explicit frame creation preserves existi
     await fire('[data-id="frame:g"]', 'dblclick')
     assert.notEqual(document.querySelector('.dsh-workspace-cover-surface').style.visibility, 'hidden', 'frames never close the map to open artifact preview')
     await fire('[data-id="node:a"]', 'dblclick')
-    assert.equal(document.querySelector('.dsh-navigation-preview-title strong').textContent, 'Alpha')
-    assert.equal(document.querySelector('[data-selection]'), null, 'artifact preview is not a generic detail form')
-    assert.equal(document.querySelector('.dsh-workspace-cover-surface').style.visibility, 'hidden', 'readonly users can inspect configured artifacts')
+    assert.equal(document.querySelector('.dsh-navigation-preview-title'), null, 'an artifact binding alone is not an available preview')
+    assert.equal(document.querySelector('[data-selection]').textContent, 'items:a', 'the same declared record remains readable before generation')
+    assert.equal(document.querySelector('.dsh-workspace-cover-surface').style.visibility, 'hidden', 'readonly users can inspect the configured record')
     assert.equal(writes, 0)
     assert.deepEqual(data, original)
     editable = true
     await act(async () => show())
     assert.equal(document.querySelector('.dsh-workspace-cover-surface').style.visibility, 'hidden')
     const hiddenAdd = document.querySelector('.dsh-navigation-map-cover > header button')
-    assert.ok(hiddenAdd.disabled, 'cannot create a frame using a hidden canvas')
-    await act(async () => hiddenAdd.click())
+    assert.ok(!hiddenAdd || hiddenAdd.disabled, 'a hidden canvas has no available frame-creation action')
+    if (hiddenAdd) await act(async () => hiddenAdd.click())
     assert.equal(writes, 0)
     // Return through the actual preview toggle, not a click on a hidden pane.
     await act(async () => document.querySelector('.dsh-navigation-map-toggle[aria-expanded="false"]').click())
@@ -286,4 +286,62 @@ test('navigation gestures are readonly; explicit frame creation preserves existi
       else delete globalThis[key]
     }
   }
+})
+
+
+test('digested workspace preserves its current arrival and form across unrelated inventory changes without weakening bind fences', async () => {
+  const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'https://panel.test/' })
+  for (const key of ['window', 'document', 'DOMParser', 'HTMLElement', 'HTMLFormElement', 'DocumentFragment', 'Element', 'Node']) globalThis[key] = dom.window[key]
+  Object.assign(globalThis, { getComputedStyle: dom.window.getComputedStyle, ResizeObserver: class { observe() {} unobserve() {} disconnect() {} },
+    requestAnimationFrame: callback => setTimeout(callback, 0), cancelAnimationFrame: clearTimeout, IS_REACT_ACT_ENVIRONMENT: true })
+  const { default: React, act } = await import('react'); globalThis.React = React
+  const { createRoot } = await import('react-dom/client')
+  const { NavigationWorkspace } = await import('../src/navigation-workspace.tsx')
+  const binding = { nodes: { path: 'screens', order: 'order', label: 'name', position: 'point', artifact: 'file' },
+    edges: { path: 'links', order: 'link_order', source: 'from', target: 'to', label: 'name', hotspot: 'hotspot', context: 'input' },
+    frames: { path: 'groups', label: 'name', members: 'screens', position: 'point', size: 'size' }, stylesheet: 'style/tokens.css' }
+  const data = { screens: { list: { name: 'List', file: 'bundle/list.html' }, detail: { name: 'Detail', file: 'bundle/detail.html' } }, groups: {},
+    links: { open: { from: 'list', to: 'detail', hotspot: 'open', input: { selection: 'saved' } }, back: { from: 'detail', to: 'list', hotspot: 'back' } } }
+  let artifactFiles = { 'bundle/list.html': 'list', 'bundle/detail.html': 'detail', 'style/tokens.css': 'css' }, sourceRevision = 'r1', writes = 0
+  const reads = []
+  const readArtifact = async path => { reads.push(path); return { found: true, content: path.endsWith('.css') ? 'body{color:blue}' : `<h1>${path}</h1><button data-prototype-id="${path.endsWith('list.html') ? 'open' : 'back'}">Go</button>` } }
+  const root = createRoot(document.getElementById('root'))
+  const show = () => act(async () => root.render(React.createElement(NavigationWorkspace, {
+    node: { id: 'map', component: 'navigation_workspace', navigation_map: binding }, manifest: { fields: [], sections: ['screens', 'links', 'groups'].map(id => ({ id, title: id })) }, data,
+    options: { skill: 'bundle', artifactFiles, sourceRevision, readArtifact, editable: true, onPanelUpdate: () => { writes++ } }, render: () => null,
+  })))
+  const frame = () => document.querySelector('.dsh-navigation-preview iframe')
+  const config = node => JSON.parse(node.srcdoc.match(/const config=(\{.*?\});document/)[1])
+  const send = (id, source = frame().contentWindow, channel = config(frame()).channel, type = 'navigate') => act(async () => window.dispatchEvent(new dom.window.MessageEvent('message', {
+    source, data: type === 'bind' ? { type: 'design-preview:bind', channel, id, element: 'picked', label: 'Picked' } : { type: 'design-preview:navigate', channel, id },
+  })))
+  const select = label => act(async () => [...document.querySelectorAll('.dsh-panel-workspace-tree-item')].find(item => item.textContent === label).click())
+  const context = () => {
+    const block = new DOMParser().parseFromString(frame().srcdoc, 'text/html').getElementById('dsh-design-preview-context')
+    return block ? JSON.parse(block.textContent) : undefined
+  }
+  try {
+    await show(); await select('List'); await send('open')
+    assert.deepEqual(context(), { selection: 'saved' })
+    const current = frame(), markup = current.srcdoc, readCount = reads.length
+    current.contentDocument.body.textContent = 'Completed form state'
+    sourceRevision = 'r2'; artifactFiles = { ...artifactFiles, 'other/report.html': 'new' }; await show()
+    assert.equal(frame() === current, true, 'unrelated Bundle changes preserve the arrived document')
+    assert.equal(frame().srcdoc, markup, 'unchanged shared CSS must not disappear and reload the frame')
+    assert.equal(frame().contentDocument.body.textContent, 'Completed form state')
+    assert.deepEqual(context(), { selection: 'saved' })
+    assert.equal(reads.length, readCount)
+    data.screens.list.name = 'Renamed unrelated screen'; await show()
+    assert.equal(frame() === current, true, 'unrelated canonical metadata does not invalidate the incoming edge')
+    data.links.open.input = { selection: 'changed' }; await show()
+    assert.equal(context(), undefined, 'a changed actual incoming context is still invalidated')
+    assert.equal(frame() === current, false)
+    await select('Renamed unrelated screen')
+    const pick = () => document.querySelector('.dsh-navigation-binding-controls button[aria-pressed]')
+    await act(async () => pick().click())
+    const old = frame(), channel = config(old).channel
+    sourceRevision = 'r3'; artifactFiles = { ...artifactFiles, 'other/report.html': 'newer' }; await show()
+    await send('open', old.contentWindow, channel, 'bind')
+    assert.equal(writes, 0, 'the complete transaction version still rejects an obsolete binding message')
+  } finally { await act(async () => root.unmount()); dom.window.close() }
 })

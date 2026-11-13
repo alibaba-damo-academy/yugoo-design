@@ -297,12 +297,9 @@ export function GraphPanel({ read, readStatus, retry, footer, ownerLabels, explo
           {graph.recovery?.state === 'error' && retry && <button disabled={retrying} onClick={() => { setRetrying(true); void retry().then(() => setReload(n => n + 1)).catch(e => setError(String(e))).finally(() => setRetrying(false)) }}>{retrying ? t('knowledgeGraphRetrying') : t('knowledgeGraphRetryRecovery')}</button>}
         </div></details>
         <details className='graph-popover'><summary>{t('knowledgeGraphLegend')}</summary><div className='graph-popover-body'>
-          <div className='graph-legend'><span><i/>{t('knowledgeGraphRelationship')}</span><span><i data-kind='contains'/>{t('knowledgeGraphContains')}</span><span><i data-kind='candidate'/>{t('knowledgeGraphCandidate')}</span></div>
+          <div className='graph-legend'><span><i/>{t('knowledgeGraphRelationship')}</span><span><i data-kind='contains'/>{t('knowledgeGraphContains')}</span><span>{t('knowledgeGraphLineStatusHint')}</span></div>
           <div className='graph-legend'>{Object.entries(sourceLabels).map(([owner, label], index) => <span key={owner}><i style={{ border: 0, width: 7, height: 7, borderRadius: '50%', background: graphSourceColors[index % graphSourceColors.length] }} />{label}</span>)}</div>
-          <p>{exploration ? t('knowledgeGraphExplorationLegend') : t('knowledgeGraphGraphLegend')}</p>
-          <p>{t('knowledgeGraphEvidenceLegend')}</p>
-          <p>{t('knowledgeGraphDirectionLegend')}</p>
-          <p>{exploration ? t('knowledgeGraphExploreControls') : spatial ? t('knowledgeGraphSpatialControls') : t('knowledgeGraphFlatControls')}</p><p>{t('knowledgeGraphKeyboard', { revision: graph.checkpoint.slice(0, 8) })}</p>
+          <p>{spatial ? t('knowledgeGraphSpatialControls') : t('knowledgeGraphFlatControls')}</p>
         </div></details>
       </div>
     </>}

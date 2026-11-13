@@ -18,12 +18,15 @@
     }
   },
   "scripts": {
-    "test": "node --test test/test-reading-order.mjs test/test-channel-spacing.mjs test/test-layout-policy.mjs test/smoke-bundle-localization.mjs && node test/smoke-page-design-script.mjs && node test/test-page-file-contract.mjs && node test/smoke-flow-design-script.mjs && node test/smoke-bpmn-routing.mjs && node test/smoke-design-style-script.mjs && node test/smoke-prd-script.mjs",
+    "test:flow-nodes": "node --test test/flow-node-content.test.mjs && node test/smoke-flow-design-script.mjs --node-supplements-only",
+    "test": "node --test test/test-reading-order.mjs test/test-channel-spacing.mjs test/test-layout-policy.mjs test/smoke-bundle-localization.mjs test/integration-draft-validation.test.mjs test/research-evidence.test.mjs && node test/smoke-page-design-script.mjs && node test/test-page-file-contract.mjs && node test/smoke-flow-design-script.mjs && node test/smoke-bpmn-routing.mjs && node test/smoke-design-style-script.mjs && node test/smoke-prd-script.mjs && node --test test/prd-ai-source-contract.mjs",
     "test:localization": "node --test test/smoke-bundle-localization.mjs",
     "test:layout-production": "node test/smoke-layout-production.mjs",
     "test:page-file-contract": "node test/test-page-file-contract.mjs",
     "build": "node build.mjs",
-    "test:distribution": "node --test test/portable-distribution.mjs"
+    "test:distribution": "node --test test/portable-distribution.mjs",
+    "test:prd-runtime": "node --test test/prd-runtime-distribution.mjs",
+    "test:bundle-evidence": "node --test test/integration-draft-validation.test.mjs test/research-evidence.test.mjs"
   },
   "dependencies": {
     "bpmn-js": "^18.24.0",

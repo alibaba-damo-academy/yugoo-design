@@ -1,14 +1,14 @@
 /**
  * Advisory review card for every durable unresolved human-review item.
- * Revision mismatch is displayed as a revalidation marker. Only pending and
+ * Pending items remain reviewable after revision changes. Only pending and
  * deferred items remain in the review surface: accept/reject clear the card,
  * while defer keeps it available but collapses its details. Acceptance
- * persists its receipt before Host prompt dispatch. Reject and defer never
+ * persists its receipt before the Host continuation notice. Reject and defer never
  * wake the Agent.
  */
-import { createElement, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactElement } from 'react'
-import { createPortal } from 'react-dom'
+import { createElement, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactElement } from 'react'
 import { currentLanguage } from '../host.ts'
+import { PanelDisclosureIcon } from '../../../panel-workspace.tsx'
 
 /** One bounded recommendation inside an advisory (display fields). */
 export interface AdvisoryCardItem {
@@ -167,44 +167,11 @@ export function adjacentAdvisoryIndex(currentIndex: number, count: number, direc
   return Math.min(Math.max(currentIndex + direction, 0), Math.max(count - 1, 0))
 }
 
-/** Minimal browser geometry consumed by the expanded advisory layout. */
-export interface AdvisoryLayoutRect {
-  readonly left: number
-  readonly top: number
-  readonly width: number
-}
-
-/** Fixed-position geometry for an advisory expanded over conversation history. */
-export interface AdvisoryExpandedRect extends AdvisoryLayoutRect {
-  readonly height: number
-}
-
 /**
- * Align expanded advisory details with the host composer column while filling
- * the visible conversation history above it.
- * @param history - visible conversation scroll-region geometry.
- * @param composer - host composer-card geometry.
- * @returns usable fixed-position geometry, or null before host layout settles.
- */
-export function resolveAdvisoryExpandedRect(
-  history: AdvisoryLayoutRect,
-  composer: AdvisoryLayoutRect,
-  boundary?: AdvisoryExpandedRect,
-): AdvisoryExpandedRect | null {
-  const top = boundary ? Math.max(history.top, boundary.top) : history.top
-  const bottom = boundary ? Math.min(composer.top, boundary.top + boundary.height) : composer.top
-  const left = boundary ? Math.max(composer.left, boundary.left) : composer.left
-  const right = boundary ? Math.min(composer.left + composer.width, boundary.left + boundary.width) : composer.left + composer.width
-  const height = bottom - top, width = right - left
-  if (![top, left, width, height].every(Number.isFinite) || width <= 0 || height <= 0) return null
-  return { left, top, width, height }
-}
-
-/**
- * Drive one acceptance: await the host delivery (sendPrompt) first and
+ * Drive one acceptance: await the host continuation delivery and
  * report the outcome; a failure never dismisses the advisory.
  * @param advisory - the advisory being accepted.
- * @param deliver - host-wired sendPrompt call.
+ * @param deliver - host-wired continuation delivery.
  * @returns whether the delivery succeeded.
  */
 export async function deliverAdvisoryAcceptance(
@@ -228,14 +195,18 @@ export interface AdvisoryAcceptanceResult {
 
 /** Receipt material returned by the atomic accepted-disposition write. */
 export interface AdvisoryAcceptanceAuthority {
+  readonly notification?: 'sent' | 'failed' | 'unknown'
+  readonly notificationError?: string
   readonly acceptanceReceiptId: string
   readonly actionReceipts: readonly AdvisoryActionReceipt[]
   readonly executionStatus: AdvisoryExecutionStatus
 }
 
 /**
- * Render one concise, conversation-visible acceptance request. The advisory
- * Agent needs the exact advisory identity and the same bounded facts the human
+ * Render model-facing acceptance context for existing integration callers.
+ * Never submit this internal context as an ordinary human-authored message;
+ * the DSH adapter delivers an attributed notice with its own visible summary.
+ * The Agent needs the exact advisory identity and the same bounded facts the human
  * accepted, independently of generic titles or repeated item ids. Only the
  * separately supplied receipt/Bundle pairs grant execution authority.
  */
@@ -288,12 +259,11 @@ export function renderAdvisoryAcceptancePrompt(
 }
 
 /**
- * Persist an acceptance receipt, then dispatch the correlated prompt.
+ * Persist an acceptance receipt, then confirm the correlated continuation.
  * @param advisory - advisory being accepted.
- * @param promptDelivered - whether an earlier attempt delivered the prompt.
- * @param deliver - host-wired prompt delivery.
+ * @param deliver - host-wired continuation delivery confirmation.
  * @param record - host-wired accepted-disposition persistence.
- * @returns which phases completed; callers retain `promptDelivered` for retry.
+ * @returns which phases completed; delivery is not proof of execution.
  */
 export async function completeAdvisoryAcceptance(
   advisory: AdvisoryCardView,
@@ -317,11 +287,12 @@ export interface IAdvisoryReviewCardProps {
   /** Advisory review entries; only pending human-review ones render. */
   readonly entries: readonly AdvisoryReviewEntry[]
   /**
-   * Host-wired prompt delivery: await `runtime.sendPrompt(sessionId,
-   * advisory.acceptanceInstruction)`. A rejection keeps the card for retry.
+   * Confirm host-wired continuation delivery. The native DSH adapter queues an
+   * attributed notice while recording acceptance; never send its authority as
+   * an ordinary user prompt. A rejection keeps the card for explicit retry.
    */
   readonly onAccept: (advisory: AdvisoryCardView, authority: AdvisoryAcceptanceAuthority) => Promise<void>
-  /** Persist the acceptance receipt before any prompt is dispatched. */
+  /** Persist the acceptance receipt before any continuation is dispatched. */
   readonly onRecordAccepted: (advisory: AdvisoryCardView) => Promise<AdvisoryAcceptanceAuthority>
   /** Local disposition callback; must never send a prompt or wake the Agent. */
   readonly onDismiss: (advisory: AdvisoryCardView, decision: AdvisoryDismissDecision) => Promise<void>
@@ -337,6 +308,9 @@ export function AdvisoryReviewCard({ entries, onAccept, onRecordAccepted, onDism
   const [locallyHandled, setLocallyHandled] = useState<ReadonlySet<string>>(new Set())
   const [busy, setBusy] = useState<ReadonlySet<string>>(new Set())
   const [failed, setFailed] = useState<ReadonlySet<string>>(new Set())
+  // A durable acceptance may arrive through polling before notification fails.
+  // Retain that exact card for explicit recovery until delivery is confirmed.
+  const accepting = useRef(new Map<string, AdvisoryCardView>())
   const reading = readingFor(readingScope)
   const [selectedId, setSelectedId] = useState<string | null>(() => {
     const pending = selectPendingAdvisories(entries, new Set())
@@ -345,13 +319,24 @@ export function AdvisoryReviewCard({ entries, onAccept, onRecordAccepted, onDism
       ?? pending.find(item => item.id === reading.selected)
       ?? pending[0])?.id ?? null
   })
-  const [readIds, setReadIds] = useState(() => new Set(reading.read))
   const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [expandedRect, setExpandedRect] = useState<AdvisoryExpandedRect | null>(null)
   const busyRef = useRef(new Set<string>())
   const previousVisibleIdsRef = useRef<readonly string[]>([])
 
-  const visible = useMemo(() => selectPendingAdvisories(entries, locallyHandled), [entries, locallyHandled])
+  const visible = useMemo(() => {
+    const pending = selectPendingAdvisories(entries, locallyHandled)
+    const ids = new Set(pending.map(item => item.id))
+    const current = new Map(entries.map(entry => [entry.advisory.id, entry]))
+    return [...pending.map(item => accepting.current.get(item.id) ?? item), ...[...accepting.current.values()].filter(item => !ids.has(item.id)
+      && !locallyHandled.has(item.id) && (busy.has(item.id) || failed.has(item.id)))].map(item => {
+      // Polling may confirm durable acceptance even when its RPC response was
+      // lost. Retention owns visibility, never a competing authority/status.
+      const saved = current.get(item.id)
+      return saved?.acceptanceReceiptId === undefined ? item : { ...item, status: saved.status,
+        acceptanceReceiptId: saved.acceptanceReceiptId, actionReceipts: saved.actionReceipts,
+        executionStatus: saved.executionStatus, stale: saved.stale }
+    })
+  }, [entries, locallyHandled, busy, failed])
 
   useEffect(() => {
     const visibleIds = visible.map(advisory => advisory.id)
@@ -363,65 +348,6 @@ export function AdvisoryReviewCard({ entries, onAccept, onRecordAccepted, onDism
     previousVisibleIdsRef.current = visibleIds
   }, [visible])
 
-  useEffect(() => {
-    if (expandedId === null || typeof document === 'undefined') {
-      setExpandedRect(null)
-      return
-    }
-    const history = document.querySelector<HTMLElement>('[data-conversation-scroll]')
-    const composer = document.querySelector<HTMLElement>('[data-composer-card]')
-    const boundary = history?.closest<HTMLElement>('[data-conversation-boundary]')
-    if (history === null || composer === null) {
-      setExpandedRect(null)
-      return
-    }
-    let frame = 0
-    const update = (): void => {
-      const bounds = boundary?.getBoundingClientRect()
-      const clipped = bounds ? { left: Math.max(0, bounds.left), top: Math.max(0, bounds.top),
-        width: Math.min(window.innerWidth, bounds.right) - Math.max(0, bounds.left),
-        height: Math.min(window.innerHeight, bounds.bottom) - Math.max(0, bounds.top) } : undefined
-      const cover = boundary?.dataset.advisoryCoverComposer === 'true' && clipped
-      const composerRect = composer.getBoundingClientRect()
-      const next = resolveAdvisoryExpandedRect(
-        cover ? clipped : history.getBoundingClientRect(),
-        cover ? { left: clipped.left, width: clipped.width, top: clipped.top + clipped.height } : composerRect,
-        clipped,
-      )
-      setExpandedRect((current) => {
-        if (current === null || next === null) return next
-        return current.left === next.left
-          && current.top === next.top
-          && current.width === next.width
-          && current.height === next.height
-          ? current
-          : next
-      })
-    }
-    const scheduleUpdate = (): void => {
-      cancelAnimationFrame(frame)
-      frame = requestAnimationFrame(update)
-    }
-    const resizeObserver = new ResizeObserver(scheduleUpdate)
-    resizeObserver.observe(history)
-    resizeObserver.observe(composer)
-    if (boundary) resizeObserver.observe(boundary)
-    const mutationObserver = new MutationObserver(scheduleUpdate)
-    mutationObserver.observe(history, { childList: true, subtree: true })
-    if (boundary) mutationObserver.observe(boundary, { attributes: true, attributeFilter: ['data-advisory-cover-composer'] })
-    window.addEventListener('resize', scheduleUpdate)
-    boundary?.addEventListener('scroll', scheduleUpdate, { passive: true })
-    update()
-    scheduleUpdate()
-    return () => {
-      cancelAnimationFrame(frame)
-      resizeObserver.disconnect()
-      mutationObserver.disconnect()
-      window.removeEventListener('resize', scheduleUpdate)
-      boundary?.removeEventListener('scroll', scheduleUpdate)
-    }
-  }, [expandedId])
-
   const selectedIndex = resolveAdvisoryIndex(visible.map(item => item.id), selectedId, previousVisibleIdsRef.current)
   const advisory = visible[selectedIndex]
   useEffect(() => {
@@ -429,7 +355,6 @@ export function AdvisoryReviewCard({ entries, onAccept, onRecordAccepted, onDism
     reading.selected = advisory.id
     if (!reading.read.has(advisory.id)) {
       reading.read.add(advisory.id)
-      setReadIds(new Set(reading.read))
     }
   }, [advisory?.id, reading])
   if (visible.length === 0) {
@@ -449,13 +374,19 @@ export function AdvisoryReviewCard({ entries, onAccept, onRecordAccepted, onDism
   }
   const accept = async (advisory: AdvisoryCardView): Promise<void> => {
     if (busyRef.current.has(advisory.id)) return
+    accepting.current.set(advisory.id, advisory)
     busyRef.current.add(advisory.id)
     addTo(setBusy, advisory.id)
     removeFrom(setFailed, advisory.id)
     try {
       const result = await completeAdvisoryAcceptance(
         advisory,
-        onRecordAccepted,
+        async candidate => {
+          const authority = await onRecordAccepted(candidate)
+          accepting.current.set(candidate.id, { ...candidate, status: 'accepted', acceptanceReceiptId: authority.acceptanceReceiptId,
+            actionReceipts: authority.actionReceipts, executionStatus: authority.executionStatus })
+          return authority
+        },
         onAccept,
       )
       if (!result.receiptRecorded || !result.promptDelivered) {
@@ -463,6 +394,7 @@ export function AdvisoryReviewCard({ entries, onAccept, onRecordAccepted, onDism
         return
       }
       setExpandedId((current) => current === advisory.id ? null : current)
+      accepting.current.delete(advisory.id)
       addTo(setLocallyHandled, advisory.id)
     } finally {
       busyRef.current.delete(advisory.id)
@@ -488,6 +420,7 @@ export function AdvisoryReviewCard({ entries, onAccept, onRecordAccepted, onDism
   }
 
   if (advisory === undefined) return null
+  const receiptSaved = advisory.acceptanceReceiptId !== undefined
   const expanded = expandedId === advisory.id
   const selectIndex = (index: number): void => {
     const next = visible[index]
@@ -509,20 +442,9 @@ export function AdvisoryReviewCard({ entries, onAccept, onRecordAccepted, onDism
   const carousel = (
     <div className='dsh-advisory-carousel' onKeyDown={navigateByKeyboard}>
       <article key={advisory.id} className='dsh-advisory-card' data-advisory-id={advisory.id} data-expanded={expanded || undefined}>
-          <header className='dsh-advisory-card-header'>
-            <span className='dsh-advisory-profile' title={advisory.profile}>{advisoryProfileLabel(advisory.profile, isZh)}</span>
-            <span className='dsh-advisory-status'>{advisory.status === 'deferred' ? (isZh ? '稍后处理' : 'Deferred') : (isZh ? '待处理' : 'Pending')}</span>
-            {advisory.stale === true && (
-              <span className='dsh-advisory-revalidation'>{isZh ? '需重新核验' : 'Needs revalidation'}</span>
-            )}
-            {visible.some(item => item.id !== advisory.id && !readIds.has(item.id)) && (
-              <button type='button' className='dsh-advisory-new-arrival' onClick={() => {
-                const index = visible.findIndex(item => item.id !== advisory.id && !readIds.has(item.id))
-                if (index >= 0) selectIndex(index)
-              }}>{isZh ? '有新建议 · 查看' : 'New advisories · View'}</button>
-            )}
-          </header>
-          <p className='dsh-advisory-summary'>{advisory.summary}</p>
+          <p className='dsh-advisory-summary'>{advisory.items.length > 0
+            ? advisory.items.map(item => item.title).join(isZh ? '；' : '; ')
+            : advisory.summary}</p>
           {advisory.items.length > 0 && (
             <details
               className='dsh-advisory-details'
@@ -532,17 +454,18 @@ export function AdvisoryReviewCard({ entries, onAccept, onRecordAccepted, onDism
                 setExpandedId((current) => open ? advisory.id : current === advisory.id ? null : current)
               }}
             >
-              <summary aria-label={isZh ? `${expanded ? '收起' : '展开'}设计建议 ${advisory.id} 的详情` : `${expanded ? 'Hide' : 'Show'} advisory details for ${advisory.id}`}>
-                <span>{isZh ? (expanded ? '收起详情' : '展开详情') : (expanded ? 'Close details' : 'Review details')}</span>
-                <span className='dsh-advisory-count'>{advisory.items.length}</span>
+              <summary className='dsh-panel-disclosure' aria-label={isZh ? `${expanded ? '收起' : '展开'}设计建议 ${advisory.id} 的详情` : `${expanded ? 'Hide' : 'Show'} advisory details for ${advisory.id}`}>
+                <span>{isZh ? '详情' : 'Details'}</span>
+                <PanelDisclosureIcon expanded={false} />
               </summary>
               <div className='dsh-advisory-items-scroll'>
                 <ul className='dsh-advisory-items'>
                   {advisory.items.map((item) => (
                     <li key={item.id} className='dsh-advisory-item' data-item-id={item.id}>
-                      <span className='dsh-advisory-item-title'>{item.title}</span>
+                      {advisory.items.length > 1 && <span className='dsh-advisory-item-title'>{item.title}</span>}
                       <span className='dsh-advisory-item-detail'>{item.detail}</span>
                       {item.rationale !== undefined && <span className='dsh-advisory-item-rationale'>{item.rationale}</span>}
+                      {item.references.length > 0 && <span className='dsh-advisory-item-references'>{isZh ? '依据：' : 'Evidence: '}{item.references.join(' · ')}</span>}
                     </li>
                   ))}
                 </ul>
@@ -552,7 +475,7 @@ export function AdvisoryReviewCard({ entries, onAccept, onRecordAccepted, onDism
           {failed.has(advisory.id) && (
             <p className='dsh-advisory-error' role='alert'>
               {advisory.acceptanceReceiptId !== undefined
-                ? (isZh ? '接受回执已保存，但投递失败；建议仍可见并可重试。' : 'The acceptance receipt is durable, but delivery failed. The advisory remains visible and retryable.')
+                ? (isZh ? '接受已记录，通知尚未确认送达。请先查看原对话，再决定是否重试。' : 'Acceptance is saved, but delivery is unconfirmed. Check the original conversation before retrying.')
                 : (isZh ? '接受回执保存失败，建议仍待处理。' : 'The acceptance receipt could not be saved. The advisory remains pending.')}
             </p>
           )}
@@ -560,15 +483,15 @@ export function AdvisoryReviewCard({ entries, onAccept, onRecordAccepted, onDism
             <button
               type='button'
               className='dsh-advisory-accept'
-              aria-label={isZh ? `接受设计建议 ${advisory.id}` : `Accept advisory ${advisory.id}`}
+              aria-label={receiptSaved
+                ? (isZh ? `重试设计建议 ${advisory.id} 的通知` : `Retry notification for advisory ${advisory.id}`)
+                : (isZh ? `接受设计建议 ${advisory.id}` : `Accept advisory ${advisory.id}`)}
               disabled={busy.has(advisory.id)}
               onClick={() => { void accept(advisory) }}
             >
-              {advisory.status === 'pending' || advisory.status === 'deferred' || advisory.status === undefined
-                ? (isZh ? '接受' : 'Accept')
-                : (isZh ? '重试执行' : 'Retry')}
+              {receiptSaved ? (isZh ? '重试通知' : 'Retry notification') : (isZh ? '接受' : 'Accept')}
             </button>
-            <button
+            {!receiptSaved && <><button
               type='button'
               className='dsh-advisory-reject'
               aria-label={isZh ? `拒绝设计建议 ${advisory.id}` : `Reject advisory ${advisory.id}`}
@@ -585,7 +508,7 @@ export function AdvisoryReviewCard({ entries, onAccept, onRecordAccepted, onDism
               onClick={() => { void dismiss(advisory, 'deferred') }}
             >
               {isZh ? '稍后' : 'Later'}
-            </button>
+            </button></>}
           </footer>
       </article>
       <nav className='dsh-advisory-carousel-controls' aria-label={isZh ? '设计建议翻页' : 'Design advisory pagination'}>
@@ -621,20 +544,9 @@ export function AdvisoryReviewCard({ entries, onAccept, onRecordAccepted, onDism
     </div>
   )
 
-  const expandedStyle: CSSProperties | undefined = expandedRect === null
-    ? undefined
-    : {
-        left: expandedRect.left,
-        top: expandedRect.top,
-        width: expandedRect.width,
-        height: expandedRect.height,
-      }
-
   return (
     <section className='dsh-advisory-review' aria-label={isZh ? '待审阅的设计建议' : 'Design advisories pending review'}>
-      {expanded && expandedStyle !== undefined && typeof document !== 'undefined'
-        ? createPortal(<div className='dsh-advisory-expanded-layer' style={expandedStyle}>{carousel}</div>, document.body, advisory.id)
-        : carousel}
+      {carousel}
     </section>
   )
 }

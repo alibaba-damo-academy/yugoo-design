@@ -1,5 +1,6 @@
 /** Read portable sources without extracting them or deciding runtime validity. */
 import type { StudioContentArchive } from 'dsh-design-studio'
+import { STUDIO_SOURCE_MAX_BYTES, STUDIO_ARCHIVE_MAX_JSON_BYTES } from 'dsh-design-studio/types'
 import { decodeStudioContentZip, isStudioZip, readStudioZipEntries } from './content-zip.ts'
 
 export interface StudioImportFile {
@@ -11,7 +12,6 @@ export interface StudioSourceImport {
   files: { path: string; base64: string }[]
   title?: { zh: string; en: string }
 }
-const MAX_BYTES = 12 * 1024 * 1024
 function base64(bytes: Uint8Array) {
   let value = ''
   for (let index = 0; index < bytes.length; index += 8192) value += String.fromCharCode(...bytes.subarray(index, index + 8192))
@@ -19,14 +19,17 @@ function base64(bytes: Uint8Array) {
 }
 function checkSources(input: StudioSourceImport): StudioSourceImport {
   const names = new Set<string>()
+  let sourceBytes = 0
   for (const file of input.files) {
     if (/[\\\u0000-\u001f:*?"<>|]/u.test(file.path) || file.path !== file.path.normalize('NFC')
       || file.path.split('/').some(part => !part || ['.', '..', '.git', 'node_modules', '__proto__', 'prototype', 'constructor'].includes(part))) throw Error(`Unsafe file path: ${file.path}`)
     const key = file.path.toLowerCase()
     if (names.has(key)) throw Error(`Duplicate or case-conflicting file path: ${file.path}`)
     names.add(key)
+    sourceBytes += file.base64.length / 4 * 3 - (file.base64.endsWith('==') ? 2 : file.base64.endsWith('=') ? 1 : 0)
   }
-  if (input.files.length > 4096 || new TextEncoder().encode(JSON.stringify({ method: 'studioInstanceImportSources', params: input })).length > MAX_BYTES) throw Error('Import exceeds the 12 MiB upload limit or 4096 files. No content was truncated.')
+  if (input.files.length > 4096 || sourceBytes > STUDIO_SOURCE_MAX_BYTES) throw Error('Import source exceeds 32 MiB or 4096 files. No content was truncated.')
+  if (new TextEncoder().encode(JSON.stringify({ method: 'studioInstanceImportSources', params: input })).length > STUDIO_ARCHIVE_MAX_JSON_BYTES) throw Error('Import transport exceeds 64 MiB. No content was truncated.')
   const required = input.kind === 'bundle' ? ['SKILL.md'] : ['mindset.md', 'kit.yaml']
   for (const path of required) if (!input.files.some(file => file.path === path)) throw Error(`Missing required file: ${path}`)
   return input
@@ -45,11 +48,12 @@ function normalize(kind: StudioSourceImport['kind'], files: StudioSourceImport['
 }
 export async function readStudioImportFiles(kind: StudioSourceImport['kind'], selected: readonly StudioImportFile[], readArchive?: (source: string) => Promise<StudioContentArchive>): Promise<StudioSourceImport> {
   if (!selected.length) throw Error('No file selected.')
-  if (selected.length > 4096 || selected.reduce((size, file) => size + file.size, 0) > MAX_BYTES) throw Error('Import exceeds the 12 MiB upload limit or 4096 files.')
+  if (selected.length > 4096 || selected.reduce((size, file) => size + file.size, 0) > STUDIO_ARCHIVE_MAX_JSON_BYTES) throw Error('Import transport exceeds 64 MiB or 4096 files.')
   const loaded = await Promise.all(selected.map(async file => ({
     path: file.webkitRelativePath || file.name,
     bytes: file.arrayBuffer ? new Uint8Array(await file.arrayBuffer()) : new TextEncoder().encode(await file.text()),
   })))
+  if (loaded.reduce((size, file) => size + file.bytes.byteLength, 0) > STUDIO_ARCHIVE_MAX_JSON_BYTES) throw Error('Import transport exceeds 64 MiB.')
   if (loaded.length === 1 && !selected[0]!.webkitRelativePath) {
     const { bytes, path } = loaded[0]!
     let archive: StudioContentArchive | undefined

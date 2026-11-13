@@ -1,10 +1,12 @@
 /** Real Core/S2 filesystem integration; no native model, browser or installed-package claim. */
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { DesignProjectManager } from '../../core/lib/index.js'
+import { DesignProjectManager, DesignJournalStorage } from '../../core/lib/index.js'
 import { writeContentCatalog } from '../../core/test/fixtures/content-catalog.mjs'
 import { createCompanionContentLibrary } from '../src/content-library.mjs'
 import { companionFs, openCompanionProject } from '../src/project.mjs'
@@ -75,6 +77,49 @@ test('settlement detects real project-definition changes without blocking on lib
   const next = await api.prepareBundle({ skill: 'alpha' })
   assert.match(next.method, /Concurrent project edit/)
   assert.notEqual(next.definitionRevision, initial.definitionRevision)
+})
+
+test('settlement verifies source pins through the project store without blocking a draft', async t => {
+  const f = await fixture(t)
+  const api = await openCompanionProject(f.options)
+  const prepared = await api.prepareBundle({ skill: 'alpha' })
+  await writeFile(join(prepared.resources, 'validation.yaml'),
+    'skill: alpha\nrules:\n  - id: sources\n    scope: [state, completion]\n    code: alpha.source\n    check: { source_reference_map: references }\n')
+  const first = await api.store.write('alpha', { summary: 'Existing facts' }, { origin: 'agent', settleEvent: async () => {} })
+  const source = await api.store.write('other', { evidence: 'Verified later fact' }, { origin: 'agent', settleEvent: async () => {} })
+  const state = revision => ({ summary: 'Unfinished reference', references: { one: { file: 'other/other.json', revision, pointer: '/evidence' } } })
+  await api.store.writeWorktreeText('alpha/alpha.json', JSON.stringify(state(first.commit)))
+  await assert.rejects(api.settleBundle({ skill: 'alpha', invocationId: 'invalid-source-pin' }), /pinned version/)
+  await api.settleBundle({ skill: 'alpha', invocationId: 'unfinished-source-draft', scope: 'state' })
+  assert.deepEqual(await api.store.readPublished('alpha'), state(first.commit))
+  await api.store.writeWorktreeText('alpha/alpha.json', JSON.stringify(state(source.commit)))
+  const completed = await api.settleBundle({ skill: 'alpha', invocationId: 'valid-source-pin' })
+  assert.ok(completed.commit)
+})
+
+test('Panel save consumes the original pending edit after a records-only Git advance', async t => {
+  const f = await fixture(t), api = await openCompanionProject(f.options)
+  const prepared = await api.prepareBundle({ skill: 'alpha' })
+  const manifest = join(prepared.resources, 'skill.yaml')
+  await writeFile(manifest, (await readFile(manifest, 'utf8')).replace('handoff: none', 'handoff: must_edit'))
+  await api.store.writeWorktreeText('alpha/alpha.json', '{"summary":"Original question"}')
+  const pending = await api.settleBundle({ skill: 'alpha', invocationId: 'pending-edit', scope: 'state' })
+  assert.equal((await api.prepareBundle({ skill: 'alpha' })).execution.handoff, 'must_edit')
+  await mkdir(join(f.projectRoot, 'design_records', 'reviews'), { recursive: true })
+  await writeFile(join(f.projectRoot, 'design_records', 'reviews', 'background.json'), '{"items":[]}\n')
+  const exec = promisify(execFile)
+  await exec('git', ['add', '--', 'design_records/reviews/background.json'], { cwd: f.projectRoot })
+  await exec('git', ['-c', 'user.name=Test', '-c', 'user.email=test@local', 'commit', '-qm', 'System review'], { cwd: f.projectRoot })
+  assert.notEqual(await api.store.head(), pending.commit)
+  assert.equal(await api.store.isCurrentPublicationAt(pending.commit, await api.store.head(), 'alpha'), true)
+  const saved = await api.savePanel({ skill: 'alpha', eventId: 'human-answer', state: { summary: 'Saved human answer' } })
+  const projectId = JSON.parse(await readFile(join(f.projectRoot, 'project.json'), 'utf8')).id
+  const journal = new DesignJournalStorage(join(f.stateRoot, projectId))
+  const consumed = (await journal.read(`codex:${f.options.connection.threadId}`)).snapshot.consumedExecutionHandoffs
+  assert.equal(consumed.length, 1)
+  assert.equal(consumed[0].invocationId, 'pending-edit')
+  assert.equal(consumed[0].pin.stateRevision, pending.commit)
+  assert.equal(consumed[0].panelStateRevision, saved.commit)
 })
 
 test('current library edits initialize a new project while copied identities remain independent', async t => {

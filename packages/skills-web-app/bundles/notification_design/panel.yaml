@@ -12,7 +12,7 @@ sections:
     order: notification_order
     form:
       reorder: false
-      header: {variant: detail, title: {field: title, editable: true}}
+      header: {show_id: true, variant: detail, title: {field: title, editable: true}}
       body:
         - kind: group
           title: $t:deliveryGroup
@@ -27,6 +27,7 @@ sections:
             - {kind: field, field: action_target}
     create:
       id_field: id
+      id_prefix: NT
       defaults: {title: '', channels: [in_app]}
       initial_label:
         field: title
@@ -34,6 +35,7 @@ sections:
         numbered_text: $t:newNotificationNumbered
     confirm_delete: true
 fields:
+  - {key: id, control: text, hidden: true, readonly: true, applies_to: [notifications]}
   - {key: title, label: $t:title, control: text, required: true, applies_to: [notifications]}
   - {key: trigger, label: $t:trigger, control: textarea, required: true, applies_to: [notifications]}
   - key: recipients

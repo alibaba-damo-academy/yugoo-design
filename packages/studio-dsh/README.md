@@ -16,6 +16,13 @@ when the trusted authoring service is enabled, users can open the current librar
 it and save in place. Explicit Copy creates an independent identity.
 The bounded native factories and their activation requirements follow below.
 
+Installed Bundle Panel previews use the session-free `studioManagement.previewInstalled`
+read. It reuses the existing confined catalog captures and Core-backed Studio
+composition preview for exact installed pins, sample data and synthetic resources.
+The shared page renders the result read-only without creating or saving a library
+instance. Missing sources, invalid samples and unsupported previews retain their
+actual diagnostics; instance editing continues through the existing scoped client.
+
 Native authoring follows the shared [editor-level save contract](../studio/README.md#edit-current-content):
 successful saves are readable by another process or a reopened application;
 process interruption preserves complete old or new snapshots, write failures
@@ -171,11 +178,15 @@ The codec still rejects unexpected fields and malformed translated copy. Choice
 labels and descriptions do not enter mount requests: those retain their existing
 exact pin and revision checks.
 
-The shared catalog still compiles every independent Bundle when listing choices.
-Consequently, Kit working-copy copy/read can fail on an unrelated broken
-independent source, even when exact capture of that Kit succeeds. This adapter
-preserves that shared policy. Page navigation does not activate a Host through
-this entry. Run `test:authoring-sources` for the explicit
+The shared catalog lists already loaded independent Bundle metadata without
+reading or compiling complete source trees. This adapter keeps broken independent
+registrations visible; their exact capture reports the error when selected.
+Import name collision checks therefore do not read unrelated installed sources.
+Selected complete source capture and retention share Studio's 32 MiB tree budget
+and Core's opaque-resource byte accounting. Archive JSON permits 64 MiB for the
+same content's base64 envelope and browser transfer; the 1 MiB text viewer
+limit is separate. Page navigation does not activate a Host through this entry.
+Run `test:authoring-sources` for the explicit
 filesystem-port fixtures with real Core compilation and temporary Studio
 copy/reopen checks; actual DSH filesystem, native model and installed-host
 integration require separate checks.
@@ -307,8 +318,7 @@ An export accepts an exact installed Kit or Bundle request
 from S2 and exports every saved overlay, opaque resource and retained mount in
 one read transaction. Stale revisions fail; installed base content is never a
 substitute for the selected copy. Imports and exports retain the existing
-`studio-content-archive/v1` format and validation limits. The shared UI keeps its
-existing HTTP upload budget.
+`studio-content-archive/v1` format and validation limits. The shared UI uses the same 32 MiB source / 64 MiB serialized transport budget.
 Installed Bundle export resolves the catalog's exact source and captures immutable
 bytes through the shared archive adapter. It needs no containing Kit and creates
 no working copy. The independent loader rechecks the captured Bundle identity.

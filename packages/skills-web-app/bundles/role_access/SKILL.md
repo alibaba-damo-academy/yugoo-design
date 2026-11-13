@@ -10,11 +10,16 @@ description: |-
 
 # Roles and Permissions
 
+See the [record ID guidance](reference/artifact-contract.md#record-ids) for this Bundle's numbering suggestions and existing identity boundaries.
+
 For canvas generation or revision, read [the canvas guide](reference/canvas-guide.md).
 It supplements the existing methods and output contract; it applies to both
 new design and reconstruction without replacing domain-specific rules.
 
 ## Ownership and tools
+
+Before authoring, read [the output contract](reference/artifact-contract.md)
+for field meanings, examples and checks shared by design and reconstruction.
 
 `role_access/role_access.json` is the only canonical state. The foreground
 Producer uses project-scoped `list` and `read` to inspect that state, GROUND,
@@ -22,11 +27,11 @@ and the smallest relevant Design evidence. It uses `write` or `edit` to maintain
 the complete authorization design in its owned WorkingCopy. This lightweight
 skill is completed directly by the Producer.
 
-For a proposal that requires explicit review, the Producer calls
-`design_validate`, repairs every schema or declarative validation diagnostic in
+The Producer calls
+`design_validate({outcome:"complete"})`, repairs every schema or declarative validation diagnostic in
 the same WorkingCopy, and repeats
-until valid. It then calls `design_publish({action:"handoff"})` to publish the
-canonical state before the review gate. A panel save already persists the
+until valid. It then calls `design_publish({action:"complete"})` to publish the
+reviewable proposal. A panel save already persists the
 user's edits; later runs read and preserve them.
 
 ## Maintaining existing design
@@ -69,10 +74,6 @@ Close only after the visible roles, assignment rules, and material permission de
 - Resolving an unclear actor or product boundary can also provide U evidence; any score change follows the saved facts and current agreed scope, not a fixed range.
 - Empty roles, permissions copied from job descriptions, uncovered protected actions, or broad access without a grounded condition may leave scores unchanged or lower them.
 
-## Output contract
-
-Read [the shared output contract](reference/artifact-contract.md) for these field meanings, examples and checks; it is used by both ordinary design and reconstruction.
-
 ## Inputs and authority
 
 Before proposing roles, inspect GROUND and the smallest relevant set of persisted design evidence:
@@ -85,13 +86,11 @@ Before proposing roles, inspect GROUND and the smallest relevant set of persiste
 | `business_data` / `business_rules` | business things, visible states, eligibility and prohibitions | write a natural `applies_when` or explicit deny only when required |
 | `page_design` | visible actions on lists, details, forms, and workspaces | check that every protected user action has a role decision |
 
-If those artifacts do not exist, use the user's current requirement conservatively. Prefer `用户` and `管理员` over fabricated department titles. Never invent identity-provider groups, organization levels, API scopes, endpoint names, or database identifiers.
+If those artifacts do not exist, use the user's current requirement conservatively. Prefer simple roles such as User and Administrator over fabricated department titles. Never invent identity-provider groups, organization levels, API scopes, endpoint names, or database identifiers.
 
-### Usage
-
-Maintain the complete role design state for the first material design and for every later chat-requested change. Run integration validation and publish the paused WorkingCopy before presenting the native panel. The native panel persists its own edits; do not repeat a panel save.
-
-The host appends the exact generated schema to this body. Follow that schema literally: `roles` and `policies` are ID-keyed mappings, `role_order` and `policy_order` are ordered ID lists, and every policy uses the singular `role_ref`.
+The output contract defines `roles` and `policies` as ID-keyed mappings,
+`role_order` and `policy_order` as ordered ID lists, and each policy's singular
+`role_ref`. Read that installed resource before authoring.
 
 ## Workflow
 
@@ -102,9 +101,10 @@ List the material product operations implied by established flows and pages befo
 For each protected operation, identify:
 
 - the actor that needs it;
-- the user-visible capability, written as a verb plus its target, such as `审批订单` or `查看项目成员`;
+- the user-visible capability, written as a verb plus its target, such as Approve orders or View project members;
 - whether it applies everywhere or only to a target range/state;
-- whether the operation needs an extra confirmation step.
+- whether a requirement, agreed design decision, or observed behavior establishes
+  an independent verification step before the operation.
 
 Do not persist this inventory as another collection. It is a reasoning checklist used to form `roles` and `policies`.
 
@@ -118,14 +118,21 @@ Start with established actors, then group them by required access:
 - Do not create a second role merely to express temporary confirmation, record ownership, or one conditional operation.
 - Treat a service identity as a role only when it authenticates to the product and performs protected product operations.
 
-A role title must be durable and understandable to the user. Prefer `项目成员`, `审批人`, and `系统管理员`; avoid person names, temporary team names, and internal group codes.
+A role title must be durable and understandable to the user. Prefer names such as Project Member, Approver, and System Administrator in the design's authoring language; avoid person names, temporary team names, and internal group codes.
 
-### 3. State how each role is obtained
+### 3. Distinguish design from restoration
 
-Read [the shared output contract](reference/artifact-contract.md) for these field meanings, examples and checks; it is used by both ordinary design and reconstruction.
+For a new design, grant only operations needed by established tasks. Include
+extra verification only when a requirement, agreed design decision, or observed
+behavior establishes that independent pre-operation step; perceived impact
+alone does not establish it.
 
-For a new design, grant only operations needed by established tasks and add
-extra verification only when an allowed high-impact operation needs it.
+Business approval, sign-off, or choosing Approve/Return/Reject is the protected
+operation itself, not evidence of another confirmation prompt. Set `confirm`
+only for that separate prompt. A required Return reason belongs in `custom`
+with its explanation in `custom_requirement`; assignment and lifecycle limits
+belong in `applies_when`. Neither implies `confirm`.
+
 Restoration preserves the evidenced grants and verification even when a better
 policy could be proposed; policy improvements are separate design work.
 
@@ -160,7 +167,7 @@ evaluator. Do not claim the inheritance design is resolved while a consequential
 allow/deny conflict remains unclear. Reconstruction preserves supported source
 semantics and reports unsupported composition rather than inventing precedence.
 
-### 7. Reconcile coverage and least privilege
+### 4. Reconcile coverage and least privilege
 
 Before writing or closing, check the design in both directions:
 
@@ -176,13 +183,14 @@ Before writing or closing, check the design in both directions:
 
 If a required identity fact is missing, preserve the smallest safe design and report the gap in close-out. Do not silently broaden access to make a workflow appear complete.
 
-## State contract
+## Present the proposal
 
-Read [the shared output contract](reference/artifact-contract.md) for these field meanings, examples and checks; it is used by both ordinary design and reconstruction.
-
-## Interaction gate
-
-This skill uses `must_edit` because authorization decisions require explicit review. After the current role/access facts are validated and published with `design_publish({action:"handoff"})`, pause for the native role-centric panel. A successful panel save persists any user edits and releases the review gate; it does not create or change an evidence-review status.
+Present the native role-centric panel so the user can inspect authorization
+decisions and revise them. Preserve the distinction between established access
+facts, proposals and unresolved choices; publishing or saving a proposal does
+not confirm it. Ask through the existing conversation when a consequential
+authorization decision is missing or conflicting. This design review does not
+require editing an arbitrary field before continuing the user's request.
 
 The form and canvas edit the same role and inheritance records. Use the shared
 canvas/details overlay switch to inspect the chain, then return to the selected

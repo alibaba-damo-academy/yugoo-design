@@ -14,6 +14,8 @@ for (const host of ['codex', 'claude-code', 'qoder', 'qwenwork', 'workbuddy']) {
     assert.equal(c.mode, mode)
     assert.equal(c.canonicalFile, '/projects/a space/design_files/example_bundle/example_bundle.json')
     assert.equal(c.finishTool, mode === 'main' ? 'design_finish_main_bundle' : 'design_finish_run')
+    assert.match(c.instructions, /validation and diagnostic JSON must not be redirected into an artifact/)
+    assert.match(c.instructions, /shell calls do not supply the DSH tool's script_io envelope/)
     assert.deepEqual(c.validation, { executable: input.executable,
       argv: [input.cliEntry, 'validate', '--project', input.projectRoot, '--kit', input.kitRoot,
         '--state-root', input.stateRoot, '--skill', input.skill, '--scope', 'completion'] })

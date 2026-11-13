@@ -8,13 +8,27 @@ export async function createCompanionSettings(stateRoot) {
   const path = join(stateRoot, 'advisory-settings.json')
   let value
   try { value = JSON.parse(await readFile(path, 'utf8')) } catch (error) { if (error.code !== 'ENOENT') throw error }
-  let settings = { maxSuggestions: resolveMaxSuggestions(value?.maxSuggestions) }
+  const languages = ['auto', 'zh', 'en'], appearances = ['system', 'light', 'dark']
+  let settings = { maxSuggestions: resolveMaxSuggestions(value?.maxSuggestions),
+    ...(languages.includes(value?.language) ? { language: value.language } : {}),
+    ...(appearances.includes(value?.appearance) ? { appearance: value.appearance } : {}),
+  }
   let tail = Promise.resolve()
   return {
     read: () => ({ ...settings }),
     write(input) {
-      const next = { maxSuggestions: resolveMaxSuggestions(input.maxSuggestions) }
       const result = tail.then(async () => {
+        if (!input || typeof input !== 'object' || Array.isArray(input)) throw Error('Invalid settings update')
+        const next = { ...settings }
+        if (Object.hasOwn(input, 'maxSuggestions')) next.maxSuggestions = resolveMaxSuggestions(input.maxSuggestions)
+        if (Object.hasOwn(input, 'language')) {
+          if (!languages.includes(input.language)) throw Error('Unsupported interface language')
+          next.language = input.language
+        }
+        if (Object.hasOwn(input, 'appearance')) {
+          if (!appearances.includes(input.appearance)) throw Error('Unsupported interface appearance')
+          next.appearance = input.appearance
+        }
         await mkdir(stateRoot, { recursive: true, mode: 0o700 })
         const temporary = `${path}.${randomUUID()}.tmp`
         await writeFile(temporary, JSON.stringify(next), { mode: 0o600 })

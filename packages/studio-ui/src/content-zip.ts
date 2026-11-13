@@ -1,10 +1,11 @@
 /** Browser transport only. Core still validates every original byte and definition. */
 import { Unzip, UnzipInflate, unzipSync, zipSync } from 'fflate'
 import type { StudioContentArchive } from 'dsh-design-studio'
+import { STUDIO_SOURCE_MAX_BYTES, STUDIO_ARCHIVE_MAX_JSON_BYTES } from 'dsh-design-studio/types'
 
 const MANIFEST = 'studio-manifest.json'
 const MAX_FILES = 4097
-const MAX_BYTES = 18 * 1024 * 1024 // original content (16 MiB) plus bounded metadata
+const MAX_BYTES = STUDIO_ARCHIVE_MAX_JSON_BYTES // source bytes plus bounded portable metadata
 const encoder = new TextEncoder(), decoder = new TextDecoder('utf-8', { fatal: true })
 
 function safeEntry(name: string) {
@@ -72,13 +73,17 @@ function verifyLocalEntries(bytes: Uint8Array) {
 
 /** Ordinary ZIP with readable source tree and a version/integrity manifest. */
 export function encodeStudioContentZip(source: string): Uint8Array {
+  if (encoder.encode(source).byteLength > MAX_BYTES) throw Error('Archive JSON exceeds 64 MiB.')
   const archive = JSON.parse(source) as StudioContentArchive
   if (archive.format !== 'studio-content-archive/v1' || !Array.isArray(archive.files)) throw Error('Unsupported content archive.')
   const entries: Record<string, Uint8Array> = Object.create(null)
+  let sourceBytes = 0
   const files = archive.files.map(({ base64, ...file }) => {
     const name = `content/${file.path}`; safeEntry(name)
     if (entries[name]) throw Error('Duplicate ZIP file path.')
     entries[name] = fromBase64(base64)
+    sourceBytes += entries[name]!.byteLength
+    if (sourceBytes > STUDIO_SOURCE_MAX_BYTES) throw Error('ZIP source content exceeds 32 MiB.')
     return file
   })
   entries[MANIFEST] = encoder.encode(JSON.stringify({ format: 'studio-content-zip/v1', archive: { ...archive, files } }, null, 2))
@@ -88,7 +93,7 @@ export function encodeStudioContentZip(source: string): Uint8Array {
 
 /** Bounded ZIP -> existing JSON transport; never extracts to a filesystem. */
 export function readStudioZipEntries(bytes: Uint8Array): Map<string, Uint8Array> {
-  if (bytes.length > 12 * 1024 * 1024) throw Error('ZIP file exceeds the 12 MiB upload limit.')
+  if (bytes.length > MAX_BYTES) throw Error('ZIP file exceeds the 64 MiB transport limit.')
   verifyLocalEntries(bytes)
   const expected = new Map<string, number>(), names = new Set<string>()
   let declared = 0
@@ -135,6 +140,7 @@ export function decodeStudioContentZip(bytes: Uint8Array): string {
   const manifest = JSON.parse(decoder.decode(entries.get(MANIFEST)!))
   if (manifest.format !== 'studio-content-zip/v1' || !Array.isArray(manifest.archive?.files)) throw Error('Unsupported ZIP manifest.')
   const used = new Set([MANIFEST])
+  let sourceBytes = 0
   const files = manifest.archive.files.map((file: Record<string, unknown>) => {
     if (typeof file.path !== 'string' || Object.hasOwn(file, 'base64')) throw Error('Invalid ZIP file manifest.')
     const name = `content/${file.path}`; safeEntry(name)
@@ -142,10 +148,14 @@ export function decodeStudioContentZip(bytes: Uint8Array): string {
     if (!data || used.has(name)) throw Error(`Missing or duplicate ZIP content: ${file.path}`)
     if (data.length !== file.bytes) throw Error(`ZIP file size mismatch: ${file.path}`)
     used.add(name)
+    sourceBytes += data.byteLength
+    if (sourceBytes > STUDIO_SOURCE_MAX_BYTES) throw Error('ZIP source content exceeds 32 MiB.')
     return { ...file, base64: toBase64(data) }
   })
   if (used.size !== entries.size) throw Error('ZIP contains files that are not listed in its manifest.')
-  return JSON.stringify({ ...manifest.archive, files })
+  const source = JSON.stringify({ ...manifest.archive, files })
+  if (encoder.encode(source).byteLength > MAX_BYTES) throw Error('Archive JSON exceeds 64 MiB.')
+  return source
 }
 
 export function isStudioZip(bytes: Uint8Array): boolean { return bytes[0] === 0x50 && bytes[1] === 0x4b }

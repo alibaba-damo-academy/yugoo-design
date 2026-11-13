@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { BPMN_TEXT_RENDERER, applyBpmnLaneHeaderDividers, fitBpmnForVerticalBrowsing, fitBpmnToViewport, type IBpmnCanvasService } from './bpmn-viewport.ts'
 import { usePanelI18n } from './panel-i18n.tsx'
 import { loadBpmnRuntime } from './bpmn-runtime-loader.ts'
 import { loadBpmnStyles } from './bpmn-styles-loader.ts'
 import type { RenderOptions } from './interpreter.ts'
+import { bpmnElementContexts, type BpmnElementContext } from './bpmn-context.ts'
+import { PanelContentState } from './panel-content-state.tsx'
 
 interface BpmnRuntime {
   get(name: string): unknown
@@ -15,7 +17,9 @@ interface BpmnRuntime {
 
 /** Runtime-owned editor; the Bundle only binds a canonical artifact reference. */
 export function BpmnSurface(props: { xml: string; editing: boolean; disabled: boolean
+  active?: boolean; progress?: ReactNode
   selectedElement?: string; onSelectElement?: (id: string | undefined) => void
+  onContext?: (context: readonly BpmnElementContext[]) => void
   onChange: (xml: string) => void; register: NonNullable<RenderOptions['registerBeforeSave']>
   navigationFlush: { current: (() => Promise<void>) | undefined } }) {
   const { t } = usePanelI18n()
@@ -73,19 +77,25 @@ export function BpmnSurface(props: { xml: string; editing: boolean; disabled: bo
       instance.current = active
       await active.importXML(props.xml)
       if (gone) return
+      const context = () => {
+        const registry = active!.get('elementRegistry') as { getAll(): Parameters<typeof bpmnElementContexts>[0] }
+        callbacks.current.onContext?.(bpmnElementContexts(registry.getAll()))
+      }
+      context()
       applyBpmnLaneHeaderDividers(active, props.xml)
       active.on('element.click', event => {
         if (callbacks.current.disabled) return
         const element = event.element?.labelTarget ?? event.element
         callbacks.current.onSelectElement?.(element?.id)
       })
-      viewport.current = 'width'; fit('width'); setReady(true)
+      viewport.current = 'width'; setReady(true)
       if (props.editing) {
         active.on('directEditing.activate', () => {
           originalText = (active!.get('directEditing') as { getValue(): string }).getValue()
         })
         active.on('directEditing.deactivate', () => { originalText = undefined; reportPending() })
         active.on('commandStack.changed', () => {
+          context()
           version++
           reportPending()
           if (timer) clearTimeout(timer)
@@ -115,6 +125,11 @@ export function BpmnSurface(props: { xml: string; editing: boolean; disabled: bo
     // The owner remounts on file identity/revision or mode changes, not each
     // local XML echo. This preserves selection and the native undo stack.
   }, [])
+  useLayoutEffect(() => {
+    // Import can finish while the pending placeholder hides the canvas. Fit
+    // only after revealing it, without recreating the native renderer.
+    if (ready) fit('width')
+  }, [ready])
   useEffect(() => {
     const runtime = instance.current
     if (!ready || !runtime) return
@@ -130,15 +145,21 @@ export function BpmnSurface(props: { xml: string; editing: boolean; disabled: bo
     if (!canvas) return
     viewport.current = 'manual'; canvas.zoom(Math.max(0.1, Math.min(3, canvas.viewbox().scale * factor)))
   }
+  // Native bpmn-js reports this exact condition for a parsed structural draft
+  // without a display diagram. Other import failures remain real errors.
+  const awaitingLayout = props.active && error === 'Error: no diagram to display'
+  const visibleError = error && !awaitingLayout ? error : undefined
   return <div className="dsh-bpmn-surface">
-    <div className="dsh-bpmn-toolbar" role="group" aria-label={t('diagram')}>
+    {ready ? <>{props.progress}<div className="dsh-bpmn-toolbar" role="group" aria-label={t('diagram')}>
       <button type="button" disabled={!ready} title={t('fitWidthHint')} onClick={() => { viewport.current = 'width'; fit('width') }}>{t('fitWidth')}</button>
       <button type="button" disabled={!ready} title={t('fitAllHint')} onClick={() => { viewport.current = 'all'; fit('all') }}>{t('fitAll')}</button>
       <button type="button" disabled={!ready} aria-label={t('zoomIn')} onClick={() => zoom(1.2)}>＋</button>
       <button type="button" disabled={!ready} aria-label={t('zoomOut')} onClick={() => zoom(1 / 1.2)}>−</button>
-    </div>
-    {error ? <p role="alert">{t('diagramInvalid')} {error}</p> : !ready ? <p role="status">{t('diagramLoading')}</p> : null}
-    <div ref={container} className="dsh-bpmn-canvas" aria-label={t('diagram')} {...(props.disabled ? { inert: '' } : {})}
+    </div>{error ? <p role="alert">{t('diagramInvalid')} {error}</p> : null}</>
+      : <div className="dsh-artifact-placeholder">{visibleError || !props.active || !props.progress ? <PanelContentState kind="canvas"
+        state={visibleError ? 'error' : 'loading'}
+        message={visibleError ? `${t('diagramInvalid')} ${visibleError}` : t('diagramLoading')} /> : null}{props.progress}</div>}
+    <div ref={container} className="dsh-bpmn-canvas" hidden={!ready} aria-label={t('diagram')} {...(props.disabled ? { inert: '' } : {})}
       onPointerDown={() => { viewport.current = 'manual' }} onWheel={() => { viewport.current = 'manual' }} />
   </div>
 }

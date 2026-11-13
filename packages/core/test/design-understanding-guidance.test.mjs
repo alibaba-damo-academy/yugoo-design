@@ -68,5 +68,5 @@ test('neutral scene questions are reachable from the real loaded method and reso
   assert.match(method, /already in the conversation and saved answers/)
   assert.match(method, /reference\/artifact-contract\.md/)
   assert.ok(kit.resources['smart_questions/reference/artifact-contract.md'])
-  assert.match(kit.mindset, /not a new product brief\s+database/)
+  assert.match(kit.mindset, /reading aids, not another product\s+brief, confirmation record or required report/)
 })

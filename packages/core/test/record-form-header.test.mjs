@@ -12,6 +12,20 @@ const base = () => ({ version: 1, panel_kind: 'document', sections: [{ id: 'entr
   fields: [{ key: 'caption', control: 'text', applies_to: ['entries'] }],
   ui: { id: 'form', component: 'record_form', source: 'entries' } })
 
+test('header business-number presentation binds existing readonly identity without requiring a number format or value', () => {
+  const panel = base()
+  panel.sections[0].form.header.show_id = true
+  panel.fields.push({ key: 'id', control: 'text', readonly: true, hidden: true, applies_to: ['entries'] })
+  assert.deepEqual(validatePanelManifest(panel), [])
+  panel.sections[0].form.header.show_id = false
+  assert.deepEqual(validatePanelManifest(panel), [])
+  panel.sections[0].form.header.show_id = 'yes'
+  assert.ok(validatePanelManifest(panel).some(error => error.includes('invalid header')))
+  panel.sections[0].form.header.show_id = true
+  panel.fields[1].readonly = false
+  assert.ok(validatePanelManifest(panel).some(error => error.includes('header identity')))
+})
+
 test('headers are explicit closed bindings, and omitted form keeps default declarations valid', () => {
   assert.deepEqual(validatePanelManifest(base()), [])
   const legacy = base(); delete legacy.sections[0].form

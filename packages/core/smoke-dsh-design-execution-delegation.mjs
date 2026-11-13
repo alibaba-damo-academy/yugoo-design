@@ -128,7 +128,7 @@ assert.equal(starts.every(request => request.prompt[0].text.includes('Host-nativ
 assert.equal(starts.every(request => request.prompt[0].text.includes(DESIGN_WORKER_EVIDENCE_GUIDANCE)), true)
 assert.equal(starts.every(request => request.prompt[0].text.includes(KNOWLEDGE_AGENTIC_GUIDANCE)), true)
 assert.equal(starts.every(request => request.prompt[0].text.includes('Do not read or inspect executable script source before running it')), true)
-assert.equal(starts.every(request => request.prompt[0].text.includes('write the complete artifact directly')), true)
+assert.equal(starts.every(request => request.prompt[0].text.includes('complete artifact that satisfies the Bundle contract')), true)
 assert.equal(starts.every(request => request.prompt[0].text.includes('Do not call design_worker_read_artifact merely to check whether a write was complete')), true)
 assert.equal(starts.every(request => request.prompt[0].text.includes('"artifact_kind":"page_html"')), true)
 assert.equal(files.get(first.artifact.path).content, `<html>page-1-${'x'.repeat(40 * 1024)}</html>`)
@@ -146,8 +146,12 @@ for (const [skillName, artifactKind, artifactFile] of [
     attempts: createDesignArtifactAttemptRegistry(), workspace, recordAttempt() {},
     async startSubagent(_provider, request) {
       received = request
-      await workspace.write(artifactFile, { encoding: 'utf8', content: 'source-supported fixture bytes' })
-      return { id: 'restored-worker', localAgent: { session: { id: 'restored-worker' } }, result: Promise.resolve({ stopReason: 'completed', output: [] }), async dispose() {} }
+      const child = { session: { id: 'restored-worker' } }
+      await reconstructionTools.get('design_worker_write_artifact').execute({
+        assignment_id: request.prompt[0].text.match(/assignment_id "([^"]+)"/)[1],
+        content: 'source-supported fixture bytes',
+      }, { agent: child, signal })
+      return { id: 'restored-worker', localAgent: child, result: Promise.resolve({ stopReason: 'completed', output: [] }), async dispose() {} }
     },
   })
   reconstructed.install({ tools: { register(definition) { reconstructionTools.set(definition.name, definition) } } })
@@ -241,7 +245,10 @@ await assert.rejects(
             const outcome = await gate.promise
             if (outcome === 'cancelled') return { stopReason: 'cancelled', output: [] }
             if (outcome === 'failed') return { stopReason: 'failed', diagnostic: `failed ${itemId}`, output: [] }
-            await frontierWorkspace.write(descriptor.artifact_file, { encoding: 'utf8', content: `findings ${itemId}` })
+            await frontierTools.get('design_worker_write_artifact').execute({
+              assignment_id: request.prompt[0].text.match(/assignment_id "([^"]+)"/)[1],
+              content: `findings ${itemId}`,
+            }, { agent: child, signal: request.signal })
             return { stopReason: 'completed', output: [] }
           } finally {
             live -= 1

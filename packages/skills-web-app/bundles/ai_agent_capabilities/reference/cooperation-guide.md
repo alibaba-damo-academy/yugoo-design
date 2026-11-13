@@ -45,7 +45,7 @@ requires the user's explicit request; this guide does not authorize discovery.
 4. This executor writes only its current Bundle. Return the coordination findings
    to the caller at the existing result/handoff boundary. Do not call another Bundle
    from an isolated Producer, mutate its files with shell/fs tools, or bypass
-   `must_edit` to advance a chain. The main/calling Agent decides the next relevant
+   a declared user handoff to advance a chain. The main/calling Agent decides the next relevant
    step under current user authorization and invokes the target's existing entry;
    that target validates, publishes and hands back its own state.
 5. Before the caller applies a later supplement, reread the affected target state

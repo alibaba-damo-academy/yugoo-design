@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { RenderOptions } from './interpreter.ts'
 import { confinedEditableArtifact } from './text-artifact-edit.ts'
-import { LivePreview } from './live-preview.tsx'
+import { LivePreview, type PreviewViewportMode } from './live-preview.tsx'
+import { PanelSelect } from './panel-select.tsx'
 import type { PreviewLink, PreviewNavigation } from './preview-navigation.ts'
 import type { PreviewNavigationContext } from './preview-navigation-context.ts'
 import { usePanelI18n } from './panel-i18n.tsx'
@@ -12,13 +13,15 @@ import { useTextArtifactContents } from './client/panels/artifact-text-hydration
 import { inlinePreviewStylesheet } from './preview-tokens.ts'
 import { secureDesignSrcDoc } from './client/srcdoc-security.ts'
 import { ArtifactStatusIcon } from './artifact-status-icon.tsx'
+import { PanelRecordHeader } from './panel-workspace.tsx'
 import { PanelContentState } from './panel-content-state.tsx'
 import type { NavigationStylesheet } from './use-navigation-stylesheet.ts'
 
 /** Read-only artifact projection. Fetch results never become canonical state. */
 let previewReaderGeneration = 0
-export function NavigationPreview({ path: raw, title, options, links, onNavigate, binding, onBind, artifactId, artifactKind, stylesheet, thumbnail = false, sharedStylesheet, navigationContext, onNavigationError, onNavigationReset, documentVersion, titleBadge, actions }: {
+export function NavigationPreview({ path: raw, title, recordId, options, links, onNavigate, binding, onBind, artifactId, artifactKind, stylesheet, thumbnail = false, sharedStylesheet, navigationContext, onNavigationError, onNavigationReset, documentVersion, titleBadge, actions }: {
   path: unknown; title: string; options?: RenderOptions
+  recordId?: string
   links?: readonly PreviewLink[]; onNavigate?: (target: string, navigation: PreviewNavigation) => void
   navigationContext?: PreviewNavigationContext; onNavigationError?: (message: string) => void
   onNavigationReset?: () => void
@@ -39,7 +42,12 @@ export function NavigationPreview({ path: raw, title, options, links, onNavigate
   const receipt = path ? projectArtifactReceipt(artifactId, options?.executionAttempts, artifactKind, path) : undefined
   const [geometry, setGeometry] = useState<{ identity: number; issues: string[] | undefined }>()
   const [reload, setReload] = useState(0)
-  const key = JSON.stringify([artifactId, path, generation, receipt, options?.sourceRevision, options?.collapseToken, documentVersion, reload])
+  const [viewportMode, setViewportMode] = useState<PreviewViewportMode>('fit-width')
+  // A Host inventory owns per-file freshness. Whole-project stamps are only a
+  // fallback without that inventory; the reader still fences source authority.
+  const fallbackVersion = options?.artifactFiles === undefined
+    ? [receipt, options?.sourceRevision, options?.collapseToken, documentVersion] : undefined
+  const key = JSON.stringify([options?.skill, artifactId, path, generation, fallbackVersion, reload])
   const read = options?.readArtifact
   const documentIdentity = useMemo(() => ++previewReaderGeneration, [key, read])
   const onGeometry = useCallback((issues: string[] | undefined) => setGeometry({ identity: documentIdentity, issues }), [documentIdentity])
@@ -87,6 +95,8 @@ export function NavigationPreview({ path: raw, title, options, links, onNavigate
     : path && !read ? 'unavailable' : 'empty'
   const contentMessage = busy ? t('refreshing') : candidate && !path ? t('invalidDocumentPath')
     : contentState === 'error' || contentState === 'unavailable' ? t('documentUnavailable') : t('emptyDocument')
+  const progress = <ExecutionTrace item={{ id: artifactId, title, file: path, status: execution.status, runId: execution.runId, logTarget: execution.logTarget, points: [], links: [] }} read={options?.readExecutionLog} />
+  const active = execution.status === 'working' || execution.status === 'queued'
   if (thumbnail) return <div className="dsh-navigation-thumbnail" aria-label={title} aria-busy={busy}>
     {hasContent ? <iframe title={title} loading="lazy" tabIndex={-1} aria-hidden="true"
       // As in the full preview, artifact inline scripts may draw the screen.
@@ -97,8 +107,12 @@ export function NavigationPreview({ path: raw, title, options, links, onNavigate
       : <PanelContentState state={contentState} message={contentMessage} kind="preview" appearance="compact" />}
   </div>
   return <div className="dsh-navigation-preview" aria-busy={busy}>
-    <header><div className="dsh-navigation-preview-title"><strong>{title}</strong>{titleBadge}<ArtifactStatusIcon status={execution.status} label={statusLabel} /></div><div className="dsh-navigation-preview-actions">{actions}<button type="button" data-preview-refresh disabled={!path || busy}
-      onClick={() => { onNavigationReset?.(); setReload(value => value + 1) }}>{busy ? t('refreshing') : t('refresh')}</button></div></header>
+    <PanelRecordHeader placement="workspace" recordId={recordId}><div className="dsh-navigation-preview-title"><strong>{title}</strong>{titleBadge}<ArtifactStatusIcon status={execution.status} label={statusLabel} /></div><div className="dsh-navigation-preview-actions">{actions}
+      <PanelSelect aria-label={t('previewSize')} value={viewportMode} disabled={!hasContent}
+        options={[{ value: 'fit-width', label: t('fitWidth') }, { value: 'actual-size', label: t('previewActualSize') }]}
+        onValueChange={value => setViewportMode(value as PreviewViewportMode)} />
+      <button type="button" data-preview-refresh disabled={!path || busy}
+      onClick={() => { onNavigationReset?.(); setReload(value => value + 1) }}>{busy ? t('refreshing') : t('refresh')}</button></div></PanelRecordHeader>
     {html !== undefined && geometryIssues !== undefined ? <div className={`dsh-navigation-visual-check is-${geometryIssues.length ? 'fail' : 'pass'}`} role={geometryIssues.length ? 'alert' : 'status'}>
       {t(geometryIssues.length ? 'navigationGeometryFailed' : 'navigationGeometryPassed')}
       {geometryIssues.length ? <ul>{geometryIssues.map((issue, index) => {
@@ -109,8 +123,8 @@ export function NavigationPreview({ path: raw, title, options, links, onNavigate
         return <li key={index}>{label}</li>
       })}</ul> : null}
     </div> : null}
-    <ExecutionTrace item={{ id: artifactId, title, file: path, status: execution.status, runId: execution.runId, logTarget: execution.logTarget, points: [], links: [] }} read={options?.readExecutionLog} />
-    {hasContent ? <LivePreview key={documentIdentity} html={html!} imageHtml={contents[artifactId] ?? undefined} variables={{}} title={title} links={links} onNavigate={onNavigate} binding={binding} onBind={onBind} navigationContext={navigationContext} onNavigationError={onNavigationError} onGeometry={onGeometry} />
-      : <PanelContentState state={contentState} message={contentMessage} kind="preview" />}
+    {hasContent ? progress : null}
+    {hasContent ? <LivePreview key={documentIdentity} html={html!} imageHtml={contents[artifactId] ?? undefined} variables={{}} title={title} viewportMode={viewportMode} links={links} onNavigate={onNavigate} binding={binding} onBind={onBind} navigationContext={navigationContext} onNavigationError={onNavigationError} onGeometry={onGeometry} />
+      : <div className="dsh-artifact-placeholder">{!active || contentState === 'error' || contentState === 'unavailable' ? <PanelContentState state={contentState} message={contentMessage} kind="preview" /> : null}{progress}</div>}
   </div>
 }

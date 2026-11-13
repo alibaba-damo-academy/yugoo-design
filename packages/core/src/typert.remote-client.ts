@@ -182,6 +182,12 @@ const artifactSchema = z.object({
   found: z.boolean(),
   content: z.string(),
 })
+const artifactHistorySchema = z.array(z.object({
+  skill: z.string(), artifactId: z.string(), artifactKind: z.string(), artifactFile: z.string(),
+  invocationId: z.string(), runId: z.string(), parentRunId: z.string(),
+  phase: z.enum(['completed', 'failed', 'cancelled']), timestamp: z.number().int().nonnegative(),
+  diagnostic: z.string().optional(),
+}).strict())
 const executionLogSchema = z.object({
   found: z.boolean(),
   revision: z.string().nullable(),
@@ -191,6 +197,10 @@ const executionLogSchema = z.object({
     timestamp: z.number().int().nonnegative(),
     eventType: z.enum(['message', 'search', 'fetch', 'synthesize', 'error']),
     message: z.string(),
+    activity: z.object({
+      kind: z.enum(['search', 'fetch', 'read-file', 'write-file', 'run-script', 'structured-output', 'run-tool', 'tool-failed']),
+      detail: z.string(),
+    }).optional(),
     url: z.string().optional(),
   })),
 })
@@ -502,6 +512,19 @@ export const TYPERT_REMOTE = {
       },
     },
     {
+      id: 'dsh-design-core#designPanel/readArtifactHistory',
+      service: 'designPanel', namespace: 'designPanel', method: 'readArtifactHistory',
+      invocation: { kind: 'direct' }, scope: { context: 'agent', wire: 'agentId' },
+      parameters: [
+        { name: 'agent', wire: 'agentId', source: 'lookup', lookup: 'agent',
+          codec: { mode: 'strict', typeSymbol: '@deepseek-ai/dsh-session/types#SessionId', create: () => agentIdSchema } },
+        { name: 'skill', wire: 'skill', source: 'json',
+          codec: { mode: 'strict', typeSymbol: 'dsh-design-core#designPanel/readArtifactHistory:skill', create: () => skillSchema } },
+      ],
+      cancellation: { parameter: 'signal' },
+      result: { mode: 'strict', typeSymbol: 'dsh-design-core#designPanel/readArtifactHistory:result', create: () => artifactHistorySchema },
+    },
+    {
       id: 'dsh-design-core#designPanel/readExecutionLog',
       service: 'designPanel',
       namespace: 'designPanel',
@@ -611,7 +634,10 @@ export const TYPERT_REMOTE = {
       result: {
         mode: 'strict',
         typeSymbol: 'dsh-design-core#designPanel/decideAdvisory:result',
-        create: () => advisoryProjectionSchema,
+        create: () => advisoryProjectionSchema.extend({
+          notification: z.enum(['sent', 'failed', 'unknown']).optional(),
+          notificationError: z.string().optional(),
+        }),
       },
     },
     {

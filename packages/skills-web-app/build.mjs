@@ -8,11 +8,12 @@ import { withNormalBuildEvidence } from '../../scripts/normal-build-module-evide
 import { captureOutputModuleMap, verifyOutputModuleFiles } from '../../scripts/companion-output-module-map.mjs'
 import { copyOwnLicenseMaterials, OWN_LICENSE_FILES } from '../../scripts/release-own-license.mjs'
 import { writeFlowScriptMaterials } from '../../scripts/companion-bundled-license.mjs'
+import { preparePrdRuntime } from './prd-runtime.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const workspace = resolve(here, '../..')
 
-async function runNormalBuild(label, config) {
+export async function runNormalBuild(label, config) {
   const bundles = await build(withNormalBuildEvidence(`dsh-release-skills-web-app-${label}`, config))
   try {
     const snapshot = captureOutputModuleMap(label, bundles.flatMap(bundle => bundle.chunks), { workspaceRoot: workspace, outputRoot: config.outDir })
@@ -75,6 +76,23 @@ async function copyTree(source, target) {
   }
 }
 
+/** Keep shared preview semantics inside the complete portable PRD CLI. */
+export async function buildPrdScript(source, outDir, { runBuild = runNormalBuild } = {}) {
+  return runBuild('prd-cli', {
+    config: false, entry: { prd: source }, outDir, format: 'esm', platform: 'node', target: 'node22',
+    tsconfig: false, dts: false, clean: false, failOnWarn: true,
+    outputOptions: { codeSplitting: false },
+    deps: { alwaysBundle: [/.*/], onlyBundle: false },
+    plugins: [{
+      name: 'prd-preserve-renderer-entry',
+      resolveId(specifier, importer) {
+        if (importer === source && specifier === './visual-renderer.mjs') return { id: specifier, external: true }
+        return null
+      },
+    }],
+  })
+}
+
 /** Shared by the npm content package and both Companion packaging routes. */
 export async function buildWebAppContent(target, options = {}) {
   await copyTree(join(here, 'kits'), join(target, 'kits'))
@@ -84,7 +102,14 @@ export async function buildWebAppContent(target, options = {}) {
   const flow = join(target, 'bundles/flow_design')
   await copyOwnLicenseMaterials(here, flow)
   await writeFlowScriptMaterials(workspace, flow, maps)
-  return maps
+  maps.push(await buildPrdScript(join(here, 'bundles/web_app_prd_assembly/scripts/prd.mjs'),
+    join(target, 'bundles/web_app_prd_assembly/scripts'), options))
+  const prd = await preparePrdRuntime({
+    bundleRoot: join(target, 'bundles/web_app_prd_assembly'), workspaceRoot: workspace,
+    whiteboardEntry: join(here, 'bundles/web_app_prd_assembly/scripts/whiteboard-export.mjs'),
+    runBuild: options.runBuild ?? runNormalBuild,
+  })
+  return [...maps, ...prd.maps]
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {

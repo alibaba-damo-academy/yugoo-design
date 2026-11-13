@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>意向与承诺：合成调研报告示例</title>
+  <style data-report-document-style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #fff; color: #171717; font: 14px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+    main { width: min(920px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 40px; overflow-wrap: anywhere; }
+    header { margin: 0 0 20px; padding-bottom: 12px; border-bottom: 1px solid #d4d4d4; }
+    h1 { margin: 0 0 6px; font-size: 20px; line-height: 1.4; font-weight: 700; }
+    h2 { margin: 24px 0 10px; font-size: 16px; line-height: 1.5; font-weight: 700; }
+    h3, h4 { margin: 16px 0 8px; font-size: 14px; line-height: 1.6; font-weight: 650; }
+    p { margin: 0 0 12px; }
+    ul, ol { margin: 0 0 14px; padding-left: 24px; }
+    li { margin: 6px 0; }
+    a { color: #1d4ed8; text-underline-offset: 2px; }
+    table { width: 100%; margin: 16px 0 22px; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 9px 10px; border: 1px solid #d4d4d4; text-align: left; vertical-align: top; }
+    th { background: #f5f5f5; }
+    figure { margin: 16px 0 24px; }
+    figure img, figure svg { display: block; max-width: 100%; height: auto; }
+    figcaption, .report-context { color: #525252; font-size: 12px; }
+    .report-takeaway { font-size: 16px; line-height: 1.5; font-weight: 650; }
+    .report-answer { margin: 16px 0 24px; padding: 12px 16px; border-left: 3px solid #2563eb; background: #eff6ff; }
+    .report-answer .report-label { color: #1d4ed8; }
+    .report-answer .report-takeaway { color: #1e3a8a; }
+    .report-answer > :last-child { margin-bottom: 0; }
+    .report-label { display: block; margin: 0 0 8px; color: #525252; font-size: 12px; font-weight: 650; }
+    .report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 16px 24px; margin: 16px 0; }
+    .report-grid > section { min-width: 0; padding-top: 12px; border-top: 1px solid #d4d4d4; }
+    .report-grid > .report-observation { border-top-color: #2563eb; }
+    .report-observation .report-label { color: #1d4ed8; }
+    .report-grid h3 { margin-top: 0; }
+    .report-grid > section > :last-child { margin-bottom: 0; }
+    .report-diagram { overflow-x: auto; padding: 8px 0; }
+    .report-diagram svg { max-width: none; margin: 0 auto; }
+    .report-diagram:focus-visible { outline: 2px solid #171717; outline-offset: -2px; }
+    .report-flow { display: grid; grid-template-columns: 1fr; gap: 28px; padding: 0; list-style: none; }
+    .report-flow > li { position: relative; margin: 0; padding: 12px; border: 1px solid #d4d4d4; border-radius: 8px; }
+    .report-flow > li:not(:last-child)::after { content: "↓"; position: absolute; left: 12px; bottom: -25px; color: #737373; }
+    .report-flow strong { display: block; margin-bottom: 6px; }
+    .report-flow p { margin: 0; }
+    .report-flow .report-context { margin-bottom: 4px; }
+    .report-comparison th { white-space: nowrap; }
+    .evidence-limit, .design-suggestion { margin: 12px 0; padding: 10px 14px; border-left: 3px solid; }
+    .evidence-limit { border-left-color: #d97706; background: #fffbeb; }
+    .evidence-limit > strong { color: #92400e; }
+    .design-suggestion { border-left-color: #0f766e; background: #f0fdfa; }
+    .design-suggestion .report-label { color: #0f766e; }
+    @media (max-width: 720px) { main { width: calc(100% - 28px); padding-top: 16px; } table { display: block; overflow-x: auto; } }
+    @media print { main { width: 100%; padding: 0; } figure { break-inside: avoid; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>收到申请，何时才算确认预订？</h1>
+    <p class="report-context">合成阅读示例 · 虚构的场地预订场景；没有开展外部调研，不代表任何产品或用户的事实。</p>
+  </header>
+
+  <section class="report-answer" aria-label="示例的设计判断">
+    <span class="report-label">设计判断 · 基于下方虚构情境</span>
+    <p class="report-takeaway">把“收到申请”与“确认预订”分开，让申请人看清承诺在哪一步成立。</p>
+    <p>在需要人工核实的情境中，先展示等待原因和下一步；需要补充信息时回到同一申请，避免让人误以为已经预订成功。</p>
+  </section>
+
+  <h2>先分清记录了什么、承诺了什么</h2>
+  <div class="report-grid">
+    <section class="report-observation">
+      <span class="report-label">情境设定 · 用于示意</span>
+      <h3>申请已收到，仍需核实</h3>
+      <p>申请包含场地与时段，但信息可能不完整。这个设定只说明“有一条申请”，不表示时段可用或预订成功。</p>
+    </section>
+    <section>
+      <span class="report-label">解释 · 依赖上述设定</span>
+      <h3>等待需要有明确含义</h3>
+      <p>在这个情境中，把等待显示成成功会模糊承诺边界；下一步由谁处理、申请人是否需要补充，应与当前状态一起说明。</p>
+    </section>
+  </div>
+
+  <h2>补充后回到哪里，要在流程里看见</h2>
+  <figure aria-labelledby="process-caption">
+    <div class="report-diagram" role="region" aria-label="虚构预订流程，可横向滚动" tabindex="0">
+      <svg xmlns="http://www.w3.org/2000/svg" width="560" height="264" viewBox="0 0 560 264" role="img" aria-labelledby="process-title process-desc">
+        <title id="process-title">申请、核实、补充与确认的虚构机制</title>
+        <desc id="process-desc">收到申请后进入等待核实；信息充分且时段可用时确认预订。信息不足时补充信息，再回到同一申请的等待核实。时段不可用则明确告知未确认。这是设计示意，不是观察到的产品行为。</desc>
+        <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#525252"/></marker></defs>
+        <g fill="none" stroke="#525252" stroke-width="1.5" marker-end="url(#arrow)">
+          <path d="M160 54H208"/>
+          <path d="M350 54H396"/>
+          <path d="M279 84V146"/>
+          <path d="M350 178H374V70H350"/>
+        </g>
+        <g fill="#fafafa" stroke="#d4d4d4">
+          <rect x="18" y="24" width="142" height="60" rx="8"/>
+          <rect x="208" y="24" width="142" height="60" rx="8"/>
+          <rect x="396" y="24" width="142" height="60" rx="8" fill="#eff6ff" stroke="#2563eb"/>
+          <rect x="208" y="146" width="142" height="64" rx="8"/>
+        </g>
+        <g fill="#171717" font-family="sans-serif" font-size="14" text-anchor="middle">
+          <text x="89" y="49" font-weight="650">收到申请</text><text x="89" y="70" fill="#525252">已记录使用意向</text>
+          <text x="279" y="49" font-weight="650">等待核实</text><text x="279" y="70" fill="#525252">尚未作出承诺</text>
+          <text x="467" y="49" font-weight="650">确认预订</text><text x="467" y="70" fill="#525252">承诺在此成立</text>
+          <text x="279" y="173" font-weight="650">补充信息</text><text x="279" y="195" fill="#525252">保留同一申请</text>
+        </g>
+        <g fill="#525252" font-family="sans-serif" font-size="12">
+          <text x="367" y="15" text-anchor="middle">信息充分且时段可用</text>
+          <text x="290" y="120">信息不足</text>
+          <text x="390" y="128">补充后重新核实</text>
+          <text x="18" y="247">时段不可用 → 明确告知未确认；不沿用“等待”暗示成功。</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption id="process-caption">图中的分支与回路是完整标注的虚构方案，用来展示关系；真实报告应把机制与条件连接到精确来源，并区分观察与建议。</figcaption>
+  </figure>
+
+  <h2>对照承诺边界，而不只是罗列状态</h2>
+  <table class="report-comparison" tabindex="0" aria-label="虚构预订状态的含义比较">
+    <caption>同一维度下比较：哪一步让人可以据此安排行动？</caption>
+    <thead><tr><th scope="col">示例状态</th><th scope="col">已经成立</th><th scope="col">尚不能认定</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">收到申请</th><td>意向已被记录</td><td>时段可用、预订成功</td></tr>
+      <tr><th scope="row">等待核实 / 补充</th><td>申请仍在处理；能看见下一步</td><td>承诺已经成立、等待多久</td></tr>
+      <tr><th scope="row">确认预订</th><td><strong>本次预订承诺已成立</strong></td><td>取消条件、通知方式或历史保存规则</td></tr>
+    </tbody>
+  </table>
+
+  <div class="design-suggestion">
+    <span class="report-label">设计建议 · 有条件采用</span>
+    <p><strong>需要核实时，保留清楚的等待与补充路径。</strong>如果真实业务允许即时确认，就不应照搬这段等待流程。是否人工核实、由谁处理，以及取消与历史规则，仍应由真实目标和证据决定。</p>
+  </div>
+  <div class="evidence-limit"><strong>证据边界：</strong>本例没有真实来源、统计或采访结果；以上设定、解释和建议均为合成示意。真实报告应在相关判断、表格和流程旁保留来源与适用范围，不能把这一示例当作已确认需求。</div>
+
+  <h2>结论</h2>
+  <p>先让人看清承诺边界，再决定如何表达状态与下一步。视觉组织帮助读者比较含义和追踪路径，不能替代对真实业务规则的确认。</p>
+</main>
+</body>
+</html>

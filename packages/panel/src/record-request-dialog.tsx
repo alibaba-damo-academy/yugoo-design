@@ -24,7 +24,12 @@ export function RecordRequestDialog({ node, manifest, options, onClose }: {
   const sending = useRef(false)
   const writable = !!options?.editable && !!options.sendPrompt && fields.every(field => field && !field.readonly && !field.hidden)
   const valid = fields.every(field => (!field.required || values[field.key]?.trim()) && (!field.options || field.options.some(option => option.value === values[field.key])))
-  useEffect(() => { const element = dialog.current!; element.showModal(); return () => element.close() }, [])
+  useEffect(() => {
+    const element = dialog.current!
+    element.showModal()
+    element.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('form input:enabled, form textarea:enabled, form select:enabled')?.focus()
+    return () => element.close()
+  }, [])
   return <dialog ref={dialog} className="dsh-record-request-dialog" aria-labelledby={`${node.id}-request-title`} onCancel={event => { event.preventDefault(); if (!sending.current) onClose() }}>
     <header><h2 id={`${node.id}-request-title`}>{t('addItem', { item: section.item_name ?? section.title })}</h2><button type="button" aria-label={t('cancel')} disabled={pending} onClick={onClose}><X size={18} /></button></header>
     <form onSubmit={async event => {

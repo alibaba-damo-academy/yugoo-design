@@ -51,7 +51,7 @@ test('image hydration mounts a new experience document while unchanged polling r
     assert.notEqual(hydrated, initial, 'changed srcdoc mounts a fresh iframe')
     assert.match(hydrated.srcdoc, /data:image\/png;base64,YQ==/)
     assert.equal(hydrated.title, initial.title, 'semantic section remains selected')
-    assert.equal(hydrated.getAttribute('sandbox'), 'allow-scripts')
+    assert.equal(hydrated.getAttribute('sandbox'), 'allow-scripts allow-forms')
     assert.equal(hydrated.getAttribute('referrerpolicy'), 'no-referrer')
     assert.equal(policy(hydrated), initialPolicy, 'hydration cannot loosen CSP')
     assert.match(initialPolicy, /connect-src 'none'/)

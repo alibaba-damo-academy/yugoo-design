@@ -1,5 +1,11 @@
 # role_access output contract
 
+## Record IDs
+
+For new roles prefer `ROLE-001`, new policies `AP-001`, and new inheritance records `RI-001`, continuing each type separately. Preserve the actual role endpoints and requirement/assignment tokens.
+
+Existing IDs, including older formats, remain valid during ordinary edits and reconstruction. If the user explicitly requests business renumbering, revise actual record keys/IDs and current references/orders together through their existing owners; keep technical IDs and history unchanged. Names and titles remain readable content, separate from identity.
+
 For canvas generation or revision, read [the canvas guide](canvas-guide.md).
 It supplements the existing methods and output contract; it applies to both
 new design and reconstruction without replacing domain-specific rules.
@@ -14,6 +20,13 @@ required facts that cannot be represented rather than fabricating a value.
 
 Roles represent permission sets, not job descriptions or flow participants. Preserve actual access behavior rather than improving its least-privilege policy during restoration. The model uses one current role per identity in context; report multi-role composition or other unrepresentable semantics instead of silently flattening them. A missing permission in inspected evidence does not prove source denial; the panel’s unlisted-operation convention must not become a claim about unexamined source behavior.
 
+Author new business text in the language requested for the design, otherwise in
+the established project language (or the current request's language for a new
+project). This includes titles, custom assignment rules, capabilities, conditions
+and descriptions. Keep IDs, enum values and the assignment presets below exact.
+Preserve unaffected saved wording; a UI language change does not translate user
+content. Reconstruction retains source wording unless translation is requested.
+
 ## Output contract
 
 Persist the role and policy evidence, with optional explicit inheritance edges:
@@ -27,19 +40,25 @@ Do not create persona, responsibility, role-conflict, shared-policy, access-scop
 
 ### 3. State how each role is obtained
 
-Write one self-contained `assignment_rule`:
+Write one self-contained `assignment_rule`. The two existing radio presets have
+stable stored values and localized display labels:
 
-- `注册后自动拥有` for the ordinary registered-user role;
-- `由管理员授予` when an authorized administrator explicitly assigns it;
-- otherwise write one natural rule, such as `受邀加入项目后拥有，离开项目时失去`.
+| Stored value (keep exact) | Meaning |
+| --- | --- |
+| `注册后自动拥有` | Automatically granted after registration. |
+| `由管理员授予` | Explicitly granted by an authorized administrator. |
 
-Do not store the option label `其他`; store the actual rule. Do not describe what the role does in `assignment_rule`.
+Use a preset only when its meaning matches the evidence. Otherwise write the
+actual rule in the design's authoring language, such as “Granted on joining the
+project; revoked on departure.” Do not store the localized Other option label
+or describe what the role does in `assignment_rule`. Preserve existing preset
+values and custom rules on unrelated edits.
 
 ### Permission decisions
 
 Record the evidenced local operations for each role. Each policy belongs to exactly one role through `role_ref`; never share its ownership between roles. For independent roles with similar operations, use separate local records so their target range and later edits remain independent. When explicit inheritance is evidenced, retain the policy at its original owner and refer through the parent edge instead of copying it.
 
-Write `capability` as one natural user-facing phrase. Do not split it into technical resource/action fields and never expose strings such as `approve:business_data:order`, endpoint names, or code symbols. Set `title` to a readable summary of the decision, normally `允许{capability}` or `禁止{capability}`; it is record metadata, not a second permission concept shown for user input.
+Write `capability` as one natural user-facing phrase. Do not split it into technical resource/action fields and never expose strings such as `approve:business_data:order`, endpoint names, or code symbols. For a new or revised capability, set `title` to that same operation phrase. The separate `effect` field records and displays allow/deny; do not add a language-specific effect prefix to the title. This derived title is record metadata, not a second permission concept shown for user input. Preserve unaffected saved titles.
 
 The panel models explicit permission decisions, with unlisted operations implicitly denied in that model. This convention does not establish source behavior when evidence coverage is incomplete.
 
@@ -49,7 +68,7 @@ The panel models explicit permission decisions, with unlisted operations implici
 
 ### 5. Add one applicability sentence only when needed
 
-Leave `applies_when` empty when the decision applies to every instance and state relevant to the role. Otherwise combine target range and runtime condition into one plain-language sentence, for example `仅限自己负责的客户，且客户仍在跟进中`.
+Leave `applies_when` empty when the decision applies to every instance and state relevant to the role. Otherwise combine target range and runtime condition into one plain-language sentence, for example “Only assigned customers while follow-up is active.”
 
 Use this field for ownership, workspace boundary, record relationship, lifecycle state, amount threshold, or another established condition. Do not create separate scope and condition records. Do not hide a second permission inside the condition.
 
@@ -57,11 +76,22 @@ Use this field for ownership, workspace boundary, record relationship, lifecycle
 
 `requirements` may contain:
 
-- `confirm`: ask the user to confirm immediately before the operation;
+- `confirm`: show a separate confirmation prompt immediately before performing the capability;
 - `reauthenticate`: verify the user's identity again;
 - `custom`: perform the plain-language step in `custom_requirement`.
 
-Record these when the allowed operation has that verification, regardless of its perceived risk. When `custom` is absent, leave `custom_requirement` empty. These steps do not grant permission; they are additional checks after the role is already allowed to act.
+Record these when a requirement, agreed design decision, or observed behavior
+establishes that independent verification for the allowed operation, regardless
+of its perceived risk. Business approval, sign-off, or choosing
+Approve/Return/Reject is the operation itself; neither its label nor its impact
+establishes another confirmation prompt. Preserve independently evidenced
+verification during reconstruction.
+
+A required Return reason belongs in `custom` with its explanation in
+`custom_requirement`; assignment and lifecycle limits belong in `applies_when`.
+Neither implies `confirm`. When `custom` is absent, leave `custom_requirement`
+empty. These steps do not grant permission; they are additional checks after
+the role is already allowed to act.
 
 ### Optional single-parent inheritance
 
@@ -100,27 +130,32 @@ wording or string equality. Reconstruction reports multi-parent/multi-role or
 unknown precedence as unsupported/uncertain rather than silently flattening it.
 Both form and canvas operate on the same edges and original policies.
 
-Read [the synthetic inheritance example](example.json) only for representation;
-it is not user authorization evidence. The flat example below remains valid.
+Read [the synthetic Chinese-language inheritance example](example.json) only for
+representation; its wording does not select a project's language and it is not
+user authorization evidence. The flat English-language example below remains valid.
 
 ## State contract
 
 Write `RoleAccessState` in this shape; the generated schema remains authoritative for exact types:
 
+This example assumes that a requirement, agreed design decision, or observed
+behavior independently establishes a confirmation prompt before removing a
+project member; removal alone does not imply that prompt.
+
 ```json
 {
   "schema_version": 5,
-  "title": "项目协作角色权限",
-  "summary": "成员维护自己的任务，管理员负责成员与空间设置。",
+  "title": "Project Roles and Access",
+  "summary": "Members maintain their own tasks; administrators manage members and workspace settings.",
   "roles": {
     "project-member": {
       "id": "project-member",
-      "title": "项目成员",
-      "assignment_rule": "受邀加入项目后拥有，离开项目时失去"
+      "title": "Project Member",
+      "assignment_rule": "Granted on joining the project; revoked on departure"
     },
     "workspace-admin": {
       "id": "workspace-admin",
-      "title": "空间管理员",
+      "title": "Workspace Administrator",
       "assignment_rule": "由管理员授予"
     }
   },
@@ -128,21 +163,21 @@ Write `RoleAccessState` in this shape; the generated schema remains authoritativ
   "policies": {
     "member-edit-own-task": {
       "id": "member-edit-own-task",
-      "title": "允许编辑自己负责的任务",
+      "title": "Edit assigned tasks",
       "role_ref": "project-member",
-      "capability": "编辑自己负责的任务",
+      "capability": "Edit assigned tasks",
       "effect": "allow",
-      "applies_when": "仅限任务未完成时",
+      "applies_when": "Only while the task is unfinished",
       "requirements": [],
       "custom_requirement": ""
     },
     "admin-remove-member": {
       "id": "admin-remove-member",
-      "title": "允许移除项目成员",
+      "title": "Remove project members",
       "role_ref": "workspace-admin",
-      "capability": "移除项目成员",
+      "capability": "Remove project members",
       "effect": "allow",
-      "applies_when": "仅限自己管理的空间",
+      "applies_when": "Only within an administered workspace",
       "requirements": ["confirm"],
       "custom_requirement": ""
     }
@@ -172,15 +207,15 @@ Use stable IDs and keep map keys equal to each record's `id`. Keep every live ID
 ### Common mistakes
 
 ```text
-Wrong: role = “销售经理”, responsibilities = “管理团队业绩”
-Right: role = “销售经理”, assignment_rule = “由管理员授予”, policies = “查看团队客户”“审批折扣申请”
+Wrong: role = “Sales Manager”, responsibilities = “Manage team performance”
+Right: role = “Sales Manager”, assignment_rule = “由管理员授予” (stable preset), policies = “View team customers” and “Approve discount requests”
 
 Wrong: capability = “approve:business_data:order”
-Right: capability = “审批订单”
+Right: capability = “Approve orders”
 
-Wrong: one shared “查看订单” policy points to both salesperson and manager
-Right: salesperson gets “查看自己负责的订单”; manager gets a separate “查看团队订单” policy
+Wrong: one shared “View orders” policy points to both salesperson and manager
+Right: salesperson gets “View assigned orders”; manager gets a separate “View team orders” policy
 
 Wrong: generate denies for every omitted operation
-Right: omit unavailable operations; add an explicit deny only for a grounded prohibition such as “审批自己提交的申请”
+Right: omit unavailable operations; add an explicit deny only for a grounded prohibition such as “Approve one's own request”
 ```

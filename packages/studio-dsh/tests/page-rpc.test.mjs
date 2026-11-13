@@ -52,7 +52,7 @@ function serverResponse(request, result) {
 }
 
 // Desktop's custom scheme may have an opaque origin. Both representations must
-// keep the six read methods on the protocol proxy; Web retains its own origin.
+// keep read methods on the protocol proxy; Web retains its own origin.
 {
   const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'location')
   try {
@@ -170,8 +170,8 @@ function serverResponse(request, result) {
   await remote.readBundleFile('flows', 'SKILL.md', '1.0')
   assert.deepEqual(JSON.parse(fetchSpy.calls[1].init.body).payload,
     { args: { name: 'flows', path: 'SKILL.md', version: '1.0' } }, 'exact Bundle version survives the transport')
-  // The public Remote surface is exactly the six read-only methods.
-  assert.deepEqual(Object.keys(remote).sort(), ['readBundleFile', 'readBundleWorkspace', 'readKitFile', 'readKitFiles', 'readKitWorkspace', 'workspace'], 'no mutation method exists on the page Remote')
+  // The public Remote surface contains only inspection and isolated sample reads.
+  assert.deepEqual(Object.keys(remote).sort(), ['previewInstalled', 'readBundleFile', 'readBundleWorkspace', 'readKitFile', 'readKitFiles', 'readKitWorkspace', 'workspace'], 'no mutation method exists on the page Remote')
 }
 
 // Outer gateway failures converge on code/message and drop host details.

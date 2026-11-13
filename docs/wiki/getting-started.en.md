@@ -98,14 +98,14 @@ Continue from the scope rule I just saved. Explain which flows, permissions and 
 Start with the single most useful issue to address now, so I can decide what to do next.
 ```
 
-The saved design is the basis for your next discussion with the Agent. Reopening the Panel should show the saved values, and the original session should continue from the updated content. If saving or continuation fails, record which step failed and consult [troubleshooting](troubleshooting.md). Follow the [customer project delivery tutorial](web-app-demo.en.md) through this round, and use the [official Kit user guide](official-kits.md) for other design activities.
+The saved design is the basis for your next discussion with the Agent. Reopening the Panel should show the saved values, and the original session should continue from the updated content. If saving or continuation fails, record which step failed and consult [troubleshooting](troubleshooting.md). Follow the [customer project delivery tutorial](web-app-demo.en.md) through this round, and use the [official Kit user guide](official-kits.en.md) for other design activities.
 
 ## Continue after your first session
 
 | What you want to do now | What to say or do | Details |
 | --- | --- | --- |
-| Explore a design dimension | Request a specific feature, flow, data model, page or another result supported by the current Kit | [Kit user guide](official-kits.md) |
-| Decide what to do next | "Given the goals and saved design, explain the most useful gap to address and the evidence for it." | [Clarity and core mechanisms](concepts.md) |
+| Explore a design dimension | Request a specific feature, flow, data model, page or another result supported by the current Kit | [Kit user guide](official-kits.en.md) |
+| Decide what to do next | "Given the goals and saved design, explain the most useful gap to address and the evidence for it." | [Clarity and core mechanisms](concepts.en.md) |
 | Explore connections or request proactive review | "Which rules does this flow change affect? Check it against the existing design." | [Usage guide](usage.en.md#3-handle-suggestions) |
 | Continue a project, inspect changes or migrate an old project | Open the project from the installed entry point; specify the original and target scope for migration | [Project management and recovery](usage.en.md#4-manage-and-recover-projects), [all commands](commands.md) |
 | Add design materials from existing code | Give the absolute repository path and this round's scope, then ask the Agent to reconstruct the current design | [Reconstruction guide](usage.en.md#5-reconstruct-a-design-from-existing-materials) |

@@ -1,7 +1,7 @@
 /** Shared DSH browser adapter values, independently testable from client boot. */
 import { useSyncExternalStore, type CSSProperties, type ReactElement } from 'react'
 import type { SettingsSectionOwnerProps } from '@deepseek-ai/dsh-client-ui-settings/client'
-import type { StudioManagementClient } from 'dsh-design-studio-ui'
+import type { StudioManagementClient, StudioAuthoringClient } from 'dsh-design-studio-ui'
 import { isDshDesktopLocation, STUDIO_PAGE_BASE, studioConversationReturnPath } from './page-path.ts'
 
 interface LocaleSnapshot {
@@ -49,6 +49,7 @@ export type DshRemoteResult<T> =
 
 /** Remote namespace methods used by the Studio client. */
 export interface DshStudioRemote {
+  previewInstalled?(input: Parameters<NonNullable<StudioAuthoringClient['previewInstalled']>>[0]): Promise<DshRemoteResult<Awaited<ReturnType<NonNullable<StudioAuthoringClient['previewInstalled']>>>>>
   workspace(query: string): Promise<DshRemoteResult<Awaited<ReturnType<StudioManagementClient['workspace']>>>>
   readKitWorkspace(name: string, version: string): Promise<DshRemoteResult<Awaited<ReturnType<StudioManagementClient['readKitWorkspace']>>>>
   readKitFiles(name: string, version: string): Promise<DshRemoteResult<Awaited<ReturnType<NonNullable<StudioManagementClient['readKitFiles']>>>>>
@@ -65,6 +66,7 @@ export function createDshStudioClient(remote: DshStudioRemote): StudioManagement
     return settled.value
   }
   return Object.freeze({
+    ...(remote.previewInstalled ? { previewInstalled: (input: Parameters<NonNullable<StudioAuthoringClient['previewInstalled']>>[0]) => unwrap('previewInstalled', remote.previewInstalled!(input)) } : {}),
     workspace: (query: string) => unwrap('workspace', remote.workspace(query)),
     readKitWorkspace: async (name: string, version: string) => {
       const result = await unwrap('readKitWorkspace', remote.readKitWorkspace(name, version))

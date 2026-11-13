@@ -10,19 +10,22 @@ description: |-
 
 # Research
 
+See the [record ID guidance](reference/artifact-contract.md#record-ids) for this Bundle's numbering suggestions and existing identity boundaries.
+
 ## How this skill runs
 
-Research has a planned handoff. The first Producer run uses project-scoped
+Research has a planned handoff. The active executor (main conversation or isolated Producer, as selected by
+`execution.mode`) uses project-scoped
 `list` and `read` tools to inspect `research/research.json`, the owned
 findings/conclusion artifacts relevant to its active rounds, and related
 upstream evidence. With no prior round it creates and persists the initial plan,
 lets the polling panel read that current file immediately, and calls
 `design_publish({action:"handoff"})` once for the declared user-continue pause. After
-the user starts that exact plan, the Producer owns the complete research run.
+the user starts that exact plan, the executor owns the complete research run.
 Treat pending directions as independent unless one explicitly depends on
 evidence produced by another. When the current independent dependency frontier
 contains two or more directions and `design_delegate_frontier` is available, the
-Producer submits that complete ordered frontier in one call. The Host atomically
+executor submits that complete ordered frontier in one call. The Host atomically
 validates and claims every id/path before starting any Worker, applies its own
 bounded concurrency, and returns every item in request order after all have
 settled. Use `design_delegate` for one direction, or as the compatibility
@@ -31,77 +34,101 @@ together without awaiting one before dispatching the next. The frontier, rather
 than a fixed Worker count, determines the batch. Dependent directions run in a
 later frontier, and the conclusion runs only after every direction has accepted
 findings or a settled Host attempt. When delegation is unavailable, or when a
-Worker fails, is cancelled, or was not started, the Producer researches that
-direction itself. This remains foreground work:
-`run_design_skill` and the calling main-Agent turn stay pending until the
-Producer settles.
+Worker fails, is cancelled, or was not started, the executor researches that
+direction itself. This remains attached foreground work. Main placement publishes explicitly
+from the current conversation; subagent placement keeps the calling
+`run_design_skill` pending until its executor settles.
 
-All Producer mutations use `write` or `edit` against the current Bundle-owned
+All executor mutations use `write` or `edit` against the current Bundle-owned
 working copy. They never use host filesystem or shell access.
 
 - **Plan.** Maintain the complete plan state in `research/research.json`: rounds
   with directions (`title` + `research_points`) and deterministic direct
   artifact paths for new work. Preserve explicit source limits, allowed source
-  types, product scope and exclusions in the affected direction's existing
+  types, product scope, exclusions and requested report language in the affected direction's existing
   `research_points`, alongside its questions, so the saved plan retains the
   complete brief across confirmation, delegation and serial takeover. Do not
-  invent a limit when the user supplied none. The Producer updates its working copy and calls
+  invent a limit when the user supplied none. The executor updates its working copy and calls
   `design_publish({action:"handoff"})` to enter the independently configured gate,
   and the runtime presents `开始调研` / `Start Research`; the user may revise
   the plan before starting it.
-- **Execute.** After confirmation, the Producer handles pending directions and
+- **Execute.** After confirmation, the executor handles pending directions and
   the round conclusion:
-  1. Partition pending directions by evidence dependency. For an independent
-     frontier of two or more directions, call `design_delegate_frontier` once
-     with a new invocation-local `batch_id` and the complete ordered `items`
-     list. Reuse that id only for the exact same ordered items; changed work uses
-     a new id. When only one direction is pending, or when the frontier tool is
-     unavailable, use `design_delegate`; emit independent fallback calls together
-     without waiting between dispatches. Never include the dependent round
-     conclusion in a direction frontier. Do not write transient
+  1. Partition pending directions by evidence dependency and plan the complete
+     ordered frontier. Never include the dependent round conclusion in a
+     direction frontier. Assemble the prompts in step 2 before dispatching.
+     Do not write transient
      queued/working state or execution ids into Design JSON. The Host records
-     Producer and Worker attempts at their real lifecycle boundaries; the panel
+     executor and Worker attempts at their real lifecycle boundaries; the panel
      polls those events and their native session logs for status and rolling
      trace. For serial work, search with `web_search` (and `web_fetch` when
      available) per the brief below.
-  2. Bind every delegated task to its stable `artifact_file`. The Worker writes
-     and repairs only that exact pre-bound artifact path, then returns a receipt
-     containing the path, digest, byte count, and attempt. Read the landed
-     Markdown, then update only that direction with its
-     `findings_file`, digest, and source URLs. Do not rewrite
-     bytes already proven by the receipt. Serial work uses the Producer's normal
-     write tools and the same validation contract.
+  2. Assemble each complete delegated `prompt` before calling the tool. Read
+     `reference/artifact-contract.md` and copy **User bounds and evidence
+     acceptance** and **Findings Markdown** (up to **Conclusion HTML**) into the
+     assignment. These contain the evidence method and exact report outline;
+     neither a remembered outline nor a resource path replaces that content.
+     Keep conclusion-only instructions with the executor.
+
+     > Question and research points: {current direction and relevant product context}.
+     > Source/scope bounds and report language: {the user's complete constraint, or no supplied limit}.
+     > Evidence method and output: {the two contract sections just read}.
+     > No usable source passage: return the failure reason without writing a
+     > findings file or diagnostic-only report. The report outline applies only to
+     > evidence-backed results.
+     > Owned findings file for evidence-backed results: {exact artifact_file}.
+
+     Carry the interpretation and applicability guidance below into the relevant
+     research points; this assignment does not replace those domain judgments.
      Each `design_delegate_frontier.items[]` entry or single `design_delegate`
      call uses `artifact_kind: "research_direction"`,
      `artifact_id` equal to the round-scoped stable ID
      `"{round_id}/{direction_id}"` (for example `"R-002/D-001"`), `artifact_file` equal to
-     that direction's exact findings path, and a complete `prompt` containing
-     the direction brief, research points, trusted-source policy, and findings
-     contract. These explicit arguments are the runtime/panel binding; there is
-     no parallel task declaration in `skill.yaml`. A frontier call is all-settled:
-     integrate every `completed` receipt, then take over each `failed`,
+     that direction's exact findings path, and the complete `prompt` assembled
+     above. These explicit arguments are the runtime/panel binding; there is
+     no parallel task declaration in `skill.yaml`.
+     For an independent frontier of two or more directions, call
+     `design_delegate_frontier` once with a new invocation-local `batch_id` and
+     the complete ordered `items` list. Reuse that id only for the exact same
+     ordered items; changed work uses a new id. When only one direction is
+     pending, or when the frontier tool is unavailable, use `design_delegate`;
+     emit independent fallback calls together without waiting between dispatches.
+     A frontier call is all-settled:
+     review every `completed` candidate before integration, then take over each `failed`,
      `cancelled`, or `not_started` item serially. Do not ask the Host to retry it.
+     The Worker writes and repairs only its exact pre-bound artifact path, then
+     returns a receipt containing the path, digest, byte count, and attempt.
+     Before updating `findings_file` or source URLs, apply the contract's
+     evidence acceptance to the landed report: read it, verify material claims
+     against original passages, and reconcile its complete source set. The
+     receipt proves bytes, not evidence quality; do not rewrite the file merely
+     to reproduce receipt-proven bytes. Serial work uses the same evidence
+     method, acceptance and validation with the executor's normal write tools.
   3. After all directions, read the working-copy findings and author the round's conclusion
      HTML, verify that every external citation occurs in the settled direction
      findings and uses a descriptive source title, then write
      `research/{round_id}/conclusion.html` and the matching `conclusion_file` in
-     the same WorkingCopy. Call `design_validate({outcome:"complete"})`, repair
+     the same WorkingCopy. Run the read-only current-round file check described
+     in [the output contract](reference/artifact-contract.md#check-the-current-rounds-source-sets)
+     against those exact files. Repair its source-set diagnostics and compare
+     its distinct citation counts with the user's applicable bounds; the check
+     does not verify source truth or pages opened. Call `design_validate({outcome:"complete"})`, repair
      every diagnostic in that same WorkingCopy, and then call
      `design_publish({action:"complete"})`.
 
   A delegated Worker has no general Design Files mutation authority. It can
   write and repair only the artifact path pre-bound in its task; it never
   writes canonical JSON. Available read-only tools can inspect relevant source
-  evidence when the brief has a material gap. The foreground Producer preserves settled directions,
+  evidence when the brief has a material gap. The foreground executor preserves settled directions,
   integrates the returned receipts, runs Bundle validation over the complete
   round, and decides whether more work is required.
-  A failed or unavailable delegation is a reason for the Producer to
+  A failed or unavailable delegation is a reason for the executor to
   take over that direction, not a reason to abandon the round or persist an
-  attempt status. If the Producer's own evidence attempt also fails, leave the
+  attempt status. If the executor's own evidence attempt also fails, leave the
   direction without a findings ref and name the gap in the partial conclusion.
   Cancellation leaves unfinished work resumable.
 
-  Focus binds serial Producer execution to an artifact; it is not authored
+  Focus binds serial executor execution to an artifact; it is not authored
   Design state or artifact-acceptance evidence.
   Do not call it for a task passed to `design_delegate` or
   `design_delegate_frontier`; delegated activity is observed automatically.
@@ -112,10 +139,16 @@ working copy. They never use host filesystem or shell access.
   same kind, round-scoped ID, and file that would have been passed to
   `design_delegate`.
 
-- **Tool adaptation.** `web_search` availability depends on the host's web seam
-  configuration; `web_fetch` is off by default. The host's native web tools
-  return URLs, so findings carry ordinary Markdown links copied exactly from those
-  tool results. When live evidence cannot be retrieved, leave the direction
+- **Tool adaptation.** Use the search/fetch capabilities exposed by the current
+  Host; do not assume a particular tool configuration. Findings carry ordinary
+  Markdown links copied exactly from actual retrieval results. Distinguish retrieval failure from a Host-truncated result:
+  navigation-only excerpts may omit the article body. Recover the relevant
+  sections through available native tools or retained original results before
+  declaring the evidence unavailable; avoid repeatedly fetching the same whole page.
+  Findings use portable Markdown headings, lists, tables and links; do not use
+  HTML badges or CSS classes, which their view displays as text. Self-contained
+  HTML belongs only in the conclusion artifact.
+  When live evidence cannot be retrieved, leave the direction
   unaccepted and keep the evidence gap open. Do not turn model knowledge or an
   authentication-error report into findings, and never invent a URL.
 
@@ -125,7 +158,7 @@ the requested change with the current canonical state and owned artifacts.
 Prefer a targeted edit: preserve every unchanged `findings_file`, accepted
 round, source, and direct reference. Clear only an affected direction's
 `findings_file` when it must be researched again, and clear that round's
-`conclusion_file` so the Producer synthesizes the updated evidence. Regenerate
+`conclusion_file` so the executor synthesizes the updated evidence. Regenerate
 an entire round only when its topic or evidence basis materially changed.
 
 ## When to use
@@ -153,36 +186,37 @@ the current product or requested exploration. Express this in the existing
 `research_points`, not extra plan fields. Broad landscape research can discover
 useful questions; it need not pretend the user has already chosen a solution.
 
-### Honor the user's evidence bounds
+For each material claim, identify what would establish it, read the relevant
+original passage and check its scope and contrary evidence. Source priority
+selects where to look; it does not prove everything about that product. Silence
+on a page means unverified by that page, not absence from the product. A negative
+capability claim needs evidence ruling it out within the stated scope. Keep a
+short supporting passage or precise section locator beside the finding; a URL,
+search snippet, error or unread truncation is not that evidence.
 
-The user's source limit is an acceptance condition for the requested output,
-separate from the Host's tool/time/token budget. Carry the complete current
-constraint into every Worker brief. Before serial research or taking over a
-failed Worker, reread the saved direction and apply the same constraint; a failed
-attempt does not permit a larger source set or broader product scope.
+When revising research, cover the current user's requested reports and conclusion,
+not just the caller's provisional diagnosis. Treat an assertion that another
+report needs no changes as a hypothesis to verify, not prior acceptance. Preserve
+supported observations; correct unsupported claims everywhere they occur,
+including the overview, comparison cells and conclusion. A local citation fix
+cannot establish the unchanged text's accuracy.
 
-For a limit on report sources, count distinct cited document URLs across the
-findings and its `信息来源` section, not domains, repeated citations or search
-result counts. For example, “at most two first-party sources per direction”
-permits at most two distinct first-party document URLs in that direction's
-findings and matching `source_urls`. It does not mean two websites with unlimited
-pages, nor two new sources in addition to retained ones. A limit on pages opened
-or tool calls instead applies before retrieval; follow the user's actual wording.
+Reconcile the report's distinct cited document URLs, including inline citations,
+with its bibliography and canonical `source_urls`, within the user's stated
+source cap. Two pages on one site are two sources; repeated use of one URL is
+one. A tool-call limit is a different bound. Do not invent either limit. Read
+landed reports and the original passages supporting material conclusions before
+accepting them; a successful file receipt or schema validation proves neither
+source support nor evidence quality. Apply the same evidence strength when
+synthesizing the round conclusion.
 
-Before integrating a Worker receipt or publishing serial findings, inspect the
-landed report against the current direction's questions and bounds. If it exceeds
-the source limit, keep the strongest permitted evidence and revise or qualify
-every claim that depended on a removed source. Update inline links, the source
-list and `source_urls` together; trimming only JSON or the bibliography does not
-repair an over-budget report. Regenerate the affected round conclusion from the
-accepted findings without adding external sources. If the permitted evidence
-cannot support the requested answer, keep that limitation explicit rather than
-silently adding a source. Report the actual per-direction source counts and any
-unmet bound in the handoff. Ordinary Bundle validation does not mechanically
-interpret these free-text constraints; passing it never waives this review.
+[User bounds and evidence acceptance](reference/artifact-contract.md#user-bounds-and-evidence-acceptance)
+retains these requirements in the readable output contract for reconstruction and
+delegated assignments. Worker self-check and executor acceptance are separate
+responsibilities.
 
-Apply the same evidence standard to every statement, including headings,
-table cells, chart labels and recommendation reasons:
+Distinguish observation, inference and recommendation throughout the report,
+including headings, table cells, chart labels and recommendation reasons:
 - An observation says only what the source establishes, within its context.
 - An inference explains its basis and conditions where it appears. A known
   mechanism does not establish user success, comparative quality or measured
@@ -227,7 +261,7 @@ The `research` panel holds one or more rounds, each with direction findings and 
 grounded conclusion. Findings and conclusions are file-backed through direct
 `findings_file` and `conclusion_file` references. Canonical records describe
 planned or accepted results; queued/working/attempt failure comes from durable
-Host execution events, never Agent-authored JSON or Git. The Producer owns canonical JSON and publication;
+Host execution events, never Agent-authored JSON or Git. The executor owns canonical JSON and publication;
 optional Workers write and validate only their pre-bound artifact file, then
 return its receipt.
 
@@ -235,7 +269,7 @@ return its receipt.
 
 **HR-1 (no premature handoff)**: Do NOT emit any next-skill / build suggestion (`function_modules`, `flow_design`, `直接开发`, etc.) until the current round has a readable `conclusion_file` produced from its current direction set.
 
-**HR-2 (partial failure ≠ skip the round)**: If one or more directions cannot produce findings (searches return nothing usable, or the citation gate keeps rejecting the report after one fix attempt), the round still completes:
+**HR-2 (partial failure ≠ skip the round)**: If a direction has no accepted findings and no successful Worker receipt in the current execution, the round can still complete from its accepted evidence:
 - Leave the direction without a findings ref; the Host attempt retains the failure diagnostic.
 - Synthesize the round conclusion from directions that DID complete; name the
   missing direction gaps and write it to the WorkingCopy. The Panel derives the
@@ -243,7 +277,14 @@ return its receipt.
   execution-result stage.
 - Do NOT silently retry the same direction endlessly in the same turn.
 - Recovery options: continue with the partial conclusion, add a NEW direction in a later plan, or retry the unaccepted direction after clearing the round's `conclusion_file`.
-- After a recovered direction completes, the same Producer run synthesizes a new conclusion from the now-current findings.
+- After a recovered direction completes, the same executor run synthesizes a new conclusion from the now-current findings.
+
+A successful Worker receipt follows the
+[landed-candidate boundary](reference/artifact-contract.md#landed-worker-candidates).
+If the report remains unacceptable after one evidence-supported fix, report this
+execution as unfinished or failed without complete publication. Continue through
+ordinary Owner repair or already-authorized restore in a later execution,
+preserving settled work and receipt history.
 
 Use plain language for conclusions. A comparison need not assign a verdict
 to every option: explain what is known and leave an unsupported dimension
@@ -253,14 +294,14 @@ establishes support for the stated proposition, not as required matrix cells.
 ### Heavy content lives in files, never inline
 
 Findings markdown and round conclusions are LONG. They never appear inline in
-state. The Producer stores direct refs on their owning direction or round, and
+state. The executor stores direct refs on their owning direction or round, and
 the panel reads the selected direction/conclusion from its file on demand.
 
-- **Findings** (per-direction): the assigned Worker or Producer writes validated findings to
+- **Findings** (per-direction): the assigned Worker or executor writes validated findings to
   `research/{round_id}/{direction_id}-{title}.md`
   (e.g. `research/R-001/D-001-拼多多核心商业模式与增长策略.md`) as part of the owned artifact set.
-- **Conclusion** (per-round): a self-contained HTML slide-deck authored from
-  the completed findings. The assigned Worker or Producer writes and
+- **Conclusion** (per-round): a self-contained visual research report authored from
+  the completed findings. The assigned Worker or executor writes and
   validates it at `research/{round_id}/conclusion.html`.
 
 To re-read these artifacts later (for example as downstream design context),
@@ -297,7 +338,7 @@ projection with workspace filesystem or shell reads.
 When prior rounds exist, preserve their complete objects and append the new ID
 to `round_order`; the shortened example shows only the newly added round.
 
-**P2 — Continue digging (extend current round):** the user asks for MORE directions on the current topic. Read `current_round_id`, merge new directions into that round, and write the round with the FULL `direction_order` list (every id, existing + new). The Producer preserves every round and direction in the complete canonical working copy, validates it, and publishes it.
+**P2 — Continue digging (extend current round):** the user asks for MORE directions on the current topic. Read `current_round_id`, merge new directions into that round, and write the round with the FULL `direction_order` list (every id, existing + new). The executor preserves every round and direction in the complete canonical working copy, validates it, and publishes it.
 
 ```json
 {
@@ -331,24 +372,26 @@ to `round_order`; the shortened example shows only the newly added round.
 
 ### Plan review gate
 
-When the plan first lands with the direction list, stop and wait for the user.
-End the turn with a short plan summary and the explicit next step: reply
-`开始调研` to execute, or describe revisions first.
+When the plan first lands, publish the declared handoff and return a short
+summary with the runtime-provided Start Research action. A request to focus,
+add, remove or reorder directions revises the existing plan, preserving the
+rest, then returns to that same review boundary.
 
-A free-form chat request to focus, add, remove, or reorder directions is a current instruction, not a reason to wait: write the revised plan (preserving the rest), then remain at plan review with the updated plan.
+### Research scope
 
-### Research owns all design-time web lookups
-
-Any external-info need that exists to inform a design decision goes through
-`research`, because the output belongs in the research panel's audit trail. A
-small design sometimes warrants just a 1-direction round. Factual lookups that
-do not feed design state (e.g. "今天日元汇率") are answered directly in chat —
-plain `web_search` is fine there; no round needed.
+Use this Bundle when the requested result is durable design research: preserve
+its plan, findings and synthesis in the research panel. A single direction can
+suffice. Users can refine the round topic, direction title and research points
+in the Panel and save them before research or another revision. Read that saved
+plan before executing; editing it does not rewrite an existing report or prove
+that the report answers the revised questions. Ordinary factual answers or an accepted advisory's Host-research route
+follow the current request and shared Host policy; they do not require a round
+or authorize Design File writes.
 
 ## Canonical plan shape
 
-Keep the plan small. **Per direction, author only these 3 fields** — the schema
-defaults handle everything else:
+A new plan needs direction identity, title and research points; file refs may
+remain absent or null until accepted artifacts exist. For example:
 
 ```json
 {
@@ -381,8 +424,8 @@ defaults handle everything else:
 ### Direct artifact refs and revisions
 
 On a new plan, each direction has `findings_file: null`; the round has `stage: "identified"` and
-`conclusion_file: null`. Publication fills these fields only after validating
-and atomically persisting accepted output.
+`conclusion_file: null`. The executor fills these refs only after their artifacts exist and pass
+validation, then publishes the integrated state.
 
 Preserve valid direct refs when revising unrelated plan text. When a direction
 must be researched again, clear only its findings ref and its round conclusion
@@ -390,21 +433,19 @@ ref. Adding or removing a direction also clears
 that round's conclusion ref. Git history provides artifact version history;
 do not maintain integer artifact revisions in Design JSON.
 
-### DO NOT author these fields
+### Populate only supported state
 
-These are **managed by Producer publication and the execution turn** — the
-schema supplies defaults, and the findings/conclusion settlements mutate them
-as the round runs:
+Preserve existing metadata. Do not invent timestamps, counters or execution
+status, or assume publication manufactures Bundle fields. Omit optional metadata
+on a new plan unless an actual source supplies it. `source` describes evidenced
+origin (`analysis`, `user` or `prerequisites`), not execution progress.
 
-| Field | Default | Populated by |
-|---|---|---|
-| `source` | `"analysis"` | leave default unless the direction comes from `prerequisites` or the `user` |
-| `source_urls` | `[]` | extracted from the settled findings' `信息来源` section |
-| `created_at` / `updated_at` | `0` | store-level metadata |
-| `epoch` | `0` | multi-run counter |
-| `findings_file` / `conclusion_file` | `null` | Producer after validated artifact persistence |
-
-**Schema discipline**: invented fields like `direction_name`, `is_selected`, `priority`, `estimated_hours` pollute downstream state and fail validation. Do not invent fields. The schema is exactly the output + managed tables above; nothing more.
+After accepting a validated report, the executor records its exact `findings_file`
+and reconciled `source_urls`; it sets `conclusion_file` after validating the
+synthesis. These refs and source lists are executor-owned canonical fields,
+not automatic side effects of a receipt. The output contract and schema define
+legal fields; do not invent `direction_name`, `is_selected`, `priority` or
+`estimated_hours`.
 
 Before proposing directions, read the current research state. Do not re-propose a direction that already has accepted findings. Artifact refs are durable Design facts; execution status comes only from Host attempts. If the user asks for MORE on accepted research, explicitly clear the affected ref or propose a new direction. Never silently repeat accepted work.
 
@@ -437,77 +478,70 @@ For each direction:
    leave the gap explicit instead of extending the run indefinitely.
 2. Open the most authoritative hits with `web_fetch` when available — search
    snippets alone are incomplete; ground claims in pages you actually opened.
-3. Author the findings markdown below. When working serially, the Producer
+3. Author the findings markdown below. When working serially, the executor
    writes it directly to the owned working copy and validates the citation contract.
    When delegated, include the stable `artifact_file` in the task. The Worker
-   writes and repairs that exact path; the Producer reads the file, checks the
+   writes and repairs that exact path; the executor reads the file, checks the
    receipt, and updates the direction state.
 
-When delegating a direction, include this bounded-evidence policy, the user's
-explicit source/scope constraints, all of that direction's `research_points`,
-and the complete findings contract below in the
-Worker prompt. Search depth must not depend on whether the Producer performs the
-direction itself or delegates it.
+For delegated work, assemble the prompt at **How this skill runs → Execute,
+step 2**, using the confirmed direction and the installed evidence acceptance
+and Findings Markdown sections as specified there. Keep the same evidence depth
+for serial work.
+Search depth must not depend on serial or delegated placement.
 
-**Citations (Host-native Markdown links).** Every factual claim carries an
-inline Markdown link copied exactly from a `web_search` or `web_fetch` result,
-for example `[Official source](https://example.com/report)`. Never mint an SRC
-token: the host does not expose a run-scoped token resolver to this
-research execution. Use the actual result of each successful retrieval tool as
-source evidence; tool arguments, report fields, and generated prose cannot
-self-prove a source. The Worker, or the executor doing serial research, must
-check every findings link and Markdown image URL against the evidence retrieved
-for that direction before writing. The executor rereads every new or changed
-findings artifact and checks its citations against the accepted direction
-evidence before publication; do not assume another Worker's retrieval proves
-this report's claims. Repair placeholders, malformed links, missing source URLs,
-and URLs absent from that evidence in the same owned artifact. If retrieval
-evidence is unavailable, leave the affected finding unaccepted rather than
-claiming that it was verified. These are Agent review responsibilities:
-`design_validate` enforces the installed schema and declared validation rules,
-not a mechanical per-Worker citation-membership ledger. Passing structural
-validation does not establish that a source supports the report's claim.
-If no retrieved source supports a claim, qualify or omit the claim.
+**Citations (Host-native Markdown links).** Copy exact URLs from successful
+retrieval results into ordinary inline Markdown links, for example
+`[Official source](https://example.com/report)`. Never mint an SRC token: the
+Host has no run-scoped token resolver for this research execution. Tool
+arguments and generated report text cannot self-prove a source. Check findings
+links and image URLs against evidence actually retrieved for that direction,
+using the shared contract's evidence acceptance before integration and
+publication. A structural validation pass is not citation or factual verification.
 
 Read [reference/artifact-contract.md](reference/artifact-contract.md) for the shared findings sections, citation representation, conclusion document shape and activity bindings. Include that reference in every delegated brief. Live research still uses the retrieval/evidence policy above.
 
-**No live evidence means failure, not degraded findings.** If `web_search` is
-unavailable or retrieves no usable source after the bounded attempts, leave
+**No live evidence means failure, not degraded findings.** If available retrieval
+tools yield no usable source after the bounded attempts, leave
 that direction without a findings file; the Host attempt retains the reason. A delegated
-Delegation failure is a tool failure, not an accepted artifact candidate. The
-Producer either takes over that direction or leaves it unaccepted after its own
+Worker failure is a tool failure, not an accepted artifact candidate. The
+executor either takes over that direction or leaves it unaccepted after its own
 bounded evidence attempt. Never replace missing
 live evidence with model knowledge, a fabricated URL, or an authentication-error
 report. Other accepted directions may still support a partial round conclusion.
 
-### Round conclusion (HTML slide-deck)
+### Round conclusion (HTML report)
 
 After all directions are settled, read the accepted findings and author ONE
-complete, self-contained HTML document — a readable research synthesis grounded
+complete, self-contained HTML document — a visual research synthesis grounded
 in the findings; never invent numbers/sources. Organize it around the question
-and available evidence, not a mandatory market-report template. The Producer writes it
+and available evidence, not a mandatory market-report template. The executor writes it
 to the round's owned conclusion path and validates it. Keep the canonical round
 stage as the durable `confirmed` decision phase; the Panel derives
 `researching`, `completed`, or `partial` from Host attempts and the accepted
 findings/conclusion references.
 
-Use the conclusion document shape in the shared artifact contract. Its content remains grounded in accepted findings; completion does not authorize new product decisions.
+Before writing a new conclusion, read the installed
+`reference/conclusion-template.html` and `reference/conclusion-example.html`
+with `read_skill_resource`. Use their reading shell and visual organization,
+not the synthetic example's facts. For a revision, compare the existing shell
+with that same resource and preserve unaffected evidence and source links.
+Build the synthesis around the decision the research informs: state a bounded
+answer, show the evidence relationship that makes it understandable, and explain
+the applicable options and remaining unknowns. Choose comparable dimensions for
+alternatives; show meaningful conditions, branches and return paths for a
+mechanism rather than flattening it into a row of steps. A stack of findings,
+identical cards or a table that merely repeats paragraphs is not synthesis.
+Use [Conclusion HTML](reference/artifact-contract.md#conclusion-html) for the
+construction method, semantic report patterns and document shape. Its content
+remains grounded in accepted findings; completion does not authorize new product
+decisions.
 
-## How research changes the design evidence
+## Return findings to the caller
 
-Research adds external evidence about markets, products, users, competitors, and domain conventions, so it typically improves U. It does not automatically create modules, processes, acceptance criteria, or visual decisions; its S/T effect remains potential until the persisted findings themselves support a score change or a later selected skill incorporates them into a concrete design artifact.
-
-After a round, explain what the findings clarified and recommend the most suitable alternatives only when concrete gaps remain. Research does not force a consumer skill or a fixed handoff; the user may choose an additive design step, ask questions, revise the research, or proceed to development when readiness is sufficient.
-
-Common follow-ups (illustrative — **not** an exhaustive whitelist; pick the best match for the current state, including skills not listed and including editing a previously-completed skill):
-
-| Research findings suggest                                       | Likely next move                                                  |
-|-----------------------------------------------------------------|-------------------------------------------------------------------|
-| Domain still ambiguous; new clarification questions surfaced    | `smart_questions` — primarily adds U evidence                     |
-| Concrete competitor features / product modes uncovered          | `function_modules` — primarily adds S evidence                    |
-| Workflow / role / approval pattern from analogous products      | `flow_design` — primarily adds S evidence                         |
-| Visual / brand / UX conventions from references                 | `design_style` — primarily adds S evidence                        |
-| Findings INVALIDATE earlier assumptions in a completed skill    | Re-run that prior skill with the corrected state (not a new one)  |
-| Two skills are equally plausible for the biggest gap            | Two `next_design_tool_skill` alternatives so the user picks       |
-
-The Producer is **not limited to this table**. Use the current request, persisted findings, concrete gap, and each skill's typical Δ to form suitable alternatives.
+Report what the saved findings clarified and which consequential gaps remain.
+They may support questions about user-specific choices, functions, flows or
+visual work, or invalidate an earlier assumption. Name the relevant evidence
+and affected owner rather than launching it. The caller and user choose the
+next action through the shared interaction; research completion mandates no
+consumer, selector tool or score change.

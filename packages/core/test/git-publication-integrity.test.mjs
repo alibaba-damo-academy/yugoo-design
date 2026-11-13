@@ -268,6 +268,30 @@ async function workingCopyFixture(t, id, settleEvent, spawn) {
   return { ...f, workspace, working }
 }
 
+test('Producer completion checks source targets at their claimed commit while draft publication remains available', async t => {
+  const { createProducerProjectWorkspace } = await import('../src/producer-project-workspace.ts')
+  const f = await fixture(t)
+  const first = await f.store.write('sample', { label: 'base' }, options('source-base'))
+  await f.store.write('source', { records: { first: 'real later evidence' } }, { ...options('source-later'), publication: undefined })
+  const skill = { name: 'sample', version: '1.0', description: 'fixture', content: '# fixture',
+    execution: { mode: 'subagent', handoff: 'none' }, metadata: {
+      schemaYaml: 'type: object\n',
+      validationYaml: 'skill: sample\nrules:\n  - id: sources\n    scope: [state, completion]\n    code: sample.source\n    check: { source_reference_map: references }\n',
+    } }
+  const workspace = await createProducerProjectWorkspace({ store: f.store, signal: new AbortController().signal,
+    invocationSkill: skill, resolveSkill: () => skill, ownsPath: path => path.startsWith('sample/'),
+    publicationInvocationId: 'source-reference', settleEvent: async () => {}, withMutation: action => action() })
+  const working = await workspace.openWorkingCopy()
+  const bad = { references: { evidence: { file: 'source/source.json', revision: first.commit, pointer: '/records/first' } } }
+  await working.writeText('sample/sample.json', JSON.stringify(bad))
+  assert.deepEqual(await working.validate('in_progress'), [])
+  assert.equal((await working.validate('complete'))[0].code, 'sample.source')
+  await assert.rejects(working.publish('complete', 'complete'), /pinned version/)
+  const draft = await working.publish('in_progress', 'handoff')
+  assert.deepEqual(draft.state, bad)
+  assert.deepEqual(await f.store.readPublished('sample'), bad)
+})
+
 test('CLI backend: a closed Producer working copy recovers exact Journal/diff facts without rewriting content', async t => {
   for (const stage of ['journal', 'diff']) {
     let fail = true, armed = false, calls = 0, settled

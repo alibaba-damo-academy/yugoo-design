@@ -18,7 +18,7 @@ const indexPins = { prod: '7f651063487849c79a8cdedc3aa6bd04c6b0c717ee63959116f1f
 const digest = (bytes: string | Buffer) => createHash('sha256').update(bytes).digest('hex')
 
 /** Build-only, exact upstream input boundary. This does not configure a host or a Worker. */
-export function canvasBrowserAssets(configUrl: string, options: { packageRoot?: string; environment?: 'prod' | 'dev' } = {}) {
+export function canvasBrowserAssets(configUrl: string, options: { packageRoot?: string; environment?: 'prod' | 'dev'; surface?: 'editor' | 'export' } = {}) {
   const entry = options.packageRoot ? undefined : createRequire(configUrl).resolve('@excalidraw/excalidraw')
   const packageRoot = realpathSync(options.packageRoot ?? resolve(dirname(entry!), '../..'))
   const environment = options.environment ?? (entry && basename(dirname(entry)) === 'dev' ? 'dev' : 'prod')
@@ -124,7 +124,9 @@ export function canvasBrowserAssets(configUrl: string, options: { packageRoot?: 
         return null
       },
       generateBundle() {
-        if (!metadataTransformed || !indexTransformed || !cssTransformed) throw Error('Canvas asset integration incomplete: metadata, index and scoped CSS preprocessing are all required')
+        // A headless scene exporter renders no editor DOM. Its font broker and
+        // scene metadata remain exact, without injecting editor-only styles.
+        if (!metadataTransformed || !indexTransformed || (options.surface !== 'export' && !cssTransformed)) throw Error('Canvas asset integration incomplete: metadata, index and editor scoped CSS preprocessing are required')
         // Reject source/binary/license drift even after successful hooks, before emission.
         prepare()
       },

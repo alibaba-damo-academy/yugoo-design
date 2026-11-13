@@ -6,39 +6,91 @@
     }
   },
   "questions": {
-    "const_auth_mode": {
-      "prompt": "是否需要注册登录？",
+    "const_identity_needs": {
+      "prompt": "使用时，需要知道是谁在操作吗？",
       "kind": "single",
       "choices": [
-        {"value": "anonymous", "label": "不需要，直接使用", "recommended": true},
-        {"value": "auth_required", "label": "需要，支持注册登录", "recommended": false}
+        {
+          "value": "not_needed",
+          "label": "不需要区分使用者"
+        },
+        {
+          "value": "needed",
+          "label": "需要识别使用者"
+        },
+        {
+          "value": "undecided",
+          "label": "暂不确定"
+        }
       ],
-      "answer": "anonymous",
+      "answer": "",
       "detail": ""
     },
-    "const_storage_mode": {
-      "prompt": "应用数据如何保存？",
+    "const_data_retention": {
+      "prompt": "下次打开时，需要保留上次的内容或操作进度吗？",
       "kind": "single",
       "choices": [
-        {"value": "browser_temp", "label": "仅当前浏览器临时保存", "recommended": true},
-        {"value": "database_persistent", "label": "持久保存，可跨设备继续使用", "recommended": false}
+        {
+          "value": "not_needed",
+          "label": "不需要保留"
+        },
+        {
+          "value": "needed",
+          "label": "需要保留"
+        },
+        {
+          "value": "undecided",
+          "label": "暂不确定"
+        }
       ],
-      "answer": "browser_temp",
+      "answer": "",
       "detail": ""
     },
-    "preview_main_outcome": {
+    "const_usage_devices": {
+      "prompt": "主要在哪些设备上使用？（可多选）",
+      "kind": "multiple",
+      "choices": [
+        {
+          "value": "computer",
+          "label": "电脑"
+        },
+        {
+          "value": "phone",
+          "label": "手机"
+        },
+        {
+          "value": "tablet",
+          "label": "平板"
+        },
+        {
+          "value": "other",
+          "label": "其他设备"
+        }
+      ],
+      "answer": "",
+      "detail": ""
+    },
+    "Q-001": {
       "prompt": "整理个人阅读材料时，你最希望先解决什么问题？",
       "kind": "single",
       "choices": [
-        {"value": "find_saved", "label": "更快找到已保存的材料", "recommended": true},
-        {"value": "organize_notes", "label": "把阅读笔记整理得更清楚", "recommended": false}
+        {
+          "value": "find_saved",
+          "label": "更快找到已保存的材料",
+          "recommended": true
+        },
+        {
+          "value": "organize_notes",
+          "label": "把阅读笔记整理得更清楚",
+          "recommended": false
+        }
       ],
       "answer": "",
       "detail": "",
       "round": 0,
       "rejected": false
     },
-    "preview_situation": {
+    "Q-002": {
       "prompt": "最近一次找不到阅读材料时，你正在做什么？可以直接用自己的话描述。",
       "kind": "text",
       "answer": "",

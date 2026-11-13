@@ -4,11 +4,12 @@ import { cp, mkdir, mkdtemp, readFile, writeFile, rm, symlink, rename } from 'no
 import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
+import { createHash } from 'node:crypto'
 import { parse, stringify } from 'yaml'
 import { writeContentCatalog } from './fixtures/content-catalog.mjs'
 const { register } = await import('tsx/esm/api'); register()
 const { DesignContentStore, contentNodeFs } = await import('../src/content-store.ts')
-const { loadDesignKit, loadDesignBundle, createDirectoryBundleResolver, parseKitMounts } = await import('../src/kit-loader.ts')
+const { loadDesignKit, loadDesignBundle, createDirectoryBundleResolver, parseKitMounts, projectKitResource } = await import('../src/kit-loader.ts')
 const { default: DesignService } = await import('../src/design-service.ts')
 const { DesignBundleContributionRegistry } = await import('../src/runtime-drivers.ts')
 const { createSkillScriptPort } = await import('../src/dsh-design-execution-plugin.ts')
@@ -57,9 +58,9 @@ test('optional resource projection retains complete traversal and confines opaqu
 test('opaque resources count their full byte length against the same cumulative resource budget', async () => {
   const f = resourceProjectionFixture()
   const textBytes = [...f.files].filter(([path]) => path !== f.binary).reduce((sum, [, bytes]) => sum + bytes.length, 0)
-  f.files.set(f.binary, Buffer.alloc(16 * 1024 * 1024 - textBytes))
+  f.files.set(f.binary, Buffer.alloc(32 * 1024 * 1024 - textBytes))
   assert.ok(await f.load(), 'exact total byte limit is permitted')
-  f.files.set(f.binary, Buffer.alloc(16 * 1024 * 1024 - textBytes + 1))
+  f.files.set(f.binary, Buffer.alloc(32 * 1024 * 1024 - textBytes + 1))
   await assert.rejects(f.load(), /Bundle resources exceed .* bytes/)
   for (const byteLength of [-1, NaN, Infinity]) {
     await assert.rejects(f.load({ ...f.fs, readResource: async path => path === f.binary
@@ -85,6 +86,23 @@ test('required method and definition slots cannot be bypassed by an opaque resou
   })))
   await assert.rejects(f.load({ ...f.fs, readResource: async path => path === locale
     ? { kind: 'opaque', byteLength: 1 } : f.fs.readResource(path) }), /utf-8/, 'explicit locale reads cannot be bypassed by an opaque resource claim')
+})
+
+test('retained Node and virtual resources share strict text/opaque projection without changing raw copy guards', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'content-resource-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const bytes = Buffer.from([0, 255, 128, 10]), path = join(root, 'original.BIN')
+  await writeFile(path, bytes)
+  assert.deepEqual(await contentNodeFs.readResource(path), projectKitResource(path, bytes))
+  assert.deepEqual(await contentNodeFs.readResource(path), { kind: 'opaque', byteLength: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') })
+  assert.deepEqual(await readFile(path), bytes, 'projection never changes stored bytes')
+  assert.equal(contentNodeFs.readBytes, undefined, 'real source copies keep their existing byte revision check and copyTree path')
+  assert.equal(await contentNodeFs.readResource(join(root, 'missing.bin')), undefined)
+  assert.deepEqual(projectKitResource('assets.bin/method.md', Buffer.from('Keep the source.')), { kind: 'text', content: 'Keep the source.' })
+  assert.notEqual(projectKitResource('asset.bin', Buffer.from([0, 255])).sha256, projectKitResource('asset.bin', Buffer.from([0, 128])).sha256, 'same-length asset changes retain distinct fingerprints')
+  await writeFile(join(root, 'invalid.md'), bytes)
+  await assert.rejects(contentNodeFs.readResource(join(root, 'invalid.md')), /utf-8/)
+  assert.throws(() => projectKitResource('unknown.data', bytes), /utf-8/, 'unknown extensions are not silently hidden as binary')
 })
 
 async function fixture(t) {

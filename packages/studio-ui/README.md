@@ -29,8 +29,8 @@ copy authoring. A local copy can be copied again using its saved canonical sourc
 `instances.editCurrent` opens the same library identity for editing; Copy alone creates a new independent identity. Delete and less frequent
 working-copy actions live in the shared right-hand overflow menu. Studio does not
 expose an installed-package uninstall port; installed packages remain host-owned.
-Hosts can supply `renderPreview` for saved-instance sample Panels, including
-read-only **Open**, independently of the legacy Panel-draft `authoring` client.
+Hosts can supply `renderPreview` for installed-source and saved-instance sample
+Panels, including read-only **Open**, independently of the legacy Panel-draft `authoring` client.
 The renderer receives the existing isolated preview and read-only context;
 supplying it does not enter native authoring or grant a save capability.
 Optional `instances.create` adds **New Kit / New Bundle**, creating a real blank S2
@@ -39,7 +39,7 @@ mounts before validation succeeds.
 
 Kit and Bundle catalogs share the established header: a 300px search control on
 the left, matched/total counts, and New on the right. The product breadcrumb already
-names the section; the catalog does not repeat its heading. There is no local version picker or publication status. The existing leave guard protects unsaved edits.
+names the section; the catalog does not repeat its heading. There is no local version picker or publication status. The existing leave guard protects unsaved edits. Export reads the current saved content while preserving unsaved source, name, mount and AI proposals; it does not save or revert them.
 
 Saved local Bundle cards show their Kit reference count. Select the count to
 open the same mount management view used by installed Bundles, without opening
@@ -48,6 +48,14 @@ archive; mount management identifies these retained sources separately from
 missing independent catalog entries. Single-file ZIP imports report an invalid
 archive format before checking for required source files; ZIP resources inside
 an imported source folder retain their original bytes.
+
+Portable import/export uses the shared Studio limits: 32 MiB of complete source
+bytes and 64 MiB for the archive JSON or ZIP. Host RPC wrapping does not count
+against the archive content limit. Browser import and
+export use the pure `dsh-design-studio/types` entry for these values; no Node
+archive/compiler dependency enters the browser codec. ZIP directories, paths,
+file count, declared expansion and original file bytes remain checked. Errors
+use the existing import feedback and preserve the selected source.
 
 Only new/edit object entries invoke `renderContent(content, context)`, inside the
 Studio stage. The context supplies the object's `id`, create/edit `intent` and
@@ -288,7 +296,10 @@ contract; this view is not a dynamic executable component marketplace.
 Bundle pages put Source files first and Panel preview second. The recursive file
 explorer displays actual source paths, including nested reference folders. Trial
 execution is a Bundle-local action. Installed previews use the optional read-only
-`previewInstalled` transport and the same runtime renderer. The installed host
+`client.previewInstalled` transport and the top-level `renderPreview` renderer;
+legacy `authoring` preview ports remain a fallback. Opening this preview never
+creates a local instance, enters native authoring or grants a save capability.
+The installed host
 loads Bundle-owned `reference/preview.json` before runtime initial values; the
 preview displays the actual selected sample rather than an empty placeholder.
 A missing sample is a diagnostic, not a fabricated populated Panel.
@@ -309,10 +320,12 @@ source editor. Catalog counts and empty states include visible local copies usin
 the same search filter as their cards.
 When a host combines unsent conversation input with the editor's dirty signal,
 it may report `onDirtyChange(navigationDirty, { sourceDirty })`, retaining the
-shared editor's canonical dirty signal as `sourceDirty`. Export uses that source
-signal; navigation protects both. Unsent input stays in place after exporting the
-saved revision. Boolean-only callbacks retain their existing behavior, and the
-editor still blocks export during unsaved source changes or uncertain saves.
+shared editor's canonical dirty signal as `sourceDirty`. Navigation protects both
+kinds of unsaved input. Export reads the saved revision
+while preserving unsaved source, name, mount and conversation drafts; it neither
+saves nor reverts them. An uncertain save still requires the existing verification
+path before export. Boolean-only dirty callbacks retain their existing meaning
+for navigation; they do not make an unsaved draft part of the archive.
 Copy opens an independent editable file set; title-pencil renaming changes the
 selected language's display name without changing source identities. The header places
 an arrow-only Back action on the left and copy/edit actions on the right, with

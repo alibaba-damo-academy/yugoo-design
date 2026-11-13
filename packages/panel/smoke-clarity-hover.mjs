@@ -19,7 +19,7 @@ const event = async (target, type, relatedTarget) => {
 const pause = async () => { await act(async () => new Promise(resolve => setTimeout(resolve, 150))) }
 try {
   await act(async () => root.render(React.createElement(ClarityDockReadout, { value })))
-  assert.ok(indicator('u').textContent.includes('理解度'))
+  assert.ok(indicator('u').textContent.includes('可理解'))
   assert.ok(indicator('s').textContent.includes('结构化'))
   assert.ok(indicator('t').textContent.includes('可验证'))
   assert.equal(document.querySelector('details,summary'), null)

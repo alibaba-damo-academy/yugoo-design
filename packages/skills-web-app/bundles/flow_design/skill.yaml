@@ -33,6 +33,7 @@ presentation:
 # Process metadata is summarized here. Read the canonical records for rules,
 # roles, triggers and exceptions; open the declared BPMN artifact for the diagram.
 # The panel does not copy XML or runtime execution state into canonical JSON.
+# Node supplements are not a second topology or editable name/role authority.
 summary:
   fields: [{source: topic, title: Topic}]
   collections:
@@ -41,3 +42,8 @@ summary:
       title_fields: [title]
       order: process_order
       fields: [title, description, tier, process_type, bpmn_file]
+    - source: nodes
+      title: Step details
+      order: node_order
+      title_fields: [bpmn_element_ref]
+      fields: [process_ref, bpmn_element_ref, activity, entry_condition, exit_condition, failure_response, remarks]

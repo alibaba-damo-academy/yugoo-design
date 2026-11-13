@@ -91,6 +91,7 @@ name before the user edits it. Do not put translation tokens in canonical defaul
 ```yaml
 create:
   id_field: id
+  id_prefix: F
   defaults: {title: ''}
   initial_label:
     field: title
@@ -108,6 +109,15 @@ otherwise `text`. This number is a display default, not a stable identity or a
 guarantee of unique names after deletion.
 
 Only the new record is seeded, in the existing atomic map/order insertion.
+Optional `create.id_prefix` seeds new business identities such as `F-001`: the
+existing create operation takes the largest decimal suffix for that prefix in
+the current collection and adds one, padded to at least three digits. It does
+not rename old records, constrain saved IDs or add a save check. Deleting the
+highest numbered record can make that number available again; this is a local
+creation default, with no global counter or historical reservation. Omit it to
+retain the existing UUID creation. Contextual detail editors use their canonical
+owner's prefix. `form.header.show_id` remains a separate display declaration.
+
 A nonblank supplied name wins, then a nonblank canonical default, then the label.
 Existing records and their IDs are not renamed when the locale changes. The
 Kit loader resolves just these label templates through the declared locales,
@@ -119,6 +129,13 @@ gain it just because this document or a source manifest was updated; load the
 manifest against the actual target version before publishing it.
 
 ### Long text editing
+
+For named typed `record_map` cards, `item_label_field` may bind the existing
+visible text child as the inline title editor. The body then omits that same
+input. Its label, requiredness, visibility, readonly state and edit dependencies
+remain authoritative; an explicitly declared `id_field` is not a title editor.
+Hidden names are not exposed as headings. Other control types keep their original
+body editors, and the map keys, ordering and save channel stay unchanged.
 
 Multiline fields fit actual content from one line up to five automatic lines,
 then scroll internally. Users can resize them beyond that automatic limit.
@@ -539,6 +556,21 @@ The fixed `detail` header is 44px high, with a 32px editable title; `card` is
 record list. Header text supports normal Bundle translation tokens. Ordinals
 are presentation, not record identities or newly stored facts.
 
+`form.header.show_id: true` explicitly presents the record's saved business
+number before its name, using `create.id_field` or the existing `id` convention.
+Declare that field as unconditional readonly `text`; it can remain hidden in
+the body. The same number is used by its form, related table, page preview or
+canvas title. A related table keeps it in the first name cell, without another
+column. Missing values stay absent. `false` hides the number; omission retains
+the existing visible-field behavior. The renderer never allocates or reformats
+numbers and does not expose arbitrary hidden keys.
+
+Question workspaces opt in with `question_policy.show_ids: true`, reading saved
+question keys while retaining the natural labels of `first_round_ids` settings.
+Artifact workspaces use `artifacts.show_ids: true` for their saved parent/child
+keys in both plans and reports. Scoped child keys keep their parent context;
+these display choices do not change editing, execution or reference identity.
+
 A field-bound title must reference an unconditional declared `text` field of
 the same section, never its identity. `editable: true` additionally excludes
 readonly and derived fields and schema metadata/references. It uses the same
@@ -614,6 +646,11 @@ silently omit facts. `label` is `stacked` (default), `inline` (stacks in narrow
 containers), or `visually_hidden` (accessible name remains). `width` is `auto`
 or `fill`; this changes presentation, not write authority. Group titles/help and
 row text use existing Bundle translations; keys, IDs and canonical values do not.
+
+Direct and fallback fields keep their ordinary visible captions and controls;
+they do not create a grey group or disclosure automatically. Declare a named
+group for an actual domain section. Existing record cards and real record
+collections retain their own surfaces without adding another card per field.
 
 For longer records, a top-level body item may declare bounded record-local tabs:
 
@@ -719,6 +756,14 @@ The authoritative closed set is `CONTROL_KINDS` in
 listed here does not make its parameters interchangeable with other controls;
 use the corresponding field contract and validator when authoring a Bundle.
 
+`list` edits a `string[]` as separate multiline entries. Editing or removing an
+entry preserves all other entries, their whitespace, line breaks, duplicates and
+order. Add creates one empty draft entry; newlines inside it remain part of that
+entry. The same control applies to record fields, nested `item_fields` and
+`schema_field`; it does not parse a whole list from lines or normalize saved
+values. Read-only lists retain entry boundaries. `token_list` keeps its separate
+token-entry behavior.
+
 ### Schema binding for `select` and `radio`
 
 A `select` or `radio` field binds to a section record property declared in the
@@ -796,6 +841,13 @@ fields:
   retained unless the existing explicit `clear_when_hidden` contract applies;
   a change to any declared dependency then re-evaluates that contract. No
   recursive condition/expression language or executable predicates are allowed.
+- `hide_when_empty: true` omits an optional, explicitly read-only collection's
+  caption and reading surface when its value is missing, null, an empty array or
+  an empty object. It supports `list`, `rows`, `token_list`, `source_list`,
+  `record_map` and `source_reference_map`. Nonempty entries remain visible,
+  including blank authored entries; malformed scalar values are not treated as
+  an empty collection. It never clears saved content or hides an editable or
+  required input. Empty form groups/rows follow the existing visibility rules.
 - Authored `label_when: [{field: mode, in: [automatic], label: When it runs}]`
   selects display copy from sibling values, using the same matching rule as
   `visible_when`. The first matching entry wins; no match keeps `label` (or the
@@ -949,6 +1001,42 @@ register icons. Generated A2UI panels reject the field even on an otherwise
 allowed component; static authoring capability does not expand that subset.
 The icon does not alter canonical data, selection, edits, execution or save.
 
+### `artifact_workspace` — plans beside saved reports
+
+An artifact workspace can declare optional `artifacts.fields` and
+`artifacts.children.fields` to edit the parent plan and each child plan. These
+reuse `EditorField` and the shared record form. Keys are local own properties of
+the corresponding record, without `applies_to`; the owning schema validates
+their types and controls. Each declared list includes its `title_field` as an
+unconditional writable `text` field, rendered once in the shared title bar.
+For example:
+
+```yaml
+artifacts:
+  records_path: rounds
+  title_field: topic
+  file_field: conclusion_file
+  artifact_kind: research_conclusion
+  fields: [{key: topic, label: Research topic, control: text}]
+  children:
+    records_field: directions
+    title_field: title
+    file_field: findings_file
+    artifact_kind: research_direction
+    scoped_ids: true
+    fields:
+      - {key: title, label: Research direction, control: text}
+      - {key: research_points, label: Questions and scope, control: list}
+```
+
+The plan is usable before its report exists. Once the report is available,
+Details and Content Preview switch between the same record's form and retained
+report reader. Editing keeps the plan visible when a report arrives. Writes
+merge the selected record into the bound parent collection through the existing
+Panel draft/update channel; global Save persists them. They do not rewrite
+report files, source references, record order or execution state. Omitting these
+field declarations preserves the existing read-only artifact workspace.
+
 ### `navigation_workspace` — creating connections
 
 `navigation_map` binds independent node, edge and frame collections. Optional
@@ -988,6 +1076,8 @@ Full-height workspace components preserve scroll and navigation ownership:
 behavior through explicit data bindings rather than Kit names. These are reusable
 capabilities, not a guarantee that every record schema fits every workspace.
 
+### `record_board` — card navigation and overview
+
 `record_board.board.detail_sources` can embed exactly one `record_workspace`
 under the selected card. Each `{section, reference}` binding declares an unordered
 direct record collection and a readonly `record_select` back to the board's
@@ -1005,9 +1095,17 @@ Ordinary `detail_sections` retain their existing same-record nested-form meaning
 directly, cards have no artificial group heading, and the overview connects the
 root directly to records. Do not bind long summaries merely to satisfy grouping;
 this projection never adds a grouping field to canonical records.
-Sidebar selection scrolls the board's own content to the card title; it does not
-start editing or move the host conversation. Manual scrolling updates the current
-sidebar record, including a current cue on a collapsed navigation group. The
+For a grouped board, the sidebar selects one grouping and the content shows only
+that grouping's cards. A child shortcut locates its card inside that selected
+group; selecting a card in the overview selects its group first. The grouping
+title appears once in the shared page header and divider, without a second
+collapsible wrapper for the same scope. First-level records use the shared muted
+content groups, with their reading and editing body on the base surface; changing
+the navigation scope does not remove the form's first-level section hierarchy.
+An ungrouped board keeps its records in one scope and uses record shortcuts
+without inventing group entities. Navigation
+does not start editing, discard drafts or move the host conversation. Scrolling
+within the selected scope updates its current child cue. The
 reading order honors the section's durable order; grouping preserves first-group
 and within-group order without changing stored data. `board.overview: false`
 omits the generated mind-map entry when it does not help the task.
@@ -1046,6 +1144,8 @@ details action returns to the selected record. It does not add form/canvas tabs
 to the sidebar. Covered content stays mounted and inert to preserve selection,
 drafts and the graph viewport without allowing hidden controls to receive input.
 
+### `record_related_editor` — editing related records in place
+
 `record_related_editor.record_table` is an authored-only table presentation of
 the same child collection, not a conversion to a `rows` array. Its finite
 `columns: [{fields: [field_key, ...], label?: string}]` groups existing field
@@ -1065,6 +1165,8 @@ the selected record's form title, rather than above the whole inspector. It
 still updates the same relation edge, rejects cycles, retains the source-record
 navigation and shows the actual parent in read-only mode. Omission preserves
 the prior inspector presentation; neither view creates an extra parent field.
+
+### `diagram_workspace` — BPMN and node details
 
 `diagram_workspace.diagram.detail_rows` groups declared read-only fields into
 responsive fact cards. `chip_fields` selects string-list fields rendered as tags;
@@ -1086,6 +1188,23 @@ process only; absent or duplicate bindings do not guess a record. Existing field
 edit permissions and the atomic artifact save barrier remain authoritative.
 This is contextual navigation, not automatic synchronization of BPMN structure
 and business facts; authors must explain how structural changes are reconciled.
+
+`inspector.presentation: document` opens the same process and node forms as one
+continuous details page. Sidebar and diagram selections anchor that page; manual
+scrolling updates the selected sidebar item. The Diagram action retains the
+mounted canvas and its viewport. Node names, responsible lanes and outgoing
+branches are read-only projections of that loaded BPMN model, not new editable
+copies. One shared collapsible process group contains its overview and distinct
+node record cards. Selecting a child reveals its process group without resetting
+the mounted editors or their draft. Omission retains the existing side inspector.
+
+Optional `inspector.migration: {message, action_label, prompt}` supplies a
+Bundle-authored notice and ordinary Agent request when a saved diagram has no
+node supplements. This does not prevent browsing or saving, replace project
+definitions, invent node assignments, or run a project migration. An Agent first
+compares and updates only the authorized project Bundle files through ordinary
+editing, then follows its current method to supplement the saved design. The
+three text slots localize; process identities and file references do not.
 
 For an exact component contract and on-demand local type declarations, use the
 authoring inspector from the repository root:
@@ -1109,6 +1228,8 @@ An authored workspace is not automatically promoted into that subset.
 Supported generated results can be deterministically retained as DSL; unsupported
 capabilities must fail explicitly, never disappear during conversion. This is
 not an arbitrary bidirectional A2UI protocol converter.
+
+### `question_list`, `question_workspace`, `question_rounds` — questions and answers
 
 `question_list` is the standard controlled question interaction. Each source
 record uses `prompt`, optional `note`, `kind` (`text | single | multiple`),
@@ -1135,10 +1256,16 @@ authored extension.
 
 Each group may declare a `presentation` object containing only optional boolean
 `always_expanded`, `show_detail`, and `show_attachments` properties. These select
-shared component behavior, not Bundle-specific styling. `always_expanded` selects
-the answer area's reading/editing presentation; it does not prevent the user from
-collapsing the outer grey question frame. That frame starts open, and its
-disclosure is independent of editing, finishing or rejecting an answer.
+shared component behavior, not Bundle-specific styling. `always_expanded` presents
+the group as one compact form: single choices use the shared dropdown, multiple
+choices wrap horizontally, and fields use two columns when space permits. Each
+question keeps its label and answer without another card or disclosure. Choice
+context shares one optional editor: existing member details are shown in order,
+with their text preserved. Only an explicit edit consolidates that text into the
+first choice record’s `detail` and clears the merged member details through the
+existing draft transaction; Cancel restores the original records. Empty single
+choices show “Not sure yet” without adding an Unanswered option or writing a
+user decision. Ordinary groups retain their independent question disclosures.
 Omission preserves the usual answer, detail and attachment behavior. Hiding a
 control or closing the frame preserves canonical data and mounted drafts;
 keeping an answer expanded does not grant editing permission.
@@ -1175,6 +1302,8 @@ their existing answer/detail-only write authority and protected `kind` remain
 unchanged. Converting a generated view into an authored reusable panel does not
 silently grant this capability: the author must opt in under the static contract.
 
+### `panel_workspace` — shared navigation shell
+
 `panel_workspace` is the reusable panel-internal left navigation + main content
 layout. It standardizes containment, scroll ownership and narrow-panel fallback;
 it does not define domain records or selection semantics. Use it rather than
@@ -1196,6 +1325,8 @@ Web App question panel used body round sections, not this sidebar; the shared
 sidebar is an enhanced structure using the original public navigation style,
 not a claim of one-to-one restoration of a nonexistent original sidebar.
 
+### `doc_lifecycle_studio`, `rowview_workbench` — structured workbenches
+
 `doc_lifecycle_studio` binds `objects`/`axes`/`actions` sections (validation
 fails loud when one is missing) and renders the fact table (actions × state
 axes, per-cell effects) plus process/derivation/ledger projections derived at
@@ -1204,6 +1335,8 @@ render time; unavailable views render disabled with a reason, never hidden.
 `source` declaring the add section it owns — the details-envelope schema
 check and the renderer are both scoped to that section; a workbench without
 `source` is rejected at compile time.
+
+### `bpmn_canvas` — editing saved steps
 
 In editable mode `bpmn_canvas` edits bidirectionally: each process record's
 `name` and `steps` array (step name, `kind` task/gateway/event, order, add,
@@ -1258,6 +1391,9 @@ active execution and folds when it finishes. A run/target change clears old rows
 and ignores late responses from the previous target. Temporary read failures
 retain the last readable rows and active logs retry through the shared polling
 scheduler. All these surfaces use the same `ExecutionRollingLog` client component.
+This explicitly authored log retains history. Automatically supplied node progress
+uses the same reader only while queued or running and unmounts on completion,
+failure or cancellation; it does not add a permanent history surface to the node.
 
 ### `tabs` — mounted views with stable identities
 

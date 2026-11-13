@@ -11,14 +11,15 @@ const { designReviewDepth, renderDesignReviewDepth, renderDesignReviewStartingPo
 test('depth changes investigation scope and stopping conditions without a finding quota or read barrier', () => {
   for (const depth of ['light', 'standard', 'thorough']) {
     const text = renderDesignReviewDepth(depth)
-    assert.match(text, /Stop/)
-    assert.match(text, /known consequential risk beyond/)
-    assert.match(text, /every substantiated material finding/)
+    assert.match(text, /same profile threshold/)
+    assert.match(text, /Outside-scope clues.*explicitly unverified/)
+    assert.match(text, /without silently broadening/)
+    assert.match(text, /substantiated material findings/)
     assert.doesNotMatch(text, /single most useful|up to (three|five)|suggested finding count/)
   }
   assert.match(renderDesignReviewDepth('light'), /directly involved saved facts/)
   assert.match(renderDesignReviewDepth('standard'), /relevant neighboring evidence/)
-  assert.match(renderDesignReviewDepth('thorough'), /project-wide responsibilities and dependency chains/)
+  assert.match(renderDesignReviewDepth('thorough'), /current saved design results/)
   const paths = ['design_files/changed/changed.json', 'design_files/related/detail.svg', 'design_files/_experiences/demo.json']
   const text = renderDesignReviewStartingPoints([{skill:'changed'}, {skill:'related',artifactFile:'related/detail.svg'},
     {skill:'related',artifactFile:'related/missing.svg'}, {skill:'unknown'}, {skill:'_experiences'}], paths)

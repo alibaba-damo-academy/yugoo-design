@@ -96,3 +96,11 @@ test('historical Panel trial records and byte sources remain readable without ex
   assert.equal(await captured.fs.readText(join(captured.root, 'current.txt')), 'current installed source', 'source version is provenance, not an installed capture lock')
   await assert.rejects(ports.sources.capture({ name: 'different_kit', version: '2.0' }), /identity/)
 })
+
+
+test('source retention still rejects complete trees exceeding 32 MiB without losing existing snapshots', async t => {
+  const f = await fixture(t)
+  const large = { path: 'assets/large.bin', base64: Buffer.alloc(32 * 1024 * 1024 + 1).toString('base64') }
+  await assert.rejects(f.sources.retainTree([large]), /32 MiB/)
+  assert.equal(await f.snapshot.fs.readText(join(f.snapshot.root, 'SKILL.md')), 'saved source')
+})

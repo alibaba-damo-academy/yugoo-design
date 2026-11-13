@@ -1,7 +1,7 @@
 ---
 name: integration_design
 description: |-
-  - **Capability**: design each product-relevant external connection as a complete new Plugin, with concise product-side notes.
+  - **Capability**: design each product-relevant external connection as a new Plugin-style record, with concise product-side notes.
   - **Resolves**: S/T gaps around which external capability the product needs, how the Agent accesses and uses it, and what the product does when the connection succeeds or fails.
   - **Candidate when**: a product behavior depends on an external API, webhook, SDK, MCP tool, third-party component, device, or team-operated system.
   - **Do not infer**: never invent vendor behavior, URL, credential, endpoint, or field-level API contract.
@@ -9,6 +9,8 @@ description: |-
 ---
 
 # Integration Design
+
+See the [record ID guidance](reference/artifact-contract.md#record-ids) for this Bundle's numbering suggestions and existing identity boundaries.
 
 ## Design responsibility
 
@@ -33,16 +35,25 @@ Do not use this skill to design internal modules, database tables, deployment in
 
 ## Ownership and tools
 
+Before authoring, read [the output contract](reference/artifact-contract.md)
+for field meanings, examples and checks shared by design and reconstruction.
+
 `integration_design/integration_design.json` is the only canonical state. The
 foreground Producer uses project-scoped `list` and `read` to inspect that state,
 GROUND, relevant Design evidence, and verified external facts. It uses `write`
 or `edit` to maintain the complete integration design in its owned WorkingCopy.
 This lightweight skill is completed directly by the Producer.
 
-Before publication, the Producer calls `design_validate`. It repairs every
-schema or declarative validation diagnostic in the same WorkingCopy,
-repeats until valid, then calls `design_publish({action:"complete"})`. A panel
-save already persists the user's edits; later runs read and preserve them.
+Before publication, the Producer calls `design_validate`. Repair malformed
+state in the same WorkingCopy. A missing external fact is not repaired by a
+plausible value: preserve the record, leave its URL absent or empty, and explain
+material unknowns in its existing optional remarks and handoff. No selected or
+needed external connection is a valid empty collection. When the scoped design
+is recorded and validation passes, call `design_publish({action:"complete"})`;
+this completes the design task, not an implemented or usable connection. Do not
+repeat an unchanged failing check or invent a record to satisfy completion.
+A panel save already persists the user's
+edits; later runs read and preserve them.
 
 ## Maintaining existing design
 
@@ -80,7 +91,7 @@ Start from GROUND, the active design evidence, and explicit external-system evid
 2. User-supplied vendor documentation, API documentation, examples, or known external-system facts.
 3. Existing confirmed functions, flows, business data, rules, roles, and pages that establish why the integration is needed.
 
-Lower-authority evidence may explain product intent but cannot manufacture higher-authority technical facts. If a required URL, credential name, or usage detail is unknown, leave that field incomplete and report the gap. Do not insert a plausible placeholder merely to pass deliverables.
+Lower-authority evidence may explain product intent but cannot manufacture higher-authority technical facts. If a URL, credential name, or technical usage detail is unknown, leave it absent or empty and report the material gap in the existing optional remarks. Retain the established capability's purpose and intended usage without claiming that it can already be invoked. Do not insert a plausible placeholder merely to pass deliverables.
 
 ## Reasoning workflow
 
@@ -109,35 +120,27 @@ Do not create one giant “ERP 集成” record when ordering, inventory, invoic
 
 Every integration record is authored as a new Plugin connection from established evidence. There is no platform Plugin directory to reuse from: never claim a connection is a verified or pre-existing platform Plugin, and never persist a Plugin reference, snapshot, or identifier copied from another system.
 
-### 4. Author the Plugin fields
-
-Read [the shared output contract](reference/artifact-contract.md) for these field meanings, examples and checks; it is used by both ordinary design and reconstruction.
-
-### 8. Check the whole record as one design
+### 4. Check the whole record as one design
 
 Read the record from top to bottom as a user would:
 
 - the Name identifies the capability;
 - the Description explains its value;
-- the URL points to a real access or documentation location;
+- a supplied URL points to an evidenced access or documentation location; an unknown URL stays absent or empty;
 - Secrets describe only evidenced authentication needs;
 - the Prompt teaches the Agent to use the capability;
 - when additional product-side consequences apply, the optional remarks explain success and failure behavior without duplicating established facts. Do not fabricate remarks merely to fill a form.
 
 Resolve contradictions before persisting. For example, a Prompt must not say “automatically retry” when the remarks require manual recovery, and a payment-query Plugin must not be used to design payment creation unless its documentation supports both.
 
-## State contract
-
-Read [the shared output contract](reference/artifact-contract.md) for these field meanings, examples and checks; it is used by both ordinary design and reconstruction.
-
 ## Close-out
 
-Close only after the current integrations are persisted, every completion issue is repaired, and the quality gates have been checked. Summarise:
+Close after the current scoped design is persisted, its structural completion issues are repaired, and the design checks have been reviewed. An empty set can state that no external connection is currently selected or needed. Summarise:
 
 - which external capabilities were designed as new Plugin connections;
 - which URLs, credentials, documentation, or usage facts remain unresolved.
 
-Do not claim a connection is implementation-ready while a required fact is unknown. Do not create main-Agent suggestions or a fixed next-skill sequence from this body.
+Design completion does not establish an implemented, configured or usable connection. Do not claim implementation readiness or actual access while a required technical fact is unknown. Do not create main-Agent suggestions or a fixed next-skill sequence from this body.
 
 After the integration evidence is persisted, report what it clarified across U/S/T. Unresolved connection facts may leave clarity unchanged or reduce confidence.
 

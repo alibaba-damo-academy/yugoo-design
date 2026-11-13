@@ -93,9 +93,11 @@ test('nested choice rows use only the shared choice gap while card fields own se
   assert.equal(style('.dsh-panel-disclosure-icon').width,'16px')
   assert.equal(style('.dsh-panel-workspace-map-toggle').padding,'0px','workspace defaults cannot override the shared canvas toggle')
   assert.equal(style('.dsh-panel-workspace-map-toggle').borderRadius,'8px 0 0 8px')
-  assert.equal(style('.dsh-record-board-editor > summary').fontWeight,'400','detail disclosure retains its accepted normal weight')
+  // CSS normal and 400 are the same weight; JSDOM serializes the inherited
+  // font shorthand as normal. Baseline and current stylesheet both do this.
+  assert.ok(['400','normal'].includes(style('.dsh-record-board-editor > summary').fontWeight),'detail disclosure retains its accepted normal weight')
   assert.equal(style('#detail-group').fontWeight,'500','record detail groups do not outweigh the record title')
-  assert.equal(style('#nested-group').fontWeight,'500','compact detail groups use the same hierarchy')
+  assert.equal(style('#nested-group').fontWeight,'400','compact dimension captions use the shared field-label role, not a second record heading')
   // JSDOM incorrectly lets its UA summary rules override author styles. Real
   // Chromium verifies flex + no marker; retain the authored rule check here.
   assert.equal([...dom.window.document.styleSheets[0].cssRules].find(rule=>rule.selectorText==='summary.dsh-panel-disclosure').style.getPropertyValue('list-style'),'none')

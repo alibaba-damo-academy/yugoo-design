@@ -16,22 +16,25 @@ const nativeSizeCss=small.map(name=>{
   return nativeCss.slice(start,nativeCss.indexOf('}',start)+1)
 }).join('\n')
 const buttonRules=[...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
-  .filter(match=>match[1].includes('.dsh-diagram-heading > button'))
+  .filter(match=>match[1].includes('.dsh-design-record-header.is-detail > button'))
   .map(match=>match[0]).join('\n')
 
-test('diagram action buttons match native outline/sm dimensions and stay scoped',()=>{
+test('page actions use the shared header height while canvas tools retain native outline/sm geometry',()=>{
   assert.equal((nativeFlow.match(/variant='outline'\s+size='sm'/g)??[]).length,2)
-  const dom=new JSDOM(`<style>${nativeSizeCss}\n${buttonRules}</style><div class="dsh-diagram-heading"><button id="details">Details</button><button id="edit">Edit diagram</button></div><div class="dsh-bpmn-toolbar"><button id="fit">Fit all</button></div><button id="native" class="${small.join(' ')}">Native</button><button id="foreign">Host button</button>`)
+  const dom=new JSDOM(`<style>${nativeSizeCss}\n${css}</style><div class="dsh-design-panel"><header class="dsh-design-record-header is-detail dsh-diagram-heading"><button id="details">Details</button><button id="edit">Edit diagram</button></header><div class="dsh-bpmn-toolbar"><button id="fit">Fit all</button></div></div><button id="native" class="${small.join(' ')}">Native</button><button id="foreign">Host button</button>`)
   try {
     const native=dom.window.getComputedStyle(dom.window.document.getElementById('native'))
     for(const id of ['details','edit','fit']) {
       const style=dom.window.getComputedStyle(dom.window.document.getElementById(id))
-      for(const property of ['height','paddingTop','paddingRight','paddingBottom','paddingLeft','fontSize','lineHeight'])
+      for(const property of ['paddingTop','paddingRight','paddingBottom','paddingLeft','fontSize','lineHeight'])
         assert.equal(style[property],native[property],`${id} retains native ${property}`)
+      assert.equal(style.height,'var(--ygd-panel-action-height, 1.75rem)', 'the shared action rule keeps the native canvas fallback')
       assert.equal(style.boxSizing,'border-box')
       assert.equal(style.display,'inline-flex')
       assert.equal(style.boxShadow,'none')
     }
+    assert.equal(dom.window.getComputedStyle(dom.window.document.querySelector('header')).getPropertyValue('--ygd-panel-action-height'),'32px', 'page headers own the 32px action context')
+    assert.equal(dom.window.getComputedStyle(dom.window.document.querySelector('.dsh-bpmn-toolbar')).getPropertyValue('--ygd-panel-action-height'),'', 'the canvas does not inherit a page header context')
     assert.notEqual(dom.window.getComputedStyle(dom.window.document.getElementById('foreign')).height,native.height,'Host button does not receive Panel action dimensions')
   } finally { dom.window.close() }
 })

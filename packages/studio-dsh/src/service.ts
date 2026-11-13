@@ -16,7 +16,11 @@ import {
   type StudioCatalogSnapshotPort,
   type StudioKitWorkspaceResult,
   type StudioWorkspaceView,
+  type StudioPanelPreviewResult,
 } from 'dsh-design-studio'
+import type { StudioAuthoringClient } from 'dsh-design-studio-ui'
+import { createDshStudioInstanceAdapters } from './authoring-sources.ts'
+import { STUDIO_INSTALLED_PREVIEW_REQUEST } from './typert.remote-client.ts'
 import { openInstalledSourceFiles, kitFileError } from './kit-files.ts'
 import { markStudioRemote } from './remote-method.ts'
 import { openDshStudioBundleSource, resolveKitSourceRoot, type StudioKitSourceConfig } from './kit-sources.ts'
@@ -258,6 +262,26 @@ export class DshStudioManagementService extends TypertRemoteService {
     })
   }
 
+  /** Read installed source through existing captures and Core preview; never creates an instance. */
+  previewInstalled(input: Parameters<NonNullable<StudioAuthoringClient['previewInstalled']>>[0]): Promise<StudioPanelPreviewResult> {
+    const request = STUDIO_INSTALLED_PREVIEW_REQUEST.parse(input)
+    return this.run(async () => {
+      try {
+        const { catalog, composition } = createDshStudioInstanceAdapters({ design: this.host.design, fs: this.host.fs })
+        const { bundle, kit, revision, sampleSource } = request
+        if (kit) {
+          const captured = await catalog.captureKit(kit)
+          return await composition.preview!({ kind: 'kit', kit, kitFiles: captured.files,
+            mounts: captured.mounts.map(({ bindingKey, name, version }) => ({ bindingKey, bundle: { name, version } })),
+            resolveBundle: pin => catalog.captureBundle(pin), bundle, revision, sampleSource })
+        }
+        const captured = await catalog.captureBundle(bundle)
+        return await composition.preview!({ kind: 'bundle', bundle, bundleFiles: captured.files,
+          sourceId: captured.sourceId, runtimeName: captured.runtimeName, revision, sampleSource })
+      } catch (error) { return sourceUnavailable(request.bundle.name, error) }
+    })
+  }
+
   private requireManagement(): StudioManagementService {
     if (this.management === undefined) throw new Error('design studio dsh: service is not initialized')
     return this.management
@@ -301,3 +325,4 @@ markRemote('readKitFiles', DshStudioManagementService.prototype.readKitFiles)
 markRemote('readKitFile', DshStudioManagementService.prototype.readKitFile)
 markRemote('readBundleWorkspace', DshStudioManagementService.prototype.readBundleWorkspace)
 markRemote('readBundleFile', DshStudioManagementService.prototype.readBundleFile)
+markRemote('previewInstalled', DshStudioManagementService.prototype.previewInstalled)

@@ -717,6 +717,7 @@ export class DshAdvisoryScheduler {
         },
       }, this.ports.subagents)
     if (outcome.status !== 'produced') return undefined
+    const knowledgeUsed = reviewedKnowledge !== undefined && outcome.knowledgeUsed
     if (outcome.knowledgeError) this.ports.warn(`Design Knowledge observations discarded: ${outcome.knowledgeError}`)
     let published: DesignAdvisoryRuntimeStatus['lastPublished'] | undefined
     if (outcome.advisory.items.length === 0) {
@@ -740,9 +741,10 @@ export class DshAdvisoryScheduler {
         designRevision: targetRevision,
         commit: change.commit,
         itemCount: outcome.advisory.items.length,
-        knowledgeUsed: reviewedKnowledge !== undefined,
-        ...(reviewedKnowledge === undefined ? {} : { knowledgeSourceCheckpoint: reviewedKnowledge.sourceCheckpoint ?? change.commit }),
-        ...(reviewedKnowledge === undefined ? { fallbackReason: knowledgeFallbackReason ?? 'unavailable' } : {}),
+        knowledgeUsed,
+        ...(knowledgeUsed ? { knowledgeSourceCheckpoint: reviewedKnowledge!.sourceCheckpoint ?? change.commit } : {}),
+        ...(knowledgeUsed ? {} : { fallbackReason: reviewedKnowledge === undefined
+          ? knowledgeFallbackReason ?? 'unavailable' : 'read-not-observed' }),
         kit: kit.name,
         kitVersion: kit.version,
         vocabularyRevision: relationVocabularyRevision,

@@ -6,9 +6,10 @@ import { assertKitTestScripts, isKitRootDevelopmentFile } from './kit-test-file-
 test('current declared Node tests are accepted without executing any test command', async () => {
   const manifest = JSON.parse(await readFile(new URL('../packages/skills-web-app/package.json', import.meta.url), 'utf8'))
   const files = assertKitTestScripts(manifest.scripts)
-  assert.equal(files.size, 12)
+  assert.equal(files.size, 13)
   assert.ok(files.has('test/test-reading-order.mjs'))
   assert.ok(files.has('test/smoke-layout-production.mjs'))
+  assert.ok(files.has('test/prd-runtime-distribution.mjs'))
 })
 
 test('only the package-owned source build is allowed; publication/install/runtime lifecycle stays absent', () => {

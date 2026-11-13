@@ -6,6 +6,7 @@ const { registerDshProducerDesignTools } = await import('../src/dsh-producer-des
 const { renderDesignSkillCatalog, DESIGN_CORE_PROGRESSION_PROMPT } = await import('../src/design-core-prompt.ts')
 const { DESIGN_SKILL_RESOURCE_GUIDANCE } = await import('../src/design-generation-guidance.ts')
 const { producerSystemPrompt } = await import('../src/dsh-design-execution-plugin.ts')
+const { designSkillResourceEntryPaths } = await import('../src/reconstruction-prompt.ts')
 
 function registry() {
   const definitions = new Map()
@@ -15,6 +16,35 @@ const skill = name => ({ name, title: { zh: name, en: name }, label: { zh: name,
   description: 'A bounded design capability.', content: 'Domain method, injected only into execution.',
   execution: { mode: 'main', handoff: 'none' } })
 const exec = { agent: {}, signal: new AbortController().signal }
+
+test('resource discovery selects the bound Bundle entry without injecting content or unrelated assets', () => {
+  const contract = 'reference/artifact-contract.md'
+  const resources = {
+    [`warehouse_planning/${contract}`]: 'Current project-owned contract bytes.',
+    'warehouse_planning/reference/guide.md': 'A linked guide.',
+    'warehouse_planning/reference/icons.yaml': 'Large icon catalog.',
+    'warehouse_planning/scripts/layout.mjs': 'Executable source.',
+    [`warehouse_planning_extra/${contract}`]: 'Another Bundle contract.',
+    [`community_events/${contract}`]: 'Other project semantics.',
+  }
+  const entries = designSkillResourceEntryPaths('warehouse_planning', resources)
+  assert.deepEqual(entries, [contract])
+  assert.ok(Object.isFrozen(entries))
+  const selected = { ...skill('warehouse_planning'),
+    metadata: { schemaYaml: 'type: object', validationYaml: 'skill: warehouse_planning\nrules: []' } }
+  const prompt = producerSystemPrompt(selected, { allowed: [], unavailableOptional: [] },
+    '/application', true, resources, '/project/design_files')
+  assert.deepEqual(JSON.parse(prompt.match(/<bundle_resources>\s*([^<]+)<\/bundle_resources>/)[1]), entries)
+  for (const body of Object.values(resources)) assert.ok(!prompt.includes(body))
+
+  const withoutEntry = { ...resources }
+  delete withoutEntry[`warehouse_planning/${contract}`]
+  const fallback = designSkillResourceEntryPaths('warehouse_planning', withoutEntry)
+  assert.deepEqual(fallback, ['reference/guide.md', 'reference/icons.yaml'])
+  assert.deepEqual(entries, [contract], 'later snapshots do not change an existing discovery result')
+  assert.deepEqual(designSkillResourceEntryPaths('missing_bundle', resources), [])
+  assert.deepEqual(designSkillResourceEntryPaths('warehouse_planning', {}), [])
+})
 
 test('mounted entry stays generic, with full methods limited to the selected executor', () => {
   for (const name of ['warehouse_planning', 'community_events']) {
@@ -29,6 +59,12 @@ test('mounted entry stays generic, with full methods limited to the selected exe
         { allowed: [], unavailableOptional: [] }, '/application', false, {}, '/project/design_files')
       assert.ok(prompt.includes(selected.content))
       assert.equal(prompt.split(DESIGN_SKILL_RESOURCE_GUIDANCE).length, 2)
+      assert.match(prompt, /Host-native read\/read_image\/glob\/grep can also inspect current Design Files/)
+      assert.match(prompt, /For long files, you can use the Host reader's available range or pagination options/)
+      assert.doesNotMatch(prompt, /Always use read_design_file|reserved for Host-authorized application\/source evidence|directly only to explore/)
+      assert.match(prompt, /only files owned by the current Bundle/)
+      if (mode === 'main') assert.match(prompt, /absolute paths under this root for Host-native Design File reads/)
+      else assert.match(prompt, /Your session cwd is the Design Files root/)
     }
   }
   assert.equal(DESIGN_CORE_PROGRESSION_PROMPT.split(DESIGN_SKILL_RESOURCE_GUIDANCE).length, 2)

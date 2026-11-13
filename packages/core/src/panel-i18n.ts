@@ -40,7 +40,12 @@ function mapTexts(value: unknown, translate: (text: string) => string): unknown 
       ? Object.fromEntries(Object.entries(entry).map(([name, config]) => [name,
         name === 'tags' && Array.isArray(config) ? config.map(tag => ({ ...tag,
           ...(tag.labels ? { labels: Object.fromEntries(Object.entries(tag.labels).map(([key, text]) => [key, typeof text === 'string' ? translate(text) : text])) } : {}),
-        })) : config]))
+        })) : name === 'inspector' && config !== null && typeof config === 'object' && !Array.isArray(config)
+          ? Object.fromEntries(Object.entries(config).map(([field, value]) => [field,
+            field === 'migration' && value !== null && typeof value === 'object' && !Array.isArray(value)
+              ? Object.fromEntries(Object.entries(value).map(([slot, text]) => [slot,
+                ['message', 'action_label', 'prompt'].includes(slot) && typeof text === 'string' ? translate(text) : text])) : value]))
+          : config]))
       : key === 'board' && entry !== null && typeof entry === 'object' && !Array.isArray(entry)
       ? Object.fromEntries(Object.entries(entry).map(([name, config]) => [name,
         name === 'details_title' && typeof config === 'string' ? translate(config) : name === 'request_create' && config !== null && typeof config === 'object' && !Array.isArray(config)

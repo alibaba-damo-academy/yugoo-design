@@ -454,6 +454,7 @@ test('public authoring guidance is selected by exact path without granting futur
     '.agents/skills/design-bundle-creator/references/canvas-authoring.md',
     '.agents/skills/design-bundle-creator/references/cooperation-authoring.md',
     '.agents/skills/design-bundle-creator/references/panel-authoring.md',
+    '.agents/skills/design-bundle-creator/references/validation-authoring.md',
     '.agents/skills/design-bundle-creator/scripts/inspect-panel-component.mjs',
     '.agents/skills/design-bundle-creator/scripts/list-panel-components.mjs',
     '.agents/skills/design-kit-creator/SKILL.md',
@@ -680,12 +681,12 @@ test('task handoff guide and selected linked contracts do not approve future sib
   assert.equal(rules[0].kind, 'file')
   assert.equal(rules[0].action, 'include')
   const document = readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
-  assert.ok(document.includes('[验证记录](#代表性验证记录)'))
-  const verification = document.split('## 代表性验证记录')[1]?.split('\n## ')[0]
-  assert.ok(verification, 'representative verification remains discoverable')
-  assert.ok(verification.includes('一个没有原设计对话的接收 Agent'))
-  assert.ok(verification.includes('同一候选的后继受控设计变更也已完成'))
-  assert.ok(verification.includes('不代表所有宿主、Kit 或完整视觉验收'))
+  assert.ok(document.includes('[交接核验步骤](#验证一次完整交接)'))
+  const verification = document.split('## 验证一次完整交接')[1]?.split('\n## ')[0]
+  assert.ok(verification, 'the maintained handoff verification steps remain discoverable')
+  assert.ok(verification.includes('没有原设计对话的新 Coding Agent 会话'))
+  assert.ok(verification.includes('接收方重新读取新版本'))
+  assert.ok(verification.includes('任一步未执行都须标为未完成'))
   assert.ok(document.includes('验收必须使用同一已安装发行候选'))
   assert.ok(document.includes('不能套用 Web App 的文件名或字段'))
   assert.ok(document.includes('本指南不授予发布、部署'))
@@ -1004,8 +1005,8 @@ test('active bundled materials use exact public paths; historical and future sib
     "sha256": "e132ed46f92916593bab00f4c315510b4a239c2b1504fd1bed6d8bed436c7f54"
   },
   "scripts/companion-bundled-license.mjs": {
-    "bytes": 29780,
-    "sha256": "87aeb035df2b36ba11c000212074b7313e3532df0bfb9064a6a6bb64dd310f6f"
+    "bytes": 35720,
+    "sha256": "4543ec8f862a9fa6b5f0d05bab057cec96e54f5bba08c4a33f9f15da0eff9d46"
   },
   "scripts/companion-bundled-license.test.mjs": {
     "bytes": 16852,

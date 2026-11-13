@@ -4,6 +4,28 @@ const { register } = await import('tsx/esm/api'); register()
 const { projectRecords, relationDisplayLabel, relationMeaningLabel, relationOriginLabel, relationLifecycleLabel } = await import('../src/client/graph-model.ts')
 const { projectExplorationRecords, bundleDisplay } = await import('../src/client/graph-bundle-model.ts')
 
+test('system-produced single relations follow the interface locale without changing original evidence', () => {
+  const edge = (kind, label, reading) => ({ id: kind, from: 'a', to: 'b', kind, label, evidence: '原始证据 exact bytes', ...(reading ? { reading } : {}) })
+  const sources = [
+    [edge('contains', '包含内容'), 'Contains', '包含'],
+    [edge('semantic', '语义相近（候选） 0.921'), 'Similarity candidate', '相似候选'],
+    [edge('identifier-match', '标识符匹配（非业务确认）'), 'Identifier match (unconfirmed)', '标识符匹配（非业务确认）'],
+    [edge('identifier-match', '来源引用（非确认）', { relationType: 'references', meaning: 'references', origin: 'file', direction: 'forward', lifecycle: 'observed' }), 'Source reference (unconfirmed)', '来源引用（非确认）'],
+    [{ ...edge('knowledge', '来源引用（非确认）', { relationType: 'references', meaning: 'references', origin: 'file', direction: 'forward', lifecycle: 'observed' }), id: 'source-ref:stored' }, 'Source reference (unconfirmed)', '来源引用（非确认）'],
+    [edge('knowledge', '引用产物', { relationType: 'references-artifact', meaning: 'references', origin: 'file', direction: 'forward', lifecycle: 'observed' }), 'Artifact reference', '引用产物'],
+  ]
+  for (const [source, en, zh] of sources) {
+    const original = structuredClone(source)
+    for (const displayed of [source, { ...source, members: [source] }]) {
+      assert.equal(relationDisplayLabel(displayed, 'en-US'), en)
+      assert.equal(relationDisplayLabel(displayed, 'zh-CN'), zh)
+    }
+    assert.deepEqual(source, original)
+  }
+  const authored = edge('knowledge', '人工命名 unchanged', { relationType: 'references-artifact', meaning: 'references', origin: 'human', direction: 'forward', lifecycle: 'accepted' })
+  assert.equal(relationDisplayLabel(authored, 'en-US'), authored.label)
+})
+
 test('ordinary and Bundle aggregations share the display formatter without translating original labels or evidence', () => {
   const node = id => ({ id, owner: id, record: true, label: 'Original ' + id, file: 'fixture.json', pointer: '/' + id, context: '原文 context' })
   const reading = { relationType: 'supports', meaning: 'supports', origin: 'human', direction: 'forward', lifecycle: 'accepted' }

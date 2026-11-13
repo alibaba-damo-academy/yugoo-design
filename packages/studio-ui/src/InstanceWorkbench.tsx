@@ -321,7 +321,7 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
   }, [client, id, record?.revision, record?.kind, tab, previewBundle, locale, busy, candidatePending, sourceDirty])
 
   const file = record?.files?.find(entry => entry.path === path)
-  const exportDisabled = !record || record.id !== id || dirty || renaming || busy || candidateBusy || candidateState?.saveUnverified || mountActions?.isSaveSubmitted() || previewBusy || candidatePending
+  const exportDisabled = !record || record.id !== id || busy || candidateBusy || candidateState?.saveUnverified || mountActions?.isSaveSubmitted()
   const exportSaved = () => { if (!exportDisabled && record) onExport?.(structuredClone(record)) }
   const sourcePending = sourceDirty || candidatePending
   const sourceLocked = busy || candidateBusy || candidateState?.saveUnverified === true || mountActions?.isSaveSubmitted() === true
@@ -348,10 +348,7 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
   const exportDisabledReason = !exportDisabled ? undefined
     : !record || record.id !== id ? (zh ? '正在打开内容，请稍后再导出。' : 'Wait for the content to open before exporting.')
       : candidateState?.saveUnverified || mountActions?.saveUnverified ? (zh ? '请先核对保存结果，再导出。' : 'Verify the save result before exporting.')
-        : busy || candidateBusy || mountActions?.isSaveSubmitted() ? (zh ? '请等待当前操作完成，再导出。' : 'Wait for the current operation to finish before exporting.')
-          : renaming ? (zh ? '请先完成名称修改，再导出。' : 'Finish renaming before exporting.')
-            : dirty || candidatePending ? (zh ? '请先保存或还原修改，再导出。' : 'Save or revert changes before exporting.')
-              : (zh ? '正在准备预览，请稍后再导出。' : 'Wait for the preview to finish before exporting.')
+        : (zh ? '请等待当前操作完成，再导出。' : 'Wait for the current operation to finish before exporting.')
   const editSource = (text: string) => {
     if (sourceLocked || !loaded || readOnly || text === content) return
     ++prepareRequest.current

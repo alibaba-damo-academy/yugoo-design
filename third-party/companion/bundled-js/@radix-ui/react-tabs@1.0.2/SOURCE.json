@@ -1,0 +1,27 @@
+{
+  "name": "@radix-ui/react-tabs",
+  "version": "1.0.2",
+  "repository": "radix-ui/primitives",
+  "commit": "21a7c97dc8efa79fecca36428eec49f187294085",
+  "tag": null,
+  "publishedGitHead": null,
+  "correspondence": "Nearest official New release commit whose package.json has exact version; all published npm source-map sources compared byte-for-byte. npm version has no gitHead; no tag claim.",
+  "sourceMatches": [
+    {
+      "path": "packages/react/tabs/src/index.ts",
+      "exactMatch": true,
+      "sha256": "120711d1da3b43febf4edd43b662ed9a942cb7f62663e33081a29840e406639b"
+    },
+    {
+      "path": "packages/react/tabs/src/Tabs.tsx",
+      "exactMatch": true,
+      "sha256": "3c17d20356e77828dcacae8c484d87465ad6873ecc8deacfe255f11a314f1947"
+    }
+  ],
+  "tarball": "https://registry.npmjs.org/@radix-ui/react-tabs/-/react-tabs-1.0.2.tgz",
+  "tarballIntegrity": "sha512-gOUwh+HbjCuL0UCo8kZ+kdUEG8QtpdO4sMQduJ34ZEz0r4922g9REOBM+vIsfwtGxSug4Yb1msJMJYN2Bk8TpQ==",
+  "tarballSha1": "8f5ec73ca41b151a413bdd6e00553408ff34ce07",
+  "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/21a7c97dc8efa79fecca36428eec49f187294085/LICENSE",
+  "licenseSha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+  "licenseBytes": 1063
+}

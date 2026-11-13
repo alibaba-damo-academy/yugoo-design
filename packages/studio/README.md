@@ -60,6 +60,20 @@ Mount cards read titles and descriptions from the selected saved sources, includ
 imported trees without a separate library entry. Display metadata does not create
 library records or change mount bindings.
 
+Catalog discovery and import name collision checks use the owning catalog's
+already loaded Bundle metadata. The trusted `listBundles` port supplies exact
+pins, titles, runtime names and optional picker descriptions; it does not capture
+or compile source trees. Selecting a Bundle captures and validates that source,
+so an unrelated unavailable source cannot block an import.
+
+Complete source capture and retention support up to 32 MiB per tree, matching
+Core's Bundle resource budget. A portable archive supports 32 MiB of total source
+bytes; its JSON allows 64 MiB for base64 and the envelope. Existing file, path,
+composition and revision limits still apply.
+Opaque resources retain their byte lengths during compilation, without text
+conversion. The 1 MiB text editing limit is separate. Browser transports read
+these limits from the pure `dsh-design-studio/types` entry.
+
 `exportArchive({id, expectedRevision})` exports the current complete saved source
 and mounted Bundle resources through the existing source-archive format. It supports
 unfinished definitions, checks the source revision, and does not replace edits with

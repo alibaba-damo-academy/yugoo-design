@@ -9,10 +9,11 @@ sections:
   - id: requirements
     form: {header: {variant: detail, title: {field: title, editable: true}}}
     title: $t:requirements
-    item_name: $t:requirements
+    item_name: $t:requirementItem
     order: requirement_order
     create:
       id_field: id
+      id_prefix: AC
       defaults: {title: ''}
       initial_label:
         field: title
@@ -20,6 +21,7 @@ sections:
         numbered_text: $t:newRequirementNumbered
     confirm_delete: true
 fields:
+  - {key: id, label: ID, control: text, readonly: true, applies_to: [requirements]}
   - key: title
     label: $t:title
     control: text
@@ -35,7 +37,6 @@ fields:
     required: true
     label: $t:condition
     control: textarea
-    description: $t:conditionHelp
     placeholder: $t:conditionExample
     applies_to: [requirements]
   - key: pass_criteria
@@ -52,12 +53,12 @@ fields:
     applies_to: [requirements]
 ui:
   component: record_board
-  guidance: $t:guidance
   sidebar_icon: clipboard-check
   id: acceptance-workspace
   title: $t:workspace
   source: requirements
   board:
+    id_field: id
     label: title
     description: pass_criteria
     group: group

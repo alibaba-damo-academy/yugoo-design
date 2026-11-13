@@ -16,6 +16,10 @@ The product and its ten native DSH components share one npm release version. The
 
 **Installation is more than downloading.** Complete the host's native registration/import and activation, then check the version actually loaded. Preserve the previous runtime and installation receipts when updating. Normal design versioning uses the bundled Git runtime; no system Git executable is required. Follow the acquired package's help for supported platforms and commands.
 
+## Version-specific verification records
+
+The records below identify particular releases and environments. They remain useful for understanding tested paths and failures, but do not identify the version currently selected by npm's `latest` tag. Check the acquired package and its release notes for your installation. Current source behavior is described separately under [Studio capabilities](#studio-source-capabilities-and-installed-acceptance).
+
 **Verified use in `0.2.7`.** Checks used the actual published npm packages with
 official DSH `0.2.1-rc.3` on Windows Web. An official-host update from `0.2.6`
 preserved existing data and source content. After correcting CPU dependency
@@ -34,17 +38,7 @@ before retrying. Follow the
 [DSH installation and repair guidance](../../packages/companion/HOSTS.md#install-or-update-deepseek-harness)
 for configuration, activation and recovery.
 
-Environment preparation and native MCP handoff improvements are being prepared
-in source and a website development version; they do not update the published
-`0.2.7` installer. Current source also adds native macOS QwenWork preparation
-and GUI process identification; a complete installed Mac Agent workflow remains
-unverified. The published DSH packages' exact rc3/rc2 Host peers reject rc5;
-source now uses a normal compatible rc3 API range while preserving rc2 support,
-with the rc3/rc5 public APIs compared.
-New installed-host results must be recorded separately from static compatibility
-checks. Slow DSH installation on macOS is also being investigated; its cause has
-not been confirmed. These routes must not be treated as ready merely because
-source or an installation prompt has changed.
+**Scope of the earlier installer investigation.** At the time of the `0.2.7` checks, environment preparation, native MCP handoff and macOS QwenWork preparation were separate source or website-development changes. Those changes did not update the `0.2.7` archive or establish a complete installed Mac Agent workflow. The recorded exact rc3/rc2 Host peers rejected rc5; a subsequent source change used a compatible rc3 API range while retaining rc2 support, with the rc3/rc5 public APIs compared. Static API comparisons and installation prompts do not establish an installed workflow. The earlier slow macOS installation investigation did not establish a cause. Preserve these original limits when consulting the record; check a newer release's own instructions and results separately.
 
 **Local semantic search has separate dependencies.** Local embeddings use CPU. The installation guide sets `ONNXRUNTIME_NODE_INSTALL_CUDA=skip` for acquisition while retaining dependency lifecycle scripts; this skips the additional CUDA download, not the ONNX runtime or embedding model. Prepare the required model cache or allow its download as instructed. Conversation, design generation and reviews use the host's model configuration.
 
@@ -69,14 +63,14 @@ The documented QwenWork `1.3.2-26101704` route cannot create background Agent Se
 
 ## Studio source capabilities and installed acceptance
 
-Studio provides tools for inspecting methods, editing current Kit/Bundle content, copying independent identities, managing mounts, previewing panels, trying methods through the native host and sharing source archives. Availability depends on the plugin version and host adapter; consult the [Studio walkthrough](usage.en.md#6-studio-inspect-customize-and-check-kits) and your installed version's controls.
+Current Studio source provides tools for inspecting methods, editing current Kit/Bundle content, copying independent identities, managing mounts, previewing panels, trying methods through the native host and sharing source archives. Availability depends on the plugin version and host adapter; consult the [Studio walkthrough](usage.en.md#6-studio-inspect-customize-and-check-kits) and your installed version's controls.
 
 Keep these operations distinct:
 
 - Ordinary saves update the same library identity without a local publication or version-selection step. Projects with their own `design_kit` files remain independent of subsequent library edits.
-- Sample preview uses sample data and does not invoke a model. A native trial runs in a separate test project; its demonstration save does not prove durable project saving or Agent continuation.
-- The current release includes importing ZIP files, folders or a Bundle's `SKILL.md` as editable source. Missing auxiliary definitions remain available for completion; loading and preview report their actual diagnostics. Import does not execute scripts, install models or Providers, or change existing projects. Source and license fields are optional; existing attribution remains intact.
-- Exporting and sharing a copy does not publish it to a registry or establish compatibility with another host. Check the recipient's complete use/save/reopen path as described in [Kit sharing](kit-sharing.en.md).
+- Sample preview uses the current source draft with isolated sample data and does not invoke a model. It can check unsaved declarative changes. A native trial reads saved methods and runs in a separate test project; its demonstration save does not prove durable project saving or Agent continuation.
+- Source import accepts ZIP files, folders or a Bundle's `SKILL.md` as editable source. Missing auxiliary definitions remain available for completion; loading and preview report their actual diagnostics. Import does not execute scripts, install models or Providers, or change existing projects. Source and license fields are optional; existing attribution remains intact.
+- Export reads the last saved source while retaining unsaved source, mount and conversation drafts. Save first if the archive should include those changes. Exporting and sharing a copy does not publish it to a registry or establish compatibility with another host. Check the recipient's complete use/save/reopen path as described in [Kit sharing](kit-sharing.en.md).
 
 The installed `0.2.7` Studio authoring workflow was checked with official DSH
 `0.2.1-rc.3` on Windows Web. The tested path covered Kit/Bundle creation and

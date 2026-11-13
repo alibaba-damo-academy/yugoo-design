@@ -47,23 +47,23 @@ export function createPendingDesignInteractionSource(face: UiSessionPendingFace)
 /**
  * Cancel only the one machine-identified Design next-step recommendation.
  * Other native questions, multi-question requests, plan reviews, and absent
- * interactions are deliberately untouched. A cancellation transport failure
- * cannot undo the panel save that already committed before this call.
+ * interactions are deliberately untouched. An optional lookup or cancellation
+ * failure cannot block continuation after the panel save already committed.
  */
 export async function cancelPendingDesignNextStepQuestion(
   source: PendingInteractionSource,
   sessionId: string,
 ): Promise<boolean> {
-  const candidate = source.getSnapshot().get(sessionId) as PendingQuestionLike | undefined
-  if (candidate?.kind !== 'question' || !Array.isArray(candidate.questions) || candidate.questions.length !== 1) return false
-  const question = candidate.questions[0]
-  if (typeof question !== 'object' || question === null || (question as { id?: unknown }).id !== DESIGN_NEXT_STEP_QUESTION_ID) return false
-  const cancel = typeof candidate.cancel === 'function' ? candidate.cancel
-    : candidate.dismissal === 'cancel' && typeof candidate.dismiss === 'function' ? candidate.dismiss : undefined
-  // Current Host tool-call-keyed cards have dismissal='hide': dismissing one
-  // leaves the request live, so it must never be reported as cancellation.
-  if (cancel === undefined) return false
   try {
+    const candidate = source.getSnapshot().get(sessionId) as PendingQuestionLike | undefined
+    if (candidate?.kind !== 'question' || !Array.isArray(candidate.questions) || candidate.questions.length !== 1) return false
+    const question = candidate.questions[0]
+    if (typeof question !== 'object' || question === null || (question as { id?: unknown }).id !== DESIGN_NEXT_STEP_QUESTION_ID) return false
+    const cancel = typeof candidate.cancel === 'function' ? candidate.cancel
+      : candidate.dismissal === 'cancel' && typeof candidate.dismiss === 'function' ? candidate.dismiss : undefined
+    // Current Host tool-call-keyed cards have dismissal='hide': dismissing one
+    // leaves the request live, so it must never be reported as cancellation.
+    if (cancel === undefined) return false
     await cancel.call(candidate)
     return true
   } catch {

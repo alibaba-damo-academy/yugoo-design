@@ -3,12 +3,16 @@ import { createHash, randomUUID } from 'node:crypto'
 import { lstat, mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import { stringify } from 'yaml'
-import { loadDesignBundle, loadDesignKit, resolveDesignKitPackage, type DesignBundleContent, type DesignBundlePin, type DesignKitLocation, type DesignKitLoadOptions, type KitFsLike } from './kit-loader.ts'
+import { loadDesignBundle, loadDesignKit, resolveDesignKitPackage, projectKitResource, type DesignBundleContent, type DesignBundlePin, type DesignKitLocation, type DesignKitLoadOptions, type KitFsLike } from './kit-loader.ts'
 import { DesignBundleVersion, DesignKitVersion, type DesignKit } from './types.ts'
 import type { DesignProjectKitPin } from './design-project.ts'
 import { composeProjectKit, projectBundleOverrides } from './project-content.ts'
 
 export const contentNodeFs: KitFsLike = {
+  readResource: async path => { try { return projectKitResource(path, await readFile(path)) } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
+    throw error
+  } },
   readText: async path => { try { return await readFile(path, 'utf8') } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
     throw error

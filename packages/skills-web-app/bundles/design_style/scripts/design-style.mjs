@@ -96,7 +96,10 @@ function designMd(state) {
   for (const section of sections) {
     lines.push('', `## ${section.replaceAll('_', ' ')}`, '', '```json', JSON.stringify(record(config[section]), null, 2), '```')
   }
-  lines.push('', '## Representative Screen', '', `- Title: ${String(preview.title ?? preview.name ?? 'Not specified')}`, `- Rationale: ${String(preview.rationale ?? 'Not specified')}`, `- Implementation reference: ${String(preview.html_file ?? 'Not specified')}`, '', "## Do's and Don'ts", '', '- Consume the sibling `tokens.css`.', '- Do not invent a competing palette or type scale.')
+  if (typeof config.notes === 'string' && config.notes.trim()) lines.push('', '## Design Notes', '', config.notes)
+  lines.push('', '## Representative Screen', '', `- Title: ${String(preview.title ?? preview.name ?? 'Not specified')}`)
+  if (typeof preview.rationale === 'string' && preview.rationale.trim()) lines.push(`- Rationale: ${preview.rationale}`)
+  lines.push(`- Implementation reference: ${String(preview.html_file ?? 'Not specified')}`, '', "## Do's and Don'ts", '', '- Consume the sibling `tokens.css`.', '- Do not invent a competing palette or type scale.')
   return `${lines.join('\n').trimEnd()}\n`
 }
 

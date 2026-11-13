@@ -1,0 +1,27 @@
+{
+  "name": "@radix-ui/react-collection",
+  "version": "1.0.1",
+  "repository": "radix-ui/primitives",
+  "commit": "6343181bd1fb9c0962bb1190dadd1e5e10b32fd4",
+  "tag": null,
+  "publishedGitHead": null,
+  "correspondence": "Nearest official New release commit whose package.json has exact version; all published npm source-map sources compared byte-for-byte. npm version has no gitHead; no tag claim.",
+  "sourceMatches": [
+    {
+      "path": "packages/react/collection/src/index.ts",
+      "exactMatch": true,
+      "sha256": "694ac7a0bdb1b4e8648ac8d5212d7608da470403710f2e600f9f782c839c917c"
+    },
+    {
+      "path": "packages/react/collection/src/Collection.tsx",
+      "exactMatch": true,
+      "sha256": "a88758dfc90c25329f9fdbdfe29dd7403ab2d0ee246440e548ec32a169c55e7c"
+    }
+  ],
+  "tarball": "https://registry.npmjs.org/@radix-ui/react-collection/-/react-collection-1.0.1.tgz",
+  "tarballIntegrity": "sha512-uuiFbs+YCKjn3X1DTSx9G7BHApu4GHbi3kgiwsnFUbOKCrwejAJv4eE4Vc8C0Oaxt9T0aV4ox0WCOdx+39Xo+g==",
+  "tarballSha1": "259506f97c6703b36291826768d3c1337edd1de5",
+  "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/6343181bd1fb9c0962bb1190dadd1e5e10b32fd4/LICENSE",
+  "licenseSha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+  "licenseBytes": 1063
+}

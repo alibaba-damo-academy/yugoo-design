@@ -50,6 +50,33 @@ for (const studio of [false, true]) test(`failed sends preserve input with ${stu
   } else assert.match(host.querySelector('[role=alert]').textContent, /Fixture transport rejected request/)
 })
 
+test('Studio shows one connection explanation while preserving the disabled action and typed request', async t => {
+  const root = createRoot(host); let connection = 'unknown'
+  t.after(async () => { await React.act(async () => root.unmount()) })
+  const binding = { bindingId: 'feedback-binding', threadId: 'feedback-thread' }
+  await React.act(async () => root.render(h(StudioConversationLayout, {
+    locale: 'en', checkConnection: async () => connection,
+    rpc: async method => { assert.equal(method, 'info'); return { host: 'codex', threadId: binding.threadId, studioConversation: binding } },
+    readConversation: async () => ({ conversation: { available: true, recordedStatus: 'completed', omitted: 0, rows: [] } }),
+    children: (_render, _initial, renderContent) => renderContent(h('div', {}, 'Source editor'), { id: 'feedback-copy', intent: 'author', onDirtyChange() {} }),
+  })))
+  const reason = 'The connection to your agent has not been confirmed.'
+  await until(() => host.textContent.includes(reason))
+  assert.equal(host.textContent.split(reason).length - 1, 1)
+  const textarea = host.querySelector('textarea')
+  await React.act(async () => {
+    Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set.call(textarea, 'Keep my request')
+    textarea.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+  assert.equal(button('Send to Codex').disabled, true)
+  connection = 'available'
+  await click('Check agent connection again')
+  await until(() => !host.textContent.includes(reason) && host.querySelector('form [role=status]'))
+  assert.equal(host.querySelector('textarea').value, 'Keep my request')
+  assert.equal(button('Send to Codex').disabled, true, 'a missing working copy still prevents sending')
+  assert.match(host.querySelector('form [role=status]').textContent, /working copy/i)
+})
+
 test('handoff failures have shared styles and tokens before Workspace exists, without an automatic dialog', async t => {
   const root = createRoot(host); let catalog = 0
   t.after(async () => { await React.act(async () => root.unmount()) })

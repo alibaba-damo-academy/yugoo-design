@@ -30,8 +30,10 @@ export function registerKnowledgeOrchestrationTools(ctx: Context, design: Design
     parameters: {
       advisoryId: { type: 'string', required: true }, acceptanceReceiptId: { type: 'string', required: true },
       kind: { type: 'string', enum: ['bundle', 'host-question', 'host-research', 'no-action'], required: true },
-      reason: { type: 'string', required: true }, revision: { type: 'number', required: true },
-      projectId: { type: 'string', required: true }, selectionRevision: { type: 'number', required: true },
+      reason: { type: 'string', required: true },
+      revision: { type: 'number', required: true, description: 'Copy the top-level revision returned by the latest design_read_review_action: this is the current DesignJournal revision, not the design-revision in the advisory inputs. On a conflict, reread and revalidate rather than wait or retry the same stale value.' },
+      projectId: { type: 'string', required: true },
+      selectionRevision: { type: 'number', required: true, description: 'Copy selectionRevision from the same design_read_review_action response: the selected-project binding revision, not the Design or Journal revision.' },
       kitName: { type: 'string', required: true }, kitVersion: { type: 'string', required: true },
       skillName: { type: 'string' },
     },

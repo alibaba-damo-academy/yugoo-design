@@ -140,7 +140,11 @@ test('source-side unsent intent protects navigation while saved export retains t
   const unload = new Event('beforeunload', { cancelable: true }); window.dispatchEvent(unload)
   assert.equal(unload.defaultPrevented, true)
   await edit(document.querySelector('textarea[aria-label="SKILL.md"]'), '# Unsaved source')
-  assert.equal(button('Export').disabled, true); assert.equal(f.exports.length, 1)
+  assert.equal(button('Export').disabled, false)
+  await click('Export')
+  assert.deepEqual(f.exports, [{ id: row.id, expectedRevision: row.revision }, { id: row.id, expectedRevision: row.revision }])
+  assert.equal(composer.value, 'P3-UNSENT-020')
+  assert.equal(document.querySelector('textarea[aria-label="SKILL.md"]').value, '# Unsaved source')
 })
 test('installed direct export preserves kind/pin and suppresses duplicate requests', async t => {
   const f = await fixture(t, { installedBundle: true }), gate = deferred(); let calls = 0
@@ -151,10 +155,9 @@ test('installed direct export preserves kind/pin and suppresses duplicate reques
   assert.equal(f.downloads[0], 'imported_kit.zip')
 })
 
-for (const [kind, locale] of [['bundle', 'en'], ['kit', 'zh']]) test(`source edits, rename and pending save explain blocked export for ${kind}/${locale}`, async t => {
+for (const [kind, locale] of [['bundle', 'en'], ['kit', 'zh']]) test(`saved export preserves source and title drafts while a pending save stays blocked for ${kind}/${locale}`, async t => {
   let record = copy(kind), release
   const zh = locale === 'zh', exportLabel = zh ? '导出' : 'Export', sourcePath = record.files[0].path
-  const explanation = zh ? '请先保存或还原修改，再导出。' : 'Save or revert changes before exporting.'
   const exported = [], root = createRoot(document.getElementById('root'))
   const client = { read: async () => record, readFile: async ({ id, path }) => ({ id, path, revision: record.revision, content: '# Saved source' }), saveFile: async () => { await new Promise(resolve => { release = resolve }); record = { ...record, revision: 5 }; return record } }
   t.after(async () => React.act(async () => root.unmount()))
@@ -164,9 +167,11 @@ for (const [kind, locale] of [['bundle', 'en'], ['kit', 'zh']]) test(`source edi
   assert.equal(button(exportLabel).disabled, false)
   assert.equal(button(exportLabel).getAttribute('title'), null)
   await edit(editor(), '# New source')
-  assert.equal(button(exportLabel).disabled, true)
-  assert.equal(button(exportLabel).title, explanation)
-  assert.equal(button(exportLabel).getAttribute('aria-description'), explanation)
+  assert.equal(button(exportLabel).disabled, false)
+  await click(exportLabel)
+  assert.equal(exported[0].revision, 4)
+  assert.equal(editor().value, '# New source')
+  assert.equal(button(zh ? '保存' : 'Save').disabled, false)
   const confirm = window.confirm; window.confirm = () => true; t.after(() => { window.confirm = confirm })
   await click(zh ? '还原' : 'Revert')
   assert.equal(button(exportLabel).disabled, false)
@@ -177,11 +182,14 @@ for (const [kind, locale] of [['bundle', 'en'], ['kit', 'zh']]) test(`source edi
   await React.act(async () => release()); await until(() => !button(exportLabel).disabled)
   assert.equal(button(exportLabel).getAttribute('title'), null)
   assert.equal(button(exportLabel).getAttribute('aria-description'), null)
-  await click(exportLabel); assert.equal(exported[0].revision, 5)
-  await click(zh ? '重命名' : 'Rename'); assert.equal(button(exportLabel).disabled, true)
-  assert.equal(button(exportLabel).title, zh ? '请先完成名称修改，再导出。' : 'Finish renaming before exporting.')
+  await click(exportLabel); assert.equal(exported[1].revision, 5)
+  await click(zh ? '重命名' : 'Rename'); assert.equal(button(exportLabel).disabled, false)
   await edit(document.querySelector(`input[aria-label="${zh ? '名称' : 'Name'}"]`), 'New copy title')
-  assert.equal(button(exportLabel).disabled, true); assert.equal(exported.length, 1)
+  await click(exportLabel)
+  assert.equal(exported.length, 3)
+  assert.equal(exported[2].revision, 5)
+  assert.equal(document.querySelector(`input[aria-label="${zh ? '名称' : 'Name'}"]`).value, 'New copy title')
+  assert.deepEqual(exported[2].title, record.title)
 })
 
 test('toolbar refresh catches copy-list failure and offers a successful retry', async t => {

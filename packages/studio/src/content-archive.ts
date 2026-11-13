@@ -1,9 +1,10 @@
 /** Portable regular-file content, not a plugin installer or publication format. */
 import { createHash } from 'node:crypto'
-import { extname, isAbsolute, relative, resolve, sep } from 'node:path'
-import { DesignBundleVersion, DesignKitVersion, loadDesignBundle, type KitFsLike, type KitResourceContent } from 'dsh-design-core'
+import { isAbsolute, relative, resolve, sep } from 'node:path'
+import { DesignBundleVersion, DesignKitVersion, loadDesignBundle, projectKitResource, type KitFsLike, type KitResourceContent } from 'dsh-design-core'
 import { loadStudioKit } from './load.ts'
-import type { DesignBundleVersionPin, StudioDiagnostic, StudioReadFs } from './types.ts'
+import { STUDIO_SOURCE_MAX_BYTES, STUDIO_ARCHIVE_MAX_JSON_BYTES, type DesignBundleVersionPin, type StudioDiagnostic, type StudioReadFs } from './types.ts'
+export { STUDIO_SOURCE_MAX_BYTES, STUDIO_ARCHIVE_MAX_JSON_BYTES } from './types.ts'
 
 export interface StudioArchivePin { readonly name: string; readonly version: string }
 export interface StudioArchiveFile {
@@ -54,21 +55,15 @@ export interface StudioPreparedContentImport {
   readonly requiresTrustReview: boolean
   readonly validation: { readonly valid: boolean; readonly diagnostics: readonly StudioDiagnostic[] }
 }
-const MAX_BYTES = 16 * 1024 * 1024
-const MAX_JSON = 32 * 1024 * 1024
+const MAX_BYTES = STUDIO_SOURCE_MAX_BYTES
+const MAX_JSON = STUDIO_ARCHIVE_MAX_JSON_BYTES
 const MAX_FILES = 4096
 const HASH = /^[0-9a-f]{64}$/
 const sha = (value: string | Uint8Array): string => createHash('sha256').update(value).digest('hex')
 
-// Explicit byte assets only. Unknown resources, methods and scripts remain strict text.
-const OPAQUE_RESOURCE_EXTENSIONS = new Set(['.bin', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.ico', '.bmp',
-  '.pdf', '.woff', '.woff2', '.ttf', '.otf', '.eot', '.wasm'])
-
-/** Shared by archive capture and virtual import; full bytes and directory entries remain intact. */
+/** Core owns the shared text/opaque projection; retained bytes stay exact. */
 export function readStudioArchiveResource(path: string, bytes: Uint8Array): KitResourceContent {
-  return OPAQUE_RESOURCE_EXTENSIONS.has(extname(path).toLowerCase())
-    ? { kind: 'opaque', byteLength: bytes.byteLength }
-    : { kind: 'text', content: new TextDecoder('utf-8', { fatal: true }).decode(bytes) }
+  return projectKitResource(path, bytes)
 }
 
 function object(value: unknown): Record<string, unknown> {
@@ -109,7 +104,7 @@ function canonical(data: Omit<StudioContentArchive, 'sha256'>): string { return 
 
 /** Parse a bounded JSON envelope; hashes include metadata and every original byte. */
 export function readStudioContentArchive(source: string): StudioContentArchive {
-  if (typeof source !== 'string' || Buffer.byteLength(source) > MAX_JSON) throw Error('Archive JSON exceeds 32 MiB.')
+  if (typeof source !== 'string' || Buffer.byteLength(source) > MAX_JSON) throw Error('Archive JSON exceeds 64 MiB.')
   const raw = object(JSON.parse(source))
   keys(raw, ['format', 'kind', 'pin', ...(Object.hasOwn(raw, 'title') ? ['title'] : []), ...(Object.hasOwn(raw, 'provenance') ? ['provenance'] : []), 'dependencies', 'files', 'sha256'])
   if (raw.format !== 'studio-content-archive/v1' || (raw.kind !== 'kit' && raw.kind !== 'bundle')) throw Error('Unsupported archive format.')
@@ -154,14 +149,14 @@ export function readStudioContentArchive(source: string): StudioContentArchive {
     paths.set(folded, path)
     const parts = folded.split('/'); parts.pop()
     while (parts.length) { directories.add(parts.join('/')); parts.pop() }
-    if (!Number.isSafeInteger(entry.bytes) || (entry.bytes as number) < 0 || (entry.bytes as number) > MAX_BYTES - total) throw Error('Archive content exceeds 16 MiB or has an invalid byte count.')
+    if (!Number.isSafeInteger(entry.bytes) || (entry.bytes as number) < 0 || (entry.bytes as number) > MAX_BYTES - total) throw Error('Archive content exceeds 32 MiB or has an invalid byte count.')
     if (typeof entry.base64 !== 'string' || entry.base64.length > Math.ceil(MAX_BYTES / 3) * 4 || entry.base64.length % 4
       || !/^[A-Za-z0-9+/]*={0,2}$/u.test(entry.base64)) throw Error('Invalid archive base64.')
     const bytes = Buffer.from(entry.base64, 'base64')
     if (bytes.toString('base64') !== entry.base64 || entry.bytes !== bytes.length || typeof entry.sha256 !== 'string'
       || !HASH.test(entry.sha256) || sha(bytes) !== entry.sha256) throw Error('Archive file integrity mismatch.')
     total += bytes.length
-    if (total > MAX_BYTES) throw Error('Archive content exceeds 16 MiB.')
+    if (total > MAX_BYTES) throw Error('Archive content exceeds 32 MiB.')
     return Object.freeze({ path, base64: entry.base64, bytes: bytes.length, sha256: entry.sha256 })
   }).sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0)
   if ([...directories].some(path => paths.has(path))) throw Error('Archive file/directory collision.')
@@ -368,7 +363,7 @@ async function exportArchive(
       safePath(target)
       const bytes = await source.readBytes(resolve(source.root, path))
       total += bytes.byteLength
-      if (total > MAX_BYTES || files.length >= MAX_FILES) throw Error('Archive content exceeds 16 MiB or 4096 files.')
+      if (total > MAX_BYTES || files.length >= MAX_FILES) throw Error('Archive content exceeds 32 MiB or 4096 files.')
       files.push({ path: target, base64: Buffer.from(bytes).toString('base64'), bytes: bytes.byteLength, sha256: sha(bytes) })
     }
   }

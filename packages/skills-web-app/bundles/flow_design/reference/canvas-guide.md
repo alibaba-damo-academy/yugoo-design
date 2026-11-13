@@ -14,10 +14,22 @@ Processes/lane participants/tasks/events/gateways/flows retain BPMN meanings.
 For reconstruction preserve observed policy and exceptions; ordinary design
 uses the existing SKILL's product-boundary and process-granularity methods.
 
+Optional `nodes` in the same JSON owns only step supplements, bound by
+`process_ref` + `bpmn_element_ref`; `node_order` is reading order. Names, actor
+lanes, element types, branch conditions and destinations remain BPMN facts.
+Read [the step contract](artifact-contract.md#step-supplements) before adding
+or revising details. Keep unresolved or deleted-element supplements visible
+until their references/content are deliberately repaired; never match by name
+or silently drop user text. Local narrative edits use the shared Panel draft
+and save channel; meaningful topology/actor/routing changes update this same
+BPMN, not a parallel JSON graph.
+
 ## Layout, routing, labels and missing evidence
 
-Use the installed Bundle's structure-validation → layout → final-validation
-pipeline by file path. The layout script produces BPMN DI; never hand-author a
+Use the installed [file-operation routes](artifact-contract.md#structure-and-file-operations):
+new diagrams need structure-validation → layout → final-validation; existing
+diagrams use targeted edits and final validation, with layout when geometry
+changes. Preserve retained semantic IDs. The layout script produces BPMN DI; never hand-author a
 second layout or patch truncated output. Lane labels use actual supplied names;
 resolve the built-in System display name from its stable ID in the canonical
 role cast, and pass that cast to both file validators as the contract specifies.

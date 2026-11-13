@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
-import { BPMN_RENDERER, PAGE_VIEWPORT, renderPrdVisuals } from './visual-renderer.mjs'
+import { previewNavigationContextDataMarkup, validatePreviewNavigationContext } from '../../../../panel/src/preview-navigation-context.ts'
+import { BPMN_RENDERER, WHITEBOARD_RENDERER, PAGE_VIEWPORT, PAGE_SCREENSHOT_OPTIONS, renderPrdVisuals } from './visual-renderer.mjs'
 
 const rawInput = readFileSync(0, 'utf8')
 const action = process.argv[2]
@@ -20,6 +21,7 @@ const VISUAL_REGIONS = Object.freeze([
   'page_map',
   'all_page_prototypes',
   'design_preview',
+  'all_whiteboards',
 ])
 
 const OWNER_GATED_SECTIONS = Object.freeze({
@@ -41,6 +43,7 @@ const NARRATIVE_SECTIONS = new Set([
   'roles_security_audit',
   'pages_interactions',
   'visual_experience',
+  'design_explanations',
   'integrations',
   'notifications_communications',
   'analytics_outputs',
@@ -84,6 +87,14 @@ function parseSourceJson(sourceFiles, path, diagnostics) {
   }
 }
 
+function visualOwnerSource(sourceFiles, indexPath, artifactPattern, diagnostics) {
+  if (typeof sourceFiles[indexPath] !== 'string') {
+    const artifactPath = Object.keys(sourceFiles).find(path => artifactPattern.test(path))
+    if (artifactPath !== undefined) diagnostics.push(`input_files includes visual artifact ${JSON.stringify(artifactPath)} but is missing its canonical owner index ${JSON.stringify(indexPath)}; include that owner JSON together with its artifacts before retrying`)
+  }
+  return parseSourceJson(sourceFiles, indexPath, diagnostics)
+}
+
 function orderedRecords(container, order) {
   const values = record(container)
   const keys = Array.isArray(order) ? order.map(String) : Object.keys(values)
@@ -106,7 +117,7 @@ function visualPlan(sourceFiles) {
   if (functionsState !== undefined) plan.function_scope_map.push({ path: functionsPath, kind: 'function-map', state: functionsState })
 
   const flowPath = 'flow_design/flow_design.json'
-  const flowState = parseSourceJson(sourceFiles, flowPath, diagnostics)
+  const flowState = visualOwnerSource(sourceFiles, flowPath, /^flow_design\/.*\.bpmn$/u, diagnostics)
   if (flowState !== undefined) {
     for (const [id, process] of orderedRecords(flowState.processes, flowState.process_order)) {
       if (process.deleted === true || typeof process.bpmn_file !== 'string' || process.bpmn_file.trim() === '') continue
@@ -118,7 +129,7 @@ function visualPlan(sourceFiles) {
   }
 
   const pagesPath = 'page_design/page_design.json'
-  const pageState = parseSourceJson(sourceFiles, pagesPath, diagnostics)
+  const pageState = visualOwnerSource(sourceFiles, pagesPath, /^page_design\/.*\.html$/u, diagnostics)
   if (pageState !== undefined) {
     plan.page_map.push({ path: pagesPath, kind: 'page-map', state: pageState })
     for (const [id, page] of orderedRecords(pageState.pages, pageState.page_order)) {
@@ -128,23 +139,35 @@ function visualPlan(sourceFiles) {
       else if (typeof sourceFiles[path] !== 'string') diagnostics.push(`visual source ${JSON.stringify(path)} referenced by page ${JSON.stringify(id)} is missing`)
       else {
         const content = sourceFiles[path]
+        // A static Page projection represents one existing bound arrival, in
+        // the same canonical connection order used by the navigation map.
+        const arrival = orderedRecords(pageState.connections, pageState.connection_order).find(([, edge]) =>
+          edge.target_page_id === id && Object.hasOwn(record(pageState.pages), edge.source_page_id)
+          && typeof edge.source_element_id === 'string' && edge.source_element_id.trim() !== ''
+          && Object.hasOwn(edge, 'preview_context'))
+        let previewContext
+        if (arrival !== undefined) {
+          try { previewContext = validatePreviewNavigationContext(arrival[1].preview_context) }
+          catch (error) { diagnostics.push(`connection ${JSON.stringify(arrival[0])}: ${error.message}`); continue }
+        }
         const usesDesignTokens = /var\(\s*--ds-|<link\b[^>]*href\s*=\s*(["'])[^"']*tokens\.css\1/iu.test(content)
         if (usesDesignTokens && typeof tokensCss !== 'string') diagnostics.push(`visual dependency ${JSON.stringify(tokensPath)} required by page prototype ${JSON.stringify(path)} is missing`)
         else plan.all_page_prototypes.push({
           path,
-          dependencies: typeof tokensCss === 'string' ? [tokensPath] : [],
+          dependencies: [...(typeof tokensCss === 'string' ? [tokensPath] : []), ...(previewContext === undefined ? [] : [pagesPath])],
           kind: 'html',
           id,
           title: String(page.name ?? id),
           content,
           tokensCss: typeof tokensCss === 'string' ? tokensCss : undefined,
+          ...(previewContext === undefined ? {} : { previewContext, contextLabel: String(arrival[1].label ?? '') }),
         })
       }
     }
   }
 
   const stylePath = 'design_style/design_style.json'
-  const styleState = parseSourceJson(sourceFiles, stylePath, diagnostics)
+  const styleState = visualOwnerSource(sourceFiles, stylePath, /^design_style\/.*\.html$/u, diagnostics)
   if (styleState !== undefined) {
     const config = record(styleState.config)
     const primaryPreview = record(config.preview_page)
@@ -161,6 +184,33 @@ function visualPlan(sourceFiles) {
       else if (typeof sourceFiles[path] !== 'string') diagnostics.push(`visual source ${JSON.stringify(path)} referenced by design style is missing`)
       else if (typeof sourceFiles[tokensPath] !== 'string') diagnostics.push(`visual dependency ${JSON.stringify(tokensPath)} required by design style preview ${JSON.stringify(path)} is missing`)
       else plan.design_preview.push({ path, dependencies: [tokensPath], kind: 'html', id: String(preview.name ?? path), title: String(preview.title ?? preview.name ?? path), content: sourceFiles[path], tokensCss: sourceFiles[tokensPath] })
+    }
+  }
+  const whiteboardState = visualOwnerSource(sourceFiles, 'whiteboard/whiteboard.json', /^whiteboard\/boards\/.*\.json$/u, diagnostics)
+  if (whiteboardState !== undefined) {
+    for (const [id, board] of orderedRecords(whiteboardState.boards, whiteboardState.board_order)) {
+      const path = board.artifact_file
+      if (path !== `whiteboard/boards/${id}.json` || !/^[A-Za-z0-9_-]+$/u.test(id)) {
+        diagnostics.push(`whiteboard ${JSON.stringify(id)} has an unsafe or mismatched scene path`)
+        continue
+      }
+      if (typeof sourceFiles[path] !== 'string') {
+        diagnostics.push(`visual source ${JSON.stringify(path)} referenced by whiteboard ${JSON.stringify(id)} is missing`)
+        continue
+      }
+      const scene = parseSourceJson(sourceFiles, path, diagnostics)
+      if (scene === undefined) continue
+      if (!Array.isArray(scene.elements)) {
+        diagnostics.push(`whiteboard scene ${JSON.stringify(path)} must contain native elements`)
+        continue
+      }
+      const neededImages = [...new Set(scene.elements.filter(element => isRecord(element) && element.type === 'image' && !element.isDeleted).map(element => element.fileId))]
+      const missingImages = neededImages.filter(id => typeof record(record(scene.files)[id]).dataURL !== 'string')
+      if (missingImages.length > 0) {
+        diagnostics.push(`whiteboard scene ${JSON.stringify(path)} needs exact image bytes for ${missingImages.join(', ')}; path-only attachments are not available through this text-file script input`)
+        continue
+      }
+      plan.all_whiteboards.push({ path, kind: 'whiteboard', id, title: String(board.title ?? id), content: sourceFiles[path], scene })
     }
   }
   return { plan, diagnostics }
@@ -289,9 +339,9 @@ function pageMapSvg(state, copy) {
   return svgDocument(parts.join(''), `0 0 ${width} ${height}`)
 }
 
-const OWNER_PREVIEW_CSP = "default-src 'none'; base-uri 'none'; connect-src 'none'; form-action 'none'; frame-src 'none'; object-src 'none'; img-src data: blob:; media-src data: blob:; font-src data:; style-src 'unsafe-inline'; script-src 'none'"
+const OWNER_PREVIEW_CSP = "default-src 'none'; base-uri 'none'; connect-src 'none'; form-action 'none'; frame-src 'none'; object-src 'none'; img-src data: blob:; media-src data: blob:; font-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'"
 
-function confinedOwnerHtml(html, tokensCss) {
+function confinedOwnerHtml(html, tokensCss, previewContext) {
   let content = html
   let tokenStyle = ''
   if (typeof tokensCss === 'string') {
@@ -302,21 +352,41 @@ function confinedOwnerHtml(html, tokensCss) {
   }
   const meta = `<meta http-equiv="Content-Security-Policy" content="${OWNER_PREVIEW_CSP}">`
   const needsTokenStyle = tokenStyle !== '' && !content.includes('data-prd-source-ref="design_style/tokens.css"')
-  const headContent = `${meta}${needsTokenStyle ? tokenStyle : ''}`
+  const headContent = `${meta}${needsTokenStyle ? tokenStyle : ''}${previewNavigationContextDataMarkup(previewContext)}`
   if (/<head(?:\s[^>]*)?>/iu.test(content)) return content.replace(/<head(?:\s[^>]*)?>/iu, open => `${open}${headContent}`)
   if (/<html(?:\s[^>]*)?>/iu.test(content)) return content.replace(/<html(?:\s[^>]*)?>/iu, open => `${open}<head>${headContent}</head>`)
   return `<!doctype html><html><head>${headContent}</head><body>${content}</body></html>`
 }
 
+function htmlSourceDigest(item) {
+  const context = previewNavigationContextDataMarkup(item.previewContext)
+  const capture = JSON.stringify({ initialViewport: PAGE_VIEWPORT, viewportHeight: 'document', screenshot: PAGE_SCREENSHOT_OPTIONS })
+  return digest(`${item.content}\n${context}\n${capture}`)
+}
+
+function pngDimensions(source) {
+  if (typeof source !== 'string' || !source.startsWith('data:image/png;base64,')) return undefined
+  const png = Buffer.from(source.slice('data:image/png;base64,'.length), 'base64')
+  if (png.length < 24 || png.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') return undefined
+  const width = png.readUInt32BE(16), height = png.readUInt32BE(20)
+  return width > 0 && height > 0 ? { width, height } : undefined
+}
+
 function htmlPreview(item) {
-  if (typeof item.screenshot !== 'string') throw new Error(`HTML visual ${JSON.stringify(item.path)} has not been rendered`)
+  const dimensions = pngDimensions(item.screenshot)
+  if (!dimensions) throw new Error(`HTML visual ${JSON.stringify(item.path)} has not been rendered as a valid PNG`)
   const dependencies = Array.isArray(item.dependencies) && item.dependencies.length > 0 ? ` data-prd-source-dependencies="${escapeHtml(item.dependencies.join(','))}"` : ''
-  return `<figure class="prd-visual-figure" data-prd-source-ref="${escapeHtml(item.path)}" data-prd-source-digest="${digest(item.content)}" data-prd-projection-digest="${digest(item.screenshot)}"${dependencies}><figcaption class="prd-visual-caption">${escapeHtml(item.title)}</figcaption><img class="prd-page-image" loading="lazy" alt="${escapeHtml(item.title)}" width="${PAGE_VIEWPORT.width * PAGE_VIEWPORT.deviceScaleFactor}" height="${PAGE_VIEWPORT.height * PAGE_VIEWPORT.deviceScaleFactor}" src="${item.screenshot}"></figure>`
+  const caption = item.contextLabel ? `${item.title} — ${item.contextLabel}` : item.title
+  return `<figure class="prd-visual-figure" data-prd-source-ref="${escapeHtml(item.path)}" data-prd-source-digest="${htmlSourceDigest(item)}" data-prd-projection-digest="${digest(item.screenshot)}"${dependencies}><figcaption class="prd-visual-caption">${escapeHtml(caption)}</figcaption><img class="prd-page-image" loading="lazy" alt="${escapeHtml(caption)}" width="${dimensions.width}" height="${dimensions.height}" src="${item.screenshot}"></figure>`
 }
 
 function renderVisual(item, copy) {
   if (item.kind === 'function-map') return `<figure class="prd-visual-figure" data-prd-source-ref="${escapeHtml(item.path)}"><figcaption class="prd-visual-caption">${escapeHtml(copy.functionMap)}</figcaption>${functionMapSvg(item.state, copy)}</figure>`
   if (item.kind === 'page-map') return `<figure class="prd-visual-figure" data-prd-source-ref="${escapeHtml(item.path)}"><figcaption class="prd-visual-caption">${escapeHtml(copy.pageMap)}</figcaption>${pageMapSvg(item.state, copy)}</figure>`
+  if (item.kind === 'whiteboard') {
+    if (!item.image?.dataURL) throw new Error(`Whiteboard visual ${JSON.stringify(item.path)} has not been rendered`)
+    return `<figure class="prd-visual-figure" data-prd-source-ref="${escapeHtml(item.path)}" data-prd-source-digest="${digest(item.content)}" data-prd-projection-digest="${digest(item.image.dataURL)}"><figcaption class="prd-visual-caption">${escapeHtml(item.title)}</figcaption><img class="prd-whiteboard-image" data-prd-whiteboard-renderer="${WHITEBOARD_RENDERER}" alt="${escapeHtml(item.title)}" width="${item.image.width}" height="${item.image.height}" src="${item.image.dataURL}"></figure>`
+  }
   if (item.kind === 'bpmn') {
     if (typeof item.renderedSvg !== 'string') throw new Error(`BPMN visual ${JSON.stringify(item.path)} has not been rendered`)
     return `<figure class="prd-visual-figure" data-prd-source-ref="${escapeHtml(item.path)}" data-prd-source-digest="${digest(item.content)}" data-prd-projection-digest="${digest(item.renderedSvg)}"><figcaption class="prd-visual-caption">${escapeHtml(item.title)}</figcaption>${item.renderedSvg}</figure>`
@@ -331,7 +401,7 @@ function replaceVisualRegion(html, name, content) {
   return html.replace(expression, (_match, start, end) => `${start}\n${content}\n${end}`)
 }
 
-const DISTRIBUTED_VISUAL_REGIONS = new Set(['all_bpmn', 'all_page_prototypes'])
+const DISTRIBUTED_VISUAL_REGIONS = new Set(['all_bpmn', 'all_page_prototypes', 'all_whiteboards'])
 
 function replaceDistributedVisualRegion(html, name, items, diagnostics, copy) {
   const regionExpression = new RegExp(`(<!--\\s*prd-visual:${name}:start\\s*-->)(?<body>[\\s\\S]*?)(<!--\\s*prd-visual:${name}:end\\s*-->)`, 'iu')
@@ -361,13 +431,16 @@ async function materializeVisuals(html, sourceFiles) {
   if (diagnostics.length > 0) return { html, diagnostics }
   try {
     const bpmnItems = plan.all_bpmn
+    const whiteboardItems = plan.all_whiteboards
     const htmlItems = [...plan.all_page_prototypes, ...plan.design_preview]
     const rendered = await renderPrdVisuals({
       bpmnItems,
-      htmlItems: htmlItems.map(item => ({ ...item, ownerHtml: confinedOwnerHtml(item.content, item.tokensCss) })),
+      whiteboardItems,
+      htmlItems: htmlItems.map(item => ({ ...item, ownerHtml: confinedOwnerHtml(item.content, item.tokensCss, item.previewContext) })),
     })
     bpmnItems.forEach((item, index) => { item.renderedSvg = rendered.bpmnSvgs[index] })
     htmlItems.forEach((item, index) => { item.screenshot = rendered.htmlScreenshots[index] })
+    whiteboardItems.forEach((item, index) => { item.image = rendered.whiteboardImages[index] })
   } catch (error) {
     diagnostics.push(error instanceof Error ? error.message : String(error))
     return { html, diagnostics }
@@ -548,7 +621,7 @@ function htmlDiagnostics(state, html, template, sourceFiles) {
       if (!policy.sources.includes(owner)) diagnostics.push(`chapter ${JSON.stringify(id)} uses disallowed source owner ${JSON.stringify(owner)}`)
       if (owner !== 'user' && owner !== 'upload') {
         const canonical = sourceFiles[`${owner}/${owner}.json`]
-        if (typeof canonical !== 'string') diagnostics.push(`chapter ${JSON.stringify(id)} uses unavailable source owner ${JSON.stringify(owner)}`)
+        if (typeof canonical !== 'string') diagnostics.push(`chapter ${JSON.stringify(id)} uses unavailable source owner ${JSON.stringify(owner)}: its canonical file was not supplied in input_files. Supply the existing owner file before changing grounded prose or source annotations; omitted input is not proof that the project lacks this design.`)
       }
     }
 
@@ -574,6 +647,16 @@ function htmlDiagnostics(state, html, template, sourceFiles) {
       }
     }
     for (const provenanceId of visibleHere) if (!expectedIds.has(provenanceId)) diagnostics.push(`chapter ${JSON.stringify(id)} visibly uses undeclared provenance ${JSON.stringify(provenanceId)}`)
+    if (id === 'quality_acceptance' && typeof sourceFiles['quality_acceptance/quality_acceptance.json'] === 'string') {
+      const quality = parseSourceJson(sourceFiles, 'quality_acceptance/quality_acceptance.json', diagnostics)
+      const chapterText = visibleText(actual.body)
+      for (const [requirementId, requirement] of orderedRecords(record(quality).requirements, record(quality).requirement_order)) {
+        const verification = record(requirement).verification
+        if (typeof verification === 'string' && verification.trim() !== '' && !chapterText.includes(visibleText(escapeHtml(verification)))) {
+          diagnostics.push(`acceptance requirement ${JSON.stringify(requirementId)} verification must be retained from quality_acceptance/quality_acceptance.json in the quality_acceptance chapter; a condition/pass summary does not retain its verification steps`)
+        }
+      }
+    }
     const authorityOwner = OWNER_GATED_SECTIONS[id]
     if (authorityOwner !== undefined && typeof sourceFiles[`${authorityOwner}/${authorityOwner}.json`] !== 'string') {
       const outsideRails = actual.body
@@ -581,7 +664,7 @@ function htmlDiagnostics(state, html, template, sourceFiles) {
         .replace(/<figure\b[^>]*>[\s\S]*?<\/figure\s*>/giu, '')
         .replace(/<h[34]\b[^>]*>[\s\S]*?<\/h[34]\s*>/giu, '')
         .replace(/<!--[\s\S]*?-->/gu, '')
-      if (visibleText(outsideRails) !== '') diagnostics.push(`chapter ${JSON.stringify(id)} has concrete content without its authority Bundle ${JSON.stringify(authorityOwner)}; wrap every temporary completion in declared ai-provenance rails`)
+      if (visibleText(outsideRails) !== '') diagnostics.push(`chapter ${JSON.stringify(id)} authority Bundle ${JSON.stringify(authorityOwner)} was not supplied in input_files. Read the current owner and include it before editing this chapter. Only evidence actually absent from the project can justify a temporary completion; do not invent absence or remove source annotations to repair omitted input.`)
     }
     for (const name of policy.visualRegions) {
       const starts = [...actual.body.matchAll(new RegExp(`<!--\\s*prd-visual:${name}:start\\s*-->`, 'giu'))]
@@ -659,12 +742,21 @@ function htmlDiagnostics(state, html, template, sourceFiles) {
       if (item?.kind === 'html') {
         const image = /<img\b[^>]*\bclass\s*=\s*(["'])prd-page-image\1[^>]*>/iu.exec(figure)?.[0]
         const source = image === undefined ? undefined : decodeEntities(attribute(image, 'src') ?? '')
-        if (image === undefined || !source?.startsWith('data:image/png;base64,')) diagnostics.push(`HTML visual ${JSON.stringify(ref)} must be embedded as a rendered PNG preview`)
+        const dimensions = pngDimensions(source)
+        if (image === undefined || !dimensions) diagnostics.push(`HTML visual ${JSON.stringify(ref)} must be embedded as a rendered PNG preview`)
         else {
-          if (attribute(image, 'width') !== String(PAGE_VIEWPORT.width * PAGE_VIEWPORT.deviceScaleFactor) || attribute(image, 'height') !== String(PAGE_VIEWPORT.height * PAGE_VIEWPORT.deviceScaleFactor)) diagnostics.push(`HTML visual ${JSON.stringify(ref)} must preserve the ${PAGE_VIEWPORT.width}x${PAGE_VIEWPORT.height} design viewport at ${PAGE_VIEWPORT.deviceScaleFactor}x density`)
-          if (attribute(figureTag, 'data-prd-source-digest') !== digest(item.content)) diagnostics.push(`HTML visual ${JSON.stringify(ref)} is stale relative to its owner artifact`)
+          if (attribute(image, 'width') !== String(dimensions.width) || attribute(image, 'height') !== String(dimensions.height)) diagnostics.push(`HTML visual ${JSON.stringify(ref)} must preserve its actual PNG dimensions and aspect ratio`)
+          if (attribute(figureTag, 'data-prd-source-digest') !== htmlSourceDigest(item)) diagnostics.push(`HTML visual ${JSON.stringify(ref)} is stale relative to its owner artifact, preview context or capture settings`)
           if (attribute(figureTag, 'data-prd-projection-digest') !== digest(source)) diagnostics.push(`HTML visual ${JSON.stringify(ref)} projection integrity check failed`)
         }
+      } else if (item?.kind === 'whiteboard') {
+        const image = /<img\b[^>]*\bclass\s*=\s*(["'])prd-whiteboard-image\1[^>]*>/iu.exec(figure)?.[0] ?? ''
+        const source = decodeEntities(attribute(image, 'src') ?? '')
+        const png = source.startsWith('data:image/png;base64,') ? Buffer.from(source.slice('data:image/png;base64,'.length), 'base64') : Buffer.alloc(0)
+        if (attribute(image, 'data-prd-whiteboard-renderer') !== WHITEBOARD_RENDERER || png.length < 24 || png.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') diagnostics.push(`Whiteboard visual ${JSON.stringify(ref)} must be a native rendered PNG`)
+        else if (attribute(image, 'width') !== String(png.readUInt32BE(16)) || attribute(image, 'height') !== String(png.readUInt32BE(20))) diagnostics.push(`Whiteboard visual ${JSON.stringify(ref)} must preserve its native image ratio and dimensions`)
+        if (attribute(figureTag, 'data-prd-source-digest') !== digest(item.content)) diagnostics.push(`Whiteboard visual ${JSON.stringify(ref)} is stale relative to its owner scene`)
+        if (attribute(figureTag, 'data-prd-projection-digest') !== digest(source)) diagnostics.push(`Whiteboard visual ${JSON.stringify(ref)} projection integrity check failed`)
       } else if (item?.kind === 'bpmn') {
         const svg = /<svg\b[^>]*\bdata-prd-bpmn-renderer\s*=\s*(["'])bpmn-js@18\.24\.0\1[^>]*>[\s\S]*?<\/svg\s*>/iu.exec(figure)?.[0]
         if (svg === undefined) diagnostics.push(`BPMN visual ${JSON.stringify(ref)} must be an embedded ${BPMN_RENDERER} SVG projection`)
@@ -690,6 +782,8 @@ function htmlDiagnostics(state, html, template, sourceFiles) {
   const expectedImageCount = Object.values(visual.plan).flat().filter(item => item.kind === 'html').length
   const previewImages = [...html.matchAll(/<img\b[^>]*\bclass\s*=\s*(["'])prd-page-image\1[^>]*>/giu)]
   if (previewImages.length !== expectedImageCount) diagnostics.push(`prd.html must contain exactly ${expectedImageCount} rendered owner-artifact preview image(s) inside visual regions`)
+  const whiteboardImages = [...html.matchAll(/<img\b[^>]*\bclass\s*=\s*(["'])prd-whiteboard-image\1[^>]*>/giu)]
+  if (whiteboardImages.length !== visual.plan.all_whiteboards.length) diagnostics.push(`prd.html must contain exactly ${visual.plan.all_whiteboards.length} rendered Whiteboard image(s) inside visual regions`)
   const iframeTags = [...html.matchAll(/<iframe\b[^>]*>/giu)]
   if (iframeTags.length > 0) diagnostics.push('PRD must not rely on iframe previews; render owner HTML to a static image during assembly')
   return [...new Set(diagnostics)]
@@ -698,7 +792,7 @@ function htmlDiagnostics(state, html, template, sourceFiles) {
 function stateDiagnostics(state) {
   const diagnostics = []
   if (state.schema_version !== 8) diagnostics.push('schema_version must equal 8')
-  if (typeof state.title !== 'string' || state.title.trim() === '') diagnostics.push('title must not be empty')
+  if (typeof state.title !== 'string' || state.title.trim() === '') diagnostics.push('state.title must not be empty (canonical PRD schema.yaml field title; edit the JSON state, not the HTML title)')
   if (!['concise', 'detailed'].includes(state.detail_level)) diagnostics.push('detail_level must be concise or detailed')
   if (state.html_file !== htmlPath) diagnostics.push(`html_file must equal ${htmlPath}`)
   if (!Array.isArray(state.ai_provenance)) diagnostics.push('ai_provenance must be an array')
@@ -709,9 +803,44 @@ const state = record(input.state ?? record(input.candidate).state)
 const artifacts = record(input.artifacts)
 const sourceFiles = record(input.input_files)
 const html = stripFence(inputHtml)
-const template = String(input.template ?? '')
+const validationHasOutput = action === 'validate-html-file' && record(input.script_io).output_file != null
+// The Bundle owns the validation baseline. A caller must not have to copy it
+// through model context, or be able to replace it with a relaxed template.
+let template = ''
+const templateDiagnostics = []
+if (action === 'finalize-html-file' || action === 'validate-html-file') {
+  try {
+    template = readFileSync(new URL('../reference/prd-template.html', import.meta.url), 'utf8')
+    if (template.trim() === '') templateDiagnostics.push('reference/prd-template.html is required')
+  } catch (error) {
+    templateDiagnostics.push(`cannot read Bundle resource reference/prd-template.html: ${error instanceof Error ? error.message : String(error)}`)
+  }
+}
 
-if (action === 'materialize-visuals') {
+function documentDiagnostics(candidateHtml) {
+  const diagnostics = [...stateDiagnostics(state), ...sourceFileDiagnostics(sourceFiles), ...templateDiagnostics]
+  if (candidateHtml === '') diagnostics.push('prd.html is missing or empty')
+  if (candidateHtml !== '' && template.trim() !== '') {
+    try { diagnostics.push(...htmlDiagnostics(state, candidateHtml, template, sourceFiles)) } catch (error) { diagnostics.push(error instanceof Error ? error.message : String(error)) }
+  }
+  return [...new Set(diagnostics)]
+}
+
+if (validationHasOutput) {
+  output({ valid: false, diagnostics: ['validate-html-file returns JSON diagnostics, not an HTML artifact; omit output_file so the document is not overwritten'] }, false)
+} else if (action === 'finalize-html-file') {
+  // Reuse the Host's existing exit-0 output write: no partial projection lands
+  // when a source, dependency, browser or final document check fails.
+  let diagnostics = [...stateDiagnostics(state), ...sourceFileDiagnostics(sourceFiles), ...templateDiagnostics]
+  if (html === '') diagnostics.push('prd.html is missing or empty')
+  if (diagnostics.length === 0) {
+    const prepared = await materializeVisuals(html, sourceFiles)
+    diagnostics = [...prepared.diagnostics]
+    if (diagnostics.length === 0) diagnostics.push(...documentDiagnostics(prepared.html))
+    if (diagnostics.length === 0) process.stdout.write(prepared.html)
+  }
+  if (diagnostics.length > 0) output({ valid: false, diagnostics: [...new Set(diagnostics)] }, false)
+} else if (action === 'materialize-visuals') {
   const prepared = await materializeVisuals(html, sourceFiles)
   const diagnostics = [...sourceFileDiagnostics(sourceFiles), ...prepared.diagnostics]
   if (html === '') diagnostics.push('prd.html is missing or empty')
@@ -720,11 +849,6 @@ if (action === 'materialize-visuals') {
 } else if (action !== 'validate-html-file') {
   output({ valid: false, diagnostics: [`unknown PRD script action: ${action}`] }, false)
 } else {
-  const diagnostics = [...stateDiagnostics(state), ...sourceFileDiagnostics(sourceFiles)]
-  if (html === '') diagnostics.push('prd.html is missing or empty')
-  if (template.trim() === '') diagnostics.push('reference/prd-template.html is required')
-  if (html !== '' && template.trim() !== '') {
-    try { diagnostics.push(...htmlDiagnostics(state, html, template, sourceFiles)) } catch (error) { diagnostics.push(error instanceof Error ? error.message : String(error)) }
-  }
+  const diagnostics = documentDiagnostics(html)
   output({ valid: diagnostics.length === 0, diagnostics }, diagnostics.length === 0)
 }

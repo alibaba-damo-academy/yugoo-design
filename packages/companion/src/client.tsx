@@ -5,7 +5,7 @@ import { alignConversationHeader } from './header-alignment.mjs'
 import { browserTransport, companionView } from './browser-access.mjs'
 import { CanvasFontRoot } from '../../panel/src/use-canvas-ui-font.mjs'
 import { createRoot } from 'react-dom/client'
-import { useCallback, useEffect, useState, useRef, type CSSProperties, type ReactElement } from 'react'
+import { useCallback, useEffect, useState, useRef, useSyncExternalStore, type CSSProperties, type ReactElement } from 'react'
 import { DesignWorkspace, ReviewPolicyControl, type DesignRuntime, type DesignWorkspaceControls } from '../../panel/src/client/workspace.tsx'
 import { Button } from '../../panel/src/client/ported/ui/button.tsx'
 import { createTrialPanelBridge, type TrialPanelBinding } from './trial-panel-bridge.ts'
@@ -29,6 +29,7 @@ import { StudioConversationLayout } from './studio-conversation.tsx'
 import { StudioEntryFeedback } from './studio-feedback.tsx'
 import { studioConversationHandoff } from './studio-conversation.mjs'
 import { PanelSelect } from '../../panel/src/panel-select.tsx'
+import { PanelFieldCaption } from '../../panel/src/panel-workspace.tsx'
 import type { StudioManagementClient } from '../../studio-ui/src/types.ts'
 import type { StudioContentClient } from '../../studio-ui/src/content-transfer.ts'
 import type { StudioAuthoring } from '../../studio-ui/src/authoring.ts'
@@ -37,7 +38,7 @@ import { StudioRuntimePreview } from './studio-preview.tsx'
 import { studioComponentLibrary } from './studio-components.tsx'
 import { AdvisorySidebarEntry } from '../../panel/src/client/advisory-sidebar-entry.tsx'
 import { bindDesignHostLocale, useCurrentLanguage } from '../../panel/src/client/ported/host.ts'
-import { createCompanionLocale, companionChromeText, companionChromeMessages, companionDocumentLanguage, type CompanionChromeKey, type CompanionLanguage } from './locale.ts'
+import { createCompanionLocale, applyCompanionAppearance, resolveCompanionAppearance, companionChromeText, companionChromeMessages, companionDocumentLanguage, type CompanionChromeKey, type CompanionLanguage } from './locale.ts'
 import { AdvisoryReviewCard, selectPendingAdvisories, type AdvisoryReviewEntry, type AdvisoryAcceptanceAuthority } from '../../panel/src/client/ported/design/AdvisoryReviewCard.tsx'
 import '../../panel/src/client/owned-styles.ts'
 import '../../panel/src/client/generated/design.tw.css'
@@ -178,57 +179,57 @@ const runtime: DesignRuntime = {
 }
 
 const CONVERSATION_CSS = `
-      .companion-icon-button{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:6px;flex-shrink:0;color:#625879}
-      .companion-icon-button:hover,.companion-sidebar-action:hover{background:#f3f0f8}
-      .companion-icon-button:focus-visible,.companion-sidebar-action:focus-visible{outline:2px solid #7c5af6;outline-offset:2px}
+      .companion-icon-button{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:6px;flex-shrink:0;color:var(--ds-text-secondary,CanvasText)}
+      .companion-icon-button:hover,.companion-sidebar-action:hover{background:var(--ds-fill-3,ButtonFace)}
+      .companion-icon-button:focus-visible,.companion-sidebar-action:focus-visible{outline:2px solid var(--ds-brand-bg-default,Highlight);outline-offset:2px}
       .companion-icon-button svg,.companion-sidebar-action svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
       .companion-conversation{width:var(--chat-width,30%);min-width:0;flex-shrink:0;display:flex;flex-direction:column;font-size:14px;line-height:1.5}
-      .companion-resize{width:6px;flex-shrink:0;cursor:col-resize;touch-action:none;background:#f6f5f8}
-      .companion-resize:hover,.companion-resize:focus-visible{background:#b9a2f4;outline:none}
+      .companion-resize{width:6px;flex-shrink:0;cursor:col-resize;touch-action:none;background:var(--ds-fill-2,Canvas)}
+      .companion-resize:hover,.companion-resize:focus-visible{background:var(--ds-brand-light-bg-default,Highlight);outline:none}
       .companion-conversation[hidden]{display:none}
       .companion-conversation>header{gap:8px;justify-content:space-between}
       .companion-conversation-heading{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
       .companion-conversation-title{display:flex;align-items:center;gap:6px;min-width:0}
-      .companion-conversation-heading>span,.companion-conversation-hint{font-size:12px;color:#6d6d6d}
+      .companion-conversation-heading>span,.companion-conversation-hint{font-size:12px;color:var(--ds-text-secondary,CanvasText)}
       .companion-conversation .companion-conversation-hint{padding:8px 16px;margin:0}
-      .companion-sync-status{display:flex;align-items:center;gap:6px;background:#faf9fd;border-bottom:1px solid #eee;flex-shrink:0}
+      .companion-sync-status{display:flex;align-items:center;gap:6px;background:var(--ds-fill-2,Canvas);border-bottom:1px solid var(--ds-border-default,ButtonBorder);flex-shrink:0}
       .companion-sync-status .companion-spinner{margin-right:0;flex-shrink:0}
       .companion-conversation-history{flex:1;min-height:0;overflow:auto;padding:0 16px;overflow-anchor:none}
       ${CONVERSATION_ACTIVITY_CSS}
-      .companion-native-question{border:1px solid #ddd;border-radius:8px;padding:12px;margin:10px 0;background:#fff;color:#222}
+      .companion-native-question{border:1px solid var(--ds-border-default,ButtonBorder);border-radius:8px;padding:12px;margin:10px 0;background:var(--ds-bg-white,Canvas);color:var(--ds-text-primary,CanvasText)}
       .companion-native-question ul{padding-left:20px;margin:10px 0}
       .companion-native-question li{margin:8px 0}
-      .companion-native-question li p{color:#666;margin:3px 0;font-size:12px}
-      .companion-native-question small{display:block;color:#666;line-height:1.5}
-      .companion-conversation form{padding:12px;border-top:1px solid #e8e8e8;display:flex;flex-direction:column;gap:8px}
-      .companion-input-shell{border:1px solid #dfdfdf;border-radius:16px;padding:10px;background:#fff;display:flex;flex-direction:column;gap:6px;min-width:0;transition:border-color .15s,box-shadow .15s}
-      .companion-input-shell:focus-within{border-color:#b9a2f4;box-shadow:0 0 0 2px #7c5af612}
+      .companion-native-question li p{color:var(--ds-text-secondary,GrayText);margin:3px 0;font-size:12px}
+      .companion-native-question small{display:block;color:var(--ds-text-secondary,GrayText);line-height:1.5}
+      .companion-conversation form{padding:12px;border-top:1px solid var(--ds-border-default,ButtonBorder);display:flex;flex-direction:column;gap:8px}
+      .companion-input-shell{border:1px solid var(--ds-border-default,ButtonBorder);border-radius:16px;padding:10px;background:var(--ds-bg-white,Canvas);display:flex;flex-direction:column;gap:6px;min-width:0;transition:border-color .15s,box-shadow .15s}
+      .companion-input-shell:focus-within{border-color:var(--ds-brand-light-bg-default,Highlight);box-shadow:0 0 0 2px color-mix(in srgb,var(--ds-brand-bg-default,Highlight) 7%,transparent)}
       .companion-conversation textarea{resize:vertical;box-sizing:border-box;width:100%;min-height:64px;max-height:180px;border:0;border-radius:0;padding:2px;background:transparent;font:inherit;outline:none}
       .companion-composer-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
-      .companion-composer-actions button{min-height:32px;border:1px solid #e2ddea;border-radius:6px;padding:6px 10px;font-size:12px;line-height:18px}
-      .companion-conversation button[type=submit]{flex-shrink:0;background:#7c5af6;border-color:#7c5af6;color:#fff}
-      .companion-composer-actions button:focus-visible{outline:2px solid #7c5af6;outline-offset:2px}
+      .companion-composer-actions button{min-height:32px;border:1px solid var(--ds-border-default,ButtonBorder);border-radius:6px;padding:6px 10px;font-size:12px;line-height:18px}
+      .companion-conversation button[type=submit]{flex-shrink:0;background:var(--ds-brand-bg-default,Highlight);border-color:var(--ds-brand-bg-default,Highlight);color:var(--ds-static-white,#fff)}
+      .companion-composer-actions button:focus-visible{outline:2px solid var(--ds-brand-bg-default,Highlight);outline-offset:2px}
       .companion-send-group{display:inline-flex;align-items:stretch;position:relative;max-width:100%}
       .companion-send-group button[type=submit]{border-radius:6px 0 0 6px}
       .companion-send-menu{position:relative;flex-shrink:0}
-      .companion-send-menu>summary{list-style:none;display:flex;align-items:center;justify-content:center;width:28px;height:32px;box-sizing:border-box;background:#7c5af6;color:#fff;border-left:1px solid #ffffff50;border-radius:0 6px 6px 0;cursor:pointer}
+      .companion-send-menu>summary{list-style:none;display:flex;align-items:center;justify-content:center;width:28px;height:32px;box-sizing:border-box;background:var(--ds-brand-bg-default,Highlight);color:var(--ds-static-white,#fff);border-left:1px solid color-mix(in srgb,currentColor 30%,transparent);border-radius:0 6px 6px 0;cursor:pointer}
       .companion-send-menu>summary::-webkit-details-marker{display:none}
       .companion-send-menu>summary svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.5}
-      .companion-send-menu>summary:focus-visible{outline:2px solid #7c5af6;outline-offset:2px}
-      .companion-send-options{position:absolute;right:0;bottom:calc(100% + 8px);width:max-content;max-width:280px;padding:4px;background:#fff;border:1px solid #e2ddea;border-radius:8px;box-shadow:0 4px 16px #0002;z-index:20}
+      .companion-send-menu>summary:focus-visible{outline:2px solid var(--ds-brand-bg-default,Highlight);outline-offset:2px}
+      .companion-send-options{position:absolute;right:0;bottom:calc(100% + 8px);width:max-content;max-width:280px;padding:4px;background:var(--ds-bg-white,Canvas);border:1px solid var(--ds-border-default,ButtonBorder);border-radius:8px;box-shadow:0 4px 16px #0002;z-index:20}
       .companion-composer-actions .companion-send-options button{width:100%;border:0;text-align:left;justify-content:flex-start}
-      .companion-send-options button:hover:not(:disabled){background:#f3f0f8}
+      .companion-send-options button:hover:not(:disabled){background:var(--ds-fill-3,ButtonFace)}
       .companion-conversation button:disabled{opacity:.5;cursor:default}
-      .companion-connection{position:relative;font-size:12px;color:#6d6d6d;overflow:visible}
+      .companion-connection{position:relative;font-size:12px;color:var(--ds-text-secondary,CanvasText);overflow:visible}
       .companion-connection>button{cursor:pointer;display:flex;align-items:center;justify-content:center;width:24px;height:24px;border:0;padding:0;border-radius:6px;background:transparent;color:inherit}
       .companion-connection>button svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5}
-      .companion-connection>button:hover{background:#f3f0f8}
-      .companion-connection>button:focus-visible{outline:2px solid #7c5af6;outline-offset:2px}
-      .companion-connection-popover{display:none;position:absolute;top:calc(100% + 6px);left:-80px;width:260px;max-width:calc(100vw - 48px);padding:10px 12px;background:#fff;border:1px solid #e2ddea;border-radius:8px;box-shadow:0 4px 16px #0002;z-index:30;overflow-wrap:anywhere}
+      .companion-connection>button:hover{background:var(--ds-fill-3,ButtonFace)}
+      .companion-connection>button:focus-visible{outline:2px solid var(--ds-brand-bg-default,Highlight);outline-offset:2px}
+      .companion-connection-popover{display:none;position:absolute;top:calc(100% + 6px);left:-80px;width:260px;max-width:calc(100vw - 48px);padding:10px 12px;background:var(--ds-bg-white,Canvas);border:1px solid var(--ds-border-default,ButtonBorder);border-radius:8px;box-shadow:0 4px 16px #0002;z-index:30;overflow-wrap:anywhere}
       .companion-connection[data-open]>.companion-connection-popover,.companion-connection:hover>.companion-connection-popover,.companion-connection:focus-within>.companion-connection-popover{display:block}
       .companion-connection-popover p{margin:0 0 6px}
       .companion-connection-popover p:last-child{margin-bottom:0}
-      .companion-notify{min-width:0;color:#625879;background:#fff;text-align:left;overflow-wrap:anywhere}
+      .companion-notify{min-width:0;color:var(--ds-text-secondary,CanvasText);background:var(--ds-bg-white,Canvas);text-align:left;overflow-wrap:anywhere}
 `
 
 function App() {
@@ -259,6 +260,7 @@ function App() {
   const [catalog, setCatalog] = useState<DesignProjectCatalogRead>()
   const [thread, setThread] = useState<string>()
   const [error, setError] = useState('')
+  const [settingsFeedback, setSettingsFeedback] = useState<{ failed: boolean; detail?: string }>()
   const kitReloadPending = useRef(false)
   const lastKitReloadError = useRef<string>()
   const [pollError, setPollError] = useState('')
@@ -334,6 +336,43 @@ function App() {
 
   useEffect(() => { document.documentElement.lang = companionDocumentLanguage(locale) }, [locale])
   const [language, setLanguage] = useState(companionLocale.getPreference)
+  const appearance = useSyncExternalStore(companionLocale.subscribe, () => companionLocale.getSnapshot().appearance)
+  const [effectiveAppearance, setEffectiveAppearance] = useState(() => resolveCompanionAppearance(appearance, window.matchMedia('(prefers-color-scheme: dark)').matches))
+  const preferenceWrites = useRef<Promise<unknown>>(Promise.resolve())
+  const failedPreferences = useRef<{ language?: CompanionLanguage; appearance?: 'system' | 'light' | 'dark' }>()
+  const [preferenceError, setPreferenceError] = useState('')
+  useEffect(() => {
+    if (trialPanelPage) return
+    return applyCompanionAppearance(document, appearance, window.matchMedia('(prefers-color-scheme: dark)'), setEffectiveAppearance)
+  }, [appearance])
+  const savePreferences = (patch: { language?: CompanionLanguage; appearance?: 'system' | 'light' | 'dark' }): Promise<void> => {
+    // Persist the two current UI choices together, so a later successful choice
+    // also repairs a previously failed UI preference without touching other settings.
+    setPreferenceError('')
+    const desired = { ...patch, language: companionLocale.getPreference(), appearance: companionLocale.getSnapshot().appearance }
+    const saved = preferenceWrites.current.then(() => rpc('updateSettings', desired))
+    preferenceWrites.current = saved.catch(() => {})
+    return saved.then(() => { failedPreferences.current = undefined; setPreferenceError('') }, () => {
+      failedPreferences.current = desired
+      const message = currentChrome('interfacePreferencesSaveFailed')
+      setPreferenceError(message)
+      throw new Error(message)
+    })
+  }
+  const changeLanguage = (value: CompanionLanguage) => {
+    companionLocale.setPreference(value, false)
+    setLanguage(value)
+    return savePreferences({ language: value })
+  }
+  const changeAppearance = (value: 'system' | 'light' | 'dark') => {
+    companionLocale.setAppearance(value)
+    return savePreferences({ appearance: value })
+  }
+  const preferences = trialPanelPage ? undefined : {
+    language: locale === 'zh_CN' ? 'zh' as const : 'en' as const, effectiveAppearance,
+    onLanguageChange: changeLanguage, onAppearanceChange: changeAppearance,
+  }
+
   useEffect(() => bindDesignHostLocale(companionLocale), [])
   const resizeChat = (value: number) => { setChatWidth(value); try { localStorage.setItem('design-companion-chat-width', String(value)) } catch { /* Layout remains usable without storage. */ } }
   useEffect(() => {
@@ -371,7 +410,8 @@ function App() {
       } catch (error) {
         if (!disposed) {
           lastSnapshot = undefined
-          setPollError(String(error))
+          setPollError(error instanceof Error && error.name === 'TimeoutError'
+            ? currentChrome('workspaceSyncRetrying') : String(error))
         }
       }
       finally { busy = false }
@@ -388,7 +428,16 @@ function App() {
       } })
       .catch(error => { if (!disposed) setError(String(error)) })
     void poll()
-    void rpc<{ maxSuggestions: number }>('readSettings').then(value => { if (!disposed) setMaxSuggestions(String(value.maxSuggestions)) }).catch(error => { if (!disposed) setError(String(error)) })
+    const preferenceBeforeRead = companionLocale.getSnapshot()
+    void rpc<{ maxSuggestions: number; language?: CompanionLanguage; appearance?: 'system' | 'light' | 'dark' }>('readSettings').then(value => {
+      if (disposed) return
+      setMaxSuggestions(String(value.maxSuggestions))
+      // A delayed initial read must never override a choice made in this window.
+      if (!trialPanelPage && companionLocale.getSnapshot() === preferenceBeforeRead) {
+        if (value.language) { companionLocale.setPreference(value.language, false); setLanguage(value.language) }
+        if (value.appearance) companionLocale.setAppearance(value.appearance)
+      }
+    }).catch(error => { if (!disposed) setError(String(error)) })
     const unsubscribe = subscribeLivePoll(() => { void poll() })
     return () => { disposed = true; trialBridge.current?.dispose(); trialBridge.current = undefined; clearTimeout(noticeTimer); unsubscribe(); onNotificationError = () => {}; onNotice = () => {} }
   }, [])
@@ -470,21 +519,21 @@ function App() {
   return <div className="dsh-design-root companion-root" data-companion-view={designOnly ? 'panel-only' : 'full'} ref={shellRoot}>
     <style>{DOCK_CSS}{`
       html,body,#root{height:100%;margin:0;font-family:var(--ds-font-main,system-ui,sans-serif)}
-      .companion-root{height:100%;display:flex;background:#fff;color:#272727}
-      .companion-sidebar{width:190px;padding:12px;border-right:1px solid #e8e8e8;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+      .companion-root{height:100%;display:flex;background:var(--ds-bg-white,Canvas);color:var(--ds-text-primary,CanvasText)}
+      .companion-sidebar{width:190px;padding:12px;border-right:1px solid var(--ds-border-default,ButtonBorder);display:flex;flex-direction:column;gap:8px;flex-shrink:0}
       .companion-sidebar[data-collapsed=true]{width:60px}
       .companion-sidebar-heading{display:flex;align-items:center;justify-content:space-between;min-height:calc(var(--companion-top-header-height,76px) - 24px);flex-shrink:0;margin-bottom:8px;gap:4px}
       .companion-sidebar-heading>strong{font-size:18px;line-height:24px;white-space:nowrap}
       .companion-sidebar .dsh-project-sidebar-entry,.companion-sidebar .dsh-advisory-sidebar-entry{margin:0}
       .companion-sidebar .dsh-project-sidebar-trigger,.companion-sidebar .dsh-advisory-sidebar-trigger{height:40px}
       .companion-sidebar-action{display:flex;align-items:center;gap:10px;min-height:40px;padding:0 8px;border-radius:6px;font-size:14px;line-height:22px;text-align:left}
-      .companion-sidebar-action[aria-expanded=true]{background:#f1ecff;color:#663ae8}
+      .companion-sidebar-action[aria-expanded=true]{background:var(--ds-brand-light-bg-default);color:var(--ds-brand-text-primary)}
       .companion-sidebar[data-collapsed=true] .companion-sidebar-action{width:36px;justify-content:center;padding:0}
-      .companion-sidebar-meta{margin-top:auto;font-size:12px;color:#6d6d6d;overflow-wrap:anywhere}
+      .companion-sidebar-meta{margin-top:auto;font-size:12px;color:var(--ds-text-secondary,CanvasText);overflow-wrap:anywhere}
       .companion-review-statuses{display:grid;gap:12px;padding:12px 0;list-style:none}
       .companion-review-statuses li{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
       .companion-review-statuses strong{min-width:100px}
-      .companion-review-statuses small{width:100%;color:#777}
+      .companion-review-statuses small{width:100%;color:var(--ds-text-tertiary,GrayText)}
       .companion-main{position:relative;display:flex;flex-direction:column;flex:1;min-width:0;min-height:0}
       .companion-content{display:flex;flex:1;min-width:0;min-height:0}
       ${CONVERSATION_CSS}
@@ -492,21 +541,28 @@ function App() {
       .companion-feedback{display:flex;align-items:center;justify-content:space-between;gap:12px;pointer-events:auto;box-sizing:border-box;max-width:min(520px,calc(100vw - 32px));max-height:25vh;overflow:auto;overflow-wrap:anywhere}
       .companion-feedback>div{min-width:0}
       .companion-feedback>button{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:inherit;cursor:pointer}
-      .companion-feedback>button:hover{background:#ffffff20}
+      .companion-feedback>button:hover{background:color-mix(in srgb,currentColor 12%,transparent)}
       .companion-feedback>button:focus-visible{outline:2px solid currentColor;outline-offset:2px}
       .companion-feedback>button svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round}
       .companion-feedback .companion-error{padding:0;color:inherit}
       .companion-feedback p{margin:6px 0 0}
-      .companion-error{padding:10px;color:#b02d2f;white-space:pre-wrap;overflow-wrap:anywhere}
+      .companion-error{padding:10px;color:var(--ds-error-6,LinkText);white-space:pre-wrap;overflow-wrap:anywhere}
       .companion-advisories{max-height:40%;overflow:auto;padding:8px 12px;flex-shrink:0}
-      .companion-settings{font-size:12px;line-height:1.6}
-      .companion-settings input{width:48px;border:1px solid #ddd;margin:4px}
       .companion-sidebar-bottom{margin-top:auto;display:flex;flex-direction:column;gap:8px}
-      .companion-settings-dialog{margin:auto;max-width:540px;width:calc(100% - 48px);max-height:80vh;overflow:auto;border:1px solid #e2ddea;border-radius:12px;padding:24px;background:#fff;color:#272727}
+      .companion-settings-dialog{margin:auto;box-sizing:border-box;max-width:540px;width:calc(100% - 32px);max-height:calc(100dvh - 32px);overflow:auto;border:1px solid var(--ds-border-default);border-radius:12px;padding:24px;background:var(--ds-bg-white);color:var(--ds-text-primary)}
       .companion-settings-dialog::backdrop{background:#0005}
-      .companion-settings-dialog>header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-      .companion-settings-dialog>section{margin:18px 0;display:flex;flex-direction:column;gap:10px}
-      .companion-settings-dialog>header>button,.companion-settings-dialog>section>button{padding:6px 10px;border:1px solid #ddd;border-radius:6px}
+      .companion-settings-dialog>header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}
+      .companion-settings-dialog h2{margin:0;font-size:16px;line-height:24px;font-weight:600}
+      .companion-settings-dialog>section{display:flex;flex-direction:column;align-items:flex-start;gap:12px;min-width:0}
+      .companion-settings-dialog>section+section{margin-top:20px;padding-top:20px;border-top:1px solid var(--ds-border-default)}
+      .companion-settings-dialog h3{margin:0;font:inherit;font-weight:600}
+      .companion-settings-dialog p{margin:0;overflow-wrap:anywhere}
+      .companion-settings-dialog a{color:inherit;text-decoration:none}
+      .companion-settings-dialog .companion-settings-field{display:flex;flex-direction:column;gap:8px;width:100%;min-width:0}
+      .companion-settings-dialog .companion-settings-number{max-width:96px}
+      .companion-settings-context{color:var(--ds-text-tertiary);font-size:12px;line-height:20px}
+      .companion-settings-feedback{color:var(--ds-success-text-primary)}
+      .companion-settings-feedback[data-failed=true]{color:var(--ds-error-text-primary)}
       .companion-conversation .dsh-advisory-inbox{flex-shrink:0;max-height:min(35vh,350px)}
       @media(max-width:900px){
         .companion-content{flex-direction:column}
@@ -518,7 +574,7 @@ function App() {
         .companion-main .dsh-design-dock{width:100%;overflow:auto}
       }
       .companion-root[data-companion-view=panel-only]{flex-direction:row-reverse}
-      [data-companion-view=panel-only] .companion-sidebar{width:214px;box-sizing:border-box;padding:8px;border-right:0;border-left:1px solid var(--ds-line-1,#e8e8e8)}
+      [data-companion-view=panel-only] .companion-sidebar{width:214px;box-sizing:border-box;padding:8px;border-right:0;border-left:1px solid var(--ds-line-1,var(--ds-border-default,ButtonBorder))}
       [data-companion-view=panel-only] .companion-sidebar[data-collapsed=true]{width:52px}
       [data-companion-view=panel-only] .companion-sidebar-heading{min-height:28px;margin:0}
       [data-companion-view=panel-only] .companion-sidebar-heading .companion-icon-button svg{transform:scaleX(-1)}
@@ -595,7 +651,7 @@ function App() {
               .catch(() => {}).finally(() => { setRecoveringNotification(false); requestLivePoll() })
           }}>{recoveringNotification ? (locale === 'zh_CN' ? '正在通知…' : 'Notifying…') : (locale === 'zh_CN' ? '仅恢复通知' : 'Recover notification only')}</Button>}
         </section>}
-        {workspace && thread ? <DesignWorkspace hideProjectHeader={designOnly} {...workspace} experienceAvailable sessionId={thread} runtime={runtime} dockOpen
+        {workspace && thread ? <DesignWorkspace hideProjectHeader={designOnly} {...workspace} experienceAvailable preferences={preferences} sessionId={thread} runtime={runtime} dockOpen
           presentation={trialPanelPage ? 'panel-only' : 'workspace'} demonstrationSave={trialPanelPage} onControlsChange={publishControls}
           hostReportedSaveError={lastNotificationFailure} /> : <p>{chrome('designFilesReading')}</p>}
       </div>
@@ -606,34 +662,42 @@ function App() {
         <button type="button" aria-label={chrome('dismissNotice')} onClick={() => { setError(''); setPollError(''); setNotificationError(''); onNotice('') }}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"/></svg></button>
       </div>}
     </main>
-    <dialog className="companion-settings-dialog" ref={reviewDialog} aria-label={chrome('backgroundReviews')} onClose={() => setReviewDialogOpen(false)}>
-      <header><strong>{chrome('backgroundReviews')}</strong><button type="button" onClick={()=>reviewDialog.current?.close()}>{chrome('closeBackgroundReviews')}</button></header>
+    <dialog className="dsh-design-panel companion-settings-dialog" ref={reviewDialog} aria-label={chrome('backgroundReviews')} onClose={() => setReviewDialogOpen(false)}>
+      <header><h2>{chrome('backgroundReviews')}</h2><Button variant="ghost" type="button" onClick={()=>reviewDialog.current?.close()}>{chrome('closeBackgroundReviews')}</Button></header>
       {reviewLogError && <p role="status">{reviewLogError}</p>}
       <BackgroundReviewPanel locale={locale} value={backgroundReviews} disconnected={!!pollError || !!reviewLogError}/>
     </dialog>
-    <dialog className="companion-settings-dialog" ref={settingsDialog} aria-label={chrome('designSettings')}>
-      <header><strong>{chrome('settings')}</strong><button type="button" onClick={() => settingsDialog.current?.close()}>{chrome('closeSettings')}</button></header>
-      <section className="companion-settings">
-        <label htmlFor="companion-language">{chrome('language')}</label>
-        <select id="companion-language" value={language} onChange={event => {
-          const value = event.target.value as CompanionLanguage
-          companionLocale.setPreference(value)
-          setLanguage(value)
-        }}>
-          <option value="auto">{chrome('browserDefault')}</option>
-          <option value="zh">中文</option>
-          <option value="en">English</option>
-        </select>
+    <dialog className="dsh-design-panel companion-settings-dialog" ref={settingsDialog} aria-label={chrome('designSettings')}>
+      <header><h2>{chrome('settings')}</h2><Button variant="ghost" type="button" onClick={() => settingsDialog.current?.close()}>{chrome('closeSettings')}</Button></header>
+      <section>
+        <div className="companion-settings-field">
+        <PanelFieldCaption label={chrome('language')} htmlFor="companion-language" locale={locale} />
+        <PanelSelect id="companion-language" value={language} options={[
+          { value: 'auto', label: chrome('browserDefault') }, { value: 'zh', label: '中文' }, { value: 'en', label: 'English' },
+        ]} onValueChange={preference => {
+          const value = preference as CompanionLanguage
+          void changeLanguage(value).catch(() => { /* Existing preference feedback retains the retry. */ })
+        }} />
+        </div>
+        {preferenceError && <div role="alert"><p>{preferenceError}</p><Button variant="outline" type="button" onClick={() => {
+          if (failedPreferences.current) void savePreferences(failedPreferences.current).catch(() => {})
+        }}>{chrome('retryPreferences')}</Button></div>}
       </section>
-      <section className="companion-settings"><strong>{chrome('designSuggestions')}</strong>
-        <label>{chrome('maxSuggestions')}<input aria-label={chrome('maxSuggestions')} type="number" min="1" max="10" step="1" value={maxSuggestions} onChange={event => setMaxSuggestions(event.target.value)} /></label>
-        <button type="button" onClick={() => { void rpc('updateSettings', { maxSuggestions: Number(maxSuggestions) }).then(() => { requestLivePoll(); onNotice(chrome('settingsSaved'), true) }).catch(error => setError(String(error))) }}>{chrome('saveSettings')}</button>
+      <section><h3>{chrome('designSuggestions')}</h3>
+        <div className="companion-settings-field">
+          <PanelFieldCaption label={chrome('maxSuggestions')} htmlFor="companion-max-suggestions" locale={locale} />
+          <input id="companion-max-suggestions" className="dsh-design-field-input companion-settings-number" type="number" min="1" max="10" step="1" value={maxSuggestions} onChange={event => { setMaxSuggestions(event.target.value); setSettingsFeedback(undefined) }} />
+        </div>
+        <Button type="button" onClick={() => { void rpc('updateSettings', { maxSuggestions: Number(maxSuggestions) }).then(() => { requestLivePoll(); setSettingsFeedback({ failed: false }) }).catch(error => setSettingsFeedback({ failed: true, detail: error instanceof TypeError ? undefined : error instanceof Error ? error.message : String(error) })) }}>{chrome('saveSettings')}</Button>
+        {settingsFeedback && <p className="companion-settings-feedback" data-failed={settingsFeedback.failed} role={settingsFeedback.failed ? 'alert' : 'status'}>
+          {chrome('maxSuggestions')}: {chrome(settingsFeedback.failed ? 'settingsSaveFailed' : 'settingsSaved')}{settingsFeedback.failed && settingsFeedback.detail && <><br />{settingsFeedback.detail}</>}
+        </p>}
       </section>
-      {!designOnly && <section><strong>{chrome('display')}</strong><button type="button" onClick={() => resizeChat(DEFAULT_CHAT_WIDTH)}>{chrome('restoreChatLayout')}</button></section>}
-      <section><strong>{chrome('designStudio')}</strong><p>{chrome('studioDescription')}</p>
-        <a href={transport.headers['X-Design-Token'] ? `?view=studio#${encodeURIComponent(transport.headers['X-Design-Token'])}` : '?view=studio'} target="_blank" rel="noopener noreferrer" onClick={() => settingsDialog.current?.close()}>{chrome('openStudio')}</a>
+      {!designOnly && <section><h3>{chrome('display')}</h3><Button variant="outline" type="button" onClick={() => resizeChat(DEFAULT_CHAT_WIDTH)}>{chrome('restoreChatLayout')}</Button></section>}
+      <section><h3>{chrome('designStudio')}</h3><p>{chrome('studioDescription')}</p>
+        <Button variant="outline" asChild><a href={transport.headers['X-Design-Token'] ? `?view=studio#${encodeURIComponent(transport.headers['X-Design-Token'])}` : '?view=studio'} target="_blank" rel="noopener noreferrer" onClick={() => settingsDialog.current?.close()}>{chrome('openStudio')}</a></Button>
       </section>
-      <section><strong>{chrome('nativeConnection')}</strong><p>{currentHostLabel()} · {thread ?? chrome('connecting')}</p><p>{chrome('nativeConnectionDescription', { host: currentHostLabel() })}</p></section>
+      <section><h3>{chrome('nativeConnection')}</h3><p className="companion-settings-context">{currentHostLabel()} · {thread ?? chrome('connecting')}</p><p>{chrome('nativeConnectionDescription', { host: currentHostLabel() })}</p></section>
     </dialog>
   </div>
 }

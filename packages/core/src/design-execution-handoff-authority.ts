@@ -69,9 +69,25 @@ export async function pendingMustEditAuthorityForSave(
   skillName: string,
   head: string | undefined,
   readCommitDiff: (commit: string) => Promise<string>,
+  matchesCurrentPublication?: (commit: string, head: string) => Promise<boolean>,
 ): Promise<PendingMustEditAuthority | undefined> {
-  // Establish journal/HEAD authority before issuing any Git reads.
-  const initial = pendingMustEditAuthority(records, kitName, kitVersion, skillName, head)
+  // Journal publications keep their original commit pins. A caller may prove
+  // that later system records advanced HEAD without replacing that publication
+  // or changing Design evidence; do not mistake that audit commit for a gate.
+  let publicationHead = head
+  if (head !== undefined && matchesCurrentPublication !== undefined) {
+    for (let index = records.length - 1; index >= 0; index -= 1) {
+      const record = records[index]
+      if (record?.type !== 'design/changed'
+        || record.data.kit !== kitName || record.data.version !== kitVersion || record.data.skill !== skillName
+        || record.data.commit === undefined) continue
+      if (record.data.commit !== head && await matchesCurrentPublication(record.data.commit, head)) {
+        publicationHead = record.data.commit
+      }
+      break
+    }
+  }
+  const initial = pendingMustEditAuthority(records, kitName, kitVersion, skillName, publicationHead)
   if (initial === undefined || initial.panelStateRevision === undefined) return initial
   const commits: string[] = []
   for (let index = records.length - 1; index >= 0; index -= 1) {
@@ -91,5 +107,5 @@ export async function pendingMustEditAuthorityForSave(
     seen.add(commit)
     if ((await readCommitDiff(commit)).trim() !== '') { release = commit; break }
   }
-  return pendingMustEditAuthority(records, kitName, kitVersion, skillName, head, commit => commit === release)
+  return pendingMustEditAuthority(records, kitName, kitVersion, skillName, publicationHead, commit => commit === release)
 }

@@ -1,7 +1,14 @@
-import type { EditorField } from './dsl.ts'
+import type { EditorField, PanelManifest } from './dsl.ts'
 
 type Records = Record<string, Record<string, unknown>>
 const isRecord = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value)
+
+/** Titles and body controls apply the same declared nested-field edit rules. */
+export function recordMapItemManifest(field: EditorField): PanelManifest {
+  return { version: 1, panel_kind: 'document', sections: [{ id: 'items', title: 'Items' }],
+    fields: (field.item_fields ?? []).map(child => ({ ...child, applies_to: ['items'] })),
+    ui: { id: 'item-editor', component: 'record_form', source: 'items' } }
+}
 
 /** Read only. Missing order entries appear without rewriting saved facts. */
 export function recordMapState(field: EditorField, record: Record<string, unknown>): { items: Records; ids: string[] } | undefined {

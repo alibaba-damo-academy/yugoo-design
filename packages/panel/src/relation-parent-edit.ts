@@ -50,7 +50,7 @@ export function planRelationParentEdit(manifest: PanelManifest, data: Record<str
       ...(binding.orderPath && rawOrder ? { [binding.orderPath]: rawOrder.filter((id: string) => id !== existing[0]) } : {}) }
   }
   if (existing?.[1][graph.target_field] === parent) return {}
-  const id = existing?.[0] ?? freshRecordId(graph.edges, raw as Records)
+  const id = existing?.[0] ?? freshRecordId(graph.edges, raw as Records, definition.create?.id_prefix)
   const option = manifest.fields.find(field => field.key === graph.edge_kind_field && field.applies_to?.includes(graph.edges))
     ?.options?.find(value => value.value === kind)
   if (!existing && (!option?.label.trim() || option.label.includes('$t:'))) return

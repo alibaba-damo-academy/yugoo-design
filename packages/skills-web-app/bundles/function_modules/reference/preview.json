@@ -1,8 +1,8 @@
 {
-  "function_order": ["F-PREVIEW-001", "F-PREVIEW-002"],
+  "function_order": ["F-001", "F-002"],
   "functions": {
-    "F-PREVIEW-001": {
-      "function_id": "F-PREVIEW-001",
+    "F-001": {
+      "function_id": "F-001",
       "function_name": "保存阅读材料",
       "function_description": "合成预览示例：记录材料标题和链接，方便以后继续阅读。不是用户已确认需求。",
       "function_epic": "个人阅读",
@@ -19,8 +19,8 @@
         "exceptions": {"E-001": {"condition": "链接为空。", "response": "提示补充链接，保留已填标题。"}}
       }
     },
-    "F-PREVIEW-002": {
-      "function_id": "F-PREVIEW-002",
+    "F-002": {
+      "function_id": "F-002",
       "function_name": "查找已存材料",
       "function_description": "合成预览示例：按标题关键词查找已保存的材料，并返回阅读入口。",
       "function_epic": "个人阅读",

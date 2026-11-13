@@ -6,6 +6,7 @@ import { projectDesignExecutionProvenance, renderDesignExecutionProvenance } fro
 import { renderResult, apply } from '../src/dsh-run-design-skill-tool.ts'
 import { createDshDesignDelegation } from '../src/dsh-producer-delegation.ts'
 import { createDesignArtifactAttemptRegistry } from '../src/artifact-attempt-registry.ts'
+import { GitBlobSizeLimitError } from '../src/git.ts'
 
 const path = 'page_design/a.html'
 const content = Buffer.from('<html>Worker output</html>')
@@ -36,7 +37,7 @@ function fixture() {
         assert.equal(commit, pin.stateRevision)
         reads.push({ commit, file, maxBytes })
         const bytes = blobs.get(file)
-        if (bytes !== undefined && bytes.length > maxBytes) throw new Error('read limit exceeded')
+        if (bytes !== undefined && bytes.length > maxBytes) throw new GitBlobSizeLimitError(file, bytes.length, maxBytes)
         return bytes
       },
     },
@@ -56,6 +57,61 @@ test('Host receipt requires the actual child lifecycle and matching accepted byt
   request.observations.at(-1).receipt = { ...receipt, sha256: 'b'.repeat(64) }
   assert.equal(result.integratedWorkerReceipts[0].sha256, receipt.sha256)
   assert(Object.isFrozen(result.integratedWorkerReceipts[0]))
+})
+
+for (const [change, finalBytes] of [
+  ['larger', Buffer.concat([content, Buffer.from('12345678')])],
+  ['smaller', Buffer.from('Producer replacement')],
+  ['same-size replacement', Buffer.from(content.toString().replace('Worker', 'Owner!'))],
+]) test(`Producer integration with ${change} bytes preserves publication without certifying unchanged Worker output`, async () => {
+  const { request, blobs } = fixture()
+  blobs.set(path, finalBytes)
+  const result = await projectDesignExecutionProvenance(request)
+  assert.equal(result.integratedWorkerReceipts.length, 0)
+  assert.equal(result.workerAttempts[0].phase, 'completed')
+  assert.equal(result.stateRevision, pin.stateRevision)
+  assert.match(result.diagnostics.join('\n'), /Accepted publication remains valid/)
+  assert.match(result.diagnostics.join('\n'), /bytes differ.*after integration/)
+  assert.doesNotMatch(result.diagnostics.join('\n'), /exceeds|read budget|unavailable/)
+})
+
+test('actual final artifact size still obeys the configured file cap rather than the old receipt size', async () => {
+  const { request, blobs } = fixture()
+  request.limits.maxFileBytes = 200
+  blobs.set(path, Buffer.alloc(201))
+  const result = await projectDesignExecutionProvenance(request)
+  assert.equal(result.integratedWorkerReceipts.length, 0)
+  assert.match(result.diagnostics.join('\n'), /exceeds 200 bytes/)
+  assert.doesNotMatch(result.diagnostics.join('\n'), /Accepted publication remains valid/)
+})
+
+test('actual artifact reads remain bounded by the remaining aggregate budget', async () => {
+  const { request, reads, blobs } = fixture()
+  const canonicalBytes = blobs.get(`${pin.skillName}/${pin.skillName}.json`).length
+  request.limits.maxTotalBytes = canonicalBytes + content.length - 1
+  const result = await projectDesignExecutionProvenance(request)
+  assert.equal(result.integratedWorkerReceipts.length, 0)
+  assert.match(result.diagnostics.join('\n'), /exceeds the configured read budget/)
+  assert.doesNotMatch(result.diagnostics.join('\n'), /Accepted publication remains valid/)
+  assert.equal(reads.at(-1).maxBytes, content.length - 1)
+})
+
+test('a smaller integrated artifact charges only captured bytes before checking another Worker', async () => {
+  const { request, reads, blobs } = fixture()
+  const secondPath = 'page_design/b.html'
+  const smaller = Buffer.from('<html/>')
+  const canonical = Buffer.from(JSON.stringify({ pages: [{ artifact_file: path }, { artifact_file: secondPath }] }))
+  blobs.set(`${pin.skillName}/${pin.skillName}.json`, canonical)
+  blobs.set(path, smaller)
+  blobs.set(secondPath, content)
+  const secondWorker = { ...worker, attemptId: 'second-attempt', artifactId: 'b', artifactFile: secondPath, runId: 'second-worker' }
+  request.observations.push({ ...secondWorker, phase: 'working' },
+    { ...secondWorker, phase: 'completed', receipt: { ...receipt, path: secondPath } })
+  request.limits.maxTotalBytes = canonical.length + smaller.length + content.length
+  const result = await projectDesignExecutionProvenance(request)
+  assert.deepEqual(result.integratedWorkerReceipts.map(row => row.path), [secondPath])
+  assert.match(result.diagnostics.join('\n'), /bytes differ.*after integration/)
+  assert.equal(reads.at(-1).maxBytes, content.length)
 })
 
 for (const field of ['projectId', 'invocationId', 'rootCallId', 'skill']) test(`wrong ${field} cannot borrow an old successful receipt`, async () => {

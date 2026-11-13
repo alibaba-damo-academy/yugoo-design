@@ -1,5 +1,11 @@
 # business_rules output contract
 
+## Record IDs
+
+For new business rules prefer `BR-001`, `BR-002`, and so on. Conditions and outcomes remain content of that same rule.
+
+Existing IDs, including older formats, remain valid during ordinary edits and reconstruction. If the user explicitly requests business renumbering, revise actual record keys/IDs and current references/orders together through their existing owners; keep technical IDs and history unchanged. Names and titles remain readable content, separate from identity.
+
 Shared by ordinary design and reconstruction. Canonical state is
 `business_rules/business_rules.json`; the installed schema and validation remain
 authoritative. This reference describes representation and semantic checks,

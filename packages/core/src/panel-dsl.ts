@@ -166,6 +166,8 @@ export interface PanelSection {
     header?: {
       variant: 'detail' | 'card'
       title: { field: string; editable?: boolean } | { text: string; numbered?: boolean }
+      /** Display the saved business identity beside the name, never generate one. */
+      show_id?: boolean
     }
     body?: readonly (FormField | FormRow | FormGroup | FormTabs)[]
   }
@@ -178,6 +180,8 @@ export interface PanelSection {
   /** Optional canonical id field and initial scalar values for user-created records. */
   create?: {
     id_field?: string
+    /** Optional business prefix for new local records, e.g. F → F-001. */
+    id_prefix?: string
     defaults?: Record<string, string | number | boolean | readonly string[]>
     /** Localized label for a newly inserted record only; never rewrites saved records.
      * A nonempty supplied name or default wins. numbered_text permits only {index}. */
@@ -212,6 +216,8 @@ export interface EditorField {
   /** select: false prevents new empty selections, without normalizing saved values. */
   allow_clear?: boolean
   readonly?: boolean
+  /** Read-only optional collections may omit their empty reading surface. Never clears data. */
+  hide_when_empty?: boolean
   /** Binding-only field (for example an owned parent reference); not an input. */
   hidden?: boolean
   /** token_list: suggestions remain optional; free text values are preserved. */
@@ -318,6 +324,10 @@ export interface ComponentNode {
   diagram?: { format: 'bpmn'; file_field: string; label_field: string; label_source?: string; artifact_kind: string; order_only?: boolean; summary_fields?: readonly string[]; detail_rows?: readonly (readonly string[])[]; detail_hint_fields?: readonly string[]; chip_fields?: readonly string[]; tags?: readonly { field: string; labels?: Record<string, string>; tones?: Record<string, 'danger' | 'warning' | 'success' | 'neutral'> }[]
     /** Opt-in contextual record editor beside the diagram; all sections keep their existing bindings. */
     inspector?: {
+      /** Full-width continuous details with node anchors; omission keeps the side inspector. */
+      presentation?: 'document'
+      /** Bundle-authored request when an existing diagram has no node supplements yet. */
+      migration?: { message: string; action_label: string; prompt: string }
       process_sections: readonly string[]
       nodes: { source: string; process_field: string; element_field: string; label_field: string; sections: readonly string[] }
       related?: readonly { source: string; process_field: string; node_field?: string; sections: readonly string[]; advanced?: boolean }[]
@@ -325,11 +335,15 @@ export interface ComponentNode {
   }
   artifacts?: {
     records_path: string
+    /** Parent/child map keys are authored business numbers in this workspace. */
+    show_ids?: boolean
     order_path?: string
     current_path?: string
     title_field: string
     file_field: string
     artifact_kind: string
+    /** Local record fields, using the same field contract as nested record forms. */
+    fields?: readonly EditorField[]
     children: {
       records_field: string
       order_field?: string
@@ -339,6 +353,7 @@ export interface ComponentNode {
       links_field?: string
       artifact_kind: string
       scoped_ids?: boolean
+      fields?: readonly EditorField[]
     }
   }
   document?: {
@@ -490,11 +505,13 @@ export interface ComponentNode {
   rounds_source?: string
   /** Contiguous cards sharing a content-owned frame, without changing record order. */
   card_groups?: readonly { id: string; title: string; question_ids: readonly string[];
-    /** always_expanded selects answer reading/editing; the outer question frame can still collapse. */
+    /** always_expanded presents the group as a compact form; editing guards still apply. */
     presentation?: { always_expanded?: boolean; show_detail?: boolean; show_attachments?: boolean }
   }[]
   /** Optional question-workspace behavior; record identities belong to the Bundle. */
   question_policy?: {
+    /** Display saved question identities; fixed first-round settings keep their labels. */
+    show_ids?: boolean
     first_round_ids?: readonly string[]
     protected_ids?: readonly string[]
     history_readonly?: boolean
@@ -584,6 +601,7 @@ export function validatePanelManifest(manifest: PanelManifest): string[] {
       if (entry.create === null || typeof entry.create !== 'object' || Array.isArray(entry.create)) errors.push(`section ${entry.id}: invalid create contract`)
       else {
         if (entry.create.id_field !== undefined && (!isSafeDottedPath(entry.create.id_field) || entry.create.id_field.includes('.'))) errors.push(`section ${entry.id}: invalid id_field`)
+        if (entry.create.id_prefix !== undefined && (typeof entry.create.id_prefix !== 'string' || !entry.create.id_prefix.trim())) errors.push(`section ${entry.id}: invalid id_prefix`)
         if (entry.create.defaults !== undefined) scalarDefaults(entry.create.defaults, `section ${entry.id}.create.defaults`)
         if (entry.create.initial_label !== undefined) {
           const label = entry.create.initial_label
@@ -634,6 +652,9 @@ export function validatePanelManifest(manifest: PanelManifest): string[] {
     const field = entry
     for (const key of ['description', 'placeholder', 'custom_description'] as const) if (field[key] !== undefined && typeof field[key] !== 'string') errors.push(`field ${field.key}: ${key} must be text`)
     if (field.readonly !== undefined && typeof field.readonly !== 'boolean') errors.push(`field ${field.key}: readonly must be boolean`)
+    if (field.hide_when_empty !== undefined && (typeof field.hide_when_empty !== 'boolean'
+      || field.hide_when_empty && (field.readonly !== true || field.required === true || (field.required_in?.length ?? 0) > 0
+        || !['list', 'rows', 'token_list', 'source_list', 'record_map', 'source_reference_map'].includes(field.control)))) errors.push(`field ${field.key}: hide_when_empty requires an optional read-only collection`)
     if (field.hidden !== undefined && typeof field.hidden !== 'boolean') errors.push(`field ${field.key}: hidden must be boolean`)
     if (field.required !== undefined && typeof field.required !== 'boolean') errors.push(`field ${field.key}: required must be boolean`)
     if (field.required_in !== undefined) {
@@ -978,7 +999,13 @@ export function validatePanelManifest(manifest: PanelManifest): string[] {
     const header = form.header
     if (!header || typeof header !== 'object' || Array.isArray(header)
       || !['detail', 'card'].includes(header.variant)
-      || Object.keys(header).some(key => !['variant', 'title'].includes(key))) { errors.push(`${path}: invalid header`); continue }
+      || Object.keys(header).some(key => !['variant', 'title', 'show_id'].includes(key))
+      || (header.show_id !== undefined && typeof header.show_id !== 'boolean')) { errors.push(`${path}: invalid header`); continue }
+    if (header.show_id === true) {
+      const identity = fields.find((entry): entry is EditorField => isEditorField(entry)
+        && entry.key === (section.create?.id_field ?? 'id') && entry.applies_to?.includes(section.id) === true)
+      if (!identity || identity.control !== 'text' || identity.readonly !== true || identity.visible_when) errors.push(`${path}: header identity requires an unconditional declared readonly text field`)
+    }
     const title = header.title
     if (!title || typeof title !== 'object' || Array.isArray(title)) { errors.push(`${path}: invalid header title`); continue }
     if ('field' in title) {
@@ -1143,6 +1170,9 @@ export function validatePanelManifest(manifest: PanelManifest): string[] {
           if (!inspector || typeof inspector !== 'object' || Array.isArray(inspector)
             || !sameSections(inspector.process_sections, component.source)) errors.push(`${path}: diagram inspector requires same-collection process sections`)
           else {
+            if (inspector.presentation !== undefined && inspector.presentation !== 'document') errors.push(`${path}: invalid diagram inspector presentation`)
+            if (inspector.migration !== undefined && (!inspector.migration || typeof inspector.migration !== 'object'
+              || ['message', 'action_label', 'prompt'].some(key => typeof inspector.migration![key as keyof typeof inspector.migration] !== 'string' || !inspector.migration![key as keyof typeof inspector.migration].trim()))) errors.push(`${path}: diagram migration requires a message, action label and request`)
             const checkGroup = (group: typeof inspector.nodes | NonNullable<typeof inspector.related>[number], nodes: boolean) => {
               if (!group || typeof group !== 'object' || !sameSections(group.sections, group.source)) { errors.push(`${path}: invalid diagram inspector record sections`); return }
               const processField = fieldOf(group.source, group.process_field)
@@ -1200,6 +1230,17 @@ export function validatePanelManifest(manifest: PanelManifest): string[] {
         for (const binding of [config.order_path, config.current_path, config.children.order_field, config.children.points_field, config.children.links_field]) if (binding !== undefined && !isSafeDottedPath(binding)) errors.push(`${path}: invalid optional artifact workspace binding`)
         for (const kind of [config.artifact_kind, config.children.artifact_kind]) if (typeof kind !== 'string' || !/^[a-zA-Z][\w-]*$/u.test(kind)) errors.push(`${path}: invalid artifact kind`)
         if (config.children.scoped_ids !== undefined && typeof config.children.scoped_ids !== 'boolean') errors.push(`${path}: scoped_ids must be boolean`)
+        if (config.show_ids !== undefined && typeof config.show_ids !== 'boolean') errors.push(`${path}: show_ids must be boolean`)
+        for (const [owner, declared, titleField] of [['parent', config.fields, config.title_field], ['child', config.children.fields, config.children.title_field]] as const) {
+          if (declared === undefined) continue
+          if (!Array.isArray(declared) || declared.length === 0) { errors.push(`${path}: ${owner} artifact fields must be a nonempty field list`); continue }
+          for (const field of declared) if (!isEditorField(field) || !isSafeDottedPath(field.key) || field.key.includes('.') || field.applies_to !== undefined) errors.push(`${path}: ${owner} artifact fields must bind local own properties`)
+          errors.push(...validatePanelManifest({ version: 1, panel_kind: 'document', i18n: manifest.i18n,
+            sections: [{ id: 'artifact', title: 'Artifact', form: { header: { variant: 'detail', title: { field: titleField, editable: true } } } }],
+            fields: declared.map(field => ({ ...field, applies_to: ['artifact'] })),
+            ui: { id: 'artifact-fields', component: 'record_form', source: 'artifact' },
+          }).map(error => `${path}: ${owner} artifact fields: ${error}`))
+        }
       }
     }
     if (component.component === 'document_workspace') {
@@ -1413,40 +1454,12 @@ export function validatePanelManifest(manifest: PanelManifest): string[] {
             return !owner || !view || (view.records_path ?? source) !== (owner.records_path ?? owner.id)
           })) errors.push(`${path}: related editor sources must share its canonical collection`)
       }
-      if (component.record_table !== undefined) {
-      if (component.record_cards !== undefined) errors.push(`${path}: choose a record table or reading cards, not both`)
-      const table = component.record_table
-      const columns = table?.columns
-      const keys = new Set<string>()
-      if (component.component !== 'record_related_editor' || !table || typeof table !== 'object' || Array.isArray(table)
-        || Object.keys(table).some(key => key !== 'columns') || !Array.isArray(columns) || !columns.length || columns.length > 12) {
-        errors.push(`${path}: record_table requires related-editor columns`)
-      } else {
-        for (const column of columns) {
-          if (!column || typeof column !== 'object' || Array.isArray(column)
-            || Object.keys(column).some(key => !['fields', 'label'].includes(key))
-            || !isStringList(column.fields) || !column.fields.length || column.fields.length > 8
-            || (column.label !== undefined && (typeof column.label !== 'string' || !column.label.trim()))) {
-            errors.push(`${path}: invalid record_table column`); continue
-          }
-          for (const key of column.fields) {
-            const field = fieldOf(component.source, key)
-            if (!field || field.hidden || keys.has(key)) errors.push(`${path}: record_table needs unique visible declared fields: ${key}`)
-            keys.add(key)
-          }
-        }
-        for (const field of fields) {
-          if (isEditorField(field) && field.applies_to?.includes(component.source ?? '') && !field.hidden && !keys.has(field.key)) {
-            errors.push(`${path}: record_table must retain visible field ${field.key}`)
-          }
-        }
-      }
-    }
     if (component.inherit_from_graph !== undefined && (component.inherit_from_graph !== true
         || !workspaceGraph?.hierarchy || workspaceGraph.nodes !== reference?.options_from_section
         || workspaceGraph.edges === component.source)) errors.push(`${path}: inherit_from_graph needs the workspace hierarchy and an associated record section`)
     }
     if (component.record_table !== undefined) {
+      if (component.record_cards !== undefined) errors.push(`${path}: choose a record table or reading cards, not both`)
       const table = component.record_table
       const columns = table?.columns
       const keys = new Set<string>()
@@ -1519,7 +1532,7 @@ export function validatePanelManifest(manifest: PanelManifest): string[] {
         errors.push(`${path}: question_policy requires a question workspace and an object`)
       } else {
         for (const key of Object.keys(policy)) {
-          if (!['first_round_ids', 'protected_ids', 'history_readonly', 'numbered_rounds', 'allow_rejection', 'allow_choice_actions'].includes(key)) errors.push(`${path}: unknown question policy ${key}`)
+          if (!['show_ids', 'first_round_ids', 'protected_ids', 'history_readonly', 'numbered_rounds', 'allow_rejection', 'allow_choice_actions'].includes(key)) errors.push(`${path}: unknown question policy ${key}`)
         }
         for (const key of ['first_round_ids', 'protected_ids'] as const) {
           const ids = policy[key]
@@ -1527,7 +1540,7 @@ export function validatePanelManifest(manifest: PanelManifest): string[] {
             || ids.some(id => id.trim() === '' || isUnsafePanelKey(id))
             || new Set(ids).size !== ids.length)) errors.push(`${path}: ${key} must contain unique safe record ids`)
         }
-        for (const key of ['history_readonly', 'numbered_rounds', 'allow_rejection', 'allow_choice_actions'] as const) {
+        for (const key of ['show_ids', 'history_readonly', 'numbered_rounds', 'allow_rejection', 'allow_choice_actions'] as const) {
           if (policy[key] !== undefined && typeof policy[key] !== 'boolean') errors.push(`${path}: ${key} must be boolean`)
         }
         if (policy.allow_rejection && !ownsField(component.source, 'rejected')) errors.push(`${path}: rejection needs a declared rejected field`)

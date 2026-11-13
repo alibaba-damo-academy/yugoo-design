@@ -10,6 +10,8 @@ description: |-
 
 # Smart Questions
 
+See the [record ID guidance](reference/artifact-contract.md#record-ids) for this Bundle's numbering suggestions and existing identity boundaries.
+
 ## Purpose: product understanding that evolves
 
 Maintain a coherent account of who the product serves, the problem in their
@@ -33,7 +35,8 @@ because no other Bundle has recorded it.
 
 ## Shared method for design and reconstruction
 
-Read [the shared output contract](reference/artifact-contract.md) for these field meanings, examples and checks; it is used by both ordinary design and reconstruction.
+Before authoring, read [the output contract](reference/artifact-contract.md)
+for field meanings, examples and checks shared by design and reconstruction.
 
 ## Interaction: useful to this person now
 
@@ -54,16 +57,19 @@ Choose how to resolve uncertainty before turning it into a question:
   proceed within the agreed scope; do not turn it into a prerequisite.
 
 These are reasoning choices, not new question types or persisted statuses.
-The question panel remains the interaction surface: put a concise proposal,
-its useful context and the decision to make in the card's `prompt`, with
-appropriate `choices` or free-text input. Do not put the proposed answer into
+The question panel remains the interaction surface. Use `prompt` for a concise
+question with the proposal, context or consequences needed to answer it.
+For choice questions, put complete options and option-specific explanations
+only in `choices[].label`; do not enumerate or restate each option in `prompt`.
+Do not put the proposed answer into
 the user's `answer` or use `detail` as a substitute for visible question text.
 Free-text questions have one response field: `answer`. Keep their `detail`
 empty; any user-supplied explanation belongs with that answer. Choice questions
 may use `detail` for an actual user-supplied explanation or a faithful summary
 of explicit user evidence. Do not generate a second response area for free text.
-Put your proposed scope, rationale, examples and unresolved questions in
-`prompt`, not in user-response fields. Your earlier proposal, a Producer brief,
+Keep question-level scope, rationale, examples and unresolved context in
+`prompt` only when needed to understand the question, not in user-response fields.
+Your earlier proposal, a Producer brief,
 and another Agent's summary do not establish that the user said or confirmed
 something; trace prefilled answers to direct user input or saved user edits.
 Do not replace the panel with a chat-only interview or a native Ask Question.
@@ -100,10 +106,12 @@ When the user wants a result, offer explicit reversible defaults rather than
 forcing premature decisions. Do not record a recommendation as their answer.
 Ask the smallest necessary question when a consequential decision has no safe
 provisional option; explain why, or propose a narrower scope without silently
-changing agreed scope. Never ask about Host-managed deployment, credentials,
-hosting or infrastructure tuning. Technical decisions remain product questions
-only when their user-visible consequences actually require user judgment.
-Application-type choices must respect the supplied platform environment.
+changing agreed scope. Reuse actual project and Host context instead of asking
+users to configure Host accounts or infrastructure as product requirements.
+Target-application delivery, deployment and offline constraints are product
+questions when their consequences matter to the requested design. Do not assume
+a cloud stack or infer the target's deployment from a local Host.
+Technical choices follow established application needs and real constraints.
 
 Offer "other", "not sure, advise me", or "simplify first; decide after the
 prototype" where meaningful. Preserve the user's words through existing fields.
@@ -111,7 +119,7 @@ Deferral is a valid instruction about proceeding, not approval of unknown
 details. Do not rephrase rejected/deferred questions after a mere round or
 revision change. Revisit only when the user returns to the decision, material
 new evidence changes its impact, or a newly requested result genuinely needs it;
-explain what changed. Fixed login/storage defaults alone never justify a round.
+explain what changed. App basics or old login/storage settings alone never justify another round.
 
 ## Eliciting a concrete situation without a story template
 
@@ -142,20 +150,18 @@ claim ownership of formal story management or duplicate its records.
 Use user statements and established Design evidence without asking again.
 Update an existing relevant card when a user changes its answer. Do not create
 a self-answered duplicate just to copy another artifact or log a chat statement.
-Maintain shared product facts through the existing owning paths; the Producer
+Maintain shared product facts through the existing owning paths; the executor
 does not gain authority to write another Bundle or GROUND from this instruction.
-Preserve existing answers, including the fixed cards' initialized values;
-preserving a value does not newly confirm it. For a new unanswered dynamic
-question, leave `answer` empty until the user supplies or adopts an answer.
-A recommendation for the deliverable belongs in the question's proposal, not
-in that empty answer. Follow the fixed-card initialization contract below when
-creating a panel; do not clear its defaults because no new confirmation occurred.
-In both cases, describe the actual basis of a value rather than equating a
-non-empty answer with user approval.
-
-### Reconstruction
-
-Read [the shared output contract](reference/artifact-contract.md) for these field meanings, examples and checks; it is used by both ordinary design and reconstruction.
+Preserve existing answers, including old initialized login/storage values;
+preserving a value does not newly confirm it. For any new unanswered question,
+leave `answer` empty until the user supplies or adopts an answer. A recommendation
+belongs in the question's proposal, not in that empty answer. For a new initial
+background overview, use the shared contract's App basics group: identity need,
+content retention and usage devices. Reuse known facts; ask only about material
+unknowns. Preserve an existing question set on revision instead of replacing
+old settings or appending the new group automatically.
+For reconstruction, follow the shared contract's source-backed 5W1H method.
+Always describe the actual basis of a value; a non-empty answer is not user approval.
 
 ## Persistence and close-out
 
@@ -198,7 +204,3 @@ prefill or "not sure" alone do not increase U/S/T or imply confirmation.
 Material user answers can clarify U; concrete scope, workflow or observable
 behavior can support S/T under the existing Host rubric. Explicit scope
 reduction may add evidence while other details remain unknown.
-
-## Fixed-card contract
-
-Read [the shared output contract](reference/artifact-contract.md) for these field meanings, examples and checks; it is used by both ordinary design and reconstruction.

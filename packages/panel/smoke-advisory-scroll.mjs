@@ -17,42 +17,59 @@ try {
     </li>`).join('')
   await page.setContent(`<!doctype html>
     <style>${advisoryCss}</style>
-    <main class="dsh-advisory-expanded-layer" style="left:72px;top:76px;width:544px;height:740px">
-      <div class="dsh-advisory-carousel">
-        <article class="dsh-advisory-card" data-expanded>
-          <header class="dsh-advisory-card-header">Reflection review</header>
+    <main class="dsh-advisory-inbox" style="position:fixed;left:72px;bottom:60px;width:544px">
+      <header class="dsh-advisory-inbox-heading">Design Advisories</header>
+      <section class="dsh-advisory-review"><div class="dsh-advisory-carousel">
+        <article class="dsh-advisory-card">
           <p class="dsh-advisory-summary">Review the complete recommendation set.</p>
-          <details class="dsh-advisory-details" open>
-            <summary>Close details</summary>
+          <details class="dsh-advisory-details">
+            <summary>Details</summary>
             <div class="dsh-advisory-items-scroll"><ul class="dsh-advisory-items">${items}</ul></div>
           </details>
-          <footer class="dsh-advisory-actions"><button>Accept</button><button>Reject</button></footer>
+          <footer class="dsh-advisory-actions"><button>Accept</button><button>Reject</button><button>Later</button></footer>
         </article>
-        <nav class="dsh-advisory-carousel-controls"><button>←</button><span>1 / 2</span><button>→</button></nav>
-      </div>
-    </main>`)
+        <nav class="dsh-advisory-carousel-controls"><time class="dsh-advisory-time">Today 12:28</time><button>←</button><span class="dsh-advisory-position">1 / 2</span><button>→</button></nav>
+      </div></section>
+    </main>
+    <script>document.querySelector('details').addEventListener('toggle', event => document.querySelector('article').toggleAttribute('data-expanded', event.target.open))</script>`)
+
+  const appearance = () => page.evaluate(() => {
+    const selectors = ['.dsh-advisory-inbox', '.dsh-advisory-time', '.dsh-advisory-carousel-controls button', '.dsh-advisory-position']
+    return selectors.map(selector => {
+      const node = document.querySelector(selector), css = getComputedStyle(node)
+      return { font: css.font, color: css.color, border: css.border, background: css.backgroundColor,
+        padding: css.padding, borderRadius: css.borderRadius, width: node.getBoundingClientRect().width }
+    })
+  })
+  const collapsed = await appearance()
+  await page.locator('summary').click()
+  await page.waitForFunction(() => document.querySelector('article').hasAttribute('data-expanded'))
+  assert.deepEqual(await appearance(), collapsed, 'expansion preserves the frame, date and pagination appearance')
 
   const scroll = page.locator('.dsh-advisory-items-scroll')
-  const layer = page.locator('.dsh-advisory-expanded-layer')
+  const layer = page.locator('.dsh-advisory-inbox')
   const actions = page.locator('.dsh-advisory-actions')
   const pagination = page.locator('.dsh-advisory-carousel-controls')
   const geometryBefore = await Promise.all([layer.boundingBox(), actions.boundingBox(), pagination.boundingBox()])
   const capacity = await scroll.evaluate(node => ({ clientHeight: node.clientHeight, scrollHeight: node.scrollHeight }))
   assert.ok(capacity.clientHeight > 0 && capacity.scrollHeight > capacity.clientHeight, 'expanded advisory details must own a bounded scroll viewport')
+  assert.ok(geometryBefore[1].y + geometryBefore[1].height <= geometryBefore[0].y + geometryBefore[0].height, 'actions remain within the original frame')
+  assert.ok(geometryBefore[2].y + geometryBefore[2].height <= geometryBefore[0].y + geometryBefore[0].height, 'date and pagination remain visible')
 
   await scroll.hover()
-  await page.mouse.wheel(0, 600)
+  await page.mouse.wheel(0, capacity.scrollHeight)
   await page.waitForTimeout(50)
   const down = await scroll.evaluate(node => node.scrollTop)
   assert.ok(down > 0, 'mouse wheel must scroll expanded advisory details down')
+  assert.ok(await scroll.evaluate(node => node.scrollTop + node.clientHeight >= node.scrollHeight - 1), 'the final recommendation remains reachable')
   await page.mouse.wheel(0, -300)
   await page.waitForTimeout(50)
   const up = await scroll.evaluate(node => node.scrollTop)
   assert.ok(up < down, 'mouse wheel must scroll expanded advisory details up')
 
   const geometryAfter = await Promise.all([layer.boundingBox(), actions.boundingBox(), pagination.boundingBox()])
-  assert.deepEqual(geometryAfter, geometryBefore, 'detail scrolling must not move the composer-width layer, actions, or pagination')
-  assert.equal(geometryAfter[0]?.width, 544, 'expanded advisory must stay constrained to the conversation column')
+  assert.deepEqual(geometryAfter, geometryBefore, 'detail scrolling must not move the original frame, actions, or pagination')
+  assert.equal(geometryAfter[0]?.width, 544, 'expanded advisory keeps its original width')
   assert.equal(await page.evaluate(() => window.scrollY), 0, 'detail scrolling must not scroll the host page')
 } finally {
   await browser.close()

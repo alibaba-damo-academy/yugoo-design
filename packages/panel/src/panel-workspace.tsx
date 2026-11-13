@@ -1,5 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type InputHTMLAttributes, type KeyboardEvent, type PointerEvent, type ReactElement, type ReactNode } from 'react'
-import { Info, PanelsTopLeft, Pencil, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, Info, PanelsTopLeft, Pencil, Trash2, X } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { panelPopupTheme } from './panel-select.tsx'
 import { Handle, Position } from '@xyflow/react'
@@ -9,25 +9,44 @@ import { panelText, usePanelI18n } from './panel-i18n.tsx'
 const DEFAULT_SIDEBAR_WIDTH = 220
 const MIN_SIDEBAR_WIDTH = 160
 const MAX_SIDEBAR_WIDTH = 460
+// Includes shared gutters and card padding, so fixed actions cannot reduce a
+// record's editable title to zero. The workspace owns any horizontal overflow.
+const MIN_WORKSPACE_CONTENT_WIDTH = 400
+const WORKSPACE_DIVIDER_WIDTH = 1
+
+/** Saved identities share the existing card treatment, without an editor. */
+export function PanelRecordId({ value, label }: { value?: string; label?: string }): ReactElement | null {
+  return value?.trim() ? <small className='dsh-record-board-id' title={label}>{value}</small> : null
+}
 
 /** Record forms and specialized readers share the complete title-bar layout.
  * Without a declared variant, preserve the existing unframed record title. */
-export function PanelRecordHeader({ variant, placement, titleRole, context, children }: {
+export function PanelRecordHeader({ variant, placement, titleRole, context, meta, recordId, recordIdLabel, className, children }: {
   variant?: 'detail' | 'card'
   placement?: 'workspace'
   /** The containing view owns hierarchy independently of the header's frame. */
   titleRole?: 'workspace' | 'record'
   /** Optional supporting context; essential decisions stay in the record body. */
   context?: string
+  /** Brief read-only record metadata, aligned to the end of the title row. */
+  meta?: string
+  /** Existing canonical identity; display only, independent of title and counts. */
+  recordId?: string
+  recordIdLabel?: string
+  /** Scene-specific content, with the shared title-bar frame retained. */
+  className?: string
   children?: ReactNode
 }): ReactElement {
   const style = variant ?? (placement === 'workspace' ? 'detail' : undefined)
   const role = titleRole ?? (style === 'card' ? 'record' : 'workspace')
   const hasContext = !!context?.trim()
-  const content = <>{children}{hasContext ? <p className='dsh-panel-header-context'>{context}</p> : null}</>
+  const hasMeta = !!meta?.trim()
+  const hasId = !!recordId?.trim()
+  const heading = <><PanelRecordId value={recordId} label={recordIdLabel} />{children}</>
+  const content = <>{hasMeta ? <span className='dsh-panel-header-main'>{heading}</span> : heading}{hasMeta ? <span className='dsh-panel-header-meta'>{meta}</span> : null}{hasContext ? <p className='dsh-panel-header-context'>{context}</p> : null}</>
   return style
-    ? <header data-panel-title-role={role} className={`dsh-design-record-title dsh-design-record-header is-${style}${placement === 'workspace' ? ' is-workspace' : ''}${hasContext ? ' has-context' : ''}`}>{content}</header>
-    : <div data-panel-title-role={role} className={`dsh-design-record-title${hasContext ? ' has-context' : ''}`}>{content}</div>
+    ? <header data-panel-title-role={role} className={`dsh-design-record-title dsh-design-record-header is-${style}${placement === 'workspace' ? ' is-workspace' : ''}${hasContext ? ' has-context' : ''}${hasMeta ? ' has-meta' : ''}${hasId ? ' has-record-id' : ''}${className ? ` ${className}` : ''}`}>{content}</header>
+    : <div data-panel-title-role={role} className={`dsh-design-record-title${hasContext ? ' has-context' : ''}${hasMeta ? ' has-meta' : ''}${hasId ? ' has-record-id' : ''}${className ? ` ${className}` : ''}`}>{content}</div>
 }
 
 /** The existing name binding remains the only editor; the pencil only focuses it. */
@@ -40,7 +59,7 @@ export function PanelEditableTitle({ locale, ...props }: InputHTMLAttributes<HTM
     <input {...props} ref={input} className={`dsh-design-record-header-input${props.className ? ` ${props.className}` : ''}`}
       data-panel-title={canEdit ? 'editable' : 'readonly'} />
     {canEdit ? <button type='button' className='dsh-panel-title-edit' aria-label={editLabel} title={editLabel}
-      onClick={() => { input.current?.focus({ preventScroll: true }); input.current?.select() }}>
+      onClick={event => { event.preventDefault(); input.current?.focus({ preventScroll: true }); input.current?.select() }}>
       <Pencil size={14} aria-hidden='true' />
     </button> : null}
   </span>
@@ -57,11 +76,14 @@ export function PanelCanvasHandles({ isConnectable = true }: { isConnectable?: b
 
 /** Counts describe the projected graph, not newly persisted business facts. */
 export function PanelCanvasToolbar(props: { title: ReactNode; counts: ReactNode; children?: ReactNode; placement?: 'workspace' }): ReactElement {
-  return <header className={`dsh-canvas-toolbar${props.placement === 'workspace' ? ' is-workspace' : ''}`}>
-    <div className='dsh-canvas-toolbar-heading'><span className='dsh-canvas-toolbar-title'>{props.title}</span>
+  const content = <>
+    <div className='dsh-panel-header-title-group dsh-canvas-toolbar-heading'><span className='dsh-canvas-toolbar-title'>{props.title}</span>
       <span className='dsh-canvas-toolbar-counts'>{props.counts}</span></div>
     {props.children ? <div className='dsh-canvas-toolbar-actions'>{props.children}</div> : null}
-  </header>
+  </>
+  return props.placement === 'workspace'
+    ? <PanelRecordHeader placement='workspace' className='dsh-canvas-toolbar is-workspace'>{content}</PanelRecordHeader>
+    : <header className='dsh-canvas-toolbar'>{content}</header>
 }
 
 function savedSidebarWidth(id: string | undefined): number {
@@ -154,7 +176,26 @@ export function PanelWorkspace(props: {
   const { t } = usePanelI18n()
   const root = useRef<HTMLElement>(null)
   const [sidebarWidth, setSidebarWidth] = useState(() => savedSidebarWidth(props.autoSaveId))
+  const [workspaceWidth, setWorkspaceWidth] = useState(0)
   const [resizing, setResizing] = useState(false)
+  const sidebarMax = workspaceWidth > 0
+    ? Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, workspaceWidth - WORKSPACE_DIVIDER_WIDTH - MIN_WORKSPACE_CONTENT_WIDTH))
+    : MAX_SIDEBAR_WIDTH
+  const effectiveSidebarWidth = Math.min(sidebarWidth, sidebarMax)
+
+  useLayoutEffect(() => {
+    const workspace = root.current
+    if (!workspace || typeof ResizeObserver !== 'function') return
+    const observer = new ResizeObserver(() => {
+      const width = workspace.getBoundingClientRect().width
+      // A temporarily hidden view retains its mounted editor and width preference.
+      if (width > 0) setWorkspaceWidth(width)
+    })
+    observer.observe(workspace)
+    const width = workspace.getBoundingClientRect().width
+    if (width > 0) setWorkspaceWidth(width)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     if (!props.autoSaveId || typeof window === 'undefined') return
@@ -209,8 +250,9 @@ export function PanelWorkspace(props: {
     const move = (event: globalThis.PointerEvent) => {
       const bounds = root.current?.getBoundingClientRect()
       if (!bounds) return
-      const responsiveMax = Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, bounds.width * 0.6))
-      setSidebarWidth(Math.max(MIN_SIDEBAR_WIDTH, Math.min(responsiveMax, event.clientX - bounds.left)))
+      const responsiveMax = Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, bounds.width - WORKSPACE_DIVIDER_WIDTH - MIN_WORKSPACE_CONTENT_WIDTH))
+      const next = Math.max(MIN_SIDEBAR_WIDTH, Math.min(responsiveMax, event.clientX - bounds.left + (root.current?.scrollLeft ?? 0)))
+      setSidebarWidth(preferred => Math.min(preferred, responsiveMax) === next ? preferred : next)
     }
     const finish = () => setResizing(false)
     document.documentElement.dataset.dshPanelResizing = 'true'
@@ -228,14 +270,15 @@ export function PanelWorkspace(props: {
   const resizeFromKeyboard = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
     event.preventDefault()
-    setSidebarWidth(width => Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, width + (event.key === 'ArrowLeft' ? -12 : 12))))
+    const next = Math.max(MIN_SIDEBAR_WIDTH, Math.min(sidebarMax, effectiveSidebarWidth + (event.key === 'ArrowLeft' ? -12 : 12)))
+    setSidebarWidth(preferred => Math.min(preferred, sidebarMax) === next ? preferred : next)
   }
 
   return (
     <section
       ref={root}
       className={`dsh-panel-workspace${props.guidance ? ' has-guidance' : ''}${resizing ? ' is-resizing' : ''}${props.className ? ` ${props.className}` : ''}`}
-      style={{ '--dsh-panel-sidebar-width': `${sidebarWidth}px` } as CSSProperties}
+      style={{ '--dsh-panel-sidebar-width': `${effectiveSidebarWidth}px` } as CSSProperties}
     >
       <aside className='dsh-panel-workspace-sidebar'>{props.sidebar}</aside>
       <div
@@ -244,8 +287,8 @@ export function PanelWorkspace(props: {
         aria-label={t('resizeSidebar')}
         aria-orientation='vertical'
         aria-valuemin={MIN_SIDEBAR_WIDTH}
-        aria-valuemax={MAX_SIDEBAR_WIDTH}
-        aria-valuenow={Math.round(sidebarWidth)}
+        aria-valuemax={sidebarMax}
+        aria-valuenow={Math.round(effectiveSidebarWidth)}
         tabIndex={0}
         onPointerDown={(event: PointerEvent<HTMLDivElement>) => {
           event.preventDefault()
@@ -455,14 +498,37 @@ export function PanelRequiredMark({ locale }: { locale?: string }): ReactElement
 
 /** One caption order for ordinary fields, collection headings and compact forms.
  * Help is a sibling of the native label, never another labelable child inside it. */
-export function PanelFieldCaption({ label, required, description, htmlFor, locale }: {
-  label: string; required?: boolean; description?: string; htmlFor?: string; locale?: string
+export function PanelFieldCaption({ label, required, description, htmlFor, locale, count }: {
+  label: string; required?: boolean; description?: string; htmlFor?: string; locale?: string; count?: number
 }): ReactElement {
   const { locale: contextLocale } = usePanelI18n()
   const text = <>{label}{required ? <PanelRequiredMark locale={locale} /> : null}</>
   return <>{htmlFor ? <label htmlFor={htmlFor}>{text}</label> : text}
+    {count !== undefined ? <PanelCollectionCount count={count} locale={locale} /> : null}
     {description?.trim() ? <PanelHelp label={panelText('fieldHelp', locale ?? contextLocale, { field: label })}>{description}</PanelHelp> : null}
   </>
+}
+
+/** Child counts describe the collection, not its completeness. */
+export function PanelCollectionCount({ count, locale }: { count: number; locale?: string }): ReactElement {
+  const { locale: contextLocale } = usePanelI18n()
+  return <small className="dsh-panel-collection-count" aria-label={panelText(count === 1 ? 'itemCountOne' : 'itemCountMany', locale ?? contextLocale, { count })}>({count})</small>
+}
+
+/** Ordinary collection actions keep one geometry and order. Callers expose move
+ * only when their array order or declared durable order is actually editable. */
+export function PanelCollectionActions({ label, onRemove, onMove, first, last, className = '', testId }: {
+  label: string; onRemove: () => void; onMove?: (delta: -1 | 1) => void; first?: boolean; last?: boolean; className?: string; testId?: string
+}): ReactElement {
+  const { t } = usePanelI18n()
+  return <span className={`dsh-design-record-actions ${className}`}>
+    {onMove ? ([-1, 1] as const).map(delta => <button key={delta} type="button" title={t(delta < 0 ? 'moveUp' : 'moveDown')}
+      aria-label={`${t(delta < 0 ? 'moveUp' : 'moveDown')} ${label}`} data-testid={testId ? `${testId}-${delta < 0 ? 'up' : 'down'}` : undefined}
+      disabled={delta < 0 ? first : last} onClick={event => { event.preventDefault(); onMove(delta) }}>
+      {delta < 0 ? <ArrowUp size={16} aria-hidden="true" /> : <ArrowDown size={16} aria-hidden="true" />}</button>) : null}
+    <button type="button" title={t('remove', { item: label })} aria-label={t('remove', { item: label })}
+      data-testid={testId ? `${testId}-remove` : undefined} onClick={event => { event.preventDefault(); onRemove() }}><Trash2 size={16} aria-hidden="true" /></button>
+  </span>
 }
 
 /** One help interaction for field/collection captions and workspace guidance. */

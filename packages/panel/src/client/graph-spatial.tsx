@@ -80,14 +80,14 @@ export function SpatialGraphCanvas(props: GraphCanvasProps & GraphCanvasTheme & 
         })
         .linkThreeObject(e => {
           const geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()])
-          const material = e.kind === 'contains' ? new THREE.LineDashedMaterial({ color: '#9aa6b5', transparent: true, opacity: .5, dashSize: 4, gapSize: 3 }) : new THREE.LineBasicMaterial({ color: '#8291ac', transparent: true, opacity: .8 })
+          const material = new THREE.LineBasicMaterial({ color: '#8291ac', transparent: true, opacity: .8 })
           const object = new THREE.Line(geometry, material)
           resources.push(geometry, material); edgeObjects.set(e.id, object); return object
         })
         .linkPositionUpdate((object, { start, end }) => {
           const line = object as Three.Line, positions = line.geometry.attributes.position as Three.BufferAttribute
           positions.setXYZ(0, start.x, start.y, start.z); positions.setXYZ(1, end.x, end.y, end.z); positions.needsUpdate = true
-          line.computeLineDistances(); line.geometry.computeBoundingSphere(); return true
+          line.geometry.computeBoundingSphere(); return true
         })
         .onNodeClick(n => latest.current.onNode(n.id)).onLinkClick(e => latest.current.onEdge(e.id))
         .onNodeHover(n => { hovered = n?.id ?? ''; style() })
@@ -199,7 +199,7 @@ export function SpatialGraphCanvas(props: GraphCanvasProps & GraphCanvasTheme & 
         const detailed = (id: string) => id === focus || id === hovered || neighbors.has(id) || Boolean(matches?.has(id))
         const candidates = visible.sort((a, b) => Number(b.id === focus || b.id === hovered) - Number(a.id === focus || a.id === hovered) || Number(detailed(b.id)) - Number(detailed(a.id)) || labelRanks.get(a.id)! - labelRanks.get(b.id)!)
         const items = candidates.map(p => {
-          const text = shortGraphLabel(p.n, detailed(p.id), latest.current.contentCounts?.get(p.id))
+          const text = shortGraphLabel(p.n, detailed(p.id), latest.current.contentCounts?.get(p.id), localeRef.current)
           return { ...p, text, w: measure.measureText(text).width + 12, h: 24 }
         })
         const placed: ReturnType<typeof placeLabels<(typeof items)[number]>> = []
@@ -308,7 +308,7 @@ export function SpatialGraphCanvas(props: GraphCanvasProps & GraphCanvasTheme & 
     <div ref={host} aria-label={t('graphSpatialCanvas')} style={{ position: 'absolute', inset: 0 }} />
     <div ref={labels} aria-label={t('graphSpatialLabels')} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }} />
     {error && <p role='alert' style={{ position: 'relative', padding: 12 }}>{t('graphSpatialUnavailable', { error })}</p>}
-    <GraphCameraTools dark={props.dark} onToggleDark={props.onToggleDark} disabled={loading || Boolean(error)} onFit={() => actions.current.fit(true)} onZoom={factor => actions.current.zoom(factor)} onRestart={() => actions.current.restart()}>
+    <GraphCameraTools dark={props.dark} onToggleDark={props.onToggleDark} followingPage={props.followingPage} onFollowPage={props.onFollowPage} disabled={loading || Boolean(error)} onFit={() => actions.current.fit(true)} onZoom={factor => actions.current.zoom(factor)} onRestart={() => actions.current.restart()}>
       <details className='graph-popover'>
         <summary>{t('graphSpatialOptions')}</summary>
         <div className='graph-popover-body'>

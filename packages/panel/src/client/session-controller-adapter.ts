@@ -1,4 +1,5 @@
 /** Adapt the current Session Controller selection to the root-scoped Design Panel. */
+import type { Context } from '@deepseek-ai/cordis'
 
 /** Public Host desktop carrier; project roots always come from the selected workspace. */
 export interface PanelProjectFolderRemote {
@@ -51,6 +52,20 @@ export interface PanelSessions {
   binding(id: string): PanelSessionBinding | undefined
 }
 
+/** The Host owns the input model, draft and caret restoration. */
+export interface PanelInputResolver {
+  for(scope: unknown): { focus(): void }
+}
+
+/** Read the optional native capability through Cordis, then resolve its retained session. */
+export function panelComposerFocus(sessions: Pick<PanelSessions, 'binding'>, host: Pick<Context, 'get'>, sessionId: string): (() => void) | undefined {
+  // Property access requires an injected service even with optional chaining.
+  // get() is the Host's public optional read and excludes inactive providers.
+  const input = (host.get('conversation') as { input?: PanelInputResolver } | undefined)?.input
+  const scope = sessions.binding(sessionId)?.ctx
+  return input && scope !== undefined ? () => input.for(scope).focus() : undefined
+}
+
 /** The host UI owns selection separately from the Session catalog in DSH 0.2. */
 export interface PanelCurrentSessionBinding {
   readonly props: { readonly sessionId?: string }
@@ -58,6 +73,8 @@ export interface PanelCurrentSessionBinding {
 
 /** Identity-stable binding for one selected DSH Session. */
 export interface PanelSessionBinding {
+  /** Opaque retained Host scope, consumed only by native Host capabilities. */
+  readonly ctx?: unknown
   readonly session: CurrentPanelSessionSource<unknown> & {
     readonly projections: {
       faceOf(key: string): CurrentPanelSessionSource<unknown>

@@ -59,3 +59,22 @@ properties:
   process_order:
     type: array
     items: { type: string }
+  # Optional supplements to exact BPMN elements. Names, actors, types and
+  # routing stay in the BPMN; missing mappings retain their authored text.
+  nodes:
+    type: map
+    value:
+      type: object
+      required: [process_ref, bpmn_element_ref]
+      properties:
+        process_ref: { type: string, knowledge: { role: reference, target: '#/processes' } }
+        bpmn_element_ref: { type: string, knowledge: { role: metadata } }
+        activity: { type: string }
+        entry_condition: { type: string }
+        exit_condition: { type: string }
+        failure_response: { type: string }
+        remarks: { type: string }
+  node_order:
+    knowledge: { role: metadata }
+    type: array
+    items: { type: string }

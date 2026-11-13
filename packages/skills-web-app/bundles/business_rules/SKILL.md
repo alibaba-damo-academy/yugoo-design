@@ -10,9 +10,14 @@ description: |-
 
 # Business Rules
 
+See the [record ID guidance](reference/artifact-contract.md#record-ids) for this Bundle's numbering suggestions and existing identity boundaries.
+
 Define what the product must consistently decide or do, under which condition or based on which information. This skill owns independent, reusable product decisions and constraints; it does not duplicate the structures of functions, business data, flows, permissions, pages, or integrations.
 
 ## Ownership and tools
+
+Before authoring, read [the output contract](reference/artifact-contract.md)
+for field meanings, examples and checks shared by design and reconstruction.
 
 `business_rules/business_rules.json` is the only canonical state. The foreground
 Producer uses project-scoped `list` and `read` to inspect that state, GROUND,
@@ -20,10 +25,10 @@ and relevant Design evidence. It uses `write` or `edit` to maintain the complete
 rule set in its owned WorkingCopy. This lightweight skill is completed directly
 by the Producer.
 
-For a proposal that requires panel review, the Producer runs
-`design_validate({outcome:"pause"})`, repairs every completion issue, and calls
-`design_publish({action:"handoff"})` to publish the canonical state before the
-review gate. A panel save already persists the user's edits; later runs read and
+The Producer runs
+`design_validate({outcome:"complete"})`, repairs every completion issue, and calls
+`design_publish({action:"complete"})` to publish the reviewable proposal.
+A panel save already persists the user's edits; later runs read and
 preserve them.
 
 ## Maintaining existing design
@@ -57,14 +62,10 @@ Keep sequence and handoffs with `flow_design`, permissions with `role_access`, i
 
 The condition/outcome pair supports validation, calculations, routing, automation, exceptions, and unconditional constraints without forcing an “if—then” classification.
 
-## State contract
-
-Read [the shared output contract](reference/artifact-contract.md) for these field meanings, examples and checks; it is used by both ordinary design and reconstruction.
-
 ## Close-out evidence
 
 Close only after material rules are persisted and reviewable, with every completion issue repaired. Use the saved conditions, outcomes and exceptions as evidence for the shared current-state assessment, rather than a fixed score increment. Report what is clear and what remains unresolved. Vague, overlapping, contradictory, or untestable rules do not improve clarity.
 
-## Interaction gate
+## Present the proposal
 
-After producing a valid proposal, present the native panel and pause for user review and save. Do not self-confirm rules or rewrite a successful panel save.
+After producing a valid proposal, present the native panel for review and optional editing. Do not self-confirm rules or rewrite a successful panel save. Keep unresolved conditions and conflicting decisions explicit and ask through the existing conversation when a real choice is needed; an arbitrary field edit is not required to continue the user's request.

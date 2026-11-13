@@ -1,5 +1,11 @@
 # notification_design output contract
 
+## Record IDs
+
+For new notification records prefer `NT-001`, `NT-002`, and so on; `N` belongs to Flow step supplements. Preserve actual recipients, channel values and action targets.
+
+Existing IDs, including older formats, remain valid during ordinary edits and reconstruction. If the user explicitly requests business renumbering, revise actual record keys/IDs and current references/orders together through their existing owners; keep technical IDs and history unchanged. Names and titles remain readable content, separate from identity.
+
 Shared by ordinary design and reconstruction. Canonical state is
 `notification_design/notification_design.json`; the installed schema and validation remain
 authoritative. This reference describes representation and semantic checks,
@@ -44,6 +50,12 @@ If the necessary integration is not established, keep the evidenced method under
 - which business item is affected;
 - why it matters;
 - what the recipient should do, when action is required.
+
+Resolve internal record IDs to their business names in `trigger`, `recipients`,
+`message` and `action_target`: “the assigned reviewer” or “request details”,
+not a flow-node ID, schema path or role key. Preserve public identifiers people
+actually use, such as a request number. Canonical notification IDs remain stable;
+readable wording neither renames them nor invents a new destination.
 
 Use `action_target` only when the user can open a known page or task. Name the destination and relevant area in product language, such as “订单详情的审批区域”. Do not invent URLs or page IDs.
 

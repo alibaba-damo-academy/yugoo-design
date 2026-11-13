@@ -6,6 +6,8 @@
 # Explicit per-direction source/scope bounds in research_points are also
 # Agent-reviewed against the actual report; these rules do not infer numeric
 # source limits from free text. Passing them does not waive the user's bounds.
+# The executor separately runs the Bundle's read-only file consistency script;
+# it is not automatically executed by these state/publication rules.
 #
 # Contract summary:
 # - Every accepted direction has a direct `findings_file` and non-empty file.

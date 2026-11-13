@@ -1,3 +1,4 @@
+import { collectionFieldCount } from './record-state.ts'
 import { browserRandomUuid } from './browser-uuid.ts'
 import { newRecordMapItem } from './record-map-state.ts'
 import type { ReactElement } from 'react'
@@ -16,7 +17,7 @@ export function CompactRecordDetails({ fields, values, optional, editable, rende
   const missing = visible.filter(field => optional && !field.required && values[field.key] === undefined)
   return <div className="dsh-compact-record-details">
     {visible.filter(field => !missing.includes(field)).map(field => <section key={field.key} data-detail-control={field.control}>
-      <header><h5><PanelFieldCaption label={field.label ?? field.key} required={field.required} description={field.description} /></h5>{editable && optional && !field.required && !field.readonly && field.control !== 'record_map'
+      <header><h5><PanelFieldCaption label={field.label ?? field.key} count={collectionFieldCount(field, values[field.key])} required={field.required} description={field.description} /></h5>{editable && optional && !field.required && !field.readonly && field.control !== 'record_map'
         ? <button type="button" aria-label={t('remove', { item: field.label ?? field.key })} onClick={() => change(field, undefined)}>{t('remove', { item: '' })}</button> : null}</header>
       {render({ ...field, description: undefined })}
     </section>)}

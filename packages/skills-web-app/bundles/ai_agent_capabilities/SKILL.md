@@ -10,6 +10,8 @@ description: |-
 
 # AI Agent Design
 
+See the [record ID guidance](reference/artifact-contract.md#record-ids) for this Bundle's numbering suggestions and existing identity boundaries.
+
 For canvas generation or revision, read [the canvas guide](reference/canvas-guide.md).
 It supplements the existing methods and output contract; it applies to both
 new design and reconstruction without replacing domain-specific rules.
@@ -109,6 +111,13 @@ and a realistic recovery/takeover. Partial text is not a completed task. Separat
 stop from resume and replay; check side effects and duplicate risk before
 proposing a retry. Retain meaningful recovery details in the exception's
 handling or optional notes, without inventing runtime guarantees.
+
+Walk each entry from its supplied material and user input through the prompt
+to the result. Every fact essential to that prompt must be obtainable through
+that entry or an established, authorized retrieval capability. Agent-level
+library scope does not mean the entry has supplied the material. If an input
+is unavailable, describe the gap and recovery in the existing exception or
+notes; do not invent a retrieval tool to make the prompt appear executable.
 
 Include in action conditions or material scope only requirements that matter
 to the product, such as
@@ -329,12 +338,16 @@ Assess an already saved
 user diff rather than replaying it.
 
 New proposals, observed implementation, successful calls and user decisions must
-remain distinguishable in evidence. This is an unreleased first capability;
-do not add a migration or multi-version system to complete it.
+remain distinguishable in evidence. Use the existing saved definitions and
+revision path; do not introduce a separate migration or multi-version system.
 
 Validate the full AI state with the host's actual validation tool, repair all
 schema/state/completion diagnostics in this WorkingCopy, then publish through the
-existing scoped entrance and honor `must_edit`. A useful handoff names what the
+existing scoped entrance with complete publication. Present the editable design
+for review without requiring a field change to continue. Keep unresolved product
+choices explicit and use the existing conversation when an actual decision is
+needed; publication or a panel save does not confirm an AI proposal.
+A useful close-out names what the
 Agent will do, what the user can change, and material unknowns. Mechanically valid
 state, a preview or a published design is not native Agent execution, resource
 installation, a successful model call or an optimized prompt.

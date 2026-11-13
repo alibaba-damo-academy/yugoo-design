@@ -1,0 +1,12 @@
+{
+  "name": "@radix-ui/react-use-escape-keydown",
+  "version": "1.1.0",
+  "repository": "radix-ui/primitives",
+  "commit": "704069ee4c40c3b6f342c104dff5ad873ee39c43",
+  "gitHead": "704069ee4c40c3b6f342c104dff5ad873ee39c43",
+  "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+  "licenseSha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+  "licenseBytes": 1063,
+  "packageMetadataSha256": "1856376e72284d90d2aa0681fa9921a75d7cf6a55c0cd38ae56bab82c187a01a",
+  "correspondence": "Official repository LICENSE at the exact gitHead disclosed by npm version metadata. No substitution from another version."
+}

@@ -6,6 +6,7 @@ i18n:
 empty_description: $t:empty
 sections:
   - id: boards
+    form: {header: {variant: detail, title: {field: title, editable: true}, show_id: true}}
     title: $t:boards
     item_name: $t:board
     order: board_order
@@ -16,7 +17,6 @@ fields:
   - {key: artifact_file, label: '$t:file', control: artifact_ref, hidden: true, readonly: true, applies_to: [boards]}
 ui:
   component: canvas_workspace
-  guidance: "$t:guidance"
   sidebar_icon: pen-tool
   id: topic-canvases
   title: $t:boards

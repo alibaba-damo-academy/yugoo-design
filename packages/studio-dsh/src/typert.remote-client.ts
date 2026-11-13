@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type {
   StudioKitView, StudioBundleView, StudioWorkspaceView,
   StudioBundleMountView, StudioKitWorkspaceView, StudioBundleWorkspaceView,
+  StudioPanelPreview,
 } from 'dsh-design-studio'
 
 /** Strict factory contract; the Host requires a parser, not a validator library. */
@@ -98,6 +99,20 @@ const bundleWorkspaceResult = z.object({ workspace: bundleWorkspaceView.optional
 const bundleFileView = z.object({ path: z.string(), content: z.string() }).strict()
 const bundleFileResult = z.object({ file: bundleFileView.optional(), diagnostics: z.array(diagnostic) }).strict()
 
+/** Same isolated sample projection for installed reads and instance candidates. */
+const previewIdentity = z.string().min(1).regex(/^[^\u0000-\u001f\u007f]+$/u)
+const previewPin = z.object({ name: previewIdentity, version: previewIdentity }).strict()
+export const STUDIO_PANEL_PREVIEW_SCHEMA = z.object({
+  revision: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER), kit: previewPin.optional(), bundle: previewPin,
+  panelYaml: z.string(), sample: z.record(z.string(), z.json()), artifacts: z.record(z.string(), z.string()).optional(),
+} satisfies Record<keyof StudioPanelPreview, z.ZodType>).strict()
+export const STUDIO_INSTALLED_PREVIEW_REQUEST = z.object({
+  kit: previewPin.optional(), bundle: previewPin, revision: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER), sampleSource: z.string().optional(),
+}).strict()
+const installedPreviewResult = z.object({ preview: STUDIO_PANEL_PREVIEW_SCHEMA.optional(),
+  diagnostics: z.array(diagnostic.extend({ severity: z.literal('warning').optional() }).strict()),
+}).strict()
+
 const direct = { kind: 'direct' as const }
 const json = (name: string, schema: z.ZodType, acceptsUndefined = false) => ({
   name, wire: name, source: 'json' as const,
@@ -133,6 +148,10 @@ export const TYPERT_REMOTE: StudioRemoteContribution = {
     {
       id: 'dsh-design-studio-dsh#studioManagement/readBundleFile', service: 'studioManagement', namespace: 'studioManagement', method: 'readBundleFile',
       invocation: direct, parameters: [json('name', z.string()), json('path', z.string()), json('version', z.string().optional(), true)], result: result('readBundleFileResult', bundleFileResult),
+    },
+    {
+      id: 'dsh-design-studio-dsh#studioManagement/previewInstalled', service: 'studioManagement', namespace: 'studioManagement', method: 'previewInstalled',
+      invocation: direct, parameters: [json('request', STUDIO_INSTALLED_PREVIEW_REQUEST)], result: result('previewInstalledResult', installedPreviewResult),
     },
   ],
 }

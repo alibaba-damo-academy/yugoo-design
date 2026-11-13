@@ -129,17 +129,17 @@ test('kind switches and optional lifecycle edits durably save/reopen through exi
   const open = () => new DesignFilesStore(io, new GitVersioning(spawn, project, 'design_files'), join(project, 'design_files'))
   const store = open()
   const edited = structuredClone(sample)
-  Object.assign(edited.knowledge_resources['K-material'], {
+  Object.assign(edited.knowledge_resources['K-001'], {
     formation_and_update: 'Explicitly authored memory formation', user_management: 'View, correct, clear when requested',
   })
   for (const kind of ['knowledge_base', 'long_term_memory', 'knowledge_base']) {
-    edited.knowledge_resources['K-material'].kind = kind
+    edited.knowledge_resources['K-001'].kind = kind
     const result = await applyPanelEdit(store, { skill: bundle.name, state: edited }, async () => {}, validate)
     assert.ok(result.commit)
     assert.deepEqual(await open().read(bundle.name), edited, 'inactive branch bytes and every unrelated record survive')
   }
   const head = await store.head()
-  const invalid = structuredClone(edited); invalid.knowledge_resources['K-memory'].user_management = {}
+  const invalid = structuredClone(edited); invalid.knowledge_resources['K-002'].user_management = {}
   await assert.rejects(applyPanelEdit(store, { skill: bundle.name, state: invalid }, async () => {}, validate))
   assert.equal(await store.head(), head)
   assert.deepEqual(await open().read(bundle.name), edited)

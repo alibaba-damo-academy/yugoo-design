@@ -1,0 +1,28 @@
+{
+  "name": "@radix-ui/react-direction",
+  "version": "1.0.0",
+  "repository": "radix-ui/primitives",
+  "commit": "3e5644edadcded918db177368c3fe9654ce9885f",
+  "tag": null,
+  "publishedGitHead": null,
+  "correspondence": "Official New release: V1 commit package.json has exact version; all published npm source-map sources compared byte-for-byte. No npm gitHead or matching version tag available.",
+  "sourceMatches": [
+    {
+      "path": "packages/react/direction/src/index.ts",
+      "exactMatch": true,
+      "sha256": "948e2dd32a70e47099cdf634bf7df9e16d062b414ce014bd2e8c522e4401d71e"
+    },
+    {
+      "path": "packages/react/direction/src/Direction.tsx",
+      "exactMatch": true,
+      "sha256": "342eea1d875b1c385e4a0bd35126405dde9cac6b7bdf6d0ebf4bc99a2a938974"
+    }
+  ],
+  "tarball": "https://registry.npmjs.org/@radix-ui/react-direction/-/react-direction-1.0.0.tgz",
+  "tarballIntegrity": "sha512-2HV05lGUgYcA6xgLQ4BKPDmtL+QbIZYH5fCOTAOOcJ5O0QbWS3i9lKaurLzliYUDhORI2Qr3pyjhJh44lKA3rQ==",
+  "tarballSha1": "a2e0b552352459ecf96342c79949dd833c1e6e45",
+  "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/3e5644edadcded918db177368c3fe9654ce9885f/LICENSE",
+  "licenseSha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+  "licenseBytes": 1063,
+  "packageMetadataSha256": "5d79a7458348804b62f0029b9df4a0c740ac0b2ce3066cf461d26476419944f6"
+}

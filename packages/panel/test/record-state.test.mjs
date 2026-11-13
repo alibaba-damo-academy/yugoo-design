@@ -1,6 +1,15 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { pathGet, pathSet, applyDesignEditToDraft, recordDeletionUpdates, orderedRecordIds } from '../src/record-state.ts'
+import { pathGet, pathSet, applyDesignEditToDraft, recordDeletionUpdates, orderedRecordIds, freshRecordId } from '../src/record-state.ts'
+
+test('declared new-record prefixes continue existing business numbers without rewriting legacy keys', () => {
+  const records = { 'M-001': { id: 'M-001' }, 'M-007': { id: 'M-007' }, 'model_sources-legacy': { id: 'model_sources-legacy' }, 'M-1e3': {}, 'M-0x10': {}, 'K-099': { id: 'K-099' } }
+  const before = structuredClone(records)
+  assert.equal(freshRecordId('model_sources', records, 'M'), 'M-008')
+  assert.equal(freshRecordId('knowledge_resources', {}, 'K'), 'K-001')
+  assert.match(freshRecordId('model_sources', records), /^model_sources-[0-9a-f-]{36}$/)
+  assert.deepEqual(records, before)
+})
 
 test('record transaction layer works without a browser or rendering runtime', () => {
   assert.equal(typeof window, 'undefined')

@@ -49,6 +49,8 @@ export interface DshDesignDelegationOptions {
   /** Explicit plugin-owned Worker route; other configured providers retain their native route. */
   readonly startFileWorker?: (request: Omit<DesignFileWorkerRequest, 'descriptor'>) => Promise<SubagentRun>
   readonly workerEvidenceTools?: readonly string[]
+  /** Documentation entry paths from the invocation's bound Bundle snapshot. */
+  readonly workerResourcePaths?: readonly string[]
   readonly scripts?: DesignProducerSkillScriptPort
   readonly maxDepth: number
   readonly maxTokens?: number
@@ -65,6 +67,7 @@ interface WorkerAssignment {
   readonly attempt: string
   readonly claimAttempt: string
   child?: string
+  written?: boolean
 }
 
 interface PreparedFrontierItem {
@@ -109,15 +112,21 @@ function artifactPath(value: string, skillName: string): string {
   return path
 }
 
-function workerFailure(result: SubagentResult): Error | undefined {
-  if (result.stopReason === 'completed') return undefined
+function workerFailureDetails(result: SubagentResult): string[] {
   const partial = result.output
     .filter((block): block is Extract<ContentBlock, { readonly type: 'text' }> => block.type === 'text')
     .map(block => block.text).join('')
-  return new Error([
-    `Design artifact worker ended with ${String(result.stopReason)}`,
+  return [
     ...result.diagnostic === undefined ? [] : [`Diagnostic: ${result.diagnostic}`],
     ...partial === '' ? [] : [`Partial output: ${partial}`],
+  ]
+}
+
+function workerFailure(result: SubagentResult): Error | undefined {
+  if (result.stopReason === 'completed') return undefined
+  return new Error([
+    `Design artifact worker ended with ${String(result.stopReason)}`,
+    ...workerFailureDetails(result),
   ].join('\n'))
 }
 
@@ -128,6 +137,7 @@ function promptText(
   path: string,
   assignmentId: string,
   reconstruct: boolean,
+  resourcePaths?: readonly string[],
 ): string {
   return [
     prompt,
@@ -139,10 +149,14 @@ function promptText(
     'Do not modify canonical Design JSON or any other Design Project file.',
     'You inherit the Producer\'s Host-native read-only workspace tools. Use available read, read_image, glob, and grep tools directly when relevant source code, documentation, or visual evidence must be inspected; the Host path policy still applies.',
     'Follow the Producer assignment and shared Bundle artifact contract for the requested work, validation, and repair. A reconstruction assignment extracts source facts; it does not authorize forward design. The Host does not perform domain validation for you.',
-    'Run Bundle scripts directly through run_skill_script using their documented CLI contract in the Bundle references. Use input_json only for small structured requests; use input_file, optional input_files, optional input_context, and optional output_file for artifacts so their bytes do not pass through your context. Do not read or inspect executable script source before running it unless the script itself reports an unexplained internal failure.',
-    `Keep narration brief and write the complete artifact directly with ${WRITE_ARTIFACT}; do not spend the artifact output budget restating its contents.`,
+    ...(resourcePaths === undefined ? [] : [
+      '<bundle_resources>', JSON.stringify(resourcePaths), '</bundle_resources>',
+      'Read the applicable output, validation and CLI contract with read_skill_resource using these current-Bundle relative paths, unless its relevant content is already supplied. Follow only relevant links. If required guidance is unavailable, report the gap rather than guessing.',
+    ]),
+    'Run Bundle scripts directly through run_skill_script using their documented CLI contract in the Bundle references. Use input_json only for small structured requests; use input_file, optional input_files, optional input_context, and optional output_file for artifacts so their bytes do not pass through your context. Omit output_file for validation and diagnostic JSON. Do not read or inspect executable script source before running it unless the script itself reports an unexplained internal failure.',
+    `For a successful result, write only the complete artifact that satisfies the Bundle contract directly with ${WRITE_ARTIFACT}; keep narration brief rather than restating its contents.`,
     `Do not call ${READ_ARTIFACT} merely to check whether a write was complete, and do not rewrite the whole artifact based only on that check. Read only when the active Skill's validation or repair loop requires inspection.`,
-    'Do not return artifact bytes as structured JSON. Finish only after the complete artifact is on disk.',
+    'Do not return artifact bytes as structured JSON. A successful result requires this attempt to write the complete artifact on disk, even when the accepted bytes are unchanged. If the Bundle contract cannot be satisfied, finish with a brief failure diagnostic and leave the assigned artifact unwritten; preserve any existing artifact. Do not create an empty, placeholder, or diagnostic-only artifact to satisfy the file requirement.',
     ...(reconstruct ? ['<reconstruction_assignment>', RECONSTRUCTION_WORKER_METHOD, '</reconstruction_assignment>'] : []),
   ].join('\n')
 }
@@ -213,6 +227,7 @@ function registerArtifactTools(
         encoding: args.encoding === 'base64' ? 'base64' : 'utf8',
         content: args.content,
       }, exec.signal)
+      assignment.written = true
       return { path: assignment.path, written: true }
     },
   }))
@@ -239,6 +254,7 @@ function registerArtifactTools(
         args.replace_all === true,
         exec.signal,
       )
+      if (result.replacements > 0) assignment.written = true
       return { path: assignment.path, replacements: result.replacements }
     },
   }))
@@ -259,7 +275,7 @@ async function runWorker(
   let primaryError: unknown
   assignments.set(attempt, { path, artifactId, attempt, claimAttempt })
   try {
-    const promptBlocks: ContentBlock[] = [{ type: 'text', text: promptText(prompt, artifactKind, artifactId, path, attempt, options.reconstruct === true) }]
+    const promptBlocks: ContentBlock[] = [{ type: 'text', text: promptText(prompt, artifactKind, artifactId, path, attempt, options.reconstruct === true, options.workerResourcePaths) }]
     run = options.startFileWorker === undefined ? await options.startSubagent(options.provider, {
       label: `${artifactKind} · ${artifactId}`, parent: exec.agent!, signal: exec.signal,
       // Official DSH composes the parent scope before applying toolFilter.
@@ -288,7 +304,11 @@ async function runWorker(
         if (options.scripts !== undefined) childCtx.tools.register(createDesignSkillScriptTool({
           // Inputs use the invocation's already-authorized Design workspace.
           read: (inputPath, signal) => { assertActive(); return options.workspace.read(inputPath, signal) },
-          write: (outputPath, file, signal) => { assertActive(outputPath); return options.workspace.write(outputPath, file, signal) },
+          async write(outputPath, file, signal) {
+            assertActive(outputPath)
+            await options.workspace.write(outputPath, file, signal)
+            assignment.written = true
+          },
         }, options.scripts, (output, signal) => { signal.throwIfAborted(); assertActive(output) }))
       },
     })
@@ -301,10 +321,14 @@ async function runWorker(
     }
     assignment.child = childKey
     options.recordAttempt({ artifactId, artifactKind, artifactFile: path, attemptId: attempt, runId: String(run.id), parentRunId: String(exec.agent!.session.id), role: 'worker', phase: 'working' })
-    const failure = workerFailure(await run.result)
+    const result = await run.result
+    const failure = workerFailure(result)
     if (failure !== undefined) throw failure
     const file = await options.workspace.read(path, exec.signal)
-    if (file === undefined) throw new Error(`Design artifact worker completed without writing ${JSON.stringify(path)}`)
+    if (assignment.written !== true || file === undefined) throw new Error([
+      `Design artifact worker completed without writing ${JSON.stringify(path)}`,
+      ...workerFailureDetails(result),
+    ].join('\n'))
     const content = file.encoding === 'utf8' ? Buffer.from(file.content, 'utf8') : Buffer.from(file.content, 'base64')
     if (content.length === 0) throw new Error(`Design artifact worker wrote an empty artifact ${JSON.stringify(path)}`)
     const receipt = Object.freeze({ path, sha256: createHash('sha256').update(content).digest('hex'), bytes: content.length, attempt })
@@ -522,7 +546,7 @@ function frontierTool(
 
       const claimAttempt = randomUUID()
       const claims = Object.freeze(items.flatMap(item => item.claims))
-      options.attempts.claimAll(claims, claimAttempt)
+      options.attempts.claimAll(claims, claimAttempt, { role: 'worker', sessionId: String(exec.agent.session.id) })
       frontier.active += items.length
       try {
         for (const item of items) {
@@ -590,7 +614,7 @@ function delegationTool(
       const prompt = nonEmpty(String(rawArgs.prompt ?? ''), 'design delegation prompt')
       const attempt = randomUUID()
       const claims = Object.freeze([artifactId, `path:${path}`])
-      options.attempts.claimAll(claims, attempt); frontier.active += 1
+      options.attempts.claimAll(claims, attempt, { role: 'worker', sessionId: String(exec.agent.session.id) }); frontier.active += 1
       options.recordAttempt({ artifactId, artifactKind, artifactFile: path, attemptId: attempt, parentRunId: String(exec.agent.session.id), role: 'worker', phase: 'queued' })
       try {
         return {

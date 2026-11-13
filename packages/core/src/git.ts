@@ -802,6 +802,7 @@ export class GitVersioning {
       ], signal)).stdout.trim()
       const zero = '0'.repeat(format === 'sha1' ? 40 : 64)
       await this.requireSuccess(['git', 'update-ref', 'HEAD', commit, head ?? zero], signal)
+        .finally(() => this.invalidatePolledHead())
       try {
         await this.reconcileIndex(commit, ordinaryIndexBefore, publishedIndexEntries, temporary, signal)
         return { commit, change }
@@ -866,7 +867,7 @@ export class GitVersioning {
       signal?.throwIfAborted()
       const response = await this.nativeResult({
         kind: 'publish', expectedHead: head, message, stagingRoot: temporary, files: frozen, forceCommit,
-      }, signal)
+      }, signal).finally(() => this.invalidatePolledHead())
       const value = response.value as { commit?: string; change?: 'changed' | 'unchanged' }
       if (value.commit === undefined) return {}
       requireFullCommit(value.commit)

@@ -1,6 +1,20 @@
 /** Evidence-driven reconstruction guidance shared by command and Producer. */
 import type { DesignSkill } from './types.ts'
 
+const ARTIFACT_CONTRACT_RESOURCE = 'reference/artifact-contract.md'
+
+/** Discover documentation in the same bound snapshot used by read_skill_resource. */
+export function designSkillResourceEntryPaths(skillName: string, resources: Readonly<Record<string, string>>): readonly string[] {
+  const prefix = `${skillName}/`
+  // Prefer the existing shared entry; otherwise expose the available documents
+  // without guessing an entry, loading their bodies, or requiring a new resource.
+  return Object.freeze(Object.hasOwn(resources, `${prefix}${ARTIFACT_CONTRACT_RESOURCE}`)
+    ? [ARTIFACT_CONTRACT_RESOURCE]
+    : Object.keys(resources)
+      .filter(path => path.startsWith(prefix) && /\.(?:md|yaml)$/u.test(path))
+      .map(path => path.slice(prefix.length)).sort())
+}
+
 /** The same loaded output contracts used by publication, without the forward playbook. */
 export function reconstructionContractPrompt(skill: DesignSkill, resources: Readonly<Record<string, string>>): string {
   const schema = skill.metadata?.schemaYaml
@@ -8,14 +22,9 @@ export function reconstructionContractPrompt(skill: DesignSkill, resources: Read
   if (typeof schema !== 'string' || schema.trim() === '' || typeof validation !== 'string' || validation.trim() === '') {
     throw new Error(`design reconstruction: Bundle ${skill.name} is missing its loaded schema or validation contract`)
   }
-  const prefix = `${skill.name}/`
-  const contract = 'reference/artifact-contract.md'
-  const hasArtifactContract = Object.hasOwn(resources, `${prefix}${contract}`)
-  // One documented entry when present; do not dump icon catalogs or executable
-  // source into every Producer just to make the contract discoverable.
-  const paths = hasArtifactContract ? [contract] : Object.keys(resources)
-    .filter(path => path.startsWith(prefix) && /\.(?:md|yaml)$/u.test(path))
-    .map(path => path.slice(prefix.length)).sort()
+  const contract = ARTIFACT_CONTRACT_RESOURCE
+  const paths = designSkillResourceEntryPaths(skill.name, resources)
+  const hasArtifactContract = paths.includes(contract)
   return [
     '<reconstruction_task>', RECONSTRUCTION_PRODUCER_METHOD, '</reconstruction_task>',
     '<bundle_schema>', schema, '</bundle_schema>',

@@ -5,9 +5,9 @@ import assert from 'node:assert/strict'
 const testFiles = new Set([
   'test-reading-order.mjs', 'test-channel-spacing.mjs', 'test-layout-policy.mjs', 'test-page-file-contract.mjs',
   'smoke-page-design-script.mjs', 'smoke-flow-design-script.mjs', 'smoke-bpmn-routing.mjs',
-  'smoke-bundle-localization.mjs', 'portable-distribution.mjs', 'smoke-design-style-script.mjs', 'smoke-prd-script.mjs', 'smoke-layout-production.mjs',
+  'smoke-bundle-localization.mjs', 'portable-distribution.mjs', 'prd-runtime-distribution.mjs', 'smoke-design-style-script.mjs', 'smoke-prd-script.mjs', 'smoke-layout-production.mjs',
 ].map(name => `test/${name}`))
-const toolFiles = new Set(['build.mjs', 'scripts/compare-reading-layout.mjs', 'scripts/preview-reading-layout.mjs'])
+const toolFiles = new Set(['build.mjs', 'prd-runtime.mjs', 'scripts/compare-reading-layout.mjs', 'scripts/preview-reading-layout.mjs'])
 
 export function isKitRootDevelopmentFile(path) {
   return testFiles.has(path) || toolFiles.has(path)

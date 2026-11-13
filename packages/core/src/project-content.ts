@@ -4,6 +4,10 @@ import { composeDesignKitBundles, type DesignBundleContent, type DesignBundlePin
 import type { DesignProjectKitPin } from './design-project.ts'
 import { DesignBundleVersion, type DesignKit } from './types.ts'
 
+// File-backed Kit snapshots are replaced on a source revision change. Keep
+// their derived digest, not another copy of their often-large resource text.
+const snapshotHashes = new WeakMap<DesignKit, string>()
+
 /** Canonical JSON, ignoring object insertion order but preserving authored array order. */
 function canonical(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonical)
@@ -15,9 +19,16 @@ function canonical(value: unknown): unknown {
 
 /** Paths are installation details; all authored methods, manifests and captured resources participate. */
 export function projectKitContentHash(kit: DesignKit): string {
+  const captured = snapshotHashes.get(kit)
+  if (captured !== undefined) return captured
   const { sourceRoot: _root, sourceLocation: _location, sourceFs: _fs, sourceId: _sourceId, ...definition } = kit
   const skills = kit.skills.map(({ resourceRoot: _resourceRoot, sourceFs: _fs, sourceId: _sourceId, ...skill }) => skill)
   return createHash('sha256').update(JSON.stringify(canonical({ ...definition, skills }))).digest('hex')
+}
+
+/** Capture only a loader-owned snapshot after its source consistency check. */
+export function captureProjectKitContentHash(kit: DesignKit): void {
+  snapshotHashes.set(kit, projectKitContentHash(kit))
 }
 
 export function sameProjectContentPin(left: DesignProjectKitPin | undefined, right: DesignProjectKitPin | undefined): boolean {

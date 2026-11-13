@@ -48,16 +48,16 @@ test('native record headings end with the glyph and keep local drafts while swit
       assert.equal(heading.querySelector('.dsh-record-map-actions').nextElementSibling, heading.lastElementChild)
       assert.equal(heading.querySelector('button button'), null)
     }
-    const draft = entry('one').querySelector('input'); draft.value = 'Unfinished local text'
+    const draft = entry('one').querySelector('[aria-label="Draft one"]'); draft.value = 'Unfinished local text'
     await change(() => summary('one').click())
     assert.equal(entry('one').open, false)
-    assert.equal(entry('one').querySelector('input'), draft)
+    assert.equal(entry('one').querySelector('[aria-label="Draft one"]'), draft)
     await change(() => summary('two').click())
     assert.equal(entry('two').open, true, 'the old record closing event must not clear the new selection')
     await change(() => summary('one').click())
     assert.equal(entry('one').open, true)
     assert.equal(entry('two').open, false)
-    assert.equal(entry('one').querySelector('input').value, 'Unfinished local text')
+    assert.equal(entry('one').querySelector('[aria-label="Draft one"]').value, 'Unfinished local text')
     await change(() => entry('one').querySelector('details').dispatchEvent(new window.Event('toggle', { bubbles: true })))
     assert.equal(entry('one').open, true, 'nested toggle events do not control their parent')
     assert.equal(fixture.writes.length, 0)

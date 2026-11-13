@@ -24,7 +24,7 @@ test('knowledge/memory forms differ, preserve hidden edits and legacy text, loca
   let data = structuredClone(original), locale = 'zh-CN', editable = true
   const writes = []
   // Existing broad descriptions are not migrated merely by opening the new form.
-  data.knowledge_resources['K-material'].description = 'Original user content\n完整保留，不自动拆分。'
+  data.knowledge_resources['K-001'].description = 'Original user content\n完整保留，不自动拆分。'
   const show = () => root.render(renderManifest(manifest, data, {
     editable, locale, onEdit: edit => { writes.push(edit); data = applyDesignEditToDraft(data, manifest, edit); show() },
     onPanelUpdate: updates => { writes.push(updates); data = { ...data, ...updates }; show() },
@@ -46,27 +46,27 @@ test('knowledge/memory forms differ, preserve hidden edits and legacy text, loca
   })
   try {
     const beforeOpen = structuredClone(data)
-    await React.act(show); await select(original.knowledge_resources['K-material'].name)
+    await React.act(show); await select(original.knowledge_resources['K-001'].name)
     assert.equal(textarea('description').getAttribute('aria-label'), '资料内容')
-    assert.equal(textarea('description').value, beforeOpen.knowledge_resources['K-material'].description)
+    assert.equal(textarea('description').value, beforeOpen.knowledge_resources['K-001'].description)
     assert.ok(textarea('source_and_maintenance'))
     assert.equal(field('formation_and_update'), null); assert.equal(field('user_management'), null)
     assert.deepEqual(data, beforeOpen); assert.equal(writes.length, 0)
     for (const key of ['description', 'source_and_maintenance', 'access_scope', 'notes'])
       assert.notEqual(textarea(key).getAttribute('aria-required'), 'true', key)
     await change('source_and_maintenance', '用户自己的来源维护计划\n不联网补充。')
-    const library = structuredClone(data.knowledge_resources['K-material'])
+    const library = structuredClone(data.knowledge_resources['K-001'])
     await kind('long_term_memory')
     assert.equal(field('source_and_maintenance'), null)
     assert.equal(textarea('description').getAttribute('aria-label'), '记住什么')
     assert.equal(textarea('description').value, library.description)
     await change('formation_and_update', '用户确认才形成；发生冲突时询问。')
     await change('user_management', '用户可查看、纠正和清除；清除后不自动恢复。')
-    const memory = structuredClone(data.knowledge_resources['K-material'])
+    const memory = structuredClone(data.knowledge_resources['K-001'])
     await kind('knowledge_base')
     assert.equal(field('formation_and_update'), null); assert.equal(field('user_management'), null)
     assert.equal(textarea('source_and_maintenance').value, library.source_and_maintenance)
-    assert.equal(data.knowledge_resources['K-material'].user_management, memory.user_management)
+    assert.equal(data.knowledge_resources['K-001'].user_management, memory.user_management)
     await kind('long_term_memory')
     assert.equal(textarea('formation_and_update').value, memory.formation_and_update)
     const beforeLocale = structuredClone(data), count = writes.length
@@ -80,10 +80,10 @@ test('knowledge/memory forms differ, preserve hidden edits and legacy text, loca
     for (const input of field('kind').querySelectorAll('input')) assert.equal(input.disabled, true)
     assert.deepEqual(data, beforeLocale); assert.equal(writes.length, count)
     editable = true; locale = 'zh-CN'; await React.act(show)
-    await select(original.knowledge_resources['K-memory'].name)
+    await select(original.knowledge_resources['K-002'].name)
     assert.equal(textarea('description').getAttribute('aria-label'), '记住什么')
     assert.equal(field('source_and_maintenance'), null)
-    assert.deepEqual(data.knowledge_resources['K-memory'], original.knowledge_resources['K-memory'])
+    assert.deepEqual(data.knowledge_resources['K-002'], original.knowledge_resources['K-002'])
     await select('阅读整理助手')
     assert.equal(textarea('description').getAttribute('aria-label'), manifest.i18n.messages['zh-CN'].description,
       'kind-specific labels must not change the existing localized Agent description')

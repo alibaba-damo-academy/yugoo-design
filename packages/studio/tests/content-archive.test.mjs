@@ -182,10 +182,10 @@ test('bounded count, bytes, envelope and unknown formats reject before preparing
   const archive = readStudioContentArchive(await exportStudioContentArchive(source(), request('kit')))
   const count = structuredClone(archive); count.files = Array.from({ length: 4097 }, () => count.files[0])
   assert.throws(() => readStudioContentArchive(seal(count)), /count/)
-  assert.throws(() => readStudioContentArchive(' '.repeat(32 * 1024 * 1024 + 1)), /32 MiB/)
-  const bytes = Buffer.alloc(16 * 1024 * 1024 + 1), large = structuredClone(archive)
+  assert.throws(() => readStudioContentArchive(' '.repeat(64 * 1024 * 1024 + 1)), /64 MiB/)
+  const bytes = Buffer.alloc(32 * 1024 * 1024 + 1), large = structuredClone(archive)
   large.files = [{ path: 'large.bin', base64: bytes.toString('base64'), bytes: bytes.length, sha256: sha(bytes) }]
-  assert.throws(() => readStudioContentArchive(seal(large)), /16 MiB/)
+  assert.throws(() => readStudioContentArchive(seal(large)), /32 MiB/)
   const accepted = source(); accepted.map.set('large.bin', Buffer.alloc(1024 * 1024))
   assert.equal((await prepareStudioContentImport(await exportStudioContentArchive(accepted, request('kit')))).validation.valid, true)
   const unknown = structuredClone(archive); unknown.format = 'tar/v1'

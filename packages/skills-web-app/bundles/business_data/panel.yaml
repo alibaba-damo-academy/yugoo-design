@@ -7,19 +7,22 @@ initial_values: {schema_version: 3}
 empty_description: $t:empty
 sections:
   - id: objects
-    form: {header: {variant: detail, title: {field: name, editable: true}}}
+    form:
+      header: {show_id: true, variant: detail, title: {field: name, editable: true}}
+      body:
+        - {kind: group, title: '$t:meaning', items: [{kind: field, field: description}]}
     title: $t:objects
     item_name: $t:object
     order: object_order
-    create: {id_field: id, defaults: {name: '', description: ''}}
+    create: {id_field: id, id_prefix: BO, defaults: {name: '', description: ''}}
     confirm_delete: true
     delete_relations: [{section: relations, reference_fields: [source, target]}]
   - id: relations
-    form: {header: {variant: detail, title: {field: name, editable: true}}}
+    form: {header: {show_id: true, variant: detail, title: {field: name, editable: true}}}
     title: $t:relations
     item_name: $t:relation
     add_mode: graph
-    create: {id_field: id, defaults: {kind: association, name: '', description: ''}}
+    create: {id_field: id, id_prefix: REL, defaults: {kind: association, name: '', description: ''}}
     confirm_delete: true
 fields:
   - {key: id, control: text, hidden: true, readonly: true, applies_to: [objects, relations]}
@@ -61,7 +64,7 @@ fields:
           - {value: optional, label: '$t:optional'}
           - {value: always, label: '$t:always'}
           - {value: conditional, label: '$t:conditional'}
-      - {key: required_when, label: '$t:requiredWhen', control: textarea, visible_when: {field: requirement, in: [conditional]}, clear_when_hidden: true}
+      - {key: required_when, label: '$t:requiredWhen', control: textarea, required: true, visible_when: {field: requirement, in: [conditional]}, clear_when_hidden: true}
       - {key: options, label: '$t:options', control: list, visible_when: {field: value_type, in: [single_choice, multiple_choice]}, clear_when_hidden: true}
       - {key: example, label: '$t:example', control: text}
   - key: states
@@ -114,7 +117,6 @@ ui:
   sidebar_icon: database
   id: business-objects
   title: $t:objects
-  guidance: "$t:guidance"
   sources: [objects, relations]
   workspace_view: switch
   children:

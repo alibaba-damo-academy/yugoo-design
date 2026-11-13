@@ -1,3 +1,4 @@
+import { STUDIO_ARCHIVE_MAX_JSON_BYTES } from '../../studio/src/types.ts'
 import {createWorkBuddyChildTranscript,verifyWorkBuddyChild} from './workbuddy-native.mjs'
 import {createNativeBackgroundAdapter} from './native-background-adapter.mjs'
 import {createCodexDesktopExecutionAdapter} from './codex-desktop-execution.mjs'
@@ -330,10 +331,15 @@ export async function startCompanion(options) {
         const chunks = []
         for await (const chunk of request) {
           size += chunk.length
-          if (size > 12 * 1024 * 1024) return send(response, 413, { error: 'Request exceeds 12 MiB.' })
+          if (size > STUDIO_ARCHIVE_MAX_JSON_BYTES) return send(response, 413, { error: 'Request exceeds 64 MiB.' })
           chunks.push(chunk)
         }
         const { method, params = {} } = JSON.parse(Buffer.concat(chunks).toString('utf8'))
+        // Complete Studio sources need their base64 envelope. All other
+        // authenticated operations keep the existing 12 MiB request limit.
+        if (size > 12 * 1024 * 1024 && !['studioInstanceImportSources', 'studioContentReadArchive'].includes(method)) {
+          return send(response, 413, { error: 'Request exceeds 12 MiB.' })
+        }
         // Authenticated status/preflight only; never launch a real review as a probe.
         if (backgroundAdapter && ['readWorkspace','prepareReview','prepareReviews','recheckReviews','bindReviewRun','bindReviewRuns'].includes(method)) await refreshReviewCapability()
         if (browserRequest) {

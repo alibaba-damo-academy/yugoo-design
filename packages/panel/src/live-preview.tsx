@@ -1,16 +1,18 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { previewGeometryMarkup, previewGeometryReport } from './preview-geometry.ts'
-import { secureDesignSrcDoc } from './client/srcdoc-security.ts'
+import { INTERACTIVE_PREVIEW_SANDBOX, secureDesignSrcDoc } from './client/srcdoc-security.ts'
 import { previewNavigationMarkup, previewNavigation, previewHotspotSelection, type PreviewLink, type PreviewNavigation } from './preview-navigation.ts'
 import { previewNavigationContextMarkup, type PreviewNavigationContext } from './preview-navigation-context.ts'
 
 let previewGeneration = 0
+export type PreviewViewportMode = 'fit-width' | 'actual-size'
 
 /** Opaque-origin preview: inline prototype behavior is allowed, host access and
  * network capabilities are not. A one-way bridge updates declared CSS variables
  * without reloading the prototype or accepting writes from the artifact. */
-export function LivePreview({ html, imageHtml, variables, title, designWidth = 1280, links = [], onNavigate, binding, onBind, navigationContext, onNavigationError, onGeometry }: {
+export function LivePreview({ html, imageHtml, variables, title, designWidth = 1280, viewportMode = 'fit-width', links = [], onNavigate, binding, onBind, navigationContext, onNavigationError, onGeometry }: {
   html: string; variables: Readonly<Record<string, string>>; title: string; designWidth?: number
+  viewportMode?: PreviewViewportMode
   imageHtml?: string
   links?: readonly PreviewLink[]; onNavigate?: (target: string, navigation: PreviewNavigation) => void
   binding?: string; onBind?: (element: string, label: string) => void
@@ -18,7 +20,8 @@ export function LivePreview({ html, imageHtml, variables, title, designWidth = 1
   onGeometry?: (issues: string[] | undefined) => void
 }) {
   const frame = useRef<HTMLIFrameElement>(null), container = useRef<HTMLDivElement>(null)
-  const [scale, setScale] = useState(1)
+  const [fittedScale, setScale] = useState(1)
+  const scale = viewportMode === 'actual-size' ? 1 : fittedScale
   const values = useRef(variables); values.current = variables
   const images = useMemo(() => {
     if (!imageHtml) return []
@@ -83,6 +86,9 @@ export function LivePreview({ html, imageHtml, variables, title, designWidth = 1
     } catch (failure) { return { error: String(failure) } }
   }, [html, channel, navigationChannel, linkKey, binding, contextKey, measureGeometry])
   useEffect(send, [variables, channel, images])
+  useLayoutEffect(() => {
+    if (viewportMode === 'fit-width' && container.current) container.current.scrollLeft = 0
+  }, [viewportMode])
   useEffect(() => {
     const element = container.current
     if (!element) return
@@ -90,7 +96,8 @@ export function LivePreview({ html, imageHtml, variables, title, designWidth = 1
     const observer = new ResizeObserver(fit); observer.observe(element); fit()
     return () => observer.disconnect()
   }, [designWidth])
-  return <div ref={container} className="dsh-live-preview">{srcDoc.error ? <p role="alert">{srcDoc.error}</p> : <iframe key={navigationChannel} ref={frame} title={title} srcDoc={srcDoc.html}
-    sandbox="allow-scripts" referrerPolicy="no-referrer" onLoad={send}
-    style={{ width: scale < 1 ? designWidth : '100%', height: `${100 / Math.max(scale, .01)}%`, transform: `scale(${scale})`, transformOrigin: 'top left', border: 0 }} />}</div>
+  return <div ref={container} className="dsh-live-preview" data-preview-viewport={viewportMode}
+    tabIndex={viewportMode === 'actual-size' ? 0 : undefined} role={viewportMode === 'actual-size' ? 'region' : undefined} aria-label={title}>{srcDoc.error ? <p role="alert">{srcDoc.error}</p> : <iframe key={navigationChannel} ref={frame} title={title} srcDoc={srcDoc.html}
+    sandbox={INTERACTIVE_PREVIEW_SANDBOX} referrerPolicy="no-referrer" onLoad={send}
+    style={{ width: viewportMode === 'actual-size' || scale < 1 ? designWidth : '100%', height: `${100 / Math.max(scale, .01)}%`, transform: `scale(${scale})`, transformOrigin: 'top left', border: 0 }} />}</div>
 }

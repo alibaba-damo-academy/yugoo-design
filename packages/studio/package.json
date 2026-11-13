@@ -17,6 +17,10 @@
       "default": "./lib/index.js"
     },
     "./package.json": "./package.json",
+    "./types": {
+      "types": "./lib/types.d.ts",
+      "default": "./lib/types.js"
+    },
     "./node": {
       "types": "./lib/node.d.ts",
       "default": "./lib/node.js"

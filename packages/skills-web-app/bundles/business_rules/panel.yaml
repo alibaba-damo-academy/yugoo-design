@@ -12,13 +12,14 @@ sections:
     order: rule_order
     form:
       reorder: false
-      header: {variant: detail, title: {field: title, editable: true}}
+      header: {show_id: true, variant: detail, title: {field: title, editable: true}}
       body:
-        - {kind: field, field: condition}
-        - {kind: field, field: outcome}
-        - {kind: field, field: notes}
+        - {kind: group, title: '$t:condition', items: [{kind: field, field: condition}]}
+        - {kind: group, title: '$t:outcome', items: [{kind: field, field: outcome}]}
+        - {kind: group, title: '$t:notes', items: [{kind: field, field: notes}]}
     create:
       id_field: id
+      id_prefix: BR
       defaults: {title: ''}
       initial_label:
         field: title
@@ -26,6 +27,7 @@ sections:
         numbered_text: $t:newRuleNumbered
     confirm_delete: true
 fields:
+  - {key: id, control: text, hidden: true, readonly: true, applies_to: [rules]}
   - {key: title, label: '$t:title', control: text, required: true, applies_to: [rules]}
   - key: condition
     label: $t:condition
@@ -40,7 +42,6 @@ fields:
     applies_to: [rules]
   - key: notes
     label: $t:notes
-    description: $t:notesHelp
     control: textarea
     placeholder: $t:notesExample
     applies_to: [rules]

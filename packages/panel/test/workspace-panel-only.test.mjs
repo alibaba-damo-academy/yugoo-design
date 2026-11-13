@@ -34,7 +34,7 @@ test('panel-only hides workspace chrome and delegates dirty/save/retract to the 
         b.onLoad({ filter: /.*/, namespace: 'not-exercised' }, args => ({ contents: args.path === 'css' ? ''
           : args.path === 'bpmn' ? 'export class Modeler { constructor() { throw new Error("BPMN is not exercised") } }; export class NavigatedViewer extends Modeler {}'
           : args.path === 'canvas' ? 'export default function Canvas() { throw new Error("Canvas is not exercised") }'
-          : 'export function GraphPanel() { throw new Error("Graph is not exercised") }' }))
+          : 'export function GraphPanel({footer}) { return React.createElement("div", {"data-testid": "graph-chrome-probe"}, footer) }' }))
       } }] })
     const { DesignWorkspace, editDraft, setSaving, bindDesignHostLocale } = await import(pathToFileURL(join(output, 'workspace.mjs')).href)
     const registry = { subscribe: () => () => {}, revision: () => 0, get: id => id === 'fixture' ? {
@@ -168,21 +168,30 @@ test('panel-only hides workspace chrome and delegates dirty/save/retract to the 
     await React.act(async () => editDraft('example', { title: 'Undo this' }))
     await React.act(async () => controls.retract())
     assert.equal(controls.dirty, false)
-    let closes = 0
-    await React.act(async () => root.render(React.createElement(DesignWorkspace, { ...props, onClose: () => { closes++ } })))
-    assert.equal(container.querySelectorAll('[data-testid="dsh-design-dock-close"]').length, 1)
-    assert.ok(container.querySelector('[data-testid="design-project-header"] [data-testid="dsh-design-dock-close"]'), 'populated dock closes from the project header')
-    assert.equal(container.querySelector('[data-testid="chat-design-tabs"]').parentElement.querySelector('[data-testid="dsh-design-dock-close"]'), null, 'tab actions no longer contain the whole-dock close')
-    const emptyProps = { ...props, design: {}, onClose: () => { closes++ } }
+    const preferences = { language: 'en', effectiveAppearance: 'light', onLanguageChange() {}, onAppearanceChange() {} }
+    await React.act(async () => root.render(React.createElement(DesignWorkspace, { ...props, preferences })))
+    assert.equal(container.querySelector('[data-testid="dsh-design-dock-close"]'), null, 'the Host toggle owns closing; no duplicate visible close action')
+    assert.equal(container.querySelectorAll('[data-testid="design-project-header"] [data-workspace-preference]').length, 2)
+    assert.ok(container.querySelector('[data-testid="design-workspace-preferences"]'))
+    const retainedPreference = container.querySelector('[data-testid="design-workspace-preferences"]')
+    await React.act(async () => container.querySelector('[data-testid="design-view-switcher"] button:last-child').click())
+    assert.ok(container.querySelector('[data-testid="graph-chrome-probe"]'))
+    assert.equal(container.querySelector('[data-testid="design-workspace-preferences"]') === retainedPreference, true, 'KAG navigation retains in-flight preference feedback and the original controls')
+    await React.act(async () => container.querySelector('[data-testid="design-view-switcher"] button:first-child').click())
+    await React.act(async () => root.render(React.createElement(DesignWorkspace, { ...props, preferences, experienceAvailable: true })))
+    await React.act(async () => container.querySelectorAll('[data-testid="design-view-switcher"] button')[1].click())
+    assert.equal(container.querySelector('[data-testid="design-workspace-preferences"]') === retainedPreference, true, 'Experience retains the same common preference controls')
+    await React.act(async () => container.querySelector('[data-testid="design-view-switcher"] button:first-child').click())
+    const emptyProps = { ...props, design: {}, preferences }
     await React.act(async () => root.render(React.createElement(DesignWorkspace, emptyProps)))
-    assert.ok(container.querySelector('[data-testid="design-project-header"] [data-testid="dsh-design-dock-close"]'), 'empty dock closes from the compact project header')
-    await React.act(async () => container.querySelector('[data-testid="dsh-design-dock-close"]').click())
-    assert.equal(closes, 1)
+    assert.equal(container.querySelector('[data-testid="dsh-design-dock-close"]'), null)
+    assert.equal(container.querySelectorAll('[data-testid="design-project-header"] [data-workspace-preference]').length, 2, 'empty workspaces retain preferences')
     await React.act(async () => root.render(React.createElement(DesignWorkspace, { ...emptyProps, hideProjectHeader: true })))
     assert.equal(container.querySelector('[data-testid="design-project-header"]'), null)
-    assert.ok(container.querySelector('[data-testid="dsh-design-dock-close"]'), 'a host that hides the project header must retain empty-dock close')
-    await React.act(async () => container.querySelector('[data-testid="dsh-design-dock-close"]').click())
-    assert.equal(closes, 2)
+    assert.equal(container.querySelectorAll('.dsh-design-dock-toolbar [data-workspace-preference]').length, 2, 'the compact design-only entry retains preferences without restoring metadata')
+    assert.equal(container.querySelector('[data-testid="dsh-design-dock-close"]'), null)
+    await React.act(async () => root.render(React.createElement(DesignWorkspace, { ...props, preferences, presentation: 'panel-only' })))
+    assert.equal(container.querySelector('[data-testid="design-workspace-preferences"]'), null, 'Studio nested Panel previews do not duplicate Host preferences')
     await React.act(async () => root.unmount()); root = undefined
     assert.equal(controls, undefined, 'unmounted workspace withdraws its controls')
   } finally {

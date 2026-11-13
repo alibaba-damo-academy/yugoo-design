@@ -8,7 +8,7 @@ empty_description: $t:empty
 sections:
   - id: integrations
     form:
-      header: {variant: detail, title: {field: title, editable: true}}
+      header: {show_id: true, variant: detail, title: {field: title, editable: true}}
       body:
         - kind: group
           title: $t:connectionDetails
@@ -29,6 +29,7 @@ sections:
     order: integration_order
     create:
       id_field: id
+      id_prefix: INT
       defaults: {title: ''}
       initial_label:
         field: title
@@ -36,10 +37,10 @@ sections:
         numbered_text: $t:newIntegrationNumbered
     confirm_delete: true
 fields:
+  - {key: id, control: text, hidden: true, readonly: true, applies_to: [integrations]}
   - {key: title, label: '$t:title', control: text, required: true, applies_to: [integrations]}
   - key: description
     label: $t:description
-    description: $t:descriptionHelp
     placeholder: $t:descriptionExample
     control: textarea
     required: true
@@ -51,11 +52,10 @@ fields:
     placeholder: 'https://api.example.com'
     control: text
     input_type: url
-    required: true
+    required: false
     applies_to: [integrations]
   - key: secrets
     label: $t:secrets
-    description: $t:secretsHelp
     control: record_map
     row_name: $t:secret
     id_field: id
@@ -67,14 +67,12 @@ fields:
     applies_to: [integrations]
   - key: prompt_content
     label: $t:prompt
-    description: $t:promptHelp
     placeholder: $t:promptExample
     control: textarea
     required: true
     applies_to: [integrations]
   - key: business_rules
     label: $t:notes
-    description: $t:notesHelp
     placeholder: $t:notesExample
     control: textarea
     required: false

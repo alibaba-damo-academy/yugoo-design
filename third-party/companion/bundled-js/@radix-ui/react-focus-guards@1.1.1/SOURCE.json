@@ -1,0 +1,12 @@
+{
+  "name": "@radix-ui/react-focus-guards",
+  "version": "1.1.1",
+  "repository": "radix-ui/primitives",
+  "commit": "157415ed1f34c53b5afbf53a047895ed6a7f957f",
+  "gitHead": "157415ed1f34c53b5afbf53a047895ed6a7f957f",
+  "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/157415ed1f34c53b5afbf53a047895ed6a7f957f/LICENSE",
+  "licenseSha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+  "licenseBytes": 1063,
+  "packageMetadataSha256": "f306da59cbac12a05b94fb3be354a8beb9e30aa0ba4ed0b2261a70191e147bac",
+  "correspondence": "Official repository LICENSE at the exact gitHead disclosed by npm version metadata. No substitution from another version."
+}

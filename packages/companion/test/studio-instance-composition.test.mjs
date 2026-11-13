@@ -32,9 +32,16 @@ async function captureDirectory(root) {
 async function fixture() {
   const bundleFiles = new Map(await Promise.all([originalPin, otherPin].map(async pin => [pin.name, await captureDirectory(join(packageRoot, 'bundles', pin.name))])))
   const owned = await captureDirectory(join(packageRoot, 'kits/web_app'))
+  const choices = [originalPin, otherPin].map(pin => {
+    const files = bundleFiles.get(pin.name), manifest = parse(textOf(files, 'skill.yaml'))
+    const zh = JSON.parse(textOf(files, 'locales/zh-CN.json')), en = JSON.parse(textOf(files, 'locales/en-US.json'))
+    return { ...pin, title: manifest.title, runtimeName: manifest.name,
+      description: parseFrontmatter(textOf(files, 'SKILL.md'), 'SKILL.md').meta.description,
+      displayDescription: { zh: zh.bundleDescription, en: en.bundleDescription } }
+  })
   let projected
   const trusted = {
-    async listBundles() { return [originalPin, otherPin] },
+    async listBundles() { return structuredClone(choices) },
     async captureBundle(pin) {
       if (pin.version !== '1.0' || !bundleFiles.has(pin.name)) throw new Error('Missing exact fixture source')
       return { files: structuredClone(bundleFiles.get(pin.name)), sourceId }
@@ -47,7 +54,7 @@ async function fixture() {
 }
 const mountsFor = (...pins) => pins.map(pin => ({ bindingKey: pin.runtimeName ?? pin.name, bundle: { name: pin.name, version: pin.version } }))
 
-test('real Core catalog captures independent Bundle titles, runtime names and exact Kit mounts', async () => {
+test('catalog reuses loaded Bundle titles, runtime names and exact Kit mounts', async () => {
   const f = await fixture(), before = structuredClone([...f.bundleFiles])
   const catalog = await f.catalog.listBundles()
   assert.deepEqual(catalog.map(item => item.name), [originalPin.name, otherPin.name])
@@ -173,7 +180,7 @@ test('real loader failures, unsafe captures, pin mismatch and absent authority a
   await assert.rejects(noTrust.catalog.captureBundle(originalPin), /source identity/)
   const absent = createStudioInstanceAdapters({ ...f.trusted, captureBundle: async () => ({ files: [], sourceId }) })
   await assert.rejects(absent.catalog.captureBundle(originalPin), /Missing/)
-  const duplicated = createStudioInstanceAdapters({ ...f.trusted, listBundles: async () => [originalPin, originalPin] })
+  const duplicated = createStudioInstanceAdapters({ ...f.trusted, listBundles: async () => { const [choice] = await f.trusted.listBundles(); return [choice, choice] } })
   await assert.rejects(duplicated.catalog.listBundles(), /Ambiguous/)
   await assert.rejects(f.composition.forkBundle({ files: Array.from({ length: 4097 }, (_, index) => entry(`f${index}`, '')), from: originalPin, to: target, runtimeName: originalPin.name }), /4096 files/)
 })
@@ -336,7 +343,7 @@ test('new source objects save and reopen through the real adapter; incomplete Bu
   assert.ok(preview.preview, 'first real mount uses the actual Core loader and shared declarative preview')
 })
 
-test('installed catalog descriptions come from parsed Bundle sources and translated copy stays optional', async () => {
+test('catalog keeps loaded descriptions while selected capture reflects changed source copy', async () => {
   const f = await fixture()
   const files = f.bundleFiles.get(originalPin.name)
   for (const path of ['locales/zh-CN.json', 'locales/en-US.json']) {
@@ -346,6 +353,7 @@ test('installed catalog descriptions come from parsed Bundle sources and transla
   const before = structuredClone([...f.bundleFiles])
   const selected = (await f.catalog.listBundles()).find(item => item.name === originalPin.name)
   assert.equal(selected.description, parseFrontmatter(textOf(files, 'SKILL.md'), 'SKILL.md').meta.description)
-  assert.equal(Object.hasOwn(selected, 'displayDescription'), false)
+  assert.equal(Object.hasOwn(selected, 'displayDescription'), true, 'loaded catalog metadata does not recapture changed sources')
+  assert.equal(Object.hasOwn(await f.catalog.captureBundle(originalPin), 'displayDescription'), false, 'selected source capture still reads and validates its current bytes')
   assert.deepEqual([...f.bundleFiles], before, 'catalog projection does not rewrite author-owned locale or method bytes')
 })

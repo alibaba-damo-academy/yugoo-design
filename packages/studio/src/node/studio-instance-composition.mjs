@@ -3,9 +3,10 @@ import { resolve, relative, isAbsolute, sep } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { parseDocument, isMap, isSeq, isScalar, stringify } from 'yaml'
 import { loadDesignBundle, loadDesignKit, parseFrontmatter, parseKitMounts, parseMindsetSkillNames } from 'dsh-design-core'
+import { STUDIO_SOURCE_MAX_BYTES, readStudioArchiveResource } from '../content-archive.ts'
 import { finalizeStudioPanelPreview } from '../panel-preview.ts'
 
-const MAX_TREE_BYTES = 16 * 1024 * 1024
+const MAX_TREE_BYTES = STUDIO_SOURCE_MAX_BYTES
 const MAX_TREE_FILES = 4096
 const MAX_CLOSURE_BYTES = 64 * 1024 * 1024
 const MAX_CLOSURE_FILES = 16384
@@ -39,7 +40,7 @@ function memorySource(entries, budget = { bytes: 0, files: 0 }) {
     const bytes = Buffer.from(base64, 'base64')
     if (bytes.toString('base64') !== base64) throw new Error('Studio source base64 is not canonical.')
     total += bytes.length
-    if (total > MAX_TREE_BYTES) throw new Error('Studio source exceeds 16 MiB.')
+    if (total > MAX_TREE_BYTES) throw new Error('Studio source exceeds 32 MiB.')
     files.set(path, bytes)
     const parts = path.split('/')
     for (let count = 1; count < parts.length; count++) directories.add(parts.slice(0, count).join('/'))
@@ -53,9 +54,10 @@ function memorySource(entries, budget = { bytes: 0, files: 0 }) {
     return rel.split(sep).join('/')
   }
   const fs = {
-    // Match Core's Node readText port for collected resources; retained bytes stay exact.
+    // Definitions stay text; resources retain their text/opaque projection and original bytes.
     async readText(path) { const bytes = files.get(keyOf(path)); return bytes === undefined ? undefined : bytes.toString('utf8') },
     async readBytes(path) { const bytes = files.get(keyOf(path)); return bytes === undefined ? undefined : Buffer.from(bytes) },
+    async readResource(path) { const bytes = files.get(keyOf(path)); return bytes === undefined ? undefined : readStudioArchiveResource(path, bytes) },
     async listDir(path) {
       const key = keyOf(path), prefix = key ? `${key}/` : ''
       return [...new Set([...files.keys()].filter(name => name.startsWith(prefix)).map(name => name.slice(prefix.length).split('/')[0]))].sort()
@@ -239,10 +241,16 @@ export function createStudioInstanceAdapters(trusted) {
         const pin = pinOf(value), key = `${pin.name}@${pin.version}`
         if (seen.has(key)) throw new Error(`Ambiguous exact Bundle ${key}.`)
         seen.add(key)
-        const captured = await catalog.captureBundle(pin)
-        result.push({ ...pin, title: captured.title, runtimeName: captured.runtimeName,
-          ...(captured.description === undefined ? {} : { description: captured.description }),
-          ...(captured.displayDescription === undefined ? {} : { displayDescription: { ...captured.displayDescription } }),
+        // Discovery uses metadata already loaded by the owning catalog. Source
+        // capture/compilation belongs only to the selected operation below.
+        if (!value.title || typeof value.title.zh !== 'string' || typeof value.title.en !== 'string'
+          || typeof value.runtimeName !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(value.runtimeName)
+          || (value.description !== undefined && typeof value.description !== 'string')
+          || (value.displayDescription !== undefined && (!value.displayDescription || typeof value.displayDescription.zh !== 'string'
+            || typeof value.displayDescription.en !== 'string'))) throw new Error('Trusted Bundle catalog metadata is missing or invalid.')
+        result.push({ ...pin, title: { ...value.title }, runtimeName: value.runtimeName,
+          ...(value.description === undefined ? {} : { description: value.description }),
+          ...(value.displayDescription === undefined ? {} : { displayDescription: { ...value.displayDescription } }),
         })
       }
       return result

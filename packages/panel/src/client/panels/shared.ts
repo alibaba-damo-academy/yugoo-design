@@ -32,6 +32,7 @@ export interface SkillPanelProps {
   readBinaryArtifact: (relPath: string) => Promise<BinaryArtifactRead>
   artifactActivities?: readonly import('../types.ts').DesignArtifactActivityRead[]
   executionAttempts?: readonly import('../types.ts').DesignPanelWorkspaceRead['executionAttempts'][number][]
+  readArtifactHistory?: (skill: string) => Promise<readonly import('../types.ts').DesignArtifactHistoryEntry[]>
   readExecutionLog?: (executionRef: string, afterSeq?: number, target?: import('../types.ts').DesignArtifactLogTarget) => Promise<import('../types.ts').DesignExecutionLogRead>
   /** Flush local input into the Panel draft before saving or navigation. Optional
    * discard clears that input on the existing workspace Revert action. */

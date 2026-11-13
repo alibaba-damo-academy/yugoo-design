@@ -1,23 +1,23 @@
 {
   "schema_version": 4,
   "requirements": {
-    "Q-PREVIEW-001": {
-      "id": "Q-PREVIEW-001",
+    "AC-001": {
+      "id": "AC-001",
       "title": "合成示例：提交结果可见",
       "condition": "合成请求内容完整，用户点击提交且保存成功后",
       "pass_criteria": "展示请求编号和待审核状态。",
       "verification": "演示用标准，不代表实际检查通过或用户承诺。",
       "group": "业务流程"
     },
-    "Q-PREVIEW-002": {
-      "id": "Q-PREVIEW-002",
+    "AC-002": {
+      "id": "AC-002",
       "title": "合成示例：无效内容可修正",
       "condition": "合成请求缺少标题，用户尝试提交",
       "pass_criteria": "显示标题缺失提示，并保留已填写的说明。",
       "verification": "仅用于展示验收条目，不是实际测试结果。"
     },
-    "Q-PREVIEW-003": {
-      "id": "Q-PREVIEW-003",
+    "AC-003": {
+      "id": "AC-003",
       "title": "合成示例：AI 草稿待确认",
       "group": "AI 能力",
       "condition": "合成产品明确将 AI 建议保留为草稿；AI 已返回建议，用户尚未确认采用",
@@ -26,8 +26,8 @@
     }
   },
   "requirement_order": [
-    "Q-PREVIEW-001",
-    "Q-PREVIEW-002",
-    "Q-PREVIEW-003"
+    "AC-001",
+    "AC-002",
+    "AC-003"
   ]
 }

@@ -1,0 +1,16 @@
+{
+  "name": "fastdom",
+  "version": "1.0.12",
+  "repository": "wilsonpage/fastdom",
+  "publishedGitHead": "a7b9044d58952b970c8b918dcf0e7c8824ba0ff5",
+  "gitHeadResolvable": false,
+  "correspondence": "Complete original MIT license section retained verbatim from SRI/SHA1-verified official npm tarball README.md; full README retained too. GitHub published gitHead lookup returned 404, not substituted with another revision.",
+  "licenseUrl": "https://registry.npmjs.org/fastdom/-/fastdom-1.0.12.tgz",
+  "originalPath": "package/README.md",
+  "licenseOffsetBytes": 6431,
+  "licenseSha256": "50c0de64f5cd5e39859b43f7eca7f5843fb3c3d5ac7e34a453e27419ad51e08c",
+  "licenseBytes": 1094,
+  "readmeSha256": "cc5669ab6f7741bb061c8a7244addc8e3af1f84ec7d2445744b59d0169a87d11",
+  "tarballIntegrity": "sha512-LB+xjSTEbjHE1cWsxu+tN2Xqr1kpi+V9aADI7sVM5ZMaXyYGPHULQMzpJMYqOTULK/73pUkWVzzObFRBkPr+hg==",
+  "tarballSha1": "ae43d55af017252ae499b2e186511ab97412de39"
+}

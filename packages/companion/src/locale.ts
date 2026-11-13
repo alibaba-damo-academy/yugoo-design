@@ -7,6 +7,7 @@ const chromeZh = {
   backgroundReviews: '后台评审', closeBackgroundReviews: '关闭后台评审', pending: '待处理', running: '运行中',
   settings: '设置', designSettings: '设计系统设置', closeSettings: '关闭设置',
   language: '语言', browserDefault: '跟随浏览器',
+  interfacePreferencesSaveFailed: '设置未保存，重新打开可能恢复原设置。', retryPreferences: '重试保存',
   designSuggestions: '设计建议', maxSuggestions: '最大建议数', saveSettings: '保存设置', settingsSaved: '设置已保存',
   display: '显示', restoreChatLayout: '恢复聊天与设计区 3:7',
   designStudio: 'Design Studio', studioDescription: '查看 Kit、Bundle 及其源文件，保留当前对话。',
@@ -156,6 +157,8 @@ const chromeZh = {
   reviewActivityUnreadable: "后台操作记录暂不可读。",
   reviewActivityLastReceived: "后台操作记录暂不可读；以下保留上次收到的记录。",
   conversationSyncRetrying: "会话同步已断开，正在重试；以下保留上次收到的记录。",
+  workspaceSyncRetrying: "面板同步暂时超时，正在自动重试。当前内容和未保存的修改已保留。",
+  settingsSaveFailed: "设置未能保存，输入已保留，请重试。",
   designSuggestionsEmpty: "暂无待处理的设计建议。",
   adviceNotificationUnconfirmed: "建议已接受，但通知未确认。",
   studioLinkIncomplete: "修改建议链接不完整，请从原对话重新打开。",
@@ -166,6 +169,7 @@ const chromeEn: Record<keyof typeof chromeZh, string> = {
   backgroundReviews: 'Background Reviews', closeBackgroundReviews: 'Close background reviews', pending: 'Needs attention', running: 'Running',
   settings: 'Settings', designSettings: 'Design System settings', closeSettings: 'Close settings',
   language: 'Language', browserDefault: 'Browser default',
+  interfacePreferencesSaveFailed: 'This change was not saved. Reopening may restore the previous setting.', retryPreferences: 'Try saving again',
   designSuggestions: 'Design Suggestions', maxSuggestions: 'Maximum suggestions', saveSettings: 'Save settings', settingsSaved: 'Settings saved',
   display: 'Display', restoreChatLayout: 'Restore 30/70 layout',
   designStudio: 'Design Studio', studioDescription: 'Browse Kits, Bundles and their source files without leaving your conversation.',
@@ -315,6 +319,8 @@ const chromeEn: Record<keyof typeof chromeZh, string> = {
   reviewActivityUnreadable: "Background activity could not be loaded.",
   reviewActivityLastReceived: "Background activity could not be loaded. Showing the last received records.",
   conversationSyncRetrying: "Conversation sync disconnected and is retrying. Showing the last received messages.",
+  workspaceSyncRetrying: "Panel sync timed out and is retrying automatically. Your current content and unsaved edits are kept.",
+  settingsSaveFailed: "Settings could not be saved. Your input is kept; try saving again.",
   designSuggestionsEmpty: "No design suggestions need attention.",
   adviceNotificationUnconfirmed: "The suggestion was accepted, but notification delivery is unconfirmed.",
   studioLinkIncomplete: "This link to proposed changes is incomplete. Open it again from the original conversation.",
@@ -339,7 +345,8 @@ export function createCompanionLocale(storage?: Pick<Storage, 'getItem' | 'setIt
     if (saved === 'en' || saved === 'zh') preference = saved
   } catch { /* Private browsing still permits a session-local selection. */ }
   const resolve = () => preference === 'auto' ? browserLanguage.toLowerCase().startsWith('zh') ? 'zh' : 'en' : preference
-  let snapshot = { active: resolve() }
+  let appearance: 'system' | 'light' | 'dark' = 'system'
+  let snapshot: { active: 'zh' | 'en'; appearance: 'system' | 'light' | 'dark' } = { active: resolve(), appearance }
   const listeners = new Set<() => void>()
   return {
     getSnapshot: () => snapshot,
@@ -348,12 +355,46 @@ export function createCompanionLocale(storage?: Pick<Storage, 'getItem' | 'setIt
       listeners.add(listener)
       return () => { listeners.delete(listener) }
     },
+    setAppearance(value: 'system' | 'light' | 'dark') {
+      if (!['system', 'light', 'dark'].includes(value)) throw new Error('Unsupported Companion appearance')
+      appearance = value
+      snapshot = { active: resolve(), appearance }
+      for (const listener of listeners) listener()
+    },
     setPreference(value: CompanionLanguage, persist = true) {
       if (!['auto', 'en', 'zh'].includes(value)) throw new Error('Unsupported Companion language')
       preference = value
       try { if (persist) storage?.setItem(COMPANION_LANGUAGE_KEY, value) } catch { /* Keep in-memory choice. */ }
-      snapshot = { active: resolve() }
+      snapshot = { active: resolve(), appearance }
       for (const listener of listeners) listener()
     },
+  }
+}
+
+
+export function resolveCompanionAppearance(preference: 'system' | 'light' | 'dark', systemDark: boolean): 'light' | 'dark' {
+  return preference === 'system' ? systemDark ? 'dark' : 'light' : preference
+}
+
+/** The standalone Companion owns its document scheme, not shared Panel colors. */
+export function applyCompanionAppearance(doc: Document, preference: 'system' | 'light' | 'dark', media: Pick<MediaQueryList, 'matches' | 'addEventListener' | 'removeEventListener'>, onResolved?: (appearance: 'light' | 'dark') => void) {
+  const previous = doc.documentElement.style.colorScheme
+  const hadDark = doc.body.hasAttribute('data-ds-dark-theme')
+  let applied = ''
+  const update = () => {
+    const resolved = resolveCompanionAppearance(preference, media.matches)
+    applied = resolved
+    doc.documentElement.style.colorScheme = applied
+    doc.body.toggleAttribute('data-ds-dark-theme', applied === 'dark')
+    onResolved?.(resolved)
+  }
+  media.addEventListener('change', update)
+  update()
+  return () => {
+    media.removeEventListener('change', update)
+    if (doc.documentElement.style.colorScheme === applied) {
+      doc.documentElement.style.colorScheme = previous
+      doc.body.toggleAttribute('data-ds-dark-theme', hadDark)
+    }
   }
 }

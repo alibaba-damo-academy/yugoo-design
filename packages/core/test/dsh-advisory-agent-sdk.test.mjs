@@ -149,6 +149,53 @@ test('native context preserves saved template examples without resolving Host va
   assert.equal(await snapshot(), 'Saved state: {{account_id}}', 'normal context is restored after scoped suppression ends')
 })
 
+test('pure KAG status changes do not extend a completed native reply or wake an idle Agent', async t => {
+  const { default: DesignService } = await import('../src/design-service.ts')
+  let entered, release
+  const inModel = new Promise(resolve => { entered = resolve })
+  const finish = new Promise(resolve => { release = resolve })
+  t.after(() => release())
+  const requests = []
+  const f = await fixture(t, { async step(n, request) {
+    requests.push(request.messages.flatMap(message => message.content.filter(block => block.type === 'text').map(block => block.text)).join('\n'))
+    if (n === 0) { entered(); await finish }
+    return stop()
+  } })
+  const service = new DesignService(f.ctx, { stateRoot: join(f.root, 'state'), projectsRoot: join(f.root, 'projects'), hostInstanceId: 'status-context-test' })
+  const project = '11111111-1111-4111-8111-111111111111'
+  let state = 'due'
+  service.selectionForAgent = () => ({ projectId: project })
+  service.knowledgeStatusSnapshot = async () => ({ project, state, freshness: 'none', semanticLayer: 'enabled' })
+  service.reviewStatuses = async () => []
+  service.readReviewPolicy = async () => ({ mode: 'off', autoMergeWindowMs: 30000 })
+  service.renderDesignState = () => ''
+  service.renderClarityInput = () => ''
+  service.renderAdvisoryProjection = async () => ''
+  const transition = async value => {
+    state = value
+    service.notifyWorkspaceChange({ kind: 'selection-changed', agent: f.parent.agent })
+    await new Promise(resolve => setImmediate(resolve))
+  }
+  await transition('due')
+  assert.equal(requests.length, 0, 'status alone never wakes idle')
+  const human = text => llm.createUserMessage({ content: [{ type: 'text', text }], source: { kind: 'user' } })
+  f.parent.agent.followup(human('Explain the unknowns and wait for my choice; do not run a Bundle.'))
+  await inModel
+  await transition('running'); await transition('current')
+  release(); await f.parent.agent.whenIdle()
+  assert.equal(requests.length, 1, 'pending status must not create another model step after a completed no-tool reply')
+  assert.match(requests[0], /KAG: due/)
+  assert.equal(f.parent.agent.session.snapshotEvents().filter(event => event.type === 'agent/inbox/spliced'
+    && event.data.inserted.some(message => message.source.summary?.startsWith('design knowledge status:'))).length, 0)
+  f.parent.agent.followup(human('Now read the latest derived status without starting work.'))
+  await f.parent.agent.whenIdle()
+  assert.equal(requests.length, 2, 'only the second ordinary human request creates the next step')
+  assert.match(requests[1], /KAG: current/)
+  assert.match(requests[1], /Project GRA policy: \{"mode":"off"/)
+  await transition('failed')
+  assert.equal(requests.length, 2, 'a later idle transition still starts no model request')
+})
+
 test('RC3 factory has real readonly child lifecycle without manager catalog, events or parent wake', { skip: !factoryBackend }, async t => {
   let entered, release
   const inModel = new Promise(resolve => { entered = resolve })
@@ -174,7 +221,7 @@ test('RC3 factory has real readonly child lifecycle without manager catalog, eve
     assert.deepEqual(f.ctx.subagents.list(), providers)
     assert.equal(f.nativeStarts.length, 0)
     release()
-    assert.deepEqual(await run.result, { stopReason: 'completed', structured: { value: 'factory' } })
+    assert.deepEqual(await run.result, { stopReason: 'completed', structured: { value: 'factory' }, knowledgeUsed: false })
     assert.equal(agents.foldConsumedWork(child.session.snapshotEvents()).end.data.reason.kind, 'completed')
   } finally { await Promise.all([run.dispose(), run.dispose()]) }
   assert.equal(f.ctx.agents.get(run.id), undefined)
@@ -393,7 +440,7 @@ test('actual SDK denies local mutators, shell, PTC and nested delegation before 
   f.parent.agent.ctx.tools.register(parentTool)
   const run = await f.port.start('spawn', f.request)
   try {
-    assert.deepEqual(await run.result, { stopReason: 'completed', structured: { value: 'verified' } })
+    assert.deepEqual(await run.result, { stopReason: 'completed', structured: { value: 'verified' }, knowledgeUsed: false })
     assert.equal(writes, 0)
     await assert.rejects(readFile(tempTarget), /ENOENT/)
     await assert.rejects(readFile(join(f.root, 'forbidden')), /ENOENT/)
@@ -440,9 +487,49 @@ test('Knowledge reads preserve exact pins and the authorized parent binding', as
     async execute(args, exec) { assert.equal(exec.agent, expectedParent); queries++; return [{ type: 'text', text: 'bounded graph' }] },
   }))
   const run = await f.port.start('spawn', { ...f.request, knowledgeContext: JSON.stringify({ project: 'project', checkpoint: oid, knowledgeRevision: 'rev:1' }) })
-  try { assert.equal((await run.result).stopReason, 'completed'); assert.equal(queries, 1) }
+  try {
+    const result = await run.result
+    assert.equal(result.stopReason, 'completed'); assert.equal(result.knowledgeUsed, true); assert.equal(queries, 1)
+  }
   finally { await run.dispose() }
   assert.deepEqual(f.results.filter(r => r.name === 'design_query_knowledge').map(r => r.isError), [true, false])
+})
+
+for (const scenario of [
+  { name: 'omitted snapshot without a query', omitted: true, query: 'none', used: false },
+  { name: 'omitted snapshot with rejected query pins', omitted: true, query: 'wrong', used: false },
+  { name: 'omitted snapshot with a failed pinned query', omitted: true, query: 'error', used: false },
+  { name: 'omitted snapshot with a successful empty query', omitted: true, query: 'success', used: true },
+  { name: 'actual inline snapshot', query: 'none', used: true },
+  { name: 'actual inline empty graph', empty: true, query: 'none', used: true },
+  { name: 'available inline snapshot never delivered', deliver: false, query: 'none', used: false },
+]) test(`Knowledge use is observed from native delivery/results: ${scenario.name}`, async t => {
+  const project = 'project', checkpoint = 'a'.repeat(40)
+  const context = JSON.stringify({ project, checkpoint, knowledgeRevision: 'rev:1',
+    entities: scenario.omitted || scenario.empty ? [] : [{ id: 'fact', properties: { text: 'original fact' } }], relations: [],
+    ...(scenario.omitted ? { coverage: { status: 'not-inlined', includedEntities: 0, omittedEntities: 1 } } : {}) })
+  let queries = 0
+  const f = await fixture(t, { step(n) {
+    return scenario.query !== 'none' && n === 0
+      ? call('design_query_knowledge', { project, checkpoint, revision: scenario.query === 'wrong' ? 'wrong' : 'rev:1' })
+      : call('structured_output', { value: 'reviewed' })
+  } })
+  f.parent.agent.ctx.tools.register(tools.defineContentToolFixture({ name: 'design_query_knowledge', description: 'Pinned Knowledge reader',
+    parameters: { project: { type: 'string', required: true }, checkpoint: { type: 'string', required: true }, revision: { type: 'string', required: true } },
+    async execute() {
+      queries++
+      if (scenario.query === 'error') throw new Error('Knowledge read failed')
+      return [{ type: 'text', text: JSON.stringify({ entities: [], relations: [] }) }]
+    },
+  }))
+  const run = await f.port.start('spawn', { ...f.request, knowledgeContext: context,
+    ...(scenario.deliver === false ? {} : { prompt: [{ type: 'text', text: `Stored Design KAG:\n${context}` }] }) })
+  try {
+    const result = await run.result
+    assert.equal(result.stopReason, 'completed')
+    assert.equal(result.knowledgeUsed, scenario.used)
+    assert.equal(queries, ['success', 'error'].includes(scenario.query) ? 1 : 0)
+  } finally { await run.dispose() }
 })
 
 test('oversized initial KAG uses the original readonly pinned query before official Grounding completion', async t => {
@@ -485,6 +572,7 @@ test('oversized initial KAG uses the original readonly pinned query before offic
   }, f.port).catch(error => { throw f.modelErrors[0] ?? error })
   assert.equal(outcome.status, 'produced')
   assert.equal(queries, 1)
+  assert.equal(outcome.knowledgeUsed, true)
   assert.deepEqual(f.results.filter(r => r.name === 'design_query_knowledge').map(r => r.isError), [true, false])
   assert.equal(f.children.length, 1)
   assert.equal(f.ctx.agents.get(f.children[0].id), undefined)
@@ -570,7 +658,7 @@ test('Grounding rejects oversized references before capture and permits the same
   for (const [length, repair] of [[513, true], [959, true], [959, false]]) await t.test(`${length} characters, repair=${repair}`, async t => {
     const reference = 'prd/product.md#' + 'x'.repeat(512 - 'prd/product.md#'.length)
     const output = authoritativeReference => ({ schemaVersion: 1, inconsistencies: [{
-      id: 'audience-drift', facets: ['prd', 'page_design'], summary: 'The saved audiences disagree.',
+      id: 'audience-drift', title: 'Saved audiences disagree', facets: ['prd', 'page_design'], summary: 'The saved audiences disagree.',
       authoritativeReference, correction: 'Align the page audience to creators.', affectedFacets: ['page_design'],
     }] })
     const f = await fixture(t, { step(n) {
@@ -879,7 +967,10 @@ test('readonly discovery retains every official resource and pin without repeati
     resources: bundle.resources.map(({ sha256: _sha256, ...resource }) => resource),
   })) }
   const allResources = evidence.manifest.bundles.flatMap(bundle => bundle.resources.map(resource => ({ bundle, resource })))
-  assert.equal(allResources.length, 228, 'all resources in the fixed official Kit are covered, not a selected subset')
+  const sourceResources = [...content.entries()].flatMap(([name, bundle]) => Object.keys(bundle.resources)
+    .map(path => `${name}/${path}`)).sort()
+  assert.deepEqual(allResources.map(({ bundle, resource }) => `${bundle.name}/${resource.path}`).sort(), sourceResources,
+    'every resource in the loaded official Kit is covered, not a selected subset')
   for (const { bundle, resource } of allResources) {
     const exact = content.get(bundle.name).resources[resource.path]
     const read = evidence.resource(bundle.bindingKey, resource.path, 0, 12000, new AbortController().signal)

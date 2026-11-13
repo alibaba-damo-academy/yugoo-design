@@ -12,6 +12,7 @@ sections:
     confirm_delete: true
     create:
       id_field: function_id
+      id_prefix: F
       defaults: {function_name: '', function_description: '', function_epic: '', priority: Medium, source: user, rejected: false}
   - id: function_details
     title: $t:details
@@ -22,7 +23,7 @@ fields:
   - {key: function_id, label: '$t:functionId', control: text, readonly: true, applies_to: [functions]}
   - {key: function_name, label: '$t:name', control: text, required: true, applies_to: [functions]}
   - {key: function_description, label: '$t:description', control: textarea, required: true, applies_to: [functions]}
-  - {key: function_epic, label: '$t:epic', control: text, required: true, description: '$t:epicHelp', applies_to: [functions]}
+  - {key: function_epic, label: '$t:epic', control: text, description: '$t:epicHelp', applies_to: [functions]}
   - key: priority
     label: $t:priority
     control: select
@@ -36,7 +37,6 @@ fields:
     options: [{value: ai, label: '$t:ai'}, {value: user, label: '$t:user'}]
     applies_to: [functions]
   - {key: reason, label: '$t:reason', control: textarea, applies_to: [functions]}
-  - {key: references, label: '$t:references', control: source_reference_map, readonly: true, applies_to: [functions]}
   - {key: situation, label: '$t:situation', control: textarea, applies_to: [function_details]}
   - key: behaviors
     label: $t:behaviors
@@ -70,7 +70,6 @@ fields:
     applies_to: [function_details]
 ui:
   component: record_board
-  guidance: "$t:guidance"
   sidebar_icon: blocks
   id: function-board
   title: $t:functions
@@ -88,5 +87,5 @@ ui:
     badge: priority
     details_title: $t:detailsAndEvidence
     detail_fields_mode: fixed
-    detail_fields: [reason, references]
+    detail_fields: [reason]
     detail_sections: [function_details]

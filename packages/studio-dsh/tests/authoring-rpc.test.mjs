@@ -92,7 +92,7 @@ test('saved Kit and Bundle titles cross stateless archive and source-import wire
   }
 })
 
-test('all optional endpoints declare the real native lookup and leave the original six-method client intact', () => {
+test('all optional authoring endpoints declare native lookup while installed inspection stays session-free', () => {
   assert.equal(STUDIO_AUTHORING_REMOTE.descriptors.length, 22)
   assert.equal(new Set(STUDIO_AUTHORING_REMOTE.descriptors.map(item => item.id)).size, 22)
   for (const descriptor of STUDIO_AUTHORING_REMOTE.descriptors) {
@@ -106,7 +106,7 @@ test('all optional endpoints declare the real native lookup and leave the origin
     assert.equal(descriptor.result.mode, 'strict')
   }
   assert.deepEqual(Object.keys(createSameOriginStudioRemote()).sort(), [
-    'readBundleFile', 'readBundleWorkspace', 'readKitFile', 'readKitFiles', 'readKitWorkspace', 'workspace',
+    'previewInstalled', 'readBundleFile', 'readBundleWorkspace', 'readKitFile', 'readKitFiles', 'readKitWorkspace', 'workspace',
   ])
 })
 

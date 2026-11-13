@@ -268,7 +268,7 @@ const RESULT_SCHEMA = {
   ],
 } as const
 
-function invocationId(rootCallId: string): DesignExecutionInvocationId {
+export function designSkillInvocationId(rootCallId: string): DesignExecutionInvocationId {
   const digest = createHash('sha256')
     .update('run_design_skill\0', 'utf8')
     .update(rootCallId, 'utf8')
@@ -479,7 +479,7 @@ export const inject = ['tools']
  * @param port - high-level Design skill controller.
  */
 export function apply(ctx: Context, port: RunDesignSkillPort): void {
-  const awaitingUserContinue = new WeakSet<Agent>()
+  const awaitingUserContinue = new WeakMap<Agent, { readonly turn?: number }>()
   // One correction belongs to the Host turn, never to a brief, call id or
   // concurrent sibling. Consume it synchronously before any engagement await.
   // Do not clear it at turn-stopping: RC2 may still drain queued steering in
@@ -487,7 +487,9 @@ export function apply(ctx: Context, port: RunDesignSkillPort): void {
   const acknowledgementRecovery = new WeakMap<Agent, { readonly turn?: number; closed: boolean }>()
 
   ctx.on('agent/turn-stopping', ({ agent }) => {
-    awaitingUserContinue.delete(agent)
+    // A Host may still drain steering in the same recorded turn. Only hosts
+    // without a recorded turn need this lifecycle-based compatibility cleanup.
+    if (awaitingUserContinue.get(agent)?.turn === undefined) awaitingUserContinue.delete(agent)
   })
 
   ctx.tools.register(defineTool({
@@ -550,11 +552,16 @@ export function apply(ctx: Context, port: RunDesignSkillPort): void {
       if (args.advisoryReceiptId !== undefined && args.advisoryReceiptId.trim() === '') {
         throw new Error('run_design_skill advisoryReceiptId must be non-empty text')
       }
-      if (awaitingUserContinue.has(exec.agent)) {
+      // Capture the invoking turn before any asynchronous execution/settlement.
+      // A new human turn must reach the controller's existing gate validation,
+      // even if the previous turn's stopping hook did not clear local state.
+      const acknowledgement = invocationAcknowledgement(exec.agent, String(exec.rootCallId))
+      const waiting = awaitingUserContinue.get(exec.agent)
+      if (waiting !== undefined && (waiting.turn === undefined
+        || acknowledgement.turn === undefined || waiting.turn === acknowledgement.turn)) {
         throw new Error('run_design_skill is awaiting the current user-continue action and cannot run again in this user turn')
       }
       if (args.action === undefined) {
-        const acknowledgement = invocationAcknowledgement(exec.agent, String(exec.rootCallId))
         const prior = acknowledgementRecovery.get(exec.agent)
         const recovery = prior?.turn === acknowledgement.turn ? prior : undefined
         if (recovery?.closed || !acknowledgement.present) {
@@ -575,7 +582,7 @@ export function apply(ctx: Context, port: RunDesignSkillPort): void {
       }
 
       const advisoryReceiptId = args.advisoryReceiptId?.trim()
-      const proposedInvocationId = invocationId(String(exec.rootCallId))
+      const proposedInvocationId = designSkillInvocationId(String(exec.rootCallId))
       let advisoryAttempt: {
         readonly receiptId: string
         readonly attemptId: string
@@ -653,7 +660,13 @@ export function apply(ctx: Context, port: RunDesignSkillPort): void {
           })
         }
         if (result.kind === 'await_user' && result.gate?.kind === 'user_continue') {
-          awaitingUserContinue.add(settlementAgent)
+          const prior = awaitingUserContinue.get(settlementAgent)
+          // A late main-mode callback belongs to its original invocation; it
+          // must neither acquire the current turn nor overwrite a newer wait.
+          if (prior === undefined || (acknowledgement.turn !== undefined
+            && prior.turn !== undefined && acknowledgement.turn > prior.turn)) {
+            awaitingUserContinue.set(settlementAgent, { turn: acknowledgement.turn })
+          }
         }
       }
       if (result.kind === 'in_progress') {

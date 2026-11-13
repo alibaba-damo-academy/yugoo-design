@@ -17,7 +17,7 @@ test('shared specification switches in place while the edge control retains page
   const { NavigationWorkspace } = await import('../src/navigation-workspace.tsx')
   const { PanelLocaleContext } = await import('../src/panel-i18n.tsx')
   const binding = {
-    nodes: { path: 'screens', order: 'order', label: 'name', position: 'point', artifact: 'file' },
+    nodes: { path: 'screens', order: 'order', label: 'name', position: 'point', artifact: 'file', artifact_kind: 'page_html' },
     edges: { path: 'links', order: 'link_order', source: 'from', target: 'to', label: 'name' },
     frames: { path: 'groups', label: 'name', members: 'screens', position: 'point', size: 'size' },
   }
@@ -107,6 +107,32 @@ test('shared specification switches in place while the edge control retains page
     assert.equal(mounts, 1)
     assert.equal(writes, 0, 'navigation never writes design data')
     assert.deepEqual(data, initial)
+
+    const inspector = document.querySelector('.dsh-navigation-inspector')
+    await click(document.querySelector('.dsh-navigation-preview-actions button'))
+    assert.equal(inspector.hidden, false, 'the declared record form is reachable from an existing preview')
+    assert.equal(inspector.querySelector('[data-selection]').textContent, 'screens:detail')
+    assert.ok(iframe.closest('[hidden]'), 'details hide the preview without discarding its document')
+    await click(inspector.querySelector('.dsh-navigation-actions button'))
+    assert.equal(inspector.hidden, true)
+    assert.equal(document.querySelector('.dsh-navigation-preview iframe'), iframe, 'returning from details retains the same preview')
+
+    data.screens.detail.file = null
+    await act(async () => show())
+    assert.equal(inspector.hidden, false, 'a plan without an artifact shows the existing record renderer immediately')
+    assert.equal(inspector.querySelector('[data-selection]').textContent, 'screens:detail')
+    assert.equal(inspector.querySelector('.dsh-navigation-actions button'), null, 'no empty preview choice is added to an unfinished plan')
+    assert.equal(writes, 0, 'view selection and artifact availability never modify the plan')
+    options.executionAttempts = [{ invocationId: 'pages', attemptId: 'detail-run', runId: 'worker',
+      artifactId: 'detail', artifactKind: 'page_html', artifactFile: 'bundle/detail.html', role: 'worker', phase: 'working', sequence: 1 }]
+    options.artifactFiles = { 'bundle/detail.html': 'landed-worker-file' }
+    await act(async () => show())
+    assert.equal(inspector.hidden, true, 'a landed native Worker preview remains available before canonical integration')
+    assert.equal(document.querySelector('.dsh-navigation-preview iframe').title, 'Detail')
+    delete options.executionAttempts
+    delete options.artifactFiles
+    data.screens.detail.file = initial.screens.detail.file
+    await act(async () => show())
 
     includeSpecification = false
     await act(async () => show())

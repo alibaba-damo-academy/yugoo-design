@@ -1,17 +1,10 @@
 /**
- * Main-Agent write policy for Design Project files.
+ * Main-Agent mutation routing for managed Design Project data.
  *
- * Design workers own native file operations. The Main Agent may read committed
- * files from the disclosed project root and inspect that repository's Git
- * status, diff, and history through host filesystem and shell tools; the
- * revision-pinned Design projection stays the same-turn authority for design
- * decisions. Only modification is reserved: Design Files change through the
- * design port, never through Main-Agent host write, edit, or patch tools.
- * Project-local design_kit definitions use ordinary authorized file editing.
- * Shell writes to Design data remain forbidden by the Design Core prompt.
- * Producer writes are
- * ordinary persistent worktree files; publication rebuilds its mechanical Git
- * index and commits only a validated frozen snapshot.
+ * The Host owns ordinary file permissions. Only actual targets in the selected
+ * project's Design Files and system metadata use the Design save boundary.
+ * Source, notes and project-local design_kit definitions remain ordinary Host
+ * edits. Payload text and similarly named outside paths are never authority.
  */
 
 import { posix } from 'node:path'
@@ -40,11 +33,11 @@ export interface DesignFileToolPolicyInput {
   readonly resolvedTargets?: readonly string[]
 }
 
-function argumentText(value: unknown): string {
+function patchText(value: unknown): string {
   if (typeof value === 'string') return value
-  if (Array.isArray(value)) return value.map(argumentText).join('\n')
-  if (typeof value === 'object' && value !== null) {
-    return Object.values(value).map(argumentText).join('\n')
+  if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+    return ['patch', 'input'].map(key => (value as Record<string, unknown>)[key])
+      .filter((text): text is string => typeof text === 'string').join('\n')
   }
   return ''
 }
@@ -53,10 +46,11 @@ function normalizedPath(path: string): string {
   return path.replaceAll('\\', '/').replace(/\/+$/, '')
 }
 
-/** Exact mutation targets; patch moves must account for both source and destination. */
-function mutationTargets(input: DesignFileToolPolicyInput): string[] {
+/** Classify actual mutation targets before consulting any Design Project. */
+export function designFileMutationTargets(input: Pick<DesignFileToolPolicyInput, 'name' | 'arguments'>): readonly string[] {
+  if (!HOST_MUTATION_TOOL_NAMES.has(input.name)) return []
   if (input.name === 'apply_patch') {
-    const patch = typeof input.arguments === 'string' ? input.arguments : argumentText(input.arguments)
+    const patch = patchText(input.arguments)
     return [...patch.matchAll(/^\*\*\* (?:Add File|Update File|Delete File|Move to): (.+)\r?$/gm)].map(match => match[1]!.trim())
   }
   if (!input.arguments || typeof input.arguments !== 'object' || Array.isArray(input.arguments)) return []
@@ -72,18 +66,9 @@ function absoluteTarget(path: string, cwd: string): string {
   return /^[a-z]:\//i.test(result) ? result.toLowerCase() : result
 }
 
-/** The only project-repository exception: every mutated file belongs to its definition tree. */
-export function projectDefinitionMutationPaths(input: DesignFileToolPolicyInput): readonly string[] | undefined {
-  if (!HOST_MUTATION_TOOL_NAMES.has(input.name)) return undefined
-  const paths = mutationTargets(input)
-  if (!paths.length || paths.some(path => path.includes('\0') || normalizedPath(path).split('/').includes('..'))) return undefined
-  const project = absoluteTarget(input.projectRoot, input.projectRoot)
-  const root = `${project}/design_kit/`
-  const targets = paths.map(path => absoluteTarget(path, input.workingDirectory ?? project))
-  if (!targets.every(path => path.startsWith(root))) return undefined
-  if (input.resolvedTargets && (input.resolvedTargets.length !== targets.length
-    || !input.resolvedTargets.every(path => absoluteTarget(path, project).startsWith(root)))) return undefined
-  return targets
+/** Actual Host mutation paths, for the existing filesystem-identity check. */
+export function designFileMutationPaths(input: DesignFileToolPolicyInput): readonly string[] {
+  return designFileMutationTargets(input).map(path => absoluteTarget(path, input.workingDirectory ?? input.projectRoot))
 }
 
 /**
@@ -96,28 +81,15 @@ export function projectDefinitionMutationPaths(input: DesignFileToolPolicyInput)
  */
 export function designFileToolDenial(input: DesignFileToolPolicyInput): string | undefined {
   if (input.isSubagent || !HOST_MUTATION_TOOL_NAMES.has(input.name)) return undefined
-  if (projectDefinitionMutationPaths(input)) return undefined
-
-  const text = normalizedPath(argumentText(input.arguments))
-  const lower = text.toLowerCase()
-  const projectRoot = normalizedPath(input.projectRoot)
-  const designFilesRoot = normalizedPath(input.designFilesRoot)
-  const targetInProject = mutationTargets(input).some(path => {
-    const target = absoluteTarget(path, input.workingDirectory ?? projectRoot)
-    const project = absoluteTarget(projectRoot, projectRoot)
-    return (input.workingDirectory !== undefined || /^(?:\/|[a-z]:[\\/])/i.test(path))
-      && (target === project || target.startsWith(project + '/'))
-  })
-  const referencesProtectedPath = targetInProject
-    || lower.includes('/design_files/')
-    || lower.includes('design_files/')
-    || lower.includes('/.design-system/')
-    || lower.includes('.design-system/')
-    || text.includes(projectRoot)
-    || text.includes(designFilesRoot)
-    || input.resolvedTargets !== undefined
-  const declaresDesignFileIntent = /\bdesign[ -](?:files?|projects?)\b/i.test(text)
-
-  if (!referencesProtectedPath && !declaresDesignFileIntent) return undefined
-  return 'Design Files change only through the Design System (run_design_skill or a persisted Design panel edit); host write, edit, and patch tools cannot modify them. Ordinary authorized edits are allowed only for the selected project’s design_kit definition tree; this does not grant Design data, project metadata or Git mutation authority. Reading committed files and inspecting Git status, diff, or history from the disclosed project root remains allowed.'
+  const project = absoluteTarget(input.projectRoot, input.projectRoot)
+  const managedRoots = [input.designFilesRoot, `${project}/design_records`, `${project}/.git`, `${project}/.design-system`]
+    .map(path => absoluteTarget(path, project))
+  const metadata = `${project}/project.json`
+  const targets = [
+    ...designFileMutationPaths(input),
+    ...(input.resolvedTargets ?? []).map(path => absoluteTarget(path, project)),
+  ]
+  if (!targets.some(target => target === metadata
+    || managedRoots.some(root => target === root || target.startsWith(`${root}/`)))) return undefined
+  return 'Design Files and managed project metadata change only through the Design System (run_design_skill or a persisted Design panel edit). Ordinary authorized Host edits to source, notes and design_kit definitions remain available; file contents do not change that permission.'
 }

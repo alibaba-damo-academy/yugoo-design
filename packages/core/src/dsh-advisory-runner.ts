@@ -37,7 +37,12 @@ export interface AdvisorySubagentPort {
   }): Promise<{
     /** Actual native child Session id, usable as assessment provenance. */
     readonly id: Agent['id']
-    readonly result: Promise<{ readonly stopReason: string; readonly structured?: unknown }>
+    readonly result: Promise<{
+      readonly stopReason: string
+      readonly structured?: unknown
+      /** Native input delivery or a successful pinned Knowledge tool result. */
+      readonly knowledgeUsed?: boolean
+    }>
     dispose(): Promise<void>
   }>
 }
@@ -92,7 +97,7 @@ export type DshAdvisoryRunOutcome =
 
 /** Parsed current advice before the caller chooses the current review set. */
 export type DshAdvisoryAnalysisOutcome =
-  | { readonly status: 'produced'; readonly advisory: DesignAdvisory; readonly knowledgeRelations?: readonly KnowledgeReviewObservation[]; readonly knowledgeRetractions?: readonly KnowledgeReviewRetraction[]; readonly knowledgeError?: string }
+  | { readonly status: 'produced'; readonly advisory: DesignAdvisory; readonly knowledgeUsed: boolean; readonly knowledgeRelations?: readonly KnowledgeReviewObservation[]; readonly knowledgeRetractions?: readonly KnowledgeReviewRetraction[]; readonly knowledgeError?: string }
   | { readonly status: 'stale' }
 
 const ADVISORY_INVESTIGATION_STRATEGY = [
@@ -116,9 +121,10 @@ export async function analyzeDshDesignAdvisory(
   request: DshAdvisoryRunRequest,
   subagents: AdvisorySubagentPort,
 ): Promise<DshAdvisoryAnalysisOutcome> {
-  const profile = officialAdvisoryProfile(request.profile)
+  const definition = officialAdvisoryProfile(request.profile)
   const depth = designReviewDepth(request.reviewDepth)
-  const input = profile.parseInput(request.input)
+  const input = definition.parseInput(request.input)
+  const profile = officialAdvisoryProfile(request.profile, input)
   const parseOutput = (value: unknown) => {
     if (request.knowledgeContext && value !== null && typeof value === 'object' && !Array.isArray(value)) {
       const { knowledgeRelations: _extension, knowledgeRetractions: _retractions, ...advisory } = value as Record<string, unknown>
@@ -191,7 +197,8 @@ export async function analyzeDshDesignAdvisory(
     }
     if (!await request.stillCurrent(input)) return { status: 'stale' }
     const advisory = profile.project(input, output)
-    return { status: 'produced', advisory, ...(split ? { knowledgeRelations: split.observations, knowledgeRetractions:split.retractions } : {}), ...(knowledgeError ? { knowledgeError } : {}) }
+    return { status: 'produced', advisory, knowledgeUsed: result.knowledgeUsed === true,
+      ...(split ? { knowledgeRelations: split.observations, knowledgeRetractions:split.retractions } : {}), ...(knowledgeError ? { knowledgeError } : {}) }
   } finally {
     await run.dispose()
   }

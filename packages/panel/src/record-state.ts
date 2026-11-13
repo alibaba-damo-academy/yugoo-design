@@ -10,6 +10,15 @@ export function recordLabel(record: Record<string, unknown>, fallback: string): 
   return fallback
 }
 
+/** Count actual collection children, never filled fields or selected options. */
+export function collectionFieldCount(field: EditorField | undefined, value: unknown): number | undefined {
+  if (!field) return undefined
+  if (['list', 'rows', 'source_list'].includes(field.control)) return Array.isArray(value) ? value.length : value == null ? 0 : undefined
+  if (['record_map', 'source_reference_map'].includes(field.control)) return value && typeof value === 'object' && !Array.isArray(value)
+    ? Object.keys(value).length : value == null ? 0 : undefined
+  return undefined
+}
+
 /** Pure record transactions shared by all declarative components. No React,
  * Host services, component imports, or Bundle-specific branches belong here. */
 /** Design Files projected by section: sectionId -> recordId -> record. */
@@ -111,6 +120,21 @@ export function sectionBindingOf(manifest: PanelManifest, sectionId: string): Se
   }
 }
 
+/** Read a saved identity with a presentation intent: an explicit display binding,
+ * or the section's visible ID field. Creation identity alone is not display intent.
+ * Missing bindings/values stay absent; this never generates or repairs IDs. */
+export function recordIdentityOf(manifest: PanelManifest, sectionId: string, values: Record<string, unknown>, idField?: string): { value: string; label?: string } | undefined {
+  const section = manifest.sections.find(section => section.id === sectionId)
+  const show = section?.form?.header?.show_id
+  if (idField === undefined && show === false) return undefined
+  const key = idField ?? section?.create?.id_field ?? (show === true ? 'id' : undefined)
+  const field = fieldsForSection(manifest.fields, sectionId).find(field => field.key === key)
+  if (idField === undefined && show !== true && (!field || !fieldIsVisible(field, values))) return undefined
+  const value = key ? values[key] : undefined
+  if (typeof value !== 'string' || !value.trim()) return undefined
+  return { value, label: field?.label }
+}
+
 /**
  * Read a record map at a dotted path, tolerantly.
  * @param data - the render data.
@@ -133,15 +157,27 @@ export function recordsAtPath(data: Record<string, unknown>, path: string): Reco
 }
 
 /**
- * Generate an opaque record id: a platform UUID suffixed to a stable
- * section-derived prefix, collision-checked against the current map. Ids
- * are not deterministically re-derivable, so deleted ids are practically
- * never reused and stale cross-panel references cannot silently rebind.
+ * Create one local record identity. A declared business prefix uses the next
+ * number in that collection; it never rewrites existing keys or validates their
+ * format. Without that declaration, retain the original UUID identity.
  * @param prefix - stable section-derived prefix for readability.
  * @param records - the current record map.
+ * @param businessPrefix - optional author-declared readable prefix.
  * @returns an id unique within the current map.
  */
-export function freshRecordId(prefix: string, records: Record<string, Record<string, unknown>>): string {
+export function freshRecordId(prefix: string, records: Record<string, Record<string, unknown>>, businessPrefix?: string): string {
+  if (businessPrefix) {
+    const start = `${businessPrefix}-`
+    let largest = 0
+    for (const key of Object.keys(records)) {
+      if (!key.startsWith(start)) continue
+      const suffix = key.slice(start.length)
+      if (!/^\d+$/.test(suffix)) continue
+      const value = Number(suffix)
+      if (Number.isSafeInteger(value) && value > largest) largest = value
+    }
+    return `${start}${String(largest + 1).padStart(3, '0')}`
+  }
   let id = `${prefix}-${browserRandomUuid()}`
   while (Object.hasOwn(records, id)) {
     id = `${prefix}-${browserRandomUuid()}`
@@ -181,6 +217,11 @@ function withFieldValue(values: Record<string, unknown>, key: string, value: unk
 
 export function fieldIsVisible(field: EditorField, values: Record<string, unknown>): boolean {
   if (field.hidden) return false
+  if (field.hide_when_empty === true && field.readonly === true) {
+    const value = values[field.key]
+    if (value == null || Array.isArray(value) && value.length === 0
+      || typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0) return false
+  }
   const gate = field.visible_when
   if (!gate) return true
   const conditions = 'all' in gate ? gate.all : [gate]

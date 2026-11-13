@@ -17,6 +17,41 @@ const { StudioWorkspace } = await import(process.env.STUDIO_CONTENT_ARCHIVE_BUIL
 const { act } = React
 const button = text => [...document.querySelectorAll('button')].find(item => item.textContent === text)
 const record = id => ({ id, kind: 'bundle', title: { zh: '观察记录', en: id }, source: { bundle: { name: 'observations', version: '1.0' } }, revision: 0, mounts: [], refs: [], files: [{ path: 'SKILL.md', bytes: 9, editable: true }] })
+test('installed Bundle preview uses read-only management and the independent renderer without creating a local instance', async () => {
+  for (const legacy of [false, true]) {
+  const pin = { name: 'observations', version: '1.0' }, requests = [], renders = []
+  const panelYaml = 'version: 1\npanel_kind: document\nsections: []\nfields: []\n'
+  const client = {
+    workspace: async query => ({ query, kits: [], bundles: [{ ...pin, title: { zh: '观察记录', en: 'Observations' }, description: 'Read observations.', usedBy: [] }] }),
+    readBundleWorkspace: async () => ({ workspace: { ...pin, description: 'Read observations.', files: [{ path: 'panel.yaml', bytes: panelYaml.length }], panel: { kind: 'declarative' } }, diagnostics: [] }),
+    readBundleFile: async () => ({ file: { path: 'panel.yaml', content: panelYaml }, diagnostics: [] }),
+    previewInstalled: async request => { requests.push(request); return { preview: { bundle: pin, revision: request.revision, panelYaml, sample: { summary: 'Isolated sample' } }, diagnostics: [] } },
+  }
+  const controller = new StudioWorkspaceController(client)
+  await controller.load(); controller.setSection('bundles')
+  const root = createRoot(document.getElementById('root'))
+  const instances = { list: async () => [], editCurrent: async () => assert.fail('preview must not materialize a local copy'), copy: async () => assert.fail('preview must not copy'), create: async () => assert.fail('preview must not create') }
+  const previewInstalled = client.previewInstalled
+  if (legacy) delete client.previewInstalled
+  const renderPreview = (value, _adopt, options) => {
+    renders.push({ value, options }); return React.createElement('p', { 'data-testid': 'installed-sample' }, value.sample.summary)
+  }
+  try {
+    await act(async () => root.render(React.createElement(StudioWorkspace, { client, controller, instances, locale: 'en',
+      renderPreview: legacy ? undefined : renderPreview,
+      authoring: legacy ? { client: { previewInstalled }, renderPreview } : undefined,
+    })))
+    await act(async () => button('Open').click())
+    await act(async () => button('Panel Preview').click())
+    assert.equal(requests.length, 1, 'installed Open reaches its exact preview capability without legacy authoring')
+    assert.deepEqual(requests[0], { kit: undefined, bundle: pin, revision: 0 })
+    assert.equal(document.querySelector('[data-testid="installed-sample"]').textContent, 'Isolated sample')
+    assert.equal(renders.at(-1).options.readOnly, true, 'catalog sample grants reading only')
+    assert.equal(document.querySelector('textarea[aria-label="Panel YAML"]').readOnly, true)
+    assert.doesNotMatch(document.body.textContent, /Panel preview is unavailable here/)
+  } finally { await act(async () => root.unmount()) }
+  }
+})
 async function mount(renderInstanceWorkbench, kind = 'bundle', describe = value => value) {
   const fixture = id => describe(kind === 'bundle' ? record(id) : { ...record(id), kind, source: { kit: { name: 'evidence', version: '1.0' } }, files: [{ path: 'mindset.md', bytes: 9, editable: true }] })
   const calls = [], dirty = [], instances = { list: async () => [fixture('first')], read: async ({ id }) => { calls.push(id); return fixture(id) }, readFile: async ({ id, path }) => ({ id, path, revision: 0, content: '# Fixture' }) }

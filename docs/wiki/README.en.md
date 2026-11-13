@@ -8,8 +8,8 @@ This Wiki covers using Yugoo Design in your existing Agent application, managing
 
 ## Where to start
 
-- **Work on your own design:** [install and begin](getting-started.en.md) → [client-project walkthrough](web-app-demo.en.md) → [everyday use](usage.en.md). The [Kit user guide](official-kits.md) explains the available design activities.
-- **Understand the system:** read the [product principles](../product-vision.en.md), [core concepts](concepts.md) and [runtime overview](architecture.md), then use the capability table below for U/S/T, KAG, GRA, saving and handoffs. The [command reference](commands.md) explains `/yugoo` arguments.
+- **Work on your own design:** [install and begin](getting-started.en.md) → [client-project walkthrough](web-app-demo.en.md) → [everyday use](usage.en.md). The [Kit user guide](official-kits.en.md) explains the available design activities.
+- **Understand the system:** read the [product principles](../product-vision.en.md), [core concepts](concepts.en.md) and [runtime overview](architecture.md), then use the capability table below for U/S/T, KAG, GRA, saving and handoffs. The [command reference](commands.md) explains `/yugoo` arguments.
 - **Turn professional methods into interactive tools:** [minimal customization](custom-kit-tutorial.en.md) → [authoring rules](extending.en.md) → [Studio](usage.en.md#6-studio-inspect-customize-and-check-kits) → [sharing with recipients](kit-sharing.en.md).
 - **Contribute to the source:** [development guide](development.md) → [architecture baseline](../system-design-baseline.md) and the owning package's README → [contribution, testing and release guidance](../../CONTRIBUTING.md).
 
@@ -21,8 +21,8 @@ The starting guides above have English counterparts. Some deeper user and techni
 | --- | --- |
 | Prepare a host, configure its model, and install or update Yugoo | [Getting started](getting-started.en.md), [host compatibility](hosts.en.md): find the route for your host and enable the plugin |
 | Create a project and request an output | [Client-project walkthrough](web-app-demo.en.md): move from a goal to a concrete Panel and use your feedback to change the design |
-| Find domain capabilities | [Kit user guide](official-kits.md), [acquisition list](kit-sharing.en.md#official-kits): distinguish the included Kit from public examples acquired separately |
-| Understand interface terms | [Core concepts](concepts.md), [terminology](terminology.md): distinguish Project, Kit, Mindset, Bundle, Panel and Studio |
+| Find domain capabilities | [Kit user guide](official-kits.en.md), [acquisition list](kit-sharing.en.md#official-kits): distinguish the included Kit from public examples acquired separately |
+| Understand interface terms | [Core concepts](concepts.en.md), [terminology](terminology.md): distinguish Project, Kit, Mindset, Bundle, Panel and Studio |
 | Check versions and limits | [Host compatibility](hosts.en.md), [release status](preview-status.md): check the scope of the selected release |
 
 ## Everyday operations and commands
@@ -34,16 +34,16 @@ The starting guides above have English counterparts. Some deeper user and techni
 | Read a suggestion and decide whether to accept it | [Handle suggestions](usage.en.md#3-handle-suggestions) | Choose revision, clarification or research; changes go through the owning Bundle, and disposing of a suggestion does not itself change the design |
 | View Git history, migrate an older project, or remove its registration | [Manage and recover projects](usage.en.md#4-manage-and-recover-projects), [command reference](commands.md) | Trace earlier changes; migration creates an adapted project, while removing a registration retains its files |
 | Reconstruct a design from materials or existing software | [Reconstruction](usage.en.md#5-reconstruct-a-design-from-existing-materials) | Retain observed evidence and unknowns while the owning Bundles produce design files |
-| Assemble a PRD or prepare implementation tasks | [Kit user guide](official-kits.md), [development handoff](../design-development-handoff.md) | Retain source designs and organize the handoff around the task and the codebase's existing spec |
+| Assemble a PRD or prepare implementation tasks | [Kit user guide](official-kits.en.md), [development handoff](../design-development-handoff.md) | Retain source designs and organize the handoff around the task and the codebase's existing spec |
 
 ## Capabilities and principles
 
 | Capability | Purpose and entry point | Further reading |
 | --- | --- | --- |
-| Interactive outputs and a gap-driven loop | AI chooses useful actions from the goal, evidence and your feedback; open questions, diagrams or prototypes when they help | [Core mechanisms](concepts.md#三个核心机制), [product principles](../product-vision.en.md) |
-| Project, Kit, Mindset and Bundle | A project retains outputs and history; a Kit organizes domain methods and tools, and a Bundle supplies a focused capability | [Names and responsibilities](concepts.md#名称与职责), [Kit user guide](official-kits.md) |
-| Clarity assessment (U/S/T) | Use evidence to understand what is missing, ask about the reasoning, and consider the next step | [Concepts](concepts.md#清晰度评估与下一步建议), [score explanations](../ust-score-explanations.md), [everyday use](usage.en.md) |
-| Knowledge graph (KAG) | Connect independent design sources to find supporting evidence and the impact of changes | [Concepts](concepts.md#知识关联与审查), [knowledge-source policy](../design-knowledge-source-policy.md), [everyday use](usage.en.md) |
+| Interactive outputs and a gap-driven loop | AI chooses useful actions from the goal, evidence and your feedback; open questions, diagrams or prototypes when they help | [Core mechanisms](concepts.en.md#three-complementary-mechanisms), [product principles](../product-vision.en.md) |
+| Project, Kit, Mindset and Bundle | A project retains outputs and history; a Kit organizes domain methods and tools, and a Bundle supplies a focused capability | [Names and responsibilities](concepts.en.md#names-and-responsibilities), [Kit user guide](official-kits.en.md) |
+| Clarity assessment (U/S/T) | Use evidence to understand what is missing, ask about the reasoning, and consider the next step | [Concepts](concepts.en.md#clarity-assessment-and-next-steps), [score explanations](../ust-score-explanations.md), [everyday use](usage.en.md) |
+| Knowledge graph (KAG) | Connect independent design sources to find supporting evidence and the impact of changes | [Concepts](concepts.en.md#knowledge-connections-and-review), [knowledge-source policy](../design-knowledge-source-policy.md), [everyday use](usage.en.md) |
 | Automatic review (GRA) | Receive suggestions about consistency, knowledge questions and intent; background, foreground and manual options depend on the host | [Handle suggestions](usage.en.md#3-handle-suggestions), [host limits](hosts.en.md#background-capabilities-and-review-fallback), [reading suggestions](../advisory-reading.md) |
 | Files and Git history | Continue saved work, trace changes and migrate older projects; the package includes the Git runtime | [Project management](usage.en.md#4-manage-and-recover-projects), [project files and backup](project-files.md), [commands](commands.md) |
 | Design-to-development handoff | Give a coding Agent the design evidence it needs, then return new questions to the relevant design dimension | [Handoff guide](../design-development-handoff.md), [walkthrough](web-app-demo.en.md) |
@@ -53,7 +53,7 @@ The starting guides above have English counterparts. Some deeper user and techni
 
 | What you want to do | Entry point |
 | --- | --- |
-| Design application features, flows, data, permissions, pages and AI capabilities | [Kit user guide](official-kits.md), [client-project walkthrough](web-app-demo.en.md) |
+| Design application features, flows, data, permissions, pages and AI capabilities | [Kit user guide](official-kits.en.md), [client-project walkthrough](web-app-demo.en.md) |
 | Explore representations beyond software pages | [Non-Web examples](non-web-kit-demo.md), [community workshop delivery](../../examples/community-workshop-delivery/README.md), [field operations](../../examples/field-operations-shared/README.md) |
 | Inspect Mindsets, mounts and Bundles, and check previews in Studio | [Studio guide](usage.en.md#6-studio-inspect-customize-and-check-kits): edit current content and copy an independent identity when needed; distinguish source saves, sample previews and actual trials |
 | Author Kits, Mindsets, Bundles and Panels | [Minimal customization](custom-kit-tutorial.en.md), [extension guide](extending.en.md), [Panel DSL](../dsl-spec.md), [shared UIUX standard](../panel-uiux-standard.md) |
@@ -86,6 +86,6 @@ For problems with entry points, connections, generation, saving or continuing a 
 
 ## Documentation and versions
 
-Tutorial interfaces and operations can change with the host, plugin and Kit version. Current-content editing and project-owned `design_kit` files described here correspond to release `0.2.3`; see the [sharing guide](kit-sharing.en.md) for the steps. Complete Studio authoring checks are still in progress. Check [host compatibility](hosts.en.md) first. Examples state the versions and scope they demonstrate; see [release status](preview-status.md) for current releases, tested scope and known issues.
+Tutorial interfaces and operations can change with the host, plugin and Kit version. See the [sharing guide](kit-sharing.en.md) for current-content editing, complete project definitions and delivery steps. Check [host compatibility](hosts.en.md) first. Examples retain their capture or use version and scope; [release status](preview-status.md) maintains release and verification records. Source updates do not automatically change an installed product.
 
 To improve documentation, translations or examples, read [Contributing](../../CONTRIBUTING.md) and [terminology](terminology.md). The [English README](../../README.en.md) introduces the project; use the [feedback guide](support.md) for questions and suggestions. Maintenance and public synchronization follow the [document sync contract](../public-document-sync.md).

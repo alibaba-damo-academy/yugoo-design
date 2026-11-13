@@ -2,9 +2,9 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { sidebarIcon } from './sidebar-icon.tsx'
 import { browserRandomUuid } from './browser-uuid.ts'
 import type { ComponentNode, PanelManifest } from './dsl.ts'
-import { applyPanelUpdatesToDraft, fieldIsVisible, fieldsForSection, fieldValuesOf, pathGet, recordsAtPath, sectionBindingOf, type DesignData } from './record-state.ts'
+import { applyPanelUpdatesToDraft, fieldIsVisible, fieldsForSection, fieldValuesOf, pathGet, recordIdentityOf, recordsAtPath, sectionBindingOf, type DesignData } from './record-state.ts'
 import type { RenderOptions } from './interpreter.ts'
-import { PanelEditableTitle, PanelWorkspace, PanelWorkspaceTree, PanelWorkspaceTreeItem, PanelWorkspaceTreeAdd } from './panel-workspace.tsx'
+import { PanelEditableTitle, PanelRecordHeader, PanelWorkspace, PanelWorkspaceTree, PanelWorkspaceTreeItem, PanelWorkspaceTreeAdd } from './panel-workspace.tsx'
 import { usePanelI18n } from './panel-i18n.tsx'
 import { PanelContentState } from './panel-content-state.tsx'
 import { emptyCanvasScene, parseCanvasScene } from './canvas-scene.ts'
@@ -78,7 +78,7 @@ export function CanvasWorkspace({ node, manifest, data, options }: { node: Compo
     <PanelWorkspaceTreeAdd disabled={!editable} onAdd={add}>{t('canvasAdd')}</PanelWorkspaceTreeAdd>
   </PanelWorkspaceTree>}><div className="dsh-canvas-workspace">
     {selected && record ? <>
-      <header className="dsh-canvas-heading"><PanelEditableTitle aria-label={t('canvasTitle')} aria-required={titleField?.required || undefined}
+      <PanelRecordHeader placement="workspace" className="dsh-canvas-heading" recordId={recordIdentityOf(manifest, node.source!, record)?.value}><PanelEditableTitle aria-label={t('canvasTitle')} aria-required={titleField?.required || undefined}
         value={String(record[config.label_field] ?? '')} disabled={!titleEditable}
         onChange={event => { if (titleEditable) options?.onEdit?.({ section: node.source!, record: selected, field: config.label_field, value: event.target.value }) }} />
         <div className="dsh-design-record-actions">
@@ -91,13 +91,13 @@ export function CanvasWorkspace({ node, manifest, data, options }: { node: Compo
             ...(pendingList === undefined ? {} : { [PANEL_TEXT_ARTIFACTS_KEY]: discardTextArtifactRecordEdits(pendingList, binding.recordsPath, selected) }) })
         }}><Trash2 size={16} aria-hidden="true" /></button>
         </div>
-      </header>
+      </PanelRecordHeader>
       {pending && identity.current.base !== 'new' && identity.current.base !== version ? <p role="alert">{t('canvasChanged')}</p> : null}
       <div className="dsh-canvas-stage">{valid && scene ? <Suspense fallback={<PanelContentState state="loading" message={t('canvasLoading')} kind="canvas" />}>
         <Surface key={`${selected}:${identity.current.base}:${identity.current.epoch}`} scene={scene} scope={scope} assets={pending?.assets}
           disabled={!editable} readImages={options?.readBinaryArtifact} register={options?.registerBeforeSave ?? (() => () => {})}
           onChange={edit => options?.onStageArtifact?.({ ...edit, baseVersion, path: file, binding: { recordsPath: binding.recordsPath, record: selected, field: config.file_field } })} />
-      </Suspense> : <div className="dsh-diagram-placeholder"><PanelContentState kind="canvas"
+      </Suspense> : <div className="dsh-artifact-placeholder"><PanelContentState kind="canvas"
         state={error || !valid ? 'error' : knownAbsent || loaded?.key === fileKey && loaded.pending ? 'empty' : !options?.readArtifact ? 'unavailable' : 'loading'}
         message={error ?? (!valid || !options?.readArtifact ? t('canvasUnavailable') : knownAbsent || loaded?.key === fileKey && loaded.pending ? t('canvasPending') : t('canvasLoading'))}>
         {error ? <button type="button" onClick={() => setRetry(value => value + 1)}>{t('retry')}</button> : null}

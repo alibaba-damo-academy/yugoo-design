@@ -4,7 +4,7 @@ English · [简体中文](kit-sharing.md)
 
 Use this page to share and receive Yugoo Design Kits. You can copy the [community workshop example](../../examples/community-workshop-delivery/README.md) directly; see [extension development](extending.en.md) for authoring rules. Kit content and Design Projects are different materials: sharing a Kit does not include user projects, conversations, model credentials, or host installations.
 
-**Version scope:** The in-place Studio editing, direct source import, and project-owned `design_kit` files described below correspond to release `0.2.3`. Complete Studio authoring checks are still in progress. Check [host support](hosts.en.md) and [release status](preview-status.md) for tested scope and known issues. The historical records below retain their original scope; follow the matching instructions for older entry points.
+This page describes current-content editing, source sharing and project-owned `design_kit` files. Available operations depend on the installed version and host; check [host support](hosts.en.md) and [release status](preview-status.md). Historical records below retain their original versions and verification scope rather than substituting for checks of your installation.
 
 Choose the delivery method supported by the target release: Studio receives files through source import, complete content directories use the host's loader, and npm packages use release and host-registration paths. On first receipt, verify in an independent project to avoid overwriting content already in use.
 
@@ -12,7 +12,7 @@ Choose the delivery method supported by the target release: Studio receives file
 
 The purposes, delivery status, and actual integration scope of Official Kits are listed below.
 
-Before choosing, read the [official Kit user guide](official-kits.md) to learn what each kind of Panel helps you judge and how to start a small scenario. This section maintains versions, acquisition methods, and integration scope.
+Before choosing, read the [official Kit user guide](official-kits.en.md) to learn what each kind of Panel helps you judge and how to start a small scenario. This section maintains versions, acquisition methods, and integration scope.
 
 **Install the main plugin first, then choose a Kit.** Web App is the official Kit delivered with the main plugin by default; users do not need to install its internal npm modules separately. Companion carries complete Web App content in its payload; the complete DSH distribution loads it through dependencies and package entry points. Bundled content is available, but this does not automatically select it for every project. On first use, create a project through the current host's `yugoo` entry point and select `web_app`. Existing projects continue using their own Kit files; see [restoring older project content](#update-and-restore-project-content) below. See the [installation guide](getting-started.en.md) for obtaining the main plugin.
 
@@ -72,7 +72,7 @@ Studio provides import, editing, and export in the existing Kit and Bundle works
 For authors sharing current content:
 
 1. Open the Kit or Bundle you want to share and save the changes to deliver.
-2. Export the current source ZIP. A Kit export includes mounted Bundle files and resources; Bundles can also be exported independently. Unfinished definitions can be exported for someone else to help complete. Source and license metadata are optional, while existing LICENSE, NOTICE, and source notices remain in the files.
+2. Export the last saved source ZIP. Unsaved edits remain in place but are not written to the archive. A Kit export includes mounted Bundle files and resources; Bundles can also be exported independently. Unfinished definitions can be exported for someone else to help complete. Source and license metadata are optional, while existing LICENSE, NOTICE, and source notices remain in the files.
 3. Supply a short README: the intended task, host/plugin version, optional or required external environment, one synthetic request, and the actual verification scope. Follow the license and attribution requirements below.
 
 For recipients importing and trying it:

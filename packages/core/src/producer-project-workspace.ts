@@ -575,6 +575,7 @@ class BundleWorkingCopy implements ProducerBundleWorkingCopy {
     const resolveValidationDriver = this.host.resolveValidationDriver
     return Object.freeze(await validateSkillDesign(this.definition, write.state, {
       scopes: mode === 'complete' ? ['state', 'completion'] : ['state'],
+      sourceTextAt: (revision, path) => this.host.store.readTextAt(revision, path, this.host.signal),
       artifactText: path => {
         if (write.artifacts !== undefined && Object.hasOwn(write.artifacts, path)) {
           const content = write.artifacts[path]

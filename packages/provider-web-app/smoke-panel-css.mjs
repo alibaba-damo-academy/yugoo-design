@@ -2,7 +2,10 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
-const css = await readFile(new URL('./src/client/generated/design.tw.css', import.meta.url), 'utf8')
+const providerCss = await readFile(new URL('./src/client/generated/design.tw.css', import.meta.url), 'utf8')
+const panelCss = await readFile(new URL('../panel/src/client/generated/design.tw.css', import.meta.url), 'utf8')
+const css = panelCss + providerCss
+assert.ok(!providerCss.includes('--background:'), 'the native provider inherits ordinary HSL aliases from its injected Panel')
 assert.ok(css.includes(':where(.dsh-design-root button)'), 'scoped resets must not outrank utilities')
 assert.ok(!/(^|[^)])\.dsh-design-root button\s*{/.test(css), 'bare scoped button resets are forbidden')
 assert.match(

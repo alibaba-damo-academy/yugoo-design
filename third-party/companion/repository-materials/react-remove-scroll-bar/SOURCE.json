@@ -1,0 +1,24 @@
+{
+  "scope": "official-repository-license-original; exact published-package source correspondence not established",
+  "name": "react-remove-scroll-bar",
+  "publishedPackageVersion": "2.3.8",
+  "publishedDeclaredLicense": "MIT",
+  "publishedAuthor": {
+    "name": "Anton Korzunov",
+    "email": "thekashey@gmail.com"
+  },
+  "publishedGitHead": "b3b1287aad81def2e2ae707274b74531b61ddbaf",
+  "publishedGitHeadReadStatus": 404,
+  "repository": "theKashey/react-remove-scroll-bar",
+  "repositoryPackageVersion": "2.3.7",
+  "licenseSourceCommit": "7301c160fda44cb8cf2b9fdfde61efad35736196",
+  "licenseUrl": "https://raw.githubusercontent.com/theKashey/react-remove-scroll-bar/7301c160fda44cb8cf2b9fdfde61efad35736196/LICENSE",
+  "licenseSha256": "a79aae0c0f21990d9d963bb3c5a79cdcea9a46f8523ba55c58d7fe776b6ebc84",
+  "licenseBytes": 1093,
+  "copyright": "2025 Anton Korzunov",
+  "sourceCorrespondenceVerified": false,
+  "exactPublishedVersionLicenseVerified": false,
+  "completeBundledInventoryVerified": false,
+  "releaseLicenseAcceptance": false,
+  "limitations": "Original official repository LICENSE bytes retained. The source commit package.json says 2.3.7, not 2.3.8; npm2.3.8 declares MIT but its disclosed gitHead and version tags were unavailable, so no exact historical/source correspondence is claimed. No third-party notice authority used."
+}

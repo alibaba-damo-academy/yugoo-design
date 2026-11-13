@@ -77,7 +77,7 @@ need a scope discussion. A customer's "okay" in a group chat is not necessarily
 formal confirmation; we need to record exactly what was confirmed.
 ```
 
-Ask AI to revise the flow branches accordingly and maintain the corresponding judgments through the business-rules Bundle. Continue inspecting and editing specific conditions, save, then ask the Agent to continue from the saved content. Use the Panel directly for definite fields or wording; add reasons in conversation when interpretation or effects across design areas matter.
+Ask AI to revise the flow branches accordingly and maintain the corresponding judgments through the business-rules Bundle. The process diagram and process properties are for reading. Select a node to supplement its activity, entry and completion conditions, failure handling or remarks; save, then ask the Agent to continue from that content. Edit supported fields in the rules and other Panels directly. Use conversation to identify the object and reason when interpreting facts, changing the flow structure or coordinating designs.
 
 | Design content | Judgment that needs to be clear |
 | --- | --- |
@@ -94,7 +94,7 @@ When viewing a U/S/T clarity assessment, expand the reasons and next gaps rather
 
 ## 4. Use a suggestion to expose an unresolved tradeoff
 
-In a host that supports proactive review (GRA), read the evidence behind a suggestion before deciding how to proceed. The customer project delivery example saved a Grounding suggestion: [Smart Questions](../../examples/design-team-delivery/design_files/smart_questions/smart_questions.json) already required project-lead confirmation when a committed milestone was affected, while BR-001 in the [business rules](../../examples/design-team-delivery/design_files/business_rules/business_rules.json) checked only for new pages or business capabilities and missed the delivery-date exception. The suggestion's point was:
+In a host that supports automatic review (GRA), read the evidence behind a suggestion before deciding how to proceed. The customer project delivery example saved a Grounding suggestion: [Smart Questions](../../examples/design-team-delivery/design_files/smart_questions/smart_questions.json) already required project-lead confirmation when a committed milestone was affected, while BR-001 in the [business rules](../../examples/design-team-delivery/design_files/business_rules/business_rules.json) checked only for new pages or business capabilities and missed the delivery-date exception. The suggestion's point was:
 
 > Even without added scope, a change that affects a committed delivery milestone needs the project lead to confirm the arrangement.
 > Compare the questions and answers with the flow, and add this existing judgment to the business rule's direct-handling conditions.
@@ -109,15 +109,15 @@ to confirm the arrangement.
 
 In this demonstration, after human acceptance, AI was asked to revise the rules: BR-001's direct-handling conditions gained "does not affect committed delivery milestones," while BR-002 explicitly required project-lead confirmation for added scope or affected milestones. Compare the saved rules with the flow to check the result. Reading a suggestion does not rewrite the design. Use background review within the [host's supported scope](hosts.en.md), or explicitly ask the original session to check against existing designs.
 
-This comparison makes "within scope can be handled directly" more precise and can lead to further discussion of unresolved delivery-date responsibilities. See [core concepts](concepts.md#知识关联与审查) for the three review perspectives.
+This comparison makes "within scope can be handled directly" more precise and can lead to further discussion of unresolved delivery-date responsibilities. See [core concepts](concepts.en.md#knowledge-connections-and-review) for the three review perspectives.
 
 ![Read a Grounding suggestion beside the conversation and check the delivery-milestone condition missing from BR-001](../images/readme-design-advice.png)
 
-KAG helps you find related content and sources. For example, choose the customer change-request flow or feedback-detail page under 「关联图谱」 (Related graph) at the bottom to see their referenced BPMN and HTML artifacts, then return to the Panel to check them. The graph and review each provide clues. The rule suggestion above came from comparison between Design Files, rather than a decision made automatically by the graph.
+KAG helps you find related content and sources. For example, choose the customer change-request flow or feedback-detail page under **Relationships** at the bottom to see their referenced BPMN and HTML artifacts, then return to the Panel to check them. The graph and review each provide clues. The rule suggestion above came from comparison between Design Files, rather than a decision made automatically by the graph.
 
 ## 5. Develop data, AI capabilities and pages as needed
 
-With those decisions made, make the proposal more concrete. For example, first inspect the page map to see where the project lead enters and how they find the original scope and impact. Once the main path is confirmed, generate concrete UI to judge whether the information and interactions are convenient.
+With those decisions made, make the proposal more concrete. Use Page Design to inspect page relationships: where does the lead enter, and how do they find the original scope and impact? Once the main path is confirmed, open individual prototypes to judge whether the information and interactions are convenient. Page Design maintains the page list, navigation and high-fidelity HTML for each page. When the project has no visual direction yet, it can first establish an adjustable visual foundation.
 
 ```text
 Use the saved responsibilities and scope rules to develop the page map
@@ -132,7 +132,7 @@ If the next decision depends on external information, use Research. For example,
 
 ![Switch between Research, UI Design and page-map Panels in the same customer project delivery example](../images/readme-design-exploration.gif)
 
-A scenario experience places existing designs in a concrete situation, useful for discussing how to handle "the customer requests a new page, affecting a committed milestone." It can bring flows, rules and pages together to show the current proposal. Enter through 「场景体验」 (scenario experience) at the bottom of the Panel; see the [usage guide](usage.en.md#view-a-scenario-experience) for steps. Page prototypes focus on specific interfaces and navigation; each serves a different purpose.
+A scenario experience places existing designs in a concrete situation, useful for discussing how to handle "the customer requests a new page, affecting a committed milestone." It can bring flows, rules and pages together to show the current proposal. Enter through Scenarios at the bottom of the design workspace; see the [usage guide](usage.en.md#view-a-scenario-experience) for steps. Page prototypes focus on specific interfaces and navigation; each serves a different purpose.
 
 ![Compare a customer's request for another page with the original scope and impact assessment in a scenario experience](../images/readme-scene.png)
 
@@ -140,7 +140,7 @@ Explore other questions as needed:
 
 | What needs more thought | What to inspect in the relevant Panel |
 | --- | --- |
-| How feedback, deliverables, changes and confirmations relate | Objects, relationships and field meanings in business data |
+| How feedback, deliverables, changes and confirmations relate | Information, states, relationships and field meanings in Business Objects |
 | What customers, designers and project leads can each do | Visibility and operation scope in roles and permissions |
 | How AI helps without making commitments for the team | Responsibilities, prompts, Skills, tools and human-confirmation boundaries in AI capabilities |
 | How users inspect feedback and decisions | Paths from feedback to scope evidence, impact and confirmation in page maps and prototypes |
@@ -148,7 +148,7 @@ Explore other questions as needed:
 
 For example, the future application's AI might summarize customer feedback, flag similar requests and draft impact notes. Authorized people decide whether to include a change in scope and which delivery date to commit to. You are designing AI for your future application here; its specific responsibilities and execution mode need to be defined in that application's design.
 
-The conversation can suggest a next step: fill in missing scope evidence, or first use one page to check whether the project lead can see the information needed to decide. The choice follows the current obstacle, rather than the number of Panels or the lowest score. See the [official Kit user guide](official-kits.md#web-app从业务想法到可以讨论和实现的应用设计) for the purpose of each design activity.
+The conversation can suggest a next step: fill in missing scope evidence, or first use one page to check whether the project lead can see the information needed to decide. The choice follows the current obstacle, rather than the number of Panels or the lowest score. See the [official Kit user guide](official-kits.en.md#web-app-from-a-business-idea-to-an-application-you-can-discuss-and-implement) for the purpose of each design activity.
 
 <details>
 <summary>Explore further: business objects, relationships and rules</summary>
@@ -192,7 +192,7 @@ To compare decisions before and after a change, ask, "Inspect the most recent ch
 
 If the Agent provides a U/S/T clarity assessment, use its evidence to understand current Understanding, Structure and Testability. Ask, "Why is this still unclear, and which concrete decision is most worth discussing?" Scores help locate gaps; they do not require you to fill every Panel to improve the score. See [clarity explanations](../ust-score-explanations.md).
 
-To understand how a judgment relates to other content, open 「关联图谱」 (Related graph) at the bottom of the Panel, select relevant objects and inspect sources, then return to the flow or rules to decide whether a change is needed. You can also ask the Agent to explain against the original design. Graph links help find evidence, but still need to be read with the actual files. See [viewing KAG](usage.en.md#view-kag-and-index-status) for steps.
+To understand how a judgment relates to other content, open **Relationships** at the bottom of the Panel, select relevant objects and inspect sources, then return to the flow or rules to decide whether a change is needed. You can also ask the Agent to explain against the original design. Graph links help find evidence, but still need to be read with the actual files. See [viewing KAG](usage.en.md#view-kag-and-index-status) for steps.
 
 ## What to check after the exercise
 

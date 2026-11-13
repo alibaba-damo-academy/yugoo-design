@@ -45,21 +45,21 @@ test('actual loader retains version 1.0 and schema 5, accepting old flat state, 
 
 test('state and completion reject self/cycles/dangling/second parents/duplicate edges/identity mismatch', async () => {
   for (const [mutate, code] of [
-    [s => { s.inheritances.self = edge('self', 'R-PREVIEW-A', 'R-PREVIEW-A') }, 'role_access.cyclic_inheritance'],
-    [s => { s.inheritances.loop = edge('loop', 'R-PREVIEW-A', 'R-PREVIEW-C') }, 'role_access.cyclic_inheritance'],
-    [s => { s.inheritances['RI-PREVIEW-B-A'].source = 'absent' }, 'role_access.invalid_inheritance_endpoint'],
-    [s => { s.inheritances['RI-PREVIEW-B-A'].target = 'absent' }, 'role_access.invalid_inheritance_endpoint'],
-    [s => { s.inheritances.second = edge('second', 'R-PREVIEW-C', 'R-PREVIEW-A') }, 'role_access.multiple_parents'],
-    [s => { s.inheritances.duplicate = edge('duplicate', 'R-PREVIEW-C', 'R-PREVIEW-B') }, 'role_access.multiple_parents'],
-    [s => { s.inheritances['RI-PREVIEW-B-A'].id = 'wrong' }, 'role_access.invalid_inheritance_id'],
-    [s => { s.policies['AP-PREVIEW-A'].role_ref = 'absent' }, 'role_access.invalid_policy_role'],
+    [s => { s.inheritances.self = edge('self', 'ROLE-001', 'ROLE-001') }, 'role_access.cyclic_inheritance'],
+    [s => { s.inheritances.loop = edge('loop', 'ROLE-001', 'ROLE-003') }, 'role_access.cyclic_inheritance'],
+    [s => { s.inheritances['RI-001'].source = 'absent' }, 'role_access.invalid_inheritance_endpoint'],
+    [s => { s.inheritances['RI-001'].target = 'absent' }, 'role_access.invalid_inheritance_endpoint'],
+    [s => { s.inheritances.second = edge('second', 'ROLE-003', 'ROLE-001') }, 'role_access.multiple_parents'],
+    [s => { s.inheritances.duplicate = edge('duplicate', 'ROLE-003', 'ROLE-002') }, 'role_access.multiple_parents'],
+    [s => { s.inheritances['RI-001'].id = 'wrong' }, 'role_access.invalid_inheritance_id'],
+    [s => { s.policies['AP-001'].role_ref = 'absent' }, 'role_access.invalid_policy_role'],
   ]) for (const scope of ['state', 'completion']) {
     const bad = structuredClone(example); mutate(bad)
     assert.ok((await validateSkillDesign(skill, bad, { scopes: [scope] })).some(issue => issue.code === code), `${code}/${scope}`)
   }
-  for (const mutate of [s => { s.inheritances['RI-PREVIEW-B-A'].kind = 'organization-rank' },
-    s => { s.roles['R-PREVIEW-B'].parent_ref = 'R-PREVIEW-A' },
-    s => { s.effective_policies = {} }, s => { delete s.inheritances['RI-PREVIEW-B-A'].target }]) {
+  for (const mutate of [s => { s.inheritances['RI-001'].kind = 'organization-rank' },
+    s => { s.roles['ROLE-002'].parent_ref = 'ROLE-001' },
+    s => { s.effective_policies = {} }, s => { delete s.inheritances['RI-001'].target }]) {
     const bad = structuredClone(example); mutate(bad)
     assert.ok((await validateSkillDesign(skill, bad)).some(issue => issue.code === 'schema_violation'))
   }
@@ -79,7 +79,7 @@ test('inheritance references preserve previous KAG source IDs; summaries expose 
     }
   }
   const summary = renderDeclarativeState(example, skill).join('\n')
-  assert.match(summary, /source=R-PREVIEW-B/); assert.match(summary, /target=R-PREVIEW-A/)
+  assert.match(summary, /source=ROLE-002/); assert.match(summary, /target=ROLE-001/)
   assert.match(summary, /核对请求归属后才能修改/)
   assert.deepEqual(Object.keys(example.policies), example.policy_order)
 })
@@ -92,15 +92,15 @@ test('canonical edit/delete and real Panel Save/reopen preserve original policy 
   await applyPanelEdit(store, { skill: 'role_access', state: example }, async () => {}, validatorFromSchemaYaml(skill.metadata.schemaYaml))
   const reopened = new DesignFilesStore(fs, new GitVersioning(spawn, root, 'design_files'), join(root, 'design_files'))
   assert.deepEqual(await reopened.read('role_access'), example)
-  const edited = applyDesignEditToDraft(example, panel, { section: 'inheritances', record: 'RI-PREVIEW-C-B', field: 'description', value: '用户明确调整的继承依据（合成测试）' })
+  const edited = applyDesignEditToDraft(example, panel, { section: 'inheritances', record: 'RI-002', field: 'description', value: '用户明确调整的继承依据（合成测试）' })
   assert.deepEqual(await validateSkillDesign(skill, edited), [])
   await applyPanelEdit(reopened, { skill: 'role_access', state: edited }, async () => {}, validatorFromSchemaYaml(skill.metadata.schemaYaml))
   const saved = await store.read('role_access')
   assert.deepEqual(saved.policies, example.policies); assert.deepEqual(saved.roles, example.roles)
-  const removed = recordDeletionUpdates(panel, saved, 'roles', 'R-PREVIEW-B').updates
-  assert.ok(!removed.roles['R-PREVIEW-B']); assert.deepEqual(removed.inheritances, {})
-  assert.ok(removed.policies['AP-PREVIEW-A']); assert.ok(removed.policies['AP-PREVIEW-C'])
-  assert.ok(!removed.policies['AP-PREVIEW-B'])
+  const removed = recordDeletionUpdates(panel, saved, 'roles', 'ROLE-002').updates
+  assert.ok(!removed.roles['ROLE-002']); assert.deepEqual(removed.inheritances, {})
+  assert.ok(removed.policies['AP-001']); assert.ok(removed.policies['AP-003'])
+  assert.ok(!removed.policies['AP-002'])
   const after = { ...saved, ...removed }
   assert.deepEqual(await validateSkillDesign(skill, after), [])
   await applyPanelEdit(reopened, { skill: 'role_access', state: after }, async () => {}, validatorFromSchemaYaml(skill.metadata.schemaYaml))

@@ -27,6 +27,7 @@ ui:
     sources:
       - {value: smart_questions, label: '$t:questions', navigable: true}
       - {value: research, label: '$t:research', navigable: true}
+      - {value: ai_agent_capabilities, label: '$t:aiCapabilities', navigable: true}
       - {value: function_modules, label: '$t:functions', navigable: true}
       - {value: flow_design, label: '$t:flows', navigable: true}
       - {value: design_style, label: '$t:style', navigable: true}

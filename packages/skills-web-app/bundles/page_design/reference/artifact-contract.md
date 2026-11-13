@@ -1,5 +1,18 @@
 # Page output contract
 
+## Record IDs
+
+For new Pages prefer `PG-001` and connections `PC-001`, continuing each type separately. Canvas sections are scene groups, not business numbering targets; preserve their existing scene IDs, including `PS` keys. Derived navigation groups, HTML DOM/hotspot IDs, shared navigation keys and Style references are not renumbered.
+
+Existing IDs, including older formats, remain valid during ordinary edits and reconstruction. If the user explicitly requests business renumbering, revise actual record keys/IDs and current references/orders together through their existing owners; keep technical IDs and history unchanged. Names and titles remain readable content, separate from identity.
+
+For explicitly requested Page or connection renumbering, update the current Page
+references, `artifact_file` and `page_design/pages/<page-id>.html` paths together.
+In those HTML artifacts, synchronize only the business bindings
+`data-prototype-page` and `data-prototype-connection`; preserve DOM/hotspot IDs,
+`data-prototype-id`, page content and layout. Use the existing Page validation
+and publication path.
+
 For canvas generation or revision, read [the canvas guide](canvas-guide.md).
 It supplements the existing methods and output contract; it applies to both
 new design and reconstruction without replacing domain-specific rules.
@@ -81,11 +94,54 @@ into the same missing-asset failure. Rerun after shared references change.
 
 Each Page is a complete standalone HTML document at `page_design/pages/<page-id>.html`; no HTML in JSON, nested page shell, fragments or generated page-map SVG. Use local assets. The panel supplies the landed `design_style/tokens.css`; consume its existing `--ds-*` names, never declare a competing namespace or reference unknown tokens. Original raster brand/images use plain `img src` paths relative to the HTML (PNG/JPEG/WebP); SVG icons use the exact Style authority. Unsupported assets/presentation remain a reported limitation.
 
-- Cross-page controls use `data-prototype-page="<target-page-id>"`.
+Default to a compact page suited to the intended device viewport, keeping the
+primary task and action easy to find instead of stacking every secondary
+section. Use a long page when continuous reading, entry or browsing warrants
+it; do not hide necessary content merely to fit one screen. Follow Style's shared
+shell and scrolling decisions, describing material Page differences in existing
+Page fields and the Worker brief. Make whole-page versus content-area scrolling
+and fixed/sticky navigation intentional, then check the actual viewport and
+scrolled state. This guidance adds no maximum height or validator. Preserve
+observed source behavior during reconstruction and unrelated content during
+local revisions; report screenshots do not determine the Page's layout.
+
+- Cross-page controls bind a canonical outgoing connection through the unique
+  element/connection markers below. `data-prototype-page="<target-page-id>"`
+  declares target metadata for validation; it does not navigate by itself.
 - Meaningful interactive elements have unique `data-prototype-id` and readable `data-prototype-label`.
 - Mark every outgoing connection exactly once with `data-prototype-connection="<connection-id>"`; do not mark incoming connections.
-- The validator returns `bindings` for canonical `source_element_id` and `source_element_label`; do not invent bindings before HTML exists.
+- The validator returns `bindings` for canonical `source_element_id` and
+  `source_element_label`; integrate them before publication. The Host resolves
+  clicks from these bindings, not from an arbitrary target attribute. Do not
+  invent bindings before HTML exists or reuse one connection for multiple hotspots.
 - No remote dependency, navigation URL or cross-page routing script. Optional `data-design-icon` / `data-design-brand` markers resolve to current Style IDs; they are not fidelity tests.
+
+### Local actions and contextual results
+
+The Host switches Pages through the navigation markers; it does not implement
+the Page's local controls. Author local behavior for enabled actions promised
+by the Page brief: connect the starting object/state and supplied input to an
+observable result, feedback and continuation. For example, a filter changes the
+visible records, and a valid form submission shows the agreed result while an
+invalid one explains what to correct and preserves entered values. Use the
+actual task's conditions, not a fixed catalogue of demo controls.
+
+Local JavaScript may update the artifact's DOM for these prototype behaviors;
+the ban on cross-page routing scripts does not prohibit local interaction.
+Keep synthetic content coherent with the incoming selection and the current
+object. Use the existing `preview_context` contract above for a contextual jump,
+and distinguish it from local form state. Do not add network calls, storage, a
+backend, or a second routing/context channel to simulate application persistence.
+Represent unsupported outcomes honestly rather than leaving an apparently
+working action with no result.
+
+Carry each material local action, condition and visible outcome, plus relevant
+incoming selection behavior, in the bounded Page assignment. The author and
+executor review them through the actual preview when available; HTML validity,
+hotspot bindings and a successful file receipt do not establish that they work.
+For reconstruction, preserve observed behavior and identify unverified actions
+instead of implementing a new product rule. On revision, repair only the
+affected action/context path and preserve unrelated content and controls.
 
 ## Validate and integrate each file
 

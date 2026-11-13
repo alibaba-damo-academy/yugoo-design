@@ -16,6 +16,58 @@ a bare Kit directory needs its exact Bundle resolver supplied separately.
 Loading content never installs npm dependencies. Repository-only checks and
 preview tools live in `test/` and `scripts/` and are excluded from package files.
 
+## Record IDs
+
+For new independent design records, prefer short business numbers such as
+`F-001` and `F-002`. This is a suggestion for generated content.
+Apply this numbering to independent design records people name and reference,
+not every stored key or heading. Reading groups, fields, configuration keys and
+technical identifiers are not business numbers.
+The readable name remains primary; the business number identifies that same
+canonical record rather than becoming part of its title.
+
+Ordinary edits preserve existing IDs and references. When the user explicitly
+requests short business numbers for older records, revise their actual keys/IDs
+and current references/orders together through the existing Bundle owners.
+Where IDs determine artifact paths or prototype references, keep those current
+paths and references consistent in the same authorized revision. Derived
+assemblies consume the revised sources through their existing owner.
+Do not add a second display identity or rewrite technical IDs and history.
+
+| Records | Prefix |
+| --- | --- |
+| Functions; processes; Flow step supplements | `F`; `P`; `N` |
+| Pages; connections | `PG`; `PC` |
+| Business objects; object relations; business rules | `BO`; `REL`; `BR` |
+| Roles; access policies; role inheritances | `ROLE`; `AP`; `RI` |
+| Integrations; notifications; acceptance records | `INT`; `NT`; `AC` |
+| Research rounds; directions | `R`; `D` |
+| Free questions | `Q` |
+| Boards | `WB` |
+| Agents; Skills; Tools; model sources; knowledge resources | `A`; `S`; `T`; `M`; `K` |
+
+These are authoring conventions in each Bundle's existing output contract, not
+a format validator or numbering service. Fixed question keys, field/enum values,
+numeric question rounds, Style semantic keys, canvas-section scene keys (including
+existing `PS` keys), derived groups, source references and native canvas/DOM/BPMN
+IDs retain their own meaning. PRD assembly references existing records rather
+than creating a second identity. Each owner changes only its authorized Bundle content.
+
+## Report document presentation
+
+Research conclusions and assembled PRDs share a reading scale: one document
+heading at 20px/1.4, section headings at 16px/1.5, body and subordinate headings
+at 14px/1.65, and auxiliary text at 12px or larger. Major sections begin after
+24px, subsections after 16px, and related content uses 8–12px spacing. Narrow
+views reduce the outer gutter and keep tables reachable by scrolling. Hierarchy
+comes from structure and weight rather than hero headings and large empty bands.
+
+The Research conclusion shell and PRD template are their Bundle-reachable
+resources; each retains its own evidence organization and semantics. This is a
+report presentation standard, not a theme for generated application prototypes.
+The shared Panel continues to confine authored HTML in its existing sandbox;
+it does not inject tool typography into user artifacts or translate their content.
+
 ## Script dependencies and distribution
 
 | Package | Used by | Purpose |
@@ -32,6 +84,14 @@ into a project and run without `node_modules`, `NODE_PATH` or an install step.
 The structure/final validator already uses only Node built-ins and is copied
 unchanged. A raw source Bundle still needs the repository's development
 dependencies; loading content never installs them.
+
+The PRD build also reuses the Panel package's pinned Excalidraw inputs and font
+transformations. Its browser-only export entry is a build input, not an additional
+user-side npm dependency or a directly runnable Node script. The built Bundle
+carries the resulting export resource, viewer, Playwright production runtime,
+original license materials and their output correspondence. It includes no
+browser executable or installer. Complete resources remain subject to the same
+32 MiB per-Bundle loading budget used by every Kit.
 
 The npm content package and both Companion packaging routes reuse the same
 three independent Node 22 ESM entries: layout, metrics and search. Search keeps
@@ -66,16 +126,37 @@ metrics, search and structure/final validation with no ancestor `node_modules`.
 
 ## PRD visual rendering (conditional limits)
 
-`web_app_prd_assembly` composes `prd.html` from design evidence; only its
-**visual snapshot** path dynamically imports `playwright`, resolves the
-`bpmn-js` viewer bundle when BPMN snapshots are requested, and requires a real
-browser environment. PRD assembly without visual rendering does
-not need them. The missing-dependency path of this entry is smoke-tested at
-source level with synthetic fixtures (expected to fail with
-`ERR_MODULE_NOT_FOUND` naming `playwright`); actual browser rendering with
-playwright installed is not covered by that smoke test. Browser binary
-availability and OS/sandbox constraints remain environment-specific and are not
-verified by this package.
+`web_app_prd_assembly` composes `prd.html` from saved owner evidence. The complete
+built Bundle carries its renderer/runtime resources so project copies do not
+resolve engines through a development checkout or `NODE_PATH`. BPMN uses the
+shared presentation resource; Whiteboards use native Excalidraw export with
+prepared offline fonts and become PNG images with their source geometry and
+aspect ratio. No model redraw or Panel screenshot replaces an owner artifact.
+
+The `finalize-html-file` operation projects visuals and validates the resulting
+HTML before the existing exit-0 file write. It reads its own saved template
+resource directly; callers do not serialize a second template through model
+context or choose a different validation baseline. Missing renderer resources, source
+image bytes or a supported browser fail that operation with a diagnostic;
+ordinary schema validation does not replace it. Pure format validation does not
+require a browser. Browser work uses its own normal launch/close lifecycle,
+never an install/download step or the user's active Chrome profile. Availability
+of a browser remains an operation-specific environment requirement. If the
+Playwright Chromium executable is absent, the renderer tries installed Chrome,
+then installed Microsoft Edge through their supported channels. Only a missing
+executable permits this fallback; other launch failures are reported immediately.
+
+Embedded BPMN keeps its native scale so long flows remain readable; document
+scrolling and figure-local horizontal scrolling expose the complete diagram.
+A presentation-only stylesheet revision reuses accepted, byte-unchanged
+projections and validates the complete document against current sources.
+Read-only `validate-html-file` returns JSON diagnostics and must not use the
+script tool's `output_file`; that destination is for HTML-producing operations.
+
+Source missing-dependency tests retain their real negative cases. Format checks,
+synthetic transport checks, real browser rendering, project-copy execution and
+installed-host validation are separate evidence boundaries; one does not stand
+in for the others.
 
 ## Boundaries
 
@@ -174,10 +255,12 @@ Retention mapping for the user-authorized round title/description separation:
   executor-owned explicit round assignment: no current declarative write hook
   was found to provide the claimed allocation. Preserve saved round values and
   histories; no new write hook, migration or questionnaire lifecycle is added.
-- Schema comments and the fixed-card introduction no longer promise automatic
-  Core seeding. The executor carries both existing fixed definitions/defaults
-  and user-owned answers/details; fixed-card UI protection remains declared in
-  `panel.yaml`. This correction does not relax those domain constraints.
+- Schema comments and the question contract do not promise automatic Core
+  seeding. New initial background panels use neutral App basics questions with
+  evidence-backed or empty answers. The former login/storage defaults remain
+  readable existing settings: preserve their IDs, meanings and user content,
+  without automatically replacing them or changing a project's Kit copy.
+  Grouping and question protection remain declared in `panel.yaml`.
 - Round titles/descriptions are canonical display context, not answers, user
   confirmation or execution status. New rounds require meaningful nonempty
   text in the method; schema requires both string keys on present entries.
@@ -193,7 +276,7 @@ property in the source loader alone does not prove the UI consumes it. Focused
 schema, resource, summary and canonical-save checks do not establish rendered
 round introductions, installed-host loading or real Agent generation.
 `node --test packages/core/test/smart-question-rounds-content.test.mjs`
-(from the repository root) runs eight focused tests through the source loader:
+(from the repository root) runs focused checks through the source loader:
 legacy/preview schema, malformed entries, unchanged completion, declared
 readonly/localized bindings, real Kit resource projection and reconstruction
 contract discovery, optional summary separation, and real temporary Files/Git

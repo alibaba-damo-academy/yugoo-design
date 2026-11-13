@@ -423,3 +423,17 @@ test('shared HEAD polling coalesces in-flight probes, isolates cancellation and 
     assert.equal(failCalls, 2)
   } finally { await rm(root, { recursive: true, force: true }) }
 })
+
+test('Git publication invalidates display HEAD across readers without a DesignFilesStore wrapper', async t => fixture(async ({ project, spawn }) => {
+  // Keep the display TTL unexpired regardless of machine load.
+  t.mock.timers.enable({ apis: ['Date'], now: Date.now() })
+  const reader = new GitVersioning(spawn, project.root, undefined, false, 'cli')
+  const writer = new GitVersioning(spawn, project.root, undefined, false, 'cli')
+  const before = await reader.pollHead()
+  const published = await writer.commitExact('Save a system record', new Map([
+    ['design_records/fixture.json', '{"saved":true}\n'],
+  ]), before)
+  assert.notEqual(published, before)
+  assert.equal(await reader.pollHead(), published,
+    'a completed publication must not leave another reader on its cached parent')
+}))

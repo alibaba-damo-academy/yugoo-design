@@ -61,8 +61,10 @@ test('all native producer sites use owned attribution; explicit user commands ke
     visit(source)
   }
   assert.deepEqual(Object.fromEntries([...counts].sort()), {
-    'design-service.ts': 2, 'dsh-advisory.ts': 1, 'dsh-auto-panel-model.ts': 1,
-    'dsh-content-upgrade.ts': 1, 'dsh-file-worker-agent.ts': 1, 'dsh-producer-agent.ts': 2, 'panel-remote.ts': 1,
+    // Current owners include the extracted clarity lifecycle and advisory task.
+    'design-service.ts': 1, 'dsh-advisory-acceptance.ts': 1, 'dsh-advisory-agent.ts': 1,
+    'dsh-advisory.ts': 1, 'dsh-auto-panel-model.ts': 1, 'dsh-clarity-lifecycle.ts': 1,
+    'dsh-file-worker-agent.ts': 1, 'dsh-producer-agent.ts': 2, 'panel-remote.ts': 1,
   })
   const service = await readFile(new URL('../src/design-service.ts', import.meta.url), 'utf8')
   assert.match(service, /invocation\.agent\.steer\(createUserMessage\(\{[\s\S]*?source: \{ kind: 'user' \}/)

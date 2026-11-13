@@ -29,7 +29,7 @@ test('parent stylesheet reads once, refreshes hashes and isolates old reader com
     return React.createElement('div', null, ...Array.from({ length: count }, (_, key) =>
       React.createElement(NavigationPreview, { key, thumbnail: true, path: `sample/${key}.html`, artifactId: String(key), title: String(key), options, stylesheet: path, sharedStylesheet: style })))
   }
-  const show = options => act(async () => root.render(React.createElement(Parent, { options })))
+  const show = (options, count = 20) => act(async () => root.render(React.createElement(Parent, { options, count })))
   const options = { skill: 'sample', readArtifact: read, artifactFiles: { ...files, [path]: 'v1' }, sourceRevision: 'r1' }
   try {
     await show(options)
@@ -51,13 +51,26 @@ test('parent stylesheet reads once, refreshes hashes and isolates old reader com
     noneContain('rgb(4,5,6)')
     await act(async () => newRequests[0].resolve({ found: true, content: 'body{color:rgb(7,8,9)}' }))
     allContain('rgb(7,8,9)')
+    const unchangedFrames = frames()
     await show({ ...options, readArtifact: nextReader, artifactFiles: { ...files, [path]: 'v2' }, sourceRevision: 'r2' })
-    assert.equal(newRequests.length, 2, 'new source revision rereads once, never once per child')
+    assert.equal(newRequests.length, 1, 'a new checkpoint does not reread unchanged hashed CSS')
+    assert.ok(frames().every((frame, index) => frame === unchangedFrames[index]))
+    allContain('rgb(7,8,9)')
+    await show({ ...options, readArtifact: nextReader, artifactFiles: { ...files, [path]: 'v3' }, sourceRevision: 'r2' })
+    assert.equal(newRequests.length, 2, 'changed CSS still rereads once, never once per child')
     noneContain('rgb(7,8,9)')
     await act(async () => newRequests[1].resolve({ found: true, content: 'body{color:rgb(10,11,12)}' }))
     allContain('rgb(10,11,12)')
     await show({ ...options, artifactFiles: files })
     noneContain('rgb(10,11,12)')
     assert.equal(requests.length, 2, 'known absent stylesheet does not read')
+    const legacyRequests = [], legacyRead = reader(legacyRequests)
+    await show({ ...options, artifactFiles: undefined, readArtifact: legacyRead, sourceRevision: 'legacy-1' }, 1)
+    await show({ ...options, artifactFiles: undefined, readArtifact: legacyRead, sourceRevision: 'legacy-2' }, 1)
+    assert.equal(legacyRequests.length, 2, 'without inventory, source revision remains the freshness fallback')
+    await act(async () => legacyRequests[0].resolve({ found: true, content: 'body{color:stale}' }))
+    noneContain('color:stale')
+    await act(async () => legacyRequests[1].resolve({ found: true, content: 'body{color:current}' }))
+    assert.ok(frames()[0].srcdoc.includes('color:current'))
   } finally { await act(async () => root.unmount()); dom.window.close() }
 })

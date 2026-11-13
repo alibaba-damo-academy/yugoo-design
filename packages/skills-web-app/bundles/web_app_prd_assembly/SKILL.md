@@ -9,6 +9,8 @@ description: |-
 
 # Web App PRD Assembly
 
+See the [record ID guidance](reference/artifact-contract.md#record-ids) for this Bundle's numbering suggestions and existing identity boundaries.
+
 Produce a product specification, not a summary of design panels or a report
 about the assembly process. Product, design, engineering, test, implementation,
 and operations must be able to understand the same product behavior without
@@ -20,16 +22,28 @@ The foreground Producer owns the complete logical job:
 
 1. read the template, current canonical PRD, and current evidence;
 2. create or target-edit `web_app_prd_assembly/prd.html` and its canonical JSON;
-3. materialize visuals through the shared artifact contract's file-mode script call;
-4. validate the landed HTML with the same contract's exact source files, state and template inputs;
+3. finalize the existing HTML through the shared contract's file-mode script call,
+   which materializes visuals and validates the result before writing it;
+4. inspect its exit status and diagnostics with the exact source files, state and Bundle-owned template;
 5. use every returned diagnostic to make the smallest targeted repair;
 6. keep the accepted state and artifact bytes in the WorkingCopy;
 7. call `design_publish({action:"complete"})` only after the script and normal
    schema/declarative validation pass.
 
+For a presentation-only revision, the shared contract permits reusing already
+finalized, byte-unchanged figures with the same source bindings. Update only the
+Bundle-owned document stylesheet and validate the complete HTML before normal
+publication; a source or projection change still requires finalization.
+`validate-html-file` is read-only and returns JSON diagnostics: pass `input_file`
+and the complete state/source inputs, and omit `output_file`. Artifact-writing
+calls require HTML stdout; diagnostic JSON is never an HTML artifact.
+
 Like every other heavy Bundle, a new PRD keeps `html_file: null` until the
-validated document exists in the Producer WorkingCopy. Host execution attempts,
-not canonical PRD fields, describe queued, working, failed, or completed work.
+validated document exists in the Producer WorkingCopy. When revising a saved
+PRD, retain its existing accepted `html_file` reference throughout the update,
+including an interrupted or failed attempt; do not clear it to signal progress.
+Host execution attempts, not canonical PRD fields, describe queued, working,
+failed, or completed work.
 
 The Producer uses the project-scoped `list` and `read` tools to inspect current
 evidence, then `write` or `edit` for its owned state and HTML. On a later user
@@ -79,6 +93,13 @@ In particular:
 - capability architecture has one subsection per Epic/module and explains its
   user value, responsibility, boundary, collaboration, main behavior, rules,
   exceptions, priority, and dependencies;
+- when saved AI capabilities contribute to the product, explain them in that
+  existing capability chapter using their actual owner evidence. Preserve the
+  entries and supplied context, action-condition-result behavior, result
+  adoption and human authority, resources/collaboration boundaries, and
+  meaningful exceptions and recovery. A generic “AI assists” paragraph does
+  not replace these implementation-relevant requirements. Related Page,
+  role/control and acceptance chapters retain the relevant constraints;
 - after the solution overview, every active `F-xxx` has an independently
   readable functional requirement covering its goal and scenario, actor and
   entry/precondition, system behavior, outcome, rules and exceptions, related
@@ -103,6 +124,13 @@ In particular:
   listing fields;
 - acceptance criteria connect to the described behavior and are observable and
   testable; avoid generic claims such as “good experience” or “high performance”.
+  Retain each populated `quality_acceptance.requirements[*].verification` in
+  the acceptance chapter, alongside its criterion. Keep the source's concrete
+  procedure wording, including repetitions, negative attempts and fallback
+  checks; flag a source contradiction beside it rather than silently repairing
+  the owner. Readable prose, lists or quotations are sufficient. A table of IDs,
+  conditions and pass criteria does not retain these steps. These are designed
+  verification instructions, never a claim that tests have actually passed.
 
 Do not inflate the document with repeated wording or arbitrary prose. Concise
 means shorter reasoning and fewer examples, not removal of the reasoning.
@@ -130,6 +158,31 @@ it. Use this precedence for every decision:
 3. unconfirmed owner evidence;
 4. conservative PRD-local AI completion.
 
+Preserve the evidence's certainty where each claim is used. A saved Research
+report is a source of observations and interpretations, not confirmation that
+every external-product claim is established. Carry its source scope, contrary
+evidence and unresolved limits into the requirement and decision text. A page
+that does not document a capability cannot establish product-wide absence;
+comment/reply activity cannot establish immutable full-history retention.
+The user's own requirement can stand on its own without a competitor-absence
+justification. Likewise, an upstream proposal, rationale or example does not
+become an agreed scope exclusion or mandatory rule merely by entering the PRD.
+Source authorship and a source reference do not mean user confirmation.
+
+Before calling evidence missing, inspect the relevant current owner through
+the project-scoped list/read tools. Distinguish a file omitted from script
+`input_files`, an unread/unavailable file, and a genuinely absent owner. Include
+all canonical sources used by the document, not only visual indexes, in the
+finalization/validation input. On a missing-input diagnostic, repair that input
+first; never delete grounded source annotations or invent a pending assumption
+to make the validator accept the same omission.
+
+For a migration-only request, validate the existing PRD with these exact current
+sources before changing content. A stylesheet or transport-input diagnostic
+does not authorize new product decisions, new provenance entries or rewriting
+source-backed chapters. Keep the existing source references and still-valid
+assumptions; repair only the actual representation/contract incompatibility.
+
 Use only the source owners declared for the chapter in the template. Never
 rewrite owner state or copy it into a parallel JSON ledger. Resolve naming
 differences into one product vocabulary while preserving the actual semantics.
@@ -141,8 +194,8 @@ Encode sources directly on each chapter H2 as `data-prd-sources`; use
 only sources actually used. Content quoted, summarized, reorganized, rewritten,
 or synthesized from existing Design Files is ordinary grounded PRD content and
 must not receive a purple rail. A direct, unchanged quotation may additionally
-use `prd-verbatim-source` with its exact `data-prd-source-ref`; publication
-verifies that quotation against the fixed source text.
+use `prd-verbatim-source` with its exact `data-prd-source-ref`; finalization
+verifies that quotation against the fixed source text before publication.
 
 ## Temporary completions and pending assumptions
 
@@ -185,7 +238,7 @@ declared `ai-provenance` rails. Structural headings may remain outside.
 
 ## Visual evidence
 
-Follow the shared artifact contract’s visual directives. Place each process/page description beside its corresponding empty visual-item pair; the script fills that pair from exact owner files, never model-redrawn assets.
+Follow the shared artifact contract’s visual directives. Place each process, page and Whiteboard explanation beside its corresponding empty visual-item pair; the script fills that pair from exact owner files, never model-redrawn assets. Read a Whiteboard as the saved explanation or proposal it is; assembly does not upgrade its certainty.
 
 ## Writing workflow
 
@@ -271,7 +324,7 @@ Before finalization, verify at least:
 - each capability has an outcome, priority, page or explicit non-UI path;
 - each state-changing action has actor/system, trigger, rule, result, and failure behavior;
 - object, field, rule, permission, integration, notification, and acceptance references resolve;
-- every active flow and completed page prototype has its template visual directive;
+- every active flow, completed page prototype and saved Whiteboard has its template visual directive;
 - every purple temporary-completion marker matches exactly one non-null pending
   assumption and the correct chapter;
 - grounded passages remain normal content and list their actual source owners.
@@ -297,8 +350,10 @@ unchanged and switching the Host UI does not translate the document.
 
 Once prose and provenance are complete, run the shared contract’s file-mode finalization against the already-written HTML. Do not rewrite the document or transport visual bytes through model context.
 
-If the script reports diagnostics, preserve valid content, apply the smallest
-useful edit, and run it again. A repeated identical diagnostic with no file or
+If finalization exits nonzero, keep the existing HTML and sources, leave a new
+`html_file` null, and report the specific operation as incomplete. Ordinary
+schema validity cannot override that failure. Apply the smallest useful repair
+and retry only when an input or capability has actually changed. A repeated identical diagnostic with no file or
 state progress is a real failure and must be reported; do not launch an
 automatic full-document regeneration.
 

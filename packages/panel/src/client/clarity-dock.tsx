@@ -1,7 +1,7 @@
 /**
  * The ambient design completion readout rendered as the first line of the
  * Design Project header. Read-only by the metadata contract: it renders the
- * weighted U/S/T index of the latest pinned assessment plus the host-derived
+ * U/S/T dimensions of the latest pinned assessment plus the host-derived
  * staleness/activity indicator, with per-indicator hover/focus explanations.
  * Host-observed activity never starts work or fabricates assessment progress.
  */
@@ -9,7 +9,7 @@ import { useEffect, useId, useRef, useState, type CSSProperties, type ReactEleme
 import { createPortal } from 'react-dom'
 import type { DesignClarityActivity } from 'dsh-design-core'
 import { ArtifactStatusIcon } from '../artifact-status-icon.tsx'
-import { clarityIndex, parseClarityView } from './clarity.ts'
+import { parseClarityView } from './clarity.ts'
 import { useLang } from './ported/host.ts'
 
 type ClarityScoreLevel = 'low' | 'medium' | 'high'
@@ -53,18 +53,17 @@ export const CLARITY_DOCK_CSS = `
   display: flex;
   margin-inline-start: 10px;
   min-width: 0;
-  max-width: 420px;
-  flex: 1 1 340px;
+  max-width: 560px;
+  flex: 0 1 auto;
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
 }
 .dsh-clarity-dock-dim {
   display: grid;
-  min-width: 98px;
-  max-width: 136px;
-  flex: 1 1 108px;
-  grid-template-columns: auto minmax(12px, 1fr);
+  min-width: max-content;
+  flex: 0 0 auto;
+  grid-template-columns: auto 64px;
   align-items: center;
   gap: 4px;
   cursor: help;
@@ -134,9 +133,8 @@ export const CLARITY_DOCK_CSS = `
 .dsh-clarity-dock[data-compact=true] .dsh-clarity-dock-track{display:none}
 .dsh-clarity-dock[data-compact=true] .dsh-clarity-dock-dims{margin:0;flex:0 0 auto;flex-wrap:nowrap;gap:8px}
 .dsh-clarity-dock[data-compact=true] .dsh-clarity-dock-dim{display:flex;min-width:0;flex:0 0 auto}
-.dsh-clarity-dock[data-single-line=true]{flex-wrap:nowrap}
-.dsh-clarity-dock[data-single-line=true] .dsh-clarity-dock-dims{flex:1 1 180px;flex-wrap:nowrap;max-width:320px;margin-inline-start:4px}
-.dsh-clarity-dock[data-single-line=true] .dsh-clarity-dock-dim{min-width:0;flex:1 1 60px}
+.dsh-clarity-dock[data-single-line=true]{flex-wrap:wrap}
+.dsh-clarity-dock[data-single-line=true] .dsh-clarity-dock-dims{margin-inline-start:4px}
 .dsh-clarity-dock[data-single-line=true][data-activity=true] .dsh-clarity-dock-score,
 .dsh-clarity-dock[data-single-line=true][data-activity=true] .dsh-clarity-dock-track{display:none}
 .dsh-clarity-dock[data-single-line=true][data-activity=true] .dsh-clarity-dock-dims{flex:0 0 auto;gap:8px}
@@ -190,7 +188,7 @@ function useClarityTooltip() {
   return { tipId, trigger, tooltip, position, cancelClose, close, open, deferClose }
 }
 
-function ClarityDimension(props: { metric: string; compact?: boolean; label: string; score: number; level: ClarityScoreLevel; levelLabel: string; reason: string; staleReason?: string; contextLabel?: string }): ReactElement {
+function ClarityDimension(props: { metric: string; label: string; score: number; level: ClarityScoreLevel; levelLabel: string; reason: string; staleReason?: string; contextLabel?: string }): ReactElement {
   const { tipId, trigger, tooltip, position, cancelClose, close, open, deferClose } = useClarityTooltip()
   const accessibleLabel = `${props.contextLabel ? `${props.contextLabel} · ` : ''}${props.label}: ${props.score}/100 · ${props.levelLabel}`
   return <>
@@ -198,14 +196,14 @@ function ClarityDimension(props: { metric: string; compact?: boolean; label: str
       role='progressbar' aria-label={accessibleLabel} aria-valuemin={0} aria-valuemax={100} aria-valuenow={props.score}
       tabIndex={0} aria-describedby={tipId} onMouseEnter={open} onMouseLeave={deferClose} onFocus={open} onBlur={deferClose}
       onKeyDown={event => { if (event.key === 'Escape' && position) { event.stopPropagation(); close() } }}>
-      <span className='dsh-clarity-dock-dim-readout' aria-hidden='true'><span>{props.compact ? props.metric.toUpperCase() : props.label}</span><span className='dsh-clarity-dock-dim-value'>{props.score}</span></span>
+      <span className='dsh-clarity-dock-dim-readout' aria-hidden='true'><span>{props.metric.toUpperCase()}</span><span className='dsh-clarity-dock-dim-value'>{props.score}</span></span>
       <span className='dsh-clarity-dock-track' aria-hidden='true'><span className='dsh-clarity-dock-fill' style={{ width: `${props.score}%` }} /></span>
     </span>
     {position && typeof document !== 'undefined' ? createPortal(
       <div ref={tooltip} id={tipId} role='tooltip' className='dsh-clarity-score-tooltip' style={position} tabIndex={0}
         onMouseEnter={cancelClose} onMouseLeave={deferClose} onFocus={cancelClose} onBlur={deferClose}
         onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); trigger.current?.focus(); close() } }}>
-        <strong>{props.label} · {props.score}/100</strong><p>{props.reason}</p>
+        <strong>{props.metric.toUpperCase()} · {props.label} · {props.score}/100</strong><p>{props.reason}</p>
         {props.staleReason ? <p className='dsh-clarity-score-tooltip-stale'>{props.staleReason}</p> : null}
       </div>, document.body) : <span id={tipId} hidden>{props.reason}{props.staleReason ? `\n${props.staleReason}` : ''}</span>}
   </>
@@ -268,13 +266,12 @@ export function ClarityDockReadout(props: { value: unknown; compact?: boolean; s
     <div className='dsh-clarity-dock' data-compact={props.compact || undefined} data-single-line={props.singleLine || undefined} data-activity={view.activity ? true : undefined} data-testid='design-clarity-dock'>
       <span className='dsh-clarity-dock-label' aria-label={view.activity ? t.clarity_dock_previous : undefined}>{view.activity
         ? props.singleLine || props.compact ? t.clarity_dock_previous_short : t.clarity_dock_previous : t.clarity_dock_label}</span>
-      <span className='dsh-clarity-dock-score' data-testid='design-clarity-dock-score'>{clarityIndex(view.assessment)}</span>
       <span className='dsh-clarity-dock-dims'>
         {dimensions.map((dimension) => {
           const level = clarityScoreLevel(dimension.score)
           const levelLabel = t[`clarity_dock_level_${level}`]
           return (
-            <ClarityDimension compact={props.compact || props.singleLine} key={dimension.key} metric={dimension.key} label={dimension.label} score={dimension.score} level={level} levelLabel={levelLabel}
+            <ClarityDimension key={dimension.key} metric={dimension.key} label={dimension.label} score={dimension.score} level={level} levelLabel={levelLabel}
               reason={view.explanation?.[dimension.key] || t.clarity_dock_no_reason}
               contextLabel={view.activity ? t.clarity_dock_previous : undefined}
               staleReason={view.needsReassessment ? t.clarity_dock_stale_reason : view.activity ? t.clarity_dock_previous_reason : undefined} />

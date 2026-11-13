@@ -15,7 +15,7 @@ order: 11
 icon: rules
 
 execution:
-  handoff: must_edit
+  handoff: none
 
 presentation:
   mode: declarative

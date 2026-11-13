@@ -7,6 +7,15 @@
 skill: flow_design
 
 rules:
+  # Optional node supplements do not make old files invalid or require a
+  # backfill. A supplied reading order must resolve to retained records.
+  - id: node_order_refs
+    scope: [state]
+    code: flow_design.node_order_invalid
+    message: "node_order references a missing step supplement."
+    repair_hint: "Repair the order using saved node IDs; preserve unmapped supplements."
+    check: { order_refs_map: { order: node_order, map: nodes } }
+
   - id: referenced_files_present
     scope: [state]
     code: flow_design.referenced_artifact_invalid

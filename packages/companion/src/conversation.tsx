@@ -22,7 +22,7 @@ export interface RecordedConversation {
     questions?: { id: string; question: string; options: { label: string; description: string }[] }[] }[]
 }
 
-export function Conversation({ locale = 'zh', hostLabel: suppliedHostLabel, value, thread, visible, onClose, send, attempts = [], readExecutionLog, beforeComposer, continuation, composerDisabledReason, showDesignShortcut = true, onDraftChange, initialDraft, renderError }: { locale?: string; hostLabel?: string; value?: RecordedConversation; thread?: string; visible: boolean; onClose: () => void; send: (text: string) => Promise<void>; attempts?: DesignPanelWorkspaceRead['executionAttempts']; readExecutionLog?: (runId: string, afterSeq?: number) => Promise<DesignExecutionLogRead>; beforeComposer?: ReactNode; continuation?: ReactNode; composerDisabledReason?: string; showDesignShortcut?: boolean; onDraftChange?: (draft: string) => void; initialDraft?: string; renderError?: (message: string, source: 'history' | 'send') => ReactNode }) {
+export function Conversation({ locale = 'zh', hostLabel: suppliedHostLabel, value, thread, visible, onClose, send, attempts = [], readExecutionLog, beforeComposer, continuation, composerDisabledReason, showDesignShortcut = true, onDraftChange, initialDraft, renderError, renderDisabledReason }: { locale?: string; hostLabel?: string; value?: RecordedConversation; thread?: string; visible: boolean; onClose: () => void; send: (text: string) => Promise<void>; attempts?: DesignPanelWorkspaceRead['executionAttempts']; readExecutionLog?: (runId: string, afterSeq?: number) => Promise<DesignExecutionLogRead>; beforeComposer?: ReactNode; continuation?: ReactNode; composerDisabledReason?: string; showDesignShortcut?: boolean; onDraftChange?: (draft: string) => void; initialDraft?: string; renderError?: (message: string, source: 'history' | 'send') => ReactNode; renderDisabledReason?: (reason: string) => ReactNode }) {
   const t = (key: CompanionChromeKey, values?: Record<string, string | number>) => companionChromeText(key, locale, values)
   const hostLabel = suppliedHostLabel || t('nativeAgent')
   const [draft, setDraft] = useState(initialDraft ?? '')
@@ -47,14 +47,6 @@ export function Conversation({ locale = 'zh', hostLabel: suppliedHostLabel, valu
     document.addEventListener('pointerdown', closeOutside)
     return () => document.removeEventListener('pointerdown', closeOutside)
   }, [])
-  const [compact, setCompact] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width:900px)').matches)
-  useEffect(() => {
-    const media = window.matchMedia('(max-width:900px)')
-    const update = () => setCompact(media.matches)
-    media.addEventListener('change', update)
-    update()
-    return () => media.removeEventListener('change', update)
-  }, [])
   const savedScroll = useRef(0)
   const revision = `${visible}:${JSON.stringify(value)}`
   const { scrollRef, onScroll } = useExecutionLogTail<HTMLDivElement>(revision, value?.threadId)
@@ -63,7 +55,7 @@ export function Conversation({ locale = 'zh', hostLabel: suppliedHostLabel, valu
   }, [visible])
   const work=conversationWork(value, attempts)
   const state = ({ running: t('workRunning'), background: t('workBackground'), waiting: t('workWaiting'), completed: t('workCompleted'), interrupted: t('workInterrupted'), failed: t('workFailed'), unknown: t('workUnknown') } as Record<string, string>)[work.status] ?? t('unknown')
-  return <section id="companion-conversation" className="companion-conversation" data-conversation-boundary data-advisory-cover-composer={compact || undefined} aria-label={t('conversationTitle', { host: hostLabel })} hidden={!visible}>
+  return <section id="companion-conversation" className="companion-conversation" data-conversation-boundary aria-label={t('conversationTitle', { host: hostLabel })} hidden={!visible}>
     <header className="dsh-design-project-header"><div className="companion-conversation-heading"><div className="companion-conversation-title"><strong>{t('conversationTitle', { host: hostLabel })}</strong>
       <div ref={connectionInfo} className="companion-connection" data-open={connectionOpen || undefined}>
         <button type="button" aria-label={t('connectionInfo')} aria-expanded={connectionOpen} onClick={() => setConnectionOpen(open => !open)}><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M10 9v5M10 6v1"/></svg></button>
@@ -146,7 +138,7 @@ export function Conversation({ locale = 'zh', hostLabel: suppliedHostLabel, valu
         </div>
       </div>
       </div>
-      {composerDisabledReason && <p role="status">{composerDisabledReason}</p>}
+      {composerDisabledReason && (renderDisabledReason ? renderDisabledReason(composerDisabledReason) : <p role="status">{composerDisabledReason}</p>)}
       {error && (renderError ? renderError(error, 'send') : <p role="alert">{error}</p>)}
     </form>
   </section>

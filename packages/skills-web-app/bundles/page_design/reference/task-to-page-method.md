@@ -55,12 +55,25 @@ back to the executor, not into a Worker's private redesign.
 
 ## Page Worker brief
 
-Use an ordinary task prompt, with these contents as needed:
-1. Exact Page ID/path, primary task, starting condition and expected result.
+Brief each Worker from the saved Page decision and its relevant accepted facts:
+1. Exact Page ID/path, primary task and starting object/state; material local
+   actions with their conditions, supplied input, visible result and continuation.
+   Preserve actor, object and state conditions together with failure/recovery;
+   action names alone do not convey these predicates. Use the artifact contract's
+   **Local actions and contextual results** boundary for prototype behavior.
 2. Settled shared layout/navigation and relevant Style decisions; concrete
    token/asset locators for exact source reads, not copied validator payloads.
+   Style's representative preview supplies visual language, not this Page's
+   sample identity, business state or permitted actions.
 3. Relevant neighboring pages and incoming/outgoing transitions, including
-   object context. Full unrelated page descriptions are unnecessary.
+   the actual selection keys/values and matching target identity when the map
+   uses `preview_context`. The target reads the Host's reserved block as the
+   artifact contract specifies. With no selection, use an honest default
+   instead of an unrelated fixed record. Each connection binds one source
+   hotspot: distinct record choices need distinct connections and selection
+   values, even when they share a target Page. Resolve an incomplete map before
+   assigning HTML; do not drop a choice's binding to silence validation.
+   Full unrelated page descriptions are unnecessary.
 4. Relevant source excerpts with file and record/pointer locators, indicating
    checkpoint or current working-copy basis; assumptions clearly identified.
 5. What this page owns, what it must preserve, and the file-backed validation

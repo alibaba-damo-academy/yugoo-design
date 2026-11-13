@@ -48,7 +48,7 @@
 | `design_records/clarity.json` | 最近一次成功保存的 U/S/T 评估及其所依据版本 | 评估报告工具写入；Git 跟踪 |
 | `design_records/journal/*.jsonl` | 设计过程中的持久化事实，例如保存、评估和交接记录 | 共享 Journal 服务追加；Git 跟踪，不是宿主完整聊天记录 |
 | `design_records/reviews/*.jsonl` | 已发布的审查建议、用户处理决定及相关记录 | 审查与建议服务维护；Git 跟踪，不等于仍存活的后台任务 |
-| `design_records/reviews/gra-policy.json` | 项目级 GRA 自动审查策略与调度间隔 | 用户通过设置或明确指令更新；DSH 与 Companion 共用并提交到 Git，不是宿主缓存 |
+| `design_records/reviews/gra-policy.json` | 项目级 GRA 自动审查方式、检查范围与调度间隔 | 用户通过设置或明确指令更新；DSH 与 Companion 共用并提交到 Git，不是宿主缓存 |
 | `design_records/knowledge/archive.json` | 与 Provider 无关的知识归档，保留关系、发现与决定等持久化数据 | 知识服务保存并由 Git 跟踪；不是可随意丢弃的数据库缓存 |
 
 项目可以包含用户另存的材料，但**文件出现在目录里，不等于工具已校验、提交或作为设计事实使用**。系统只提交本次操作明确拥有的文件，不把用户其他改动顺带提交。分享前应检查整个目录及历史中的隐私信息。
@@ -103,7 +103,7 @@ Panel、图上的详情表单和 Agent 应读写同一份规范数据，不各�
 
 ## 审查策略记录
 
-GRA 策略文件中的 `mode` 可为 `auto`、`continuous`、`every-publication` 或 `off`；`autoMergeWindowMs` 是合并自动触发的静默窗口，可选的 `continuousIntervalMs` 是连续检查间隔，单位均为毫秒。文件尚未生成时默认使用 `auto` 和 30 秒静默窗口。关闭自动审查仍保留用户手动检查入口，同步执行需本次明确同意；具体行为见[共享触发规则](../../packages/companion/README.md#kag--gra-trigger-model-shared-with-dsh)。策略修改通过设置接口保存，不需要手写 JSON；它随完整项目备份保留，`migrate` 不复制旧策略等系统记录。
+GRA 策略文件中的 `mode` 可为 `auto`、`continuous`、`every-publication` 或 `off`；`autoMergeWindowMs` 是合并自动触发的静默窗口，可选的 `continuousIntervalMs` 是连续检查间隔，单位均为毫秒。文件尚未生成时默认使用 `auto` 和 30 秒静默窗口。可选的 `depth` 为 `light`、`standard` 或 `thorough`，对应“当前设计”“关联设计”“整个项目”；旧记录省略它时按 `standard` 处理。检查范围不是建议数量或严重程度的档位，也不要求生成尚未开展的设计。关闭自动审查仍保留用户手动检查入口，同步执行需本次明确同意；具体行为见[共享触发规则](../../packages/companion/README.md#kag--gra-trigger-model-shared-with-dsh)。策略修改通过设置接口保存，不需要手写 JSON；它随完整项目备份保留，`migrate` 不复制旧策略等系统记录。
 
 ## Git 怎样记录变化
 

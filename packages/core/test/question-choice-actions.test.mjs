@@ -1,4 +1,7 @@
-import { webAppBundleUrl } from './web-app-content-fixture.mjs'
+/** Source declaration checks; no built-package or rendered-UI claim. */
+const webAppBundleUrl = path => new URL(`../../skills-web-app/bundles/${path}`, import.meta.url)
+const appBasicsIds = ['const_identity_needs', 'const_data_retention', 'const_usage_devices']
+const oldSettingIds = ['const_auth_mode', 'const_storage_mode']
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -88,11 +91,11 @@ test('generated snapshot/export rejects authored action flag and preserves kind 
   assert.throws(() => validateAutoPanelEdit(context.state, answer, context, checked), /undeclared choice/)
 })
 
-test('official declaration opts in with both fixed records excluded and public catalog documents the boundary', () => {
+test('official declaration protects both App basics and existing settings while the public catalog stays generic', () => {
   const view = parsePanelManifest(readFileSync(webAppBundleUrl('smart_questions/panel.yaml'), 'utf8'))
   assert.deepEqual(validatePanelManifest(view), [])
   assert.equal(view.ui.question_policy.allow_choice_actions, true)
-  assert.deepEqual(view.ui.question_policy.first_round_ids, ['const_auth_mode', 'const_storage_mode'])
+  assert.deepEqual(view.ui.question_policy.first_round_ids, [...appBasicsIds, ...oldSettingIds])
   assert.deepEqual(view.ui.question_policy.protected_ids, view.ui.question_policy.first_round_ids)
   for (const name of ['question_workspace', 'question_rounds']) assert.match(PANEL_COMPONENT_CATALOG[name].description, /allow_choice_actions/)
   assert.match(PANEL_COMPONENT_CATALOG.question_workspace.description, /Generated panels reject/)
@@ -122,10 +125,12 @@ test('authored card groups validate strictly, localize content and remain unavai
   official.i18n.messages = Object.fromEntries(['zh-CN', 'en-US'].map(locale => [locale,
     JSON.parse(readFileSync(webAppBundleUrl(`smart_questions/locales/${locale}.json`), 'utf8'))]))
   assert.deepEqual(validatePanelManifest(official), [])
-  for (const [locale, title] of [['zh-CN', '应用开发配置'], ['en-US', 'Application Development Configuration']]) {
+  for (const [locale, title, skip] of [['zh-CN', '应用基础', '跳过'], ['en-US', 'App basics', 'Skip']]) {
     const localized = localizePanelManifest(official, locale)
     assert.equal(localized.ui.card_groups[0].title, title)
-    assert.deepEqual(localized.ui.card_groups[0].question_ids, official.ui.question_policy.first_round_ids)
+    assert.equal(localized.fields.find(field => field.key === 'rejected').label, skip, 'Kit overrides retain the shared short action copy')
+    assert.deepEqual(localized.ui.card_groups[0].question_ids, appBasicsIds)
+    assert.deepEqual(localized.ui.card_groups[1].question_ids, oldSettingIds)
   }
 })
 
@@ -145,5 +150,5 @@ test('card group presentation strictly accepts only three authored boolean displ
   }
   const official = parsePanelManifest(readFileSync(webAppBundleUrl('smart_questions/panel.yaml'), 'utf8'))
   assert.deepEqual(official.ui.card_groups[0].presentation,
-    { always_expanded: true, show_detail: false, show_attachments: false })
+    { always_expanded: true, show_detail: true, show_attachments: false })
 })

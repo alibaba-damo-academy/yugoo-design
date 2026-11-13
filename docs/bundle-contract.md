@@ -444,6 +444,16 @@ Human-facing labels may use spaces or hyphens.
 
 ## File-backed script inputs (all Kits)
 
+Complete Bundle resources share a 32 MiB retained-byte budget, including opaque
+assets, with the existing depth and entry-count bounds. This accommodates
+self-contained rendering code and original fonts without a project-side install.
+It is a resource-loading budget, not a model-context or script-output allowance.
+Virtual source captures and retained Node files use the same Core resource
+projection: declared byte assets remain opaque and count their original bytes;
+methods, scripts and unknown extensions remain strict UTF-8. Full source copies
+retain every original byte and their existing change checks. Opaque byte digests
+participate in the existing definition fingerprint without entering resource text.
+
 ### Evidence and cooperation (all execution placements)
 
 Core supplies shared executor/Worker evidence guidance. A task brief carries
@@ -452,6 +462,14 @@ locators and revision basis, exact output ownership and validation contract.
 Workers retrieve material gaps with available read-only tools, rather than
 repeating a full-project intake. Context reduction must preserve conditions and
 exceptions; exact assets and mechanical inputs retain file authority.
+
+DSH file Workers discover documentation through paths from the same bound Bundle
+snapshot as `read_skill_resource`. Discovery reuses the reconstruction entry:
+prefer an existing `reference/artifact-contract.md`, otherwise list the Bundle's
+available Markdown/YAML documents. This exposes paths, not resource bodies or
+other Bundles; Workers read relevant instructions and linked references as needed.
+No placeholder contract is required. Discovery does not replace a bounded task
+assignment, source verification or the executor's acceptance of the artifact.
 
 All Bundles may use KAG to locate dependencies, constraints and change impacts.
 Verify retrieved claims against the relevant Design Files; graph similarity
@@ -469,10 +487,22 @@ operation metadata. Each Bundle documents the source paths it consumes and
 interprets those bytes in its own script. Core does not infer a domain graph,
 hardcode another Bundle's paths, or require new Kit configuration fields.
 
+In DSH, an already-structured file input includes Host-owned
+`script_io: { input_file, output_file }`, with the validated project-relative
+paths and `output_file: null` when no output was requested. The Host overrides
+any caller-supplied `script_io`. This describes the current operation, not a
+permission token. Raw file input without structured context and `input_json`
+retain their existing bytes. Producer and file Worker tools share this behavior.
+Use `output_file` only for artifact stdout; validation and diagnostic JSON remain
+tool results and must not overwrite an artifact.
+
 Where native hosts run scripts through shell, provide a documented equivalent
 file interface with relative-path and realpath confinement; use the same domain
-validator. Keep input/transport errors distinct from invalid artifacts. Missing
-authoritative input must not silently fall back to a model summary. The
+validator. These shell calls do not add the DSH tool's `script_io` envelope;
+follow the Bundle CLI's stdout contract and do not redirect validation or
+diagnostic JSON into an artifact. Keep input/transport errors distinct from
+invalid artifacts. Missing authoritative input must not silently fall back to
+a model summary. The
 existing transport envelope remains subject to host-scoped read/write policy;
 file inputs do not grant Workers canonical write authority.
 
@@ -625,8 +655,13 @@ never mechanical support, causation or approval.
 For an optional locator map, `validation.yaml` may use a leaf check
 `source_reference_map: <field>` within `for_each_in_map`. It checks confined
 paths, exact commit syntax, RFC6901 pointer syntax and a present non-array
-local subject. Absent optional maps pass. History existence is checked when
-reading/projecting evidence, not a save-time dependency on historical I/O.
+local subject. Absent optional maps pass. In completion scope it also reads the
+exact pinned file and, when supplied, JSON pointer; a real commit without that
+target is not valid evidence. The Producer supplies its project-confined history
+reader. A missing reader or unreadable target reports a repairable completion
+issue without guessing another version. Ordinary draft saves keep the local
+guards and do not depend on historical I/O. Historical references remain intact
+when a target is deleted from current content.
 DSH Panel Save applies these locator guards; Companion additionally applies
 its complete state-scope checks. Empty-state publication rules remain different
 between these two entry points.

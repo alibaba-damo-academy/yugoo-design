@@ -278,12 +278,11 @@ export function hasDueReview(statuses: readonly DesignReviewProfileStatusSnapsho
 const REMINDER_FAILURE_LIMIT = 300
 
 /**
- * Render the compact, bounded snapshot reminder injected into the main
- * conversation at activation and after save settlement. Informational only:
- * it never wakes the model, promises execution, or authorizes anything.
+ * Render the compact snapshot for an existing main-Agent request context.
+ * Formatting does not enqueue input, request a model step or authorize work.
  * @param knowledge - derived Knowledge status of the selected project.
  * @param reviews - derived per-profile review statuses.
- * @returns bounded reminder text for one non-waking inbox notice.
+ * @returns bounded derived status text for the current request.
  */
 export function renderDesignKnowledgeStatusReminder(
   knowledge: DesignKnowledgeStatusSnapshot,

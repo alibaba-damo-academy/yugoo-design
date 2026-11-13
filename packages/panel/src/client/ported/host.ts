@@ -17,6 +17,7 @@ function pickLanguage(): 'en_US' | 'zh_CN' {
 export interface DesignHostLocale {
   getSnapshot(): { active: string }
   subscribe(listener: () => void): () => void
+  setLocale?(id: string): void
 }
 let hostLocale: DesignHostLocale | undefined
 const listeners = new Set<() => void>()
@@ -62,4 +63,37 @@ export function currentLanguage(): 'zh_CN' | 'en_US' {
 /** Follow host preference changes without remounting panels or resetting drafts. */
 export function useCurrentLanguage(): 'zh_CN' | 'en_US' {
   return useSyncExternalStore(subscribe, currentLanguage, currentLanguage)
+}
+
+/** Optional public Host theme face. The Host remains the preference owner. */
+export interface DesignHostTheme {
+  getSnapshot(): { preference: string; active?: { colorScheme: 'light' | 'dark' } }
+  subscribe(listener: () => void): () => void
+  setTheme(id: string): void
+}
+let hostTheme: DesignHostTheme | undefined
+export function bindDesignHostTheme(source: DesignHostTheme): () => void {
+  hostTheme = source
+  const unsubscribe = source.subscribe(notify)
+  notify()
+  return () => {
+    unsubscribe()
+    if (hostTheme === source) { hostTheme = undefined; notify() }
+  }
+}
+function effectiveAppearance(): 'light' | 'dark' {
+  return hostTheme?.getSnapshot().active?.colorScheme === 'dark' ? 'dark' : 'light'
+}
+/** Mirror public Host state; changing an interface preference never saves design data. */
+export function useDesignHostPreferences() {
+  const language = useCurrentLanguage() === 'zh_CN' ? 'zh' as const : 'en' as const
+  const theme = useSyncExternalStore(subscribe, effectiveAppearance, effectiveAppearance)
+  const available = () => Boolean(hostLocale?.setLocale && hostTheme)
+  const ready = useSyncExternalStore(subscribe, available, available)
+  if (!ready) return undefined
+  return {
+    language, effectiveAppearance: theme,
+    onLanguageChange(value: 'zh' | 'en') { hostLocale?.setLocale?.(value) },
+    onAppearanceChange(value: 'system' | 'light' | 'dark') { hostTheme?.setTheme(value) },
+  }
 }

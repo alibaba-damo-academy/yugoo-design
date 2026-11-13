@@ -1,5 +1,9 @@
 # Design Style output contract
 
+## Record IDs
+
+This Bundle defines a visual configuration, not a numbered record inventory. Preserve semantic token, component-pattern, icon, asset and preview names and their existing references; do not replace them with business record numbers.
+
 Shared by forward design and source reconstruction. The installed schema and validation define the state. This document defines artifact representation and file operations, not how to choose a new visual direction.
 
 ## Visual authority
@@ -91,7 +95,7 @@ values and vocabulary, not this example's font sizes, icon library or layout.
     "preview_page": {
       "name": "REQUIRED: stable_snake_case_name",
       "title": "REQUIRED: user-facing title",
-      "rationale": "REQUIRED: why this screen proves the direction",
+      "rationale": "Optional existing context for why this screen was chosen",
       "html_file": null
     },
     "notes": "concise product-specific conclusion, not hidden reasoning",
@@ -121,6 +125,13 @@ values and vocabulary, not this example's font sizes, icon library or layout.
   }
 }
 ```
+
+Record useful visual choices, tradeoffs and unresolved points once in
+`config.notes`. `preview_page.rationale` is optional explanatory context, not
+proof of visual quality or a required self-assessment. Keep an existing value
+when editing unrelated settings; the generated `DESIGN.md` retains it, while
+the ordinary Panel preview does not repeat it above the screen. Do not copy it
+into a second field or automatically migrate saved content.
 
 For a text-only brand, omit both `brand.mark_id` and `brand.mark_svg`. For an
 accepted SVG mark, supply both together: a stable `mark_id` and the exact
@@ -157,6 +168,16 @@ again.
 ## Preview file
 
 One complete HTML5 document at `design_style/preview_<name>.html`; its canonical reference is project-relative and accepted only after the actual file passes validation.
+
+Default to a compact composition at the intended device viewport, with the main
+task and action easy to find. Do not stack secondary sections merely to show
+everything in one prototype. A long document, form, history or other continuous
+task may legitimately need a long page; keep that continuity and necessary
+content. There is no universal height limit. Establish whole-page versus content-area
+scrolling and fixed/sticky navigation in the existing layout description; check
+them at the target viewport and after scrolling. This is design guidance, not a
+file validator. Reconstruction preserves observed behavior, and a local revision
+does not authorize shortening unrelated content.
 
 - In `<head>`, link `<link rel="stylesheet" href="./tokens.css">`.
 - Consume at least five `var(--ds-*)` values and use them for canonical palette

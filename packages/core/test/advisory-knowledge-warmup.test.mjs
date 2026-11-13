@@ -44,6 +44,40 @@ test('oversized KAG pin metadata falls back explicitly without counting the capt
   } finally { scheduler.dispose() }
 })
 
+for (const observed of [false, true, undefined]) test(`KAG completion follows the native read observation, not snapshot availability (${observed})`, async () => {
+  const projectId = '11111111-1111-4111-8111-111111111111'
+  const change = { journalRevision: 5, commit: 'a'.repeat(40), kit: 'fixture', version: '1.0' }
+  const knowledge = await readAdvisoryDesignKnowledge({ project: projectId, checkpoint: change.commit }, {
+    query: async () => ({ revision: 'rev:1', entities: [{ id: 'large', properties: { text: 'evidence '.repeat(5000) },
+      provenance: { producer: 'design-file-projection', checkpoint: change.commit } }], relations: [] }),
+  }, 20, {}, 'rev:1')
+  const completions = []
+  const scheduler = new DshAdvisoryScheduler({
+    design: {
+      advisoryDesignKnowledge: async () => knowledge,
+      kitForAgent: () => ({ name: 'fixture', version: '1.0' }),
+      readDesignJournal: async () => ({ snapshot: { latestDesignChange: change, design: {}, advisories: [] } }),
+      projectForAgent: async () => ({ projectId, root: '/tmp/project', designFilesRoot: '/tmp/project/design_files' }),
+      refreshAdvisoryProjection: async () => {},
+      recordAdvisoryReviewCompletion: async (_agent, completion) => { completions.push(completion) },
+    },
+    subagents: { start: async (_provider, request) => {
+      assert.equal(JSON.parse(request.knowledgeContext).coverage.status, 'not-inlined')
+      return { result: Promise.resolve({ stopReason: 'completed', structured: { schemaVersion: 1, inconsistencies: [] },
+        ...(observed === undefined ? {} : { knowledgeUsed: observed }) }), dispose: async () => {} }
+    } },
+    warn: message => assert.fail(message),
+  }, { profiles: [OFFICIAL_GROUNDING_PROFILE] })
+  try {
+    await scheduler.runProfile({ id: 'knowledge-observation', status: 'idle', session: { events: [] } },
+      OFFICIAL_GROUNDING_PROFILE, 5, new AbortController().signal, () => {})
+    assert.equal(completions.length, 1)
+    assert.equal(completions[0].knowledgeUsed, observed === true)
+    assert.equal(completions[0].knowledgeSourceCheckpoint, observed === true ? change.commit : undefined)
+    assert.equal(completions[0].fallbackReason, observed === true ? undefined : 'read-not-observed')
+  } finally { scheduler.dispose() }
+})
+
 test('review dispatch reuses one revision warmup instead of queueing a second KAG read', async () => {
   const history = [{ type: 'tool/call', data: { callId: 'foreground', name: 'run_design_skill', arguments: JSON.stringify({ name: 'research', brief: 'Current research intent' }) } }]
   const agent = { id: 'agent-1', status: 'running', session: { snapshotEvents() { return history } } }

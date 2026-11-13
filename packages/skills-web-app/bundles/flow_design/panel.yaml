@@ -10,6 +10,24 @@ sections:
     item_name: $t:process
     order: process_order
     add_mode: none
+    form:
+      reorder: false
+      header: {variant: detail, title: {field: title, editable: false}}
+      body:
+        - {kind: field, field: description}
+        - kind: row
+          items:
+            - {kind: field, field: tier, width: fill}
+            - {kind: field, field: process_type, width: fill}
+        - {kind: field, field: stakeholders}
+        - {kind: field, field: business_rules}
+        - {kind: field, field: trigger_hints}
+        - {kind: field, field: exception_handling}
+  - id: nodes
+    title: $t:nodes
+    item_name: $t:node
+    order: node_order
+    add_mode: none
 fields:
   - {key: title, label: '$t:title', control: text, readonly: true, applies_to: [processes]}
   - {key: description, label: '$t:description', control: textarea, readonly: true, applies_to: [processes]}
@@ -26,13 +44,12 @@ fields:
     options: [{value: linear, label: '$t:linear'}, {value: approval, label: '$t:approval'}, {value: parallel, label: '$t:parallel'}, {value: event_driven, label: '$t:event'}]
     applies_to: [processes]
   - {key: stakeholders, label: '$t:actors', control: token_list, readonly: true, applies_to: [processes]}
-  - {key: system_responsibilities, label: '$t:responsibilities', control: token_list, readonly: true, applies_to: [processes]}
-  - {key: key_features, label: '$t:features', control: token_list, readonly: true, applies_to: [processes]}
-  - {key: business_rules, label: '$t:rules', control: token_list, readonly: true, applies_to: [processes]}
+  - {key: business_rules, label: '$t:rules', description: '$t:flowConstraintsHelp', control: list, readonly: true, applies_to: [processes]}
   - key: trigger_hints
     label: $t:triggers
     control: rows
     readonly: true
+    hide_when_empty: true
     row_name: $t:trigger
     applies_to: [processes]
     columns:
@@ -46,15 +63,22 @@ fields:
     label: $t:exceptions
     control: rows
     readonly: true
+    hide_when_empty: true
     row_name: $t:exception
     applies_to: [processes]
     columns:
       - {key: scenario, label: '$t:scenario', control: text}
       - {key: handling, label: '$t:handling', control: text}
   - {key: bpmn_file, label: '$t:diagram', control: artifact_ref, hidden: true, readonly: true, applies_to: [processes]}
+  - {key: process_ref, label: '$t:process', control: record_select, options_from_section: processes, hidden: true, readonly: true, applies_to: [nodes]}
+  - {key: bpmn_element_ref, label: '$t:elementRef', control: text, hidden: true, readonly: true, applies_to: [nodes]}
+  - {key: activity, label: '$t:activity', control: textarea, applies_to: [nodes]}
+  - {key: entry_condition, label: '$t:entryCondition', control: textarea, applies_to: [nodes]}
+  - {key: exit_condition, label: '$t:exitCondition', control: textarea, applies_to: [nodes]}
+  - {key: failure_response, label: '$t:nodeException', control: textarea, applies_to: [nodes]}
+  - {key: remarks, label: '$t:remarks', control: textarea, applies_to: [nodes]}
 ui:
   component: diagram_workspace
-  guidance: "$t:guidance"
   sidebar_icon: workflow
   id: process-diagrams
   title: $t:processes
@@ -65,12 +89,20 @@ ui:
     label_field: title
     artifact_kind: flow_bpmn
     order_only: true
-    summary_fields: [description, stakeholders]
-    tags:
-      - field: tier
-        labels: {core: '$t:priorityHigh', business: '$t:priorityMedium', auxiliary: '$t:priorityLow'}
-        tones: {core: danger, business: warning, auxiliary: success}
-      - {field: process_type}
-    detail_rows: [[description], [stakeholders], [system_responsibilities, trigger_hints], [key_features, business_rules], [exception_handling]]
+    summary_fields: [description]
+    detail_rows: [[description], [stakeholders], [business_rules], [tier, process_type], [trigger_hints], [exception_handling]]
     chip_fields: [stakeholders]
-    detail_hint_fields: [key_features, business_rules, exception_handling]
+    detail_hint_fields: [business_rules, exception_handling]
+    inspector:
+      presentation: document
+      process_sections: [processes]
+      nodes:
+        source: nodes
+        process_field: process_ref
+        element_field: bpmn_element_ref
+        label_field: activity
+        sections: [nodes]
+      migration:
+        message: $t:nodeMigrationMessage
+        action_label: $t:nodeMigrationAction
+        prompt: $t:nodeMigrationPrompt

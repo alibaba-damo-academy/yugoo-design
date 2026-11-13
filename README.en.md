@@ -129,7 +129,7 @@ Continue with the six-person client delivery team from the quick start: turn its
 
 The business data is fictional. Start from the goal in the [quick start](#quick-start), or copy the [complete example project (中文)](examples/design-team-delivery/README.md), migrate it as instructed, and continue with the [tutorial](docs/wiki/web-app-demo.en.md).
 
-The screenshots use the same fictional business scenario to show how conversation, Panel edits and subsequent advice work together. Exact layouts and available features depend on the [installed version and host](docs/wiki/preview-status.md).
+The screenshots come from an independent English project for a fictional client-feedback tool, showing how conversation, Panel edits and subsequent advice work together. The Chinese README uses its corresponding Chinese project and interface. Exact layouts and available features depend on the [installed version and host](docs/wiki/preview-status.md).
 
 This walkthrough shows one way to use the **Web App Kit**, not the framework's only use or a mandatory sequence of panels. You can [customize your own Kits, Bundles, and interactive interfaces](#start-with-software-design-then-extend-it) to adapt the professional methods, information presentation, and interaction experience to your domain and goals.
 
@@ -141,45 +141,49 @@ After saving, expand the **U/S/T assessment** to read AI's judgment and supporti
 
 With responsibilities clear, for example, AI can suggest: “Let's map a client's change request through to scheduling the work, showing who records feedback, assesses scope, and makes commitments.”
 
-![Answer Smart Questions beside the conversation, then open U/S/T for a close-up of the reasoning and next gap](docs/images/readme-smart-questions.gif)
+![Read saved Smart Questions beside the conversation, with U/S/T available in the shared header](docs/images/readme-questions.en.png)
 
 ### 2. See the process, then add real-world context
 
 AI opens the **business process panel**. Vertical swimlanes separate the client, designer, project lead, and system. Read from top to bottom to follow feedback capture, scope comparison, impact assessment, and confirmation of the work.
 
-Start with the whole process, then zoom into the decisions: which small changes can proceed directly, which need scope or timing approval, and who supplies missing information? You might add: “Designers can handle in-scope layout revisions directly when they do not affect a promised milestone.” Check the conditions and destinations, edit, and save, bringing the team's real working practices into the design.
+Start with the whole process, then zoom into the decisions: which small changes can proceed directly, which need scope or timing approval, and who supplies missing information? You might add: “Designers can handle in-scope layout revisions directly when they do not affect a promised milestone.” In the node details, edit and save the activity, entry and completion conditions, failure handling or remarks. To change branches and connections, point to the relevant node and ask AI to revise the process diagram. This brings the team's real working practices into the design.
 
-![View the complete vertical swimlanes, then zoom into direct handling, lead confirmation, and return-for-information branches in the same process](docs/images/readme-flow.gif)
+![View the complete feedback-process swimlanes, then zoom into scope judgment, direct handling and lead confirmation](docs/images/readme-flow.en.gif)
 
 ### 3. Save your decisions and continue with AI
 
-After saving, ask: “Continue from the rules I just saved and check whether the other designs express the same intent.” AI proceeds from those changes, while **proactive review (GRA)** helps identify parts that are not yet aligned.
+After saving, ask: “Continue from the rules I just saved and check whether the other designs express the same intent.” AI proceeds from those changes, while **automatic review (GRA)** helps identify parts that are not yet aligned.
 
-A Grounding suggestion recorded in this project identifies a specific gap:
+For example, a Grounding suggestion can identify a specific gap:
 
 > The answers require checking a revision's effect on delivery milestones, but the “in-scope revision” rule only checks for new pages or capabilities. It does not include the timing condition.
 
 You can clarify: “Assess scope and timing separately. Any impact on a promised milestone needs the lead to confirm the plan again.” Ask AI to revise the rule, then compare it with the same process. A suggestion does not make decisions or change the design for you.
 
-To explore how the designs relate, open **Related graph (KAG)** at the bottom of the workspace. Select a process or page, follow its relationships and sources, and return to the relevant panel to check it. The graph provides discovery paths; the design content remains the basis for judgment.
+To explore how the designs relate, open **Relationships** (KAG) at the bottom of the workspace. Select a process or page, follow its relationships and sources, and return to the relevant panel to check it. The graph provides discovery paths; the design content remains the basis for judgment.
 
-![Read an actual suggestion from this project, compare the same process and rules, then inspect related objects and sources in KAG](docs/images/readme-design-advice.gif)
+![Read an actual pending advisory beside the role permissions, with Accept, Reject and Later actions](docs/images/readme-advisories.en.png)
+
+![Inspect the project lead’s connected records, relationship types and original source fields in KAG](docs/images/readme-relationships.en.png)
 
 That is the collaboration loop: **describe a goal → examine and edit the Panel → save and continue with AI → discuss the next question.** Start the next round where understanding or a decision is most needed.
 
 ### You can also explore further…
 
-**Research, UI design, Page map, and other panels.** Use Research to organize questions, sources, and findings; develop individual screens through UI design and interactive prototypes; or open the Page map to check the transitions between the client's feedback submission, the designer's impact assessment, and the lead's confirmation. Continue with whichever part needs more attention.
+**Research, visual style and page design.** Keep questions, sources and findings in Research; compare visual directions in Design Style; and use Page Design to inspect page relationships and open high-fidelity prototypes. Check the path from the client's feedback submission through the designer's impact assessment to the lead's confirmation. Continue with whichever part needs more attention.
 
-![Switch between Research, UI design, and Page map panels in the same project](docs/images/readme-design-exploration.gif)
+![Switch between the research report, visual-style preview and page map in the same English project](docs/images/readme-exploration.en.gif)
 
 **Scene experience (场景体验).** Choose a situation such as “the client adds a page at the last minute” and walk through the process, rules, and interface together. If a step is unclear, choose “在主对话讨论当前内容” (discuss the current content in the main conversation) to bring the question back into the design. Interactions in the experience are demonstrations; they do not directly change design files.
 
-![Explore the client's request for an additional page alongside the agreed scope and impact assessment](docs/images/readme-scene.png)
+[View the scenario example (Chinese UI)](docs/images/readme-scene.png). You can also preview page prototypes independently to inspect the request list, different states and detail entry points:
+
+![Preview the request inbox in Page Design, with distinct request states and detail navigation](docs/images/readme-prototype.en.png)
 
 **PRD and implementation handoff.** Assemble the current design into a PRD draft. Review the proposal chapter by chapter, retaining sources and unresolved questions. For implementation, prepare a spec for the particular task and link its design evidence.
 
-![Read the assembled design by chapter in the PRD panel, with sources and unresolved questions](docs/images/readme-prd.png)
+![Read the assembled design by chapter in the PRD panel, with sources and unresolved questions](docs/images/readme-prd.en.png)
 
 For greater detail, develop the data relationships between feedback, deliverables, and changes, refine permissions and business rules, or use the **AI capabilities panel** to define how the application's AI organizes feedback, which Skills and tools it needs, and which commitments remain human decisions.
 
@@ -197,13 +201,13 @@ Skills you already use can contribute too. Import and adapt an existing skill, k
 
 ### Custom Kits and panels: tools that fit your field
 
-**Design Studio** provides entry points to inspect, manage and customize Kits and Bundles. Explore a Mindset, methods and source files, edit them directly or make a copy to customize separately, and preview the result with sample data. Changes saved in the library can be used by new projects; existing projects keep their own complete definitions, which you and your agent can adapt as needed.
+**Design Studio** provides entry points to inspect, manage and customize Kits and Bundles. Explore a Mindset, methods and source files, edit them directly or make a copy to customize separately. Check the Panel’s presentation and interactions with sample data, then try the methods in a separate Design Project. Changes saved in the library can be used by new projects; existing projects keep their own complete definitions, which you and your agent can adapt as needed.
 
 Panels can use question cards, tables, diagrams, prototypes or whiteboards. Declarative UI and A2UI share components and rendering capabilities; extend UI components or integrate a specialist editor when you need another form of expression.
 
 Follow the [sharing guide](docs/wiki/kit-sharing.en.md#minimum-checks-for-author-and-recipient) to check and deliver a Kit. Available operations depend on the installed version and host; see [capability and version scope](docs/wiki/preview-status.md#studio-source-capabilities-and-installed-acceptance) and the [Studio walkthrough](docs/wiki/usage.en.md#6-studio-inspect-customize-and-check-kits) for instructions and host support.
 
-![Read the Web App Mindset and browse mounted Bundles in the complete Studio page](docs/images/readme-studio.gif)
+![Manage a Kit’s mounted Bundles beside the Studio conversation, with source-file and Save controls available](docs/images/readme-studio.en.png)
 
 | What you want to do | Start here |
 | --- | --- |
@@ -218,7 +222,7 @@ Follow the [sharing guide](docs/wiki/kit-sharing.en.md#minimum-checks-for-author
 | --- | --- |
 | [Documentation overview (中文)](docs/README.md) | Entry points for usage, Kit authoring, architecture, and technical reference |
 | [Wiki](docs/wiki/README.en.md) | Installation, usage, host compatibility, and troubleshooting |
-| [Core concepts (中文)](docs/wiki/concepts.md) · [Terminology (中文)](docs/wiki/terminology.md) | Projects, Kits, Bundles, panels, and bilingual naming |
+| [Core concepts](docs/wiki/concepts.en.md) · [Terminology (中文)](docs/wiki/terminology.md) | Projects, Kits, Bundles, panels, and bilingual naming |
 | [Product principles](docs/product-vision.en.md) | Professional methods, human–AI alignment, and interaction principles |
 | [Development guide (中文)](docs/wiki/development.md) · [Architecture baseline](docs/system-design-baseline.md) | Source setup, layer responsibilities, and verification |
 | [Preview status](docs/wiki/preview-status.md) | Versions, supported features, and known limitations |

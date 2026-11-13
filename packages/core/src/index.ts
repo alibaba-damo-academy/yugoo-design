@@ -500,6 +500,7 @@ export {
   parseMindsetSkillNames,
   type KitFsLike,
   type KitResourceContent,
+  projectKitResource,
 } from './kit-loader.ts'
 export { DesignContentStore, contentNodeFs } from './content-store.ts'
 export { ensureProjectKit, loadProjectKit, DESIGN_PROJECT_KIT_DIRECTORY, type ProjectKitSource } from './project-kit-source.ts'
@@ -587,6 +588,7 @@ export {
   type DesignExecutionInputResolution,
   type DesignExecutionPin,
   type DesignExecutionProducerInput,
+  type DesignExecutionQuestionAnswer,
   type DesignExecutionProducerPort,
   type DesignExecutionProducerRequest,
   type DesignExecutionProducerRunMode,

@@ -10,6 +10,12 @@ const load = skill => {
   manifest.i18n.messages = Object.fromEntries(Object.entries(manifest.i18n.locales).map(([locale, path]) => [locale, JSON.parse(readFileSync(new URL(path, dir), 'utf8'))]))
   return manifest
 }
+// Tags remain a shared capability; Flow keeps classification inside Details.
+const taggedDiagram = () => {
+  const manifest = load('flow_design')
+  manifest.ui.diagram.tags = [{ field: 'tier', labels: { core: '$t:core' }, tones: { core: 'neutral' } }]
+  return manifest
+}
 test('native presentation declarations validate and localize text without changing storage bindings', () => {
   for (const skill of ['function_modules', 'flow_design', 'ai_agent_capabilities', 'page_design']) assert.deepEqual(validatePanelManifest(load(skill)), [], skill)
   const source = load('function_modules'), localized = localizePanelManifest(source, 'en-US')
@@ -17,14 +23,15 @@ test('native presentation declarations validate and localize text without changi
   assert.equal(localized.ui.board.details_title, 'Function details')
   assert.equal(localizePanelManifest(source, 'zh-CN').ui.board.details_title, '功能详情')
   assert.deepEqual(localized.ui.board.request_create.fields, source.ui.board.request_create.fields)
-  assert.equal(localizePanelManifest(load('flow_design'), 'en-US').ui.diagram.tags[0].labels.core, 'High')
+  assert.equal(localizePanelManifest(taggedDiagram(), 'en-US').ui.diagram.tags[0].labels.core, 'Core flow')
+  assert.equal(localizePanelManifest(load('flow_design'), 'en-US').ui.diagram.inspector.presentation, 'document')
 })
 test('creation cannot bind hidden, readonly, foreign, repeated or malformed fields', () => {
   for (const fields of [['missing'], ['source'], ['rejected'], [], ['function_name', 'function_name'], 'function_name', null]) {
     const manifest = load('function_modules'); manifest.ui.board.request_create.fields = fields
     assert.ok(validatePanelManifest(manifest).length, JSON.stringify(fields))
   }
-  const manifest = load('flow_design'); manifest.ui.diagram.tags[0].tones.core = 'execute'
+  const manifest = taggedDiagram(); manifest.ui.diagram.tags[0].tones.core = 'execute'
   assert.ok(validatePanelManifest(manifest).length)
 })
 
@@ -37,7 +44,7 @@ test('navigation captions cannot expose hidden, foreign or malformed fields', ()
 
 test('diagram tags and detail hints cannot reveal hidden fields', () => {
   for (const key of ['tier', 'key_features']) {
-    const manifest = load('flow_design')
+    const manifest = taggedDiagram()
     manifest.fields.find(field => field.key === key).hidden = true
     assert.ok(validatePanelManifest(manifest).length, key)
   }

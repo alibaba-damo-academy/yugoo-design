@@ -15,6 +15,18 @@ const fixture = () => ({
   ui: { component: 'record_workspace', id: 'workspace', title: '$t:title', sources: ['rules'] },
 })
 
+test('diagram migration text localizes without translating node bindings or stored facts', () => {
+  const panel = fixture()
+  panel.ui.diagram = { inspector: { presentation: 'document',
+    nodes: { source: '$t:title', process_field: '$t:title', sections: ['$t:title'] },
+    migration: { message: '$t:title', action_label: '$t:custom', prompt: '$t:title' } } }
+  const before = structuredClone(panel)
+  const localized = localizePanelManifest(panel, 'en-US')
+  assert.deepEqual(localized.ui.diagram.inspector.migration, { message: 'Rules', action_label: 'Custom', prompt: 'Rules' })
+  assert.deepEqual(localized.ui.diagram.inspector.nodes, before.ui.diagram.inspector.nodes)
+  assert.deepEqual(panel, before)
+})
+
 test('independent guidance translates without mutating bindings and rejects explicit invalid values', () => {
   const panel = fixture()
   panel.ui.guidance = '$t:help'

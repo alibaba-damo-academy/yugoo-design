@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { createPanelComponentExample, panelComponentTitle, panelComponentCategory } from '../src/component-examples.ts'
 import { COMPONENT_KINDS, PANEL_COMPONENT_CATALOG, parsePanelManifest } from '../../core/src/panel-dsl.ts'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { JSDOM } from 'jsdom'
 const React = await import('react'); globalThis.React = React
 const { renderManifest } = await import('../src/interpreter.ts')
 const { documentArtifactPath } = await import('../src/document-workspace.tsx')
@@ -71,9 +72,13 @@ test('schema-field editors reuse shared controls and expose their labels; readon
   const manifest = parsePanelManifest(example.panelYaml)
   for (const control of ['text', 'number', 'select', 'textarea', 'list']) {
     manifest.ui.control = control
-    const html = renderToStaticMarkup(renderManifest(manifest, example.sample, { editable: true, onPanelUpdate: () => {} }))
-    if (control === 'select') assert.match(html, /role="combobox"[^>]*aria-label="Name"[^>]*class="dsh-panel-select-trigger dsh-design-field-input"/, control)
-    else assert.match(html, /class="dsh-design-field-input" aria-label="Name"/, control)
+    const html = renderToStaticMarkup(renderManifest(manifest, control === 'list' ? { ...example.sample, name: ['One complete entry', 'Second entry'] } : example.sample, { editable: true, onPanelUpdate: () => {} }))
+    const dom = new JSDOM(html)
+    try {
+      assert.ok(dom.window.document.querySelector(`[aria-label="${control === 'list' ? 'Name 1' : 'Name'}"].dsh-design-field-input`), control)
+      if (control === 'select') assert.ok(dom.window.document.querySelector('[role="combobox"]'))
+      if (control === 'list') assert.ok(dom.window.document.querySelector('[role="group"][aria-label="Name"]'))
+    } finally { dom.window.close() }
   }
   const html = renderToStaticMarkup(renderManifest(manifest, example.sample, { editable: false, onPanelUpdate: () => assert.fail('readonly writes') }))
   assert.doesNotMatch(html, /<input|<textarea|<select/)
@@ -91,7 +96,7 @@ test('document example respects the real renderer owner boundary and serves only
 test('file-backed documentation examples have populated, bounded, self-contained fixture data', () => {
   for (const locale of ['zh', 'en']) {
     const canvas = createPanelComponentExample('canvas_workspace', locale)
-    const scene = parseCanvasScene(canvas.artifacts[canvas.sample.items.first.file], { skill: 'component_example', assetsDirectory: 'images' })
+    const scene = parseCanvasScene(canvas.artifacts[canvas.sample.items['WB-001'].file], { skill: 'component_example', assetsDirectory: 'images' })
     assert.equal(scene.elements.length, 2)
     assert.ok(scene.elements.some(element => element.type === 'text' && element.text.length > 0))
     assert.deepEqual(scene.files, {}, 'documentation does not read outside images or project assets')

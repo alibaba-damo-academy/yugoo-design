@@ -2,6 +2,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -75,16 +76,21 @@ export function DesignProjectSidebarEntry({
 
   const reposition = useCallback(() => {
     const rect = triggerRef.current?.getBoundingClientRect()
-    if (rect === undefined) return
+    const popup = popoverRef.current?.getBoundingClientRect()
+    if (rect === undefined || popup === undefined) return
     setPosition({
-      left: Math.max(8, Math.min(side === 'right' ? rect.left - 376 : rect.right + 8, window.innerWidth - 376)),
-      bottom: Math.max(8, window.innerHeight - rect.bottom),
+      left: Math.max(8, Math.min(side === 'right' ? rect.left - popup.width - 8 : rect.right + 8, window.innerWidth - popup.width - 8)),
+      top: Math.max(8, Math.min(rect.bottom - popup.height, window.innerHeight - popup.height - 8)),
     })
   }, [side])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!expanded) return
     reposition()
+    // Hosts place this entry at either end of their sidebar. Keep the whole
+    // catalog reachable as its contents or the viewport change.
+    const observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(reposition)
+    if (popoverRef.current) observer?.observe(popoverRef.current)
     const close = (event: MouseEvent): void => {
       const target = event.target
       if (!(target instanceof Node)) return
@@ -93,10 +99,13 @@ export function DesignProjectSidebarEntry({
     }
     const key = (event: KeyboardEvent): void => { if (event.key === 'Escape') onToggle() }
     window.addEventListener('resize', reposition)
+    window.addEventListener('scroll', reposition, true)
     document.addEventListener('mousedown', close)
     document.addEventListener('keydown', key)
     return () => {
       window.removeEventListener('resize', reposition)
+      window.removeEventListener('scroll', reposition, true)
+      observer?.disconnect()
       document.removeEventListener('mousedown', close)
       document.removeEventListener('keydown', key)
     }

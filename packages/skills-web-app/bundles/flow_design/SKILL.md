@@ -5,10 +5,12 @@ description: |-
   - **Resolves**: S/T gaps by making established actors, product automation, ordered states, branches, triggers, and observable outcomes inspectable.
   - **Candidate when**: roles, approvals, handoffs, exceptions, or an explicitly material journey need an agreed process contract.
   - **Do not infer**: ordinary clicks or a vague product idea do not justify inventing actors, policy branches, or a BPMN diagram.
-  - **Output**: `flow_design` panel — one BPMN per material product process; every diagram exposes what the system actually does.
+  - **Output**: `flow_design` panel — one BPMN per material product process, with grounded step details linked to the same diagram elements.
 ---
 
 # Business Flows
+
+See the [record ID guidance](reference/artifact-contract.md#record-ids) for this Bundle's numbering suggestions and existing identity boundaries.
 
 For canvas generation or revision, read [the canvas guide](reference/canvas-guide.md).
 It supplements the existing methods and output contract; it applies to both
@@ -27,13 +29,14 @@ fallback, dispatching independent sibling calls together. It may keep genuinely 
 over any process when delegation is unavailable or a Worker fails. Delegation
 is optional acceleration, never completion authority; there is no required
 Worker count or fixed process order. A delegated Worker writes only its exact
-pre-bound BPMN artifact and never canonical JSON. That Worker runs
-`scripts/bpmn-validator.mjs validate-bpmn-file`, `scripts/layout.mjs`, and
-`scripts/bpmn-validator.mjs validate-final-bpmn-file` against that file, consumes their diagnostics, and
-repairs its own file before finishing. The Producer consumes the successful
-file receipt without reading or resending the complete BPMN and writes the matching canonical state
-into its current WorkingCopy. The Producer remains responsible for complete-
-Bundle integration validation, repair, and the single terminal publication.
+pre-bound BPMN artifact and never canonical JSON. That Worker follows the new/existing file route in
+[the output contract](reference/artifact-contract.md#structure-and-file-operations),
+consumes diagnostics and repairs its own file before finishing. The Producer
+uses the successful receipt for file identity, reads the relevant landed paths
+for semantic integration, and writes the matching canonical state into its
+WorkingCopy. It does not echo complete XML to acknowledge the receipt. The
+Producer remains responsible for complete-Bundle validation, repair and the
+single terminal publication.
 Each delegated call passes `artifact_kind: "flow_bpmn"`, `artifact_id` equal
 to the stable process ID, `artifact_file` equal to the exact BPMN path, and a
 complete `prompt` containing the bounded process contract, relevant evidence,
@@ -56,18 +59,25 @@ The Producer first uses project-scoped `list` and `read` to inspect
 evidence. It uses `write` or `edit` to maintain canonical JSON and owned BPMN
 files. It writes the canonical JSON plan before authoring BPMN so file polling
 immediately exposes the complete process plan. The active author (Worker, or
-Producer during serial authoring/takeover) lays out and validates each BPMN in
-place. As each file receipt settles, the Producer updates only that process in
+Producer during serial authoring/takeover) follows the applicable file route and
+final validation, running layout when geometry needs it. As each file receipt settles, the Producer updates only that process in
 canonical JSON; the panel sees each filesystem change without an intermediate
 commit.
 After completion validation, call `design_publish({action:"complete"})` once.
+
+The Producer also owns the optional `nodes` supplements and `node_order` in
+that JSON. After integrating each BPMN, bind its meaningful step details to
+exact element IDs as described in [the step contract](reference/artifact-contract.md#step-supplements).
+Workers still own only their BPMN files. Names, actor lanes, types, branching
+conditions and routing remain in BPMN; never maintain a second editable copy
+of them in JSON. The shared Panel projects those facts beside the supplements.
 
 New processes keep `bpmn_file: null` until a validated BPMN is accepted, then
 carry that durable direct reference. Do not author transient queued/working
 state: the Host records Producer and Worker attempts and the Panel polls those
 native events.
 
-Read [reference/artifact-contract.md](reference/artifact-contract.md) before serial or delegated BPMN authoring. It links the BPMN structure contract and defines the shared in-place validation/layout pipeline. Give every Worker that same entry; script execution never publishes files.
+Read [reference/artifact-contract.md](reference/artifact-contract.md) before serial or delegated BPMN authoring. It defines the shared new/existing file routes and semantic integration. Give every Worker that same entry; script execution never publishes files.
 
 Each process captures an end-to-end product scenario: who is involved, what the
 product validates, stores, decides, sends, or waits for, in what order, and with
@@ -88,8 +98,35 @@ change, edit only that process's canonical BPMN file. Clear `bpmn_file` while
 the accepted diagram is stale, and restore the same stable ref only after the
 validated revised BPMN exists. Pure prose metadata that is not represented in the
 diagram may preserve the existing completed BPMN. Never regenerate unrelated diagrams to revise one flow.
+Retain the IDs of unchanged semantic entities within the affected diagram,
+including roles/lanes, nodes and sequence flows. Keep an existing role's lane ID
+when another role is removed; create an ID only for a new entity and repair
+references when deleting or replacing an entity. Layout does not authorize
+renumbering retained entities.
 When the user explicitly requests replacement of all diagrams, rewrite each
 active canonical BPMN file; ordinary reruns preserve unchanged files and refs.
+
+When an existing Flow has no step supplements, read its current diagrams and
+parent descriptors before adding them. A step should answer what happens and,
+where material, what must hold first, what result means completion and how a
+known failure is handled. Do not repeat a short self-explanatory task label or
+require every marker to have a full form. Use `remarks` for ordinary rationale,
+source explanation or an explicit unknown; keep actual behavior and conditions
+in the purpose-built fields. Preserve cross-step rules at process level.
+
+The step-detail notice is a request to the current Native Agent to update only
+this Flow using its current Bundle definition. It does not authorize a whole-Kit
+migration, overwrite another Bundle, or discard old parent descriptions,
+responsibilities, capabilities, rules, triggers or exceptions. Reuse valid
+diagrams and retained IDs; adding narrative supplements alone does not require
+regenerating them. If the project still has an older Flow definition, update
+only that definition through the existing project-file edit/validation path
+when requested; changing library files alone does not change the project.
+
+For a removed or replaced BPMN element, preserve its saved supplement until the
+user's requested revision supports mapping, merging or removal. Do not reconnect
+by matching a title. Keep unresolved supplements and their text/source references
+visible; report the missing mapping rather than quietly dropping content.
 
 ## When to use
 
@@ -107,7 +144,7 @@ Close only after the required BPMN artifacts and confirmed process rules are per
 
 ## Output contract
 
-Process metadata and one BPMN artifact per process land in the `flow_design` panel. The generated BPMN exposes lanes, decisions, exception paths, and observable outcomes where they apply.
+Process metadata, grounded step supplements and one BPMN artifact per process land in the `flow_design` panel. The generated BPMN exposes lanes, decisions, exception paths, and observable outcomes where they apply. The process/step outline locates the same continuous details document; graph selection locates the corresponding supplement without creating another fact owner.
 
 ### Pre-Design Context (Read Prior Skill State Before Designing)
 
@@ -115,9 +152,14 @@ Before proposing processes, inspect the `<persisted_design_state_doc>` for outpu
 
 | Prior skill | What to extract | How it shapes flow design |
 |---|---|---|
-| `smart_questions` (answered) | const_auth_mode, const_storage_mode, and any domain/workflow-related dynamic answers | Auth mode determines whether there's a "注册登录" process; storage mode influences whether persistence-related processes exist; domain answers identify stakeholder roles and business scope |
+| `smart_questions` (answered) | App basics (`const_identity_needs`, `const_data_retention`, `const_usage_devices`), existing login/storage settings when present, and relevant domain/workflow answers | Identity, retention and devices constrain the user journey without selecting registration, a database or native delivery. Preserve explicit existing login/storage decisions; domain answers identify evidenced responsibilities and scope. |
 | `research` (confirmed + findings) | Competitor workflows, industry-standard process patterns, domain conventions | Reuse established patterns (e.g. "通用审批链路: 提交→审核→归档") rather than reinventing; cite research-derived conventions in business_rules when relevant |
-| `function_modules` (confirmed) | active function cards: `function_name`, `function_description`, `function_epic`, `priority`, and `rejected` | Start from active capabilities and their stated priorities. Derive roles only from the user, answered questions, or confirmed flows; a function card does not itself prove a stakeholder list. |
+| `function_modules` (confirmed) | active function cards and their `details` behavior, inputs/results, limits and exceptions; priorities and rejected status | Start from active capabilities and preserve their established boundaries. Derive roles only from the user, answered questions, or confirmed flows; a function card does not itself prove a stakeholder list. |
+
+Select only evidence allowed by the current request. Read actual QA answers and
+relevant function details, not just their titles or summaries. An unresolved
+choice does not cancel an established limit: model the known behavior and leave
+the unchosen alternative open rather than committing it as a task or branch.
 
 If NONE of these prior skills have run (e.g. very first turn, or triage routed directly to flow_design), fall back to the user's raw requirement. In that case infer stakeholders and process scope directly from chat text, but stay conservative (don't invent roles or steps the user didn't imply).
 
@@ -167,7 +209,18 @@ This is the canonical state. The Producer writes the matching BPMN file beside i
       "bpmn_file": "flow_design/P-001.bpmn"
     }
   },
-  "process_order": ["P-001"]
+  "process_order": ["P-001"],
+  "nodes": {
+    "N-001": {
+      "process_ref": "P-001",
+      "bpmn_element_ref": "UserTask_P-001_2",
+      "activity": "直属领导核对已提交申请，记录审批决定及说明。",
+      "entry_condition": "申请已提交。",
+      "exit_condition": "决定与说明已保存，进入图中对应分支。",
+      "remarks": "此处仅为合成格式示例，实际行为以当前产品证据为准。"
+    }
+  },
+  "node_order": ["N-001"]
 }
 ```
 
@@ -176,9 +229,18 @@ plan must instead use `bpmn_file: null` until the Producer has written the BPMN
 in its invocation-local workspace. Do not place XML in state. The Producer's
 validated publication atomically persists both.
 
-### Process Categorization (Priority Tiers)
+The supplement above assumes the diagram contains that exact task; use actual
+landed IDs, not example IDs. Optional strings are `activity`, `entry_condition`,
+`exit_condition`, `failure_response` and `remarks`; see the shared output
+contract for meanings and old-file compatibility. `node_order` controls reading,
+not execution. Do not add independent editable names, roles or branch targets.
 
-Classify each process into one of three tiers. This supports review ordering (core first, auxiliary last) and helps the user identify which processes matter most.
+### Process role and structure
+
+Classify each process by its role in the product. This supports review ordering
+(core first, auxiliary last); it is separate from a delivery priority or a
+process's structural pattern. The Panel keeps these classifications in Details,
+leaving the ordinary view to the process description and diagram.
 
 | Tier | What it is | Typical examples | `tier` field value |
 |---|---|---|---|
@@ -254,19 +316,26 @@ before the BPMN artifacts settle.
    sibling `design_delegate` calls), and supplies
    `reference/bpmn_authoring.md`, the exact `artifact_file`, and one bounded
    process assignment to a Worker. The Worker writes and repairs one
-   BPMN at that path, runs `scripts/bpmn-validator.mjs validate-bpmn-file`,
-   `scripts/layout.mjs` in file-transform mode, and
-   `scripts/bpmn-validator.mjs validate-final-bpmn-file`, and
-   repairs failures in the same Worker loop. The Producer consumes the final
-   file receipt without re-reading the BPMN and updates only that process's
-   `bpmn_file` reference. Serially
-   authored processes follow the same script and file path. Preserve every
-   unaffected process.
+   BPMN at that path, follows the output contract's new/existing file route,
+   and repairs failures in the same Worker loop. The Producer uses the final
+   receipt to identify the artifact, reads the relevant semantic paths against
+   source constraints, and updates that process's `bpmn_file` reference after
+   acceptance. Serial authors use the same route and semantic check. Preserve
+   every unaffected process.
 
-3. **VALIDATE, PUBLISH, AND CLOSE.** Review the complete WorkingCopy for role
-   drift, duplicate processes, broken hand-offs, and missing core coverage.
+3. **VALIDATE, PUBLISH, AND CLOSE.** Apply the output contract's semantic
+   integration to all affected processes: compare actual tasks, conditions and
+   receiving roles with the current request and saved constraints. Check role
+   drift, duplicate processes, broken hand-offs and missing core coverage;
+   correct known owned mismatches before publication. When a request names
+   multiple processes, verify the requested change in each one.
    Every referenced BPMN must already have passed the per-file final validator;
    do not assemble or resend a complete UTF-8 artifact map through the model.
+   Integrate the affected step supplements using the accepted BPMN IDs. Pass
+   `nodes` with the current cast/process in file-validator context when present;
+   repair ambiguous mappings and report retained `unmapped_nodes`. Recheck
+   changed step conditions/results against the corresponding BPMN path; prose
+   cannot make a missing branch or handoff exist.
    Run `design_validate`, repair any canonical-state diagnostic, then call
    `design_publish({action:"complete"})`.
    After all processes are
@@ -275,13 +344,11 @@ before the BPMN artifacts settle.
    choices. If some processes cannot be completed, report the affected ones and
    why instead of recording an optimistic score.
 
-After the canonical writes settle and before closing, inspect the refreshed
-Design projection once. Compare the persisted processes with
-available `smart_questions`, `research`, and `function_modules` evidence. Repair
-at most one deterministic mismatch owned by `flow_design` with one focused
-follow-up run; report a missing, malformed, or unresolved upstream decision as
-a non-blocking evidence gap rather than editing another Bundle or inventing
-policy. G/R/A owns ongoing cross-Bundle drift detection after this check.
+After publication, inspect the refreshed Design projection once to confirm it
+matches the accepted WorkingCopy and report the actual changed behavior. An
+unresolved upstream decision remains an evidence gap, not permission to invent
+policy or edit another Bundle. G/R/A handles subsequent cross-Bundle drift;
+it does not replace the Producer's prepublication semantic integration.
 
 **Process ordering**: default `core` → `business` → `auxiliary` (by `tier`). Switch to role-grouped only when the requirement is strongly role-organized; switch to complexity-progressive only when >6 processes are expected.
 
@@ -313,13 +380,13 @@ policy. G/R/A owns ongoing cross-Bundle drift detection after this check.
   - **structure fixes**: when nodes, branches, roles, step order, or process membership must change, edit only each affected canonical BPMN file.
 - Don't re-derive what `smart_questions` / `function_modules` already captured (e.g. if `const_auth_mode=anonymous`, don't propose a "账号注册" process).
 - If >10 processes are contemplated, reconsider scope rather than adding more.
-- The BPMN authoring contract is `reference/bpmn_authoring.md`; the active file author must run `scripts/bpmn-validator.mjs validate-bpmn-file`, then `scripts/layout.mjs` in file-transform mode, then `validate-final-bpmn-file`, and repair every failure before publication. For delegated work that is the Worker; the Producer runs this loop only for serial authorship or takeover.
+- `reference/bpmn_authoring.md` owns BPMN semantics; the output contract owns the applicable file route. Every authored or revised file must pass `validate-final-bpmn-file` before acceptance. For delegated work the Worker repairs it; the Producer does so for serial authorship or takeover.
 
 ### Pre-Close-Out Self-Check
 
-Every new or revised BPMN must pass the Bundle layout/validation pipeline in
-its active author before publication. Do not rerun layout solely to acknowledge
-a validated Worker receipt. Candidate-format checks stay inside delegated
+Every new or revised BPMN must pass the applicable file route and final
+validation in its active author before publication. Do not rerun layout solely
+to acknowledge a validated Worker receipt or to make a geometry-preserving edit. Candidate-format checks stay inside delegated
 Worker repair loops. Before close-out, check the complete WorkingCopy and state:
 
 1. **Every process accepted** — every active process has a non-empty `bpmn_file` and a readable BPMN artifact. If any attempt failed without a fallback succeeding, tell the user which failed and why.
@@ -386,7 +453,7 @@ when no exception is established.
    <bpmn:task id="Task_P-001_2" name="部门经理审批"/>
 ```
 
-**Emitting layout / DI elements in the structure candidate** (waste — the Producer runs the Bundle layout script)
+**Emitting layout / DI elements in the structure candidate** (for new diagrams — the active author runs the Bundle layout script)
 
 ```xml
 ❌ <bpmn:definitions ...>
@@ -396,7 +463,7 @@ when no exception is established.
 
 ✅ <bpmn:definitions ...>
      <bpmn:process id="Process_P-001">...</bpmn:process>
-     <!-- structure only — scripts/layout.mjs adds DI before the Producer writes it -->
+     <!-- new candidate only — scripts/layout.mjs produces the final file's DI -->
    </bpmn:definitions>
 ```
 

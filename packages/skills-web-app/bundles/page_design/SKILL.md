@@ -10,6 +10,8 @@ description: |-
 
 # Page Design
 
+See the [record ID guidance](reference/artifact-contract.md#record-ids) for this Bundle's numbering suggestions and existing identity boundaries.
+
 For canvas generation or revision, read [the canvas guide](reference/canvas-guide.md).
 It supplements the existing methods and output contract; it applies to both
 new design and reconstruction without replacing domain-specific rules.
@@ -85,7 +87,8 @@ terminal close through `design_publish`.
 
 Each delegated call passes `artifact_kind: "page_html"`, `artifact_id` equal
 to the stable Page ID, `artifact_file` equal to the exact HTML path, and a
-complete `prompt` containing the common specification, Page brief, connections,
+complete `prompt` containing the common specification, Page brief with local
+action/result conditions and incoming selection behavior, connections,
 relevant evidence, active Design Style projection, and validation loop. These
 explicit call arguments bind runtime status and panel logs; no task declaration
 or domain validator belongs in `skill.yaml`. Before serially authoring or taking
@@ -262,6 +265,9 @@ markers must refer to existing Style IDs; their presence is not proof of fidelit
    assembly layer. Any Page candidate that invents competing decisions must be
    reviewed and repaired before integration. This does not prescribe identical
    DOM structure across responsive or source-specific layouts.
+   Apply the shared contract's [viewport and scrolling guidance](reference/artifact-contract.md#html-and-preview-bindings)
+   to the Page and its Worker brief, using compact pages by default and long
+   pages when the task warrants them.
 8. `design_style` is the visual-language authority. Read its current assets and
    token catalog before authoring. Do not declare or override its `--ds-*`
    namespace in Page HTML. Use its tokens for shared design decisions; local
@@ -345,7 +351,8 @@ evidence, and active Design Style projection. It groups independent Pages into
 one complete `design_delegate_frontier` call when optional delegation would materially
 reduce latency; it does not await one independent Page before dispatching the
 next. For any delegated Page, supply the full `common_spec`, its current
-Page brief, a compact inventory of relevant neighboring Pages' IDs and purposes,
+Page brief (including the local actions and contextual results from the shared
+contract), a compact inventory of relevant neighboring Pages' IDs and purposes,
 incoming and outgoing connections, assigned functions, sliced upstream evidence, and
 the active Design Style projection, plus the exact `artifact_file`. Include the
 full shared navigation where applicable. Supply source locators and relevant
@@ -375,8 +382,10 @@ slots, or nested shells.
 - Shared-layout Pages follow the navigation, Logo, shell direction and component
   language agreed in `common_spec`; the author checks their meaning and visual
   consistency. Responsive or source-specific layouts need not share a DOM shape.
-  Each cross-Page navigation control uses `data-prototype-page="<page-id>"`
-  so the host preview can switch artifacts without adding routing code.
+  Each cross-Page control uses the artifact contract's unique element and
+  outgoing-connection markers; integrate the validator's bindings so the Host
+  can switch artifacts without routing code. `data-prototype-page` only declares
+  the target for validation and is not a navigation action by itself.
 - Every Page input includes its assigned functions and sliced upstream evidence:
   each
   `evidence_refs` entry (`skill:id`, e.g. `flow_design:P-001`,

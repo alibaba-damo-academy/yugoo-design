@@ -1,6 +1,6 @@
 /** Thin same-origin RPC transport for the standalone Studio page. */
 import { z } from 'zod'
-import type { StudioManagementClient } from 'dsh-design-studio-ui'
+import type { StudioManagementClient, StudioAuthoringClient } from 'dsh-design-studio-ui'
 import type { DshRemoteResult, DshStudioRemote } from './client-adapter.tsx'
 import TYPERT_REMOTE from './typert.remote-client.ts'
 import type { StudioStrictCodec } from './typert.remote-client.ts'
@@ -41,7 +41,7 @@ function resolveBase(): string {
 }
 
 /** One session-free read-only studioManagement method. */
-export type StudioRpcMethod = 'workspace' | 'readKitWorkspace' | 'readKitFiles' | 'readKitFile' | 'readBundleWorkspace' | 'readBundleFile'
+export type StudioRpcMethod = 'workspace' | 'readKitWorkspace' | 'readKitFiles' | 'readKitFile' | 'readBundleWorkspace' | 'readBundleFile' | 'previewInstalled'
 
 /**
  * Call one session-free studioManagement method over the host /api wire.
@@ -97,6 +97,7 @@ export async function callStudioRemote<T>(
  */
 export function createSameOriginStudioRemote(doFetch: StudioPageFetch = (input, init) => globalThis.fetch(input, init)): DshStudioRemote {
   return Object.freeze({
+    previewInstalled: (request: Parameters<NonNullable<StudioAuthoringClient['previewInstalled']>>[0]) => callStudioManagement<DshRemoteResult<Awaited<ReturnType<NonNullable<StudioAuthoringClient['previewInstalled']>>>>>('previewInstalled', { request }, doFetch),
     workspace: (query: string): Promise<DshRemoteResult<Awaited<ReturnType<StudioManagementClient['workspace']>>>> => (
       callStudioManagement('workspace', { query }, doFetch)
     ),

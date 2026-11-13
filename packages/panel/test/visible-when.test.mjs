@@ -116,3 +116,16 @@ test('rendered record forms hide and restore conjunctive fields without erasing 
     dom.window.close()
   }
 })
+
+
+test('optional read-only empty collections disappear without losing records or entry boundaries', () => {
+  const field = { key: 'events', control: 'rows', readonly: true, hide_when_empty: true }
+  for (const value of [undefined, null, [], {}]) {
+    const values = { events: value, note: 'Keep' }, before = structuredClone(values)
+    assert.equal(fieldIsVisible(field, values), false)
+    assert.deepEqual(values, before)
+    assert.equal(fieldIsVisible({ ...field, hide_when_empty: false }, values), true)
+    assert.equal(fieldIsVisible({ ...field, readonly: false }, values), true)
+  }
+  for (const value of [[{ event: 'Wait for reply' }], [''], { old: {} }, '', false, 0]) assert.equal(fieldIsVisible(field, { events: value }), true)
+})

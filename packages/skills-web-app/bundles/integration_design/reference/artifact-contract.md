@@ -1,5 +1,11 @@
 # integration_design output contract
 
+## Record IDs
+
+For new integration records prefer `INT-001`, `INT-002`, and so on. Local connection fields and secret identifiers retain their existing configuration semantics.
+
+Existing IDs, including older formats, remain valid during ordinary edits and reconstruction. If the user explicitly requests business renumbering, revise actual record keys/IDs and current references/orders together through their existing owners; keep technical IDs and history unchanged. Names and titles remain readable content, separate from identity.
+
 Shared by ordinary design and reconstruction. Canonical state is
 `integration_design/integration_design.json`; the installed schema and validation remain
 authoritative. This reference describes representation and semantic checks,
@@ -10,13 +16,23 @@ required facts that cannot be represented rather than fabricating a value.
 
 One record represents an independently useful external capability. The Plugin-style fields describe that connection; they do not establish that the source product uses an Agent or that a Plugin has been implemented. Reconstruct actual access and success/failure behavior. Never copy credential values from source files into Design Files. An unavailable URL or authentication fact stays an explicit limit, not an invented connection.
 
+Ordinary state validation allows incomplete connection records so unknown facts
+can be saved and corrected. It still checks schema, IDs and order coherence.
+Completion records the design within the current evidence and scope. Each
+existing record needs a meaningful Name, Description and intended-usage Prompt;
+its URL may be absent or empty until evidenced. Preserve material technical
+unknowns in the existing optional remarks and handoff. No selected or needed
+external integration is a valid empty collection with an empty order. Do not
+create a placeholder record or URL, retry unchanged validation indefinitely,
+or equate a completed design task with an implemented or working connection.
+
 ### 4. Author the Plugin fields
 
 For every integration, complete the visible Plugin creation form from established evidence:
 
 - **Name (`title`)**: a short user-recognisable capability name, not a vendor-only label such as “WMS API”.
 - **Description (`description`)**: one sentence stating what the connection does and the useful result it returns to the product.
-- **URL (`url`)**: the confirmed service entry or documentation URL. Do not guess a host, path, protocol, or environment.
+- **URL (`url`)**: an evidenced service entry or documentation URL, when known. Omit it or leave it empty otherwise; explain material uncertainty in the existing optional remarks. Do not guess a host, path, protocol, or environment.
 - **API Secrets (`secrets`)**: only credentials the documented connection actually requires.
 - **Prompt (`prompt_content`)**: natural-language instructions describing the established consumer's usage of the connection.
 
@@ -108,14 +124,25 @@ Write `IntegrationDesignState` exactly. The Bundle schema and its validator are 
 
 The mapping key and `id` must match. `integration_order` must contain every integration ID exactly once. Every secret mapping key must equal its `id`, and `secret_order` must contain every secret ID exactly once.
 
-## Quality gates
+When no external connection is selected or needed, the valid scoped result is:
+
+```json
+{"schema_version": 8, "integrations": {}, "integration_order": []}
+```
+
+An established capability may instead retain its Name, Description and intended
+usage while its URL is unknown. Keep those facts and stable IDs; do not delete
+the record merely to make the empty-set case pass. Neither example proves a
+connection is configured or available.
+
+## Design checks
 
 Before returning, verify all of the following:
 
 - Every record represents a product-relevant external capability with a clear boundary and outcome.
 - Records are split by independently meaningful capability, not mechanically by system or endpoint.
-- Every record has a complete Name, Description, confirmed URL, and Prompt. “备注” is optional, not a completion prerequisite.
-- Every record carries no platform Plugin reference and is not described as complete while one of those required facts is unresolved.
+- Every record has a meaningful Name, Description and intended-usage Prompt. A URL is supplied only when supported by evidence; an unknown URL stays absent or empty. “备注” is optional, not a completion prerequisite.
+- Every record carries no platform Plugin reference. Publication completes the scoped design task; it does not claim the connection is implemented, configured or usable while technical facts remain unresolved.
 - Every credential requirement is evidenced, named, explained, stably identified, and ordered. Credential values never enter Design Files or session events.
 - Every Prompt explains the connection's established trigger, task, consumer and useful result without inventing a new caller.
 - Any provided “备注” explains applicable product-side trigger, success, failure, and recovery behavior without duplicating the Prompt or API syntax. Do not invent consequences merely to populate it.

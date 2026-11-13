@@ -15,7 +15,7 @@ order: 10
 icon: database
 
 execution:
-  handoff: must_edit
+  handoff: none
 
 presentation:
   mode: declarative

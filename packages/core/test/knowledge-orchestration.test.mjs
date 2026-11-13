@@ -257,6 +257,30 @@ test('manual retry repairs a published advisory whose completion append failed w
   assert.equal(scheduling, 0, 'failed repair still does not rerun the model')
 })
 
+test('completion repair cannot infer actual Knowledge consumption from its source pin', async () => {
+  const profile = PROFILES[0], requestId = 'repair-usage-unknown'
+  const advisory = { id: officialAdvisoryAttemptIds(profile, 5, requestId).advisoryId,
+    profile, items: [{ id: 'finding-1' }], inputs: [
+      { source: 'kit:web_app', revision: '1.0' },
+      { source: 'design-project', revision: projectId },
+      { source: 'design-revision', revision: '5' },
+      { source: 'design-commit', revision: 'c1' },
+      { source: 'design-knowledge-source', revision: 'knowledge-source' },
+    ] }
+  const repaired = []
+  const receiver = reviewReceiver({
+    status: { available: true, profiles: PROFILES, phase: 'idle', profileStatus: [] },
+    journal: { latestDesignChange: change(), reviewCompletions: [], advisories: [{ advisory }] },
+    provider: { requestManualReviews: () => { throw Error('published advice must not rerun') } },
+  })
+  receiver.recordAdvisoryReviewCompletion = async (_agent, completion) => repaired.push(completion)
+  assert.equal((await DesignService.prototype.requestManualReviews.call(receiver, {}, requestId, [profile])).reason,
+    'request-already-completed')
+  assert.equal(repaired[0].knowledgeUsed, false)
+  assert.equal(repaired[0].fallbackReason, 'usage-not-observed')
+  assert.equal('knowledgeSourceCheckpoint' in repaired[0], false)
+})
+
 test('manual retry refuses a published advisory pinned to another project or Kit', async () => {
   const profile = PROFILES[0], requestId = 'repair-forged'
   const id = officialAdvisoryAttemptIds(profile, 5, requestId).advisoryId
@@ -297,38 +321,32 @@ test('manual retry refuses a published advisory pinned to another project or Kit
   assert.equal(recording, 0)
 })
 
-test('only successful Design publications schedule KAG; status snapshots still dedupe', async () => {
-  const injected = []
-  const listeners = []
-  const maintenance = []
+test('only successful Design publications schedule KAG without queuing status input', async () => {
+  const listeners = [], maintenance = []
+  const agent = { id: 'a1', inject: () => assert.fail('pure status must not queue a model step') }
   const receiver = {
     workspaceChangeListeners: new Set([change => listeners.push(change.kind)]),
-    injectKnowledgeOrchestrationSnapshot: async agent => { injected.push(agent) },
     scheduleKnowledgeMaintenance: (agent, id, reason) => { maintenance.push([agent, id, reason]) },
     selectionForAgent: () => ({ projectId }),
   }
   const notify = change => DesignService.prototype.notifyWorkspaceChange.call(receiver, change)
-  const agent = { id: 'a1' }
   await notify({ kind: 'design-changed', agent, journalRevision: 5 })
   await notify({ kind: 'selection-changed', agent })
   await notify({ kind: 'advisory-changed', agent, journalRevision: 6 })
-  assert.deepEqual(injected, [agent, agent], 'settlement and selection inject; advisory-changed does not')
-  assert.deepEqual(listeners, ['design-changed', 'selection-changed', 'advisory-changed'], 'observers still see every change')
+  assert.deepEqual(listeners, ['design-changed', 'selection-changed', 'advisory-changed'])
   assert.deepEqual(maintenance, [[agent, projectId, 'changed']], 'selection and advice cannot trigger maintenance')
-  await notify({kind:'design-changed',agent,journalRevision:7,projectId:'another-project'})
-  assert.equal(maintenance.length,1,'late publication cannot refresh a newly selected project')
-  await notify({kind:'review-policy-changed',agent,policy:{mode:'off',autoMergeWindowMs:30000}})
-  assert.equal(injected.length,3,'policy changes inject a non-waking policy reminder')
-  assert.equal(maintenance.length,1,'policy changes never reindex facts')
+  await notify({ kind: 'design-changed', agent, journalRevision: 7, projectId: 'another-project' })
+  assert.equal(maintenance.length, 1, 'late publication cannot refresh a newly selected project')
+  await notify({ kind: 'review-policy-changed', agent, policy: { mode: 'off', autoMergeWindowMs: 30000 } })
+  assert.equal(maintenance.length, 1, 'policy changes never reindex facts')
+  assert.equal(listeners.at(-1), 'review-policy-changed', 'UI observers still receive the policy change')
+})
 
-  // Injection itself: deduped by content, contained on failure.
-  const messages = []
-  const injectAgent = { id: 'a2', inject: message => messages.push(message) }
-  let currentSnapshot
-  let policy = { mode: 'auto', autoMergeWindowMs: 30000 }
-  const injectReceiver = {
-    knowledgeStatusInjections: new WeakMap(),
-    selectionForAgent: () => ({ projectId }),
+test('natural request context samples current status and policy without retaining stale input', async () => {
+  const agent = { id: 'a2', session: { header: {} }, inject: () => assert.fail('request context is not pending input') }
+  let currentSnapshot = snapshot(), policy = { mode: 'auto', autoMergeWindowMs: 30000 }, selected = projectId
+  const receiver = {
+    selectionForAgent: () => selected === undefined ? undefined : { projectId: selected },
     knowledgeStatusSnapshot: async () => {
       if (currentSnapshot === 'throw') throw new Error('sampling failed')
       return currentSnapshot
@@ -336,64 +354,53 @@ test('only successful Design publications schedule KAG; status snapshots still d
     reviewStatuses: async () => [],
     readReviewPolicy: async () => policy,
   }
-  const inject = () => DesignService.prototype.injectKnowledgeOrchestrationSnapshot.call(injectReceiver, injectAgent)
-  currentSnapshot = { schemaVersion: 1, project: projectId, head: 'c1', state: 'due', freshness: 'none', semanticLayer: 'enabled' }
-  await inject()
-  await inject()
-  assert.equal(messages.length, 1, 'identical consecutive snapshots inject once')
-  assert.match(messages[0].content[0].text, /<design-knowledge-status>/)
-  assert.ok(messages[0].content[0].text.endsWith(`Project GRA policy: ${JSON.stringify(policy)}`))
-  assert.doesNotMatch(messages[0].content[0].text, /Auto combines|Do not mechanically|Off forbids/)
-  assert.equal(messages[0].source.form, 'notice')
+  const render = () => DesignService.prototype.renderKnowledgeOrchestrationContext.call(receiver, agent)
+  const due = await render()
+  assert.match(due, /<design-knowledge-status>/)
+  assert.match(due, /KAG: due/)
+  assert.equal(await render(), due, 'the Host owns unchanged context deduplication')
+  assert.ok(due.endsWith(`Project GRA policy: ${JSON.stringify(policy)}`))
+  assert.doesNotMatch(due, /Auto combines|Do not mechanically|Off forbids/)
   currentSnapshot = { ...currentSnapshot, state: 'current', freshness: 'matching' }
-  await inject()
-  assert.equal(messages.length, 2, 'a changed state injects again')
+  assert.match(await render(), /KAG: current/)
   policy = { mode: 'off', autoMergeWindowMs: 30000 }
-  await inject()
-  assert.equal(messages.length, 3, 'a changed policy still reaches the Agent without repeating its rules')
-  assert.ok(messages[2].content[0].text.endsWith(`Project GRA policy: ${JSON.stringify(policy)}`))
+  assert.ok((await render()).endsWith(`Project GRA policy: ${JSON.stringify(policy)}`))
   currentSnapshot = 'throw'
-  await inject()
-  assert.equal(messages.length, 3, 'a sampling failure never surfaces to the lifecycle event')
+  assert.equal(await render(), '', 'sampling failure clears this request rather than preserving stale facts')
   currentSnapshot = undefined
-  await inject()
-  assert.equal(messages.length, 3, 'no selection or runtime injects nothing')
+  assert.equal(await render(), '')
+  currentSnapshot = snapshot(); selected = undefined
+  assert.equal(await render(), '', 'no selection contributes no context')
 })
 
-test('injection identity: project switches are never deduped away and mid-sample selection changes are dropped', async () => {
-  const messages = []
-  const agent = { id: 'switcher', inject: message => messages.push(message) }
-  let selected = 'project-a'
-  const shape = { schemaVersion: 1, head: 'c1', state: 'due', freshness: 'none', semanticLayer: 'enabled' }
+test('request context drops project races, excludes children and respects cancellation', async () => {
+  const agent = { id: 'main', session: { header: {} } }
+  let selected = 'project-a', reads = 0
   const receiver = {
-    knowledgeStatusInjections: new WeakMap(),
     selectionForAgent: () => ({ projectId: selected }),
-    // The snapshot reports whichever project was selected when sampling began.
-    knowledgeStatusSnapshot: async () => ({ ...shape, project: selected }),
+    knowledgeStatusSnapshot: async () => { reads++; return snapshot({ project: selected }) },
     reviewStatuses: async () => [],
-    readReviewPolicy: async () => ({mode:'auto',autoMergeWindowMs:30000}),
+    readReviewPolicy: async () => ({ mode: 'auto', autoMergeWindowMs: 30000 }),
   }
-  const inject = () => DesignService.prototype.injectKnowledgeOrchestrationSnapshot.call(receiver, agent)
-
-  await inject()
-  assert.equal(messages.length, 1)
-  assert.match(messages[0].content[0].text, /project: project-a/)
-  // Two projects with identical state still produce distinct notices because
-  // the reminder carries the project identity.
+  const render = (target = agent, signal) => DesignService.prototype.renderKnowledgeOrchestrationContext.call(receiver, target, signal)
+  assert.match(await render(), /project: project-a/)
   selected = 'project-b'
-  await inject()
-  assert.equal(messages.length, 2, 'a real project switch is never suppressed by dedupe')
-  assert.match(messages[1].content[0].text, /project: project-b/)
-  // A selection that changes WHILE sampling drops the stale-project notice.
-  const switching = {
-    ...receiver,
-    knowledgeStatusInjections: receiver.knowledgeStatusInjections,
-    knowledgeStatusSnapshot: async () => {
-      const snapshot = { ...shape, project: selected }
-      selected = 'project-c'
-      return snapshot
-    },
+  assert.match(await render(), /project: project-b/, 'the new request reads its selected project')
+  receiver.reviewStatuses = async () => { selected = 'project-c'; return [] }
+  assert.equal(await render(), '', 'a switch during asynchronous sampling drops the old project')
+  receiver.reviewStatuses = async () => []
+  receiver.knowledgeStatusSnapshot = async () => { reads++; return snapshot({ project: 'wrong-project' }) }
+  assert.equal(await render(), '', 'a mismatched reader result is never presented as the selected project')
+  const before = reads
+  assert.equal(await render({ session: { header: { origin: 'subagent' } } }), '')
+  assert.equal(await DesignService.prototype.renderKnowledgeOrchestrationContext.call(receiver, undefined), '')
+  assert.equal(reads, before, 'immutable children and missing Agents do not sample live project status')
+  const canceled = new AbortController(); canceled.abort()
+  await assert.rejects(render(agent, canceled.signal), { name: 'AbortError' })
+  assert.equal(reads, before, 'an already canceled request does not sample status')
+  const during = new AbortController()
+  receiver.knowledgeStatusSnapshot = async (_agent, signal) => {
+    assert.equal(signal, during.signal); during.abort(); return snapshot({ project: selected })
   }
-  await DesignService.prototype.injectKnowledgeOrchestrationSnapshot.call(switching, agent)
-  assert.equal(messages.length, 2, 'a mid-sample selection change injects nothing')
+  await assert.rejects(render(agent, during.signal), { name: 'AbortError' })
 })

@@ -22,7 +22,7 @@ import { commitDesignProjectRecords } from './design-project-records.ts'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { isDeepStrictEqual } from 'node:util'
 import { readDesignReviewPolicy, writeDesignReviewPolicy, DesignReviewPublicationQueue, type DesignReviewPolicy } from './design-review-policy.ts'
-import { readFile, writeFile, rename, rm, mkdir, lstat, realpath } from 'node:fs/promises'
+import { readFile, writeFile, rename, rm, mkdir, lstat, realpath, readlink } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { createHash, randomUUID } from 'node:crypto'
 import { foldDesignJournal } from './design-journal.ts'
@@ -105,7 +105,7 @@ import {
   type DesignAdvisoryRuntimeStatus,
   type DesignAdvisoryRuntimeStatusProvider,
 } from './advisory-runtime-status.ts'
-import { designFileToolDenial, projectDefinitionMutationPaths } from './design-file-tool-policy.ts'
+import { designFileToolDenial, designFileMutationPaths, designFileMutationTargets } from './design-file-tool-policy.ts'
 import { isDesignWorkspaceTool } from './dsh-producer-design-tools.ts'
 import { DesignKnowledgeLeaseId } from './design-knowledge-manager.ts'
 import {
@@ -193,11 +193,11 @@ export type DesignWorkspaceChangeListener = (change: DesignWorkspaceChange) => v
  */
 const KNOWLEDGE_ORCHESTRATION_PRINCIPLES = [
   'Design Knowledge (KAG) and the Grounding/Reflection/Alignment reviews are derived services over the authoritative Design Files. Successful Design publication automatically schedules bounded KAG maintenance; you may also request it explicitly when needed.',
-  'You receive a compact <design-knowledge-status> notice at activation, after each Design Files save settlement, and when a maintenance pass settles. Judge from it; never refresh or review merely because a state is not current.',
+  'At each natural model request, the current context supplies a compact <design-knowledge-status> snapshot. State changes do not request another model step or authorize work. Judge from the snapshot; never refresh or review merely because a state is not current.',
   'Reading never requires freshness: design_query_knowledge serves the latest complete generation with its pins, and every conclusion still cites the Design Files commit, not the derived graph.',
   'Call design_refresh_knowledge when an explicit refresh is useful for upcoming queries, reviews, or cross-Bundle decisions. Publication already schedules maintenance, so reuse queued/running work rather than duplicating it. It runs in the background, never blocks the conversation, and never retries itself after a failure; a new generation or an explicit retry may proceed.',
   'Call design_request_reviews only for profiles that are due and only when newly settled content may carry cross-file inconsistencies (grounding), doubtful external knowledge worth research (reflection), or decisions only the user can clarify (alignment). Reviews are detached, publish through the ordinary advisory inbox, and are advice, never authoritative facts.',
-  'GRA follows the project user policy: auto combines your due-profile judgement with a publication-triggered configurable quiet window (default 30 seconds); continuous uses the online periodic scheduler even when Design Files are unchanged; every-publication reviews each published version; off forbids automatic and your autonomous reviews, not explicit human rechecks or Clarity. Do not change that policy yourself or mechanically launch another review after every publication. Use explicit tools for useful initiative in auto or the user\'s manual check. Reuse scheduled/running reviews and existing suggestion dispositions; do not repeat pending/rejected issues without new evidence. Neither KAG nor GRA is a foreground prerequisite; Clarity is independent.',
+  'GRA follows the project user policy: auto combines your due-profile judgement with a publication-triggered configurable quiet window (default 30 seconds); continuous uses the online periodic scheduler even when Design Files are unchanged; every-publication reviews each published version; off forbids automatic and your autonomous reviews, not explicit human rechecks or Clarity. Do not change that policy yourself or mechanically launch another review after every publication. Use explicit tools for useful initiative in auto or the user\'s manual check. Reuse scheduled/running reviews and respect recorded suggestion dispositions. Independent reviews judge current saved evidence; publication handles exact duplicate findings. Neither KAG nor GRA is a foreground prerequisite; Clarity is independent.',
   'If the user explicitly asks to check or recheck the current Design, use design_recheck_reviews with a fresh stable requestId for that user request, even when the same revision was reviewed before. Reuse the same requestId only when retrying the same request; never invoke this manual path on your own initiative. An active same-profile review is reported as already active instead of launching a duplicate; that no-op does not consume the requestId.',
   'When you start either action, tell the user in one sentence what you started and why; present derived knowledge and review output as evidence-located assistance, not as a second source of design truth.',
 ].join(' ')
@@ -320,7 +320,6 @@ export default class DesignService extends Service {
   private readonly knowledgeIndexPhases = new Map<DesignProjectId, KnowledgeIndexPhase>()
   private readonly knowledgeIndexAttempts = new Map<DesignProjectId, symbol>()
   private readonly knowledgeIndexFailures = new Map<DesignProjectId, { target: string; message: string }>()
-  private readonly knowledgeStatusInjections = new WeakMap<Agent, string>()
   private readonly knowledgeMaintenanceTargets = new Map<DesignProjectId, string>()
   private readonly knowledgeMaintenance = new Map<DesignProjectId, KnowledgeMaintenanceEntry>()
   private knowledgeIndexer = new DesignKnowledgeIndex()
@@ -426,13 +425,6 @@ export default class DesignService extends Service {
       await this.restoreAgentKnowledge(agent).catch(error => {
         this.context.logger?.warn(`design: could not restore Design Knowledge: ${String(error).slice(0, 1000)}`)
       })
-      if (this.selectionForAgent(agent) === undefined) return
-      // Agentic trigger model: activation only samples cheap durable state and
-      // injects the compact KAG/GRA snapshot. The main Agent decides on its
-      // next natural turn whether bounded maintenance or due reviews are worth
-      // starting; opening a project never auto-starts expensive model work,
-      // and the notice never wakes the model or promises execution.
-      await this.injectKnowledgeOrchestrationSnapshot(agent)
     })
     ctx.on('agent/disposed', async ({ agent }) => {
       this.disposedAgents.add(agent)
@@ -507,6 +499,11 @@ export default class DesignService extends Service {
       order: 585,
       text: () => KNOWLEDGE_ORCHESTRATION_PRINCIPLES,
     })
+    // Pure derived status belongs to the request already being assembled.
+    // Agent.inject queues next-step input and can extend a running turn even
+    // without waking an idle Agent; status must not create that extra step.
+    host.systemPrompt.variable('design_knowledge_status', () => '')
+    host.systemPrompt.context({ name: 'design:knowledge-status', order: 595, text: () => '{{design_knowledge_status}}' })
     // Design-state runtime context: logged and re-emitted after compaction.
     registerDesignStateContext(host.systemPrompt, (assembly) => this.renderDesignState(assembly.agent))
     // Journal reads are async: this is the accepted per-step snapshot, unlike
@@ -514,6 +511,9 @@ export default class DesignService extends Service {
     host.systemPrompt.variable('design_advisories', () => '')
     host.systemPrompt.context({name: 'design:advisories', order: 610, text: () => '{{design_advisories}}'})
     ctx.on('system-prompt/assemble', async (assembly, context, next) => {
+      if (assembly.contexts.some(item => item.name === 'design:knowledge-status')) {
+        assembly.variables.design_knowledge_status = await this.renderKnowledgeOrchestrationContext(context.agent, context.signal)
+      }
       const projection = assembly.contexts.find(item => item.name === 'design:advisories')
       if (projection && context.agent) {
         context.signal?.throwIfAborted()
@@ -537,6 +537,9 @@ export default class DesignService extends Service {
     ): Promise<PreToolDecision> => {
       const agent = execution.agent
       if (agent === undefined || agent.session.header.origin === 'subagent') return next()
+      // This hook routes file mutations, not general Host capability. A broken
+      // selected project must not block reading, search or unrelated tools.
+      if (designFileMutationTargets(execution).length === 0) return next()
       // A scoped Design tool is an invocation capability installed only for
       // this Agent. It performs its own project-selection, ownership and
       // publication checks. Recognize it before the ordinary host-tool guard:
@@ -555,15 +558,20 @@ export default class DesignService extends Service {
         workingDirectory: agent.session.header.cwd,
         isSubagent: false,
       }
-      const targets = projectDefinitionMutationPaths(policy)
+      const targets = designFileMutationPaths(policy)
       let resolvedTargets: string[] | undefined
-      if (targets) {
+      if (targets.length > 0) {
         // Resolve the actual existing ancestor even for a newly created file.
-        // A source symlink cannot turn the lexical exception into a data write.
+        // Ordinary filenames can also be aliases of managed Design data.
         const canonical = async (path: string): Promise<string> => {
           try { return await realpath(path) }
           catch (error) {
             if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+            const entry = await lstat(path).catch((missing: NodeJS.ErrnoException) => {
+              if (missing.code !== 'ENOENT') throw missing
+              return undefined
+            })
+            if (entry?.isSymbolicLink()) return canonical(resolve(dirname(path), await readlink(path)))
             const parent = dirname(path)
             if (parent === path) throw error
             return join(await canonical(parent), basename(path))
@@ -1282,8 +1290,6 @@ export default class DesignService extends Service {
 
   /** Read one stable provider-neutral KAG retrieval snapshot for any review loop. */
   async queryStoredKnowledge(caller: Agent, args: KnowledgeReadArguments, signal?: AbortSignal) {
-    const child = caller.session.header.parentSession !== undefined
-    if (child && (!args.project || !args.checkpoint || !args.revision)) throw new Error('Knowledge child query requires exact project, checkpoint and revision pins')
     if ((args.offset ?? 0) > 0 && !args.revision) throw new Error('Knowledge continuation requires a pinned revision')
     let owner: Agent | undefined = caller
     const seen = new Set<Agent>()
@@ -1711,8 +1717,11 @@ export default class DesignService extends Service {
         designRevision: target.revision,
         commit: target.checkpoint,
         itemCount: existing.items.length,
-        knowledgeUsed: sourceCheckpoint !== undefined,
-        ...(sourceCheckpoint === undefined ? { fallbackReason: fallbackReason! } : { knowledgeSourceCheckpoint: sourceCheckpoint }),
+        // Source pins prove snapshot identity, not what the Native reviewer
+        // actually consumed. Recovery has no run-local consumption observation;
+        // preserve a known fallback and conservatively report unknown usage.
+        knowledgeUsed: false,
+        fallbackReason: fallbackReason ?? 'usage-not-observed',
         kit: kitPin.source.slice(4),
         kitVersion: kitPin.revision as DesignKitVersion,
         vocabularyRevision: pin('relation-vocabulary') ?? 'legacy-unavailable',
@@ -1738,36 +1747,33 @@ export default class DesignService extends Service {
   }
 
   /**
-   * Inject the compact KAG/GRA snapshot as one non-waking plugin notice: the
-   * model reads it at its next natural boundary and judges whether to act.
-   * Identical consecutive snapshots are deduplicated so repeated lifecycle
-   * events never become a token storm. Best-effort: a sampling or injection
-   * failure never breaks the originating lifecycle event.
+   * Read the compact KAG/GRA context for an existing main-Agent request.
+   * No inbox message, wake or maintenance is produced. The Host owns logging
+   * and deduplicating the accepted runtime context. Sampling is best-effort;
+   * cancellation still aborts the request and a project switch drops old facts.
    */
-  private async injectKnowledgeOrchestrationSnapshot(agent: Agent): Promise<void> {
+  private async renderKnowledgeOrchestrationContext(agent: Agent | undefined, signal?: AbortSignal): Promise<string> {
+    signal?.throwIfAborted()
+    if (agent === undefined || agent.session.header.origin === 'subagent') return ''
     try {
       const selectionAtSample = this.selectionForAgent(agent)?.projectId
-      if (selectionAtSample === undefined) return
-      const knowledge = await this.knowledgeStatusSnapshot(agent)
-      if (knowledge === undefined) return
+      if (selectionAtSample === undefined) return ''
+      const knowledge = await this.knowledgeStatusSnapshot(agent, signal)
+      signal?.throwIfAborted()
+      if (knowledge === undefined || knowledge.project !== selectionAtSample) return ''
       const reviews = await this.reviewStatuses(agent)
-      const reviewPolicy = await this.readReviewPolicy(agent)
+      const reviewPolicy = await this.readReviewPolicy(agent, signal)
+      signal?.throwIfAborted()
       // Identity guard: a selection that changed while sampling makes this
-      // snapshot belong to another project. Drop it; the selection-changed
-      // event injects the fresh project's own snapshot. The reminder text
-      // carries the project id, so dedupe can never suppress a real switch
-      // between two projects with otherwise identical state.
-      if (this.selectionForAgent(agent)?.projectId !== selectionAtSample) return
+      // snapshot belong to another project. The next request samples afresh.
+      if (this.selectionForAgent(agent)?.projectId !== selectionAtSample) return ''
       // Stable rules live in design:knowledge-orchestration, also present when
-      // a selected project's Kit is unavailable. Notices carry changed facts.
-      const text = `${renderDesignKnowledgeStatusReminder(knowledge, reviews)}\nProject GRA policy: ${JSON.stringify(reviewPolicy)}`
-      if (this.knowledgeStatusInjections.get(agent) === text) return
-      this.knowledgeStatusInjections.set(agent, text)
-      agent.inject(createYugooDesignMessage({
-        content: [{ type: 'text', text }],
-        notice: `design knowledge status: ${knowledge.state}`,
-      }))
-    } catch { /* Status injection assists judgement; it must never break a lifecycle event. */ }
+      // a selected project's Kit is unavailable. This context carries facts.
+      return `${renderDesignKnowledgeStatusReminder(knowledge, reviews)}\nProject GRA policy: ${JSON.stringify(reviewPolicy)}`
+    } catch {
+      signal?.throwIfAborted()
+      return ''
+    }
   }
 
   /** Optional derived semantic index; never schedules or publishes GRA work. */
@@ -1838,9 +1844,6 @@ export default class DesignService extends Service {
     if (change.kind === 'design-changed') {
       const projectId = this.selectionForAgent(change.agent)?.projectId
       if (projectId !== undefined) this.scheduleKnowledgeMaintenance(change.agent, projectId, 'changed')
-    }
-    if (change.kind === 'design-changed' || change.kind === 'selection-changed' || change.kind === 'review-policy-changed') {
-      void this.injectKnowledgeOrchestrationSnapshot(change.agent)
     }
     for (const listener of this.workspaceChangeListeners) listener(change)
   }
@@ -1924,10 +1927,6 @@ export default class DesignService extends Service {
         } finally {
           entry.running = false
           if (this.knowledgeMaintenance.get(projectId) === entry) this.knowledgeMaintenance.delete(projectId)
-          // Terminal honesty without polling: the owning conversation learns
-          // ready/failed at the next natural boundary through the same compact
-          // snapshot the Agent orchestrates from.
-          void this.injectKnowledgeOrchestrationSnapshot(entry.agent)
         }
       })()
     })
@@ -2074,13 +2073,17 @@ export default class DesignService extends Service {
       const choice = entry.advisory.schemaVersion === 2 && entry.advisory.actionSpec.kind === 'review-choice'
       const kit = this.kitForAgent(agent)
       if (!kit) throw new Error('design advisory: select a Kit first')
-      return { entry, projectId: project.projectId, selectionRevision: binding.revision,
+      // Keep current call identity before potentially long findings/catalog text.
+      // Preserve every entry field while putting disposition/receipts before its advisory.
+      const { advisory, ...disposition } = entry
+      return { projectId: project.projectId, selectionRevision: binding.revision,
         revision: read.revision, kitName: kit.name, kitVersion: kit.version,
-        candidates: choice ? kit.skills.map(skill => ({ skillName: skill.name, bundleVersion: skill.version,
-          description: skill.description, review_support: reviewSupportOf(skill) })) : [],
         instruction: choice
-          ? 'Candidate hints are not a binding. Revalidate current evidence and necessity before selecting. Host actions grant no Design File write authority.'
-          : 'Read the exact advisory findings and references. This read grants no execution authority and does not permit design_select_review_action for this advisory. Only its existing accepted action receipts, paired with their exact targets, can authorize Bundle execution; do not substitute another finding in the same Bundle.' }
+          ? 'For design_select_review_action, copy this response\'s top-level revision (the current DesignJournal revision), selectionRevision (the selected-project binding revision), projectId, kitName and kitVersion. Do not use the design-revision in entry.advisory.inputs as revision. On a revision conflict, read this advisory again and revalidate; waiting does not repair a stale argument. Candidate hints are not a binding. Revalidate current evidence and necessity before selecting. Host actions grant no Design File write authority.'
+          : 'Read the exact advisory findings and references. This read grants no execution authority and does not permit design_select_review_action for this advisory. Only its existing accepted action receipts, paired with their exact targets, can authorize Bundle execution; do not substitute another finding in the same Bundle.',
+        entry: { ...disposition, advisory },
+        candidates: choice ? kit.skills.map(skill => ({ skillName: skill.name, bundleVersion: skill.version,
+          description: skill.description, review_support: reviewSupportOf(skill) })) : [] }
     })
   }
 
@@ -2786,7 +2789,7 @@ export default class DesignService extends Service {
     try {
       current = fallback && !fallback.sourceRoot
         ? { kit: fallback, revision: projectKitContentHash(fallback) }
-        : await ensureProjectKit(project.root, { loadSource })
+        : await ensureProjectKit(project.root, { loadSource, previous: this.projectKits.get(project.root) })
       this.assertKitInstallable(current.kit)
     } catch (error) {
       // A previously readable definition is not authority for unreadable current

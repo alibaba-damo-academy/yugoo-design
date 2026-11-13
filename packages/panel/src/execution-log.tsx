@@ -25,6 +25,7 @@ export function ExecutionLog({ node, data, options }: { node: ComponentNode; dat
   const execution = resolveExecutionLog(node, data, options)
   if (!execution.runId || !options?.readExecutionLog) return <p role="status">{t('traceUnavailable')}</p>
   return <ExecutionRollingLog runId={execution.runId} logTarget={execution.logTarget}
+    retainHistory
     active={execution.status === 'working' || execution.status === 'queued'}
     label={node.title ?? t('executionTrace')} locale={locale.startsWith('en') ? 'en' : 'zh'}
     unavailableLabel={t('traceUnavailable')} maxEntries={node.log?.max_entries ?? 200}

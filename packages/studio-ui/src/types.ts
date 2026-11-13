@@ -6,12 +6,15 @@ import type {
   StudioManagementFailure,
   StudioWorkspaceView,
 } from 'dsh-design-studio'
+import type { StudioAuthoringClient } from './authoring.ts'
 
 /** UI name for the canonical management failure. */
 export type StudioClientFailure = StudioManagementFailure
 
 /** Shared read-only service API implemented by embedded and companion host adapters. */
 export interface StudioManagementClient {
+  /** Isolated installed-source sample; never materializes or saves an instance. */
+  readonly previewInstalled?: StudioAuthoringClient['previewInstalled']
   readKitFiles?(input: { name: string; version: string }): Promise<readonly string[]>
   readKitFile?(input: { name: string; version: string; path: string }): Promise<{ content: string }>
   /** Read the current JSON-only management workspace. */

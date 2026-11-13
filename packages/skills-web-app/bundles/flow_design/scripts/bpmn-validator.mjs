@@ -19,7 +19,6 @@ function processIdFromBpmn(xml) {
 	if (processId === "") throw new Error("bpmn_xml must contain one <bpmn:process id=\"Process_{process_id}\">");
 	return processId;
 }
-const FLOW_NODE_ID_RE = /<bpmn:(?:task|userTask|serviceTask|businessRuleTask|scriptTask|manualTask|sendTask|receiveTask|callActivity|subProcess|exclusiveGateway|parallelGateway|inclusiveGateway|complexGateway|eventBasedGateway|startEvent|endEvent|boundaryEvent|intermediateCatchEvent|intermediateThrowEvent)\b[^>]*?\bid="([^"]+)"/g;
 const BPMN_NODE_TAGS = /* @__PURE__ */ new Set([
 	"task",
 	"userTask",
@@ -69,7 +68,7 @@ const BPMN_TRIGGER_DEFINITIONS = Object.freeze({
 	signal: "signalEventDefinition"
 });
 function flowNodeIds(xml) {
-	return [...xml.matchAll(FLOW_NODE_ID_RE)].map((match) => match[1] ?? "");
+	return [...bpmnNodes(xml).keys()];
 }
 function record$1(value) {
 	return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
@@ -299,7 +298,7 @@ function structuralErrors(xml, processId, roleCount) {
 	if (/<(bpmndi|dc|di):/.test(xml)) errors.push("must not contain bpmndi/dc/di elements");
 	if (!xml.includes(`_${processId}_`)) errors.push(`element ids must be prefixed with the process id (${processId})`);
 	const ids = new Set(flowNodeIds(xml));
-	const dangling = [...new Set([...xml.matchAll(/(?:sourceRef|targetRef)="([^"]+)"/g)].map((match) => match[1] ?? ""))].filter((endpoint) => !ids.has(endpoint)).sort();
+	const dangling = [...new Set(bpmnSequenceFlows(xml).flatMap((flow) => [flow.source, flow.target]))].filter((endpoint) => !ids.has(endpoint)).sort();
 	if (dangling.length > 0) errors.push(`every sequenceFlow sourceRef/targetRef must reference a declared flow node (task/gateway/event) that is defined with a matching id — declare the missing node(s) or fix the flow. Undeclared ids referenced by flows: ${dangling.slice(0, 8).join(", ")}`);
 	if (roleCount >= 2) {
 		const laneCount = [...xml.matchAll(/<bpmn:lane\b/g)].length;
@@ -359,6 +358,7 @@ function layoutErrors(xml) {
 		const attributes = match[1] ?? "";
 		const edgeId = /\bid=["']([^"']+)["']/u.exec(attributes)?.[1] ?? "";
 		const elementId = /\bbpmnElement=["']([^"']+)["']/u.exec(attributes)?.[1] ?? "";
+		if (!flowIds.includes(elementId)) continue;
 		if (elementId !== "" && edgeId !== `${elementId}_di`) diagnostics.push(`BPMNEdge ${edgeId || "(missing id)"} must use the layout-script id ${elementId}_di`);
 		const waypoints = [...(match[2] ?? "").matchAll(/<di:waypoint\b[^>]*\bx=["']([^"']+)["'][^>]*\by=["']([^"']+)["'][^>]*\/?\s*>/giu)]
 			.map((waypoint) => ({ x: Number(waypoint[1]), y: Number(waypoint[2]) }));
@@ -447,6 +447,27 @@ function result(diagnostics, extra = {}) {
 	if (diagnostics.length > 0) process.exitCode = 1;
 }
 const operation = process.argv[2];
+/** Supplements never become a second BPMN authority. Retain orphan text. */
+function validateNodeBindings(xml, processId, value) {
+	if (value === void 0) return { diagnostics: [], extra: {} };
+	const nodes = record(value, "nodes");
+	const elements = bpmnNodes(xml);
+	const bindings = new Map();
+	const diagnostics = [], unmapped = [];
+	for (const [id, raw] of Object.entries(nodes)) {
+		const node = record(raw, `nodes.${id}`);
+		if (node.process_ref !== processId) continue;
+		const element = node.bpmn_element_ref;
+		if (typeof element !== "string" || !elements.has(element)) {
+			unmapped.push(id);
+			continue;
+		}
+		const previous = bindings.get(element);
+		if (previous !== void 0) diagnostics.push(`flow_design.ambiguous_node_binding: process ${processId}, element ${element} maps to both ${previous} and ${id}; merge their text without loss or repair the exact reference.`);
+		else bindings.set(element, id);
+	}
+	return { diagnostics, extra: { unmapped_nodes: unmapped } };
+}
 try {
 	if (operation === "validate-bpmn-file" || operation === "validate-final-bpmn-file") {
 		const { context, xml: rawXml } = fileInput();
@@ -458,12 +479,14 @@ try {
 			? ["BPMN artifact must contain XML only, without a Markdown fence or preamble"]
 			: [];
 		const structure = operation === "validate-final-bpmn-file" ? structureOnlyBpmn(xml) : xml;
+		const bindings = validateNodeBindings(structure, processId, context.nodes);
 		result([
 			...sourceDiagnostics,
 			...(operation === "validate-final-bpmn-file" ? layoutErrors(xml) : []),
 			...structuralErrors(structure, processId, (Array.isArray(processRecord.stakeholders) ? processRecord.stakeholders : []).length),
-			...semanticErrors(structure, processId, processRecord, context.roles)
-		]);
+			...semanticErrors(structure, processId, processRecord, context.roles),
+			...bindings.diagnostics
+		], bindings.extra);
 	} else throw new Error("usage: bpmn-validator.mjs <validate-bpmn-file|validate-final-bpmn-file>");
 } catch (error) {
 	process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);

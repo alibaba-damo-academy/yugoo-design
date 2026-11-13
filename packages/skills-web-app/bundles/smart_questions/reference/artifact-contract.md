@@ -1,5 +1,11 @@
 # smart_questions output contract
 
+## Record IDs
+
+For new free questions prefer `Q-001`, `Q-002`, and so on. Keep numeric question rounds, fixed `const_*` question keys, choice values and attachment identities unchanged.
+
+Existing IDs, including older formats, remain valid during ordinary edits and reconstruction. If the user explicitly requests business renumbering, revise actual record keys/IDs and current references/orders together through their existing owners; keep technical IDs and history unchanged. Names and titles remain readable content, separate from identity.
+
 Shared by ordinary design and reconstruction. Canonical state is
 `smart_questions/smart_questions.json`; the installed schema and validation remain
 authoritative. This reference describes representation and semantic checks,
@@ -88,27 +94,74 @@ missing from `answer`, unknowns remain honest, and each inference is supported.
 This is an Agent self-check,
 not a new validator or host gate.
 
-## Fixed-card contract
+## App basics and existing settings
 
-The executor carries these stable definitions and initialized defaults into a
-new complete state, and preserves them on revision. Do not presume automatic
-Core seeding: schema checks shape, and the declared Panel policy protects the
-fixed cards' interactions. Keep both existing cards; never rename, replace or
-modify their prompts/options. They are first-round configuration, not a reason
-to repeat an interview.
+For a new application's initial background overview, use one App basics group
+with three independent questions. Reuse explicit user statements and established
+Design facts; a known answer is reviewable context, not another interview.
+A narrow content-completion request does not require adding this group or
+invoking this Bundle. The group is a reusable starting point, not a completion
+gate or a technical-stack selector.
 
-| ID | Question | Values | Default |
-| --- | --- | --- | --- |
-| `const_auth_mode` | 是否需要注册登录？ | `anonymous` / `auth_required` | `anonymous` |
-| `const_storage_mode` | 应用数据如何保存？ | `browser_temp` / `database_persistent` | `browser_temp` |
+| Stable ID | Question | Kind and values |
+| --- | --- | --- |
+| `const_identity_needs` | 使用时，需要知道是谁在操作吗？ / Does the app need to know who is using it? | `single`: `not_needed`, `needed`, `undecided` |
+| `const_data_retention` | 下次打开时，需要保留上次的内容或操作进度吗？ / Should content or progress remain the next time the app opens? | `single`: `not_needed`, `needed`, `undecided` |
+| `const_usage_devices` | 主要在哪些设备上使用？ / Which devices will people mainly use? | `multiple`: `computer`, `phone`, `tablet`, `other` |
 
-Their recommended choices match the initial defaults. Never attach `round` or
-`rejected` to fixed cards or offer rejection. Preserve actual user answers and
-details. In reconstruction, verify login and persistence instead of treating
-defaults as evidence. If neither choice faithfully describes the implementation,
-leave the answer empty and explain its actual scope in `detail`; durable files
-do not imply cloud sync or a database. In ordinary authorized defaulting, retain
-defaults unless the requirement establishes another choice.
+Use the complete definitions in the example below; localize their prompts and
+labels to the user's language on first creation without changing IDs or value
+meanings. Keep the three entries together in that order. Each has its own
+`answer` and optional `detail`; never combine them into one answer or a package
+of architecture choices. Ordinary revision preserves existing wording and
+choices unless the user requests a change.
+
+Start with empty answers where the requirement is unknown. Do not select a
+proposal, a recommended stack or `undecided` on the user's behalf. A user-selected
+`undecided` records a deferral, not a settled requirement. Device choices are
+compatible; an empty selection remains unknown, and `other` can be explained
+in `detail`. Preserve useful constraints, source locators and uncertainty in
+that existing detail rather than adding another evidence field. Do not add
+`round` or `rejected` to these first-round entries; the Panel groups and protects
+them through its existing declarations. No automatic Core seeding is assumed.
+
+Interpret the answers as application needs:
+
+- Identifying a user does not choose registration, an identity provider or a
+  permission model. Follow up on actual access boundaries only when they affect
+  the requested design; complete role/access rules remain with their owner.
+- Retaining content does not choose a database, cloud service, synchronization
+  or sharing. Establish those independent needs only when relevant.
+- A device is not a delivery format. Preserve an explicit browser/native,
+  distribution or offline requirement in the existing context; ask about an
+  unresolved format only when its consequences matter. A local Agent Host does
+  not imply a local-only application or an available managed backend service.
+
+In reconstruction, verify these meanings against actual behavior and source
+coverage. Preserve observed facts and limits; neither a missing file nor an
+example default proves absence of identity or retention.
+
+### Preserve existing login and storage settings
+
+Existing projects may contain `const_auth_mode` and `const_storage_mode`.
+Their saved IDs, prompts, choices, answers and details retain their original
+meaning; do not replace their values with answers to the new questions:
+
+| Existing ID | Values | Historical initialized value |
+| --- | --- | --- |
+| `const_auth_mode` | `anonymous` / `auth_required` | `anonymous` |
+| `const_storage_mode` | `browser_temp` / `database_persistent` | `browser_temp` |
+
+Carry these records unchanged on revision unless the user changes them. An old
+initialized answer is not newly confirmed by being retained. Do not recreate
+these old defaults for a new state, add the new group merely to update an
+existing file, or rewrite a project's complete Kit definitions silently. The
+Panel can display either generation using the same shared question controls;
+existing supplementary text remains available. Preserve any existing `round`
+metadata and question history rather than moving settings into a new round.
+In reconstruction, verify the actual login and storage behavior; if neither
+old choice fits, leave its answer empty and explain the observed scope in
+`detail`. Durable files alone do not establish a database or cloud sync.
 
 ## State contract
 
@@ -122,7 +175,7 @@ it is not a planning queue, answer store or another lifecycle authority.
 The complete payload is an object whose `questions` value is a map from
 question ID to its question object, with optional `rounds` keyed by the saved
 round's decimal string. This synthetic example is not a user requirement or
-confirmation; the fixed answers below demonstrate initialization only:
+confirmation; the empty App basics answers below demonstrate an unanswered first panel:
 
 ```json
 {
@@ -133,32 +186,46 @@ confirmation; the fixed answers below demonstrate initialization only:
     }
   },
   "questions": {
-    "const_auth_mode": {
-      "prompt": "是否需要注册登录？",
+    "const_identity_needs": {
+      "prompt": "使用时，需要知道是谁在操作吗？",
       "kind": "single",
       "choices": [
-        {"value": "anonymous", "label": "不需要，直接使用", "recommended": true},
-        {"value": "auth_required", "label": "需要，支持注册登录", "recommended": false}
+        {"value": "not_needed", "label": "不需要区分使用者"},
+        {"value": "needed", "label": "需要识别使用者"},
+        {"value": "undecided", "label": "暂不确定"}
       ],
-      "answer": "anonymous",
+      "answer": "",
       "detail": ""
     },
-    "const_storage_mode": {
-      "prompt": "应用数据如何保存？",
+    "const_data_retention": {
+      "prompt": "下次打开时，需要保留上次的内容或操作进度吗？",
       "kind": "single",
       "choices": [
-        {"value": "browser_temp", "label": "仅当前浏览器临时保存", "recommended": true},
-        {"value": "database_persistent", "label": "持久保存，可跨设备继续使用", "recommended": false}
+        {"value": "not_needed", "label": "不需要保留"},
+        {"value": "needed", "label": "需要保留"},
+        {"value": "undecided", "label": "暂不确定"}
       ],
-      "answer": "browser_temp",
+      "answer": "",
+      "detail": ""
+    },
+    "const_usage_devices": {
+      "prompt": "主要在哪些设备上使用？（可多选）",
+      "kind": "multiple",
+      "choices": [
+        {"value": "computer", "label": "电脑"},
+        {"value": "phone", "label": "手机"},
+        {"value": "tablet", "label": "平板"},
+        {"value": "other", "label": "其他设备"}
+      ],
+      "answer": "",
       "detail": ""
     },
     "ai_interaction_method": {
-      "prompt": "用户如何与 AI 交互？",
+      "prompt": "当前原型优先采用哪种方式让用户请求 AI 帮助？",
       "kind": "single",
       "choices": [
-        {"value": "button_trigger", "label": "点击按钮触发分析", "recommended": true},
-        {"value": "dashboard_widget", "label": "在报表页展示 AI 洞察卡片", "recommended": false}
+        {"value": "button_trigger", "label": "点击操作按钮发起请求", "recommended": true},
+        {"value": "conversation_request", "label": "在对话中输入请求", "recommended": false}
       ],
       "answer": "",
       "detail": "",
@@ -170,12 +237,14 @@ confirmation; the fixed answers below demonstrate initialization only:
 }
 ```
 
-The first two entries are fixed in state. The FE renders them at the bottom of
+The first three entries are the new App basics definitions. The FE renders them at the bottom of
 the first round only; add dynamic questions after them and the FE renders later
 dynamic rounds without those fixed cards, newest first. When editing an
-existing panel, carry the fixed-card definition and prior user decisions
+existing panel, carry the existing question definitions and prior user decisions
 forward into the complete canonical state without adding them to the new round.
 
+- `prompt` contains the question and the context or consequences needed to answer it. Put each complete option in `choices[].label` once; do not also enumerate those options in `prompt`.
+  Before publishing, read the prompt together with each choice and check that every choice answers the same question about the same subject, scope and decision.
 - `value` is the stable selection token. `label` is visible text. Answers always store `value`, never a label, recommendation suffix, or invented internal token.
 - `single` stores one `value`; `multiple` stores comma-separated `value`s; `text` stores its complete free-text response in `answer`, has no choices and leaves `detail` empty. The answer, including useful qualifications, is read and edited in one place.
 - `recommended` is the only recommendation mechanism. Do not add a question-level `suggest` field or append `(推荐)` to stored labels.

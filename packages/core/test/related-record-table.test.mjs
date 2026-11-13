@@ -11,16 +11,21 @@ const table = value => value.ui.children.find(node => node.component === 'record
 test('authored related table loads through the real Kit loader and retains canonical fields in both locales', async () => {
   const fs = { readText: async path => { try { return await readFile(path, 'utf8') } catch (error) { if (error.code !== 'ENOENT') throw error } },
     listDir: readdir, isDirectory: async path => (await stat(path)).isDirectory(), realPath: realpath }
-  const kit = await loadDesignKit(fs, fileURLToPath(new URL('../../skills-web-app/', import.meta.url)), { sourceId: 'fixture:related-table' })
+  const source = new URL('../../skills-web-app/', import.meta.url)
+  const kit = await loadDesignKit(fs, {
+    rootDir: fileURLToPath(source), mindsetPath: fileURLToPath(new URL('kits/web_app/mindset.md', source)),
+    manifestPath: fileURLToPath(new URL('kits/web_app/kit.yaml', source)),
+    bundlesDir: fileURLToPath(new URL('bundles/', source)), skillsDir: fileURLToPath(new URL('bundles/', source)),
+  }, { sourceId: 'fixture:related-table-source' })
   const role = kit.skills.find(skill => skill.name === 'role_access')
   for (const locale of ['zh-CN', 'en-US']) {
     const panel = localizePanelManifest(role.metadata.panelManifest, locale)
     assert.deepEqual(validatePanelManifest(panel), [])
-    assert.deepEqual(table(panel).record_table.columns.flatMap(column => column.fields), ['effect', 'capability', 'applies_when', 'requirements', 'custom_requirement'])
+    assert.deepEqual(table(panel).record_table.columns.flatMap(column => column.fields), ['capability', 'effect', 'applies_when', 'requirements', 'custom_requirement'])
     assert.equal(table(panel).inherit_from_graph, true)
     assert.equal(panel.ui.children[0].graph.hierarchy.parent_control, 'header')
     assert.equal(panel.fields.find(field => field.key === 'role_ref').hidden, true)
-    assert.equal(table(panel).record_table.columns[3].label, locale === 'zh-CN' ? '操作前需要（可选）' : 'Before performing the action (optional)')
+    assert.equal(table(panel).record_table.columns[3].label, locale === 'zh-CN' ? '操作前需要' : 'Before performing the action')
   }
 })
 
@@ -28,7 +33,7 @@ test('related table refuses incomplete, hidden, duplicate, foreign and malformed
   const cases = [
     node => { node.record_table.columns.pop() },
     node => { node.record_table.columns[0].fields = ['role_ref'] },
-    node => { node.record_table.columns[1].fields = ['effect'] },
+    node => { node.record_table.columns[1].fields = ['capability'] },
     node => { node.record_table.columns[0].fields = ['assignment_rule'] },
     node => { node.record_table.columns[0].fields = ['__proto__'] },
     node => { node.record_table.columns[0].script = 'not permitted' },

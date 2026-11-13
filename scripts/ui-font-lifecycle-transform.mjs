@@ -25,7 +25,9 @@ export function transformUiFontLifecycle(result, { metadataSpecifier, regularSha
     code = code.slice(0, node.getStart(source)) + code.slice(node.end)
   }
   code = `import { acquireUiFont as __designAcquireUiFontLease } from ${JSON.stringify(UI_FONT_BROKER_SPECIFIER)};` + code +
-    `\nexport function __designAcquireUiFont(document,owner){return __designAcquireUiFontLease(document,{family:"Assistant",source:'url("'+__designRegularFontData+'")',sha256:${JSON.stringify(regularSha256)},style:"normal",weight:"250 900",display:"swap"},owner);}`
+    // Keep the payload as one binding. Folding string concatenation at build
+    // time duplicates the entire variable font into the descriptor literal.
+    `\nexport function __designAcquireUiFont(document,owner){return __designAcquireUiFontLease(document,{family:"Assistant",source:['url("',__designRegularFontData,'")'].join(""),sha256:${JSON.stringify(regularSha256)},style:"normal",weight:"250 900",display:"swap"},owner);}`
   const index = ts.createSourceFile('index.js', result.indexCode, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS)
   assert.equal(index.parseDiagnostics.length, 0)
   assert.ok(!result.indexCode.includes('acquireDesignUiFont'), 'Public facade identifier collision')

@@ -2,27 +2,12 @@
 # Faithful declarative translation of sdk-pilot
 # skill/design_skills/smart_questions/schema.py (Pydantic, extra="forbid").
 #
-# Executor-owned fixed-card contract (not automatic schema/Core seeding):
-# carry both fixed definitions into every complete state — prompt, kind and
-# choices are stable; only `answer` and `detail` are user-owned. Fixed cards
-# have no `round` / `rejected`; panel.yaml declares their UI protection.
-#
-#   const_auth_mode:
-#     prompt: 是否需要注册登录？
-#     kind: single
-#     choices:
-#       - { value: anonymous, label: 不需要，直接使用, recommended: true }
-#       - { value: auth_required, label: 需要，支持注册登录, recommended: false }
-#     answer: anonymous
-#     detail: ""
-#   const_storage_mode:
-#     prompt: 应用数据如何保存？
-#     kind: single
-#     choices:
-#       - { value: browser_temp, label: 仅当前浏览器临时保存, recommended: true }
-#       - { value: database_persistent, label: 持久保存，可跨设备继续使用, recommended: false }
-#     answer: browser_temp
-#     detail: ""
+# Executor-owned App basics (not automatic schema/Core seeding):
+# new first panels use the neutral questions in reference/artifact-contract.md.
+# Existing login/storage IDs, values and answers retain their original meaning.
+# A revision preserves its existing question set; it does not automatically
+# replace old settings or add a new interview. panel.yaml declares UI grouping
+# and protection. This schema accepts both generations without rewriting data.
 #
 # Choice quality, answer resolution, fixed-card, and attachment-quality
 # semantics are Producer self-checks in SKILL.md; this schema owns the stable

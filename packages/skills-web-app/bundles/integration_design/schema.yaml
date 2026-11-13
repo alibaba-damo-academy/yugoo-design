@@ -15,6 +15,8 @@ properties:
         id: { type: string }
         title: { type: string }
         description: { type: string }
+        # Optional known address, not a connection-readiness or completion flag.
+        # Omit or leave empty until supported by evidence; preserve uncertainty in remarks.
         url: { type: string }
         secrets:
           type: map

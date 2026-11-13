@@ -59,9 +59,9 @@ After a successful save, continue discussing those changes in the original sessi
 
 Grounding, Reflection and Alignment can raise questions or suggest research and clarification. View, accept, reject or defer suggestions through the entry points your host provides. A suggestion does not modify Design Files. Revise through the owning Bundle when a design needs to change. For clarification or research, you can first ask questions or search in the host conversation, or explain why no further action is needed.
 
-For example, after you allow designers to handle changes within scope directly, review may prompt you to consider their effect on committed delivery dates. Check which designs the suggestion cites, then decide whether to revise, explain an existing rule or defer it. Do not treat a suggestion as a confirmed new requirement based only on its wording. See the [client-project tutorial](web-app-demo.en.md#4-use-a-suggestion-to-expose-an-unresolved-tradeoff) for the full situation, and [knowledge connections and review](concepts.md#知识关联与审查) for review perspectives and capability limits.
+For example, after you allow designers to handle changes within scope directly, review may prompt you to consider their effect on committed delivery dates. Check which designs the suggestion cites, then decide whether to revise, explain an existing rule or defer it. Do not treat a suggestion as a confirmed new requirement based only on its wording. See the [client-project tutorial](web-app-demo.en.md#4-use-a-suggestion-to-expose-an-unresolved-tradeoff) for the full situation, and [knowledge connections and review](concepts.en.md#knowledge-connections-and-review) for review perspectives and capability limits.
 
-Installed versions that support autonomous review let you choose whether background checks run through review settings. Turning off autonomous review still allows explicit review requests. Follow [host compatibility](hosts.en.md) for the actual entry point and background capabilities.
+In Design advisories settings, choose Automatic, Scheduled or Off. Select the review scope: Current design checks the subject being discussed and the evidence needed to assess it; Related designs also checks connected responsibilities, decisions and handoffs; Entire project examines the project's existing results and their relationships. A broader scope does not require more findings or designs that have not been requested. Save to apply the settings. Turning off automatic checks still allows manual review. Follow [host compatibility](hosts.en.md) for the actual entry point and background capabilities.
 
 If background execution is unavailable, or native asynchronous review still occupies the main conversation, first choose either "turn off automatic GRA" or "review synchronously in the main conversation this time." Synchronous review temporarily occupies the conversation and requires user confirmation. Without a choice, do not change policy or run a review. Manual checks remain available after automatic GRA is disabled. See [background capabilities and review fallback](hosts.en.md#background-capabilities-and-review-fallback) for limits by host version.
 
@@ -81,15 +81,15 @@ The latest successful result is stored in the project's `design_records/clarity.
 
 ### View KAG and index status
 
-KAG helps locate design objects, relationships and evidence. In DSH, click 「Yugoo设计」 (Yugoo Design) at the top of the conversation to open the Design Panel, then 「关联图谱」 (Related graph) at the bottom. In Companion, enter the connected project's full workspace and use the same bottom entry, alongside 「设计文件」 (Design Files) and 「场景体验」 (scenario experience).
+KAG helps locate design objects, relationships and evidence. In DSH, open Yugoo Design from the conversation header, then select Relationships at the bottom of the design workspace. In Companion, enter the connected project's full workspace and use the same entry beside Panels and Scenarios.
 
 This requires a selected project and graph-reading support from the host. A single Panel preview does not show the full workspace's bottom navigation. If your entry point has no graph view, ask the Agent to query design sources and relationships; that alone does not call for rebuilding the index. Read the graph together with node details and sources. Similarity links and Agent explanations do not establish confirmed business relationships. This is the project's knowledge graph, distinct from Studio's Bundle relationship graph.
 
-If an update is indicated, ask the Agent, "Check the current project's graph status. Reuse a matching index if one exists; refresh once only if it is actually stale, and say whether the update completed or was merely accepted." `due` means an update is pending, not running. If it fails or is temporarily unavailable, you can still read Design Files directly. Judge graph status separately from GRA and UST; see [troubleshooting](troubleshooting.md#kag-或主动审查没有结果) for specific states.
+If an update is indicated, ask the Agent, "Check the current project's graph status. Reuse a matching index if one exists; refresh once only if it is actually stale, and say whether the update completed or was merely accepted." `due` means an update is pending, not running. If it fails or is temporarily unavailable, you can still read Design Files directly. Judge graph status separately from GRA and UST; see [troubleshooting](troubleshooting.md#kag-或自动审查没有结果) for specific states.
 
 #### Read design evidence from the graph
 
-Start with 「概览」 (Overview) to locate design records, then expand the relevant content locally from node details. When inspecting an aggregated link, expand its two sides and check the original endpoints, file locations and evidence. Expanding globally helps reveal the overall structure; local expansion helps focus on one question. A collapsed line may collect several pieces of evidence; a higher count does not make a relationship more reliable.
+Start with the overview to locate design records, then expand the relevant content locally from node details. When inspecting an aggregated link, expand its two sides and check the original endpoints, file locations and evidence. Expanding globally helps reveal the overall structure; local expansion helps focus on one question. A collapsed line may collect several pieces of evidence; a higher count does not make a relationship more reliable.
 
 | What you see | How to interpret it |
 | --- | --- |
@@ -102,11 +102,11 @@ Use search, filters, zoom and local expansion to narrow what you read; these ope
 
 ### View a scenario experience
 
-Select 「场景体验」 (scenario experience) at the bottom of the full design workspace to examine scattered flows, rules and interfaces within a specific situation. For example: "A customer unexpectedly asks for another page. How does the designer assess the impact, and where does the project lead confirm the arrangement?"
+Select Scenarios at the bottom of the full design workspace to examine scattered flows, rules and interfaces within a specific situation. For example: "A customer unexpectedly asks for another page. How does the designer assess the impact, and where does the project lead confirm the arrangement?"
 
-If no experience exists, click 「让 AI 推荐体验情境」 (ask AI to suggest a situation to explore). If one already exists, use 「新增场景」 (add scenario) to propose another. First agree with AI on what you want to experience and which question it should help answer, then have it generate the experience from saved designs. Once generated, choose it from the scenario list and inspect sources and demonstration assumptions under 「体验说明与设计依据」 (experience notes and design evidence).
+If no experience exists, click **Ask AI to suggest scenarios**. If one already exists, use **Add scenario** to propose another. First agree with AI on what you want to experience and which question it should help answer, then have it generate the experience from saved designs. Once generated, choose it from the scenario list and inspect sources and demonstration assumptions under **Scenario Details and Sources**.
 
-Interactions within the experience are demonstrations only; they reset when you switch and do not directly modify Design Files. If a step, wording or rule needs work, click 「在主对话讨论当前内容」 (discuss the current content in the main conversation), explain the change, then revise through the relevant Design Panel. After the design changes, the old experience remains available to revisit. If it is marked stale, choose 「按最新设计刷新」 (refresh from the latest design). This lets findings return to the design discussion instead of ending at a prototype.
+Interactions within the experience are demonstrations only; they reset when you switch and do not directly modify Design Files. If a step, wording or rule needs work, click **Discuss in chat**, explain the change, then revise through the relevant Design Panel. After the design changes, the old experience remains available to revisit. If it is marked stale, choose **Update from latest design**. This lets findings return to the design discussion instead of ending at a prototype.
 
 ### Decide what to do next
 
@@ -132,7 +132,7 @@ A Design Project is independent of chat. Common DSH entry points are below. Comp
 
 New projects default to `YuGoo/Projects` under the current operating system's Documents directory. An explicitly configured path takes precedence; existing projects are not moved automatically. WSL uses the Linux user's directory rather than redirecting to Windows Documents. Project Git checkpoints record design changes and remain after a session closes.
 
-In release `0.2.3`, selecting a Kit for the first time copies the complete Kit and mounted Bundle files to the project's `design_kit/kit` and `design_kit/bundles`. The Agent, Panels and validation then read the project's own files. Library edits or removal do not change existing projects. To use newer methods from the library, ask the Agent to compare files, explain the differences and preserve project customizations, then use normal validation, saving and Git to record the changes. For older projects, follow the corresponding content-recovery instructions.
+Since `0.2.3`, selecting a Kit for the first time copies the complete Kit and mounted Bundle files to the project's `design_kit/kit` and `design_kit/bundles`. The Agent, Panels and validation then read the project's own files. Library edits or removal do not change existing projects. To use newer methods from the library, ask the Agent to compare files, explain the differences and preserve project customizations, then use normal validation, saving and Git to record the changes. For older projects, follow the corresponding content-recovery instructions.
 
 The project operation `delete` removes the registration record while retaining actual project files; it does not delete files or empty a directory. If project content is missing, or an older project cannot locate its original Kit or Bundles, follow [updates and original-content recovery](kit-sharing.en.md#update-and-restore-project-content) rather than substituting newer library content as the original. See [project files and version management](project-files.md) for file layout, backups, moves and migration boundaries, and the [command reference](commands.md) for full parameters.
 
@@ -198,22 +198,26 @@ See the [command reference](commands.md) for full parameters and migration prere
 
 Studio manages the methods and panels used during design; the everyday Design Panel edits your design results. In Companion, open Studio from settings to reuse the current service connection in a separate browser page. DSH uses the Studio entry point provided by the host.
 
-**Version scope:** the in-place editing, source import and project-owned content described below correspond to release `0.2.3`. Complete Studio authoring checks are still in progress. Check the [host guide](hosts.en.md) and [release status](preview-status.md) for tested scope and known issues; use the matching instructions for older entry points.
+Available operations depend on the installed version and host. The following sections cover current-content editing, import, preview and sharing. Check the [host guide](hosts.en.md) and [release status](preview-status.md) for tested scope and historical issues; a newer source capability does not establish the same behavior in an older installation.
 
 ### Inspect Kits and Bundles
 
-Open a Kit from 「套件」 (Kits) on the left, read its Mindset and inspect the mounted Bundle identities. 「原始文件」 (raw files) provides the actual file tree, including complete frontmatter, mount projections and reference resources. The reading view supports browsing; the raw view preserves file content.
+Open a Kit from Kits on the left, read its Mindset and inspect the mounted Bundle identities. Source Files provides the actual file tree, including complete frontmatter, mount projections and reference resources. The reading view supports browsing; the raw view preserves file content.
 
-Find a Bundle under 「技能包」 (Bundles) to inspect its methods, output contract, schema, validation, language resources and Panel declarations. Details also show which Kits reference it. A local Kit mount reads the current saved content for that Bundle identity. Copying only a Kit retains those references; copy a Bundle separately and change the mount when you need independent methods or interactions.
+Find a Bundle under Bundles to inspect its methods, output contract, schema, validation, language resources and Panel declarations. Details also show which Kits reference it. A local Kit mount reads the current saved content for that Bundle identity. Copying only a Kit retains those references; copy a Bundle separately and change the mount when you need independent methods or interactions.
 
 ### Edit and customize independently
 
-Select a Kit or Bundle and choose 「编辑」 (edit) to open its current content under the same identity. To keep the original methods and develop an independent alternative, choose 「复制」 (copy) to create a new identity. Entry points supporting creation from scratch also offer 「新建 Kit」 (new Kit) and 「新建 Bundle」 (new Bundle).
+Select a Kit or Bundle and choose **Edit** to open its current content under the same identity. To keep the original methods and develop an independent alternative, choose **Copy** to create a new identity. Entry points supporting creation from scratch also offer New Kit and New Bundle.
 
-1. Edit 「原始文件」 (raw files) in the authoring workspace, inspect differences and save explicitly. Saving retains the current identity without publishing a local version or remounting content.
-2. Handle unsaved content before switching files or leaving. After refreshing, reopen the same object and check its saved text. You can save incomplete source; loading or previewing reports the actual definitions still needed.
-3. Use 「挂载管理」 (mount management) to organize capabilities by Bundle identity and read their current content. For independent methods or Panels, copy the relevant Bundle and mount that copy in the Kit. Source versions provide provenance rather than a number to change on every save.
+1. Edit Source Files in the authoring workspace, inspect differences and save explicitly. Saving retains the current identity without publishing a local version or remounting content.
+2. Switching files or opening Panel Preview retains the source draft. Handle unsaved changes before leaving the object. After refreshing, reopen the same object and check its saved text. You can save incomplete source; loading or previewing reports the actual definitions still needed.
+3. Use Mount management to organize capabilities by Bundle identity and read their current content. For independent methods or Panels, copy the relevant Bundle and mount that copy in the Kit. Source versions provide provenance rather than a number to change on every save.
 4. Check changes with sample previews, then select the prepared Kit in an independent new project. Inspect its complete methods and resources, generate an output, edit it, save and reopen it. Existing projects keep using their own files. To update one, ask the Agent to compare the library with its `design_kit`, preserve customizations and apply changes within the host's write permissions using ordinary validation and Git. See [sharing and project maintenance](kit-sharing.en.md).
+
+![Studio mount management: available and mounted Bundles beside the conversation area](../images/studio-mount-management.en.png)
+
+In Mount management, read the method descriptions and choose the Bundles your Kit needs. Use the conversation area on the left to describe how you want to adapt the Kit.
 
 Renaming in the title changes the display name, not the Kit/Bundle's technical identity. Removal checks Bundle references and moves the selected content to the operating system's trash; use the system's restoration entry point to recover it. npm publication, runtime component releases and Design Files saving/publication retain their separate processes.
 
@@ -221,26 +225,26 @@ Renaming in the title changes the display name, not the Kit/Bundle's technical i
 
 | Operation | What it helps check | Meaning of saving and execution |
 | --- | --- | --- |
-| Panel preview | Layout, fields and declarations with a Bundle sample | Uses an isolated sample; does not start a model or modify a Design Project |
-| Preview after editing Panel YAML | Declarative UI changes and diagnostics | Saving method source and interacting with a sample are separate |
+| Panel preview | Layout, fields and declarations using current source and a Bundle sample | Uses an isolated sample, including unsaved declarative changes; does not start a model or modify a Design Project |
+| Preview after editing Panel YAML | Declarative UI changes and diagnostics | Preview reads the current draft; saving source and interacting with a sample are separate |
 | Native trial run | Whether methods generate results, and the resulting Panel | After connection checks pass, starts a real host task in an independent test project |
 | Everyday Design Panel save | Changes to the current project's design results | Uses project validation and version records so later design work can use the result |
 
-A Bundle's 「面板预览」 (Panel preview) reads `reference/preview.json` first. If no usable sample exists, it displays diagnostics; an empty interface is not a complete experience. Declarative Panels allow YAML editing. Native Panels are implemented by a Provider and do not offer an editable `panel.yaml`.
+A Bundle's Panel Preview prefers `reference/preview.json`, then uses the declaration's initial values when no sample is provided. Invalid sample data produces diagnostics rather than silently substituting another result. An empty state does not establish that the methods generate a useful design. Declarative Panels allow YAML editing. Native Panels are implemented by a Provider and do not offer an editable `panel.yaml`.
 
 Start a trial run from the Bundle title. Save the source you want to test first; the trial reads that saved content. For an initial run, the native Agent can prepare concrete synthetic inputs and execute. You can also edit test inputs and explicitly run again, retaining separate results and original inputs for each run. A queued task or reachable connection does not mean completion. Do not treat unknown execution status as success or start duplicate runs.
 
-「演示保存」 (demo save) and 「撤销修改」 (revert changes) in the trial-run Panel demonstrate only saved UI state in the current browser. They do not publish Design Files or notify the Agent to continue. Refreshing restores the actual generated result. Verify durable saving and continuation in a normal Design Project.
+**Demonstrate save** and **Undo edits** in the trial-run Panel demonstrate only saved UI state in the current browser. They do not publish Design Files or notify the Agent to continue. Refreshing restores the actual generated result. Verify durable saving and continuation in a normal Design Project.
 
 ### Components and sharing
 
-Installed versions with a 「面板组件库」 (Panel component library) let you query declarative components from the same version, inspect synthetic examples and copy complete declarations. The library supports component selection and learning. New components still require registration and release in the shared runtime; you cannot install arbitrary executable UI here.
+Installed versions with a **Panel Component Library** let you query declarative components from the same version, inspect synthetic examples and copy complete declarations. The library supports component selection and learning. New components still require registration and release in the shared runtime; you cannot install arbitrary executable UI here.
 
-Studio can serve as a visual workbench for content maintenance: view samples, interact with Panels, identify presentation or interaction issues, revise and inspect again. Versions with host-conversation authoring let you send the current object and request to the original host Agent, inspect proposed changes in the same source and preview, then decide whether to save. Without that connection, a development Agent can maintain complete methods, data contracts and Panels in a separate authoring source, then return to Studio for inspection. See [extension development](extending.en.md) for the authoring workflow.
+Studio can serve as a visual workbench for content maintenance: view samples, interact with Panels, identify presentation or interaction issues, revise and inspect again. Versions with host-conversation authoring let you send the current object and request to the original host Agent and work on the same source and preview. Check the actual files, differences and save result. Edit directly or describe the remaining issue to the Agent. Without that connection, a development Agent can maintain complete methods, data contracts and Panels in a separate authoring source, then return to Studio for inspection. See [extension development](extending.en.md) for the authoring workflow.
 
 Use the existing import entry point to select a source ZIP, folder or single `SKILL.md`. A Bundle needs its method file; a Kit needs `mindset.md` and `kit.yaml`. Import retains original files and creates an independent identity. Other missing or incomplete definitions can be completed in the existing editor. Legacy archive JSON can also be decoded and imported through the same source entry point. Inspect the specific diagnostics for format or file-integrity problems; cancelling selection changes nothing. A standalone Bundle still needs explicit mounting in a Kit. Import does not execute scripts, grant execution trust or change existing projects.
 
-Save the content you want to share, then choose export from the object menu to download its current source ZIP. A Kit includes complete files and resources for its mounted Bundles; unfinished methods can also be shared for further work. Source and license metadata are optional, while existing LICENSE, NOTICE and attribution files must be retained. See the [sharing guide](kit-sharing.en.md) for archive formats, dependencies and recipient checks.
+Choose Export from the object menu to download the last saved source ZIP. Unsaved source, mounts and conversation input remain in place but are not included in the archive; save first when you want to share those changes. A Kit includes complete files and resources for its mounted Bundles; unfinished methods can also be shared for further work. Source and license metadata are optional, while existing LICENSE, NOTICE and attribution files must be retained. See the [sharing guide](kit-sharing.en.md) for archive formats, dependencies and recipient checks.
 
 When maintaining Studio integration, read [Studio domain](../../packages/studio/README.md) and [Studio UI](../../packages/studio-ui/README.md). To pass design results to implementation, use the [design-to-development handoff](../design-development-handoff.md).
 

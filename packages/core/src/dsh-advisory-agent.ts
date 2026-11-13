@@ -1,7 +1,7 @@
 /** Native read-only review child. Uses public Host factory/tool capabilities only. */
 import { randomUUID } from 'node:crypto'
 import { foldConsumedWork, type Agent, type AgentHandle } from '@deepseek-ai/dsh-agent'
-import { SessionId } from '@deepseek-ai/dsh-session'
+import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
 import { applyChildComposition, appendDelegatedPolicyOverrides, captureDelegatedPolicyOverrides,
   resolveChildAgentOptions, resolveChildDepth, assertSubagentMaxDepth, finalAssistantOutput,
   type SubagentRun, type SubagentDescriptorData, type SubagentStopReason } from '@deepseek-ai/dsh-subagent'
@@ -20,12 +20,12 @@ export function dshAdvisoryBackend(runtime: unknown): 'one-shot-runtime' | 'agen
 }
 
 /** Completion requires a successful structured tool record and a normal native end. */
-function reviewHandle(run: SubagentRun, release: () => void = () => {}): Awaited<ReturnType<AdvisorySubagentPort['start']>> {
+function reviewHandle(run: SubagentRun, release: () => void = () => {}, knowledgeRead?: { used: boolean }): Awaited<ReturnType<AdvisorySubagentPort['start']>> {
   const result = run.result.then(value => {
     if (value.stopReason !== 'completed' || value.structured === undefined) {
       throw new Error('design advisory: review did not complete normally with a successful structured result')
     }
-    return { stopReason: value.stopReason, structured: value.structured }
+    return { stopReason: value.stopReason, structured: value.structured, knowledgeUsed: knowledgeRead?.used === true }
   })
   void result.catch(() => {})
   let disposal: Promise<void> | undefined
@@ -34,6 +34,19 @@ function reviewHandle(run: SubagentRun, release: () => void = () => {}): Awaited
       try { await run.dispose() } finally { release() }
     })()
   } }
+}
+
+/** A captured graph is not a read: its actual native input must contain it. */
+function hasDeliveredKnowledge(context: string | undefined, events: readonly SessionEvent[]): boolean {
+  if (context === undefined) return false
+  let graph: { entities?: unknown; relations?: unknown; coverage?: { status?: unknown } } | undefined
+  try { graph = JSON.parse(context) } catch { return false }
+  if (!graph || !Array.isArray(graph.entities) || !Array.isArray(graph.relations)
+    || graph.coverage?.status === 'not-inlined') return false
+  // A genuinely empty graph is still a successful bounded read. Omitted
+  // records and a merely available snapshot are different outcomes.
+  return events.some(event => event.type === 'user/message' && event.data.source.kind === 'yugoo-design'
+    && event.data.content.some(block => block.type === 'text' && block.text.includes(context)))
 }
 
 /** Discovery is a model-facing index, not a replacement for the bound evidence. */
@@ -58,13 +71,16 @@ export function createDshAdvisoryAgent(evidenceFor: (parent: Agent, commit: stri
     if (!runtime) throw new Error('design advisory: native Subagent Runtime is unavailable')
     const backend = dshAdvisoryBackend(runtime)
     const prompt = [...request.prompt]
+    // Derived only from this child's native delivery / successful tool result;
+    // it is not another persisted review state or a model-reported assertion.
+    const knowledgeRead = { used: false }
     if (backend === 'agent-factory') {
       // RC3 external activations reject already-created native Agents. Its
       // local activation API does not expose our pre-publication setup. Use
       // the public Agent factory directly, with the same immutable closure.
       // No SubagentRuntime catalog, manager events or capacity pool is claimed.
       // Never choose this path as a retry after a failed one-shot start.
-      return reviewHandle(await startReadOnlyReview({ ...request, prompt }, evidenceFor))
+      return reviewHandle(await startReadOnlyReview({ ...request, prompt }, evidenceFor, undefined, knowledgeRead), undefined, knowledgeRead)
     }
     // The legacy runtime owns its catalog/lifecycle. One provider invocation
     // can claim the closure-bound parent, prompt and cancellation grant once.
@@ -78,7 +94,7 @@ export function createDshAdvisoryAgent(evidenceFor: (parent: Agent, commit: stri
           throw new Error('design advisory: no active immutable review grant')
         }
         claimed = true
-        return startReadOnlyReview({ ...request, prompt }, evidenceFor, native.descriptor)
+        return startReadOnlyReview({ ...request, prompt }, evidenceFor, native.descriptor, knowledgeRead)
       },
     })
     try {
@@ -87,7 +103,7 @@ export function createDshAdvisoryAgent(evidenceFor: (parent: Agent, commit: stri
         ...(request.label === undefined ? {} : { label: request.label }),
         ...(request.maxDepth === undefined ? {} : { maxDepth: request.maxDepth }),
       })
-      return reviewHandle(run, unregister)
+      return reviewHandle(run, unregister, knowledgeRead)
     } catch (error) { unregister(); throw error }
   } }
 }
@@ -97,6 +113,7 @@ async function startReadOnlyReview(
   request: Parameters<AdvisorySubagentPort['start']>[1],
   evidenceFor: (parent: Agent, commit: string, signal: AbortSignal) => Promise<AdvisoryEvidence>,
   descriptor?: SubagentDescriptorData,
+  knowledgeRead?: { used: boolean },
 ): Promise<SubagentRun> {
     if (request.parent.ctx.agents.get(request.parent.id) !== request.parent) {
       throw new Error('design advisory: exact live parent required')
@@ -119,7 +136,7 @@ async function startReadOnlyReview(
       throw new Error('design advisory: exact live parent required')
     }
     const definitions = new Map<string, ToolDefinition>()
-    let captured: unknown, recorded = false, child: Agent | undefined, handle: AgentHandle | undefined
+    let captured: unknown, recorded = false, queriedKnowledge = false, child: Agent | undefined, handle: AgentHandle | undefined
     const staged = new Map<ToolExecution['token'], unknown>()
     const onAbort = () => child?.cancel({ kind: 'parent' })
     let setupClaimed = false
@@ -200,7 +217,9 @@ async function startReadOnlyReview(
             || !definitions.has(exec.name) || ctx.tools.get(exec.name, agent) !== definitions.get(exec.name)
             ? 'design advisory: operation is outside the immutable read capability' : undefined)
           ctx.on('tools/result', (exec, result) => {
-            if (exec.agent !== agent || exec.name !== 'structured_output' || !staged.has(exec.token)) return
+            if (exec.agent !== agent) return
+            if (exec.name === 'design_query_knowledge' && !result.isError && !request.signal.aborted) queriedKnowledge = true
+            if (exec.name !== 'structured_output' || !staged.has(exec.token)) return
             const value = staged.get(exec.token); staged.delete(exec.token)
             if (!result.isError && !request.signal.aborted) { captured = value; recorded = true }
           })
@@ -230,6 +249,9 @@ async function startReadOnlyReview(
         const stopReason: SubagentStopReason = request.signal.aborted || reason === 'aborted' ? 'aborted'
           : reason === 'completed' ? 'completed' : reason === 'max-tokens' ? 'max-tokens'
           : reason === 'blocked' ? 'refusal' : 'error'
+        if (knowledgeRead && stopReason === 'completed' && recorded) {
+          knowledgeRead.used = queriedKnowledge || hasDeliveredKnowledge(request.knowledgeContext, events)
+        }
         // Native lifecycle reports the child's actual outcome. Review validity
         // remains the outer adapter's stricter successful-structured boundary.
         return { stopReason, output: finalAssistantOutput(events) ?? [],

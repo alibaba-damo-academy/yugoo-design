@@ -1,0 +1,28 @@
+{
+  "name": "@radix-ui/primitive",
+  "version": "1.0.0",
+  "repository": "radix-ui/primitives",
+  "commit": "3e5644edadcded918db177368c3fe9654ce9885f",
+  "tag": null,
+  "publishedGitHead": null,
+  "correspondence": "Official New release: V1 commit package.json has exact version; all published npm source-map sources compared byte-for-byte. No npm gitHead or matching version tag available.",
+  "sourceMatches": [
+    {
+      "path": "packages/core/primitive/src/index.ts",
+      "exactMatch": true,
+      "sha256": "69a1e6e39aa04660607e267855e9247b105e92ed8d9a55dbd9974e2831f47c72"
+    },
+    {
+      "path": "packages/core/primitive/src/primitive.tsx",
+      "exactMatch": true,
+      "sha256": "9774ebe0f9b13fe044511531c06f8b43accb33ebce32e575e0cf0945f60dc759"
+    }
+  ],
+  "tarball": "https://registry.npmjs.org/@radix-ui/primitive/-/primitive-1.0.0.tgz",
+  "tarballIntegrity": "sha512-3e7rn8FDMin4CgeL7Z/49smCA3rFYY3Ha2rUQ7HRWFadS5iCRw08ZgVT1LaNTCNqgvrUiyczLflrVrF0SRQtNA==",
+  "tarballSha1": "e1d8ef30b10ea10e69c76e896f608d9276352253",
+  "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/3e5644edadcded918db177368c3fe9654ce9885f/LICENSE",
+  "licenseSha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+  "licenseBytes": 1063,
+  "packageMetadataSha256": "083a9687387861cbff5d43613bf8dc28387134beeffcb47058b9e43c8cdd56a6"
+}

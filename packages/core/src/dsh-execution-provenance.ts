@@ -1,6 +1,7 @@
 /** Bounded result projection of existing Host observations, not another execution ledger. */
 import { createHash } from 'node:crypto'
 import { requireDesignFileRelativePath } from './design-file-path.ts'
+import { GitBlobSizeLimitError } from './git.ts'
 import type { DesignExecutionPin } from './design-execution-runtime.ts'
 import type { DesignFilesStore } from './design-files.ts'
 import type { DesignExecutionAttemptPayload } from './types.ts'
@@ -43,6 +44,8 @@ const RECEIPT_SCHEMA = { type: 'object', additionalProperties: false, properties
   path: { type: 'string', required: true }, sha256: { type: 'string', required: true },
   bytes: { type: 'integer', required: true },
 } } as const
+
+const INTEGRATED_BYTES_CHANGED = 'Accepted publication remains valid: final artifact bytes differ from the original Worker output after integration; the final artifact is not certified as unchanged Worker output.'
 
 export const DESIGN_EXECUTION_PROVENANCE_SCHEMA = {
   type: 'object', additionalProperties: false, properties: {
@@ -153,13 +156,24 @@ export async function projectDesignExecutionProvenance(request: {
           throw new Error('Worker identity, lifecycle, current attempt or Host receipt is not established')
         }
         if (!references.has(receipt.path)) throw new Error('Receipt path is not referenced by the accepted canonical state')
-        if (++fileCount > request.limits.maxFileCount || receipt.bytes > request.limits.maxFileBytes
-          || totalBytes + receipt.bytes > request.limits.maxTotalBytes) throw new Error('Receipt verification exceeds the configured read budget')
-        const bytes = await request.files.readBytesAt(pin.stateRevision, receipt.path, request.signal, receipt.bytes)
-        totalBytes += receipt.bytes
-        if (bytes === undefined || bytes.byteLength !== receipt.bytes
+        const remainingBytes = request.limits.maxTotalBytes - totalBytes
+        if (++fileCount > request.limits.maxFileCount || remainingBytes <= 0) throw new Error('Receipt verification exceeds the configured read budget')
+        let bytes: Uint8Array | undefined
+        try {
+          // The original size permits an early metadata rejection, but is not the final artifact's capacity limit.
+          bytes = await request.files.readBytesAt(pin.stateRevision, receipt.path, request.signal,
+            Math.min(receipt.bytes, request.limits.maxFileBytes, remainingBytes))
+        } catch (error) {
+          if (!(error instanceof GitBlobSizeLimitError)) throw error
+          if (error.size > request.limits.maxFileBytes) throw new GitBlobSizeLimitError(receipt.path, error.size, request.limits.maxFileBytes)
+          if (error.size > remainingBytes) throw new Error('Receipt verification exceeds the configured read budget')
+          throw new Error(INTEGRATED_BYTES_CHANGED)
+        }
+        if (bytes === undefined) throw new Error('Published artifact is unavailable')
+        totalBytes += bytes.byteLength
+        if (bytes.byteLength !== receipt.bytes
           || createHash('sha256').update(bytes).digest('hex') !== receipt.sha256) {
-          throw new Error('Published artifact bytes do not match the Host-computed Worker receipt')
+          throw new Error(INTEGRATED_BYTES_CHANGED)
         }
         receipts.push(Object.freeze({ attemptId: last.attemptId, runId: last.runId, parentRunId: last.parentRunId,
           artifactId: last.artifactId, path: receipt.path, sha256: receipt.sha256, bytes: receipt.bytes }))

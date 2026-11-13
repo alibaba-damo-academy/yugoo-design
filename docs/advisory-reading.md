@@ -25,8 +25,11 @@ Core and Panel typechecks/builds, Companion typecheck and review tests.
 ## Review settings
 
 The inbox contains a compact settings trigger rather than a full-width form.
-It opens a native modal dialog, 360px wide and bounded by the viewport, with
-vertically arranged, theme-styled controls. The close button or Escape dismisses
-it. Changes still require Save; manual review dispatch and policy semantics
-are unchanged. The component and styles are shared by DSH and Companion.
+It opens a shared, theme-styled dialog bounded by the viewport. The close
+button or Escape cancels unsaved setting changes. Save applies the selected
+automatic/scheduled/off policy, timing and review scope. Scope choices are
+Current design, Related designs and Entire project; they control the evidence
+to investigate rather than the number or severity of findings. A missing scope
+in an older project uses Related designs (`standard`). Manual review dispatch
+and the existing policy-save boundary remain unchanged. The component and styles are shared by DSH and Companion.
 Validation: Panel `test:review-settings`.

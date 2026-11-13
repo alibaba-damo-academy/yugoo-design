@@ -1,0 +1,12 @@
+{
+  "name": "@radix-ui/react-compose-refs",
+  "version": "1.1.1",
+  "repository": "radix-ui/primitives",
+  "commit": "3c5e05fab070dfa68212230e85baf0879269c57d",
+  "gitHead": "3c5e05fab070dfa68212230e85baf0879269c57d",
+  "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/3c5e05fab070dfa68212230e85baf0879269c57d/LICENSE",
+  "licenseSha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+  "licenseBytes": 1063,
+  "packageMetadataSha256": "661b35c8d06e04fe946568a9827bd70ebea1f158562681f1916a49105442e6a2",
+  "correspondence": "Official repository LICENSE at the exact gitHead disclosed by npm version metadata. No substitution from another version."
+}

@@ -10,6 +10,8 @@ description: |-
 
 # Function Modules
 
+See the [record ID guidance](reference/artifact-contract.md#record-ids) for this Bundle's numbering suggestions and existing identity boundaries.
+
 For canvas generation or revision, read [the canvas guide](reference/canvas-guide.md).
 It supplements the existing methods and output contract; it applies to both
 new design and reconstruction without replacing domain-specific rules.
@@ -52,6 +54,15 @@ map rather than creating a second "refine" route or a replacement document.
 Use this skill when the product goal is understood but the user-facing capabilities are not yet enumerated, or when the user wants to add, split, revise, accept, or reject functions. Do not use it to model infrastructure or to create a separate Epic entity.
 
 ## Derive capabilities from outcomes
+
+Select evidence within the current request's scope before deriving capabilities.
+When the user limits the basis to particular sources, use those sources' actual
+saved answers and decisions; excluded material is not a basis for capabilities
+or their rationale, even if it remains in the project. Read the relevant QA
+answer/detail, not its unselected options. For a revision, reconcile the affected
+cards with that basis while preserving unaffected content and explicit user
+decisions. Remove or qualify an unsupported inference in the affected card;
+do not silently replace a confirmed decision with another source's suggestion.
 
 Start from the established user's situation and intended result, then trace
 the smallest meaningful journey that achieves it. Derive the capabilities
@@ -136,7 +147,3 @@ Close only after the active function map and any accept/reject decisions are per
 - Assess U/S/T only from persisted evidence using the shared Host rubric; no fixed increment follows from running this Bundle or filling optional details.
 - Rejected functions count only insofar as their rejection clarifies the active product boundary; they do not add score merely by remaining visible in the rejected view.
 - A draft with overlapping functions, missing user-facing descriptions, or unresolved module scope may leave scores unchanged or lower them.
-
-## Output contract
-
-Read [the shared output contract](reference/artifact-contract.md) for these field meanings, examples and checks; it is used by both ordinary design and reconstruction.

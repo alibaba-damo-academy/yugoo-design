@@ -88,7 +88,6 @@ export { ClarityDockReadout } from './client/clarity-dock.tsx'
 export {
   AdvisoryReviewCard,
   adjacentAdvisoryIndex,
-  resolveAdvisoryExpandedRect,
   resolveAdvisoryIndex,
   selectPendingAdvisories,
   deliverAdvisoryAcceptance,
@@ -103,8 +102,6 @@ export {
   type AdvisoryAcceptanceAuthority,
   type AdvisoryActionReceipt,
   type AdvisoryExecutionStatus,
-  type AdvisoryLayoutRect,
-  type AdvisoryExpandedRect,
   type IAdvisoryReviewCardProps,
 } from './client/ported/design/AdvisoryReviewCard.tsx'
 /** Persistent sidebar advisory entry + current pending-count helper. */

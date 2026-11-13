@@ -10,6 +10,8 @@ description: |-
 
 # Acceptance Criteria
 
+See the [record ID guidance](reference/artifact-contract.md#record-ids) for this Bundle's numbering suggestions and existing identity boundaries.
+
 ## Core responsibility
 
 Help a non-professional user answer one question:
@@ -21,6 +23,9 @@ This skill owns acceptance requirements. Each requirement has one user-facing na
 It reads established product behavior from functions, flows, business data, business rules, roles, pages, integrations, notifications, AI capabilities, GROUND, and explicit user decisions. Those sources remain authoritative for what the product does. This skill does not copy or redefine them. Use an AI design's actual actions, conditions, result adoption and exceptions when they matter to acceptance; do not require an AI Bundle for unrelated behavior or automatically write acceptance records from it.
 
 ## Ownership and tools
+
+Before authoring, read [the output contract](reference/artifact-contract.md)
+for field meanings, examples and checks shared by design and reconstruction.
 
 `quality_acceptance/quality_acceptance.json` is the only canonical state. The
 foreground Producer uses project-scoped `list` and `read` to inspect that state,
@@ -60,10 +65,6 @@ Do not use it to discover product scope or invent behavior. If the source design
 
 Do not mechanically cover every field, button, browser, security topic, or edge case. A useful result is the smallest set of requirements that proves the product's core value and its material boundaries.
 
-## Evidence model
-
-Read [the shared output contract](reference/artifact-contract.md) for these field meanings, examples and checks; it is used by both ordinary design and reconstruction.
-
 ## Inputs and authority
 
 Use evidence in this order:
@@ -91,11 +92,7 @@ Use a short free group label only when it helps the user find related requiremen
 
 For AI behavior, distinguish producing a response from adopting it into product state. Base conditions and passing results on the established timing of confirmation, write/save and overwrite, and on the actual partial-result or failure behavior. Missing AI behavior remains a source decision; this Bundle neither invents it nor edits the AI design. Read the shared contract for a synthetic example.
 
-### 2. Write the checking condition
-
-Read [the shared output contract](reference/artifact-contract.md) for these field meanings, examples and checks; it is used by both ordinary design and reconstruction.
-
-### 5. Review as one acceptance list
+### 2. Review as one acceptance list
 
 Before saving, verify:
 
@@ -104,10 +101,6 @@ Before saving, verify:
 - measurable thresholds exist only for material quality concerns;
 - wording is understandable without reading internal schemas;
 - requirements do not contradict their source functions, rules, permissions, pages, or integrations.
-
-## State contract
-
-Read [the shared output contract](reference/artifact-contract.md) for these field meanings, examples and checks; it is used by both ordinary design and reconstruction.
 
 ## Close-out
 

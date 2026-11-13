@@ -89,13 +89,13 @@ test('source Remote rejects forged graph integrity before write, journal settlem
   assert.equal(initial.commit, head); assert.equal(notifications.length, 1)
   const edge = (id, source, target) => ({ id, title: '继承权限', kind: 'inherits', source, target })
   for (const [mutate, code] of [
-    [s => { s.inheritances.self = edge('self', 'R-PREVIEW-A', 'R-PREVIEW-A') }, 'cyclic_inheritance'],
-    [s => { s.inheritances.loop = edge('loop', 'R-PREVIEW-A', 'R-PREVIEW-C') }, 'cyclic_inheritance'],
-    [s => { s.inheritances.second = edge('second', 'R-PREVIEW-C', 'R-PREVIEW-A') }, 'multiple_parents'],
-    [s => { s.inheritances.duplicate = edge('duplicate', 'R-PREVIEW-C', 'R-PREVIEW-B') }, 'multiple_parents'],
-    [s => { s.inheritances['RI-PREVIEW-B-A'].source = 'absent' }, 'invalid_inheritance_endpoint'],
-    [s => { s.inheritances['RI-PREVIEW-B-A'].target = 'absent' }, 'invalid_inheritance_endpoint'],
-    [s => { delete s.inheritances['RI-PREVIEW-B-A'].target }, 'target'],
+    [s => { s.inheritances.self = edge('self', 'ROLE-001', 'ROLE-001') }, 'cyclic_inheritance'],
+    [s => { s.inheritances.loop = edge('loop', 'ROLE-001', 'ROLE-003') }, 'cyclic_inheritance'],
+    [s => { s.inheritances.second = edge('second', 'ROLE-003', 'ROLE-001') }, 'multiple_parents'],
+    [s => { s.inheritances.duplicate = edge('duplicate', 'ROLE-003', 'ROLE-002') }, 'multiple_parents'],
+    [s => { s.inheritances['RI-001'].source = 'absent' }, 'invalid_inheritance_endpoint'],
+    [s => { s.inheritances['RI-001'].target = 'absent' }, 'invalid_inheritance_endpoint'],
+    [s => { delete s.inheritances['RI-001'].target }, 'target'],
   ]) {
     const bad = structuredClone(example); mutate(bad)
     await assert.rejects(save(bad), new RegExp(code))
@@ -103,10 +103,10 @@ test('source Remote rejects forged graph integrity before write, journal settlem
     assert.equal((await journal.read(conversation)).revision, revision); assert.equal(notifications.length, 1)
   }
   const edited = structuredClone(example)
-  edited.inheritances['RI-PREVIEW-C-B'].description = '面板保存修改的合成依据'
+  edited.inheritances['RI-002'].description = '面板保存修改的合成依据'
   // Existing completion/domain-quality rules are intentionally not new save
   // gates: a user may save an unfinished assignment without forging an edge.
-  edited.roles['R-PREVIEW-C'].assignment_rule = ''
+  edited.roles['ROLE-003'].assignment_rule = ''
   const saved = await save(edited)
   assert.notEqual(saved.commit, head); assert.equal(notifications.length, 2)
   const reopened = new DesignFilesStore(nodeFs, new GitVersioning(spawn, root), root)

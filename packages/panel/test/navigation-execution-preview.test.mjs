@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 const { JSDOM } = await import('jsdom')
 const dom = new JSDOM('<div id="root"></div>', { url: 'https://panel.test/' })
-for (const key of ['window', 'document', 'HTMLElement', 'Element', 'Node', 'DOMParser']) globalThis[key] = dom.window[key]
+for (const key of ['window', 'document', 'HTMLElement', 'HTMLFormElement', 'DocumentFragment', 'getComputedStyle', 'Element', 'Node', 'DOMParser']) globalThis[key] = dom.window[key]
 globalThis.ResizeObserver = class { observe() {} disconnect() {} }
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 const React = await import('react'); globalThis.React = React
@@ -26,6 +26,23 @@ test('landed executor artifact and trace are read-only projections before canoni
     assert.ok(logs.includes('worker'))
     assert.match(document.body.textContent, /Actual worker trace/)
     assert.equal(document.querySelector('[data-execution-status]').dataset.executionStatus, 'working')
+    for (const phase of ['completed', 'failed', 'cancelled']) {
+      await show(null, { executionAttempts: [{ ...attempt, phase, sequence: 2 }] })
+      assert.equal(document.querySelector('[data-execution-log]') === null, true, `${phase} removes the node's execution region`)
+      assert.ok(document.querySelector('iframe'), 'available artifact content remains readable after execution stops')
+    }
+    await show(null, { executionAttempts: [{ ...attempt, phase: 'queued', sequence: 3 }] })
+    assert.ok(document.querySelector('[data-execution-log]'), 'an actual queued retry restores the runtime log')
+    const missing = async () => ({ found: false, content: '' })
+    await show(null, { readArtifact: missing })
+    const placeholder = document.querySelector('.dsh-artifact-placeholder')
+    assert.ok(placeholder?.querySelector('[data-content-state]'))
+    assert.ok(placeholder.querySelector('[data-execution-log]'), 'empty-content feedback and runtime log share the centered group')
+    await show(null, { readArtifact: missing, executionAttempts: [{ ...attempt, phase: 'failed', sequence: 4 }] })
+    assert.equal(document.querySelector('[data-execution-log]') === null, true)
+    assert.equal(placeholder.querySelector('[data-content-state]').dataset.contentState, 'error', 'content error feedback survives log removal')
+    assert.equal(document.querySelector('[data-preview-refresh]').disabled, false, 'the original refresh recovery remains reachable')
+    await show(null)
     const count = reads.length
     await show('../escape.html')
     assert.equal(reads.length, count, 'invalid explicit ref must not fall back or read')

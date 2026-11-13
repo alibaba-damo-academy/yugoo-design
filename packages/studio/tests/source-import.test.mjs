@@ -6,8 +6,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createStudioInstances } from '../src/node/studio-instances.mjs'
 import { createStudioDraftPorts } from '../src/node/studio-panel-drafts.mjs'
+import { createStudioInstanceAdapters } from '../src/node/studio-instance-composition.mjs'
 import { readStudioContentArchive } from '../src/content-archive.ts'
-import { adapters, originalFiles, entry, textOf, pin } from '../../companion/test/fixtures/studio-changes-fixture.mjs'
+import { adapters, originalFiles, entry, textOf, pin, choice } from '../../companion/test/fixtures/studio-changes-fixture.mjs'
 
 async function fixture(t, ports = adapters()) {
   const stateRoot = await mkdtemp(join(tmpdir(), 'studio-source-import-'))
@@ -329,7 +330,6 @@ test('no-panel validated saves retain identity, definition, digest and stale-rev
   await assert.rejects(service.saveChanges({ ...request, mode: 'validated', digest: candidate.digest }), /changed elsewhere/)
 })
 
-
 test('no-panel support does not bypass declarative/native/auto preview requirements', async t => {
   const { service } = await fixture(t)
   const record = await service.importSources({ kind: 'bundle', files: [entry('SKILL.md', conversationMethod)] })
@@ -341,4 +341,28 @@ test('no-panel support does not bypass declarative/native/auto preview requireme
   }
   const request = { id: record.id, expectedRevision: record.revision, changes: [...conversationSources(record), { path: 'panel.yaml', content: textOf(originalFiles, 'panel.yaml') }] }
   assert.equal((await service.prepareChanges(request)).valid, false, 'Core still rejects a contradictory no-panel declaration with Panel source')
+})
+
+test('small Bundle and Kit imports use loaded names even when every installed capture throws', async t => {
+  let captures = 0
+  const ports = createStudioInstanceAdapters({
+    listBundles: async () => [choice, { name: 'unrelated_large', version: '1.0', title: { zh: '大型源', en: 'Large source' }, runtimeName: 'unrelated_large' }],
+    captureBundle: async () => { captures++; throw new Error('Unrelated installed source cannot be captured.') },
+    captureKit: async () => { throw new Error('Import must not capture an installed Kit.') },
+  })
+  const { service, options } = await fixture(t, ports)
+  const bundle = await service.importSources({ kind: 'bundle', files: originalFiles })
+  const kit = await service.importSources({ kind: 'kit', files: kitSources([]) })
+  assert.notEqual(bundle.title.en, choice.title.en, 'same-name suffix uses the loaded installed title')
+  assert.equal(bundle.readiness.ready, true)
+  const method = (await service.readFile({ id: kit.id, path: 'mindset.md' })).content
+  assert.ok(method.includes('description: Preserve supplied observations.'))
+  assert.ok(method.includes('# Method'))
+  const reopened = await createStudioInstances(options)
+  assert.equal((await reopened.readFile({ id: bundle.id, path: 'SKILL.md' })).content, textOf(originalFiles, 'SKILL.md'))
+  assert.equal((await reopened.read(kit.id)).id, kit.id)
+  assert.equal((await reopened.readFile({ id: kit.id, path: 'mindset.md' })).content, method)
+  assert.equal(captures, 0, 'import discovery and retained reads never capture unrelated installed content')
+  await assert.rejects(ports.catalog.captureBundle(pin), /cannot be captured/)
+  assert.equal(captures, 1, 'the selected operation still reports its real source failure')
 })

@@ -9,9 +9,12 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createYugooDesignMessage } from './dsh-message-source.ts'
+import { deliverDshAdvisoryAcceptance, type AdvisoryAcceptanceDelivery } from './dsh-advisory-acceptance.ts'
 import { allocateDshSaveScopeId, emitDshTimingDiagnostic } from './dsh-timing-diagnostics.ts'
 import { SessionId, type SessionEvent, type SessionHeader } from '@deepseek-ai/dsh-session'
 import { designSessionEvents } from './dsh-session-events.ts'
+import { inspectDesignHistorySession, readDesignArtifactHistory, type DesignHistorySession } from './dsh-artifact-history.ts'
+import type { DesignArtifactHistoryEntry } from './artifact-activity.ts'
 import { designClarityInputMatches } from './design-clarity-report.ts'
 import { projectKitContentHash } from './project-content.ts'
 import { TypertRemoteService, Remote } from '@deepseek-ai/dsh-typert-protocol'
@@ -80,6 +83,11 @@ export interface DesignExecutionLogEntry {
   readonly timestamp: number
   readonly eventType: 'message' | 'search' | 'fetch' | 'synthesize' | 'error'
   readonly message: string
+  /** System-owned tool label; absent for native prose and older projections. Never persisted as design content. */
+  readonly activity?: {
+    readonly kind: 'search' | 'fetch' | 'read-file' | 'write-file' | 'run-script' | 'structured-output' | 'run-tool' | 'tool-failed'
+    readonly detail: string
+  }
   readonly url?: string
 }
 
@@ -257,7 +265,7 @@ function safeExecutionHref(url: string): string | undefined {
  * a javascript:/data:/file:/relative argument never reaches the rendered anchor;
  * the full safe URL is kept as the href while the message shows a truncated form.
  */
-function executionToolDetail(name: string, rawArguments: string): { readonly message: string; readonly url?: string } {
+function executionToolDetail(name: string, rawArguments: string): Pick<DesignExecutionLogEntry, 'message' | 'activity' | 'url'> {
   let args: Record<string, unknown> = {}
   try {
     const parsed = JSON.parse(rawArguments) as unknown
@@ -287,6 +295,18 @@ function executionToolDetail(name: string, rawArguments: string): { readonly mes
   const url = rawUrl === undefined ? undefined : safeExecutionHref(rawUrl)
   const path = identifier(['file_path', 'path', 'target_file'])
   const eventType = executionToolEventType(name)
+  const activity: NonNullable<DesignExecutionLogEntry['activity']> = eventType === 'search'
+    ? { kind: 'search', detail: query ?? name }
+    : eventType === 'fetch'
+      ? { kind: 'fetch', detail: url === undefined ? name : url.slice(0, 200) }
+      : name === 'run_skill_script'
+        ? { kind: 'run-script', detail: path ?? name }
+        : path !== undefined
+          ? { kind: /(?:write|edit|create|publish)/iu.test(name) ? 'write-file' : 'read-file', detail: path }
+          : name === 'structured_output'
+            ? { kind: 'structured-output', detail: '' }
+            : { kind: 'run-tool', detail: name }
+  // Keep the existing message for clients that do not render activity metadata.
   const message = eventType === 'search'
     ? `搜索：${query ?? name}`
     : eventType === 'fetch'
@@ -296,9 +316,9 @@ function executionToolDetail(name: string, rawArguments: string): { readonly mes
       : path !== undefined
         ? `${/(?:write|edit|create|publish)/iu.test(name) ? '写入' : '读取'}文件：${path}`
         : name === 'structured_output'
-          ? '整理并校验调研结果'
+          ? '整理并校验结果'
           : `运行：${name}`
-  return { message, ...(url === undefined ? {} : { url }) }
+  return { message, activity: Object.freeze(activity), ...(url === undefined ? {} : { url }) }
 }
 
 /** Expose top-level Assistant visible text and reasoning; redacted (empty-text) reasoning and Tool-result-nested reasoning stay hidden. */
@@ -438,6 +458,28 @@ export class DesignPanelRemote extends TypertRemoteService {
     }
   }
 
+  /** Explicit read-only history request; ordinary workspace polling never calls it. */
+  async readArtifactHistory(agent: Agent, skill: string, signal: AbortSignal): Promise<readonly DesignArtifactHistoryEntry[]> {
+    return this.artifactHistoryFor(agent, skill, signal)
+  }
+
+  private async artifactHistoryFor(agent: Agent, skill: string | undefined, signal: AbortSignal, runId?: string): Promise<readonly DesignArtifactHistoryEntry[]> {
+    const project = await this.design.projectForAgent(agent, signal)
+    if (skill !== undefined && !this.design.requireKitForAgent(agent).skills.some(item => item.name === skill)) {
+      throw new Error('design panel: unknown Bundle for artifact history')
+    }
+    const reads = new Map<string, Promise<DesignHistorySession | undefined>>()
+    const history = await readDesignArtifactHistory({ projectId: String(project.projectId), skill, runId,
+      main: { meta: agent.session.header, events: designSessionEvents(agent.session), inheritedEventCount: agent.session.inheritedEventCount },
+      inspect: id => {
+        let read = reads.get(id)
+        if (read === undefined) { read = inspectDesignHistorySession(this.hostContext, id, signal); reads.set(id, read) }
+        return read
+      }, signal })
+    this.design.assertProjectSelection(agent, project.projectId)
+    return history
+  }
+
   /**
    * Read one authorized Producer/Worker transcript. This is observability only:
    * it never overlays canonical Design status or writes trace copies to JSON.
@@ -455,24 +497,11 @@ export class DesignPanelRemote extends TypertRemoteService {
     if (afterSeq !== undefined && (!Number.isSafeInteger(afterSeq) || afterSeq < 0)) {
       throw new Error('design panel: execution log cursor must be a non-negative safe integer')
     }
-    type Inspection = { readonly meta: SessionHeader; readonly events: readonly SessionEvent[]; readonly inheritedEventCount?: number }
-    const services = this.hostContext as unknown as {
-      readonly sessions?: { get(id: ReturnType<typeof SessionId>): { readonly header: SessionHeader; readonly inheritedEventCount?: number; snapshotEvents?: () => readonly SessionEvent[]; readonly events?: readonly SessionEvent[] } | undefined }
-      readonly sessionPersistence?: { inspect(id: ReturnType<typeof SessionId>, signal?: AbortSignal): Promise<Inspection> }
-    }
-    const inspect = async (id: ReturnType<typeof SessionId>): Promise<Inspection | undefined> => {
-      const live = services.sessions?.get(id)
-      if (live !== undefined) return { meta: live.header, events: designSessionEvents(live), inheritedEventCount: live.inheritedEventCount }
-      try {
-        return await services.sessionPersistence?.inspect(id, signal)
-      } catch {
-        return undefined
-      }
-    }
-    // The Design plugin binds every live Producer/Worker run id to its owning
-    // conversation in process memory. Restarted Hosts intentionally do not
-    // restore stale execution UI state; completed Design Files remain durable.
+    const inspect = (id: string) => inspectDesignHistorySession(this.hostContext, id, signal)
+    // Live activity and historical observability remain separate. History is
+    // reconstructed only for this exact requested run, never installed as activity.
     const authorized = this.design.ownsExecutionRun(agent, executionRef)
+      || (agent.session !== undefined && (await this.artifactHistoryFor(agent, undefined, signal, executionRef)).some(entry => entry.runId === executionRef))
     if (!authorized) throw new Error('design panel: execution ref does not belong to this conversation')
     const child = await inspect(SessionId(executionRef))
     if (child === undefined) return { found: false, revision: null, reset: false, entries: Object.freeze([]) }
@@ -516,8 +545,7 @@ export class DesignPanelRemote extends TypertRemoteService {
             seq: event.seq,
             timestamp: event.time,
             eventType,
-            message: detail.message,
-            ...(detail.url === undefined ? {} : { url: detail.url }),
+            ...detail,
           }))
         } else if (event.type === 'tool/result') {
           const call = calls.get(String(event.data.message.source.callId))
@@ -528,6 +556,7 @@ export class DesignPanelRemote extends TypertRemoteService {
             timestamp: event.time,
             eventType: 'error',
             message: `${call?.name ?? 'tool'} · failed${event.data.error === undefined ? '' : ` (${event.data.error.code})`}`,
+            activity: Object.freeze({ kind: 'tool-failed', detail: `${call?.name ?? 'tool'}${event.data.error === undefined ? '' : ` (${event.data.error.code})`}` }),
             ...(call?.url === undefined ? {} : { url: call.url }),
           }))
         }
@@ -925,7 +954,8 @@ export class DesignPanelRemote extends TypertRemoteService {
       const journal = await this.design.readDesignJournal(agent)
       const mustEditAuthority = skillDef.execution.handoff === 'must_edit'
         ? await pendingMustEditAuthorityForSave(journal.records, kit.name, kit.version, skill, priorHead,
-          commit => store.diffCommit(commit, signal))
+          commit => store.diffCommit(commit, signal),
+          (commit, head) => store.isCurrentPublicationAt(commit, head, skill, signal))
         : undefined
       const manifest = skillDef.metadata?.skillManifest
       const runtimeDeclaration = typeof manifest === 'object' && manifest !== null && !Array.isArray(manifest)
@@ -1288,9 +1318,11 @@ export class DesignPanelRemote extends TypertRemoteService {
     agent: Agent,
     decision: DesignAdvisoryDecisionPayload,
     signal: AbortSignal,
-  ): Promise<SessionDesignAdvisory> {
+  ): Promise<SessionDesignAdvisory & Partial<AdvisoryAcceptanceDelivery>> {
     if (signal.aborted) signal.throwIfAborted()
-    return this.design.decideAdvisory(agent, decision)
+    const entry = await this.design.decideAdvisory(agent, decision)
+    if (decision.decision !== 'accepted') return entry
+    return { ...entry, ...deliverDshAdvisoryAcceptance(agent, entry) }
   }
 
   /**
@@ -1393,6 +1425,13 @@ Remote(DesignPanelRemote.prototype.readArtifact, {
     initializer.call(Object.create(DesignPanelRemote.prototype) as DesignPanelRemote)
   },
 } as ClassMethodDecoratorContext<DesignPanelRemote, DesignPanelRemote['readArtifact']>)
+
+Remote(DesignPanelRemote.prototype.readArtifactHistory, {
+  kind: 'method', name: 'readArtifactHistory', static: false, private: false,
+  addInitializer(initializer: (this: DesignPanelRemote) => void): void {
+    initializer.call(Object.create(DesignPanelRemote.prototype) as DesignPanelRemote)
+  },
+} as ClassMethodDecoratorContext<DesignPanelRemote, DesignPanelRemote['readArtifactHistory']>)
 
 Remote(DesignPanelRemote.prototype.readExecutionLog, {
   kind: 'method',

@@ -108,7 +108,7 @@ accepted publication, not mutable worktree bytes or a newer project HEAD.
 
 Every host assembles the same instruction layers in this order: the host's own base instructions, the host-neutral Design Core policy, the selected Kit Mindset, and current version-pinned Design state plus accepted advisory reminders. The selected Bundle's complete Skill Body enters its invocation's executor: the isolated Producer for `execution.mode: subagent`, or the existing main conversation for `execution.mode: main`. The routing catalog does not inject every Bundle body. Reconstruction supplies the output contract and source-extraction task instead of the forward Skill Body. The Design Core owns the foreground decision loop and cannot be replaced by a Mindset. A Mindset calibrates the Core for one domain and exposes that Kit's Bundle catalog; it cannot override current user intent, persisted evidence, a selected Bundle, or the Bundle's execution rules. Host-specific response markup, phase routing, buttons, and development commands remain outside these shared layers.
 
-DeepSeek Harness registers these layers and tools as native Cordis plugin contributions and embeds the shared Design UI in the Web application. Its Host Provider uses `agent.inject()` for durable, non-waking model context, exposes `ctx.userQuestions` for an in-turn blocking question when Bundle policy or the Agent requires native ask-user, creates each required Producer through the public Agent factory, and exposes native nested delegation to that Producer as an optional acceleration capability. It supplies package-owned `dsh.client` modules plus Remote services for the Design panel and Studio. Persistent asynchronous continuation is presented by the plugin continuation UI, and acceptance enters as an ordinary logged user turn; advisory dispositions remain plugin-owned review decisions rather than `ctx.userQuestions` interactions. The provider resolves the active Design Project through the Design System binding store instead of a Design Project, Kit, Design File, or clarity projection. Its standard `designAdvisoryInbox` projection is only a refresh/read-model mechanism and is not Design authority. CLI adapters render clarity and lifecycle state as deterministic text.
+DeepSeek Harness registers these layers and tools as native Cordis plugin contributions and embeds the shared Design UI in the Web application. Its Host Provider assembles pure KAG/GRA status into runtime context at existing natural requests and uses `agent.inject()` for plugin messages intended for the next-step inbox. Inject does not wake an idle Agent, but pending input may extend a running turn; pure status must not create that step. The provider exposes `ctx.userQuestions` for an in-turn blocking question when Bundle policy or the Agent requires native ask-user, creates each required Producer through the public Agent factory, and exposes native nested delegation to that Producer as an optional acceleration capability. It supplies package-owned `dsh.client` modules plus Remote services for the Design panel and Studio. Persistent asynchronous continuation is presented by the plugin continuation UI, and acceptance enters as an ordinary logged user turn; advisory dispositions remain plugin-owned review decisions rather than `ctx.userQuestions` interactions. The provider resolves the active Design Project through the Design System binding store instead of a Design Project, Kit, Design File, or clarity projection. Its standard `designAdvisoryInbox` projection is only a refresh/read-model mechanism and is not Design authority. CLI adapters render clarity and lifecycle state as deterministic text.
 
 Every embedded client stylesheet participates in the Host's plugin-module lifecycle. The DSH provider tags its Panel-shell, trusted-provider, and third-party panel styles with the owning `dsh.client` package id, including its published scope, so reload and HMR replace the complete style set atomically. This ownership metadata is distinct from stable Cordis and RPC identities. On materialization, an existing tag with the same stylesheet key receives the current text and package owner; its presence alone must not retain an older revision. Independent ESM renderers retain explicit stylesheet ownership outside synchronous Host factory materialization. A late injected service scope must not privately create or dispose global stylesheet tags; provider-specific styling and shared Panel chrome cannot therefore disappear independently. Component-local inline styles remain permissible only when their DOM lifetime intentionally owns them.
 
@@ -468,15 +468,19 @@ the selected executor from the Skill Body. The selected executor chooses task de
 concurrency, while Core only binds the requested artifact identity and path,
 tracks the native attempt, and returns a file receipt.
 
-The shared runtime supplies the current user brief, bounded conversation evidence, current Bundle state, complete Kit-projected Design state, exact version-pinned resources, and a project-wide read/current-Bundle write capability to the selected executor: the isolated Producer in subagent placement or the existing main Agent in main placement. Validation diagnostics return to the Agent that can repair the rejected material: artifact-local diagnostics return to the same delegated child, while integration and completion diagnostics return to the selected executor. A failed child is only an observation; the selected executor may repair, delegate again, proceed serially, revise the plan, or report a real failure. The main Agent cannot bypass Design persistence with Host filesystem or shell tools.
+The shared runtime supplies the calling Agent’s task plan separately from Host-observed current-turn human input, current Bundle state, complete Kit-projected Design state, exact version-pinned resources, and a project-wide read/current-Bundle write capability to the selected executor: the isolated Producer in subagent placement or the existing main Agent in main placement. Validation diagnostics return to the Agent that can repair the rejected material: artifact-local diagnostics return to the same delegated child, while integration and completion diagnostics return to the selected executor. A failed child is only an observation; the selected executor may repair, delegate again, proceed serially, revise the plan, or report a real failure. The main Agent cannot bypass Design persistence with Host filesystem or shell tools. Current-turn human input is preserved in arrival order, including multipart text, steering, and successful native question answers matched to their logged question call. Direct text and free-text answers remain verbatim; the question is Agent-authored context, while selected labels and custom text are the human answer. Later answers can revise an earlier request. The caller plan must not replace or reinterpret explicit human requirements; current Design Files supply saved facts, which remain revisable when requested. Other-Bundle requirements provide coordination context, not cross-Bundle write authority. The DSH adapter reads those messages and matched answers after the current turn start; it does not substitute previous turns, generic tool output, plugin notices or generated summaries. Native question selections are not promoted into direct continue commands. Exact continue-control matching and accepted-advisory claims retain their separate existing semantics.
+
+Ordinary DSH knowledge queries bind the calling Agent to its selected project through native ancestry, including Producers and Workers. A first bounded query does not require the model to copy Host-known project or graph pins. The result supplies pins for pagination or a task intentionally bound to that snapshot. Explicit foreign/stale pins, unpinned continuation, project changes and read races still fail at the query; absent knowledge never blocks unrelated design work.
 
 Page Design fixes one `common_spec` before generating Page artifacts. The persisted spec contains the shared application shell, main Logo, ordered navigation menu with Page targets, and shared component treatments; its source is always the active Design Style result. `design_style` remains the only visual-language authority, and Page Design never copies its palette, typography, spacing, radius, shadow, or motion values into `common_spec`. When no valid Design Style state exists, the main Agent first runs Design Style to publish an adjustable, product-specific baseline and expose its panel, then resumes the already requested Page Design work in the same foreground turn. Page Design cannot publish a provisional map or unstyled HTML.
 
 Page authors own the page map, evidence references, and which Pages require generation or replacement. Each Page keeps its accepted HTML path in `artifact_file`; one Producer publication versions that reference and its file together. The Producer may delegate independent Page files. Each Worker writes and validates its exact path; the Producer consumes the file receipt and obtains compact hotspot bindings through the file validator rather than reading the complete HTML again. It then updates canonical refs and remains responsible for cross-Page consistency and completion. A failed or running replacement leaves the previous authoritative prototype visible. Queued, running, and cancelled states are Host lifecycle observations projected transiently to the Panel and never form a generic revision ledger.
 
-The Page Producer gives each optional Page Worker the same resolved visual tokens and `common_spec` together with the Page map, assigned functions, and relevant upstream evidence. The Producer can generate the same Pages itself when delegation is unavailable. Each Page is one complete, self-contained HTML document with a single application shell and Page-specific content. The common spec is a cross-Page design input rather than an HTML template or assembly artifact: it fixes navigation items, labels, order, Logo, layout direction, and shared component language without introducing Foundation, fragment, slot, or nested-shell mechanics. Page validation rejects token redefinition, unknown token use, hard-coded visual values that bypass the projection, missing navigation labels, and missing Logo wordmarks.
+The Page Producer gives each optional Page Worker the same resolved visual tokens and `common_spec` together with the Page map, assigned functions, and relevant upstream evidence. The Producer can generate the same Pages itself when delegation is unavailable. Each Page is one complete, self-contained HTML document with a single application shell and Page-specific content. The common spec is a cross-Page design input rather than an HTML template or assembly artifact: it fixes navigation items, labels, order, Logo, layout direction, and shared component language without introducing Foundation, fragment, slot, or nested-shell mechanics. The file validator checks document structure and declared hotspot bindings; comments and raw-text elements do not count as interactive markup. Static validation does not certify visual-token fidelity, shared-shell consistency or working interactions; these remain Producer review and browser walkthrough responsibilities.
 
-`handoff: must_edit` pauses after persisted production. The authoritative panel save commits the edited state and does not return success until that exact version-pinned handoff is recorded as consumed. An exact retry after a post-commit persistence failure reconciles the existing commit and missing consumption idempotently. The client may open a following main-Agent turn to reassess the saved diff and recommend the next action, but the main Agent does not call the same Bundle again merely to release its gate. `handoff: user_continue` exposes one server-owned action whose Host-owned conversation interaction and accepted conversation command resolve to the same pinned continuation. The workspace projects that real Runtime gate from the current Git publication and DesignJournal authority; the client never infers it from Bundle JSON stages. A Bundle panel never renders a second resume control.
+`handoff: must_edit` pauses after persisted production. The authoritative panel save commits the edited state and does not return success until that exact version-pinned handoff is recorded as consumed. An exact retry after a post-commit persistence failure reconciles the existing commit and missing consumption idempotently. The client may open a following main-Agent turn to reassess the saved diff and recommend the next action, but the main Agent does not call the same Bundle again merely to release its gate. `handoff: user_continue` exposes one server-owned action whose Host-owned conversation interaction and accepted conversation command resolve to the same pinned continuation. Bundles declare a handoff only for an actual required interaction, not as a proxy for reviewing a proposal. The Bundle method owns the distinction between pending work and legitimately completed or deferred work; existing completion rules validate their declared output contracts. A new invocation alone is not a reason to force another user action. The workspace projects that real Runtime gate from the current Git publication and DesignJournal authority; the client never infers it from Bundle JSON stages. A Bundle panel never renders a second resume control.
+
+A Panel save updates a pending plan's content pin without settling its explicit continue action. System-record-only commits do not replace the preceding Bundle publication: the store verifies unchanged Design evidence, ancestry and absence of a newer Bundle publication before reusing its authority. Actual content changes, newer executions and completion retain their existing conflict and lifecycle checks.
 
 Validation occurs inside the selected executor's lifecycle, in either main or subagent placement. Working-copy edits are visible filesystem facts but are not a publication. An optional Worker repairs and revalidates its exact artifact before returning a file receipt. The selected executor integrates that receipt without re-reading or retransmitting large artifact bytes merely to record completion. It reads a landed artifact only when its content is a real input to downstream synthesis or repair, and otherwise uses file-path scripts for compact validation or metadata. At publication, the trusted Provider contribution's `preparePublication` operation first normalizes state and materializes deterministic or Host-owned artifacts without writing Design Files; schema, state, completion, ownership, and cross-Bundle validation then evaluate that prepared write; private dependency pins and the project revision are rechecked immediately before the atomic commit. Validators report facts and repair targets without choosing delegation, retry, or regeneration policy. A handoff gate controls continuation of the existing workflow; it never prevents a new user instruction.
 
@@ -575,18 +579,42 @@ All three review profiles investigate the pinned Design Project checkpoint with 
 
 These profiles produce bounded reminders and suggestions. They never silently rewrite authoritative design state. After a human accepts a recommendation, the host submits its acceptance instruction as ordinary user-authorized input to the main Agent, which uses the normal Kit, Bundle, validation, and persistence mechanisms. Inferred relationships remain marked as derived with their method, model or rule version, confidence, sources, and input revisions.
 
+Acceptance authority is independent of notification transport. In DSH, the
+ordinary execution tool atomically claims the accepted action before starting
+its Bundle. The controller recognizes the current project's Journal entry only
+when its action is running with that effective invocation and exact Kit/Bundle
+versions. A nonempty revision brief can then start new work over an earlier
+handoff; it does not acknowledge or consume the old gate. An ordinary background
+notice, an unclaimed acceptance or a failed/completed attempt grants no such
+authority. Retrying a failed action uses the existing claim protocol and logical
+invocation, while a separate user-continue action still requires its own current
+human control. No notification is relabelled as a human message.
+
 `ground.json` and `accepted-assertions.jsonl` are migration inputs, compatibility exports, or temporary file-provider storage only. They are not required project files and do not remain online authorities beside a graph provider. A provider-neutral archive may contain a manifest plus entity, relation, proposal, and decision records for recovery and migration; agents never maintain that archive as the live graph. Proposal decisions bind both the source-provider revision reviewed by the human and a provider-neutral proposal digest. Import validates the digest, remaps provider revisions explicitly, and preserves Design System identities and journal decisions rather than pretending two providers share revision ids.
 
 Question delivery remains an ordinary main-Agent action. After accepted Alignment or Reflection advice, the main Agent revalidates current necessity and respects rejection and deferral. Optional `review_support: [alignment, reflection]` Bundle metadata supplies non-exclusive candidates, not bindings or permissions. The Agent considers the current catalog and methods, then records a suitable Bundle, host-native question/research, or a reasoned no-action choice. A missing or unsuitable candidate never forces a Bundle invocation. Acceptance grants no Design File write authority: selecting a Bundle resolves one exact current Kit/Bundle/version target and action receipt through the shared journal before ordinary execution. Host-native choices mint no Design write receipt and do not themselves prove that investigation or questioning completed. Grounding retains its affected-owner routing. The advisory subsystem neither duplicates Bundle question state nor branches on a Bundle name.
 
 Only user-provided or explicitly confirmed answers can become `human_confirmed` evidence. Answering a question does not authorize a background advisory profile to modify another Bundle's Design Files.
 
-Review history retains the recorded follow-up choice, its reason and execution
-status alongside acceptance. A reasoned no-action choice must not become an
-unanswered request merely because no source file was changed; another review
-needs a material new fact or explicit reconsideration that changes that reason.
-This history is context for judgment, not Design evidence or execution authority.
-Selecting host-native questioning or research does not establish completion.
+Independent review history contains advisory/item locators, source pins, recorded
+status, follow-up choice/reason and execution status. It omits past machine
+findings, rationales and proposed repairs; the complete advice remains in the
+Journal and available to the main Agent through the existing review-action read.
+Locators are not verified findings, and a recorded Agent choice is not necessarily
+a direct user statement. Reviewers derive findings from current pinned sources,
+not a judgment that an old result already covers an issue. Acceptance proves
+neither factual correctness nor repair; a host-native question/research selection
+alone does not establish completion. Respect still-valid rejection or no-action
+reasons; explain the current evidence, explicit reconsideration or source-backed
+correction that changes a recorded reason.
+
+Exact duplicate filtering belongs to atomic Journal publication, using the same
+profile, action and complete item content. The existing filter preserves changed
+actions, mixed finding groups and accepted entries. It intentionally does not
+promise semantic deduplication of differently worded findings: a possible repeat
+must not silently suppress a supported correction. Review depth controls
+investigation scope, not historical-result reuse. No history is deleted, no action
+receipt is transferred and no semantic issue registry is introduced.
 
 ### Background design Agent execution
 
@@ -634,12 +662,16 @@ All execution modes inspect the current filesystem and Git history, retain lifec
 GRA frequency and review depth are separate choices in the existing project
 policy. `depth` is `light`, `standard` (also the absent-field default), or
 `thorough`. DSH and Companion pin that choice when preparing a run; changing the setting
-does not alter an in-flight run or a replayed completed result. Light starts with
-the changed object, current task and direct facts; standard follows their direct
-dependencies; thorough follows relevant project chains and edge cases. Each
-scope has an evidence-based stopping condition. Known consequential risks may
-require further investigation at any depth; finding counts are not effort
-quotas. These are investigation instructions, not fixed token budgets or
+does not alter an in-flight run or a replayed completed result. The three visible
+scopes are Current design, Related designs and Entire project. Light checks the
+current object or task and its directly involved saved facts, reading referenced
+evidence for the same concern without starting reviews of other objects.
+Standard follows directly related responsibilities, decisions and explicit
+dependencies across owning files. Thorough reviews the project's current saved
+designs and their relevant dependencies and exceptions, consulting original
+artifacts as needed. Each scope has an evidence-based stopping condition;
+outside-scope clues remain explicitly unverified rather than silently broadening
+the review. Finding counts are not effort quotas. These are investigation instructions, not fixed token budgets or
 completeness guarantees. Read tools begin with bounded excerpts and still allow
 the reviewer to request necessary evidence. Every depth retains professional
 methods, source verification, uncertainty and the existing save boundaries.
@@ -655,22 +687,22 @@ review. An unfinished foreground task is not itself a design defect; reviewers
 inspect saved evidence at their selected depth without reading newer worktree
 content or skipping an entire Bundle merely because it is being edited.
 
-The shared settings control's **Save & check** saves the selected policy before
-requesting the existing manual review. Saving settings alone writes the policy
-directly and does not send a conversation message or ask a model to apply it.
-A failed save sends no review request. On DSH, Save & check uses an Agent-bound
-Panel RPC to call the existing Core manual-review operation and its Journal /
-scheduler request identity; it does not ask the main Agent to forward the command.
-Adapters without direct dispatch retain their native Agent coordination path.
-Once direct dispatch is attempted, rejection or a lost response never falls back
-to a conversation prompt. The control reports accepted, already requested,
-already completed, rejected and unconfirmed outcomes distinctly. Ordinary design
-content saves still write Design Files / Git before notifying the Agent to read
-the changes; that separate save-and-continue flow is unchanged.
-Retrying an unacknowledged request with unchanged settings retains its request
-identity; editing a setting starts a new intent instead of replaying a review
-prepared under the old policy. Project/session changes retain their existing
-component-lifetime boundary. Automatic scheduling remains a separate choice.
+The shared settings control has Cancel and Save. Save writes the policy directly,
+without starting reviews, sending a conversation message or asking a model to
+apply it. Only the selected mode's editable timing is validated; inactive modes
+retain their previously saved timing. Off disables scope adjustment while
+preserving the selected scope. Cancel, Escape and closing the dialog discard its
+draft. Project/session changes retain the existing component-lifetime boundary.
+
+Manual reviews use the existing Core operation and Journal/scheduler request
+identity, separately from settings. DSH retains its Agent-bound Panel RPC;
+adapters without direct dispatch retain their native Agent coordination path.
+Rejection or a lost direct-dispatch response never falls back to a conversation
+prompt. Retrying the same unacknowledged request preserves its identity and
+prepared policy; a later request with changed settings is a new intent.
+Automatic scheduling remains a separate choice. Ordinary design content saves
+still write Design Files / Git before notifying the Agent to read the changes;
+that save-and-continue flow is unchanged.
 
 Stable DSH system sections contain methods and assessment rules. Mutable
 assessment identity and the current unresolved-advice projection use the Host's

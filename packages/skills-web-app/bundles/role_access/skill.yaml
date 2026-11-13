@@ -7,7 +7,7 @@ order: 12
 icon: shield
 
 execution:
-  handoff: must_edit
+  handoff: none
 
 presentation:
   mode: declarative

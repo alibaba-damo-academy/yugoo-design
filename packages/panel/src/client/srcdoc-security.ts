@@ -3,6 +3,9 @@
 /** Preview execution modes supported by the native Web App panels. */
 export type DesignSrcDocMode = 'interactive-preview' | 'static-document'
 
+/** Local prototype form events are allowed; CSP still denies actual form navigation. */
+export const INTERACTIVE_PREVIEW_SANDBOX = 'allow-scripts allow-forms'
+
 const BASE_POLICY = [
   "default-src 'none'",
   "base-uri 'none'",

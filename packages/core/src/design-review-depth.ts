@@ -1,4 +1,4 @@
-/** User-selected review effort, shared by native and Companion reviewers.
+/** User-selected review scope, shared by native and Companion reviewers.
  * These are investigation instructions, not a promise
  * about model tokens, billing, completeness, or the severity of findings.
  */
@@ -11,16 +11,16 @@ export function designReviewDepth(value: unknown = 'standard'): DesignReviewDept
 
 export function renderDesignReviewDepth(depth: DesignReviewDepth): string {
   const scope = {
-    light: 'Start with the changed object or current user task and its directly involved saved facts. Follow a dependency when it is necessary to verify a concrete concern. Stop routine expansion once those facts support the profile judgment; do not expand into an unrelated whole-project audit or speculative future concerns.',
+    light: 'Check the current design object or user task and its directly involved saved facts. Read referenced evidence when necessary to verify the same concrete concern, without starting a review of other objects in that source. This works without a prior change baseline; do not invent a diff or expand into a whole-project audit.',
     standard: 'Start with the changed object or current user task, then check its directly related saved responsibilities, decisions and explicit dependencies across owning files. Stop when the relevant neighboring evidence resolves the consistency or uncertainty being checked; do not expand into unrelated areas.',
-    thorough: 'Review the relevant project-wide responsibilities and dependency chains, including cross-file consistency, important exceptions and consequences beyond the changed object. Stop when those related paths and meaningful edge cases support the profile judgment; do not substitute an exhaustive generic checklist for relevant investigation.',
+    thorough: 'Review the project’s current saved design results and their relevant responsibilities, dependencies and exceptions. Consult original artifacts as needed. Do not scan obsolete history or copies, or treat an ungenerated Bundle as a required missing deliverable regardless of the user’s current goal.',
   }[depth]
   return [
-    `User-selected review depth: ${depth}. This is fixed for this run; do not change the project policy.`,
+    `User-selected review depth: ${depth}. Review scope: ${depth === 'light' ? 'Current design' : depth === 'thorough' ? 'Entire project' : 'Related designs'}. This is fixed for this run; do not change the project policy.`,
     scope,
-    'Every depth may pursue a known consequential risk beyond its routine starting scope until the evidence resolves it or a concrete limitation is reached. Return every substantiated material finding, and none when the profile threshold is not met. Finding count and response verbosity do not define review depth.',
+    'Every scope uses the same profile threshold. Return substantiated material findings, and none when that threshold is not met. Outside-scope clues without sufficient evidence remain explicitly unverified; state their source and coverage limit without silently broadening the investigation. Scope does not determine finding count, severity or response length.',
     'Read targeted excerpts first and obtain enough surrounding evidence to verify each finding. A partial read is not a complete-file review. If essential evidence is unavailable, disclose the limitation; do not invent facts or claim the project passed an exhaustive review.',
-    'Do not add a separate Agent or model call to choose review depth. Do not repeat pending, rejected or resolved advice without a material new fact.',
+    'Do not add a separate Agent or model call to choose review depth.',
   ].join('\n')
 }
 

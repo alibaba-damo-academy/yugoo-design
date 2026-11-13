@@ -36,7 +36,7 @@ async function checkKit(directory, count) {
   return kit
 }
 
-test('integration notes are optional in both presentation and real validation while essential fields remain required', async () => {
+test('integration notes stay optional and incomplete essential facts remain saveable until completion', async () => {
   const root = fileURLToPath(new URL('../../skills-web-app/', import.meta.url))
   const kit = await loadDesignKit(fs, root, { sourceId: 'fixture:integration-optional-notes' })
   const skill = kit.skills.find(skill => skill.name === 'integration_design')
@@ -48,7 +48,8 @@ test('integration notes are optional in both presentation and real validation wh
     }
     for (const field of ['title', 'description', 'url', 'prompt_content']) {
       const issues = await validateSkillDesign(skill, state({ ...record, [field]: '' }), { scopes })
-      assert.ok(issues.some(issue => issue.code === 'integration_design.incomplete' && issue.message.includes(`\`${field}\``)), `${field}/${scopes[0]} still rejects blank essential facts`)
+      if (scopes[0] === 'completion') assert.ok(issues.some(issue => issue.code === 'integration_design.incomplete' && issue.message.includes(`\`${field}\``)), `${field}: completion still rejects blank essential facts`)
+      else assert.deepEqual(issues, [], `${field}: users can save missing facts without inventing content`)
     }
     assert.ok((await validateSkillDesign(skill, state({ ...record, business_rules: 42 }), { scopes })).some(issue => issue.code === 'schema_violation'), 'provided notes still obey the string schema')
   }
@@ -57,7 +58,7 @@ test('integration notes are optional in both presentation and real validation wh
     assert.equal(panel.fields.find(field => field.key === 'business_rules').required, false)
     for (const field of ['title', 'description', 'url', 'prompt_content']) assert.equal(panel.fields.find(candidate => candidate.key === field).required, true)
     const credentials = panel.fields.find(field => field.key === 'secrets')
-    assert.equal(credentials.columns[0].format, 'upper_identifier')
+    assert.equal(credentials.columns[0].format, undefined, 'documented credential names keep their supplied casing')
     assert.deepEqual(credentials.columns.map(column => column.key), ['name', 'description'], 'translation never changes canonical credential keys')
     if (locale === 'zh-CN') {
       assert.equal(panel.fields.find(field => field.key === 'description').label, '能力说明')
