@@ -56,3 +56,5 @@ export { requestLivePoll, subscribeLivePoll } from './client/live-poll.ts'
 export * from './client/panels/artifact-text-hydration.ts'
 export * from './client/panels/artifact-html-images.ts'
 export * from './client/srcdoc-security.ts'
+
+export { createBpmnLabelBoundsModule } from './bpmn-label-bounds.mjs'

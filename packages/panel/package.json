@@ -80,7 +80,8 @@
     "test": "node --test test/host-entry.test.mjs && node smoke-dock-layout.mjs && node smoke-advisory-card.mjs && node smoke-advisory-sidebar-entry.mjs && node smoke-design-project-sidebar.mjs && node smoke-host-overlay-layering.mjs && pnpm run test:host-dock-geometry && node smoke-dock-session.mjs && pnpm run test:dock-open-layout && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-live-poll.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-execution-log-lifecycle.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-session-controller-adapter.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx smoke-next-step-question.mjs",
     "test:component-packages": "node --import tsx --test test/component-package.test.mjs",
     "test:related-artifacts": "TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --test test/related-artifact.test.mjs",
-    "test:workspace-layout:browser": "node test/workspace-layout-browser.mjs"
+    "test:workspace-layout:browser": "node test/workspace-layout-browser.mjs",
+    "test:bpmn:browser": "node test/bpmn-label-bounds.browser.mjs"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "*",

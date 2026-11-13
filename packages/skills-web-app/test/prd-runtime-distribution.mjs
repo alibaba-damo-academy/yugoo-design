@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { test } from 'node:test'
 import { access, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -30,6 +31,13 @@ test('copied PRD browser runtime resolves without ancestor node_modules or brows
     const viewer = await readFile(join(bundleRoot, 'scripts/assets/bpmn-viewer.js'), 'utf8')
     assert.match(viewer, /BpmnJS/)
     assert.deepEqual(JSON.parse(await readFile(join(bundleRoot, 'scripts/assets/bpmn-presentation.json'))), { defaultStyle: { fontSize: 12 } })
+    const adapter = join(bundleRoot, 'scripts/assets/bpmn-label-bounds.mjs')
+    assert.equal(await readFile(adapter, 'utf8'), await readFile(new URL('../../panel/src/bpmn-label-bounds.mjs', import.meta.url), 'utf8'))
+    assert.equal(typeof (await import(pathToFileURL(adapter))).createBpmnLabelBoundsModule, 'function')
+    const adapterBytes = await readFile(adapter)
+    const binding = { bytes: adapterBytes.length, sha256: createHash('sha256').update(adapterBytes).digest('hex') }
+    assert.deepEqual(manifest.outputs['scripts/assets/bpmn-label-bounds.mjs'], binding)
+    console.log('PRD_SHARED_LABEL_ADAPTER', JSON.stringify({ source: 'packages/panel/src/bpmn-label-bounds.mjs', output: 'scripts/assets/bpmn-label-bounds.mjs', ...binding }))
     for (const component of manifest.components) for (const item of component.materials) await access(join(bundleRoot, item.path))
     await assert.rejects(access(join(bundleRoot, 'scripts/runtime/playwright-core/node_modules')))
     await assert.rejects(access(join(bundleRoot, 'scripts/runtime/playwright-core/bin')))

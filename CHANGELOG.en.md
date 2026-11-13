@@ -12,7 +12,7 @@ Fix Panel saving, content loading, and graph and flow-diagram readability.
 - Use the selected Kit and Bundle for new projects when an upgrade retains the old content library, rather than substituting a historical snapshot.
 - Preserve images and binary resources when previewing installed Kits instead of reading them as text.
 - Translate system field captions in relationship views with the UI language while preserving user text and canvas position.
-- Reserve space for multiline branch captions in flow diagrams and separate opposing return routes to reduce label and connector overlap.
+- Reserve space for multiline branch captions in flow diagrams and separate opposing return routes to reduce label and connector overlap. Preserve text-frame widths when moved labels are saved and reopened, avoiding repeated word splitting.
 
 ## [0.3.0](https://github.com/alibaba-damo-academy/yugoo-design/tree/v0.3.0)
 

@@ -9,7 +9,7 @@
 
 // Native-reference views keep their viewport behavior and use the public
 // Panel renderer policy rather than maintaining another font specification.
-export { BPMN_NATIVE_LABEL_SIZE, BPMN_TEXT_RENDERER } from 'dsh-design-panel/client-api';
+export { BPMN_NATIVE_LABEL_SIZE, BPMN_TEXT_RENDERER, createBpmnLabelBoundsModule } from 'dsh-design-panel/client-api';
 
 // bpmn-js does not publish a narrow TypeScript interface for its canvas
 // service. Keep the local surface explicit instead of leaking `any` into both

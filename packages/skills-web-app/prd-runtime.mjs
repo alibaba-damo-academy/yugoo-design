@@ -10,7 +10,8 @@ const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 const posix = path => path.replaceAll('\\', '/')
 
 export async function preparePrdRuntime({ bundleRoot, workspaceRoot, runBuild, whiteboardEntry,
-  bpmnPresentationFile = join(workspaceRoot, 'packages/panel/src/bpmn-presentation.json') }) {
+  bpmnPresentationFile = join(workspaceRoot, 'packages/panel/src/bpmn-presentation.json'),
+  bpmnLabelBoundsFile = join(workspaceRoot, 'packages/panel/src/bpmn-label-bounds.mjs') }) {
   const require = createRequire(join(workspaceRoot, 'packages/skills-web-app/package.json'))
   const components = [], outputs = {}, maps = [], missingMaterials = []
   const materialRoots = new Map(), materialIdentities = new Map()
@@ -117,6 +118,7 @@ export async function preparePrdRuntime({ bundleRoot, workspaceRoot, runBuild, w
   const presentation = await readFile(bpmnPresentationFile)
   JSON.parse(presentation) // Reject a broken maintained configuration during build.
   await put('scripts/assets/bpmn-presentation.json', presentation)
+  await copy(bpmnLabelBoundsFile, 'scripts/assets/bpmn-label-bounds.mjs')
 
   if (whiteboardEntry !== null) {
     assert.equal(typeof runBuild, 'function', 'Normal build evidence required for Whiteboard export')

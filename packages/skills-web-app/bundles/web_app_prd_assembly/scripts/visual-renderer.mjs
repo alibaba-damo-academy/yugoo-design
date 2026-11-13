@@ -51,6 +51,10 @@ export async function renderPrdVisuals({ bpmnItems, htmlItems, whiteboardItems =
   const bpmnPresentation = bpmnItems.length > 0 && existsSync(presentationFile)
     ? JSON.parse(readFileSync(presentationFile, 'utf8')) : undefined
   if (bpmnItems.length > 0 && existsSync(packagedViewer) && !bpmnPresentation) throw new Error('Packaged BPMN presentation resource is missing')
+  const labelBoundsFile = new URL('./assets/bpmn-label-bounds.mjs', import.meta.url)
+  if (bpmnItems.length > 0 && existsSync(packagedViewer) && !existsSync(labelBoundsFile)) throw new Error('Packaged BPMN label adapter is missing')
+  const labelBoundsFactory = bpmnItems.length > 0 && existsSync(labelBoundsFile)
+    ? (await import(labelBoundsFile.href)).createBpmnLabelBoundsModule : undefined
   const whiteboardBundle = new URL('./assets/whiteboard-export.js', import.meta.url)
   if (whiteboardItems.length > 0 && !existsSync(whiteboardBundle)) throw new Error('Packaged Whiteboard export resource is missing; use the complete built Bundle')
   const packagedPlaywright = new URL('./runtime/playwright-core/index.mjs', import.meta.url)
@@ -65,10 +69,12 @@ export async function renderPrdVisuals({ bpmnItems, htmlItems, whiteboardItems =
       const page = await browser.newPage({ viewport: { width: 1600, height: 1200 } })
       await page.setContent('<!doctype html><html><body><div id="canvas" style="width:1600px;height:1200px"></div></body></html>')
       await page.addScriptTag({ path: viewerBundle })
+      if (labelBoundsFactory) await page.addScriptTag({ content: `window.YugooBpmnLabelBounds = (${labelBoundsFactory.toString()});` })
       for (const item of bpmnItems) {
         try {
           const result = await page.evaluate(async ({ xml, textRenderer }) => {
-            const viewer = new window.BpmnJS({ container: '#canvas', ...(textRenderer ? { textRenderer } : {}) })
+            const viewer = new window.BpmnJS({ container: '#canvas', ...(textRenderer ? { textRenderer } : {}),
+              ...(window.YugooBpmnLabelBounds ? { additionalModules: [window.YugooBpmnLabelBounds()] } : {}) })
             try {
               const imported = await viewer.importXML(xml)
               const saved = await viewer.saveSVG()

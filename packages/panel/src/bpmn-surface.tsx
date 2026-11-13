@@ -3,6 +3,7 @@ import { BPMN_TEXT_RENDERER, applyBpmnLaneHeaderDividers, fitBpmnForVerticalBrow
 import { usePanelI18n } from './panel-i18n.tsx'
 import { loadBpmnRuntime } from './bpmn-runtime-loader.ts'
 import { loadBpmnStyles } from './bpmn-styles-loader.ts'
+import { createBpmnLabelBoundsModule } from './bpmn-label-bounds.mjs'
 import type { RenderOptions } from './interpreter.ts'
 import { bpmnElementContexts, type BpmnElementContext } from './bpmn-context.ts'
 import { PanelContentState } from './panel-content-state.tsx'
@@ -73,7 +74,7 @@ export function BpmnSurface(props: { xml: string; editing: boolean; disabled: bo
       const [runtime] = await Promise.all([loadBpmnRuntime(), loadBpmnStyles()])
       const Constructor = (props.editing ? runtime.Modeler : runtime.NavigatedViewer) as unknown as new (options: Record<string, unknown>) => BpmnRuntime
       if (gone || !container.current) return
-      active = new Constructor({ container: container.current, textRenderer: BPMN_TEXT_RENDERER })
+      active = new Constructor({ container: container.current, textRenderer: BPMN_TEXT_RENDERER, additionalModules: [createBpmnLabelBoundsModule()] })
       instance.current = active
       await active.importXML(props.xml)
       if (gone) return

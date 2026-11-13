@@ -11630,6 +11630,24 @@
       "path": "docs/wiki/official-kits.en.md",
       "action": "include",
       "reason": "Full English counterpart of the canonical Kit user guide, retaining all15 Bundle capabilities, examples, user decisions, source references and scope; no new installation or release claim."
+    },
+    {
+      "kind": "file",
+      "path": "packages/panel/src/bpmn-label-bounds.mjs",
+      "action": "include",
+      "reason": "Shared import-only BPMN adapter preserves authored external-label frames across reading and native editing; reused by provider and copied PRD runtime without Host or third-party changes."
+    },
+    {
+      "kind": "file",
+      "path": "packages/panel/src/bpmn-label-bounds.d.mts",
+      "action": "include",
+      "reason": "Public type declaration for the shared BPMN import adapter; no private data or additional runtime authority."
+    },
+    {
+      "kind": "file",
+      "path": "packages/panel/test/bpmn-label-bounds.browser.mjs",
+      "action": "include",
+      "reason": "Synthetic real-browser regression for repeated label move/save/reimport, old narrow frames and preserved native editing/undo; not an installed Host acceptance claim."
     }
   ]
 }

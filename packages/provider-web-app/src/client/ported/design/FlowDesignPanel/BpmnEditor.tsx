@@ -5,6 +5,7 @@ import { useLangSwitch } from '../ResearchPanel/useLangSwitch.ts';
 import {
   applyBpmnLaneHeaderDividers,
   BPMN_TEXT_RENDERER,
+  createBpmnLabelBoundsModule,
   fitBpmnForVerticalBrowsing,
   fitBpmnToViewport,
   type IBpmnCanvasService,
@@ -93,8 +94,10 @@ export const BpmnEditor: React.FC<IBpmnEditorProps> = ({
     const modelerOptions = {
       container: containerRef.current,
       textRenderer: BPMN_TEXT_RENDERER,
+      additionalModules: [createBpmnLabelBoundsModule()],
     } as ConstructorParameters<typeof Modeler>[0] & {
       textRenderer: typeof BPMN_TEXT_RENDERER;
+      additionalModules: Record<string, unknown>[];
     };
     const modeler = new Modeler(modelerOptions);
     modelerRef.current = modeler;
