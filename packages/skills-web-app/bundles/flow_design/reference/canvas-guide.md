@@ -42,6 +42,9 @@ lane balance or treat dense real flows as permission to remove branches.
 For named branches, reserve annotation space around the endpoint tracks and
 between ranks before placing captions. Inspect the actual wrapped text against
 connectors and lane dividers; disjoint DI rectangles alone are insufficient.
+The installed BPMN renderer expands external label widths below 90px around
+their center. For a long caption, reserve at least that rendered width and its
+wrapped height; shrinking only its DI rectangle does not create clearance.
 Keep a caption beside its own branch rather than moving it across the canvas
 to hide a collision. A return must remain distinguishable from the outgoing
 path, including a short decision/assessment cycle.

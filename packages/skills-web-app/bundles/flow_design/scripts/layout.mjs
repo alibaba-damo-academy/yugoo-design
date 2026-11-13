@@ -24,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 import { gridFor, seedRoutes } from './router.mjs';
 import { detectFeedbackEdges } from './feedback.mjs';
 import { jointSearch, routeDescent } from './search.mjs';
-import { flowLabelSize, placeLabels } from './labels.mjs';
+import { MIN_FLOW_LABEL_WIDTH, flowLabelSize, placeLabels } from './labels.mjs';
 import { createReadingObjective } from './reading-order.mjs';
 import { channelCrowding, spaceChannels } from './channel-spacing.mjs';
 import { layoutPolicy } from './layout-policy.mjs';
@@ -623,7 +623,7 @@ if (hasSwimlanes) {
       const rank = semanticRank.get(node.id);
       rankHeight.set(rank, Math.max(rankHeight.get(rank) || 0, size.height + boundaryOverhang));
     }
-    const rankGap=new Map(),labelWidthByLane=new Map();
+    const rankGap=new Map(),labelWidthByLane=new Map(),rightCaptionEndpoints=new Map();
     // Explicit legacy comparison mode keeps its original unspaced seed.
     for(const edge of policy.reading?edges:[]){
       if(!edge.name)continue;
@@ -635,6 +635,15 @@ if (hasSwimlanes) {
       for(const id of [edge.sourceRef.id,edge.targetRef.id]){
         const laneId=laneByNodeId.get(id);
         labelWidthByLane.set(laneId,Math.max(labelWidthByLane.get(laneId)||0,label.width));
+        const sameLane=laneByNodeId.get(edge.sourceRef.id)===laneByNodeId.get(edge.targetRef.id);
+        const coveredReturn=sameLane&&edges.some(other=>feedbackEdgeIds.has(other.id)
+          &&laneByNodeId.get(other.sourceRef.id)===laneId&&laneByNodeId.get(other.targetRef.id)===laneId
+          &&semanticRank.get(other.targetRef.id)<=rank
+          &&semanticRank.get(other.sourceRef.id)>=semanticRank.get(edge.targetRef.id));
+        if(label.width>MIN_FLOW_LABEL_WIDTH&&sameLane&&!feedbackEdgeIds.has(edge.id)&&coveredReturn){
+          if(!rightCaptionEndpoints.has(laneId))rightCaptionEndpoints.set(laneId,new Set());
+          rightCaptionEndpoints.get(laneId).add(id===edge.sourceRef.id?edge.sourceRef:edge.targetRef);
+        }
       }
     }
     const rankY = new Map();
@@ -760,9 +769,15 @@ if (hasSwimlanes) {
       // Keep it inside the lane rather than over a divider or another branch.
       const captionGutter=Math.max(0,(labelWidthByLane.get(lane.id)||0)+12-lanePadding.left);
       const laneLeftGutter = (currentLaneIndex === 0 ? leftChannelSpace : 0)+captionGutter;
-      const laneRightGutter = currentLaneIndex === lanes.length - 1
+      // An enclosing same-lane return can occupy the left caption gutter. Keep one
+      // renderer-supported wrapped caption beside each long named endpoint
+      // on the right too, using its actual track center and existing margin.
+      const captionRightReach=Math.max(0,...[...(rightCaptionEndpoints.get(lane.id)||[])].map(node=>
+        (extent.xByNodeId.get(node.id)||0)+sizeFor(node.$type).width/2+MIN_FLOW_LABEL_WIDTH+12));
+      const rightCaptionGutter=Math.max(0,captionRightReach-extent.contentWidth-lanePadding.right);
+      const laneRightGutter = (currentLaneIndex === lanes.length - 1
         ? rightChannelSpace
-        : 0;
+        : 0)+rightCaptionGutter;
       const laneWidth = laneLeftGutter + lanePadding.left + extent.contentWidth +
         lanePadding.right + laneRightGutter;
       const laneNodeIds = new Set((lane.flowNodeRef || []).map((ref) => ref.id));

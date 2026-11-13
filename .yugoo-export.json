@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "3f55baedcf9b68310d9e4f99dd7cc54ab402b451",
+  "revision": "633b45d4eb72775ced3bc2727524b9b5abbad055",
   "policySha256": "e287dcbd76d4eb982bee366eb6a253909d223bb4a30ac9deee3a39773a67faa5",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -8456,7 +8456,7 @@
       "mode": "100644"
     },
     "packages/skills-web-app/bundles/flow_design/reference/canvas-guide.md": {
-      "sha256": "f12b3bde32b84abe9bed838809ec95ed8ac7c41a31622b77df90316a67a2ab48",
+      "sha256": "90cd4fc6f684c66f68fbc818cb263ac94f7ef965d27eac8e7290dd1e7210e772",
       "mode": "100644"
     },
     "packages/skills-web-app/bundles/flow_design/reference/preview.json": {
@@ -8484,7 +8484,7 @@
       "mode": "100644"
     },
     "packages/skills-web-app/bundles/flow_design/scripts/labels.mjs": {
-      "sha256": "d4cd1a6fd8d54cf2df83cda2eb8b711e4eafce247c4cd79705ad5b00bb2fe490",
+      "sha256": "b6ae5c8cd4645989c891b87475082d6cee268b0176afda8fefdc7144f16a2051",
       "mode": "100644"
     },
     "packages/skills-web-app/bundles/flow_design/scripts/layout-metrics.mjs": {
@@ -8504,7 +8504,7 @@
       "mode": "100644"
     },
     "packages/skills-web-app/bundles/flow_design/scripts/layout.mjs": {
-      "sha256": "0f27c367595b6950ebbb2e797efd7b0d5bf7d7726d77f2bcb7ae0f5f1c4d530d",
+      "sha256": "e6178bfb3e116860d4f2175712477177a1398c2f8d425e493bb31a12de29edea",
       "mode": "100644"
     },
     "packages/skills-web-app/bundles/flow_design/scripts/moves.mjs": {
@@ -9040,7 +9040,7 @@
       "mode": "100644"
     },
     "packages/skills-web-app/test/smoke-bpmn-routing.mjs": {
-      "sha256": "dcfa4817e688e6f75243f3e8a253dd04cba661d2a899973b7e1fe12e22a98d81",
+      "sha256": "f4bb524775c77898742b483c510fa17c69f210c18fd3738f9ca520e4df2f534d",
       "mode": "100644"
     },
     "packages/skills-web-app/test/smoke-bundle-localization.mjs": {
@@ -9056,7 +9056,7 @@
       "mode": "100644"
     },
     "packages/skills-web-app/test/smoke-layout-production.mjs": {
-      "sha256": "80a29070388df4a0e8483f83382cc6457dfe5fe09f29405f1aa0fdc802b1d0f9",
+      "sha256": "c21538778fec7945e57f8f7ff71296aaad46ec7db81ac4ea8546dfadc335bfab",
       "mode": "100644"
     },
     "packages/skills-web-app/test/smoke-page-design-script.mjs": {

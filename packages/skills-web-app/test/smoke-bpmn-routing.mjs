@@ -80,6 +80,36 @@ for(const edge of scopeEdges)for(const other of scopeEdges){
   assert.notDeepEqual(points(edge),points(other).reverse(),'opposite flows must have distinguishable paths');
 }
 
+// The reference review process has narrow named-flow corridors between a
+// lane divider and a return wire. Preferred-width captions had no clear side;
+// wrapping must preserve the full text without crossing either obstacle.
+const corridorInput=readFileSync(new URL('../../../examples/research-platform-comparison/good/design_files/flow_design/P-003.bpmn',import.meta.url),'utf8');
+const corridorOutput=run(corridorInput);
+const corridorModdle=new BpmnModdle();
+const corridorBefore=(await corridorModdle.fromXML(corridorInput)).rootElement;
+const corridorAfter=(await corridorModdle.fromXML(corridorOutput)).rootElement;
+assert.equal((await corridorModdle.toXML(processOf(corridorAfter))).xml,
+  (await corridorModdle.toXML(processOf(corridorBefore))).xml,'corridor layout preserves semantic process');
+const corridorElements=corridorAfter.diagrams[0].plane.planeElement;
+const corridorEdges=corridorElements.filter(e=>e.$type==='bpmndi:BPMNEdge');
+const corridorLabels=corridorElements.filter(e=>e.label?.bounds);
+for(let i=0;i<corridorLabels.length;i++)for(const other of corridorLabels.slice(i+1))
+  assert.ok(!boxOverlap(corridorLabels[i].label.bounds,other.label.bounds),'corridor labels overlap');
+for(const label of corridorEdges.filter(e=>e.label?.bounds)){
+  // bpmn-js imports long external labels at a minimum90px width, centered
+  // on the DI bounds. A narrower box can pass geometry yet cover its wire.
+  if(Array.from(label.bpmnElement.name||'').length*13>90)
+    assert.ok(label.label.bounds.width>=90,'corridor renderer expands caption width: '+label.bpmnElement.id);
+  for(const wire of corridorEdges)for(let i=1;i<wire.waypoint.length;i++)
+    assert.ok(!hit(wire.waypoint[i-1],wire.waypoint[i],label.label.bounds),
+      'corridor wire crosses caption: '+label.bpmnElement.id+' / '+wire.bpmnElement.id);
+  for(const lane of corridorElements.filter(e=>e.bpmnElement?.$type==='bpmn:Lane'))
+    for(const x of [lane.bounds.x,lane.bounds.x+lane.bounds.width])
+      assert.ok(!hit({x,y:lane.bounds.y},{x,y:lane.bounds.y+lane.bounds.height},label.label.bounds),
+        'corridor divider crosses caption: '+label.bpmnElement.id);
+}
+console.log('BPMN CAPTION CORRIDOR OK: P-003.bpmn');
+
 // Router unit semantics: a spent expansion budget yields NO routes at all
 // (the pipeline then refuses to publish a partial diagram, exit 6), and a
 // funded grid seeds every edge with an orthogonal, cap-respecting baseline.
