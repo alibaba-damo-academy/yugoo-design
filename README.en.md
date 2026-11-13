@@ -28,7 +28,7 @@ The included **Web App Kit** demonstrates this way of working through applicatio
 
 [Website](https://yugoo.org/) · [FAQ](https://yugoo.org/faq/)
 
-[Quick start](#quick-start) · [Why use it](#why-use-it) · [Core capabilities](#core-capabilities) · [Walkthrough](#a-complete-collaboration) · [Extend it](#start-with-software-design-then-extend-it) · [Wiki](docs/wiki/README.en.md) · [Contributing and feedback](#contributing-and-feedback)
+[Quick start](#quick-start) · [Why use it](#why-use-it) · [Core capabilities](#core-capabilities) · [Walkthrough](#a-complete-collaboration) · [Extend it](#start-with-software-design-then-extend-it) · [Wiki](docs/wiki/README.en.md) · [Changelog](CHANGELOG.en.md) · [Contributing and feedback](#contributing-and-feedback)
 
 ## Quick start
 

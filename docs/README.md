@@ -23,7 +23,7 @@
 | 创建项目、修改面板、保存后继续 | [使用指南](wiki/usage.md) |
 | 查阅全部 `/yugoo` 命令与参数 | [完整命令参考](wiki/commands.md) |
 | 使用清晰度、知识关联、自动审查及版本恢复 | [项目手册能力索引](wiki/README.md#能力与原理)、[日常使用](wiki/usage.md) |
-| 查看版本与可用范围 | [预览状态](wiki/preview-status.md)、[套件清单与获取](wiki/kit-sharing.md#official-kits) |
+| 查看版本与可用范围 | [更新日志](../CHANGELOG.md)、[Changelog](../CHANGELOG.en.md)、[预览状态](wiki/preview-status.md)、[套件清单与获取](wiki/kit-sharing.md#official-kits) |
 | 排查问题或反馈建议 | [故障排查](wiki/troubleshooting.md)、[问题反馈](wiki/support.md) |
 
 ## 创作套件与面板

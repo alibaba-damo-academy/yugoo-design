@@ -3167,6 +3167,18 @@
     },
     {
       "kind": "file",
+      "path": "CHANGELOG.md",
+      "action": "include",
+      "reason": "Canonical bilingual major-feature changelog, matched by version and release status; exported unchanged from the development source, without private test logs or publication authorization."
+    },
+    {
+      "kind": "file",
+      "path": "CHANGELOG.en.md",
+      "action": "include",
+      "reason": "Canonical bilingual major-feature changelog, matched by version and release status; exported unchanged from the development source, without private test logs or publication authorization."
+    },
+    {
+      "kind": "file",
       "path": "README.en.md",
       "action": "include",
       "reason": "Complete English counterpart of the canonical Chinese README, with shared chapters, capability/status scope and source links; exact committed bytes exported without a second public authority."

@@ -43,12 +43,14 @@ async function fixture(t, extra = {}) {
 test('canonical roots, Wiki and example docs export exact committed bytes, preserving dirty inputs and excluding historical sources', async t => {
   const f = await fixture(t, {
     'README.en.md': '# Shared design\r\n[简体中文](README.md)\r\n',
+    'CHANGELOG.md': '# 更新日志\n[English](CHANGELOG.en.md)\n[Guide](docs/wiki/guide.md#安装)\n',
+    'CHANGELOG.en.md': '# Changelog\n[简体中文](CHANGELOG.md)\n',
     'examples/demo/README.md': '# Example\n[Install](../../docs/wiki/guide.md#安装)\n[Project](project.json)\n',
     'examples/demo/project.json': '{"name":"Synthetic example"}\n',
   })
   for (const path of ['README.md', 'README.en.md', 'docs/wiki/guide.md', 'examples/demo/README.md']) await writeFile(join(f.source, path), 'Uncommitted user edits\n')
   const result = await stagePublicSnapshot({ ...f, publicDocuments: true, destination: join(f.root, 'stage') })
-  for (const path of [...roots, 'README.en.md', 'docs/wiki/guide.md', 'examples/demo/README.md', 'examples/demo/project.json']) {
+  for (const path of [...roots, 'README.en.md', 'CHANGELOG.md', 'CHANGELOG.en.md', 'docs/wiki/guide.md', 'examples/demo/README.md', 'examples/demo/project.json']) {
     assert.equal(await readFile(join(result.target, path), 'utf8'), f.files[path])
     assert.equal(result.manifest.files[path].sha256, digest(f.files[path]))
   }
@@ -67,6 +69,8 @@ test('missing canonical roots, outer badge anchors and unselected Wiki reference
     { extra: { 'docs/wiki/guide.md': '# 使用指南\n## 安装\n[Internal](../internal/history.md)\n' }, reason: /links are not closed.*file_not_selected/ },
     { extra: { 'README.en.md': '# English\n[Internal](docs/internal/history.md)\n' }, reason: /links are not closed.*file_not_selected/ },
     { extra: { 'README.en.md': '# English\n[Chinese](README.md#missing)\n' }, reason: /links are not closed.*anchor_not_found/ },
+    { extra: { 'CHANGELOG.md': '# 更新日志\n[Internal](docs/internal/history.md)\n' }, reason: /links are not closed.*file_not_selected/ },
+    { extra: { 'CHANGELOG.en.md': '# Changelog\n[Guide](docs/wiki/guide.md#missing)\n' }, reason: /links are not closed.*anchor_not_found/ },
     { extra: { 'examples/demo/README.md': '# Example\n[Internal](../../docs/internal/history.md)\n' }, reason: /links are not closed.*file_not_selected/ },
     { extra: { 'examples/demo/README.md': '# Example\n[Install](../../docs/wiki/guide.md#missing)\n' }, reason: /links are not closed.*anchor_not_found/ },
     { exclude: 'SECURITY.md', reason: /canonical root documents/ },
@@ -157,7 +161,7 @@ const repo = fileURLToPath(new URL('../', import.meta.url))
 const actualPolicy = () => JSON.parse(readFileSync(join(repo, 'release/public-source-policy.json'), 'utf8'))
 const classify = (policy, path) => policy.rules.find(rule => rule.kind === 'file' ? rule.path === path : path.startsWith(rule.path))?.action ?? 'review'
 const isPublicDocument = path => path.endsWith('.md') && (
-  path.startsWith('docs/') || path.startsWith('examples/') || /^(README[^/]*|CONTRIBUTING|SECURITY|AGENTS)\.md$/.test(path) ||
+  path.startsWith('docs/') || path.startsWith('examples/') || /^(README[^/]*|CHANGELOG(?:\.[A-Za-z0-9-]+)?|CONTRIBUTING|SECURITY|AGENTS)\.md$/.test(path) ||
   /^packages\/[^/]+\/(?:hosts\/[^/]+\/)?(README[^/]*|HOSTS)\.md$/.test(path)
 )
 test('public documentation emphasis renders under CommonMark/GFM, including CJK punctuation', async () => {
@@ -208,7 +212,7 @@ test('command reference covers the shared parser and promotes migrate without a 
 })
 test('actual classification keeps canonical docs public, excludes retained originals and limits companion-dev to its directory', async t => {
   const p = actualPolicy()
-  for (const path of [...roots, 'README.en.md', 'docs/wiki/README.md', 'docs/wiki/hosts.md',
+  for (const path of [...roots, 'README.en.md', 'CHANGELOG.md', 'CHANGELOG.en.md', 'docs/wiki/README.md', 'docs/wiki/hosts.md',
     'docs/wiki/commands.md', 'docs/wiki/architecture.md', 'docs/wiki/project-files.md',
     'docs/public-document-sync.md']) assert.equal(classify(p, path), 'include', path)
   for (const path of ['docs/documentation-todo.md', 'release/README.public.md', 'docs/internal/documentation-first-pass/README.md']) assert.equal(classify(p, path), 'exclude', path)
@@ -225,7 +229,7 @@ test('actual classification keeps canonical docs public, excludes retained origi
 test('actual public documentation links close against the reviewed file selection', async () => {
   const p = actualPolicy()
   const wiki = (await readdir(join(repo, 'docs/wiki'))).filter(path => path.endsWith('.md')).map(path => `docs/wiki/${path}`)
-  const publicRoots = [...roots, 'README.en.md', 'AGENTS.md', 'docs/public-document-sync.md']
+  const publicRoots = [...roots, 'README.en.md', 'CHANGELOG.md', 'CHANGELOG.en.md', 'AGENTS.md', 'docs/public-document-sync.md']
   const tracked = execFileSync('git', ['-C', repo, 'ls-files'], { encoding: 'utf8' }).trim().split('\n')
   const selected = [...new Set([...tracked, ...publicRoots, ...wiki])].filter(path => classify(p, path) === 'include')
   const documents = Object.fromEntries(selected.filter(isPublicDocument).map(path => [path, readFileSync(join(repo, path), 'utf8')]))
