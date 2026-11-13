@@ -3,6 +3,7 @@ import { usePanelI18n } from '../panel-i18n.js'
 import React, { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { DesignKnowledgeStatusSnapshot } from '../../../core/src/design-knowledge-status.ts'
 import { GraphCanvas, graphSourceColors } from './graph-canvas.js'
+import { graphNodeLabels } from './graph-node-label.ts'
 import { GraphExploration } from './graph-exploration.js'
 import { projectExplorationRecords } from './graph-bundle-model.js'
 import { projectRecords, recordOwner, recordReach, scopeGraph, edgeReading, filterRelations, graphNodeMatches, relationMeaningLabel, relationOriginLabels, relationOriginLabel, type DesignGraph, type GraphEdge } from './graph-model.js'
@@ -12,8 +13,9 @@ import { Button } from './ported/ui/button.js'
 import { subscribeLivePoll } from './live-poll.js'
 
 /** Read-only system exploration. Search, selection and scope are independent. */
-export function GraphPanel({ read, readStatus, retry, footer, ownerLabels, exploration = false }: { ownerLabels?: Record<string, string>; exploration?: boolean; read: () => Promise<{ content: string }>; readStatus?: () => Promise<DesignKnowledgeStatusSnapshot | undefined>; retry?: () => Promise<unknown>; footer: ReactNode }) {
+export function GraphPanel({ read, readStatus, retry, footer, ownerLabels, panelDefinitions, exploration = false }: { ownerLabels?: Record<string, string>; panelDefinitions?: Readonly<Record<string, { panelYaml?: string }>>; exploration?: boolean; read: () => Promise<{ content: string }>; readStatus?: () => Promise<DesignKnowledgeStatusSnapshot | undefined>; retry?: () => Promise<unknown>; footer: ReactNode }) {
   const { locale, t } = usePanelI18n()
+  const nodeLabel = useMemo(() => graphNodeLabels(panelDefinitions, locale), [panelDefinitions, locale])
   const [relationSelection, setRelationSelection] = useState<GraphEdge>()
   const [retrying, setRetrying] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
@@ -139,9 +141,10 @@ export function GraphPanel({ read, readStatus, retry, footer, ownerLabels, explo
     const source = perspective === 'original' ? projected.edges : scope.edges
     return source.filter(e => ids.has(e.from) && ids.has(e.to))
   }, [projected, scope.nodes, scope.edges, perspective])
-  const results = useMemo(() => query.trim() ? fullScope.nodes.filter(n => graphNodeMatches(n, query)) : [], [fullScope, query])
+  const results = useMemo(() => query.trim() ? fullScope.nodes.filter(n => graphNodeMatches(n, query) || nodeLabel(n).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())) : [], [fullScope, query, nodeLabel])
   const matches = useMemo(() => query.trim() ? new Set(results.map(n => n.id)) : null, [results, query])
   const chosen = graph?.nodes.find(n => n.id === selected), edge = (exploration ? relationSelection : undefined) ?? scope.edges.find(e => e.id === edgeId)
+  const seedNode = graph?.nodes.find(node => node.id === seed)
   const contentCounts = useMemo(() => {
     const counts = new Map<string, number>()
     if (graph) for (const node of graph.nodes) if (!node.record) {
@@ -227,7 +230,7 @@ export function GraphPanel({ read, readStatus, retry, footer, ownerLabels, explo
         {viewSettingsCount > 0 && <span className='graph-settings-count' aria-hidden='true'>{viewSettingsCount}</span>}
       </Button>
       {matches && <details open className='graph-search-results'><summary>{t('knowledgeGraphSearchResults', { count: matches.size })}</summary><div>
-        {results.map(n => <button key={n.id} onClick={() => { setSeed(n.id); setSelected(n.id); setEdgeId(''); setRelationSelection(undefined); setQuery('') }}>{n.label}</button>)}
+        {results.map(n => <button key={n.id} onClick={() => { setSeed(n.id); setSelected(n.id); setEdgeId(''); setRelationSelection(undefined); setQuery('') }}>{nodeLabel(n)}</button>)}
         {!results.length && <span>{t('knowledgeGraphNoMatches')}</span>}
       </div></details>}
     </header>
@@ -259,17 +262,17 @@ export function GraphPanel({ read, readStatus, retry, footer, ownerLabels, explo
     </div></div> : <>
       {visibleError && <p role='alert' className='graph-notice'>{visibleError}</p>}
       {(seed || meaning !== 'all' || origin !== 'all') && <div className='graph-scopebar'>
-        {seed && <><span>{t('knowledgeGraphNeighborhoodTitle', { label: graph.nodes.find(n => n.id === seed)?.label ?? seed })}</span><button onClick={() => setSeed('')}>{t('knowledgeGraphBack')}</button></>}
+        {seed && <><span>{t('knowledgeGraphNeighborhoodTitle', { label: seedNode ? nodeLabel(seedNode) : seed })}</span><button onClick={() => setSeed('')}>{t('knowledgeGraphBack')}</button></>}
         {(meaning !== 'all' || origin !== 'all') && <><span>{t('knowledgeGraphScope', { meaning: meaning === 'all' ? t('allRecords') : relationMeaningLabel(meaning, locale), origin: origin === 'all' ? t('allRecords') : relationOriginLabel(origin, locale) })}</span><button onClick={() => { setMeaning('all'); setOrigin('all'); clear() }}>{t('knowledgeGraphShowAllRelations')}</button></>}
       </div>}
       {scope.edges.length === 0 && <p className='graph-notice'>{t(graph.semantic?.state === 'indexing' ? 'knowledgeGraphNoEdgesIndexing' : 'knowledgeGraphNoEdges')}</p>}
       {exploration && <div className='graph-view-note' role='note'>{t('knowledgeGraphExplorationHint')}</div>}
       <div className='graph-view-body' data-exploring={exploration} data-inspecting={Boolean(chosen || edge)}>
-        {exploration ? <GraphExploration graph={scope} selected={selected} relation={edge} onNode={id => { setSelected(id); setEdgeId(''); setRelationSelection(undefined) }} onEdge={relation => { setRelationSelection(relation); setEdgeId(relation.id); setSelected('') }} onClear={clear} /> : (
-        <GraphCanvas sourceLabels={sourceLabels} contentCounts={contentCounts} viewMode={canvasView} sizeMode={sizeMode} graph={scope} layoutEdges={layoutEdges} layout={`${layout}-${perspective}`} reach={reach} selected={selected} selectedEdge={edgeId} matches={matches} onNode={id => { setSelected(id); setEdgeId(''); setRelationSelection(undefined) }} onEdge={id => { setEdgeId(id); setSelected('') }} onClear={clear} />
+        {exploration ? <GraphExploration nodeLabel={nodeLabel} graph={scope} selected={selected} relation={edge} onNode={id => { setSelected(id); setEdgeId(''); setRelationSelection(undefined) }} onEdge={relation => { setRelationSelection(relation); setEdgeId(relation.id); setSelected('') }} onClear={clear} /> : (
+        <GraphCanvas nodeLabel={nodeLabel} sourceLabels={sourceLabels} contentCounts={contentCounts} viewMode={canvasView} sizeMode={sizeMode} graph={scope} layoutEdges={layoutEdges} layout={`${layout}-${perspective}`} reach={reach} selected={selected} selectedEdge={edgeId} matches={matches} onNode={id => { setSelected(id); setEdgeId(''); setRelationSelection(undefined) }} onEdge={id => { setEdgeId(id); setSelected('') }} onClear={clear} />
         )}
         {(chosen || edge) && <aside className='graph-inspector dsh-design-panel' aria-label={t('knowledgeGraphDetails')} ref={detailsElement} onKeyDown={event => { if (event.key === 'Escape' && !(event.target as HTMLElement).closest('.dsh-panel-help')?.querySelector('[aria-expanded=true]')) { event.stopPropagation(); clear() } }}>
-          <GraphInspector key={chosen?.id ?? edge?.id} graph={graph} node={chosen} edge={edge} relations={scope.edges} sourceLabels={sourceLabels}
+          <GraphInspector key={chosen?.id ?? edge?.id} graph={graph} nodeLabel={nodeLabel} node={chosen} edge={edge} relations={scope.edges} sourceLabels={sourceLabels}
             recordAction={chosenOwner && expandable.some(n => n.id === chosenOwner) ? { expanded: expanded.has(chosenOwner), count: contentCounts.get(chosenOwner) ?? 0, toggle: () => toggleRecord(chosenOwner) } : undefined}
             onClose={clear} onNeighborhood={() => { if (chosen) { setSeed(chosen.id); setQuery('') } }}
             onNode={id => { if (chosenOwner) setExpanded(old => new Set([...old, chosenOwner])); setSelected(id); setEdgeId(''); setRelationSelection(undefined); setSeed('') }}

@@ -1,6 +1,6 @@
 // Label placement for laid-out BPMN diagrams.
 //
-// Extracted verbatim from orthogonal-routing.mjs when that module's routing
+// Originally extracted from orthogonal-routing.mjs when that module's routing
 // core was superseded by router.mjs + search.mjs (revision 10). Label
 // placement is an independent presentation pass over the FINAL geometry:
 // it scores candidate rectangles against node boxes, already-placed labels
@@ -8,8 +8,21 @@
 
 import { boxOverlap, distance, hit, segments } from './router.mjs';
 
+export function flowLabelSize(name) {
+  const textWidth=Array.from(name).length*13;
+  const width=Math.min(140,Math.max(56,textWidth));
+  return {width,height:Array.from(name).length>10?Math.max(36,Math.ceil(textWidth/width)*16):20};
+}
+
 export function placeLabels(model) {
   const placed=[];const allSegments=model.edges.flatMap(e=>segments(e.waypoint));
+  // Lane dividers are visible wires too; a caption must not be printed over
+  // one merely because it is not a semantic sequence flow.
+  for(const lane of model.lanes){
+    const b=lane.bounds;
+    if(lane.isHorizontal)for(const y of [b.y,b.y+b.height])allSegments.push([{x:b.x,y},{x:b.x+b.width,y}]);
+    else for(const x of [b.x,b.x+b.width])allSegments.push([{x,y:b.y},{x,y:b.y+b.height}]);
+  }
   const minX=Math.min(...model.lanes.map(l=>l.bounds.x))+4,maxX=Math.max(...model.lanes.map(l=>l.bounds.x+l.bounds.width))-4;
   const minY=Math.min(...model.lanes.map(l=>l.bounds.y))+44,maxY=Math.max(...model.lanes.map(l=>l.bounds.y+l.bounds.height))-4;
   const outside=p=>p.x<minX||p.x+p.width>maxX||p.y<minY||p.y+p.height>maxY;
@@ -27,9 +40,10 @@ export function placeLabels(model) {
     const chosen=options.map((r,i)=>({r,s:score(r)+i*.01})).sort((a,b)=>a.s-b.s)[0].r;
     n.label=model.moddle.create('bpmndi:BPMNLabel',{bounds:model.moddle.create('dc:Bounds',chosen)});placed.push(chosen);
   }
+  const pending=[];
   for(const edge of model.edges) {
     const name=edge.bpmnElement.name;if(!name)continue;
-    const width=Math.min(140,Math.max(56,Array.from(name).length*13)),height=Array.from(name).length>10?36:20;
+    const {width,height}=flowLabelSize(name);
     const options=[];
     for(const [a,b]of segments(edge.waypoint)) {
       const span=distance(a,b);
@@ -42,6 +56,15 @@ export function placeLabels(model) {
         }
       }
     }
+    const available=options.filter(r=>!outside(r)&&!model.nodes.some(n=>boxOverlap(n.bounds,r))
+      &&!placed.some(p=>boxOverlap(p,r))).length;
+    pending.push({edge,options,available});
+  }
+  // Reserve short/constrained branches before routes that have many other
+  // legal positions. ID order alone lets a flexible label consume the only
+  // usable space beside a short branch, even when both labels could fit.
+  pending.sort((a,b)=>a.available-b.available||a.edge.bpmnElement.id.localeCompare(b.edge.bpmnElement.id));
+  for(const {edge,options} of pending) {
     const score=r=>Number(outside(r))*100000+model.nodes.filter(n=>boxOverlap(n.bounds,r)).length*10000+placed.filter(p=>boxOverlap(p,r)).length*10000+allSegments.filter(([a,b])=>hit(a,b,r)).length*100;
     const chosen=options.map((r,i)=>({r,s:score(r)+i*.01})).sort((a,b)=>a.s-b.s)[0].r;
     edge.label=model.moddle.create('bpmndi:BPMNLabel',{bounds:model.moddle.create('dc:Bounds',chosen)});placed.push(chosen);

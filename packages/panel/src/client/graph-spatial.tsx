@@ -70,7 +70,7 @@ export function SpatialGraphCanvas(props: GraphCanvasProps & GraphCanvasTheme & 
       const native = graph
       native.backgroundColor('rgba(0,0,0,0)').showNavInfo(false).forceEngine('d3').enableNodeDrag(false)
         .width(mount.clientWidth).height(mount.clientHeight).warmupTicks(0).cooldownTicks(1).cooldownTime(6000)
-        .nodeLabel(n => { const el = document.createElement('span'); el.textContent = n.label; return el })
+        .nodeLabel(n => { const el = document.createElement('span'); el.textContent = latest.current.nodeLabel?.(n) ?? n.label; return el })
         .linkLabel(e => { const el = document.createElement('span'); el.textContent = relationDisplayLabel(e, localeRef.current); return el })
         .nodeThreeObject(n => {
           const geometry = new THREE.SphereGeometry(1, 12, 8)
@@ -199,7 +199,7 @@ export function SpatialGraphCanvas(props: GraphCanvasProps & GraphCanvasTheme & 
         const detailed = (id: string) => id === focus || id === hovered || neighbors.has(id) || Boolean(matches?.has(id))
         const candidates = visible.sort((a, b) => Number(b.id === focus || b.id === hovered) - Number(a.id === focus || a.id === hovered) || Number(detailed(b.id)) - Number(detailed(a.id)) || labelRanks.get(a.id)! - labelRanks.get(b.id)!)
         const items = candidates.map(p => {
-          const text = shortGraphLabel(p.n, detailed(p.id), latest.current.contentCounts?.get(p.id), localeRef.current)
+          const text = shortGraphLabel({ ...p.n, label: latest.current.nodeLabel?.(p.n) ?? p.n.label }, detailed(p.id), latest.current.contentCounts?.get(p.id), localeRef.current)
           return { ...p, text, w: measure.measureText(text).width + 12, h: 24 }
         })
         const placed: ReturnType<typeof placeLabels<(typeof items)[number]>> = []
@@ -224,7 +224,7 @@ export function SpatialGraphCanvas(props: GraphCanvasProps & GraphCanvasTheme & 
             button.onblur = () => { hovered = ''; style() }
             labelButtons.set(p.id, button); layer.append(button)
           }
-          button.textContent = p.text; button.title = p.n.label; button.setAttribute('aria-label', p.n.label)
+          button.textContent = p.text; button.title = latest.current.nodeLabel?.(p.n) ?? p.n.label; button.setAttribute('aria-label', button.title)
           button.dataset.nodeId = p.id; button.dataset.nodeX = String(p.x); button.dataset.nodeY = String(p.y)
           const preview = !p.n.record && !detailed(p.id)
           button.dataset.labelTier = detailed(p.id) ? 'detail' : p.n.record ? 'record' : 'preview'
@@ -302,7 +302,7 @@ export function SpatialGraphCanvas(props: GraphCanvasProps & GraphCanvasTheme & 
     }).catch(reason => { if (!disposed) { cleanup(); setLoading(false); setError(String(reason)); mount.dataset.layoutState = 'error' } })
     return () => { disposed = true; cleanup(); actions.current = { fit: () => {}, zoom: () => {}, pause: () => {}, projection: () => {}, restart: () => {}, style: () => {} } }
   }, [props.graph, props.engine, props.layoutEdges, revision])
-  useEffect(() => { actions.current.style() }, [props.selected, props.selectedEdge, props.matches, props.sizeMode, props.dark])
+  useEffect(() => { actions.current.style() }, [props.selected, props.selectedEdge, props.matches, props.sizeMode, props.dark, props.nodeLabel, locale])
   return <div className='graph-spatial-canvas' data-canvas-theme={props.dark ? 'dark' : 'light'} style={{ position: 'relative', flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden', background: props.dark ? '#121a25' : '#fafbfd' }}>
     <canvas ref={nebulaRef} aria-hidden='true' style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: .9, pointerEvents: 'none' }} />
     <div ref={host} aria-label={t('graphSpatialCanvas')} style={{ position: 'absolute', inset: 0 }} />

@@ -4,6 +4,8 @@ import assert from 'node:assert/strict'
 
 const testFiles = new Set([
   'test-reading-order.mjs', 'test-channel-spacing.mjs', 'test-layout-policy.mjs', 'test-page-file-contract.mjs',
+  'flow-node-content.test.mjs', 'integration-draft-validation.test.mjs', 'research-evidence.test.mjs', 'prd-ai-source-contract.mjs',
+  'foundation-quality-resources.test.mjs', 'whiteboard-text-geometry.test.mjs',
   'smoke-page-design-script.mjs', 'smoke-flow-design-script.mjs', 'smoke-bpmn-routing.mjs',
   'smoke-bundle-localization.mjs', 'portable-distribution.mjs', 'prd-runtime-distribution.mjs', 'smoke-design-style-script.mjs', 'smoke-prd-script.mjs', 'smoke-layout-production.mjs',
 ].map(name => `test/${name}`))
@@ -25,6 +27,10 @@ export function assertKitTestScripts(scripts) {
     assert.match(name, /^test(?::[a-z0-9][a-z0-9:-]*)?$/u, 'Kit scripts must not add build, install or runtime lifecycle commands')
     assert.equal(typeof command, 'string', 'Kit test command must be a string')
     for (const segment of command.split('&&')) {
+      if (segment.trim() === 'node test/smoke-flow-design-script.mjs --node-supplements-only') {
+        referenced.add('test/smoke-flow-design-script.mjs')
+        continue
+      }
       const tokens = segment.trim().split(/\s+/u)
       assert.equal(tokens[0], 'node', 'Kit tests may only invoke Node directly')
       const testRunner = tokens[1] === '--test'

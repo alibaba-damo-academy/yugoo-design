@@ -6,18 +6,20 @@ This log summarizes major features, noticeable experience changes, and installat
 
 ## [0.3.1](https://github.com/alibaba-damo-academy/yugoo-design/tree/v0.3.1)
 
-Fix Panel saving and content loading.
+Fix Panel saving, content loading, and graph and flow-diagram readability.
 
 - Keep current Panel content editable and saveable when an old publication's Git commit is missing, without treating an unverifiable historical record as a completed user-edit handoff.
 - Use the selected Kit and Bundle for new projects when an upgrade retains the old content library, rather than substituting a historical snapshot.
 - Preserve images and binary resources when previewing installed Kits instead of reading them as text.
+- Translate system field captions in relationship views with the UI language while preserving user text and canvas position.
+- Reserve space for multiline branch captions in flow diagrams and separate opposing return routes to reduce label and connector overlap.
 
 ## [0.3.0](https://github.com/alibaba-damo-academy/yugoo-design/tree/v0.3.0)
 
 This round focuses on consistent Design Panels, suggestions that are easier to act on, and clearer Web App Kit design and research.
 
 - **Consistent Panel reading and editing.** Unify page headings, gray sections, white record cards, identifiers and inline editing. Make questions more compact, improve editing within permission tables, and standardize required markers and field help. Expose direct language and light/dark theme switches in DSH and Companion, connected to host preferences.
-- **Better research and flow design.** AI can refine research directions into editable questions and scope. Retain search records for the questions, align direction and final-report reading widths, and strengthen guidance for visual reports. Organize process nodes as child records of a flow, with access to node details from the diagram.
+- **Better research and flow design.** AI can refine research directions into editable questions and scope. Retain the original search history for each research direction, align direction and final-report reading widths, and strengthen guidance for visual reports. Organize process nodes as child records of a flow, with access to node details from the diagram.
 - **Clearer design suggestions.** Automatic review (GRA) uses concise, actionable advice to explain the proposed change and its evidence. Clarify the three review scopes—Current design, Related designs and Entire project—and shorten review output and repeated context while retaining Accept, Reject and Later decisions.
 - **More readable relationships and clarity signals.** Reduce visual clutter in the knowledge graph (KAG), simplify tools and filters, and improve access to nodes, relationships and original evidence. Keep the Ideation index's individual U/S/T progress bars and explanations while removing the combined score.
 - **Better generation and recovery feedback.** Correct subagent log placement and remove logs after completion, temporarily hide the previous PRD while it is being updated, and improve Studio error, cancellation and retry feedback, alongside bilingual empty states when no Kit is selected.

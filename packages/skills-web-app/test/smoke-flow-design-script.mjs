@@ -172,7 +172,7 @@ if (process.argv.includes('--node-supplements-only')) process.exit(0)
 const laidOut = run(layoutScript, [], xml)
 assert.equal(laidOut.status, 0, laidOut.stderr)
 assert.match(laidOut.stdout, /<bpmndi:BPMNDiagram/)
-assert.match(laidOut.stdout, /layoutRevision="13"/)
+assert.match(laidOut.stdout, /layoutRevision="14"/)
 assert.match(laidOut.stderr, /"preference":"balanced"/)
 assert.match(laidOut.stderr, /"channels":/)
 
@@ -251,11 +251,15 @@ if (process.argv.includes('--dependency-layout-only')) {
   process.exit(0)
 }
 // Already-saved supported diagrams remain valid without rewriting coordinates.
-for (const revision of ['9','10','11','12']) {
-  const previous=laidOut.stdout.replace('layoutRevision="13"',`layoutRevision="${revision}"`)
+for (const revision of ['9','10','11','12','13']) {
+  const previous=laidOut.stdout.replace('layoutRevision="14"',`layoutRevision="${revision}"`)
   const result=run(validateScript,['validate-final-bpmn-file'],`${JSON.stringify({process_id:'P-001',process:processRecord})}\n${previous}`)
   assert.equal(result.status,0,result.stdout||result.stderr)
 }
+const unknownRevision=laidOut.stdout.replace('layoutRevision="14"','layoutRevision="999"')
+const rejectedRevision=run(validateScript,['validate-final-bpmn-file'],`${JSON.stringify({process_id:'P-001',process:processRecord})}\n${unknownRevision}`)
+assert.equal(rejectedRevision.status,1)
+assert.match(JSON.parse(rejectedRevision.stdout).diagnostics.join('\n'),/supported autoagent:layoutRevision/)
 
 const manualEdge = laidOut.stdout.replace('id="SequenceFlow_P-001_1_di"', 'id="manual_edge"')
 const rejectedManualEdge = run(validateScript, ['validate-final-bpmn-file'], `${JSON.stringify({

@@ -51,7 +51,7 @@ function Evidence({ raw, label }: { raw: string; label: string }) {
   return <>{prose && prose !== label && <div className='dsh-panel-reading-item'>{prose}</div>}
     {!!quotes.length && <div className='dsh-panel-reading-list'>{quotes.map((quote, index) => <blockquote className='dsh-panel-reading-item' key={index}>{quote}</blockquote>)}</div>}</>
 }
-function Endpoints({ graph, from, to, direction }: { graph: DesignGraph; from: string; to: string; direction: string }) {
+function Endpoints({ graph, from, to, direction, nodeLabel }: { nodeLabel?: (node: GraphNode) => string; graph: DesignGraph; from: string; to: string; direction: string }) {
   const { t } = usePanelI18n()
   const text = (id: string) => {
     const node = graph.nodes.find(candidate => candidate.id === id)
@@ -60,7 +60,8 @@ function Endpoints({ graph, from, to, direction }: { graph: DesignGraph; from: s
     // Read that value instead of the shortened canvas label. Object excerpts
     // start with descendant pointers and keep their existing record label.
     const prefix = `${node.pointer}: `
-    return node.context.startsWith(prefix) ? node.context.slice(prefix.length) || node.label : node.label
+    const label = nodeLabel?.(node) ?? node.label
+    return node.context.startsWith(prefix) ? node.context.slice(prefix.length) || label : label
   }
   return <div className='dsh-panel-reading-item'><Facts values={[
     [t(direction === 'forward' ? 'knowledgeGraphFrom' : 'knowledgeGraphEndpointOne'), text(from)],
@@ -69,13 +70,14 @@ function Endpoints({ graph, from, to, direction }: { graph: DesignGraph; from: s
 }
 
 export function GraphInspector(props: {
-  graph: DesignGraph; node?: GraphNode; edge?: GraphEdge; relations: GraphEdge[]; sourceLabels: Record<string, string>
+  nodeLabel?: (node: GraphNode) => string; graph: DesignGraph; node?: GraphNode; edge?: GraphEdge; relations: GraphEdge[]; sourceLabels: Record<string, string>
   recordAction?: { expanded: boolean; count: number; toggle: () => void }
   onClose: () => void; onNode: (id: string) => void; onEdge: (edge: GraphEdge) => void
   onNeighborhood: () => void; onExpandEndpoints: () => void
 }) {
   const { locale, t } = usePanelI18n()
   const { graph, node, edge, recordAction } = props
+  const label = props.nodeLabel ?? ((node: GraphNode) => node.label)
   const detail = node ? contentDetail(graph, node, locale) : undefined
   const members = edge ? edge.members?.length ? edge.members : [edge] : []
   const readings = members.map(edgeReading)
@@ -86,13 +88,13 @@ export function GraphInspector(props: {
   const related = node ? props.relations.filter(relation => relation.from === node.id || relation.to === node.id) : []
   return <>
     <PanelRecordHeader variant='detail' titleRole='record' context={node ? `${detail?.kind} · ${props.sourceLabels[node.owner] ?? node.owner}` : t('knowledgeGraphRelationEvidence')}>
-      <h4 className='dsh-panel-header-heading'>{node?.label ?? (edge ? common?.origin === 'embedding' ? members.length > 1 ? t('knowledgeGraphOriginalRelations', { meaning: relationMeaningLabel(common.meaning, locale), count: members.length }) : relationMeaningLabel(common.meaning, locale) : relationDisplayLabel(edge, locale) : '')}</h4>
+      <h4 className='dsh-panel-header-heading'>{(node ? label(node) : undefined) ?? (edge ? common?.origin === 'embedding' ? members.length > 1 ? t('knowledgeGraphOriginalRelations', { meaning: relationMeaningLabel(common.meaning, locale), count: members.length }) : relationMeaningLabel(common.meaning, locale) : relationDisplayLabel(edge, locale) : '')}</h4>
       <Button variant='ghostIcon' size='icon' aria-label={t('knowledgeGraphCloseDetails')} onClick={props.onClose}><X size={16} aria-hidden='true' /></Button>
     </PanelRecordHeader>
     <div className='graph-inspector-body dsh-design-structured-list'>
       {node ? <>
         {node.sourceLabel && node.sourceLabel !== node.label && <p className='dsh-design-form-group-description'>{t('knowledgeGraphSourceSummary', { label: node.sourceLabel })}</p>}
-        {detail?.source && detail.source.id !== node.id && <p className='dsh-design-form-group-description'>{t('knowledgeGraphSourceLabel', { label: detail.source.label })}</p>}
+        {detail?.source && detail.source.id !== node.id && <p className='dsh-design-form-group-description'>{t('knowledgeGraphSourceLabel', { label: label(detail.source) })}</p>}
         <div className='graph-inspector-actions'>
           {recordAction && <Button variant='outline' size='sm' aria-label={t(recordAction.expanded ? 'knowledgeGraphCollapseRecord' : 'knowledgeGraphExpandRecord')} onClick={recordAction.toggle}>{t('knowledgeGraphRecordUnits', { action: t(recordAction.expanded ? 'knowledgeGraphCollapseRecord' : 'knowledgeGraphExpandRecord'), count: recordAction.count })}</Button>}
           <Button variant='outline' size='sm' onClick={props.onNeighborhood}>{t('knowledgeGraphNeighborhood')}</Button>
@@ -100,14 +102,15 @@ export function GraphInspector(props: {
         <Group title={<>{t('knowledgeGraphVisibleCount', { count: related.length })}<PanelHelp label={t('knowledgeGraphVisibleRelations')}>{t('knowledgeGraphVisibleHint')}</PanelHelp></>}>
           <div className='dsh-panel-reading-list'>{related.map(relation => {
             const other = relation.from === node.id ? relation.to : relation.from
+            const otherNode = graph.nodes.find(candidate => candidate.id === other)
             return <button className='dsh-panel-reading-item' key={relation.id} onClick={() => props.onEdge(relation)}>
-              <span className='dsh-design-field-value'>{graph.nodes.find(candidate => candidate.id === other)?.label ?? other}</span>
+              <span className='dsh-design-field-value'>{otherNode ? label(otherNode) : other}</span>
               <span className='dsh-panel-header-context'>{relationDisplayLabel(relation, locale)} · {relationOriginLabel(edgeReading(relation).origin, locale)}</span>
             </button>
           })}</div>
         </Group>
         {!!detail?.children.length && <Group title={t('knowledgeGraphUnitCount', { count: detail.children.length })}>
-          <div className='dsh-panel-reading-list'>{detail.children.map(child => <button className='dsh-panel-reading-item' key={child.id} onClick={() => props.onNode(child.id)}>{child.label}</button>)}</div>
+          <div className='dsh-panel-reading-list'>{detail.children.map(child => <button className='dsh-panel-reading-item' key={child.id} onClick={() => props.onNode(child.id)}>{label(child)}</button>)}</div>
         </Group>}
         <Group title={<>{t('knowledgeGraphExcerpt')}<PanelHelp label={t('knowledgeGraphExcerpt')}>{t('knowledgeGraphExcerptHint')}</PanelHelp></>} defaultOpen={node.contentKind !== 'container'} className='graph-evidence'>
           <div className='dsh-source-reference'><pre className='dsh-panel-reading-item'>{node.context}</pre></div>
@@ -127,7 +130,7 @@ export function GraphInspector(props: {
         {members.map((member, index) => <Group key={member.id} title={members.length > 1 ? t('knowledgeGraphMember', { count: index + 1 }) : t('knowledgeGraphEndpoints')}
           defaultOpen={!common || index === 0} className='graph-relation-detail'>
           {!common && <><p className='dsh-design-field-value'>{relationMeaningLabel(readings[index].meaning, locale)}</p><Reading reading={readings[index]} /></>}
-          <Endpoints graph={graph} from={member.from} to={member.to} direction={readings[index].direction} />
+          <Endpoints nodeLabel={props.nodeLabel} graph={graph} from={member.from} to={member.to} direction={readings[index].direction} />
           {members.length > 1 && readings[index].origin !== 'embedding' && <p className='dsh-design-form-group-description'>{member.label}</p>}
           <Evidence raw={member.evidence} label={member.label} />
         </Group>)}

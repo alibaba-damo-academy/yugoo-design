@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
+import {readFileSync} from 'node:fs';
 import BpmnModdle from 'bpmn-moddle';
-import {gridFor, seedRoutes, routeEdge} from '../bundles/flow_design/scripts/router.mjs';
+import {boxOverlap, gridFor, seedRoutes, routeEdge} from '../bundles/flow_design/scripts/router.mjs';
 
 const script=new URL('../bundles/flow_design/scripts/layout.mjs',import.meta.url);
 const run=input=>{
@@ -15,7 +16,7 @@ function xml(nodes,edges,lanes=true,participant=false){
 }
 async function verify(name,input){
   const output=run(input),moddle=new BpmnModdle();
-  assert.match(output,/layoutRevision="13"/);
+  assert.match(output,/layoutRevision="14"/);
   const {rootElement:r,warnings}=await moddle.fromXML(output);assert.equal(warnings.length,0);
   const shapes=r.diagrams[0].plane.planeElement.filter(e=>e.$type==='bpmndi:BPMNShape'&&!['bpmn:Lane','bpmn:Participant'].includes(e.bpmnElement.$type));
   const edges=r.diagrams[0].plane.planeElement.filter(e=>e.$type==='bpmndi:BPMNEdge');
@@ -36,6 +37,7 @@ async function verify(name,input){
   };
   assert.deepEqual(await geometry(permuted),await geometry(output),name+' permutation');
   console.log('BPMN ROUTING OK:',name);
+  return output;
 }
 const basic=[{id:'start',type:'startEvent'},{id:'task',lane:1},{id:'end',type:'endEvent',lane:1}];
 await verify('lane-less',xml(basic,[['start','task'],['task','end']],false));
@@ -45,6 +47,38 @@ await verify('boundary event',xml([...basic,{id:'boundary',type:'boundaryEvent',
 const branch=[{id:'start',type:'startEvent'},{id:'fork',type:'parallelGateway'},{id:'join',type:'parallelGateway',lane:1},{id:'end',type:'endEvent',lane:1},...Array.from({length:5},(_,i)=>({id:'task'+i,lane:i%2}))];
 await verify('five parallel branches',xml(branch,[['start','fork'],...Array.from({length:5},(_,i)=>['fork','task'+i]),...Array.from({length:5},(_,i)=>['task'+i,'join']),['join','end']]));
 await verify('nested cross-lane cycles',xml([...basic,{id:'a'},{id:'b',lane:1},{id:'c'}],[['start','a'],['a','b'],['b','c'],['c','b'],['c','task'],['task','a'],['task','end']]));
+
+// Captured from the native Owner's scope-assessment process. Its structure
+// and old DI reproduced both hidden return wiring and overlapping branches.
+const scopeInput=readFileSync(new URL('./fixtures/manual-scope-loop.bpmn',import.meta.url),'utf8');
+const scopeOutput=await verify('manual scope assessment return',scopeInput);
+const scopeModdle=new BpmnModdle();
+const scopeBefore=(await scopeModdle.fromXML(scopeInput)).rootElement;
+const scopeAfter=(await scopeModdle.fromXML(scopeOutput)).rootElement;
+const processOf=r=>r.rootElements.find(e=>e.$type==='bpmn:Process');
+assert.equal((await scopeModdle.toXML(processOf(scopeAfter))).xml,
+  (await scopeModdle.toXML(processOf(scopeBefore))).xml,'layout preserves the entire semantic process');
+const scopeElements=scopeAfter.diagrams[0].plane.planeElement;
+const scopeLabels=scopeElements.filter(e=>e.label?.bounds);
+assert.equal(scopeLabels.length,scopeBefore.diagrams[0].plane.planeElement.filter(e=>e.label?.bounds).length);
+for(let i=0;i<scopeLabels.length;i++)for(const other of scopeLabels.slice(i+1))
+  assert.ok(!boxOverlap(scopeLabels[i].label.bounds,other.label.bounds),
+    'labels overlap: '+scopeLabels[i].bpmnElement.id+' / '+other.bpmnElement.id);
+const scopeEdges=scopeElements.filter(e=>e.$type==='bpmndi:BPMNEdge');
+for(const label of scopeEdges.filter(e=>e.label?.bounds)){
+  for(const wire of scopeEdges)for(let i=1;i<wire.waypoint.length;i++)
+    assert.ok(!hit(wire.waypoint[i-1],wire.waypoint[i],label.label.bounds),
+      'wire crosses branch caption: '+label.bpmnElement.id+' / '+wire.bpmnElement.id);
+  for(const lane of scopeElements.filter(e=>e.bpmnElement?.$type==='bpmn:Lane'))
+    for(const x of [lane.bounds.x,lane.bounds.x+lane.bounds.width])
+      assert.ok(!hit({x,y:lane.bounds.y},{x,y:lane.bounds.y+lane.bounds.height},label.label.bounds),
+        'lane divider crosses branch caption: '+label.bpmnElement.id);
+}
+for(const edge of scopeEdges)for(const other of scopeEdges){
+  if(edge===other||edge.bpmnElement.sourceRef!==other.bpmnElement.targetRef||edge.bpmnElement.targetRef!==other.bpmnElement.sourceRef)continue;
+  const points=e=>e.waypoint.map(p=>[p.x,p.y]);
+  assert.notDeepEqual(points(edge),points(other).reverse(),'opposite flows must have distinguishable paths');
+}
 
 // Router unit semantics: a spent expansion budget yields NO routes at all
 // (the pipeline then refuses to publish a partial diagram, exit 6), and a

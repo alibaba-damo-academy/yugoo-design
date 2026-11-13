@@ -121,11 +121,11 @@ Agent 按 Kit 的方法澄清背景，或直接展开可讨论的结果。设计
 
 ## 发布前候选预检
 
-本地 tarball 用于发布前验证所提供的精确候选，不是正式安装的主教程。核对随包名称、版本与完整性后，在独立、可长期保留的测试目录安装；`RECEIVED_EXACT_TARBALL` 表示本次收到并验证的文件，不能猜测文件名。以下为 POSIX shell 示例；Windows PowerShell 与 Agent 安装方式见[统一安装入口](../../packages/companion/HOSTS.md#agent-led-installation-and-updates)：
+本地 tarball 用于发布前验证所提供的精确候选，不是正式安装的主教程。核对随包名称、版本与完整性后，在与真实用户配置隔离的专用测试目录安装；`RECEIVED_EXACT_TARBALL` 表示本次收到并验证的文件，不能猜测文件名。以下为 POSIX shell 示例；Windows PowerShell 与 Agent 安装方式见[统一安装入口](../../packages/companion/HOSTS.md#agent-led-installation-and-updates)：
 
 ```sh
 npm install --save-exact /absolute/path/to/RECEIVED_EXACT_TARBALL.tgz
 npx --no-install yugoo-design --help
 ```
 
-CLI 宿主按 [Companion 指南](../../packages/companion/README.md#npm-candidate-and-native-installation-boundary)验证登记与运行；DSH 按收到的完整候选依赖清单及随包指南预检，[旧版官方宿主工作区路线](../../packages/dsh/README.md#unpublished-release-official-local-workspace-route)保留其对应制品的历史记录，不代表新候选的包数或验收。桌面候选按对应宿主材料与实际版本验证。旧候选的结果不会自动成为当前 npm 发行的验收结果。
+CLI 宿主按 [Companion 指南](../../packages/companion/README.md#npm-candidate-and-native-installation-boundary)验证登记与运行；DSH 按完整清单走[原始归档安装路线](../../packages/dsh/README.md#unpublished-release-original-archive-route)，保留预构建依赖及当前宿主配置。[旧版工作区记录](../../packages/dsh/README.md#unpublished-release-official-local-workspace-route)仅说明其对应制品。桌面候选按对应宿主材料与实际版本验证。旧候选的结果不会自动成为当前 npm 发行的验收结果。验证结束后保留必要日志与结果，清理不再使用的测试进程和可重建安装。

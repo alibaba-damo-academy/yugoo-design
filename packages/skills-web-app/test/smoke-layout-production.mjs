@@ -16,7 +16,7 @@ const root=await mkdtemp(join(tmpdir(),'flow-layout-production-'));
 const run=(script,input,overrides={})=>{
   const result=spawnSync(process.execPath,[script],{input,encoding:'utf8',cwd:root,env:{...env,...overrides},timeout:60000,maxBuffer:16000000});
   assert.equal(result.status,0,result.stderr);
-  assert.match(result.stdout,/layoutRevision="13"/);
+  assert.match(result.stdout,/layoutRevision="14"/);
   const metrics=JSON.parse(result.stderr.match(/reading-metrics (\{[^\n]+\})/)[1]);
   assert.equal(metrics.preference,'balanced');assert.ok(metrics.channels);
   return result.stdout;
@@ -25,14 +25,17 @@ try {
   // Exercise the same standalone dependency handling used by Companion rather
   // than maintaining a second bundler configuration for this parity check.
   await buildFlowScripts(join(here,'../bundles/flow_design/scripts'),root);
-  for(const name of ['P-001.bpmn','P-004.bpmn','P-009.bpmn']) {
-    const input=await readFile(new URL(`../../../examples/research-platform-comparison/good/design_files/flow_design/${name}`,import.meta.url),'utf8');
+  const cases=['P-001.bpmn','P-004.bpmn','P-009.bpmn'].map(name=>({name,
+    url:new URL(`../../../examples/research-platform-comparison/good/design_files/flow_design/${name}`,import.meta.url)}));
+  cases.push({name:'manual-scope-loop.bpmn',url:new URL('./fixtures/manual-scope-loop.bpmn',import.meta.url)});
+  for(const {name,url} of cases) {
+    const input=await readFile(url,'utf8');
     const production=run(entry,input);
     assert.equal(run(entry,input,{BPMN_LAYOUT_READING:'1',BPMN_LAYOUT_PREFERENCE:'balanced',BPMN_LAYOUT_CHANNELS:'1'}),production,'default differs from approved preview');
     assert.equal(run(join(root,'layout.mjs'),input),production,'relocated packaged layout differs');
     const imported=spawnSync(process.execPath,[entry,'--validate'],{input:production,encoding:'utf8',cwd:root,env,timeout:10000});
     assert.equal(imported.status,0,imported.stderr);
-    assert.equal(await readFile(new URL(`../../../examples/research-platform-comparison/good/design_files/flow_design/${name}`,import.meta.url),'utf8'),input,'source artifact changed');
+    assert.equal(await readFile(url,'utf8'),input,'source artifact changed');
     console.log(`PRODUCTION AND PORTABLE LAYOUT OK: ${name}`);
   }
 } finally {await rm(root,{recursive:true,force:true});}

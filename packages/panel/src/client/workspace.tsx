@@ -705,7 +705,7 @@ export function DesignWorkspace(props: {
       {runtime.readGraph && <button type='button' aria-pressed={graphOpen} onClick={() => flushBeforeNavigation(() => { setGraphOpen(true); setExperienceOpen(false) })}>{t.design_graph_view}</button>}
     </nav>
   ) : null
-  if (!panelOnly && graphOpen && runtime.readGraph) return <PanelLocaleContext.Provider value={isZh ? 'zh-CN' : 'en-US'}><div className='flex h-full min-h-0 flex-col'>{projectHeader}{accessNotice}<div className='min-h-0 flex-1'><GraphPanel ownerLabels={Object.fromEntries(store.skills.map(skill => [skill, tabLabel(store.manifests[skill], skill)]))} key={`${sessionId}:${projectId}`} read={readGraph} readStatus={runtime.readKnowledgeStatus ? readKnowledgeStatus : undefined} retry={runtime.retryKnowledge ? retryKnowledge : undefined} footer={viewSwitcher} /></div></div></PanelLocaleContext.Provider>
+  if (!panelOnly && graphOpen && runtime.readGraph) return <PanelLocaleContext.Provider value={isZh ? 'zh-CN' : 'en-US'}><div className='flex h-full min-h-0 flex-col'>{projectHeader}{accessNotice}<div className='min-h-0 flex-1'><GraphPanel panelDefinitions={design} ownerLabels={Object.fromEntries(store.skills.map(skill => [skill, tabLabel(store.manifests[skill], skill)]))} key={`${sessionId}:${projectId}`} read={readGraph} readStatus={runtime.readKnowledgeStatus ? readKnowledgeStatus : undefined} retry={runtime.retryKnowledge ? retryKnowledge : undefined} footer={viewSwitcher} /></div></div></PanelLocaleContext.Provider>
 
   if (!panelOnly && props.experienceAvailable && experienceOpen) return <PanelLocaleContext.Provider value={isZh ? 'zh-CN' : 'en-US'}><div className='flex h-full min-h-0 flex-col'>
     {projectHeader}

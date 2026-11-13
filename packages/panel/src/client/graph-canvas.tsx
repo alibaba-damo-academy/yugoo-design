@@ -14,7 +14,7 @@ import { useColorScheme } from '../use-color-scheme.js'
 export { graphSourceColors } from './graph-canvas-presentation.js'
 
 interface Particle extends SimulationNodeDatum { id: string; node: GraphNode; degree: number; record: string }
-export interface GraphCanvasProps { graph: GraphScope; layoutEdges?: GraphEdge[]; reach: Map<string, number>; contentCounts?: ReadonlyMap<string, number>; sizeMode?: 'uniform' | 'reach'; selected: string; selectedEdge: string; matches: Set<string> | null; layout?: string; sourceLabels?: Record<string, string>; viewMode?: 'graph' | 'ring'; onNode: (id: string) => void; onEdge: (id: string) => void; onClear: () => void }
+export interface GraphCanvasProps { nodeLabel?: (node: GraphNode) => string; graph: GraphScope; layoutEdges?: GraphEdge[]; reach: Map<string, number>; contentCounts?: ReadonlyMap<string, number>; sizeMode?: 'uniform' | 'reach'; selected: string; selectedEdge: string; matches: Set<string> | null; layout?: string; sourceLabels?: Record<string, string>; viewMode?: 'graph' | 'ring'; onNode: (id: string) => void; onEdge: (id: string) => void; onClear: () => void }
 export function GraphCanvas(props: GraphCanvasProps) {
   const mode = props.viewMode === 'ring' ? 'ring' : props.layout ?? 'stress2-original'
   const surface = useRef<HTMLDivElement>(null)
@@ -28,6 +28,7 @@ export function GraphCanvas(props: GraphCanvasProps) {
 }
 function PlanarGraphCanvas(props: GraphCanvasProps & GraphCanvasTheme & { engine: string }) {
   const { locale, t } = usePanelI18n()
+  const localeRef = useRef(locale); localeRef.current = locale
   const svgRef = useRef<SVGSVGElement>(null), nebulaRef = useRef<HTMLCanvasElement>(null), latest = useRef(props)
   const instanceId = 'graph-' + useId().replace(/[^a-zA-Z0-9_-]/g, '')
   const views = useRef(new Map<string, { positions: Map<string, { x: number; y: number }>; camera: ZoomTransform; key: string; baseScale: number; center: [number, number] }>())
@@ -112,11 +113,11 @@ function PlanarGraphCanvas(props: GraphCanvasProps & GraphCanvasTheme & { engine
       .on('click', (event, e) => { event.stopPropagation(); bundleFocusRef.current = ''; setBundleFocus(''); latest.current.onEdge(e.id) })
       .on('keydown', (event, e) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.stopPropagation(); bundleFocusRef.current = ''; setBundleFocus(''); latest.current.onEdge(e.id) } })
     const nodeEls = root.append('g').selectAll<SVGGElement, Particle>('g').data(particles, n => n.id).join('g')
-      .attr('role', 'button').attr('tabindex', 0).attr('aria-label', n => n.node.label).attr('data-node-id', n => n.id).style('cursor', ring ? 'pointer' : 'grab')
+      .attr('role', 'button').attr('tabindex', 0).attr('aria-label', n => latest.current.nodeLabel?.(n.node) ?? n.node.label).attr('data-node-id', n => n.id).style('cursor', ring ? 'pointer' : 'grab')
     nodeEls.append('circle').attr('class', 'graph-node-focus').attr('fill', 'none').attr('stroke-width', 1.5).attr('vector-effect', 'non-scaling-stroke')
     nodeEls.append('circle').attr('class', 'graph-node-dot')
     nodeEls.append('circle').attr('class', 'graph-node-hit').attr('fill', 'transparent')
-    nodeEls.append('title').text(n => [n.node.label, n.node.sourcePanel ?? n.node.previewSourcePanel, n.node.file + '#' + (n.node.pointer || '/')].filter(Boolean).join(' · '))
+    nodeEls.append('title').text(n => [latest.current.nodeLabel?.(n.node) ?? n.node.label, n.node.sourcePanel ?? n.node.previewSourcePanel, n.node.file + '#' + (n.node.pointer || '/')].filter(Boolean).join(' · '))
     const labels = root.append('g').selectAll<SVGTextElement, Particle>('text').data(particles, n => n.id).join('text')
       .attr('data-label', n => n.id).attr('paint-order', 'stroke').attr('stroke-linejoin', 'round').attr('text-anchor', 'start')
       .attr('aria-hidden', 'true').style('cursor', 'pointer')
@@ -196,7 +197,7 @@ function PlanarGraphCanvas(props: GraphCanvasProps & GraphCanvasTheme & { engine
         const detailed = hot || neighbor || Boolean(matches?.has(n.id)), preview = !n.node.record && !detailed
         if (focused && !hot && !neighbor && !matches?.has(n.id)) continue
         if (preview && (fieldLabels.get(n.record) ?? 0) >= fieldBudget) continue
-        const font = hot ? 13 : preview ? 11 : 12, value = shortGraphLabel(n.node, detailed, latest.current.contentCounts?.get(n.id), locale)
+        const font = hot ? 13 : preview ? 11 : 12, value = shortGraphLabel({ ...n.node, label: latest.current.nodeLabel?.(n.node) ?? n.node.label }, detailed, latest.current.contentCounts?.get(n.id), localeRef.current)
         const width = [...value].reduce((w, c) => w + (/[^\x00-\x7f]/.test(c) ? font : font * .58), 6)
         const gap = Math.max(9, dotRadius(n) + 5)
         const choices = [[q.x + gap, q.y + 4], [q.x - width - gap, q.y + 4], [q.x - width / 2, q.y - gap - 1], [q.x - width / 2, q.y + font + gap + 1], [q.x + gap, q.y - gap], [q.x + gap, q.y + font + gap + 1], [q.x - width - gap, q.y - gap], [q.x - width - gap, q.y + font + gap + 1]]
@@ -305,7 +306,17 @@ function PlanarGraphCanvas(props: GraphCanvasProps & GraphCanvasTheme & { engine
       const edge = edges.get(path.getAttribute('data-edge') ?? '')
       if (edge) path.setAttribute('aria-label', relationDisplayLabel(edge, locale))
     }
-  }, [locale, props.sourceLabels, props.graph])
+    const nodes = new Map(props.graph.nodes.map(node => [node.id, node]))
+    for (const element of svgRef.current?.querySelectorAll<SVGGElement>('[data-node-id]') ?? []) {
+      const node = nodes.get(element.getAttribute('data-node-id') ?? '')
+      if (!node) continue
+      const label = props.nodeLabel?.(node) ?? node.label
+      element.setAttribute('aria-label', label)
+      const title = element.querySelector('title')
+      if (title) title.textContent = [label, node.sourcePanel ?? node.previewSourcePanel, node.file + '#' + (node.pointer || '/')].filter(Boolean).join(' · ')
+    }
+    actions.current.style()
+  }, [locale, props.sourceLabels, props.nodeLabel, props.graph])
   return <div className='graph-planar-canvas' data-canvas-theme={dark ? 'dark' : 'light'} data-canvas-view={props.engine === 'ring' ? 'ring' : 'graph'} style={{ position: 'relative', flex: 1, minWidth: 0, minHeight: 0, overflow: 'hidden', background: dark ? '#121a25' : '#fafbfd' }}>
     <canvas ref={nebulaRef} aria-hidden='true' style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: .9, pointerEvents: 'none' }} />
     <svg ref={svgRef} aria-label={t('graphFieldConnections')} tabIndex={0} style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, touchAction: 'none', userSelect: 'none', cursor: 'grab' }} />

@@ -35,9 +35,14 @@ export function channelCrowding(state,{margin=24,endpointGrace=20}={}) {
     const lo=Math.max(Math.min(axisValue(a.a,a.horizontal),axisValue(a.b,a.horizontal)),Math.min(axisValue(b.a,b.horizontal),axisValue(b.b,b.horizontal)));
     const hi=Math.min(Math.max(axisValue(a.a,a.horizontal),axisValue(a.b,a.horizontal)),Math.max(axisValue(b.a,b.horizontal),axisValue(b.b,b.horizontal)));
     if(hi<=lo)continue;
-    const run=exposedRun(a,b,a.a,b.a,a.horizontal,lo,hi,endpointGrace);
+    // A fork/join may share its short docking stem. Opposing directions
+    // cannot share that exemption: a return hidden under the outgoing wire
+    // is ambiguous even when both flows connect the same two nodes.
+    const opposed=(axisValue(a.b,a.horizontal)-axisValue(a.a,a.horizontal))
+      *(axisValue(b.b,b.horizontal)-axisValue(b.a,b.horizontal))<0;
+    const run=exposedRun(a,b,a.a,b.a,a.horizontal,lo,hi,opposed?0:endpointGrace);
     if(run<8)continue;
-    pairs.push({a,b,gap:d,run,severity:run*(1-d/margin)});
+    pairs.push({a,b,opposed,gap:d,run,severity:run*(1-d/margin)});
   }
   pairs.sort((a,b)=>b.severity-a.severity||a.a.edge.id.localeCompare(b.a.edge.id)||a.a.i-b.a.i||a.b.edge.id.localeCompare(b.b.edge.id)||a.b.i-b.b.i);
   return {severity:pairs.reduce((n,p)=>n+p.severity,0),pairs};
@@ -65,11 +70,22 @@ export function spaceChannels(seed,{margin=24,endpointGrace=20,maxPasses=3,maxCa
     let best=null,attempts=0;const seen=new Set();
     const score=(c,m)=>2*m.severity+.2*c.terms.length+8*c.counts.bend;
     let bestScore=score(cost,crowding);
-    const targets=crowding.pairs.flatMap(p=>[p.a,p.b]);
+    const targets=crowding.pairs.flatMap(p=>[{...p.a,opposed:p.opposed},{...p.b,opposed:p.opposed}]);
+    // Keep the forward narrative direct when the return can take the side
+    // channel for the same readability improvement.
+    const goesBack=segment=>{
+      const source=seed.nodes.find(n=>n.id===segment.edge.sourceId),target=seed.nodes.find(n=>n.id===segment.edge.targetId);
+      return source&&target&&source.bounds.y!==target.bounds.y
+        ? source.bounds.y>target.bounds.y:!!segment.edge.feedback;
+    };
+    targets.sort((a,b)=>Number(goesBack(b))-Number(goesBack(a)));
     for(const segment of targets)for(const offset of [-margin,margin,-margin/2,margin/2]) {
       if(attempts>=maxCandidates)break;
-      const key=`${segment.edge.id}:${segment.i}:${offset}`;if(seen.has(key))continue;seen.add(key);attempts++;evaluated++;
-      const path=state.routes.get(segment.edge.id),candidate=offsetSegment(path,segment.i,offset,endpointGrace);
+      // A short two-node return still needs normal docking stems, but the
+      // stems must leave room for a visible central return channel.
+      const grace=segment.opposed?Math.min(endpointGrace,length([segment.a,segment.b])/4):endpointGrace;
+      const key=`${segment.edge.id}:${segment.i}:${offset}:${grace}`;if(seen.has(key))continue;seen.add(key);attempts++;evaluated++;
+      const path=state.routes.get(segment.edge.id),candidate=offsetSegment(path,segment.i,offset,grace);
       if(!candidate || candidate.length>path.length+4 || length(candidate)>originalLengths.get(segment.edge.id)*1.15+40)continue;
       if(segments(candidate).some(([a,b])=>a.x!==b.x&&a.y!==b.y || state.nodes.some(n=>hit(a,b,n.bounds))))continue;
       if(segments(candidate).some(([a,b])=>state.nodes.some(n=>n.id!==segment.edge.sourceId&&n.id!==segment.edge.targetId

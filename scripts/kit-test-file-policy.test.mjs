@@ -6,10 +6,12 @@ import { assertKitTestScripts, isKitRootDevelopmentFile } from './kit-test-file-
 test('current declared Node tests are accepted without executing any test command', async () => {
   const manifest = JSON.parse(await readFile(new URL('../packages/skills-web-app/package.json', import.meta.url), 'utf8'))
   const files = assertKitTestScripts(manifest.scripts)
-  assert.equal(files.size, 13)
+  assert.equal(files.size, 17)
   assert.ok(files.has('test/test-reading-order.mjs'))
   assert.ok(files.has('test/smoke-layout-production.mjs'))
   assert.ok(files.has('test/prd-runtime-distribution.mjs'))
+  assert.ok(files.has('test/flow-node-content.test.mjs'))
+  assert.ok(files.has('test/research-evidence.test.mjs'))
 })
 
 test('only the package-owned source build is allowed; publication/install/runtime lifecycle stays absent', () => {
@@ -22,6 +24,8 @@ test('Node eval, loaders, arbitrary arguments, shell commands and path escapes a
   for (const command of [
     'node -e process.exit(0)', 'node --import ./loader.mjs test/test-reading-order.mjs',
     'node test/test-reading-order.mjs --extra', 'node --test', 'node', '',
+    'node test/test-reading-order.mjs --node-supplements-only',
+    'node test/smoke-flow-design-script.mjs --node-supplements-only --extra',
     'npm test', 'pnpm build', 'node test/test-reading-order.mjs && tsdown',
     'node test/test-reading-order.mjs; echo extra', 'node test/test-reading-order.mjs | node test/test-layout-policy.mjs',
     'node test/test-reading-order.mjs &&', 'node --test ../test/test-reading-order.mjs',
@@ -32,7 +36,7 @@ test('Node eval, loaders, arbitrary arguments, shell commands and path escapes a
 })
 
 test('only exact source-only development files are exempted from Bundle script location checks', () => {
-  for (const file of ['test/test-reading-order.mjs', 'test/smoke-layout-production.mjs', 'scripts/compare-reading-layout.mjs', 'scripts/preview-reading-layout.mjs']) {
+  for (const file of ['test/test-reading-order.mjs', 'test/smoke-layout-production.mjs', 'test/foundation-quality-resources.test.mjs', 'test/whiteboard-text-geometry.test.mjs', 'scripts/compare-reading-layout.mjs', 'scripts/preview-reading-layout.mjs']) {
     assert.equal(isKitRootDevelopmentFile(file), true)
   }
   for (const file of ['index.mjs', 'runtime.js', 'test-unknown.mjs', 'smoke-unknown.mjs', 'nested/test/test-reading-order.mjs', '../test/test-reading-order.mjs', 'preview-another-tool.mjs', 'test-reading-order.mjs', 'preview-reading-layout.mjs', 'test/test-unknown.mjs']) {

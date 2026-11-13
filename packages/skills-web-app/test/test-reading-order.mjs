@@ -180,7 +180,7 @@ test('production layout keeps the delivery example rows and lane spines aligned 
     const result=spawnSync(process.execPath,[new URL('../bundles/flow_design/scripts/layout.mjs',import.meta.url).pathname],
       {input,env,encoding:'utf8',timeout:60000,maxBuffer:16000000});
     assert.equal(result.status,0,result.stderr);
-    assert.match(result.stdout,/layoutRevision="13"/);
+    assert.match(result.stdout,/layoutRevision="14"/);
     return result.stdout;
   };
   const output=run(),model=await modelFromXml(output);

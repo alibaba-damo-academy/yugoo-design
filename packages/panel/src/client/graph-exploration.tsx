@@ -4,17 +4,18 @@ import { select } from 'd3-selection'
 import { zoom, zoomIdentity, type ZoomTransform } from 'd3-zoom'
 import { Button } from './ported/ui/button.js'
 import { PanelSelect } from '../panel-select.js'
-import { edgeReading, relationDisplayLabel, relationOriginLabel, relationLifecycleLabel, type GraphEdge, type GraphScope } from './graph-model.js'
+import { edgeReading, relationDisplayLabel, relationOriginLabel, relationLifecycleLabel, type GraphEdge, type GraphNode, type GraphScope } from './graph-model.js'
 import { bundleCoordinates, bundleDisplay, edgeMembers, graphColor } from './graph-bundle-model.js'
 import { stressPositions } from './graph-stress.mjs'
 import { placeLabels } from './graph-labels.js'
 import { explorationStyles } from './graph-exploration-styles.js'
 
 type Point = { x: number; y: number; angle?: number }
-export function GraphExploration({ graph, selected, relation, onNode, onEdge, onClear }: {
-  graph: GraphScope; selected: string; relation?: GraphEdge; onNode(id: string): void; onEdge(edge: GraphEdge): void; onClear(): void
+export function GraphExploration({ graph, selected, relation, nodeLabel, onNode, onEdge, onClear }: {
+  nodeLabel?: (node: GraphNode) => string; graph: GraphScope; selected: string; relation?: GraphEdge; onNode(id: string): void; onEdge(edge: GraphEdge): void; onClear(): void
 }) {
   const { locale, t } = usePanelI18n()
+  const label = (item: { node?: GraphNode; label: string } | undefined) => item ? item.node ? nodeLabel?.(item.node) ?? item.label : item.label : ''
   const [view, setView] = useState<'free' | 'bundle'>('bundle'), [style, setStyle] = useState('glow')
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set(graph.nodes.map(node => node.owner))), [hovered, setHovered] = useState('')
   const [motion, setMotion] = useState(true), [camera, setCamera] = useState(zoomIdentity)
@@ -49,7 +50,7 @@ export function GraphExploration({ graph, selected, relation, onNode, onEdge, on
   const screenPoint = (nodeId: string) => { const p = point(nodeId); return { x: size.width / 2 + camera.x + p.x * camera.k, y: size.height / 2 + camera.y + p.y * camera.k } }
   const labelCandidates = display.nodes.filter(node => node.node && (node.node.record || node.sources.includes(selected) || node.id === hovered || selectedEndpoints.has(node.id)))
     .sort((a, b) => Number(b.sources.includes(selected) || b.id === hovered) - Number(a.sources.includes(selected) || a.id === hovered) || a.id.localeCompare(b.id))
-    .map(node => { const hot = node.sources.includes(selected) || node.id === hovered; const text = !hot && node.label.length > 15 ? node.label.slice(0, 14) + '…' : node.label; const fontSize = hot ? 14 : 12; return { id: node.id, ...screenPoint(node.id), text, fontSize, w: [...text].reduce((width, char) => width + (/[^\x00-\x7f]/.test(char) ? fontSize : fontSize * .58), 8), h: 20 } })
+    .map(node => { const hot = node.sources.includes(selected) || node.id === hovered; const caption = label(node); const text = !hot && caption.length > 15 ? caption.slice(0, 14) + '…' : caption; const fontSize = hot ? 14 : 12; return { id: node.id, ...screenPoint(node.id), text, fontSize, w: [...text].reduce((width, char) => width + (/[^\x00-\x7f]/.test(char) ? fontSize : fontSize * .58), 8), h: 20 } })
   const obstacles = display.nodes.map(node => ({ ...screenPoint(node.id), w: 14, h: 14 })).map(p => ({ ...p, x: p.x - 7, y: p.y - 7 }))
   if (view === 'bundle') for (const sector of display.sectors) { const w = sector.label.length * 7.2 + 40; obstacles.push({ x: size.width / 2 + camera.x + Math.sin(sector.angle) * (radius + 46) * camera.k - w / 2, y: size.height / 2 + camera.y - Math.cos(sector.angle) * (radius + 46) * camera.k - 10, w, h: 22 }) }
   const labels = placeLabels(labelCandidates, obstacles, size.width, size.height)
@@ -100,7 +101,7 @@ export function GraphExploration({ graph, selected, relation, onNode, onEdge, on
       </div>
       <PanelSelect aria-label={t('graphExploreStyle')} value={style} onValueChange={setStyle} options={[{ value: 'glow', label: t('graphExploreGlow') }, { value: 'depth', label: t('graphExploreDepth') }]} />
       {view === 'bundle' && <Button variant='outline' size='sm' onClick={() => setCollapsed(collapsed.size ? new Set() : new Set(display.sectors.map(s => s.owner)))}>{t(collapsed.size ? 'graphExploreExpandAll' : 'graphExploreCollapseAll')}</Button>}
-      {internalCount > 0 && <PanelSelect aria-label={t('graphExploreInternal')} value='' onValueChange={value => { const edge = internalEdges.find(edge => edge.id === value); if (edge) onEdge(edge) }} options={[{ value: '', label: t('graphExploreInternalCount', { count: internalCount }) }, ...internalEdges.map(edge => ({ value: edge.id, label: (display.nodes.find(node => node.id === edge.from)?.label ?? '') + ' · ' + relationDisplayLabel(edge, locale) }))]} />}
+      {internalCount > 0 && <PanelSelect aria-label={t('graphExploreInternal')} value='' onValueChange={value => { const edge = internalEdges.find(edge => edge.id === value); if (edge) onEdge(edge) }} options={[{ value: '', label: t('graphExploreInternalCount', { count: internalCount }) }, ...internalEdges.map(edge => ({ value: edge.id, label: label(display.nodes.find(node => node.id === edge.from)) + ' · ' + relationDisplayLabel(edge, locale) }))]} />}
       <Button variant='outline' size='sm' onClick={() => actions.current.fit()}>{t('graphCameraFit')}</Button>
       <Button variant='outline' size='sm' aria-label={t('graphExploreZoomIn')} onClick={() => actions.current.scale(1.25)}>＋</Button>
       <Button variant='outline' size='sm' aria-label={t('graphExploreZoomOut')} onClick={() => actions.current.scale(.8)}>－</Button>
@@ -133,13 +134,13 @@ export function GraphExploration({ graph, selected, relation, onNode, onEdge, on
           })}
           {display.nodes.map(node => { const p = point(node.id), chosen = node.sources.includes(selected), hot = chosen || hovered === node.id || selectedEndpoints.has(node.id)
             const n = node.node, color = graphColor(node.owner), r = n ? (n.record ? 4.5 : 2.8) : 10
-            return <g key={node.id} data-graph-node={node.id} data-original-id={n?.id} role='button' tabIndex={0} aria-label={node.label} className='exploration-node' transform={'translate(' + p.x + ',' + p.y + ')'} onMouseEnter={() => setHovered(node.id)} onMouseLeave={() => setHovered('')} onFocus={() => setHovered(node.id)} onBlur={() => setHovered('')} onClick={event => { event.stopPropagation(); if (n) onNode(n.id); else toggle(node.owner) }} onKeyDown={event => keyboard(event, () => n ? onNode(n.id) : toggle(node.owner))}>
+            return <g key={node.id} data-graph-node={node.id} data-original-id={n?.id} role='button' tabIndex={0} aria-label={label(node)} className='exploration-node' transform={'translate(' + p.x + ',' + p.y + ')'} onMouseEnter={() => setHovered(node.id)} onMouseLeave={() => setHovered('')} onFocus={() => setHovered(node.id)} onBlur={() => setHovered('')} onClick={event => { event.stopPropagation(); if (n) onNode(n.id); else toggle(node.owner) }} onKeyDown={event => keyboard(event, () => n ? onNode(n.id) : toggle(node.owner))}>
               {style === 'depth' && <ellipse cy={r + 9} rx={r * 2.4} ry={r * .65} fill={color} opacity='.15' />}
               <circle r={hot ? r * 4 : r * 2.2} fill={color} opacity={hot ? .16 : .065} className={hot ? 'exploration-pulse' : undefined} />
               <circle className='exploration-focus' r={r + 5} fill='none' stroke={color} opacity={hot ? .9 : !n ? .5 : .12} strokeWidth='1' />
               <circle r={r} fill={hot ? '#fff' : color} filter={'url(#' + id + '-glow)'} />
               <circle r={14} fill='transparent' />
-              <title>{node.label + ' · ' + node.owner + (n ? ' · ' + n.file + '#' + n.pointer : ' · ' + t('graphExploreExpandObjects', { count: node.sources.length }))}</title>
+              <title>{label(node) + ' · ' + node.owner + (n ? ' · ' + n.file + '#' + n.pointer : ' · ' + t('graphExploreExpandObjects', { count: node.sources.length }))}</title>
             </g>
           })}
         </g>

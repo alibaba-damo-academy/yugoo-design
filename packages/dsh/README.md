@@ -302,14 +302,46 @@ boundaries. The fixed beta archives still require actual strict installation,
 native activation, browser interaction and functional regression as separate
 acceptance steps; this declaration does not claim those outcomes.
 
+### Unpublished release: original archive route
+
+Select the aggregate and its complete native DSH dependency closure from the
+supplied candidate inventory. The unified `yugoo-design` installer archive has
+a separate entry and is outside this native module override set. In the owned
+test profile, map each supplied native `@yugoo-design` package to its original
+absolute `file:` tarball through the existing `overrides` in
+`pnpm-workspace.yaml`.
+
+When reusing a profile from the historical workspace route, remove this
+candidate's extracted directories from workspace discovery while retaining
+the root `.` and other existing workspace configuration. Install the original
+aggregate through the official CLI:
+
+```sh
+DSH_HOME=/recipient/owned-dsh-home node /recipient/official-dsh/lib/bin.js \
+  plugin --profile web add --workspace-root --save-exact \
+  file:/recipient/received/yugoo-design-dsh-design-system-dsh-VERSION.tgz
+```
+
+Use the actual archive filename and preserve the profile's existing linker,
+peer and build settings. The existing file-tarball consumer configuration in
+`scripts/release-physical-distribution-gate.mjs` demonstrates the override
+mechanism; use the received package names and versions for this candidate.
+Compare installed package bytes and executable modes with the original archive
+members, then separately check loaded versions, Panel operations and native
+Agent consumption.
+
+Keep compiled archives intact for installation. Treating their extracted
+contents as workspace projects can make pnpm replace bundled prebuilt
+dependencies with registry dependencies and restore their lifecycle scripts.
+Changing build permissions does not establish that the original package was
+consumed correctly.
+
 ### Unpublished release: official local workspace route
 
-This route verifies a received fixed local candidate before registry publication.
-Its historical installation results remain tied to those archives; they do not
-establish beta registry acquisition, update or native-host acceptance.
-The ten-archive recipe and receipts below describe that historical set. For a
-newer candidate, use its supplied complete package inventory, including any
-required native Git helper, rather than reusing the historical package count.
+The following recipe and receipts retain a historical installation check with
+its own archives and Host. They do not establish current candidate installation,
+registry acquisition, update or native-host acceptance. Use the original archive
+route above for current compiled candidates with bundled prebuilt dependencies.
 
 The local delivery includes ten compiled `.tgz` packages, `PORTABLE-INPUTS.json`
 (archive filenames, package identities and SHA-256), `PORTABLE-PROVIDERS.json`

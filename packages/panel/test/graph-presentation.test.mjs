@@ -3,6 +3,73 @@ import assert from 'node:assert/strict'
 const { register } = await import('tsx/esm/api'); register()
 const { placeLabels, intersects, graphLabelRanks, shortGraphLabel } = await import('../src/client/graph-labels.ts')
 const { recordReach, nodeRadius, edgeReading } = await import('../src/client/graph-model.ts')
+const { graphNodeLabels } = await import('../src/client/graph-node-label.ts')
+
+test('KAG captions reuse the actual Bundle locales while preserving source facts and user titles', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const { parsePanelManifest } = await import('../src/dsl.ts')
+  const root = new URL('../../skills-web-app/bundles/function_modules/', import.meta.url)
+  const manifest = parsePanelManifest(await readFile(new URL('panel.yaml', root), 'utf8'))
+  manifest.i18n.messages = Object.fromEntries(await Promise.all(Object.entries(manifest.i18n.locales).map(async ([locale, file]) =>
+    [locale, JSON.parse(await readFile(new URL(file, root), 'utf8'))])))
+  const panels = { sample: { panelYaml: JSON.stringify(manifest) } }
+  const base = { owner: 'sample', file: 'sample/data.json', id: 'content:one', record: false, context: '用户写的原文', recordId: 'source:one', parentId: 'source:one',
+    contentKind: 'container', label: '功能详情', sourceLabel: '用户写的标题', pointer: '/functions/F001/details', schemaPointer: '/properties/functions/value/properties/details', ontologyType: 'fixed:type', ontologyRevision: 'fixed:rev' }
+  const before = structuredClone({ panels, base })
+  const en = graphNodeLabels(panels, 'en-US'), zh = graphNodeLabels(panels, 'zh-CN')
+  assert.equal(en(base), 'Function details')
+  assert.equal(zh(base), '功能详情')
+  assert.equal(en({ ...base, contentKind: 'unit', label: '核心行为 · B001', pointer: base.pointer + '/behaviors/B001', schemaPointer: base.schemaPointer + '/properties/behaviors/value' }), 'Core behaviors · B001')
+  assert.equal(en({ ...base, contentKind: 'unit', label: '输入 · I001', pointer: base.pointer + '/inputs/I001', schemaPointer: base.schemaPointer + '/properties/inputs/value' }), 'Input · I001')
+  for (const change of [
+    { sourceLabel: undefined }, { sourceLabel: '功能详情' }, { contentKind: undefined }, { schemaPointer: undefined },
+    { owner: 'unknown' }, { schemaPointer: '/properties/other/value/properties/details' }, { label: '用户自定义分区' },
+  ]) assert.equal(en({ ...base, ...change }), change.label ?? base.label)
+  assert.deepEqual({ panels, base }, before, 'locale lookup cannot mutate saved prose, schema identity or Panel declarations')
+
+  const React = await import('react'); globalThis.React = React
+  const { renderToStaticMarkup } = await import('react-dom/server')
+  const { GraphInspector } = await import('../src/client/graph-inspector.tsx')
+  const { PanelLocaleContext } = await import('../src/panel-i18n.tsx')
+  const parent = { ...base, id: 'source:one', label: '用户写的标题', contentKind: undefined, sourceLabel: undefined, record: true }
+  const graph = { nodes: [parent, base], edges: [], checkpoint: 'fixed:commit', warnings: [] }
+  for (const [locale, label, expected] of [['en-US', en, 'Function details'], ['zh-CN', zh, '功能详情']]) {
+    const html = renderToStaticMarkup(React.createElement(PanelLocaleContext.Provider, { value: locale }, React.createElement(GraphInspector, {
+      graph, node: parent, nodeLabel: label, relations: [], sourceLabels: {}, onClose() {}, onNode() {}, onEdge() {}, onNeighborhood() {}, onExpandEndpoints() {},
+    })))
+    assert.match(html, new RegExp(expected))
+    assert.match(html, /用户写的标题/)
+    assert.match(html, /用户写的原文/)
+    if (locale === 'en-US') assert.doesNotMatch(html, />功能详情<\/button>/)
+    const scalar = { ...base, id: 'scalar:one', label: 'A shortened value', pointer: '/answer', context: '/answer: 用户的完整中文回答', sourceLabel: undefined, contentKind: 'unit' }
+    const edge = { id: 'example:edge', from: base.id, to: scalar.id, kind: 'knowledge', label: 'User relationship', evidence: 'Original evidence',
+      reading: { relationType: 'references', meaning: 'references', origin: 'human', direction: 'forward', lifecycle: 'accepted' } }
+    const relationHtml = renderToStaticMarkup(React.createElement(PanelLocaleContext.Provider, { value: locale }, React.createElement(GraphInspector, {
+      graph: { ...graph, nodes: [...graph.nodes, scalar], edges: [edge] }, edge, nodeLabel: label, relations: [edge], sourceLabels: {}, onClose() {}, onNode() {}, onEdge() {}, onNeighborhood() {}, onExpandEndpoints() {},
+    })))
+    assert.match(relationHtml, new RegExp(expected), 'object endpoints use their resolved metadata caption')
+    assert.match(relationHtml, /用户的完整中文回答/, 'scalar endpoints retain the full original value')
+    assert.doesNotMatch(relationHtml, />A shortened value</)
+    assert.match(relationHtml, /Original evidence/)
+    if (locale === 'en-US') assert.doesNotMatch(relationHtml, />功能详情</)
+  }
+})
+
+test('graph caption lookup requires unambiguous declared bindings and retains unknown inputs', () => {
+  const manifest = { version: 1, panel_kind: 'evidence_workbook',
+    i18n: { default_locale: 'zh-CN', locales: { 'zh-CN': 'locales/zh-CN.json', 'en-US': 'locales/en-US.json' },
+      messages: { 'zh-CN': { detail: '详情', other: '详情' }, 'en-US': { detail: 'Details', other: 'Other details' } } },
+    sections: [{ id: 'detail', records_path: 'items', fields_path: 'detail', title: '$t:detail' }], fields: [],
+    ui: { component: 'record_workspace', id: 'list', sources: ['detail'] } }
+  const node = { id: 'a', owner: 'custom', label: '详情', sourceLabel: 'Original prose', contentKind: 'container', schemaPointer: '/properties/items/items/properties/detail', pointer: '/items/0/detail' }
+  const resolve = panel => graphNodeLabels({ custom: { panelYaml: JSON.stringify(panel) } }, 'en-US')
+  assert.equal(resolve(manifest)(node), 'Details', 'array membership uses the same declared storage path')
+  const ambiguous = structuredClone(manifest)
+  ambiguous.sections.push({ ...ambiguous.sections[0], id: 'other', title: '$t:other' })
+  assert.equal(resolve(ambiguous)(node), '详情', 'conflicting presentation bindings cannot choose a caption silently')
+  assert.equal(graphNodeLabels({ custom: { panelYaml: 'broken: [' } }, 'en-US')(node), '详情')
+  assert.equal(graphNodeLabels(undefined, 'en-US')(node), '详情')
+})
 test('production labels avoid each other, node obstacles and viewport boundaries', () => {
   const items = [{ id: 'a', x: 100, y: 100, w: 90, h: 24 }, { id: 'b', x: 110, y: 100, w: 90, h: 24 }]
   const obstacles = [{ x: 95, y: 95, w: 10, h: 10 }]

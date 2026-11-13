@@ -39,6 +39,13 @@ does not prove readability or correct process semantics. Missing sources stay
 unknown; a plan path is not an accepted file. Do not invent a task merely for
 lane balance or treat dense real flows as permission to remove branches.
 
+For named branches, reserve annotation space around the endpoint tracks and
+between ranks before placing captions. Inspect the actual wrapped text against
+connectors and lane dividers; disjoint DI rectangles alone are insufficient.
+Keep a caption beside its own branch rather than moving it across the canvas
+to hide a collision. A return must remain distinguishable from the outgoing
+path, including a short decision/assessment cycle.
+
 ## Interaction, saving and acceptance
 
 The `diagram_workspace` reads the canonical descriptor and exact BPMN artifact;

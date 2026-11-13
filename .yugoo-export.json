@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "8ea0409695295127cdbdb107c76805b887451172",
+  "revision": "3f55baedcf9b68310d9e4f99dd7cc54ab402b451",
   "policySha256": "e287dcbd76d4eb982bee366eb6a253909d223bb4a30ac9deee3a39773a67faa5",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -104,11 +104,11 @@
       "mode": "100644"
     },
     "CHANGELOG.en.md": {
-      "sha256": "0f96ed120a1b7aced027b7249086d838542bc2b078fbef2ed8913b20a6b5d523",
+      "sha256": "00ab0cd8621cdf03968af7a93cfc795351355b4bc421b1856b914dbbd7f0dabc",
       "mode": "100644"
     },
     "CHANGELOG.md": {
-      "sha256": "0b99696801d1d36d21da861b141810ee3f9b399233ed2b0caae2855b7d97b95b",
+      "sha256": "38b18fb3c06bcd6e1bbbdf286dc0ffd9d315f79b3138d8f2fff276084b6c19d5",
       "mode": "100644"
     },
     "CONTRIBUTING.md": {
@@ -332,7 +332,7 @@
       "mode": "100644"
     },
     "docs/panel-uiux-standard.md": {
-      "sha256": "c91f2dd6adefd2151011c3104e389d05d39a1120eb01873e65383e29a4c968ec",
+      "sha256": "75010ec58342ec34e8f18f0681f1de6be1ac9efba7d01c3797964f8269613590",
       "mode": "100644"
     },
     "docs/panel-unread.md": {
@@ -364,7 +364,7 @@
       "mode": "100644"
     },
     "docs/testing/agentic-e2e.md": {
-      "sha256": "682441123f88db5e5dc7e3026c1db25d0db21426f39e1342d41ffe45ed6f5820",
+      "sha256": "926db19d57c55a9420403eea2fdefc27a5d59bde5cf1d61c0a0425dda26e1c38",
       "mode": "100644"
     },
     "docs/ust-score-explanations.md": {
@@ -416,11 +416,11 @@
       "mode": "100644"
     },
     "docs/wiki/getting-started.en.md": {
-      "sha256": "fadc5ff58edc9e0e5aedfb1f38aabc5db3d4a240e32a9301c0826795bafb29f2",
+      "sha256": "433824f4daf4e2af0bac442af27ee4de532bf3a490df87f21b9d85c9580f98a4",
       "mode": "100644"
     },
     "docs/wiki/getting-started.md": {
-      "sha256": "637af46608dd66814fae128b3174f9c8ce7f62a8e61fbdb11cebfcdbdb321231",
+      "sha256": "c02bbee3a92e71d91d9c9b884e36f7bd053a572cad08997d505da040eff10998",
       "mode": "100644"
     },
     "docs/wiki/hosts.en.md": {
@@ -4200,7 +4200,7 @@
       "mode": "100644"
     },
     "packages/dsh/README.md": {
-      "sha256": "932bcc4d81aa311a843a44986d68ff8251128e8ec7aba479cf955d53f4c9a8c4",
+      "sha256": "cb153e95be9d7b4cb9a30892aa476ae1774bc5e1464765490ac0586d4d29e1eb",
       "mode": "100644"
     },
     "packages/dsh/THIRD_PARTY_NOTICES.md": {
@@ -5528,7 +5528,7 @@
       "mode": "100644"
     },
     "packages/panel/src/client/graph-canvas.tsx": {
-      "sha256": "7e66607438fccf8debd2c0bc8966f79c4126bf6b8391d0bd6040b6e12da5e6b8",
+      "sha256": "19bc5aad9ff2454b277a4c0b3bcc90927ca343b3159761b75cb3ece8e2c5c176",
       "mode": "100644"
     },
     "packages/panel/src/client/graph-exploration-styles.ts": {
@@ -5536,11 +5536,11 @@
       "mode": "100644"
     },
     "packages/panel/src/client/graph-exploration.tsx": {
-      "sha256": "e4947409f58a1e15e38634403c1db3cfdabcf06bb2795db74d1ab34152d730cd",
+      "sha256": "5309f740d0a626a3d99586a9b6bc87e9d94422a747c7f8c8c563def206049c24",
       "mode": "100644"
     },
     "packages/panel/src/client/graph-inspector.tsx": {
-      "sha256": "14ca35f6c0b7b9668c1abd273abf54f801ce39a490b946b11154f26097edf0db",
+      "sha256": "ecd0f6b1fa3890f800702cb8ff2fb2c76cd7657561bffdf3fddcd8039cbabb4e",
       "mode": "100644"
     },
     "packages/panel/src/client/graph-labels.ts": {
@@ -5575,12 +5575,16 @@
       "sha256": "345b12c5983d9bb0bfd16b163885b9fba328030e2079ff13212b13311ab9ca1f",
       "mode": "100644"
     },
+    "packages/panel/src/client/graph-node-label.ts": {
+      "sha256": "08580a2fbb67aa9f14d83566c5e0bac65c5a82ff499de1a8598882b82957fe84",
+      "mode": "100644"
+    },
     "packages/panel/src/client/graph-panel.tsx": {
-      "sha256": "abeb1e2480a93fac4fb1c7e4f1da0bfb5c50b24e30187aacd234b73ea2da7152",
+      "sha256": "28440d08f248f42a0ee3a87b313ecaa94be9e7bbbe5077ba59651c2e69078955",
       "mode": "100644"
     },
     "packages/panel/src/client/graph-spatial.tsx": {
-      "sha256": "493748c9c829e5aa788a9f6fb6e6a2ceffb927f13e125b239387e33e3738d10d",
+      "sha256": "33c4a2f105aca980f8fb09f279ff9899f185bd88db0443a75df71bd730853a71",
       "mode": "100644"
     },
     "packages/panel/src/client/graph-stress.d.mts": {
@@ -5752,7 +5756,7 @@
       "mode": "100644"
     },
     "packages/panel/src/client/workspace.tsx": {
-      "sha256": "16ad9cd56550025440ad4f016a7a39886ddc6550a42e361e58dadb7a219b889c",
+      "sha256": "43748dc3573509dc378e0945e4612da4567cddac09c5408484913c584e5b5290",
       "mode": "100644"
     },
     "packages/panel/src/color-control.tsx": {
@@ -6424,7 +6428,7 @@
       "mode": "100644"
     },
     "packages/panel/test/graph-presentation.test.mjs": {
-      "sha256": "746e714912af1e6fcaa45be49f7ebc8f1c6f856b1b3907816c6a3b6a946ee946",
+      "sha256": "bf54588c3082456c6a68b781361413a517b3fef685351f17ec2568982a7c3938",
       "mode": "100644"
     },
     "packages/panel/test/graph-readable-browser.mjs": {
@@ -8452,7 +8456,7 @@
       "mode": "100644"
     },
     "packages/skills-web-app/bundles/flow_design/reference/canvas-guide.md": {
-      "sha256": "0e5e9a586201cd6b2e9d7f15ee9c5559d4b39f6873edbe2031b878295ca797c6",
+      "sha256": "f12b3bde32b84abe9bed838809ec95ed8ac7c41a31622b77df90316a67a2ab48",
       "mode": "100644"
     },
     "packages/skills-web-app/bundles/flow_design/reference/preview.json": {
@@ -8464,11 +8468,11 @@
       "mode": "100644"
     },
     "packages/skills-web-app/bundles/flow_design/scripts/bpmn-validator.mjs": {
-      "sha256": "cf098c7ac2e644c1ff493e615c91cd3d98d697667a38b1ce232b0fd049cfaa11",
+      "sha256": "5c8673b5a499837c8a6d2e7c673dbd2b416ce6defd16d43214268e325a2198f1",
       "mode": "100644"
     },
     "packages/skills-web-app/bundles/flow_design/scripts/channel-spacing.mjs": {
-      "sha256": "07b88c78684345a94093d2be41b3d6db9e16d527cceafc090f4954e45857b433",
+      "sha256": "b8b81a21d880c24dc1332555898dbada8c7c9d0ca1302d73e7c8a7c482c65c46",
       "mode": "100644"
     },
     "packages/skills-web-app/bundles/flow_design/scripts/cost.mjs": {
@@ -8480,7 +8484,7 @@
       "mode": "100644"
     },
     "packages/skills-web-app/bundles/flow_design/scripts/labels.mjs": {
-      "sha256": "10ecbee9edb4b6419d5e391ee30da9ea9e886f7ca3fb11f98d40094fd02af641",
+      "sha256": "d4cd1a6fd8d54cf2df83cda2eb8b711e4eafce247c4cd79705ad5b00bb2fe490",
       "mode": "100644"
     },
     "packages/skills-web-app/bundles/flow_design/scripts/layout-metrics.mjs": {
@@ -8500,7 +8504,7 @@
       "mode": "100644"
     },
     "packages/skills-web-app/bundles/flow_design/scripts/layout.mjs": {
-      "sha256": "7cdc5022c3b01a051243a6369252a20b1226e806871eafc17ef4cee85500daaf",
+      "sha256": "0f27c367595b6950ebbb2e797efd7b0d5bf7d7726d77f2bcb7ae0f5f1c4d530d",
       "mode": "100644"
     },
     "packages/skills-web-app/bundles/flow_design/scripts/moves.mjs": {
@@ -9003,6 +9007,10 @@
       "sha256": "cb4f753568feadb97f3ae0db3c38563ccfdad2981d09c468ed3d5e47f03553c0",
       "mode": "100644"
     },
+    "packages/skills-web-app/test/fixtures/manual-scope-loop.bpmn": {
+      "sha256": "1659311a81d798e236965ad0a9364d0e23c45b754fe2deea5d535d379a4fae71",
+      "mode": "100644"
+    },
     "packages/skills-web-app/test/flow-node-content.test.mjs": {
       "sha256": "54a29327939a257625f4e65b965db0638de8be50f51c825f4916f516199be552",
       "mode": "100644"
@@ -9032,7 +9040,7 @@
       "mode": "100644"
     },
     "packages/skills-web-app/test/smoke-bpmn-routing.mjs": {
-      "sha256": "d082a9f1c846081938df483a5ee834361e19095e47a2e9a2ba5d03bfd1422a7e",
+      "sha256": "dcfa4817e688e6f75243f3e8a253dd04cba661d2a899973b7e1fe12e22a98d81",
       "mode": "100644"
     },
     "packages/skills-web-app/test/smoke-bundle-localization.mjs": {
@@ -9044,11 +9052,11 @@
       "mode": "100644"
     },
     "packages/skills-web-app/test/smoke-flow-design-script.mjs": {
-      "sha256": "604c04b250b28c16a69af80e7892df0b6a7d9246101952ea566d5c11b88bd879",
+      "sha256": "6550f8de5205af12121ca089796f6813c18cedbebd2a6cc9704b18d0f288c555",
       "mode": "100644"
     },
     "packages/skills-web-app/test/smoke-layout-production.mjs": {
-      "sha256": "d6e829ebbfb686294100fa42c7a5bb6fe19f37067a131698aa572ae250c35097",
+      "sha256": "80a29070388df4a0e8483f83382cc6457dfe5fe09f29405f1aa0fdc802b1d0f9",
       "mode": "100644"
     },
     "packages/skills-web-app/test/smoke-page-design-script.mjs": {
@@ -9060,7 +9068,7 @@
       "mode": "100644"
     },
     "packages/skills-web-app/test/test-channel-spacing.mjs": {
-      "sha256": "c800f6ad80673b6b66366413e3389b5b7b87e054238fc4640459ab6e8980657d",
+      "sha256": "11102c7d62e62edefcff4533309212bdb4a6173bef7b3dbc88b75b3155ccbf0d",
       "mode": "100644"
     },
     "packages/skills-web-app/test/test-layout-policy.mjs": {
@@ -9072,7 +9080,7 @@
       "mode": "100644"
     },
     "packages/skills-web-app/test/test-reading-order.mjs": {
-      "sha256": "7771806f63266d61387ddee0a11c9b53aff313dc21d64a7649441bd3903d4cc2",
+      "sha256": "4068c4785adf35529f20f9290f2c88c2928d67b14ffb384a944eb84e24e5cdf0",
       "mode": "100644"
     },
     "packages/skills-web-app/test/whiteboard-text-geometry.test.mjs": {
@@ -9964,11 +9972,11 @@
       "mode": "100644"
     },
     "scripts/kit-test-file-policy.mjs": {
-      "sha256": "f677add849e8162bc289fd4bf6275232fd1c7eb105b608c320e3111e23a68559",
+      "sha256": "4df93b0d3860a614d2adc6cc39887c7836f19fb1625d559101aa3b51889c7946",
       "mode": "100644"
     },
     "scripts/kit-test-file-policy.test.mjs": {
-      "sha256": "e5d23b02a9add8de0f2e5d4802ec6f184b21479213c2acb4b410ab9e94672281",
+      "sha256": "a61bc383c37816558663e9a885334d5ac7c0aa3a8d9ae70d5cfd7926580b94fd",
       "mode": "100644"
     },
     "scripts/known-browser-loader-proof.mjs": {

@@ -24,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 import { gridFor, seedRoutes } from './router.mjs';
 import { detectFeedbackEdges } from './feedback.mjs';
 import { jointSearch, routeDescent } from './search.mjs';
-import { placeLabels } from './labels.mjs';
+import { flowLabelSize, placeLabels } from './labels.mjs';
 import { createReadingObjective } from './reading-order.mjs';
 import { channelCrowding, spaceChannels } from './channel-spacing.mjs';
 import { layoutPolicy } from './layout-policy.mjs';
@@ -82,7 +82,7 @@ const DEFAULT_NODE_SIZE = { width: 100, height: 80 };
 // the document for provenance. Merely reading an older revision must NOT
 // migrate or rearrange it; only explicit authoring/re-layout runs this script.
 const AUTOAGENT_LAYOUT_NAMESPACE = 'https://autoagent.ai/bpmn/layout';
-const AUTOAGENT_LAYOUT_REVISION = '13';
+const AUTOAGENT_LAYOUT_REVISION = '14';
 
 // Search uses a deterministic expansion budget, not a wall-clock deadline.
 // Measure end-to-end runtime separately; grid building also consumes time.
@@ -607,8 +607,9 @@ if (hasSwimlanes) {
     // Named sequence flows need a real annotation band between ranks. A 30px
     // gap only fits the smallest one-line label with no breathing room and
     // turns ordinary orthogonal connectors into tiny elbows. Keep enough
-    // vertical clearance for a two-line label plus routing separation.
+    // base clearance; named multiline captions reserve their own space below.
     const ROW_GAP = 56;
+    const policy=layoutPolicy();
     const rankHeight = new Map();
     for (const node of rankedNodes) {
       const size = sizeFor(node.$type);
@@ -622,11 +623,25 @@ if (hasSwimlanes) {
       const rank = semanticRank.get(node.id);
       rankHeight.set(rank, Math.max(rankHeight.get(rank) || 0, size.height + boundaryOverhang));
     }
+    const rankGap=new Map(),labelWidthByLane=new Map();
+    // Explicit legacy comparison mode keeps its original unspaced seed.
+    for(const edge of policy.reading?edges:[]){
+      if(!edge.name)continue;
+      const label=flowLabelSize(edge.name),rank=semanticRank.get(edge.sourceRef.id);
+      // Reserve the annotation height and docking stems before routing.
+      // Labels cannot be made readable by moving them far from their branch.
+      if(semanticRank.get(edge.targetRef.id)>rank)
+        rankGap.set(rank,Math.max(rankGap.get(rank)||ROW_GAP,label.height+40));
+      for(const id of [edge.sourceRef.id,edge.targetRef.id]){
+        const laneId=laneByNodeId.get(id);
+        labelWidthByLane.set(laneId,Math.max(labelWidthByLane.get(laneId)||0,label.width));
+      }
+    }
     const rankY = new Map();
     let rankCursorY = 0;
     for (const rank of [...rankHeight.keys()].sort((a, b) => a - b)) {
       rankY.set(rank, rankCursorY);
-      rankCursorY += rankHeight.get(rank) + ROW_GAP;
+      rankCursorY += rankHeight.get(rank) + (rankGap.get(rank)||ROW_GAP);
     }
     const laneContentExtents = new Map();
     for (const lane of lanes) {
@@ -741,7 +756,10 @@ if (hasSwimlanes) {
     let cumulativeX = 0;
     for (const [currentLaneIndex, lane] of lanes.entries()) {
       const extent = laneContentExtents.get(lane.id);
-      const laneLeftGutter = currentLaneIndex === 0 ? leftChannelSpace : 0;
+      // A named flow needs caption space beside either endpoint track.
+      // Keep it inside the lane rather than over a divider or another branch.
+      const captionGutter=Math.max(0,(labelWidthByLane.get(lane.id)||0)+12-lanePadding.left);
+      const laneLeftGutter = (currentLaneIndex === 0 ? leftChannelSpace : 0)+captionGutter;
       const laneRightGutter = currentLaneIndex === lanes.length - 1
         ? rightChannelSpace
         : 0;
@@ -819,7 +837,6 @@ if (hasSwimlanes) {
       nodes: searchNodes, edges: searchEdges, lanes: searchLanes, routes: seedRouteMap,
     };
     const descended = routeDescent(seedState, seedGrid, 6);
-    const policy=layoutPolicy();
     const reportingObjective = (policy.reading || policy.report) ? createReadingObjective(descended.state, {
       preference: policy.preference, seedCost: descended.cost,
     }) : undefined;

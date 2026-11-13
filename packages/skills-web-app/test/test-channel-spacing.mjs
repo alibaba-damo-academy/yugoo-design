@@ -28,3 +28,23 @@ test('already separated routes remain unchanged and candidate work is bounded',(
   assert.equal(spaceChannels(s).metrics.accepted,0);
   assert.ok(spaceChannels(fixture(),{maxPasses:2,maxCandidates:3}).metrics.evaluated<=6);
 });
+test('short opposing flows retain their docks but open a visible return channel',()=>{
+  const s={nodes:[node('decision',0,0),node('assessment',0,136)],lanes:[],
+    edges:[{id:'out',sourceId:'decision',targetId:'assessment'},
+      {id:'back',sourceId:'assessment',targetId:'decision',feedback:true}],
+    routes:new Map([['out',[{x:50,y:80},{x:50,y:136}]],
+      ['back',[{x:50,y:136},{x:50,y:80}]]])};
+  const r=spaceChannels(s);
+  assert.ok(r.metrics.accepted>0,'the entire return must not hide under the outgoing wire');
+  assert.ok(r.metrics.after<r.metrics.before);
+  assert.deepEqual(r.state.routes.get('out'),s.routes.get('out'),'prefer opening the feedback return, not bending the forward branch');
+  assert.ok(r.state.nodes===s.nodes&&r.state.lanes===s.lanes,'route repair must preserve node/lane geometry');
+  assert.equal(r.cost.counts.nodeOverlap,0);assert.equal(r.cost.counts.crossing,0);
+  for(const edge of s.edges){
+    const before=s.routes.get(edge.id),after=r.state.routes.get(edge.id);
+    assert.deepEqual(after[0],before[0]);assert.deepEqual(after.at(-1),before.at(-1));
+    for(let i=1;i<after.length;i++)assert.ok(after[i-1].x===after[i].x||after[i-1].y===after[i].y);
+  }
+  assert.ok([...r.state.routes.values()].some(path=>path.some(p=>Math.abs(p.x-50)>=12)),
+    'separation must be visible rather than a subpixel detour');
+});
