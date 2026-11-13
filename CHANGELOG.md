@@ -4,7 +4,7 @@
 
 按版本概述语构设计系统（Yugoo Design）代码仓库中的主要特性、明显体验变化，以及影响安装和升级的重要改进。细小调整和内部重构不逐项列出；完整改动见 [Git 提交历史](https://github.com/alibaba-damo-academy/yugoo-design/commits/main/)。
 
-## 0.3.0
+## [0.3.0](https://github.com/alibaba-damo-academy/yugoo-design/tree/v0.3.0)
 
 本轮重点是让设计面板（Design Panel）更一致、建议更容易决策，并完善 Web App Kit 的设计与调研体验。
 
