@@ -126,9 +126,10 @@ test('local Bundle cards show existing Kit references and open the shared mount 
     mounts: [{ bundle: { ...pin, instanceId: 'first' } }],
     availableBundles: [{ ...pin, instanceId: 'first', title: { zh: '观察记录', en: 'Notes' } }] }
   const f = await mount(undefined, 'bundle', value => ({ ...value, bundle: pin, refs: [{ id: kit.id, title: kit.title }] }))
+  const independent = { ...kit, id: 'independent-kit', importedFromSnapshot: 'original-import', title: { zh: '独立快照', en: 'Independent snapshot' }, mounts: [{ bundle: { ...pin, source: { snapshot: 'retained', sourceId: 'original' } } }] }
   const local = { ...record('first'), bundle: pin, refs: [{ id: kit.id, title: kit.title }] }, reads = []
-  f.instances.list = async input => input?.kind === 'kit' ? [kit] : [local]
-  f.instances.read = async ({ id }) => { reads.push(id); return kit }
+  f.instances.list = async input => input?.kind === 'kit' ? [kit, independent] : [local]
+  f.instances.read = async ({ id }) => { reads.push(id); return id === kit.id ? kit : independent }
   try {
     const badge = document.querySelector('button[aria-label="1 Kit · View mounts"]')
     assert.ok(badge, 'the saved local reference must be visible on its Bundle card')
@@ -137,10 +138,10 @@ test('local Bundle cards show existing Kit references and open the shared mount 
     await React.act(async () => badge.click())
     const dialog = document.querySelector('dialog,[role=dialog]')
     assert.ok(dialog); assert.match(dialog.textContent, /Feedback Kit/)
-    assert.equal(dialog.querySelector('input[type=checkbox]')?.checked, true)
+    assert.deepEqual([...dialog.querySelectorAll('input[type=checkbox]')].map(node => node.checked), [true, false])
     assert.equal(f.controller.getSnapshot().bundleWorkspace, undefined, 'a local reference never masquerades as an installed Bundle')
     assert.equal(document.querySelector('textarea'), null, 'reading references does not enter source editing')
-    assert.deepEqual(reads, [kit.id])
+    assert.deepEqual(reads, [kit.id, independent.id])
     await React.act(async () => dialog.querySelector('button[aria-label=Close]').click())
     assert.equal(document.querySelector('dialog,[role=dialog]'), null)
     assert.ok(document.querySelector('button[aria-label="1 Kit · View mounts"]'), 'closing restores the catalog and refreshes existing reference data')

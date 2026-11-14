@@ -204,7 +204,9 @@ test('invalid Kit declaration is importable and repaired through existing mount 
     .map(file => ({ ...file, path: `bundles/${pin.name}/${pin.version}/${file.path}` }))
   record = await service.importSources({ kind: 'kit', files: [...kitSources(), ...partial] })
   assert.equal(record.readiness.ready, false)
-  record = await service.updateMounts({ id: record.id, expectedRevision: 0, bundles: [pin] })
+  const retained = await service.updateMounts({ id: record.id, expectedRevision: 0, bundles: [pin] })
+  assert.equal(retained.readiness.ready, false, 'preserving membership does not silently repair the selected snapshot')
+  record = await service.updateMounts({ id: retained.id, expectedRevision: retained.revision, bundles: [{ ...pin, replaceSource: true }] })
   assert.deepEqual(record.readiness, { ready: true, diagnostics: [] }, 'explicit re-selection can repair an incomplete imported mount at the same exact pin')
 })
 

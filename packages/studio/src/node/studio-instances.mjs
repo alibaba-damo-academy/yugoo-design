@@ -138,11 +138,14 @@ export async function createStudioInstances(options) {
     for (const [path, content] of Object.entries(record.overlays)) files.set(path, Buffer.from(content).toString('base64'))
     return [...files].map(([path, base64]) => ({ path, base64 }))
   }
+  // Imported Kit snapshots never acquire a live source merely by sharing a name.
+  const mountedInstanceId = (owner, mount, records) => mount.bundle.instanceId ?? mount.instanceId
+    ?? (!owner.importedFromSnapshot ? records.find(record => !record.deletedAt && record.current === true && record.kind === 'bundle' && record.bundle.name === mount.bundle.name)?.id : undefined)
   const references = (record, records) => records.filter(item => !item.deletedAt && item.kind === 'kit'
-    && item.mounts.some(mount => (mount.bundle.instanceId ?? mount.instanceId) === record.id || (record.current === true && record.kind === 'bundle' && mount.bundle.name === record.bundle.name))).map(({ id, title }) => ({ id, title }))
+    && item.mounts.some(mount => mountedInstanceId(item, mount, records) === record.id)).map(({ id, title }) => ({ id, title }))
   const projection = (record, records) => {
-    const { overlays: _overlays, importedFromSnapshot: _imported, ...result } = record
-    return { ...result, refs: references(record, records), ...(record.recordVersion !== 2 ? { requiresMigration: true } : {}) }
+    const { overlays: _overlays, importedFromSnapshot, ...result } = record
+    return { ...result, ...(record.kind === 'kit' && importedFromSnapshot ? { importedFromSnapshot } : {}), refs: references(record, records), ...(record.recordVersion !== 2 ? { requiresMigration: true } : {}) }
   }
   // Display only: read the selected retained bytes, never a mutable installed base.
   // Incomplete working copies remain inspectable; their validity is still Core-owned.
@@ -237,7 +240,7 @@ export async function createStudioInstances(options) {
       try {
         if (record.kind === 'kit') {
           for (const mount of record.mounts) {
-            const entries = (await resolveMounts(record.mounts, record.current === true)(mount.bundle)).files
+            const entries = (await resolveMounts(record)(mount.bundle)).files
             if (!entries.some(file => file.path === 'SKILL.md')) diagnostics.push({ code: 'instance.missing_mount', path: 'kit.yaml',
               message: `Missing exact Bundle ${mount.bundle.name}@${mount.bundle.version}. Repair the Bundle selection in mount management.`, severity: 'error' })
           }
@@ -278,20 +281,20 @@ export async function createStudioInstances(options) {
     try { return declaration ? parseKitMounts(decode(declaration.base64)) : mounts.map(mount => pin(mount.bundle)) }
     catch { return mounts.map(mount => pin(mount.bundle)) } // Incomplete source remains savable/exportable; Core diagnoses it at load/preview.
   }
-  const currentMountRecord = async selected => {
-    if (selected.bundle.instanceId) {
-      const current = modern(await repository.read(selected.bundle.instanceId))
+  const currentMountRecord = async (selected, owner) => {
+    const instanceId = mountedInstanceId(owner, selected, selected.bundle.instanceId || selected.instanceId || owner.importedFromSnapshot ? [] : await repository.list())
+    if (instanceId) {
+      const current = modern(await repository.read(instanceId))
       if (current.kind !== 'bundle' || current.bundle.name !== selected.bundle.name) throw new Error('Mounted Bundle identity changed.')
       return current
     }
-    return (await repository.list()).find(record => !record.deletedAt && record.current === true && record.kind === 'bundle' && record.bundle.name === selected.bundle.name)
   }
-  const resolveMounts = (mounts, currentLibrary = false) => async requested => {
+  const resolveMounts = (owner, mounts = owner.mounts) => async requested => {
     const selected = mounts.find(mount => same(mount.bundle, pin(requested)))
     if (!selected) throw new Error('Core requested a Bundle outside the selected exact mounts.')
-    const current = await currentMountRecord(selected)
+    const current = await currentMountRecord(selected, owner)
     if (current) return { files: await filesOf(current), sourceId: current.sourceId }
-    if (currentLibrary && selected.bundle.version !== requested.version) return catalog.captureBundle(pin(requested))
+    if (owner.current === true && !owner.importedFromSnapshot && selected.bundle.version !== requested.version) return catalog.captureBundle(pin(requested))
     if (!selected.bundle.source?.snapshot) throw new Error(`Mounted Bundle source is unavailable for ${selected.bindingKey}.`)
     return { files: await entriesOf(selected.bundle.source.snapshot), sourceId: selected.bundle.source.sourceId }
   }
@@ -299,17 +302,17 @@ export async function createStudioInstances(options) {
     try {
       // Same selected source as execution/export, including retained imported trees.
       // This is a read projection only: no catalog entry or stored mount is changed.
-      const captured = await resolveMounts(record.mounts, record.current === true)(mount.bundle)
+      const captured = await resolveMounts(record)(mount.bundle)
       const display = await sourceDisplayCopy('bundle', async path => {
         safePath(path)
         const file = captured.files.find(file => file.path === path)
         return file && Buffer.byteLength(file.base64, 'base64') <= MAX_TEXT ? decode(file.base64) : undefined
       })
-      const current = await currentMountRecord(mount)
+      const current = await currentMountRecord(mount, record)
       return { ...mount, display: { ...display, ...(current ? { title: current.title } : {}) } }
     } catch { return mount } // Readiness owns unavailable/invalid-source diagnostics.
   }))
-  const kitInput = async record => ({ kit: record.kit, kitFiles: await filesOf(record), mounts: record.mounts, resolveBundle: resolveMounts(record.mounts, record.current === true) })
+  const kitInput = async record => ({ kit: record.kit, kitFiles: await filesOf(record), mounts: record.mounts, resolveBundle: resolveMounts(record) })
   const retain = async (tx, files, sourceId) => { requireSourceId(sourceId); return { snapshot: (await tx.retainTree(files)).id, sourceId } }
   const mountOne = async (tx, requested, available) => {
     const selected = available.find(item => same(item, pin(requested)))
@@ -327,7 +330,7 @@ export async function createStudioInstances(options) {
     return { bindingKey, bundle: { ...pin(requested), source: await retain(tx, captured.files, captured.sourceId) } }
   }
   const projectedKit = async (record, mounts) => {
-    const kitFiles = await composition.projectMounts({ allowEmptyDraft: true, kit: record.kit, kitFiles: await filesOf(record), mounts: mounts.map(mount => ({ bindingKey: mount.bindingKey, ...pin(mount.bundle) })), resolveBundle: resolveMounts(mounts, record.current === true) })
+    const kitFiles = await composition.projectMounts({ allowEmptyDraft: true, kit: record.kit, kitFiles: await filesOf(record), mounts: mounts.map(mount => ({ bindingKey: mount.bindingKey, ...pin(mount.bundle) })), resolveBundle: resolveMounts(record, mounts) })
     if (kitFiles.some(entry => entry.path.startsWith('skills/'))) throw new Error('Kit-owned sources cannot contain copied Bundle trees.')
     return kitFiles
   }
@@ -357,7 +360,7 @@ export async function createStudioInstances(options) {
     const dependencyRequests = current.kind === 'kit' ? mountRequests(files, current.mounts) : []
     const digest = createHash('sha256').update(JSON.stringify({ id: current.id, baseRevision: current.revision,
       kind: current.kind, pin: current[current.kind], runtimeName: current.runtimeName, sourceId: current.sourceId,
-      mounts: await Promise.all(dependencyRequests.map(async requested => ({ name: requested.name, source: await resolveMounts(current.mounts, current.current === true)(requested) }))), before: canonicalFiles(before), after: canonicalFiles(files), bundle: input.bundle, sampleSource: input.sampleSource })).digest('hex')
+      mounts: await Promise.all(dependencyRequests.map(async requested => ({ name: requested.name, source: await resolveMounts(current)(requested) }))), before: canonicalFiles(before), after: canonicalFiles(files), bundle: input.bundle, sampleSource: input.sampleSource })).digest('hex')
     return { files, diff: diff.sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0), digest }
   }
   const previewChanges = async (current, input, prepared) => {
@@ -374,7 +377,7 @@ export async function createStudioInstances(options) {
         const bundle = pin(input.bundle)
         if (!current.mounts.some(mount => same(mount.bundle, bundle))) throw new Error('Select an exact mounted Bundle.')
         result = await composition.preview({ kind: 'kit', kit: current.kit, kitFiles: prepared.files, mounts: current.mounts,
-          resolveBundle: resolveMounts(current.mounts, current.current === true), bundle, revision, sampleSource: input.sampleSource })
+          resolveBundle: resolveMounts(current), bundle, revision, sampleSource: input.sampleSource })
       }
       if (!result || !Array.isArray(result.diagnostics)) throw new Error('Core preview did not return a diagnostic result.')
       if (result.preview && result.preview.revision !== revision) throw new Error('Core preview revision does not match this candidate.')
@@ -397,7 +400,7 @@ export async function createStudioInstances(options) {
     try {
       if (current.kind === 'kit') {
         await composition.validateKit({ kit: current.kit, kitFiles: files, mounts: current.mounts,
-          resolveBundle: resolveMounts(current.mounts, current.current === true) })
+          resolveBundle: resolveMounts(current) })
       } else {
         if (input.bundle && !same(input.bundle, current.bundle)) throw new Error('Select this exact Bundle instance.')
         diagnostics.push(...identityDiagnostics(current, files))
@@ -431,7 +434,7 @@ export async function createStudioInstances(options) {
         if (record.kind !== 'kit') throw new Error('Select a Kit to read its mounted Bundles.')
         const mount = record.mounts.find(item => item.bindingKey === selectedKey)
         if (!mount) throw new Error('Select a Bundle mounted by this Kit; read the mounts first.')
-        const captured = await resolveMounts(record.mounts, record.current === true)(mount.bundle)
+        const captured = await resolveMounts(record)(mount.bundle)
         const entries = new Map(captured.files.map(file => [file.path, file]))
         const availableFiles = captured.files.map(file => {
           const bytes = Buffer.byteLength(file.base64, 'base64')
@@ -452,7 +455,7 @@ export async function createStudioInstances(options) {
         const record = modern(await tx.read(id))
         if (expectedRevision !== undefined) checkRevision(record, expectedRevision)
         if (record.kind !== 'kit') throw new Error('Select a Kit source.')
-        const captured = new Map(), kitFiles = await filesOf(record), resolveBundle = resolveMounts(record.mounts, record.current === true)
+        const captured = new Map(), kitFiles = await filesOf(record), resolveBundle = resolveMounts(record)
         for (const requested of mountRequests(kitFiles, record.mounts)) captured.set(requested.name, await resolveBundle(requested))
         return { kit: record.kit, kitFiles, mounts: structuredClone(record.mounts),
           resolveBundle: async requested => captured.get(requested.name) }
@@ -496,7 +499,7 @@ export async function createStudioInstances(options) {
         if (current.kind === 'bundle') snapshot.bundle = pin(current.bundle)
         else {
           snapshot.bundles = []
-          const resolveBundle = resolveMounts(current.mounts, current.current === true)
+          const resolveBundle = resolveMounts(current)
           for (const requested of mountRequests(await filesOf(current), current.mounts)) {
             const captured = await resolveBundle(requested)
             snapshot.bundles.push({ ...pin(requested), sourceId: captured.sourceId,
@@ -674,26 +677,13 @@ export async function createStudioInstances(options) {
         if (current.kind !== 'kit') throw new Error('Mount management requires a local Kit instance.')
         const available = await candidates(await tx.list()), mounts = []
         for (const selected of bundles) {
-          const existing = current.mounts.find(mount => same(mount.bundle, pin(selected))
+          const existing = selected.replaceSource === true ? undefined : current.mounts.find(mount => same(mount.bundle, pin(selected))
             && (selected.bindingKey === undefined || selected.bindingKey === mount.bindingKey)
             && (selected.instanceId === undefined || selected.instanceId === mount.bundle.instanceId)
             && (selected.revision === undefined || selected.revision === mount.bundle.revision))
-          let mounted = existing
-          if (existing && current.importedFromSnapshot) {
-            const files = await entriesOf(existing.bundle.source.snapshot)
-            if (available.some(item => same(item, selected))) {
-              let incomplete = !files.some(file => file.path === 'SKILL.md')
-              if (!incomplete && typeof composition.validateBundle === 'function') {
-                try { await composition.validateBundle({ bundle: pin(existing.bundle), bundleFiles: files,
-                  sourceId: existing.bundle.source.sourceId, runtimeName: existing.bindingKey }) }
-                catch { incomplete = true }
-              }
-              if (incomplete) {
-                try { mounted = await mountOne(tx, selected, available) } catch { /* Preserve unresolved dependencies while authoring other membership. */ }
-              }
-            }
-          }
-          mounts.push(mounted ?? await mountOne(tx, selected, available))
+          // Preserving membership preserves its exact source, including incomplete imports.
+          // A new choice or explicit re-selection captures through the existing owner.
+          mounts.push(existing ?? await mountOne(tx, selected, available))
         }
         if (new Set(mounts.map(mount => mount.bindingKey)).size !== mounts.length) throw new Error('Bundle binding keys must be unique.')
         const source = await retain(tx, await projectedKit(current, mounts), current.sourceId)

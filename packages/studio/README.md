@@ -17,6 +17,14 @@ Bundle runtime names and data paths. Created and imported sources use the same e
 Kit membership belongs to `kit.yaml`; its Mindset catalog is the generated readable
 projection. Mounts select stable Bundle identities. A mounted local Bundle reads its
 current saved source, including overlays, rather than locking an earlier revision.
+A Kit imported with unbound Bundle snapshots keeps those saved bytes, including
+sources captured from the catalog to fill an absent closure. Copying that Kit
+preserves this independence. Only explicit `instanceId` bindings follow live local
+content; the legacy current-by-name fallback applies to non-imported Kits.
+`updateMounts` preserves existing selected sources by default. A per-Bundle
+`replaceSource: true` expresses an explicit source re-selection through the same
+atomic save and revision check; it is request intent, never stored permission or
+mount state. Other selected sources, including incomplete snapshots, stay intact.
 Unfinished methods, missing dependencies and empty Kit membership can be saved;
 loading or previewing reports the actual missing/invalid definition. A missing
 installed catalog does not prevent reopening and editing retained local files.

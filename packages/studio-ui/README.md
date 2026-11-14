@@ -162,7 +162,14 @@ installed source reads; without them only the supplied Mindset is available.
 The Companion adapter provides the full physical tree and bounded UTF-8 reads.
 Raw Mindset includes the mount XML. Local Kit mount management presents available
 and mounted Bundle cards by stable identity, saved through `updateMounts`
-with revision checks. Mounted local Bundles use their current saved content;
+with revision checks. Bundle reference counts and the mount dialog use the same
+record identity; independent same-name imported snapshots do not count as live
+references. Unchanged selections retain their saved sources. Checking a Bundle
+in its mount dialog, or removing and re-adding it in the Kit editor, explicitly
+selects that source through the existing save. An installed Bundle is materialized
+through `editCurrent` only after an explicit mount choice, then bound by its
+returned stable record identity. Opening the dialog remains read-only; a failed
+mount write does not undo or claim to have mounted that current record. Mounted local Bundles use their current saved content;
 project-owned copies are unaffected by library changes. Removal moves the local
 copy to the system Trash, without uninstalling installed content. UI classes use the `ygd-studio` prefix;
 package identities are unchanged. Studio loading locations share one indicator

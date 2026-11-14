@@ -39,6 +39,25 @@ test('S2 mount receipts require the same Kit identity, next revision and ordered
   assert.equal(mountWriteWasRejected(Object.assign(new Error('Invalid response'), { name: 'ZodError' })), false)
 })
 
+test('an unrelated membership change preserves a same-name independent snapshot instead of choosing the live candidate', () => {
+  const snapshot = { name: b.name, version: b.version, source: { snapshot: 'retained-import', sourceId: 'import:bundle:local_b@1.0' } }
+  const imported = { ...seed, importedFromSnapshot: 'original', mounts: [{ bundle: snapshot }], availableBundles: seed.availableBundles }
+  assert.deepEqual(selectedMountPins(imported, [b.name, a.name]), [{ name: b.name, version: b.version }, a])
+  assert.equal(snapshot.source.snapshot, 'retained-import')
+})
+
+test('a local Bundle mount dialog distinguishes its live identity from an independent same-name snapshot', async () => {
+  const liveKit = { ...seed, id: 'live-kit', title: { zh: '引用原来源', en: 'Live source' }, mounts: [{ bundle: b }] }
+  const snapshotKit = { ...seed, importedFromSnapshot: 'original', id: 'snapshot-kit', title: { zh: '独立导入', en: 'Independent import' },
+    mounts: [{ bundle: { name: b.name, version: b.version, source: { snapshot: 'retained-import', sourceId: 'import:bundle:local_b@1.0' } } }] }
+  const client = { list: async () => [liveKit, snapshotKit], read: async ({ id }) => id === liveKit.id ? liveKit : snapshotKit,
+    updateMounts: async () => assert.fail('reading membership must not save') }
+  const f = await mount(BundleMounts, { client, bundle: b, installed: [], locale: 'en' })
+  try {
+    assert.deepEqual([...document.querySelectorAll('input[type=checkbox]')].map(node => node.checked), [true, false])
+  } finally { await f.close() }
+})
+
 for (const mismatch of ['foreign', 'stale', 'selection']) test(`MountEditor retains selection and verifies a ${mismatch} save receipt without repeating writes`, async () => {
   let actions, saved = seed, writes = 0
   const accepted = [], dirty = [], requests = []
@@ -126,7 +145,7 @@ test('BundleMounts preserves unavailable existing pins and local instance identi
   const f = await mount(BundleMounts, { client, bundle: b, installed: [], locale: 'en' })
   try {
     await React.act(async () => Simulate.change(document.querySelector('input[type=checkbox]'), { target: { checked: true } }))
-    assert.deepEqual(requests, [{ id: base.id, expectedRevision: 0, bundles: [a, b] }])
+    assert.deepEqual(requests, [{ id: base.id, expectedRevision: 0, bundles: [a, { ...b, replaceSource: true }] }])
     assert.equal(document.querySelector('[role=alert]'), null)
   } finally { await f.close() }
 })
@@ -201,3 +220,80 @@ test('retained mount cards use bilingual source metadata and keep selection pins
 })
 
 test.after(() => dom.window.close())
+
+for (const locale of ['en', 'zh']) test(`Kit explicit remove and re-add selects only that source (${locale})`, async () => {
+  const old = { name: b.name, version: b.version, source: { snapshot: 'retained', sourceId: 'import' } }
+  const base = { ...seed, importedFromSnapshot: 'original', mounts: [{ bundle: old }, { bundle: a }] }
+  let actions, submitted
+  const f = await mount(MountEditor, { record: base, locale, client: { updateMounts: async request => { submitted = request; return receipt(base, request.bundles) } },
+    onSaved: () => {}, onActions: value => { actions = value } })
+  try {
+    await click(locale === 'zh' ? '移除' : 'Remove'); await click(locale === 'zh' ? '添加' : 'Add')
+    assert.equal(actions.canSave, true, 're-selecting a same-name source is a meaningful change')
+    await React.act(async () => actions.save())
+    assert.deepEqual(submitted.bundles, [a, { ...b, replaceSource: true }])
+  } finally { await f.close() }
+})
+
+test('current Bundle matches ordinary builtin fallback while same-name imported snapshots stay unchecked', async () => {
+  const plain = { ...seed, id: 'ordinary', mounts: [{ bundle: { name: b.name, version: '0.1' } }] }
+  const imported = { ...plain, id: 'import', importedFromSnapshot: 'original' }
+  const client = { list: async () => [plain, imported], read: async ({ id }) => id === plain.id ? plain : imported }
+  const f = await mount(BundleMounts, { client, bundle: { ...b, current: true }, installed: [], locale: 'en' })
+  try { assert.deepEqual([...document.querySelectorAll('input[type=checkbox]')].map(node => node.checked), [true, false]) }
+  finally { await f.close() }
+})
+
+for (const reject of [false, true]) test(`builtin explicit mount materializes or reuses current identity, and ${reject ? 'localizes a rejected save' : 'saves, reopens and unmounts'}`, async () => {
+  const builtin = { name: b.name, version: b.version }, current = { ...seed, id: b.instanceId, kind: 'bundle', bundle: builtin, current: true, source: { bundle: builtin } }
+  let saved = { ...seed, importedFromSnapshot: 'original', mounts: [{ bundle: { ...builtin, source: { snapshot: 'retained', sourceId: 'original' } } }], availableBundles: [{ ...builtin, title: seed.title }] }
+  let edits = 0, writes = 0
+  const client = { list: async () => [saved], read: async () => saved, editCurrent: async () => { edits++; return current }, updateMounts: async input => {
+    writes++; if (reject && writes === 1) throw Error('Instance changed elsewhere. Reopen it before saving.')
+    saved = { ...receipt(saved, input.bundles.map(({ replaceSource, ...pin }) => pin)), availableBundles: [{ ...builtin, instanceId: current.id, title: seed.title }] }; return saved
+  } }
+  const props = { client, bundle: builtin, installed: [], locale: 'en' }, f = await mount(BundleMounts, props)
+  try {
+    assert.equal(edits,0); assert.equal(writes,0); assert.equal(document.querySelector('input[type=checkbox]').checked,false)
+    await React.act(async()=>Simulate.change(document.querySelector('input[type=checkbox]'),{target:{checked:true}}))
+    assert.equal(edits,1); assert.equal(writes,1)
+    if (reject) {
+      assert.equal(saved.mounts[0].bundle.instanceId,undefined); assert.equal(document.querySelector('input[type=checkbox]').checked,false)
+      assert.match(document.body.textContent,/Mounts could not be saved/)
+      await React.act(async()=>Simulate.change(document.querySelector('input[type=checkbox]'),{target:{checked:true}}))
+      assert.equal(edits,1,'the actual materialized record is retained after mount rejection; no automatic retry')
+    }
+    assert.equal(saved.mounts[0].bundle.instanceId,current.id); assert.equal(document.querySelector('input[type=checkbox]').checked,true)
+    await f.close()
+    const reopened = await mount(BundleMounts,props)
+    try {
+      assert.equal(document.querySelector('input[type=checkbox]').checked,true,'read-only reopen discovers the current identity')
+      assert.equal(edits,1)
+      await React.act(async()=>Simulate.change(document.querySelector('input[type=checkbox]'),{target:{checked:false}}))
+      assert.deepEqual(saved.mounts,[]); assert.equal(edits,1)
+    } finally { await reopened.close() }
+  } finally { if (document.querySelector('input[type=checkbox]')) await f.close() }
+})
+
+test('unchanged independent snapshot receipts must preserve the actual retained source', () => {
+  const source = { snapshot:'original-snapshot', sourceId:'original-source' }, base = { ...seed, importedFromSnapshot:'original', mounts:[{bundle:{...a,source}}] }
+  const pending = { base, bundles:selectedMountPins(base,[a.name]) }
+  assert.equal(mountSaveMatches({...base,revision:1},pending),true)
+  for(const wrong of [{...a},{...a,source:{...source,snapshot:'other'}},{...a,source:{...source,sourceId:'other'}}])
+    assert.equal(mountSaveMatches({...base,revision:1,mounts:[{bundle:wrong}]},pending),false)
+})
+
+test('builtin selection stays visibly selected while editCurrent is pending and never dispatches a mount on materialization failure', async () => {
+  const builtin = {name:b.name,version:b.version}, pending = deferred()
+  const kit = {...seed,importedFromSnapshot:'original',mounts:[],availableBundles:[{...builtin,title:seed.title}]}
+  let writes=0
+  const f=await mount(BundleMounts,{client:{list:async()=>[kit],read:async()=>kit,editCurrent:()=>pending.promise,updateMounts:async()=>{writes++;assert.fail('not materialized')}},bundle:builtin,installed:[],locale:'en'})
+  try {
+    await React.act(async()=>Simulate.change(document.querySelector('input[type=checkbox]'),{target:{checked:true}}))
+    assert.equal(document.querySelector('input[type=checkbox]').checked,true)
+    assert.equal(document.querySelector('input[type=checkbox]').disabled,true)
+    await React.act(async()=>pending.reject(Error('Source capture failed')))
+    assert.equal(writes,0);assert.equal(document.querySelector('input[type=checkbox]').checked,false)
+    await click('View issues'); assert.match(document.body.textContent,/Source capture failed/)
+  }finally{await f.close()}
+})

@@ -6,13 +6,13 @@ export interface PendingMountSave { readonly base: StudioInstance; readonly bund
 export const mountKey = (pin: { name: string; version: string }) => pin.name
 
 /** Preserve Bundle identity and unavailable mounts without pinning mutable library content. */
-export function selectedMountPins(record: StudioInstance, keys: Iterable<string>): MountPins {
+export function selectedMountPins(record: StudioInstance, keys: Iterable<string>, replacements: ReadonlySet<string> = new Set()): MountPins {
   return [...keys].map(key => {
-    const source = record.availableBundles?.find(bundle => mountKey(bundle) === key)
-      ?? record.mounts.find(mount => mountKey(mount.bundle) === key)?.bundle
+    const existing = replacements.has(key) ? undefined : record.mounts.find(mount => mountKey(mount.bundle) === key)?.bundle
+    const source = existing ?? record.availableBundles?.find(bundle => mountKey(bundle) === key)
     if (!source) throw Error('The selected Bundle source is unavailable. Reopen the Kit before saving.')
     const { name, version, instanceId } = source
-    return { name, version, ...(instanceId === undefined ? {} : { instanceId }) }
+    return { name, version, ...(instanceId === undefined ? {} : { instanceId }), ...(replacements.has(key) ? { replaceSource: true } : {}) }
   })
 }
 const samePin = (a?: { name: string; version: string }, b?: { name: string; version: string }) =>
@@ -26,7 +26,10 @@ export function mountSaveMatches(value: StudioInstance, pending: PendingMountSav
     && Array.isArray(value.mounts) && value.mounts.length === bundles.length
     && value.mounts.every((mount, index) => {
       const expected = bundles[index]!
+      const retained = !expected.replaceSource && expected.instanceId === undefined
+        ? base.mounts.find(value => mountKey(value.bundle) === mountKey(expected))?.bundle.source : undefined
       return samePin(mount?.bundle, expected) && mount.bundle.instanceId === expected.instanceId
+        && (!retained || (mount.bundle.source?.snapshot === retained.snapshot && mount.bundle.source.sourceId === retained.sourceId))
     })
 }
 

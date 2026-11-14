@@ -901,6 +901,14 @@ The Design Studio is the authoring and management GUI for Kits, Mindsets, and th
 
 The catalog maintains current saved Kit and Bundle content. Editing, copying and importing use the same source-instance service. Projects copy the selected current definitions once and subsequently use their own files. There is no local publication state, confirmation lock or version-switching workflow.
 
+An imported Kit retains its unbound Bundle snapshots, including dependencies
+captured from the catalog during import and copies of that Kit. Sharing a Bundle
+name does not create a live binding. Explicit local instance bindings follow that
+record; the legacy current-by-name fallback belongs only to non-imported Kits.
+Mount management preserves unchanged sources and replaces only an explicitly
+reselected source through the existing revision-checked save. Read projections,
+reference counts and selection controls use these same ownership facts.
+
 UI and Agent discovery share the current Kit choices, including saved local
 imports. Installed-source inspection remains distinct: its absence cannot make
 a local Kit unavailable. Discovery reads do not update an existing project's

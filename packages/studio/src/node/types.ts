@@ -89,7 +89,7 @@ export interface StudioInstanceBundleChoice extends DesignBundleVersionPin {
   readonly instanceId?: string
   readonly revision?: number
 }
-export interface StudioInstanceDescription extends Omit<StudioInstanceStoredRecord, 'overlays' | 'importedFromSnapshot' | 'mounts'> {
+export interface StudioInstanceDescription extends Omit<StudioInstanceStoredRecord, 'overlays' | 'mounts'> {
   /** Display-only metadata from the selected source; never persisted in mount pins. */
   readonly mounts: readonly (StudioInstanceMount & { readonly display?: Partial<Pick<StudioInstanceBundleChoice, 'title' | 'description' | 'displayDescription'>> })[]
   /** Same-identity editable projection of a catalog source. */
@@ -199,7 +199,7 @@ export interface StudioInstances {
   exportArchive(input: StudioInstanceArchiveRequest): Promise<string>
   prepareChanges(input: StudioInstanceChangeRequest): Promise<StudioInstanceCandidate>
   saveChanges(input: StudioInstanceSaveChanges): Promise<StudioInstanceDescription & { readonly changeReceipt: StudioInstanceChangeReceipt }>
-  updateMounts(input: StudioInstanceRevision & { readonly bundles: readonly (DesignBundleVersionPin & { readonly bindingKey?: string; readonly instanceId?: string; readonly revision?: number })[] }): Promise<StudioInstanceDescription>
+  updateMounts(input: StudioInstanceRevision & { readonly bundles: readonly (DesignBundleVersionPin & { readonly bindingKey?: string; readonly instanceId?: string; readonly revision?: number; readonly replaceSource?: boolean })[] }): Promise<StudioInstanceDescription>
   preview(input: StudioInstanceRevision & { readonly bundle?: DesignBundleVersionPin; readonly sampleSource?: string }): Promise<StudioPanelPreviewResult>
   migrate(input: StudioInstanceRevision): Promise<StudioInstanceDescription>
 }

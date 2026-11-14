@@ -4,17 +4,21 @@ import { LoadingIndicator } from './LoadingIndicator.tsx'
 import { StudioFeedback } from './StudioFeedback.tsx'
 import { mountKey, mountSaveMatches, mountWriteWasRejected, selectedMountPins, type PendingMountSave } from './mount-save-receipt.ts'
 
-export function BundleMounts({ client, bundle, installed, locale, onEditKit }: { client?: StudioInstanceClient; bundle: { name: string; version: string }; installed: readonly { name: string; version: string }[]; locale: 'zh' | 'en'; onEditKit?: (kit: { name: string; version: string }) => void }) {
-  const owner = useMemo(() => ({ client, name: bundle.name, version: bundle.version }), [client, bundle.name, bundle.version])
+export function BundleMounts({ client, bundle, installed, locale, onEditKit }: { client?: StudioInstanceClient; bundle: { name: string; version: string; instanceId?: string; current?: boolean }; installed: readonly { name: string; version: string }[]; locale: 'zh' | 'en'; onEditKit?: (kit: { name: string; version: string }) => void }) {
+  const owner = useMemo(() => ({ client, name: bundle.name, version: bundle.version, instanceId: bundle.instanceId, current: bundle.current }), [client, bundle.name, bundle.version, bundle.instanceId, bundle.current])
   const current = useRef(owner); current.current = owner
   const live = useRef(true), writing = useRef<typeof owner>()
   const pending = useRef<{ owner: typeof owner; save: PendingMountSave }>()
+  const [resolved, setResolved] = useState<{ owner: typeof owner; record: StudioInstance }>()
   const [query, setQuery] = useState(''), [retry, refresh] = useState(0)
   const [catalog, setCatalog] = useState<{ owner: typeof owner; kits: readonly StudioInstance[]; busy: boolean; error?: string }>()
-  const [operation, setOperation] = useState<{ owner: typeof owner; busy: boolean; error?: string; pending?: PendingMountSave }>()
+  const [operation, setOperation] = useState<{ owner: typeof owner; busy: boolean; selecting?: string; error?: string; pending?: PendingMountSave }>()
   const listing = catalog?.owner === owner ? catalog : undefined
   const update = operation?.owner === owner ? operation : undefined
   const kits = listing?.kits ?? [], loading = listing?.busy ?? !!client, busy = loading || !!update?.busy
+  const discovered = bundle.instanceId === undefined ? kits.flatMap(kit => kit.availableBundles ?? []).find(pin => pin.name === bundle.name && pin.instanceId) : undefined
+  const target = resolved?.owner === owner ? { ...bundle, instanceId: resolved.record.id, current: true }
+    : discovered ? { ...bundle, instanceId: discovered.instanceId, current: true } : bundle
   const displayedKits = update?.pending && !kits.some(kit => kit.id === update.pending!.base.id) ? [...kits, update.pending.base] : kits
   const zh = locale === 'zh'
   useEffect(() => { live.current = true; return () => { live.current = false } }, [])
@@ -39,16 +43,36 @@ export function BundleMounts({ client, bundle, installed, locale, onEditKit }: {
     })
     return () => { active = false }
   }, [owner, retry])
-  const matches = (pin: { name: string; version: string }) => pin.name === bundle.name
+  const availableTarget = (kit: StudioInstance) => kit.availableBundles?.find(pin => pin.name === target.name && (pin.instanceId === target.instanceId || (!pin.instanceId && target.current === true)))
+  const matches = (kit: StudioInstance, pin: { name: string; instanceId?: string; replaceSource?: boolean }) => pin.name === target.name
+    && (pin.instanceId !== undefined ? pin.instanceId === target.instanceId
+      : pin.replaceSource === true ? target.instanceId === undefined
+      : !kit.importedFromSnapshot && (target.instanceId === undefined || target.current === true))
   const toggle = async (kit: StudioInstance, checked: boolean) => {
     if (!client?.updateMounts || busy || listing?.error || pending.current?.owner === owner || writing.current === owner) return
-    writing.current = owner; setOperation({ owner, busy: true })
+    writing.current = owner; setOperation({ owner, busy: true, ...(checked ? { selecting: kit.id } : {}) })
     const valid = () => live.current && current.current === owner
     let submitted: PendingMountSave | undefined
     try {
       const pins = new Set(kit.mounts.map(m => mountKey(m.bundle))), key = mountKey(bundle)
       if (checked) pins.add(key); else pins.delete(key)
-      submitted = { base: structuredClone(kit), bundles: selectedMountPins(kit, pins) }
+      let bundles = selectedMountPins(kit, pins)
+      if (checked) {
+        let selected = availableTarget(kit)
+        if (!selected) throw Error('The selected Bundle source is unavailable. Reopen the Kit before saving.')
+        if (bundle.instanceId === undefined && resolved?.owner !== owner && client.editCurrent) {
+          const record = await client.editCurrent({ kind: 'bundle', bundle: { name: bundle.name, version: bundle.version } })
+          if (!valid()) return
+          const pin = record.bundle ?? record.source.bundle
+          if (record.kind !== 'bundle' || !record.id || record.current !== true || pin?.name !== bundle.name || record.deletedAt) throw Error('The current Bundle does not match the selected source.')
+          setResolved({ owner, record })
+          selected = { ...selected, ...pin, instanceId: record.id }
+        } else if (target.instanceId !== undefined) selected = { ...selected, instanceId: target.instanceId }
+        else if (kit.importedFromSnapshot) throw Error(zh ? '此宿主暂不支持编辑当前技能包，未更改挂载。' : 'This host cannot edit the current Bundle. The mount was not changed.')
+        const { name, version, instanceId } = selected
+        bundles = bundles.map(pin => pin.name === name ? { name, version, ...(instanceId === undefined ? {} : { instanceId }), replaceSource: true } : pin)
+      }
+      submitted = { base: structuredClone(kit), bundles }
       pending.current = { owner, save: submitted }; setOperation({ owner, busy: true, pending: submitted })
       const next = await client.updateMounts({ id: kit.id, expectedRevision: kit.revision, bundles: structuredClone(submitted.bundles) })
       if (!valid()) return
@@ -67,7 +91,7 @@ export function BundleMounts({ client, bundle, installed, locale, onEditKit }: {
     <input type="search" className="ygd-studio-search-input" aria-label={zh ? '搜索 Kit' : 'Search Kits'} placeholder={zh ? '搜索 Kit' : 'Search Kits'} value={query} onChange={e => setQuery(e.target.value)} />
     <p>{zh ? '挂载变更保存到库中的设计套件，已有项目保持原有内容。' : 'Mount changes update the library Kit. Existing projects keep their own content.'}</p>
     {installed.filter(k => includes(k.name) && !displayedKits.some(local => local.current && local.kit?.name === k.name)).map(k => <div key={k.name} className="ygd-studio-bundle-mount-choice">{k.name}{onEditKit && <button className="ygd-studio-btn-secondary" type="button" onClick={() => onEditKit(k)}>{zh ? '编辑' : 'Edit'}</button>}</div>)}
-    {displayedKits.filter(k => includes(k.title[locale]) && k.availableBundles?.some(matches)).map(k => <label key={k.id} className="ygd-studio-bundle-mount-choice"><input type="checkbox" checked={update?.pending?.base.id === k.id ? update.pending.bundles.some(matches) : k.mounts.some(m => matches(m.bundle))} disabled={busy || !!listing?.error || !!update?.pending || !client?.updateMounts} onChange={e => void toggle(k, e.target.checked)} />{k.title[locale]}</label>)}
+    {displayedKits.filter(k => includes(k.title[locale]) && (availableTarget(k) || k.mounts.some(m => matches(k, m.bundle)))).map(k => <label key={k.id} className="ygd-studio-bundle-mount-choice"><input type="checkbox" checked={update?.busy && update.selecting === k.id ? true : update?.pending?.base.id === k.id ? update.pending.bundles.some(pin => matches(k, pin)) : k.mounts.some(m => matches(k, { ...m.bundle, instanceId: m.bundle.instanceId ?? m.instanceId }))} disabled={busy || !!listing?.error || !!update?.pending || !client?.updateMounts} onChange={e => void toggle(k, e.target.checked)} />{k.title[locale]}</label>)}
     {busy && <LoadingIndicator label={loading ? (zh ? '正在读取挂载' : 'Loading mounts') : (zh ? '正在更新挂载' : 'Updating mounts')} />}
     {listing?.error && <StudioFeedback feedbackId={`list:${retry}:${listing.error}`} tone="error" locale={locale} title={zh ? '未能读取挂载' : 'Could not load mounts'} message={listing.error}
       actions={[{ label: zh ? '重试读取' : 'Retry loading', disabled: busy, onClick: () => refresh(value => value + 1) }]} />}

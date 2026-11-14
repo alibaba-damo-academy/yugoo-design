@@ -377,3 +377,23 @@ test('source import wire returns the real editable copy and preserves readiness 
   assert.equal(exported.provenance, undefined)
   assert.equal(Buffer.from(exported.files.find(file => file.path === 'SKILL.md').base64, 'base64').toString(), Buffer.from(input.files[0].base64, 'base64').toString())
 })
+
+test('mount wire preserves imported Kit source ownership and per-selection replacement intent', async t => {
+  const stateRoot = await mkdtemp(join(tmpdir(), 'studio-mount-identity-wire-'))
+  t.after(() => rm(stateRoot, { recursive: true, force: true }))
+  const service = await createStudioInstances({ stateRoot, ...adapters() })
+  const files = [{ path: 'mindset.md', base64: Buffer.from('---\nname: snapshot_kit\nversion: "1.0"\n---\n<design_skills>\n## observations\nRead observations.\n</design_skills>\n').toString('base64') },
+    { path: 'kit.yaml', base64: Buffer.from('version: 1\nmounts:\n  - {bindingKey: observations, name: observations, version: "1.0"}\n').toString('base64') }]
+  const imported = await service.importSources({ kind: 'kit', files })
+  const { client, calls } = clientFor(async request => {
+    const input = STUDIO_AUTHORING_RPC_SCHEMAS.updateMounts.request.parse(request.payload.args.request)
+    return reply(request, await service.updateMounts(input))
+  })
+  assert.equal(STUDIO_AUTHORING_RPC_SCHEMAS.read.result.parse(imported).importedFromSnapshot, imported.importedFromSnapshot)
+  const request = { id: imported.id, expectedRevision: imported.revision, bundles: [{ ...pin, replaceSource: true }] }
+  const saved = await client.instances.updateMounts(request)
+  assert.equal(saved.importedFromSnapshot, imported.importedFromSnapshot)
+  assert.equal(Object.hasOwn(saved.mounts[0].bundle, 'replaceSource'), false, 'intent is not persisted')
+  assert.equal(calls.length, 1)
+  for (const replaceSource of ['true', 1, null, {}]) assert.equal(STUDIO_AUTHORING_RPC_SCHEMAS.updateMounts.request.safeParse({ ...request, bundles: [{ ...pin, replaceSource }] }).success, false)
+})

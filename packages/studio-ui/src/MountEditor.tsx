@@ -15,6 +15,7 @@ export function MountEditor(props: MountEditorProps) {
 }
 function MountEditorSession({ client, record, locale, onSaved, onActions, onDirtyChange, onBusyChange }: MountEditorProps) {
   const [selected, setSelected] = useState(() => new Set(record.mounts.map(m => mountKey(m.bundle))))
+  const [replacements, setReplacements] = useState<ReadonlySet<string>>(() => new Set())
   const [query, setQuery] = useState(''), [busy, setBusy] = useState(false), [error, setError] = useState('')
   const [saveUnverified, setSaveUnverified] = useState(false)
   const pending = useRef<PendingMountSave>(), working = useRef(false), live = useRef(true)
@@ -23,7 +24,7 @@ function MountEditorSession({ client, record, locale, onSaved, onActions, onDirt
   const callbacks = useRef({ onSaved, onDirtyChange, onBusyChange }); callbacks.current = { onSaved, onDirtyChange, onBusyChange }
   const zh = locale === 'zh', candidates = record.availableBundles ?? []
   const original = new Set(record.mounts.map(m => mountKey(m.bundle)))
-  const dirty = selected.size !== original.size || [...selected].some(key => !original.has(key))
+  const dirty = replacements.size > 0 || selected.size !== original.size || [...selected].some(key => !original.has(key))
   useEffect(() => { onDirtyChange?.(dirty || saveUnverified) }, [dirty, saveUnverified, onDirtyChange])
   useEffect(() => { live.current = true; return () => { live.current = false; callbacks.current.onDirtyChange?.(false); callbacks.current.onBusyChange?.(false) } }, [])
   useEffect(() => {
@@ -41,6 +42,7 @@ function MountEditorSession({ client, record, locale, onSaved, onActions, onDirt
   const filtered = available.filter(bundle => [bundle.name, bundle.title[locale], bundle.displayDescription?.[locale], bundle.description].filter(Boolean).join(' ').toLowerCase().includes(query.trim().toLowerCase()))
   const change = (key: string, add: boolean) => {
     if (working.current || pending.current) return
+    setReplacements(previous => { const next = new Set(previous); if (add && original.has(key)) next.add(key); else next.delete(key); return next })
     setSelected(previous => { const next = new Set(previous); if (add) next.add(key); else next.delete(key); return next })
   }
   const save = async () => {
@@ -49,7 +51,7 @@ function MountEditorSession({ client, record, locale, onSaved, onActions, onDirt
     const valid = () => live.current && current.current === owner
     setBusy(true); onBusyChange?.(true); setError('')
     try {
-      const submitted = { base: structuredClone(record), bundles: selectedMountPins(record, selected) }
+      const submitted = { base: structuredClone(record), bundles: selectedMountPins(record, selected, replacements) }
       pending.current = submitted
       const saved = await client.updateMounts({ id: record.id, expectedRevision: record.revision, bundles: structuredClone(submitted.bundles) })
       if (!valid()) return
@@ -77,8 +79,8 @@ function MountEditorSession({ client, record, locale, onSaved, onActions, onDirt
   useEffect(() => {
     onActions({ canSave: !!client.updateMounts && !busy && !pending.current && dirty, save, verifySave, saveUnverified, isSaveSubmitted: () => !!pending.current,
       status: saveUnverified ? (zh ? '保存结果待核对' : 'Save needs verification') : dirty ? (zh ? `未保存 · 新增 ${[...selected].filter(key => !original.has(key)).length} · 移除 ${[...original].filter(key => !selected.has(key)).length}`
-        : `Unsaved · ${[...selected].filter(key => !original.has(key)).length} added · ${[...original].filter(key => !selected.has(key)).length} removed`) : (zh ? '已保存' : 'Saved') })
-  }, [selected, record, busy, dirty, saveUnverified, locale, client, onActions])
+        : `Unsaved · ${[...selected].filter(key => !original.has(key)).length} added · ${[...original].filter(key => !selected.has(key)).length} removed`) + (replacements.size ? (zh ? ` · 重新选择 ${replacements.size}` : ` · ${replacements.size} reselected`) : '') : (zh ? '已保存' : 'Saved') })
+  }, [selected, replacements, record, busy, dirty, saveUnverified, locale, client, onActions])
   useEffect(() => () => onActions(undefined), [onActions])
   return <section className="ygd-studio-mounts-editor" aria-label={zh ? '挂载管理' : 'Mount management'}>
     <div className="ygd-studio-mounts-columns">

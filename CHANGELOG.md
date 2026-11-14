@@ -7,7 +7,7 @@
 ## [0.3.7](https://github.com/alibaba-damo-academy/yugoo-design/tree/v0.3.7)
 
 - 后台审阅与 WorkBuddy 续作按真实完成或连接关闭结束等待，活跃面板不再按固定寿命关闭；连接丢失时保留准确的未提交或结果未知状态，避免重复投递。
-- Studio 明确区分草稿保存与内容校验，未完成的修改仍可保存，校验问题和继续修复入口保留。
+- Studio 明确区分草稿保存与内容校验，未完成的修改仍可保存；挂载计数和选择按实际来源一致显示，导入的独立快照不会因同名而切换到库中内容。
 
 ## [0.3.6](https://github.com/alibaba-damo-academy/yugoo-design/tree/4fcedfffc475c32aebe3fae05be8ec01b9d71c50)
 

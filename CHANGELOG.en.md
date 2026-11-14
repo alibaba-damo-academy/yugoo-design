@@ -7,7 +7,7 @@ This log summarizes major features, noticeable experience changes, and installat
 ## [0.3.7](https://github.com/alibaba-damo-academy/yugoo-design/tree/v0.3.7)
 
 - Let background reviews and WorkBuddy continuations wait for actual completion or connection closure, and keep active Panels open without a fixed lifetime. Preserve accurate not-submitted or unknown outcomes when a connection is lost, avoiding duplicate delivery.
-- Distinguish Studio draft saving from content validation. Unfinished changes remain saveable, with validation issues and repair actions available.
+- Distinguish Studio draft saving from content validation, keeping unfinished changes saveable. Mount counts and selections reflect the actual source; independent imported snapshots no longer switch to same-name library content.
 
 ## [0.3.6](https://github.com/alibaba-damo-academy/yugoo-design/tree/4fcedfffc475c32aebe3fae05be8ec01b9d71c50)
 

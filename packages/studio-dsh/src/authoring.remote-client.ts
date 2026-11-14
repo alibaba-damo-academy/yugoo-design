@@ -37,6 +37,7 @@ const instance = z.object({
   forkedFrom: z.object({ id: identity, revision, pin }).strict().optional(),
   migration: z.object({ fromRevision: revision, fromSnapshot: identity }).strict().optional(),
   refs: z.array(z.object({ id: identity, title }).strict()), requiresMigration: z.boolean().optional(),
+  importedFromSnapshot: identity.optional(),
   description: text.optional(), displayDescription: title.optional(), createdBlank: z.boolean().optional(), current: z.boolean().optional(),
   files: z.array(z.object({ path: text, bytes: revision, editable: z.boolean() }).strict()).optional(),
   availableBundles: z.array(choice).optional(),
@@ -114,7 +115,7 @@ export const STUDIO_AUTHORING_RPC_SCHEMAS = {
     changes.extend({ mode: z.literal('validated'), digest: text.regex(/^[a-f0-9]{64}$/u) }).strict(),
   ]), result: instance.extend({ changeReceipt: receipt }).strict() },
   updateMounts: { request: selected.extend({ bundles: z.array(pin.extend({
-    bindingKey: identity.optional(), instanceId: identity.optional(), revision: revision.optional(),
+    bindingKey: identity.optional(), instanceId: identity.optional(), revision: revision.optional(), replaceSource: z.boolean().optional(),
   }).strict()) }).strict(), result: instance },
   preview: { request: selected.extend({ bundle: pin.optional(), sampleSource: text.optional() }).strict(), result: previewResult },
   start: { request: start, result: reference },

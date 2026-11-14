@@ -29,6 +29,8 @@ export interface StudioInstance {
   readonly current?: boolean
   /** Existing S2 creation provenance; never implies definition validity. */
   readonly createdBlank?: boolean
+  /** Existing S2 import owner: unbound mounts retain their saved snapshots. */
+  readonly importedFromSnapshot?: string
   readonly readiness?: { readonly ready: boolean; readonly diagnostics: readonly { code: string; message: string; path?: string; severity?: 'error' | 'warning' }[] }
   readonly files?: readonly { readonly path: string; readonly bytes: number; readonly editable: boolean }[]
   readonly mounts: readonly { readonly bundle: DesignBundleVersionPin & { readonly instanceId?: string; readonly revision?: number;
@@ -55,7 +57,7 @@ export interface StudioInstanceClient {
   prepareChanges?(input: StudioInstanceChangeRequest): Promise<StudioInstanceCandidate>
   saveChanges?(input: StudioInstanceSaveChanges): Promise<StudioInstance & { changeReceipt: StudioInstanceChangeReceipt }>
   preview(input: { id: string; expectedRevision: number; bundle?: DesignBundleVersionPin; locale?: string }): Promise<StudioPanelPreviewResult>
-  updateMounts?(input: { id: string; expectedRevision: number; bundles: readonly (DesignBundleVersionPin & { readonly instanceId?: string; readonly revision?: number })[] }): Promise<StudioInstance>
+  updateMounts?(input: { id: string; expectedRevision: number; bundles: readonly (DesignBundleVersionPin & { readonly instanceId?: string; readonly revision?: number; readonly replaceSource?: boolean })[] }): Promise<StudioInstance>
 }
 
 export interface InstanceWorkbenchProps {

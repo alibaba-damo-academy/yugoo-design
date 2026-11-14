@@ -861,7 +861,7 @@ export function StudioWorkspace({ client, controller: supplied, authoring, rende
       <input ref={node => { importFolderInput.current = node; node?.setAttribute('webkitdirectory', '') }} type="file" hidden multiple aria-label={locale === 'zh' ? '选择导入文件夹' : 'Choose import folder'} disabled={importBusy} onChange={event => { const files = [...(event.currentTarget.files ?? [])]; event.currentTarget.value = ''; if (files.length) void importFiles(files, importKind.current) }} />
     </>}
     {mountBundle && <StudioDialog title={`${locale === 'zh' ? '挂载管理' : 'Mount Management'} · ${localMountRecord?.title[locale] ?? mountBundle.name}`} close={closeMounts}>
-      <BundleMounts onEditKit={instances?.editCurrent ? kit => { closeMounts(); void editInstalled('kit', kit) } : undefined} client={instances} bundle={mountBundle}
+      <BundleMounts onEditKit={instances?.editCurrent ? kit => { closeMounts(); void editInstalled('kit', kit) } : undefined} client={instances} bundle={{ ...mountBundle, ...(localMountRecord ? { instanceId: localMountRecord.id, current: localMountRecord.current } : {}) }}
         installed={localMountRecord ? [] : snapshot.view?.bundles.find(bundle => bundle.name === mountBundle.name && bundle.version === mountBundle.version)?.usedBy ?? []} locale={locale} />
     </StudioDialog>}
     {incompleteImport && <StudioDialog title={locale === 'zh' ? '已导入，内容待完善' : 'Imported — needs completion'} close={() => setIncompleteImport(undefined)}>

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "f3884716acd1b5983b84b98b00f89b2bf7bea4a1",
+  "revision": "420d7727e03d89d7e1919eaf35ef67ddfc5010d2",
   "policySha256": "27480f10dc4fa2c2d135bdded042b1abe727416cc8bf30a34ca60ed39984393d",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -104,11 +104,11 @@
       "mode": "100644"
     },
     "CHANGELOG.en.md": {
-      "sha256": "640ab0a9e63528ea06024103bb97f8e12cf630785ab1e251bc5255ccd91b30ad",
+      "sha256": "1a53e3976ef0f89761b490bae0bf201dce52eaba89d5524555306556d9a9c7fd",
       "mode": "100644"
     },
     "CHANGELOG.md": {
-      "sha256": "a8927a9d1942d5345a5eb89134d22e31c4943d1eda839842360a94a6e63ef777",
+      "sha256": "8893122a54f77e548f8d969bda2b57be58a8b895dcf11b8907ae8a77e7c7ffd6",
       "mode": "100644"
     },
     "CONTRIBUTING.md": {
@@ -360,11 +360,11 @@
       "mode": "100644"
     },
     "docs/system-design-baseline.md": {
-      "sha256": "13fe329eafda8ff99c8ef86c96f36280617a90c6e789a88ecb63c0c1490af34b",
+      "sha256": "a8c8ff5f20ca8868fd8eb50ba646507ab073fbd5119d8a829f79c4c626bdb6c8",
       "mode": "100644"
     },
     "docs/testing/agentic-e2e.md": {
-      "sha256": "79e4903a9ea2988c2a3b1c4b7f0318e5491cf48b2d4c88e8d5253a2c75aa1f0d",
+      "sha256": "d0d89dc919d0e0479cedf65d540b95a933ab6a59a12bedbe33de4688a5fcba34",
       "mode": "100644"
     },
     "docs/ust-score-explanations.md": {
@@ -9188,7 +9188,7 @@
       "mode": "100644"
     },
     "packages/studio-dsh/src/authoring.remote-client.ts": {
-      "sha256": "4f732d427987dea34bd2de88c1996f95c18d2c35ee89ef3f9aae41d9e55f2bf8",
+      "sha256": "110fe88e8b7714bcbb36fdbf23cc56d911d47adf101ac1ddb770e7bf8ee36342",
       "mode": "100644"
     },
     "packages/studio-dsh/src/client-adapter.tsx": {
@@ -9272,7 +9272,7 @@
       "mode": "100644"
     },
     "packages/studio-dsh/tests/authoring-rpc.test.mjs": {
-      "sha256": "4d2c3f12026949d20890d714412616d945b4adc8e9d634af4442dff4bd5ee997",
+      "sha256": "d94a22942a3d845f8d172ddf6acb61c5d3f69699d375241e14dce9857645fa11",
       "mode": "100644"
     },
     "packages/studio-dsh/tests/authoring-service-sdk.test.mjs": {
@@ -9356,7 +9356,7 @@
       "mode": "100644"
     },
     "packages/studio-ui/README.md": {
-      "sha256": "b13536b2f19895fc3abb5736cf68851aa854434ed3bbfcbe6bc21c81ae6ab879",
+      "sha256": "1ce87c904e4c174b715e7d371becc983c7f4451b1d08f4e159f8d75cf1d9ee68",
       "mode": "100644"
     },
     "packages/studio-ui/THIRD_PARTY_NOTICES.md": {
@@ -9368,7 +9368,7 @@
       "mode": "100644"
     },
     "packages/studio-ui/src/BundleMounts.tsx": {
-      "sha256": "838ee0e841549b68314018754a6420e423b58116fbe52468bc49dfc07d4b1cea",
+      "sha256": "8a3142b06666e41e7ee2531aaaa482fecdfa70ce09d27a795cf13d8c66a426ca",
       "mode": "100644"
     },
     "packages/studio-ui/src/BundleTrial.tsx": {
@@ -9392,7 +9392,7 @@
       "mode": "100644"
     },
     "packages/studio-ui/src/InstanceWorkbench.tsx": {
-      "sha256": "7ce3c7aee0c4693ebb96bf050774daf5f34c82c926f48084bdf204fe3ace2564",
+      "sha256": "6a26a4abe62155d295140402b62fac9762445d8a018284c3aad782bdbbd75939",
       "mode": "100644"
     },
     "packages/studio-ui/src/KitFiles.tsx": {
@@ -9404,7 +9404,7 @@
       "mode": "100644"
     },
     "packages/studio-ui/src/MountEditor.tsx": {
-      "sha256": "98012d959e499255f2c440db5b67218230e797f9f9136e3369f8591485dd263d",
+      "sha256": "4cd8621bc1c1194fd8e5573cc4c405c6ffb430db7cb001cbcbaaf37854d5ba5a",
       "mode": "100644"
     },
     "packages/studio-ui/src/SourceFileDiff.tsx": {
@@ -9428,7 +9428,7 @@
       "mode": "100644"
     },
     "packages/studio-ui/src/StudioWorkspace.tsx": {
-      "sha256": "ad98de7acdf159ffd72502946fe937879bece1f12733084d5994bf5097b05481",
+      "sha256": "9b48aeb5243d7eddb236ba03892dc3f3c35d98a7acd29187ab97bdb043e25d12",
       "mode": "100644"
     },
     "packages/studio-ui/src/authoring.ts": {
@@ -9464,7 +9464,7 @@
       "mode": "100644"
     },
     "packages/studio-ui/src/mount-save-receipt.ts": {
-      "sha256": "8d4cf423cbac45e5b1ae4cc987f7eff34e0e8ba8bed3dce39cdf040ced2c663e",
+      "sha256": "5e159d9b423fcecfa761794ae10267cf6dcf7aed0163fd26db686a766cd1ab08",
       "mode": "100644"
     },
     "packages/studio-ui/src/source-candidate-state.ts": {
@@ -9524,7 +9524,7 @@
       "mode": "100644"
     },
     "packages/studio-ui/tests/instance-presentation.test.mjs": {
-      "sha256": "98b9e41712f025340097b6a25509ad2a00b1c1cec03340bf0b2b528929058733",
+      "sha256": "b2f00f6e54b92702f784e4f290d1b1f3f4ebaa9b3932370d39278ef50726adbf",
       "mode": "100644"
     },
     "packages/studio-ui/tests/instance-source-changes.test.mjs": {
@@ -9532,7 +9532,7 @@
       "mode": "100644"
     },
     "packages/studio-ui/tests/mount-save.test.mjs": {
-      "sha256": "4c50b0876604ca5fc6188ed941354948205117e16271883982d7092f1f7ca586",
+      "sha256": "8cad167baa3314dbde09217909c0824ec2760abd5906eb92ada0315c8c239237",
       "mode": "100644"
     },
     "packages/studio-ui/tests/preview-alignment-fixture.tsx": {
@@ -9588,7 +9588,7 @@
       "mode": "100644"
     },
     "packages/studio/README.md": {
-      "sha256": "3bbe0188bb1b5f501e5cab2a33c405ffdae6d72e12d872abeb0d762c497e15da",
+      "sha256": "e39a98c158d2b5babceb4c1326931f59645b1b77d709cb8581acbcf9086dbdd3",
       "mode": "100644"
     },
     "packages/studio/THIRD_PARTY_NOTICES.md": {
@@ -9656,7 +9656,7 @@
       "mode": "100644"
     },
     "packages/studio/src/node/studio-instances.mjs": {
-      "sha256": "5fc175a55372ca5a4720981eddd1782777125614567b0ac7ad105e4869e339ff",
+      "sha256": "ed8a7443f6aa632c5547f65fcf1e92dae5ce9ae55de924a63e1cbf9dc6f19706",
       "mode": "100644"
     },
     "packages/studio/src/node/studio-panel-drafts.d.mts": {
@@ -9668,7 +9668,7 @@
       "mode": "100644"
     },
     "packages/studio/src/node/types.ts": {
-      "sha256": "71f0e9644b42611c94f73f838df86724e3c2aba3dc3747cbb8deac2e7c1965ab",
+      "sha256": "b0f619223e8fa6c5c233e09470d3c18354932ba3cf4b4a450ecd8d3b94d07a29",
       "mode": "100644"
     },
     "packages/studio/src/node/windows-native-platform.mjs": {
@@ -9712,7 +9712,7 @@
       "mode": "100644"
     },
     "packages/studio/tests/current-mount-consistency.test.mjs": {
-      "sha256": "32f8e057f42de9ae7440f8b11a96ddf8ed416c4cf35ea52a0fb3056d20fbfa21",
+      "sha256": "e4783a3546e1db3e0487d0cef7df7e6c61636bc816c9ac3fe8ccf5a12d015a41",
       "mode": "100644"
     },
     "packages/studio/tests/current-sources.test.mjs": {
@@ -9764,7 +9764,7 @@
       "mode": "100644"
     },
     "packages/studio/tests/source-import.test.mjs": {
-      "sha256": "275ac396efc793d6103e3c4094947b57b5029145f85b5fa026d54a822a38f64c",
+      "sha256": "9bcbe57cb47934bbef9e1c68b48edb8311df60f17c3338cfcd33afbddf93cde7",
       "mode": "100644"
     },
     "packages/studio/tests/source-storage.test.mjs": {

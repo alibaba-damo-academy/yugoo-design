@@ -141,3 +141,26 @@ test('a Bundle kit.yaml resource is saved as ordinary source rather than parsed 
   const saved = await f.service.saveChanges({ ...request, mode: 'draft', digest: candidate.digest })
   assert.equal((await f.service.readFile({ id: saved.id, path: 'kit.yaml' })).content, content)
 })
+
+for (const supplied of [true, false]) test(`imported Kit ${supplied ? 'supplied closure' : 'catalog fallback'} stays independent from a same-name current Bundle through copy and unrelated membership saves`, async t => {
+  const f = await fixture(t)
+  const closure = supplied ? [...originalFiles.map(file => ({ ...file, path: `bundles/${pin.name}/${pin.version}/${file.path}` })),
+    ...researchFiles('1.1').map(file => ({ ...file, path: `bundles/research/1.1/${file.path}` }))] : []
+  let imported = await f.service.importSources({ kind: 'kit', files: [...kitFiles, ...closure] })
+  const current = await f.service.editCurrent({ kind: 'bundle', bundle: pin })
+  const original = imported.mounts.find(m => m.bundle.name === pin.name)
+  assert.equal(original.bundle.instanceId, undefined)
+  assert.doesNotMatch((await f.service.loadKit({ id: imported.id })).skills.find(s => s.name === pin.name).content, /CURRENT_CONTENT_UI/)
+  assert.equal((await f.service.read(current.id)).refs.some(ref => ref.id === imported.id), false)
+  const copied = await f.service.copy({ kind: 'kit', sourceId: imported.id })
+  assert.doesNotMatch((await f.service.loadKit({ id: copied.id })).skills.find(s => s.name === pin.name).content, /CURRENT_CONTENT_UI/)
+  imported = await f.service.updateMounts({ id: imported.id, expectedRevision: imported.revision, bundles: [pin] })
+  assert.deepEqual(imported.mounts[0].bundle, original.bundle, 'removing research preserves the other selected snapshot exactly')
+  const reopened = await createStudioInstances(f.options)
+  assert.doesNotMatch((await reopened.loadKit({ id: imported.id })).skills[0].content, /CURRENT_CONTENT_UI/)
+  imported = await reopened.updateMounts({ id: imported.id, expectedRevision: imported.revision,
+    bundles: [{ ...pin, instanceId: current.id, replaceSource: true }] })
+  assert.equal(imported.mounts[0].bundle.instanceId, current.id)
+  assert.match((await reopened.loadKit({ id: imported.id })).skills[0].content, /CURRENT_CONTENT_UI/)
+  assert.equal((await reopened.read(current.id)).refs.some(ref => ref.id === imported.id), true)
+})
