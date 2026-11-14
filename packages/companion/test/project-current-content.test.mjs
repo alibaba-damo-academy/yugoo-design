@@ -1,12 +1,12 @@
 /** Real Core/S2 filesystem integration; no native model, browser or installed-package claim. */
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, stat, utimes, writeFile } from 'node:fs/promises'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { DesignProjectManager, DesignJournalStorage } from '../../core/lib/index.js'
+import { join, sep } from 'node:path'
+import { DesignProjectManager, DesignJournalStorage, contentNodeFs } from '../../core/lib/index.js'
 import { writeContentCatalog } from '../../core/test/fixtures/content-catalog.mjs'
 import { createCompanionContentLibrary } from '../src/content-library.mjs'
 import { companionFs, openCompanionProject } from '../src/project.mjs'
@@ -28,6 +28,60 @@ async function fixture(t) {
     connection: { host: 'codex', threadId: '11111111-1111-4111-8111-111111111111' }, statusEntryPath: '/fixture/installed-cli.mjs' }
   return { root, source, stateRoot, library, original, pin, projectRoot, options }
 }
+
+test('unchanged workspace refreshes reuse the parsed Kit and still observe method and declaration edits', async t => {
+  const f = await fixture(t), api = await openCompanionProject(f.options)
+  const statePath = join(f.projectRoot, 'design_files/alpha/alpha.json')
+  const facts = '{"summary":"Keep these design facts unchanged"}\n'
+  await api.store.writeWorktreeText('alpha/alpha.json', facts)
+  const originalKit = api.installedKit, revision = api.definitionRevision
+  let definitionReads = 0
+  const readText = contentNodeFs.readText
+  t.mock.method(contentNodeFs, 'readText', (...args) => {
+    if (args[0].startsWith(join(f.projectRoot, 'design_kit') + sep)) definitionReads++
+    return readText(...args)
+  })
+  await api.readWorkspace({ displayOnly: true })
+  await api.readWorkspace({ displayOnly: true })
+  assert.equal(definitionReads, 0, 'unchanged workspace reads must not reload and parse the project Kit')
+  assert.equal(api.installedKit, originalKit)
+  assert.equal(api.definitionRevision, revision)
+  const prepared = await api.prepareBundle({ skill: 'alpha' })
+  assert.equal(definitionReads, 0)
+  assert.equal(api.installedKit, originalKit)
+
+  const methodPath = join(prepared.resources, 'SKILL.md')
+  const method = await readFile(methodPath, 'utf8'), timestamp = new Date('2020-01-01T00:00:00Z')
+  await utimes(methodPath, timestamp, timestamp)
+  await api.prepareBundle({ skill: 'alpha' })
+  const edited = method.replace('supplied summary', 'supplied details')
+  assert.notEqual(edited, method)
+  assert.equal(Buffer.byteLength(edited), Buffer.byteLength(method))
+  await writeFile(methodPath, edited)
+  await utimes(methodPath, timestamp, timestamp)
+  assert.equal((await stat(methodPath)).mtimeMs, timestamp.getTime())
+  const changed = await api.prepareBundle({ skill: 'alpha' })
+  assert.notEqual(api.installedKit, originalKit)
+  assert.notEqual(changed.definitionRevision, revision)
+  assert.match(changed.method, /supplied details/)
+  assert.ok(definitionReads > 0)
+  const afterMethod = api.installedKit
+  const afterMethodReads = definitionReads
+
+  const manifestPath = join(prepared.resources, 'skill.yaml')
+  await writeFile(manifestPath, (await readFile(manifestPath, 'utf8')).replace('handoff: none', 'handoff: must_edit'))
+  const declared = await api.prepareBundle({ skill: 'alpha' })
+  assert.notEqual(api.installedKit, afterMethod)
+  assert.notEqual(declared.definitionRevision, changed.definitionRevision)
+  assert.equal(declared.execution.handoff, 'must_edit')
+  assert.ok(definitionReads > afterMethodReads)
+  const currentKit = api.installedKit
+  const afterDeclarationReads = definitionReads
+  await api.readWorkspace({ displayOnly: true })
+  assert.equal(api.installedKit, currentKit)
+  assert.equal(definitionReads, afterDeclarationReads)
+  assert.equal(await readFile(statePath, 'utf8'), facts)
+})
 
 test('methods, Panel and CLI use current project files; library changes and removal preserve the project', async t => {
   const f = await fixture(t)
@@ -57,8 +111,17 @@ test('methods, Panel and CLI use current project files; library changes and remo
   assert.match((await reopened.prepareBundle({ skill: 'alpha' })).method, /Project-local changed/)
   assert.deepEqual(await readFile(join(reopened.kit.skills[0].resourceRoot, 'assets/opaque.bin')), Buffer.from([0, 255, 128, 7]))
   // An existing malformed project source is a real error, never a library fallback.
+  const schema = await readFile(join(prepared.resources, 'schema.yaml'), 'utf8')
   await writeFile(join(prepared.resources, 'schema.yaml'), 'type: [broken')
   await assert.rejects(reopened.prepareBundle({ skill: 'alpha' }))
+  await assert.rejects(reopened.readWorkspace({ displayOnly: true }))
+  const checkpoint = await reopened.store.head()
+  await assert.rejects(reopened.savePanel({ skill: 'alpha', eventId: 'invalid-current-kit', state: { summary: 'Do not publish through a broken current Kit' } }))
+  assert.equal(await reopened.store.head(), checkpoint)
+  await writeFile(join(prepared.resources, 'schema.yaml'), schema)
+  await rm(join(prepared.resources, 'SKILL.md'))
+  await assert.rejects(reopened.prepareBundle({ skill: 'alpha' }), /SKILL\.md/)
+  await assert.rejects(reopened.readWorkspace({ displayOnly: true }), /SKILL\.md/)
   assert.equal((await reopened.store.read('alpha')).summary, 'Preserve original project facts')
 })
 

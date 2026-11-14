@@ -159,6 +159,56 @@ async function editFile(path, transform) {
   return text
 }
 
+test('file status counts actual changes and follows the selected file through AI and manual edits', async t => {
+  const f = await fixture(t)
+  const panel = textOf(originalFiles, 'panel.yaml'), localePath = 'locales/en-US.json'
+  const locale = textOf(originalFiles, localePath)
+  const request = { id: f.record.id, expectedRevision: f.record.revision, changes: [
+    { path: 'panel.yaml', content: panel },
+    { path: localePath, content: JSON.stringify({ ...JSON.parse(locale), title: 'Observation title' }) },
+  ] }
+  const prepared = { request, candidate: await f.service.prepareChanges(request) }
+  assert.equal(prepared.candidate.diff.length, 1, 'the unchanged requested Panel is not a file change')
+  await f.present(prepared)
+  await until(() => !button('Save').disabled)
+  const status = () => document.querySelector('.ygd-studio-editor-actions [role=status]').textContent
+  const footer = () => document.querySelector('.ygd-studio-doc-footer').textContent
+  assert.equal(status(), '1 unsaved file')
+  assert.match(footer(), /Proposed changes · not saved/)
+
+  await editFile('panel.yaml', value => value)
+  assert.match(footer(), /Saved · editable/, 'a proposal in another file does not mark this one pending')
+  const changedPanel = await editFile('panel.yaml', value => value + '\n# Retain manual clarification.\n')
+  await until(() => status() === '2 unsaved files')
+  assert.match(footer(), /Unsaved/)
+  await editFile(localePath, () => locale)
+  await until(() => status() === '1 unsaved file')
+  assert.match(footer(), /Saved · editable/, 'reverting an AI edit to its saved bytes removes its pending state')
+  await until(() => !button('Save').disabled)
+  await click('Save')
+  await until(() => f.saved.length === 1 && button('Save').disabled)
+  assert.equal(status(), 'Saved')
+  assert.equal((await f.service.readFile({ id: f.record.id, path: 'panel.yaml' })).content, changedPanel)
+  assert.equal((await f.service.readFile({ id: f.record.id, path: localePath })).content, locale)
+})
+
+test('file counts wait for the current preparation instead of showing stale or requested counts', async t => {
+  const f = await fixture(t)
+  let release
+  f.client.prepareChanges = async request => {
+    await new Promise(resolve => { release = resolve })
+    return f.service.prepareChanges(request)
+  }
+  await editFile('SKILL.md', value => value + '\nKeep this note.\n')
+  await until(() => release)
+  const status = () => document.querySelector('.ygd-studio-editor-actions [role=status]').textContent
+  assert.equal(status(), 'Preparing changes…')
+  await React.act(async () => release())
+  await until(() => status() === '1 unsaved file')
+  await editFile('panel.yaml', value => value)
+  assert.match(document.querySelector('.ygd-studio-doc-footer').textContent, /Saved · editable/)
+})
+
 test('failed preparation retries the unchanged draft and saves only after an explicit Save', async t => {
   const f = await fixture(t), requests = []
   let offline = true

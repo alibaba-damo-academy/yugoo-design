@@ -2,7 +2,7 @@ import type { DesignArtifactActivityRead } from '../../../core/src/artifact-acti
 export type { DesignArtifactActivityRead, DesignArtifactLogTarget, DesignArtifactHistoryEntry } from '../../../core/src/artifact-activity.ts'
 /** Host-neutral projection and manifest types consumed by the design dock. */
 import { equalClarityViews } from './clarity.ts'
-import type { DesignAdvisoryRuntimeStatus, DesignClarityActivity, DesignClarityExplanation } from 'dsh-design-core'
+import type { DesignAdvisoryRuntimeStatus, DesignBilingualText, DesignClarityActivity, DesignClarityExplanation } from 'dsh-design-core'
 import type { DesignContinuationDescriptor, DesignMustEditHandoffDescriptor } from 'dsh-design-core/design-continuation'
 
 /** The skill.yaml manifest slice the tabs bar consumes. */
@@ -39,6 +39,8 @@ export interface DesignExecutionLogRead {
     timestamp: number
     eventType: 'message' | 'search' | 'fetch' | 'synthesize' | 'error'
     message: string
+    /** Optional adapter-owned system text; never a translation of native prose. */
+    messageText?: DesignBilingualText
     /** Optional system label metadata; native prose stays in message without it. */
     activity?: {
       kind: 'search' | 'fetch' | 'read-file' | 'write-file' | 'run-script' | 'structured-output' | 'run-tool' | 'tool-failed'

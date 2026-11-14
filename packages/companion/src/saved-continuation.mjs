@@ -85,10 +85,12 @@ export function createSavedContinuation({ stateRoot, projectId, projectRoot, hos
         status: status === 'submitting' ? 'unknown' : savedKit !== kitHash && ['preparing', 'not_submitted'].includes(status) ? 'stale' : status,
         ...(result ? { result } : {}), retryable: savedKit === kitHash && retryable({ status }) }))
     },
-    begin({ saved, text, requestId, kitHash }) {
+    async begin({ saved, text, requestId, kitHash }) {
+      if (requestId !== undefined && !id(requestId)) throw Error('Invalid continuation request ID.')
+      if (saved !== undefined && (!Array.isArray(saved) || saved.length > 128 || saved.some(item => !id(item?.eventId)))) throw Error('Invalid saved receipts.')
+      // An explicit empty list has no saved delivery state to read or settle.
+      if (saved?.length === 0) return { entries: [], requestId }
       return mutate(value => {
-        if (requestId !== undefined && !id(requestId)) throw Error('Invalid continuation request ID.')
-        if (saved !== undefined && (!Array.isArray(saved) || saved.length > 128 || saved.some(item => !id(item?.eventId)))) throw Error('Invalid saved receipts.')
         const selected = saved === undefined ? value.entries.filter(entry => retryable(entry) && entry.kitHash === kitHash)
           : saved.map(item => {
             const entry = value.entries.find(entry => entry.eventId === item.eventId)

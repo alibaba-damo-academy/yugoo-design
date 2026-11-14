@@ -344,7 +344,6 @@ export async function startCompanion(options) {
         if (backgroundAdapter && ['readWorkspace','prepareReview','prepareReviews','recheckReviews','bindReviewRun','bindReviewRuns'].includes(method)) await refreshReviewCapability()
         if (browserRequest) {
           if (!browserMethods.has(method)) return send(response, 403, { error: 'Operation is not available to the browser.' })
-          await project.refreshAccess(true)
         }
         // This is service activity, never proof that its native input bridge is
         // online. Unauthenticated/static requests cannot extend the lifetime.
@@ -373,7 +372,8 @@ export async function startCompanion(options) {
         // rechecks after entering its mutation queue). Avoid duplicate Git
         // checks in the HTTP wrapper before entering the same authority.
         const ownsAccessCheck = ['savePanel', 'sendPrompt', 'readGit'].includes(method)
-        const access = await project.refreshAccess(method === 'readWorkspace' || ownsAccessCheck)
+        // Workspace reads own fresh metadata/Kit checks before and after their snapshot.
+        const access = method === 'readWorkspace' ? undefined : await project.refreshAccess(ownsAccessCheck)
         if(method==='recheckReviews' && params.executionMode!==undefined && !['background','foreground'].includes(params.executionMode))throw Error('Invalid manual GRA execution mode')
         const reviewRequest = ['readReview','submitReview'].includes(method) ? await reviews.readReview({reviewId:params.reviewId}) : undefined
         // Only the explicit manual entry mints foreground requests. A submit

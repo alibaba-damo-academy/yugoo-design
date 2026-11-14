@@ -105,6 +105,7 @@ test('native child binding follows real events and individual files, not a finis
       } } }) + '\n')
       const result = await call('readExecutionLog', { runId })
       assert.equal(result.entries.at(-1).message, '读取文件：design.json · 失败')
+      assert.deepEqual(result.entries.at(-1).messageText, { zh: '读取文件：design.json · 失败', en: 'Read file: design.json · Failed' })
       assert.ok(!JSON.stringify(result).includes('private'))
     }
     await assert.rejects(call('registerNativeRun', { ...w, artifactFile: 'research/R-003/D-001.md' }), /rebound/)

@@ -23,6 +23,7 @@ test('native command classifications yield informative labels without raw comman
   } }))
   assert.equal(row.label, '读取文件：SKILL.md；查看目录：design_files；搜索文件；运行命令')
   assert.equal(executionRowMessage(row), `${row.label} · 失败`)
+  assert.equal(executionRowMessage(row, 'en'), 'Read file: SKILL.md; List directory: design_files; Search files; Run command · Failed')
   assert.ok(!JSON.stringify(row).includes('secret'))
   assert.ok(!JSON.stringify(row).includes('/private'))
   for (const parsed_cmd of [undefined, [], 'invalid', [null]]) {
@@ -30,6 +31,11 @@ test('native command classifications yield informative labels without raw comman
   }
   assert.equal(executionRowMessage({ role: 'assistant', text: 'Original message', status: 'completed' }), 'Original message')
   assert.equal(executionRowMessage({ role: 'tool', label: 'design_status', status: 'completed' }), 'design_status · 已完成')
+  assert.equal(executionRowMessage({ role: 'tool', label: '修改文件', text: '原始 tool text', status: 'completed' }, 'en'), '原始 tool text · Completed')
+  for (const [status, label] of Object.entries({ completed: 'Completed', failed: 'Failed', running: 'Running', in_progress: 'Running', cancelled: 'Cancelled', interrupted: 'Interrupted' })) {
+    assert.equal(executionRowMessage({ role: 'tool', label: 'native_tool', status }, 'en'), `native_tool · ${label}`)
+  }
+  assert.equal(executionRowMessage({ role: 'tool', label: 'native_tool', status: 'provider-specific' }, 'en'), 'native_tool')
 })
 
 test('native transcript tail verifies identity, handles partial lines, deduplicates and never guesses completion', async () => {

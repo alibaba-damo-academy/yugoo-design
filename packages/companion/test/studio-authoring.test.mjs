@@ -142,7 +142,7 @@ test('a concurrent UI save during actual Core preparation cannot return a stale 
   assert.equal((await service.readFile({ id: record.id, path: 'SKILL.md' })).content, 'Human changed source while preview compiled.')
 })
 
-test('actual Core errors remain an unsaved invalid candidate, while missing/oversized catalogs cannot fall back or prepare', async t => {
+test('actual Core errors remain unsaved and catalog failures do not block ordinary source reads or preparation', async t => {
   const { service, record, scope, api } = await fixture(t)
   const invalid = await api.prepare({ changes: [{ path: 'schema.yaml', content: 'type: object\nproperties: []\n' }] })
   assert.equal(invalid.candidate.valid, false); assert.ok(invalid.candidate.diagnostics.length)
@@ -150,12 +150,19 @@ test('actual Core errors remain an unsaved invalid candidate, while missing/over
   assert.equal((await service.readFile({ id: record.id, path: 'schema.yaml' })).content, schema())
   let preparations = 0
   const instances = { ...narrow(service), async prepareChanges(input) { preparations++; return service.prepareChanges(input) } }
-  for (const readComponents of [() => ({ components: [] }), () => ({ ...actualCatalog(), oversized: 'x'.repeat(262_144) }), () => { throw Error('Catalog unavailable') }]) {
+  for (const readComponents of [undefined, () => ({ components: [] }), () => ({ ...actualCatalog(), oversized: 'x'.repeat(262_144) }), () => { throw Error('Catalog unavailable') }]) {
     const unavailable = createStudioAuthoring({ scope, instances, readComponents })
-    await assert.rejects(unavailable.read({ paths: ['schema.yaml'] }), /catalog/i)
-    await assert.rejects(unavailable.prepare({ changes: additions() }), /catalog/i)
+    const source = await unavailable.read({ paths: ['schema.yaml'] })
+    assert.equal(source.files[0].content, schema())
+    assert.equal(source.components, undefined, 'an unavailable catalog does not invent a vocabulary')
+    assert.match(source.componentCatalogError, /catalog/i)
+    const prepared = await unavailable.prepare({ changes: [{ path: 'SKILL.md', content: textOf(originalFiles, 'SKILL.md') + '\nKeep the supplied facts.\n' }] })
+    assert.equal(prepared.candidate.valid, true, JSON.stringify(prepared.candidate.diagnostics))
+    assert.equal(prepared.components, undefined)
+    assert.match(prepared.componentCatalogError, /catalog/i)
+    assert.equal((await service.read(record.id)).revision, 0, 'source preparation still does not save')
   }
-  assert.equal(preparations, 0)
+  assert.equal(preparations, 4)
 })
 
 test('read bounds and exact preview Bundle binding are enforced independently of model requests', async t => {
@@ -173,6 +180,24 @@ test('read bounds and exact preview Bundle binding are enforced independently of
     },
   } })
   await assert.rejects(bounded.read(), /4 MiB/)
+})
+
+test('Kit mount discovery and current mounted source remain readable without a component catalog', async t => {
+  const { service, record } = await fixture(t)
+  const kit = await service.create({ kind: 'kit', title: { zh: '观察套件', en: 'Observation Kit' } })
+  const mounted = await service.updateMounts({ id: kit.id, expectedRevision: kit.revision,
+    bundles: [{ ...record.bundle, instanceId: record.id }] })
+  const api = createStudioAuthoring({ scope: { id: kit.id, expectedRevision: mounted.revision, allowedPaths: ['mindset.md'] },
+    instances: { ...narrow(service), readMountedBundle: input => service.readMountedBundle(input) } })
+  const view = await api.read()
+  assert.match(view.files[0].content, /Observation Kit/)
+  assert.equal(view.mounts.length, 1)
+  const result = await api.read({ mount: { bindingKey: view.mounts[0].bindingKey, paths: ['SKILL.md'] } })
+  assert.equal(result.files[0].content, textOf(originalFiles, 'SKILL.md'))
+  assert.equal(result.mountedBundle.readOnly, true)
+  assert.equal(result.components, undefined)
+  assert.match(result.componentCatalogError, /catalog/i)
+  assert.equal((await service.read(kit.id)).revision, mounted.revision)
 })
 
 

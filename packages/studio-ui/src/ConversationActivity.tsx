@@ -1,11 +1,15 @@
 /** Shared presentation of Host-recorded messages. Hosts still own execution and transport. */
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { renderStudioMarkdown } from './markdown.tsx'
+import { designText } from '../../core/src/design-locale.ts'
+import type { DesignBilingualText } from '../../core/src/types.ts'
 
 export interface AgentConversationRow {
   id: string
   role: string
   label: string
+  /** Adapter-owned UI label only; recorded native text remains verbatim. */
+  labelText?: DesignBilingualText
   text: string
   status: string
 }
@@ -29,17 +33,17 @@ export function ConversationActivity({ rows, active, terminal, locale = 'zh', re
       {rows.some(row => row.status === 'failed') && <span className="companion-activity-failed">{zh ? ' · 有失败记录' : ' · Includes failed operations'}</span>}
     </summary>
     <div>{rows.map(row => <article key={row.id} data-role="tool" data-message-id={row.id}>
-      <div className="companion-message-label">{row.label} · {status(row.status)}</div>
+      <div className="companion-message-label">{row.labelText ? designText(row.labelText, locale) : row.label} · {status(row.status)}</div>
       {row.text && renderText(row.text)}
     </article>)}</div>
   </details>
 }
 
-export function ConversationMessage({ row, renderText = renderStudioMarkdown, children }: {
-  row: AgentConversationRow; renderText?: (text: string) => ReactNode; children?: ReactNode
+export function ConversationMessage({ row, locale = 'zh', renderText = renderStudioMarkdown, children }: {
+  row: AgentConversationRow; locale?: 'zh' | 'en'; renderText?: (text: string) => ReactNode; children?: ReactNode
 }) {
   return <article className="companion-message" data-role={row.role} data-message-id={row.id}>
-    <div className="companion-message-label">{row.label}{row.role === 'tool' ? ` · ${row.status}` : ''}</div>
+    <div className="companion-message-label">{row.labelText ? designText(row.labelText, locale) : row.label}{row.role === 'tool' ? ` · ${row.status}` : ''}</div>
     {row.text && <div className="companion-message-content">{renderText(row.text)}</div>}
     {children}
   </article>
@@ -60,7 +64,7 @@ export function ConversationMessages({ rows, active, terminal, locale }: {
   const latest = entries.at(-1)
   return <>{entries.map(entry => entry.kind === 'activity'
     ? <ConversationActivity key={entry.rows[0].id} rows={entry.rows} active={active && entry === latest} terminal={terminal} locale={locale} />
-    : <ConversationMessage key={entry.row.id} row={entry.row} />)}</>
+    : <ConversationMessage key={entry.row.id} row={entry.row} locale={locale} />)}</>
 }
 
 export const CONVERSATION_ACTIVITY_CSS = `

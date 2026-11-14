@@ -1,7 +1,7 @@
 /** Real HTTP, MCP, Core candidate, and retained disk; native delivery is scripted. */
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtemp, mkdir, writeFile, rm, readFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, writeFile, rm, readFile, readdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
@@ -33,7 +33,10 @@ async function setup(t, result = { accepted: true, status: 'submitted_unverified
   server = await startCompanion({ ...await staticFixture(root), projectRoot, nativeCwd: projectRoot, stateRoot, kitRoot,
     browserAccess: 'local', knowledgeAutoRefresh: false, embedding: { provider: 'disabled' },
     knowledgeRuntime: async () => { throw Error('No KAG runtime in this fixture.') }, host: 'codex',
-    connection: { host: 'codex', threadId, send: async (text, metadata) => { messages.push({ text, metadata }); return { ...result, threadId } } },
+    connection: { host: 'codex', threadId, send: async (text, metadata) => {
+      if (result instanceof Error) throw result
+      messages.push({ text, metadata }); return { ...result, threadId }
+    } },
   })
   const call = (method, params = {}) => callCompanion(server.connectionPath, { method, params })
   const browser = async (method, params = {}) => {
@@ -44,6 +47,36 @@ async function setup(t, result = { accepted: true, status: 'submitted_unverified
   }
   return { server, root, kitRoot, bundleRoot, projectRoot, stateRoot, messages, threadId, call, browser }
 }
+
+for (const rejected of [false, true]) test(`Studio messages bypass unrelated corrupt and locked Panel delivery metadata (${rejected ? 'transport failure' : 'accepted'})`, async t => {
+  const f = await setup(t, rejected ? Object.assign(Error('Fixture native setup failure'), { notSubmitted: true }) : undefined)
+  await f.call('savePanel', { skill: 'observations', eventId: 'saved-runtime-facts', includeDerivedStatus: false,
+    state: { items: { item_01: { title: 'Keep these saved runtime facts', status: 'open' } } } })
+  const runtimeFile = join(f.projectRoot, 'design_files/observations/observations.json')
+  const runtimeBytes = await readFile(runtimeFile)
+  const directory = join(f.stateRoot, f.server.project.project.metadata.id, 'saved-continuations')
+  const fileName = (await readdir(directory)).find(file => file.endsWith('.json'))
+  const file = join(directory, fileName)
+  await writeFile(file, '{')
+  await mkdir(`${file}.lock`)
+  const filesBefore = (await readdir(directory)).sort()
+  const info = await f.browser('info'), copy = await f.browser('studioInstanceCopy', { kind: 'bundle', bundle: pin })
+  const studio = { ...info.studioConversation, id: copy.id, expectedRevision: copy.revision }
+  const send = f.browser('sendPrompt', { requestId: 'studio-independent-of-panel-notes', studio,
+    text: 'Prepare a clarification in this Studio copy.' })
+  if (rejected) {
+    await assert.rejects(send, /Fixture native setup failure/, 'the original transport error is not replaced by an unrelated metadata error')
+    assert.equal(f.messages.length, 0)
+  } else {
+    assert.equal((await send).accepted, true)
+    assert.equal(f.messages.length, 1)
+    assert.deepEqual(f.messages[0].metadata.saved, [])
+    assert.match(f.messages[0].text, /Studio Kit\/Bundle customization/)
+  }
+  assert.equal(await readFile(file, 'utf8'), '{')
+  assert.deepEqual((await readdir(directory)).sort(), filesBefore, 'Studio does not change the unrelated ledger or lock')
+  assert.deepEqual(await readFile(runtimeFile), runtimeBytes)
+})
 
 test('Studio request -> same main transport -> MCP S2 prepare -> exact UI review -> explicit save shares one copy', async t => {
   const f = await setup(t)

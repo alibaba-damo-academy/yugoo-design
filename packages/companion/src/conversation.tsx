@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { ExecutionLogMessage, ExecutionRollingLog, useExecutionLogTail } from '../../panel/src/client/execution-rolling-log.tsx'
 import type { DesignPanelWorkspaceRead, DesignExecutionLogRead } from '../../panel/src/client/types.ts'
 import type { ReactNode } from 'react'
+import type { DesignBilingualText } from '../../core/src/types.ts'
 import { compactConversationHistory, conversationWork } from './conversation-history.mjs'
 import { companionChromeText, type CompanionChromeKey } from './locale.ts'
 
@@ -18,7 +19,7 @@ export interface RecordedConversation {
   designSessionStartedAt?: string
   error?: string
   omitted: number
-  rows: { id: string; role: string; label: string; text: string; status: string; timestamp?: string; activityEpoch?: string | number; childRunIds?: string[];
+  rows: { id: string; role: string; label: string; labelText?: DesignBilingualText; text: string; status: string; timestamp?: string; activityEpoch?: string | number; childRunIds?: string[];
     questions?: { id: string; question: string; options: { label: string; description: string }[] }[] }[]
 }
 
@@ -82,7 +83,7 @@ export function Conversation({ locale = 'zh', hostLabel: suppliedHostLabel, valu
       {!!value?.omitted && <p className="companion-conversation-hint">{t('conversationRecent', { count: value.rows.length, host: hostLabel })}</p>}
       {visible && compactConversationHistory(value?.rows, attempts).map(entry => entry.kind === 'activity' ? <WorkActivity key={entry.rows[0].id} rows={entry.rows}
         locale={locale.toLowerCase().startsWith('zh') ? 'zh' : 'en'} active={work.activeId===entry.rows[0].id} terminal={['completed','failed','interrupted'].includes(work.status)} renderText={text => <ExecutionLogMessage message={text} />}/>
-      : entry.kind === 'message' ? <ConversationMessage key={entry.row.id} row={entry.row} renderText={text => <ExecutionLogMessage message={text} />}>
+      : entry.kind === 'message' ? <ConversationMessage key={entry.row.id} row={entry.row} locale={locale.toLowerCase().startsWith('zh') ? 'zh' : 'en'} renderText={text => <ExecutionLogMessage message={text} />}>
         {entry.row.questions?.map(question => <section key={question.id} aria-label={t('nativeQuestion')} className="companion-native-question">
           <p>{question.question}</p>
           <ul>{question.options.map((option, i) => <li key={i}><span>{option.label}</span>{option.description && <p>{option.description}</p>}</li>)}</ul>

@@ -389,7 +389,8 @@ export async function createNativeRuns({ project, stateRoot, threadId, nativeCwd
         const seq = first + index + 1
         if (target !== undefined && !selected.some(segment => seq >= segment.startSeq && (segment.endSeq === undefined || seq <= segment.endSeq))) return []
         return [{ seq, timestamp: Date.parse(row.timestamp ?? '') || 0,
-          eventType: row.role === 'tool' ? 'synthesize' : 'message', message: executionRowMessage(row) }]
+          eventType: row.role === 'tool' ? 'synthesize' : 'message', message: executionRowMessage(row),
+          ...(row.role === 'tool' ? { messageText: { zh: executionRowMessage(row), en: executionRowMessage(row, 'en') } } : {}) }]
       }) : []
       return { found: valid, revision: log.lastEventAt ?? null, reset: true, entries,
         ...(target === undefined ? {} : { association: { ...targetOf(selected[0]), invocationId: owner.invocationId,

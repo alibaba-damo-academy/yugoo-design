@@ -12,24 +12,28 @@ const MAX_LINE = 8 * 1024 * 1024
 const MAX_ROWS = 200
 
 // Use native classifications only; never interpret shell strings or expose queries/output.
-function commandLabel(item) {
+function commandLabel(item, locale = 'zh') {
+  const zh = locale === 'zh'
   const actions = Array.isArray(item.parsed_cmd) ? item.parsed_cmd : []
   const labels = actions.map(action => {
     const name = typeof action?.path === 'string' ? action.path.replace(/\\/g, '/').split('/').filter(Boolean).at(-1) : undefined
     switch (action?.type) {
-      case 'read': return name ? `读取文件：${name}` : '读取文件'
-      case 'list_files': return name ? `查看目录：${name}` : '查看目录'
-      case 'search': return '搜索文件'
-      default: return '运行命令'
+      case 'read': return name ? (zh ? `读取文件：${name}` : `Read file: ${name}`) : (zh ? '读取文件' : 'Read file')
+      case 'list_files': return name ? (zh ? `查看目录：${name}` : `List directory: ${name}`) : (zh ? '查看目录' : 'List directory')
+      case 'search': return zh ? '搜索文件' : 'Search files'
+      default: return zh ? '运行命令' : 'Run command'
     }
   })
-  return [...new Set(labels)].join('；') || '运行命令'
+  return [...new Set(labels)].join(zh ? '；' : '; ') || (zh ? '运行命令' : 'Run command')
 }
 
-export function executionRowMessage(row) {
-  if (row.role !== 'tool') return row.text || row.label
-  const status = ({ completed: '已完成', failed: '失败', running: '运行中', in_progress: '运行中', cancelled: '已取消', interrupted: '已中断' })[row.status]
-  return `${row.text || row.label}${status ? ` · ${status}` : ''}`
+export function executionRowMessage(row, locale = 'zh') {
+  const label = row.labelText?.[locale] ?? row.label
+  if (row.role !== 'tool') return row.text || label
+  const status = (locale === 'zh'
+    ? { completed: '已完成', failed: '失败', running: '运行中', in_progress: '运行中', cancelled: '已取消', interrupted: '已中断' }
+    : { completed: 'Completed', failed: 'Failed', running: 'Running', in_progress: 'Running', cancelled: 'Cancelled', interrupted: 'Interrupted' })[row.status]
+  return `${row.text || label}${status ? ` · ${status}` : ''}`
 }
 
 const textBlocks = blocks => (Array.isArray(blocks) ? blocks : []).map(block => {
@@ -40,24 +44,27 @@ const textBlocks = blocks => (Array.isArray(blocks) ? blocks : []).map(block => 
 export function transcriptRow(event) {
   const item = event.payload?.item
   if (!item || typeof item.id !== 'string') return undefined
-  let role = 'tool', text, label = item.type
+  let role = 'tool', text, label = item.type, labelText
+  // Both display values are projection metadata, never the current UI language
+  // or a rewritten native message. Keep label for older readers.
+  const systemLabel = (zh, en) => { labelText = { zh, en }; return zh }
   switch (item.type) {
-    case 'UserMessage': role = 'user'; label = '你'; text = textBlocks(item.content); break
+    case 'UserMessage': role = 'user'; label = systemLabel('你', 'You'); text = textBlocks(item.content); break
     case 'AgentMessage': role = 'assistant'; label = 'Codex'; text = textBlocks(item.content); break
     case 'Reasoning':
       // Only the native public summary. Never expose raw/encrypted reasoning.
-      role = 'assistant'; label = '思考摘要'; text = (item.summary_text ?? []).join('\n'); break
-    case 'Plan': role = 'assistant'; label = '计划'; text = item.text; break
-    case 'CommandExecution': label = commandLabel(item); break
-    case 'FileChange': label = '修改文件'; break
+      role = 'assistant'; label = systemLabel('思考摘要', 'Reasoning summary'); text = (item.summary_text ?? []).join('\n'); break
+    case 'Plan': role = 'assistant'; label = systemLabel('计划', 'Plan'); text = item.text; break
+    case 'CommandExecution': label = systemLabel(commandLabel(item), commandLabel(item, 'en')); break
+    case 'FileChange': label = systemLabel('修改文件', 'Edit files'); break
     case 'McpToolCall': case 'DynamicToolCall': label = item.tool ?? item.tool_name ?? item.type; break
-    case 'WebSearch': label = '搜索'; break
-    case 'CollabAgentToolCall': label = '子代理'; break
-    case 'SubAgentActivity': label = '子代理'; break
-    default: label = item.type ?? '原生事件'
+    case 'WebSearch': label = systemLabel('搜索', 'Search'); break
+    case 'CollabAgentToolCall': label = systemLabel('子代理', 'Subagent'); break
+    case 'SubAgentActivity': label = systemLabel('子代理', 'Subagent'); break
+    default: label = item.type ?? systemLabel('原生事件', 'Native event')
   }
   if (item.type === 'Reasoning' && !text) return undefined
-  return { id: `${event.payload.turn_id ?? ''}:${item.id}`, role, label,
+  return { id: `${event.payload.turn_id ?? ''}:${item.id}`, role, label, ...(labelText ? { labelText } : {}),
     text: typeof text === 'string' ? text : '',
     status: item.status ?? (event.payload.type === 'item_completed' ? 'completed' : 'running'),
     timestamp: event.timestamp,
@@ -151,7 +158,7 @@ export function createCodexTranscript({ path, threadId, projectRoot, parentRunId
           if (!mainOnly && p?.type === 'function_call' && ['request_user_input', 'functions.request_user_input'].includes(p.name)) {
             const questions = nativeQuestions(p.arguments)
             if (questions.length && typeof p.call_id === 'string' && !rows.some(r => r.id === p.call_id)) {
-              rows.push({ id:p.call_id, role:'tool', label:'Codex 提问', text:'', status:'running', questions, timestamp:event.timestamp })
+              rows.push({ id:p.call_id, role:'tool', label:'Codex 提问', labelText: { zh:'Codex 提问', en:'Codex question' }, text:'', status:'running', questions, timestamp:event.timestamp })
               if (rows.length > MAX_ROWS) { rows.shift(); omitted++ }
             }
           } else if (!mainOnly && p?.type === 'function_call_output') {

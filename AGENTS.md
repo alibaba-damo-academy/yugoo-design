@@ -130,6 +130,19 @@ both the user and the Host Agent. Reuse the Host's tool permissions and existing
 user authorization rather than introducing a second general-purpose permission
 model, repeated approvals, or multi-user access controls for ordinary local work.
 
+Robustness and stability are the first priority for this local plugin. Before
+adding or retaining a permission gate, timeout, retry, fallback or other defensive
+mechanism, identify the concrete failure it prevents and whether the Host or an
+existing operation already handles it. Review similar mechanisms systematically;
+remove redundant restrictions and checks, including their superseded states and
+messages. Do not equate more defensive code with greater reliability. A timeout
+that abandons a read while its server work continues, then starts another attempt,
+can worsen stability; fix the actual cause rather than adding another deadline,
+retry layer or permission model. Preserve project-file isolation, atomic saves,
+user input and meaningful conflict detection. Keep ordinary local repair available
+and verify the affected success, failure and recovery paths. Apply this in the
+existing implementation and review flow, without a new approval or checklist gate.
+
 Choose the smallest mechanism that solves the user's present task. Reuse existing
 file editing, save, validation, host adapters and native Agent capabilities before
 adding another workflow, state machine, permission layer or version system.

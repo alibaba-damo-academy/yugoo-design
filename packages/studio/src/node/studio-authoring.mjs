@@ -3,11 +3,12 @@
  *
  * The host authenticates and binds the native invocation before constructing this
  * adapter. Scope is never a model argument. Pass only the existing instance
- * read/readFile/readMountedBundle/prepareChanges ports and a same-build component catalog reader
+ * read/readFile/readMountedBundle/prepareChanges ports and an optional same-build component catalog reader
  * returning the JSON projection used by design_list_panel_components.
  *
- * read({paths?}) returns coherent, bounded source text, file/mount discovery and
- * the actual catalog. read({mount:{bindingKey,paths?}}) reads only the selected
+ * read({paths?}) returns coherent, bounded source text and file/mount discovery.
+ * The actual component catalog is optional context; a failure is reported without
+ * blocking source work. read({mount:{bindingKey,paths?}}) reads only the selected
  * Kit member's current saved source; omitting paths discovers its files.
  * allowedPaths seeds the initial read; the current instance and revision bind
  * subsequent legal reads, replacements and new files.
@@ -29,7 +30,7 @@ const changed = () => new Error('Authoring instance changed. Reopen and explicit
 export function createStudioAuthoring({ scope, instances, readComponents } = {}) {
   object(scope, ['id', 'expectedRevision', 'allowedPaths', 'bundle'], 'trusted authoring scope')
   if (!instances || !['read', 'readFile', 'prepareChanges'].every(key => typeof instances[key] === 'function')
-    || typeof readComponents !== 'function' || !Array.isArray(scope.allowedPaths)) throw new Error('Authoring requires existing instance read/prepare ports, an initial reading focus and the actual component catalog reader.')
+    || (readComponents !== undefined && typeof readComponents !== 'function') || !Array.isArray(scope.allowedPaths)) throw new Error('Authoring requires existing instance read/prepare ports and an initial reading focus.')
   // Reuse S1's path, pin, revision and count guards; copy before any host await.
   const normalized = normalizeStudioInstanceChanges({ id: scope.id, expectedRevision: scope.expectedRevision,
     changes: scope.allowedPaths.map(path => ({ path, content: '' })), ...(scope.bundle === undefined ? {} : { bundle: scope.bundle }) })
@@ -55,11 +56,16 @@ export function createStudioAuthoring({ scope, instances, readComponents } = {})
   }
   const components = async () => {
     // No cache, fallback vocabulary or second component registration authority.
-    const value = await readComponents()
-    if (!value || !Array.isArray(value.components) || !value.components.length) throw new Error('The actual authoring component catalog is unavailable.')
-    const text = JSON.stringify(value)
-    if (Buffer.byteLength(text) > STUDIO_INSTANCE_CHANGE_LIMITS.sampleBytes) throw new Error('Authoring component catalog exceeds the 256 KiB response budget.')
-    return JSON.parse(text)
+    try {
+      if (!readComponents) throw new Error('The actual authoring component catalog is unavailable.')
+      const value = await readComponents()
+      if (!value || !Array.isArray(value.components) || !value.components.length) throw new Error('The actual authoring component catalog is unavailable.')
+      const text = JSON.stringify(value)
+      if (Buffer.byteLength(text) > STUDIO_INSTANCE_CHANGE_LIMITS.sampleBytes) throw new Error('Authoring component catalog exceeds the 256 KiB response budget.')
+      return { components: JSON.parse(text) }
+    } catch (error) {
+      return { componentCatalogError: error instanceof Error ? error.message : String(error) }
+    }
   }
   return Object.freeze({
     async read(input = {}) {
@@ -83,7 +89,7 @@ export function createStudioAuthoring({ scope, instances, readComponents } = {})
         if (existing.length) requestFor(existing.map(({ path, content }) => ({ path, content })))
         const catalog = await components()
         await current()
-        return { scope: binding, files, mountedBundle, components: catalog }
+        return { scope: binding, files, mountedBundle, ...catalog }
       }
       if (input.paths !== undefined && !Array.isArray(input.paths)) throw new Error('Select an exact list of scoped source paths.')
       const paths = checkPaths(input.paths ?? binding.allowedPaths)
@@ -104,7 +110,7 @@ export function createStudioAuthoring({ scope, instances, readComponents } = {})
       // Monotonic CAS revisions plus every file's receipt and this final check
       // prevent returning a mixed revision. This does not acquire a write lock.
       await current()
-      return { scope: binding, files, components: catalog,
+      return { scope: binding, files, ...catalog,
         availableFiles: record.files.map(({ path, bytes, editable }) => ({ path, bytes, readable: editable })),
         mounts: (record.mounts ?? []).map(({ bindingKey, bundle }) => ({ bindingKey, bundle: { name: bundle.name, version: bundle.version } })) }
     },
@@ -126,7 +132,7 @@ export function createStudioAuthoring({ scope, instances, readComponents } = {})
         || !/^[a-f0-9]{64}$/.test(candidate.digest) || !Array.isArray(candidate.diagnostics) || !Array.isArray(candidate.diff)
         || candidate.diff.some(file => !request.changes.some(change => change.path === file.path))
         || (candidate.preview && candidate.preview.revision !== candidate.revision)) throw new Error('Prepared candidate does not match this authoring revision and file set.')
-      return { scope: binding, components: catalog, request, candidate: structuredClone(candidate) }
+      return { scope: binding, ...catalog, request, candidate: structuredClone(candidate) }
     },
   })
 }

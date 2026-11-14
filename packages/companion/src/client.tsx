@@ -30,6 +30,7 @@ import { StudioEntryFeedback } from './studio-feedback.tsx'
 import { studioConversationHandoff } from './studio-conversation.mjs'
 import { PanelSelect } from '../../panel/src/panel-select.tsx'
 import { PanelFieldCaption } from '../../panel/src/panel-workspace.tsx'
+import { PanelContentState } from '../../panel/src/panel-content-state.tsx'
 import type { StudioManagementClient } from '../../studio-ui/src/types.ts'
 import type { StudioContentClient } from '../../studio-ui/src/content-transfer.ts'
 import type { StudioAuthoring } from '../../studio-ui/src/authoring.ts'
@@ -62,10 +63,7 @@ let onNotice = (_message: string, _autoDismiss = false) => {}
 let lastNotificationFailure: string | undefined
 type SavedContinuation = { eventId: string; commit?: string; status: string; retryable: boolean }
 async function rpc<T>(method: string, params = {}): Promise<T> {
-  // A stalled read must release its single-flight slot so the next visible
-  // tick can recover. Mutations/submissions retain their no-replay semantics.
-  const signal = method === 'readWorkspace' || method === 'readConversation' ? AbortSignal.timeout(10000) : undefined
-  const response = await fetch(transport.endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', ...transport.headers }, body: JSON.stringify({ method, params }), signal })
+  const response = await fetch(transport.endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', ...transport.headers }, body: JSON.stringify({ method, params }) })
   const result = await response.json()
   if (!response.ok) throw Object.assign(new Error(result.error ?? 'Companion request failed'), notificationDeliveryReceipt(result) ?? {})
   return result as T
@@ -410,8 +408,7 @@ function App() {
       } catch (error) {
         if (!disposed) {
           lastSnapshot = undefined
-          setPollError(error instanceof Error && error.name === 'TimeoutError'
-            ? currentChrome('workspaceSyncRetrying') : String(error))
+          setPollError(String(error))
         }
       }
       finally { busy = false }
@@ -653,7 +650,7 @@ function App() {
         </section>}
         {workspace && thread ? <DesignWorkspace hideProjectHeader={designOnly} {...workspace} experienceAvailable preferences={preferences} sessionId={thread} runtime={runtime} dockOpen
           presentation={trialPanelPage ? 'panel-only' : 'workspace'} demonstrationSave={trialPanelPage} onControlsChange={publishControls}
-          hostReportedSaveError={lastNotificationFailure} /> : <p>{chrome('designFilesReading')}</p>}
+          hostReportedSaveError={lastNotificationFailure} /> : <PanelContentState state="loading" kind="panel" message={chrome('designFilesReading')} />}
       </div>
       </div>
       {(error || pollError || notificationError || notice) && <div className={`dsh-design-toast companion-feedback${error || pollError || notificationError ? ' dsh-design-toast-error' : ''}`}>

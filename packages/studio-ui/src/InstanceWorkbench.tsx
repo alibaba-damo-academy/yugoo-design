@@ -342,9 +342,14 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
     restore()
     if (candidatePending) dismissChanges()
   }
+  const sourceChangeCount = currentPrepared?.candidate.diff.length ?? (!batchSource ? Object.keys(drafts).length : undefined)
+  const selectedFileChanged = currentPrepared ? currentPrepared.candidate.diff.some(change => change.path === path)
+    : Object.hasOwn(drafts, path) || !!fileChange
   const sourceStatus = candidateState?.saveUnverified ? (zh ? '保存结果待确认' : 'Save needs verification')
-    : sourcePending ? (zh ? `${draftRequest?.changes.length ?? proposal?.request.changes.length ?? 1} 个文件未保存` : `${draftRequest?.changes.length ?? proposal?.request.changes.length ?? 1} unsaved files`)
-      : (zh ? '已保存' : 'Saved')
+    : !sourcePending ? (zh ? '已保存' : 'Saved')
+      : sourceChangeCount === undefined ? (preparingDraft ? (zh ? '正在准备修改…' : 'Preparing changes…') : (zh ? '修改未保存' : 'Unsaved changes'))
+        : sourceChangeCount === 0 ? (zh ? '没有文件修改' : 'No file changes')
+          : (zh ? `${sourceChangeCount} 个文件未保存` : `${sourceChangeCount} unsaved ${sourceChangeCount === 1 ? 'file' : 'files'}`)
   const exportDisabledReason = !exportDisabled ? undefined
     : !record || record.id !== id ? (zh ? '正在打开内容，请稍后再导出。' : 'Wait for the content to open before exporting.')
       : candidateState?.saveUnverified || mountActions?.saveUnverified ? (zh ? '请先核对保存结果，再导出。' : 'Verify the save result before exporting.')
@@ -409,7 +414,7 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
         <button type="button" className="ygd-studio-doc-toggle" aria-pressed={fileView === 'diff'} onClick={() => setFileView('diff')}>{zh ? '对比' : 'Diff'}</button>
       </>}</div></div>
       <div className="ygd-studio-document-body ygd-studio-source-body">{file?.editable === false ? <p role="status">{zh ? '此文件不支持文本编辑，复制时会完整保留。' : 'This file is not available for text editing. Copies preserve it in full.'}</p> : !loaded ? <p role="status">{error ? (zh ? '无法读取此文件。' : 'Could not load this file.') : path ? (zh ? '读取中…' : 'Loading…') : (zh ? '没有可读取的文件。' : 'No readable files.')}</p> : !readOnly && fileView === 'diff' ? <SourceFileDiff path={path} before={fileChange?.before ?? saved} after={fileChange && !Object.hasOwn(drafts, path) ? fileChange.after : content} /> : readOnly && reading && /\.md$/i.test(path) ? <div>{renderStudioDocument(content, { locale })}</div> : <textarea ref={sourceEditor} aria-label={path || 'Source file'} spellCheck={false} value={content} readOnly={readOnly || sourceLocked} onChange={event => editSource(event.target.value)} className="ygd-studio-source-input" />}</div>
-      <footer className="ygd-studio-doc-footer"><span>{candidateState?.saveUnverified ? (zh ? '保存结果待确认，请刷新内容核对；不会自动重试' : 'Save result needs verification. Refresh the content; saving will not retry automatically.') : candidatePending ? (zh ? '待保存修改' : 'Proposed changes · not saved') : dirty ? (zh ? '未保存' : 'Unsaved') : !readOnly && file?.editable ? (zh ? '已保存 · 可编辑' : 'Saved · editable') : (zh ? '只读文件' : 'Read-only file')}</span><span>{loaded ? new TextEncoder().encode(content).length : fileChange ? new TextEncoder().encode(fileChange.after ?? '').length : file?.bytes ?? 0} {zh ? '字节' : 'bytes'}</span></footer>
+      <footer className="ygd-studio-doc-footer"><span>{candidateState?.saveUnverified ? (zh ? '保存结果待确认，请刷新内容核对；不会自动重试' : 'Save result needs verification. Refresh the content; saving will not retry automatically.') : selectedFileChanged ? candidatePending && !Object.hasOwn(drafts, path) ? (zh ? '待保存修改' : 'Proposed changes · not saved') : (zh ? '未保存' : 'Unsaved') : !readOnly && file?.editable ? (zh ? '已保存 · 可编辑' : 'Saved · editable') : (zh ? '只读文件' : 'Read-only file')}</span><span>{loaded ? new TextEncoder().encode(content).length : fileChange ? new TextEncoder().encode(fileChange.after ?? '').length : file?.bytes ?? 0} {zh ? '字节' : 'bytes'}</span></footer>
     </div>
   const mountGeneration = generation.current
   const Root = embedded ? 'section' : 'main'

@@ -229,7 +229,8 @@ export interface StudioAuthoringOptions {
     readMountedBundle?(input: StudioMountedBundleReadRequest): Promise<StudioMountedBundleRead>
     prepareChanges(input: StudioInstanceChangeRequest): Promise<StudioInstanceCandidate>
   }
-  readonly readComponents: () => StudioAwaitable<StudioAuthoringComponentCatalog>
+  /** Supplementary context; source reads/preparation do not require this catalog. */
+  readonly readComponents?: () => StudioAwaitable<StudioAuthoringComponentCatalog>
 }
 export type StudioAuthoringReplacement = StudioInstanceFileChange & { readonly content: string }
 export interface StudioAuthoringRead {
@@ -240,14 +241,16 @@ export interface StudioAuthoring {
   read(input?: StudioAuthoringRead): Promise<{
     readonly scope: StudioAuthoringScope
     readonly files: readonly StudioSourceReadFile[]
-    readonly components: StudioAuthoringComponentCatalog
+    readonly components?: StudioAuthoringComponentCatalog
+    readonly componentCatalogError?: string
     readonly availableFiles?: readonly StudioSourceFileInfo[]
     readonly mounts?: readonly { readonly bindingKey?: string; readonly bundle: DesignBundleVersionPin }[]
     readonly mountedBundle?: Omit<StudioMountedBundleRead, 'files'>
   }>
   prepare(input: { readonly changes: readonly StudioAuthoringReplacement[] }): Promise<{
     readonly scope: StudioAuthoringScope
-    readonly components: StudioAuthoringComponentCatalog
+    readonly components?: StudioAuthoringComponentCatalog
+    readonly componentCatalogError?: string
     readonly request: StudioInstanceChangeRequest
     readonly candidate: StudioInstanceCandidate
   }>

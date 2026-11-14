@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm'
 import type { DesignExecutionLogRead, DesignArtifactLogTarget } from './types.ts'
 import { requestLivePoll, subscribeLivePoll } from './live-poll.ts'
 import { panelText, type PanelMessageKey } from '../panel-i18n.tsx'
+import { designText } from '../../../core/src/design-locale.ts'
 
 type ExecutionLogEntry = DesignExecutionLogRead['entries'][number]
 const ACTIVITY_TEXT: Record<NonNullable<ExecutionLogEntry['activity']>['kind'], PanelMessageKey> = {
@@ -13,6 +14,7 @@ const ACTIVITY_TEXT: Record<NonNullable<ExecutionLogEntry['activity']>['kind'], 
 }
 /** Localize only explicitly identified system labels, never infer a label from native prose. */
 function executionActivityText(entry: ExecutionLogEntry, locale: string): string {
+  if (entry.eventType !== 'message' && entry.messageText) return designText(entry.messageText, locale.toLowerCase().startsWith('zh') ? 'zh' : 'en')
   const key = entry.activity === undefined ? undefined : ACTIVITY_TEXT[entry.activity.kind]
   return entry.eventType === 'message' || key === undefined
     ? entry.message

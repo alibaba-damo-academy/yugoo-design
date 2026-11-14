@@ -42,9 +42,16 @@ export async function openCompanionProject({ projectRoot, kitRoot, stateRoot, co
   let project = await new DesignProjectManager().open(projectRoot)
   const fs = companionFs
   const contentLibrary = createCompanionContentLibrary({ fs, kitRoot, stateRoot, trustedContentSources })
-  const readDefinition = async metadata => metadata.kit
-    ? ensureProjectKit(projectRoot, { loadSource: () => contentLibrary.resolveExactProject(metadata.kit) })
-    : contentLibrary.loadInstalled().then(kit => ({ kit, revision: projectKitContentHash(kit) }))
+  let previousDefinition
+  const readDefinition = async metadata => {
+    if (!metadata.kit) return contentLibrary.loadInstalled().then(kit => ({ kit, revision: projectKitContentHash(kit) }))
+    // Core checks current source bytes before reusing this successful parse.
+    const resolved = await ensureProjectKit(projectRoot, {
+      loadSource: () => contentLibrary.resolveExactProject(metadata.kit), previous: previousDefinition,
+    })
+    previousDefinition = resolved
+    return resolved
+  }
   const initialDefinition = await readDefinition(project.metadata)
   let kit = initialDefinition.kit
   let kitRevision = initialDefinition.revision
@@ -353,7 +360,6 @@ export async function openCompanionProject({ projectRoot, kitRoot, stateRoot, co
       })
     },
     async savePanel({ skill: name, state, artifacts = [], eventId }) {
-      await requireWritable()
       if (typeof eventId !== 'string' || !/^[\w-]{1,128}$/.test(eventId)) throw new Error('A stable save event ID is required.')
       const payload = JSON.stringify({ name, state, artifacts })
       const prior = saves.get(eventId)
@@ -506,10 +512,10 @@ export async function openCompanionProject({ projectRoot, kitRoot, stateRoot, co
         text,
       ].join('\n\n'), { requestId: attempt.requestId, saved: attempt.entries.map(({ eventId, commit }) => ({ eventId, commit })) })
       } catch (error) {
-        await savedContinuation.settle(attempt.requestId, { accepted: false, status: 'unknown', notSubmitted: !dispatched || error?.notSubmitted === true })
+        if (attempt.entries.length) await savedContinuation.settle(attempt.requestId, { accepted: false, status: 'unknown', notSubmitted: !dispatched || error?.notSubmitted === true })
         throw error
       }
-      await savedContinuation.settle(attempt.requestId, result)
+      if (attempt.entries.length) await savedContinuation.settle(attempt.requestId, result)
       // A native transport may return held/refused/unknown without throwing.
       // Explicit queue acceptance retires this pending note, not an Agent turn.
       if (result?.accepted === true) {

@@ -8,9 +8,7 @@ export async function callCompanion(connectionFile, request) {
   if (origin.protocol !== 'http:' || origin.hostname !== '127.0.0.1' || origin.pathname !== '/' || origin.search || origin.hash || origin.username || origin.password) throw new Error('Expected a loopback companion connection.')
   if (typeof connection.token !== 'string' || !/^[a-f0-9]{64}$/.test(connection.token)) throw new Error('Invalid companion access token.')
   const response = await fetch(`${origin.origin}/api`, { method: 'POST', redirect: 'error',
-    // Native submission includes readiness/privacy checks. An outer abort is
-    // unknown, never a retry signal.
-    signal: AbortSignal.timeout(request?.method === 'sendPrompt' ? 90000 : 30000), headers: { 'Content-Type': 'application/json', Origin: origin.origin, 'X-Design-Token': connection.token },
+    headers: { 'Content-Type': 'application/json', Origin: origin.origin, 'X-Design-Token': connection.token },
     body: JSON.stringify(request),
   })
   const result = await response.json()

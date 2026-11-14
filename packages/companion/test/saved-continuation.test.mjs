@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtemp, readdir, readFile, rm, writeFile, symlink } from 'node:fs/promises'
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile, symlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createSavedContinuation } from '../src/saved-continuation.mjs'
@@ -124,4 +124,25 @@ test('corrupt, foreign binding or symlinked delivery metadata fails closed', asy
   await writeFile(outside, JSON.stringify(original)); await symlink(outside, file)
   await assert.rejects(open().snapshot(), /metadata/)
   assert.equal(await readFile(outside, 'utf8'), JSON.stringify(original))
+})
+
+test('empty saved receipts skip unrelated damaged or locked delivery metadata while validating input', async t => {
+  const { api, saved, options } = await fixture(t)
+  const directory = join(options.stateRoot, options.projectId, 'saved-continuations')
+  const fileName = (await readdir(directory))[0], file = join(directory, fileName)
+  await writeFile(file, '{')
+  assert.deepEqual(await api.begin({ text: 'Independent message', requestId: 'empty-saves', saved: [] }), {
+    entries: [], requestId: 'empty-saves',
+  })
+  await mkdir(`${file}.lock`)
+  assert.deepEqual(await api.begin({ text: 'Independent message', requestId: 'still-empty', saved: [] }), {
+    entries: [], requestId: 'still-empty',
+  })
+  await assert.rejects(api.begin({ text: 'Invalid request', requestId: 'invalid/id', saved: [] }), /request ID/)
+  await assert.rejects(api.begin({ text: 'Invalid receipts', saved: {} }), /saved receipts/)
+  assert.equal(await readFile(file, 'utf8'), '{')
+  assert.ok((await readdir(directory)).includes(`${fileName}.lock`), 'an unrelated lock is never cleared')
+  await rm(`${file}.lock`, { recursive: true })
+  await assert.rejects(api.begin({ text: 'Still requires actual receipts', saved }))
+  await assert.rejects(api.begin({ text: 'Still inspects pending receipts' }))
 })

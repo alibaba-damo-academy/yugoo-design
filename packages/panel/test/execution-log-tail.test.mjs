@@ -12,6 +12,37 @@ const { renderNode } = await import('../src/interpreter.ts')
 const { requestLivePoll, livePollSubscriberCount } = await import('../src/client/live-poll.ts')
 after(() => dom.window.close())
 
+test('system log labels change language immediately while native messages stay exact', async () => {
+  const root = createRoot(document.getElementById('root'))
+  let reads = 0
+  const snapshot = { found: true, reset: true, revision: 'same-recorded-revision', entries: [
+    { seq: 1, timestamp: 1, eventType: 'synthesize', message: '修改文件 · 已完成',
+      messageText: { zh: '修改文件 · 已完成', en: 'Edit files · Completed' } },
+    { seq: 2, timestamp: 2, eventType: 'message', message: '原始消息：修改文件，已完成。',
+      messageText: { zh: '不应显示', en: 'Must not replace native text' } },
+    { seq: 3, timestamp: 3, eventType: 'synthesize', message: '原始工具文字：已完成' },
+  ] }
+  const original = JSON.stringify(snapshot)
+  const readExecutionLog = async () => { reads++; return snapshot }
+  const show = (locale, presentation = 'panel') => React.act(async () => root.render(React.createElement(ExecutionRollingLog, {
+    runId: 'bilingual', active: true, presentation, readExecutionLog, locale,
+  })))
+  try {
+    await show('en')
+    assert.match(document.body.textContent, /Edit files · Completed/)
+    assert.match(document.body.textContent, /原始消息：修改文件，已完成。/)
+    assert.match(document.body.textContent, /原始工具文字：已完成/)
+    assert.doesNotMatch(document.body.textContent, /Must not replace native text|修改文件 · 已完成/)
+    const initialReads = reads
+    await show('zh')
+    assert.match(document.body.textContent, /修改文件 · 已完成/)
+    await show('en', 'conversation')
+    assert.match(document.body.textContent, /Edit files · Completed/)
+    assert.equal(reads, initialReads, 'locale switches reuse the exact cached log')
+    assert.equal(JSON.stringify(snapshot), original)
+  } finally { await React.act(async () => root.unmount()) }
+})
+
 test('rolling log follows the tail, preserves manual scroll, bounds cursor deltas and folds only on lifecycle changes', async () => {
   const root = createRoot(document.getElementById('root'))
   let sequence = 1

@@ -59,6 +59,14 @@ presentation follows the installed Kit: shared declarative components, retained
 A2UI, or an explicitly selected native renderer. It does not start DSH or another
 model runtime.
 
+Companion-owned native activity labels and tool-status suffixes follow the
+selected interface language in conversation activity and artifact execution logs.
+The observer supplies optional bilingual `labelText`/`messageText` presentation
+values beside compatible `label`/`message` strings; shared readers select the
+language when rendering, including already loaded history. Native tool names,
+file names, user and Agent messages remain verbatim. This projection does not
+store a language preference in native events or Design Files.
+
 Standalone `serve` owns terminal SIGINT/SIGTERM cleanup. It waits for startup,
 then closes the Companion service (including project database handles, HTTP and
 its connection file) before calling the Knowledge runtime's public terminal
@@ -222,6 +230,10 @@ manual reviews after planned edits, not before a known subsequent rewrite.
 Neither due reviews nor an unavailable derived service inserts a mandatory
 assessment/review stage into ordinary design work. Uncertain delivery is never
 an automatic retry signal, including through the local CLI bridge.
+
+Studio messages with no saved Panel receipts remain available when Panel
+notification history is unreadable or locked. Their existing Studio request
+binding and native transport still own delivery and its actual failure feedback.
 
 Every `prepareBundle` response includes the same shared `executionContract` and
 prefixes its `method` with that contract before the unchanged, version-pinned

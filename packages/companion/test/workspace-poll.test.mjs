@@ -1,9 +1,15 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { appendFile, writeFile, mkdir, stat } from 'node:fs/promises'
+import { appendFile, readFile, writeFile, mkdir, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fixture } from './fixture.mjs'
 import { callCompanion } from '../src/connection-file.mjs'
+
+const browserRequest = (f, method, params = {}) => fetch(f.server.url + 'api', {
+  method: 'POST', headers: {
+    Origin: f.server.origin, 'Content-Type': 'application/json', 'X-Design-Browser': '1',
+  }, body: JSON.stringify({ method, params }),
+})
 
 test('only authenticated API activity extends the Panel service idle observation',async()=>{
  const f=await fixture({withTranscript:true})
@@ -55,14 +61,17 @@ for (const host of ['codex', 'workbuddy']) test(`${host}: bound history updates 
   let release, enter
   const entered = new Promise(resolve => { enter = resolve })
   const blocked = new Promise(resolve => { release = resolve })
-  const refresh = f.server.project.refreshAccess
+  const pollHead = f.server.project.store.pollHead
   let workspace
   try {
     const initial = await call('readConversation', { knownRevision: null })
     assert.equal(initial.workspace.conversation.available, true)
     assert.equal(initial.workspace.conversation.threadId, f.options.connection.threadId)
     assert.deepEqual(initial.workspace.conversation.rows, [])
-    f.server.project.refreshAccess = async (...args) => { enter(); await blocked; return refresh(...args) }
+    f.server.project.store.pollHead = async (...args) => {
+      enter(); await blocked
+      return pollHead.apply(f.server.project.store, args)
+    }
     workspace = call('readWorkspace')
     await entered
     await appendUser('Visible before any next agent action')
@@ -80,7 +89,7 @@ for (const host of ['codex', 'workbuddy']) test(`${host}: bound history updates 
     assert.equal(f.messages.length, 0, 'observing history never wakes the host')
   } finally {
     release()
-    f.server.project.refreshAccess = refresh
+    f.server.project.store.pollHead = pollHead
     await workspace?.catch(() => {})
     await f.close()
   }
@@ -102,6 +111,89 @@ test('invalid Design Files do not block history; native replacement remains reje
     assert.equal(unavailable.conversation.available, false)
     assert.deepEqual(unavailable.conversation.rows, [])
     assert.equal(f.messages.length, 0)
+  } finally { await f.close() }
+})
+
+test('browser history remains bound and readable when project Kit source is invalid', async () => {
+  const f = await fixture({ withTranscript: true, serverOptions: { browserAccess: 'local' } })
+  try {
+    await writeFile(join(f.options.projectRoot, 'design_kit/source.json'), '{')
+    await appendFile(f.options.transcriptPath, JSON.stringify({ type: 'event_msg', payload: {
+      type: 'item_completed', item: { type: 'UserMessage', id: 'browser-history-user',
+        content: [{ type: 'Text', text: 'History is independent of Kit parsing' }] },
+    } }) + '\n')
+    const response = await browserRequest(f, 'readConversation', {
+      knownRevision: null, threadId: 'not-a-routing-authority',
+    })
+    const first = await response.json()
+    assert.equal(response.status, 200, JSON.stringify(first))
+    assert.equal(first.workspace.conversation.threadId, f.options.connection.threadId)
+    assert.equal(first.workspace.conversation.rows.at(-1).text, 'History is independent of Kit parsing')
+    const unchanged = await browserRequest(f, 'readConversation', { knownRevision: first.revision })
+    assert.equal((await unchanged.json()).unchanged, true)
+
+    await writeFile(f.options.transcriptPath, JSON.stringify({ type: 'session_meta', payload: {
+      id: '00000000-0000-4000-8000-000000000002', cwd: f.options.projectRoot,
+    } }) + '\n')
+    const replaced = await browserRequest(f, 'readConversation')
+    assert.equal(replaced.status, 200)
+    const unavailable = await replaced.json()
+    assert.equal(unavailable.conversation.available, false)
+    assert.deepEqual(unavailable.conversation.rows, [])
+    assert.equal(f.messages.length, 0, 'browser reads never send a native message')
+  } finally { await f.close() }
+})
+
+test('workspace HTTP reads retain owner freshness and browser writes retain project identity checks', async () => {
+  const f = await fixture({ serverOptions: { browserAccess: 'local' } })
+  try {
+    const metadataPath = join(f.options.projectRoot, 'project.json')
+    const metadata = JSON.parse(await readFile(metadataPath, 'utf8'))
+    const currentMetadata = { ...metadata, name: 'Current locally edited project name' }
+    await writeFile(metadataPath, JSON.stringify(currentMetadata))
+    const mindsetPath = join(f.options.projectRoot, 'design_kit/kit/mindset.md')
+    const note = '\n<!-- Current local Kit edit remains observable. -->\n'
+    await appendFile(mindsetPath, note)
+    const fresh = await browserRequest(f, 'readWorkspace', { includeConversation: false })
+    assert.equal(fresh.status, 200)
+    assert.equal((await fresh.json()).projectName, currentMetadata.name)
+    assert.ok(f.server.project.installedKit.mindsetSource.endsWith(note))
+
+    const sourcePath = join(f.options.projectRoot, 'design_kit/source.json')
+    const source = await readFile(sourcePath, 'utf8')
+    await writeFile(sourcePath, '{')
+    const invalidKit = await browserRequest(f, 'readWorkspace')
+    assert.equal(invalidKit.status, 400)
+    assert.match((await invalidKit.json()).error, /JSON|property name|Unexpected|position/i)
+    await writeFile(sourcePath, source)
+
+    const changedIdentity = { ...currentMetadata, id: '00000000-0000-4000-8000-000000000002' }
+    const pollHead = f.server.project.store.pollHead.bind(f.server.project.store)
+    f.server.project.store.pollHead = async () => {
+      const head = await pollHead()
+      await writeFile(metadataPath, JSON.stringify(changedIdentity))
+      return head
+    }
+    try {
+      const changedDuringRead = await browserRequest(f, 'readWorkspace')
+      assert.equal(changedDuringRead.status, 400)
+      assert.match((await changedDuringRead.json()).error, /project identity changed/i)
+    } finally { f.server.project.store.pollHead = pollHead }
+
+    const statePath = join(f.options.projectRoot, 'design_files/smart_questions/smart_questions.json')
+    const state = { questions: { purpose: { prompt: 'Purpose?', kind: 'text', answer: 'Keep this answer', detail: '' } } }
+    await mkdir(join(f.options.projectRoot, 'design_files/smart_questions'), { recursive: true })
+    const saved = JSON.stringify(state)
+    await writeFile(statePath, saved)
+    const rejectedRead = await browserRequest(f, 'readWorkspace')
+    assert.equal(rejectedRead.status, 400)
+    assert.match((await rejectedRead.json()).error, /project identity changed/i)
+    const rejectedWrite = await browserRequest(f, 'savePanel', {
+      skill: 'smart_questions', state: { ...state, questions: {} },
+    })
+    assert.equal(rejectedWrite.status, 400)
+    assert.match((await rejectedWrite.json()).error, /project identity changed/i)
+    assert.equal(await readFile(statePath, 'utf8'), saved)
   } finally { await f.close() }
 })
 
@@ -142,7 +234,7 @@ test('workspace display ticks skip full Git-open while operation access remains 
       }, body: JSON.stringify({ method: 'readWorkspace', params: { includeConversation: false } }) })
       assert.equal(response.status, 200); await response.json()
     }
-    assert.deepEqual(calls, [true, true, true, true, true, true])
+    assert.deepEqual(calls, [], 'workspace freshness is owned by the project read, without duplicate dispatcher checks')
     calls.length = 0
     await callCompanion(f.server.connectionPath, { method: 'info' })
     assert.deepEqual(calls, [false], 'operation requests still use full project verification')

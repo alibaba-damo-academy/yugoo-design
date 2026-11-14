@@ -18,7 +18,32 @@ const { Conversation } = await loader.import('../src/conversation.tsx', import.m
 const { BackgroundReviewPanel } = await loader.import('../src/background-reviews.tsx', import.meta.url)
 const { companionChromeText, companionChromeMessages } = await loader.import('../src/locale.ts', import.meta.url)
 const { requireNotificationAccepted, notificationAutoDismiss } = await import('../src/notification-result.mjs')
+const { transcriptRow } = await import('../src/codex-transcript.mjs')
 const render = (component, props) => renderToStaticMarkup(React.createElement(component, props))
+
+test('native system activity labels follow the selected UI language without changing recorded text', () => {
+  const rows = [
+    transcriptRow({ payload: { type: 'item_completed', item: { type: 'FileChange', id: 'edit' } } }),
+    transcriptRow({ payload: { type: 'item_completed', item: { type: 'CommandExecution', id: 'command',
+      parsed_cmd: [{ type: 'read', path: '/private/人工说明.md' }, { type: 'unknown', cmd: 'secret' }] } } }),
+    transcriptRow({ payload: { type: 'item_completed', item: { type: 'McpToolCall', id: 'tool', tool: '修改文件' } } }),
+    { id: 'original', role: 'assistant', label: 'Codex', text: '原始消息：修改文件，已完成。', status: 'completed' },
+  ]
+  const before = JSON.stringify(rows)
+  const show = locale => render(Conversation, { locale, hostLabel: 'Codex', thread: 'thread', visible: true,
+    onClose() {}, send: async () => {}, value: { available: true, recordedStatus: 'completed', omitted: 0, rows } })
+  const english = show('en-US')
+  assert.match(english, /Edit files · Completed/)
+  assert.match(english, /Read file: 人工说明.md; Run command · Completed/)
+  assert.match(english, /修改文件 · Completed/, 'native tool names are never translated')
+  assert.match(english, /原始消息：修改文件，已完成。/)
+  assert.doesNotMatch(english, /修改文件 · 已完成|读取文件：|secret|\/private/)
+  const chinese = show('zh-CN')
+  assert.match(chinese, /修改文件 · 已完成/)
+  assert.match(chinese, /读取文件：人工说明.md；运行命令/)
+  assert.equal(JSON.stringify(rows), before, 'changing presentation never rewrites recorded rows')
+  assert.match(show('en-US'), /Edit files · Completed/)
+})
 
 test('English conversation chrome preserves original native message content', () => {
   const original = '用户提供的原文：保留 {host} 与业务名称。'

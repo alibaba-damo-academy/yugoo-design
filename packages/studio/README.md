@@ -29,6 +29,12 @@ imported sources. These reads neither copy Bundles into Kit files nor grant writ
 access to them. The scoped authoring capability exposes the same read as
 `read({mount:{bindingKey, paths?}})`; ordinary reads discover file and mount names.
 
+Scoped source reads and preparation include `components` when the Host's actual
+component catalog is available. Otherwise they return `componentCatalogError`
+alongside the source or candidate, so ordinary method, schema and source work can
+continue. This is no substitute vocabulary: component discovery reports its own
+failure, and Core still owns actual candidate validation and Panel compilation.
+
 `prepareChanges` returns a bounded multi-file source diff, candidate digest and
 validation/preview diagnostics without saving. `saveChanges` defaults to `draft`:
 it saves incomplete authoring source using the repository lock and atomic record

@@ -92,7 +92,7 @@ test('native review MCP advertises shared nested types and preserves valid JSON 
       { schemaVersion: 1, inconsistencies: [] },
       { schemaVersion: 1, researchNeeds: [] },
       { schemaVersion: 1, questions: [] },
-      { schemaVersion: 1, questions: [{ id: 'audience', facets: ['facts'], decision: 'Audience',
+      { schemaVersion: 1, questions: [{ id: 'audience', title: 'Define the intended audience', facets: ['facts'], decision: 'Audience',
         question: 'Which audience?', rationale: 'Different needs', impact: 'Changes scope' }],
       knowledgeRelations: [{ from: 'a', to: 'b', relationType: 'supports', summary: 'Saved evidence',
         evidence: [{ source: 'a.json', locator: '/fact', quote: 'A' }, { source: 'b.json', locator: '/fact', quote: 'B' }] }],
@@ -101,7 +101,8 @@ test('native review MCP advertises shared nested types and preserves valid JSON 
         s: { score: 65, evidence: 'Structure' }, t: { score: 58, evidence: 'Criteria' } },
     ]
     for (const result of valid) {
-      assert.notEqual((await submit(result)).isError, true)
+      const response = await submit(result)
+      assert.notEqual(response.isError, true, JSON.stringify({ result, response }))
       assert.deepEqual(calls.at(-1), { method: 'submitReview', params: { reviewId: 'exact-review', nativeRun, result } })
     }
     const before = calls.length
@@ -127,9 +128,36 @@ test('native review MCP advertises shared nested types and preserves valid JSON 
       { schemaVersion: 1, questions: [], knowledgeRetractions: '' },
       { schemaVersion: 1, questions: [], unexpected: true },
     ]) {
-      assert.notEqual((await submit(result)).isError, true)
+      const response = await submit(result)
+      assert.notEqual(response.isError, true, JSON.stringify({ result, response }))
       assert.deepEqual(calls.at(-1).params.result, result)
     }
+  } finally {
+    await client.close(); await mcp.close(); api.closeAllConnections()
+    await new Promise(resolve => api.close(resolve)); await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('main context can complete a slow local read without a plugin deadline or replay', { timeout: 45000 }, async () => {
+  const root = await mkdtemp(join(tmpdir(), 'slow-main-context-mcp-')), calls = []
+  const api = createServer(async (request, response) => {
+    const parts = []; for await (const part of request) parts.push(part)
+    const value = JSON.parse(Buffer.concat(parts)); calls.push(value)
+    await new Promise(resolve => setTimeout(resolve, 31000))
+    response.setHeader('content-type', 'application/json')
+    response.end(JSON.stringify({ received: value.method, summary: 'Retained context after a slow read' }))
+  })
+  await new Promise(resolve => api.listen(0, '127.0.0.1', resolve))
+  const connection = join(root, 'private.json')
+  await writeFile(connection, JSON.stringify({ origin: `http://127.0.0.1:${api.address().port}`, token: 'a'.repeat(64) }))
+  const mcp = createDesignMcp(), client = new Client({ name: 'slow-local-read-fixture', version: '1' })
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
+  try {
+    await Promise.all([client.connect(clientTransport), mcp.connect(serverTransport)])
+    const result = await client.callTool({ name: 'design_main_context', arguments: { connection } })
+    assert.notEqual(result.isError, true, JSON.stringify(result.content))
+    assert.equal(JSON.parse(result.content[0].text).received, 'mainContext')
+    assert.equal(calls.length, 1, 'a slow successful read is not replayed')
   } finally {
     await client.close(); await mcp.close(); api.closeAllConnections()
     await new Promise(resolve => api.close(resolve)); await rm(root, { recursive: true, force: true })
