@@ -271,11 +271,14 @@ Panel/reading-container widths select the compact 13px density below 560px,
 retaining the 12px auxiliary floor and normal input/target sizes. This is CSS
 container adaptation, not page zoom or a display-resolution heuristic.
 
-Interactive Page and Scenario previews allow native form validation and local
-`submit` handlers. Their opaque sandbox retains host, popup and top-navigation
+Interactive previews preserve native form validation, local `submit` handlers,
+and browser defaults such as dialog confirmation and cancellation. Their opaque
+sandbox retains host, popup and top-navigation
 isolation; `form-action 'none'` and `connect-src 'none'` still block network
 submission and connections. Reading-only documents and thumbnails retain their
 existing restrictions. A working local form does not write canonical Design Files.
+The prototype owns its `submit` handling, including cancelling navigation when
+it implements a local-only action; the preview does not cancel every submission.
 
 `PreviewWorkspace` and full Page/Scenario `NavigationPreview` readers default to
 Fit width for an overview and offer Actual size (100%) in their existing toolbar,

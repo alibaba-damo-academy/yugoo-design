@@ -532,6 +532,10 @@ Reusing a Bundle definition never shares runtime design data. Canonical state, t
 
 Runtime paths, panel routes, and state mutation events address the Kit-local instance by `bindingKey` and also carry the qualified Bundle identity and version for provenance. A binding key remains stable across compatible Kit upgrades. Changing it is an explicit remove-and-add operation that requires a reviewed state migration; it is never interpreted as a transparent rename.
 
+Authorized Design invocation uses the Host's existing permissions and user intent. Concise progress updates orient the user, but their exact wording or placement does not authorize or gate execution. Historical Bundle restoration reuses the user's existing restoration authorization. Its preview and current working-copy/base checks protect actual content; no model-supplied authorization boolean is required. Ask only about an unresolved choice to discard unpublished user changes.
+
+A failed or refused operation is reported truthfully but does not by itself end the entire user turn. Existing authorization permits diagnosis and repair of known failures and continuing independent requested work without a new human message or selection. Actual Host permission refusals, user cancellation and declared handoffs remain binding; another tool or Host is not a permission bypass. An unknown submission result must be reconciled with authoritative saved state or receipts before deciding on another attempt, never assumed uncommitted and automatically replayed. Findings alone do not authorize an additional persistent result outside the current request.
+
 The Agent Host log is the authority for conversation execution and model-visible interaction changes. Design System state does not require Host-specific Session event types or projections. The authorities for the five former DSH custom events are:
 
 | Former event | Current authority |

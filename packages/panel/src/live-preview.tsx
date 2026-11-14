@@ -78,7 +78,6 @@ export function LivePreview({ html, imageHtml, variables, title, designWidth = 1
         }
       });
       document.addEventListener('click',event=>{if(event.target instanceof Element && event.target.closest('a[href]'))event.preventDefault()},true);
-      document.addEventListener('submit',event=>event.preventDefault(),true);
     })()</script>`
     try {
       const context = previewNavigationContextMarkup(html, navigationContext)

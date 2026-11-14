@@ -423,7 +423,7 @@ export function validateAutoPanelEdit(before: JsonObject, after: unknown, contex
       continue
     }
     const nextValue = after[key]
-    if (!record(oldValue) || !record(nextValue) || Object.keys(nextValue).length > 500) {
+    if (!record(oldValue) || !record(nextValue)) {
       throw new Error(`auto panel: invalid record collection ${JSON.stringify(key)}`)
     }
     const question = hasQuestionSource(checked.ui, section.id)

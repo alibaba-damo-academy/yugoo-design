@@ -145,3 +145,21 @@ test('shared dictionaries have matching keys and interpolation placeholders', as
     assert.deepEqual([...zh[key].matchAll(/\{([^}]+)\}/g)].map(match => match[1]).sort(), [...en[key].matchAll(/\{([^}]+)\}/g)].map(match => match[1]).sort(), key)
   }
 })
+
+
+test('optional knowledge captions use exact JSON-pointer message keys without widening $t tokens', () => {
+  const panel = fixture()
+  const key = 'knowledge.label:/properties/a~1b~0c/value'
+  panel.i18n.messages['zh-CN'][key] = '内容配置'
+  panel.i18n.messages['en-US'][key] = 'Content Configuration'
+  panel.i18n.messages['zh-CN']['knowledge.label:'] = '根配置'
+  assert.deepEqual(validatePanelTranslations(panel, true), [])
+  assert.deepEqual(panelTranslationKeys(panel), ['title', 'help', 'custom'], 'metadata keys are not required UI tokens')
+  panel.ui.title = '$t:' + key
+  assert.equal(localizePanelManifest(panel, 'en-US').ui.title, '$t:' + key, 'ordinary token grammar stays unchanged')
+  for (const invalid of ['knowledge.label:properties/config', 'knowledge.label:/bad~2key', 'other:/properties/config', 'title/invalid']) {
+    const malformed = fixture()
+    malformed.i18n.messages['en-US'][invalid] = 'Bad key'
+    assert.ok(validatePanelTranslations(malformed, true).some(error => error.includes('invalid message: en-US.' + invalid)), invalid)
+  }
+})

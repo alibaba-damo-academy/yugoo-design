@@ -102,7 +102,6 @@ export interface ProducerProjectWorkspacePort {
   restoreSnapshot(
     revision: string,
     previewToken: string,
-    userAuthorizedOverwrite: boolean,
     signal: AbortSignal,
   ): Promise<Readonly<{ revision: string; changedPaths: readonly string[] }>>
   /** Validate the working copy for one pending or complete publication. Empty means valid. */
@@ -615,13 +614,12 @@ export function registerDshProducerDesignTools(
   register(defineTool({
     name: 'design_restore_snapshot',
     description: 'Safely restore only this invocation Bundle from one exact Published ancestor. '
-      + 'Always call action preview first and inspect the affected paths. Call action apply only when the user explicitly authorized overwriting those paths, passing the one-time preview_token and user_authorized_overwrite=true. '
+      + 'Call action preview first and inspect the affected paths. Apply with its preview_token under the user\'s existing restoration authorization. Ask only when overwriting unpublished changes requires a user choice that their request did not resolve. '
       + 'Apply changes only the WorkingCopy: inspect diff, run design_validate, and use design_publish to create a new audited commit. This never moves HEAD backward or runs checkout/reset.',
     parameters: {
       action: { type: 'string', required: true, enum: ['preview', 'apply'] },
       revision: { type: 'string', required: true, description: 'Exact full lowercase Published commit object id.' },
       preview_token: { type: 'string', description: 'One-time token returned by the immediately preceding preview.' },
-      user_authorized_overwrite: { type: 'boolean', description: 'Must be true for apply and represents explicit user authorization for the previewed overwrite.' },
     },
     output: {
       schema: {
@@ -660,7 +658,7 @@ export function registerDshProducerDesignTools(
     },
     async execute(args, exec) {
       if (args.action === 'preview') {
-        if (args.preview_token !== undefined || args.user_authorized_overwrite !== undefined) {
+        if (args.preview_token !== undefined) {
           throw new Error('restore preview accepts only action and revision')
         }
         const preview = await workspace.previewRestore(args.revision, exec.signal)
@@ -679,7 +677,6 @@ export function registerDshProducerDesignTools(
       const staged = await workspace.restoreSnapshot(
         args.revision,
         args.preview_token,
-        args.user_authorized_overwrite === true,
         exec.signal,
       )
       return { kind: 'staged' as const, revision: staged.revision, changed_paths: [...staged.changedPaths] }

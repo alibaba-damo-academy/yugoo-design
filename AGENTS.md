@@ -143,6 +143,10 @@ user input and meaningful conflict detection. Keep ordinary local repair availab
 and verify the affected success, failure and recovery paths. Apply this in the
 existing implementation and review flow, without a new approval or checklist gate.
 
+Apply the same necessity test to prompts, tool and MCP descriptions, skills and
+operating guides. When removing a restriction, update its maintained instructions
+and examples so guidance does not recreate the retired gate or repeated approval.
+
 Choose the smallest mechanism that solves the user's present task. Reuse existing
 file editing, save, validation, host adapters and native Agent capabilities before
 adding another workflow, state machine, permission layer or version system.

@@ -147,9 +147,12 @@ The default desktop route supports main Bundles and explicit foreground checks.
 With actual native Host delegation, its Skill may select
 `--codex-desktop-native-bundles` on the same service. The attached adapter validates
 the exact main header, current actual launch, real nested Producer parent and
-successful child consumption of the pinned Bundle method before registration.
-It reuses shared native run, artifact receipt and publication semantics. Children
-read their registered target before editing. This route requires separate actual
+Bundle/artifact ownership at registration. Prepare the current pinned Bundle
+method for the child and have it read the method and target before editing.
+An existing child can read or revisit the method during continuation;
+registration does not depend on a particular tool receipt or conversation turn.
+It reuses shared native run, artifact receipt and publication semantics.
+This route requires separate actual
 Producer, nested Worker and main Worker acceptance; a source build or capability
 flag is not successful execution. The default remains unavailable for these roles.
 Studio trials remain unavailable. Cooperative GRA

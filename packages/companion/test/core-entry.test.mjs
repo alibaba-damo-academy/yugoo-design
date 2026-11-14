@@ -2,6 +2,24 @@ import test from 'node:test'
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
+test('Companion build-time Core entry retains the canonical scenario publisher', () => {
+  const script = `
+    import assert from 'node:assert/strict';
+    const selected = await import(process.argv[1]);
+    const canonical = await import(process.argv[2]);
+    assert.equal(typeof selected.operateExperience, 'function');
+    assert.equal(selected.operateExperience, canonical.operateExperience);
+    await assert.rejects(selected.operateExperience({}, { action: 'unsupported', id: 'demo' }), /action/i);
+    await assert.rejects(selected.operateExperience({}, { action: 'prepare', id: 'demo', sources: [] }), /source/i);
+  `
+  execFileSync(process.execPath, ['--import', 'tsx', '--input-type=module', '--eval', script,
+    new URL('../src/core-entry.ts', import.meta.url).href,
+    new URL('../../core/src/experience-service.ts', import.meta.url).href], {
+    cwd: fileURLToPath(new URL('../../../', import.meta.url)),
+    timeout: 20000, stdio: ['ignore', 'pipe', 'pipe'],
+  })
+})
+
 test('Companion build-time Core selection retains canonical Kit resource projection', () => {
   const script = `
     import assert from 'node:assert/strict';

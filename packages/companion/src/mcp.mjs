@@ -128,6 +128,14 @@ export function createDesignMcp({ commandOptions = {}, loadAuthoringReference = 
     { action: z.enum(Object.keys(studioMethods)), request: z.record(z.string(), z.unknown()).describe('Existing Studio operation input. catalog accepts query; list accepts {}; create takes kind kit/bundle and title {zh,en}; copies require exact pins; edits and saves require the working-copy id and expectedRevision. Never supply a filesystem root, Agent identity, model or credential.'),
       authoringRequestId: z.string().min(1).max(128).optional().describe('prepareChanges only: exact requestId supplied by the Studio conversation request. A locator, not permission. Omit for ordinary Host conversation customization; never invent or infer a latest request.') },
     false, value => value, input => input.authoringRequestId === undefined ? input.request : { ...input.request, authoringRequestId: input.authoringRequestId })
+  register('design_experience', 'experience',
+    'Prepare, write and publish a scenario experience from current Design Files when the user requests one. This derived view does not change Bundle facts. Prepare returns the shared authoring method and captures sources; write HTML using its returned version, then publish sections with matching artifact IDs. Reuse the exact connection and current user authorization; no Bundle run registration is needed for this derived view.', {
+      action: z.enum(['prepare', 'write', 'publish']), id: z.string(),
+      version: z.string().optional(), sources: z.array(z.string()).optional(), stylesheet: z.string().optional(),
+      artifactId: z.string().optional(), content: z.string().optional(), offset: z.number().int().nonnegative().optional(),
+      title: z.string().optional(), purpose: z.string().optional(),
+      sections: z.array(z.object({ id: z.string(), title: z.string(), sources: z.array(z.string()), assumptions: z.array(z.string()) }).strict()).optional(),
+    })
   register('design_status', 'readWorkspace', 'Read compact project/checkpoint, execution, handoff and independent UST/KAG/GRA status. UST reasons are returned once in services.ust.assessment. details=true includes the complete host-specific background protocol and full workspace for explicit diagnosis; ordinary status does not need it. Read-only: never evaluates, indexes, probes or launches. Accepted/available is not completed.', {
     details: z.boolean().optional(),
   }, true)

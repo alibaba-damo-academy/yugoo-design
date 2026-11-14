@@ -1,10 +1,11 @@
-import { localizePanelManifest, parsePanelManifest, type PanelManifest } from '../dsl.ts'
+import { localizePanelManifest, panelMessagesForLocale, parsePanelManifest, type PanelManifest } from '../dsl.ts'
 import { fieldsForSection, sectionBindingOf } from '../record-state.ts'
 import type { GraphNode } from './graph-model.ts'
 
 export type GraphNodeLabel = (node: GraphNode) => string
-type Caption = { path: string[]; source: string; target: string }
+type Caption = { path: string[]; exact?: boolean; source: string; target: string }
 const properties = (path: string) => path.split('.').flatMap(key => ['properties', key])
+const pointerPath = (pointer: string) => pointer.split('/').slice(1).map(key => key.replaceAll('~1', '/').replaceAll('~0', '~'))
 const readable = (text: string | undefined): text is string => Boolean(text?.trim() && !text.startsWith('$t:'))
 
 /** Derive captions from the owning Panel's existing display declarations only.
@@ -14,8 +15,12 @@ function captions(manifest: PanelManifest, locale: string): Caption[] {
   const sources = [...new Set([manifest.i18n?.default_locale ?? 'zh-CN', ...Object.keys(manifest.i18n?.locales ?? {})])]
     .map(language => localizePanelManifest(manifest, language))
   const result: Caption[] = []
-  const add = (path: string[], originals: (string | undefined)[], target: string | undefined) => {
-    if (readable(target)) for (const source of originals) if (readable(source)) result.push({ path, source, target })
+  const add = (path: string[], originals: (string | undefined)[], target: string | undefined, exact = false) => {
+    if (readable(target)) for (const source of originals) if (readable(source)) result.push({ path, source, target, exact })
+  }
+  const messages = panelMessagesForLocale(manifest.i18n, locale)
+  for (const [key, source] of Object.entries(manifest.i18n?.messages?.[manifest.i18n.default_locale] ?? {})) {
+    if (key.startsWith('knowledge.label:')) add(pointerPath(key.slice('knowledge.label:'.length)), [source], messages[key], true)
   }
   for (const section of translated.sections) {
     const binding = sectionBindingOf(translated, section.id)
@@ -49,11 +54,11 @@ export function graphNodeLabels(panels: Readonly<Record<string, { panelYaml?: st
     catch { /* A broken optional Panel definition must not hide the source graph. */ }
   }
   return node => {
-    if (!node.contentKind || !node.schemaPointer || !node.sourceLabel || node.sourceLabel === node.label) return node.label
-    const path = node.schemaPointer.split('/').slice(1).map(key => key.replaceAll('~1', '/').replaceAll('~0', '~'))
+    if (!node.contentKind || typeof node.schemaPointer !== 'string' || !node.sourceLabel || node.sourceLabel === node.label) return node.label
+    const path = pointerPath(node.schemaPointer)
     const targets = new Set<string>()
     for (const caption of byOwner.get(node.owner) ?? []) {
-      if (path.length !== caption.path.length || !path.every((key, index) => caption.path[index] === '*' ? key === 'value' || key === 'items' : key === caption.path[index])) continue
+      if (path.length !== caption.path.length || !path.every((key, index) => !caption.exact && caption.path[index] === '*' ? key === 'value' || key === 'items' : key === caption.path[index])) continue
       const memberKey = node.pointer.slice(node.pointer.lastIndexOf('/') + 1).replaceAll('~1', '/').replaceAll('~0', '~')
       const suffix = node.contentKind === 'unit' && path.at(-1) === 'value' && memberKey ? ` · ${memberKey}` : ''
       if (node.label === caption.source) targets.add(caption.target)

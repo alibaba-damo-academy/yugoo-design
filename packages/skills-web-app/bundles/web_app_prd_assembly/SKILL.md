@@ -335,8 +335,8 @@ Before publication, review all chapters in bounded reads against the current
 owner evidence, without reading embedded image/SVG bytes into context. Compare the document headings, source
 annotations, provenance IDs, pending assumptions, and deterministic visuals
 with the pinned owner
-evidence. Repair one owned deterministic issue with
-at most one focused follow-up, then inspect the refreshed projection once more. Ask the user when a
+evidence. Repair source-proven document issues within the requested scope,
+then recheck the affected chapters and source annotations. Ask the user when a
 real product decision is required. If an owner Bundle or referenced artifact is
 missing, malformed, or unresolved, report that non-blocking evidence gap
 without editing the owner Bundle or retrying indefinitely. After publication

@@ -1,3 +1,5 @@
+# Optional starting points, not a closed set of visual directions.
+# match/avoid are product-fit cues, not category routing or mandatory choices.
 version: 1
 directions:
   - id: classic_blue_saas

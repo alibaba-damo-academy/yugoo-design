@@ -63,6 +63,21 @@ Shared component action copy stays in Panel's shared dictionaries. The owning
 type is `PanelTranslations` in `packages/core/src/panel-i18n.ts`; installed
 component contract reads expose it through `PanelManifest`'s returned reference.
 
+For fixed graph captions declared by schema `knowledge.label` that have no
+matching section or field label, the same locale JSON resources may include
+`"knowledge.label:/properties/config": "Design Style Configuration"`. The suffix
+is the exact JSON Pointer into this Bundle's schema, including `properties`,
+`value` or `items`; escape literal `~` and `/` as `~0` and `~1`. An empty suffix
+addresses the root schema. The default-locale entry must match the original
+`knowledge.label`; the selected locale supplies its display translation using
+the same language and default-locale fallback as other Panel copy.
+
+These optional entries are metadata, not `$t:` tokens. The graph applies them
+only when its existing schema pointer and distinct source caption identify a
+fixed metadata label. User text, graph facts and schema labels stay unchanged.
+Missing or conflicting matches retain the original label; older project-pinned
+Bundle resources continue to display their own captions until explicitly updated.
+
 ## `sections`
 
 ```yaml

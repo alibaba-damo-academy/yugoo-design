@@ -132,6 +132,9 @@ The execution reference maps Bundle operations to native tools and the companion
 file/validation bridge. It does not create or resume a second model runtime.
 External automatic spawning while the host is idle and
 Claude Code/Qoder adapters are not provided by this Codex entry. Executable
-Kit scripts may require their declared npm/browser dependencies; the Panel itself
-requires only Node 22+ and Git, and notification additionally requires a Codex CLI
+Kit scripts may require their declared npm/browser dependencies. The Panel uses
+the acquired release's Node requirement (`>=22.19.0` for the current release) and
+packaged native Git library on its supported targets; normal Panel use does not
+require system Git. System Git is needed only for the explicit CLI diagnostic
+backend and development fixtures. Notification additionally requires a Codex CLI
 supporting `queue --thread UUID --message TEXT`.

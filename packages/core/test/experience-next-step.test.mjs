@@ -10,9 +10,9 @@ const scene = service.split('<design_experience>')[1]?.split('</design_experienc
 
 test('scene action shares the existing optional selector, never a Bundle alias', () => {
   assert.ok(scene)
-  assert.match(progression, /scene-experience actions below are non-catalog choices, never Bundle aliases/)
-  assert.match(progression, /one to three options total and preserving the advisory option/)
-  assert.match(progression, /open, refresh or creation route rather than run_design_skill/)
+  assert.match(progression, /Advice review and scene actions are not Bundle aliases/)
+  assert.match(progression, /same one-to-three choices, preserving that advice option/)
+  assert.match(progression, /an explicitly offered scene action to its open\/refresh\/create route/)
   assert.doesNotMatch(progression, /sole non-catalog option/)
   assert.match(scene, /existing 'dsh-design-next-step' question/)
   assert.match(scene, /never open a competing selector or override a pending Bundle user-continue gate/)

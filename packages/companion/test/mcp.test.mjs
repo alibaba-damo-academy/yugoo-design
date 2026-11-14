@@ -58,7 +58,7 @@ test('packaged stdio MCP exposes explicit tools and preserves existing per-proje
   try {
     await client.connect(transport)
     const { tools } = await client.listTools()
-    assert.equal(tools.length, 42)
+    assert.equal(tools.length, 43)
     assert.ok(tools.some(tool => tool.name === 'design_studio_customize'))
     const catalogTool = tools.find(tool => tool.name === 'design_list_panel_components')
     assert.ok(catalogTool)

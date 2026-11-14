@@ -1,8 +1,23 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 const { register } = await import('tsx/esm/api'); register()
-const { projectRecords, relationDisplayLabel, relationMeaningLabel, relationOriginLabel, relationLifecycleLabel } = await import('../src/client/graph-model.ts')
+const { projectRecords, graphWarningText, relationDisplayLabel, relationMeaningLabel, relationOriginLabel, relationLifecycleLabel } = await import('../src/client/graph-model.ts')
 const { projectExplorationRecords, bundleDisplay } = await import('../src/client/graph-bundle-model.ts')
+
+test('the actual Core projection notice follows the interface locale without rewriting raw warnings', async () => {
+  const { readDesignGraph } = await import('../../core/src/design-graph.ts')
+  const graph = await readDesignGraph({ listPathsAt: async () => [] }, 'fixture-checkpoint')
+  const original = structuredClone(graph)
+  assert.equal(graph.warnings.length, 1)
+  const warning = graph.warnings[0]
+  assert.equal(graphWarningText(warning), warning)
+  assert.equal(graphWarningText(warning, 'zh-CN'), warning)
+  assert.equal(graphWarningText(warning, 'en-US'), 'The overview groups content by design record; expanding a record reveals meaningful details. Identifier matches and semantic similarity do not establish confirmed business relationships.')
+  for (const raw of ['', '未知诊断 / raw evidence {source}', warning + ' Additional original context']) {
+    assert.equal(graphWarningText(raw, 'en-US'), raw)
+  }
+  assert.deepEqual(graph, original)
+})
 
 test('system-produced single relations follow the interface locale without changing original evidence', () => {
   const edge = (kind, label, reading) => ({ id: kind, from: 'a', to: 'b', kind, label, evidence: '原始证据 exact bytes', ...(reading ? { reading } : {}) })

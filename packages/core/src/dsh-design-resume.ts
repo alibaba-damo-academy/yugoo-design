@@ -63,6 +63,6 @@ export function installDesignResumeRouting(
       return ''
     }
     const args = { name: intent.gate.pin.skillName, action: { routeId: intent.gate.action.routeId } }
-    return `The current human message matches a pending Design continuation. It has NOT started yet. Briefly acknowledge it visibly, then call run_design_skill with exactly ${JSON.stringify(args)}. Do not add a brief (that would revise the plan), ask for confirmation again, or execute the Bundle by another route. The tool revalidates the current gate and authorization. In Producer mode stay attached to its visible execution/logs; in main mode follow the returned scoped method. After the tool returns, follow its actual outcome; do not automatically retry failures.`
+    return `The current human message matches a pending Design continuation. It has NOT started yet. Continue the authorized action through run_design_skill with exactly ${JSON.stringify(args)}. Do not add a brief (that would revise the plan), ask for confirmation again, or execute the Bundle by another route. The tool revalidates the current gate and authorization. In Producer mode stay attached to its visible execution/logs; in main mode follow the returned scoped method. After the tool returns, report its actual outcome. Existing authorization permits diagnosis and repair of known failures without another human message. Respect real permission refusals, cancellation and declared handoffs; reconcile an unknown submission with saved state or receipts before another attempt.`
   }
 }

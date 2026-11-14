@@ -17,6 +17,7 @@ export {
 } from './design-service.ts'
 export { DESIGN_CORE_CLARITY_RUBRIC_PROMPT, DESIGN_CORE_PROGRESSION_PROMPT, renderDesignSkillCatalog } from './design-core-prompt.ts'
 export { designFileToolDenial, type DesignFileToolPolicyInput } from './design-file-tool-policy.ts'
+export { operateExperience, type ExperienceRequest } from './experience-service.ts'
 export { GitVersioning, GitBlobSizeLimitError, collectGitStdout, type GitCommitReceipt, type GitHistoryEntry, type SpawnFn } from './git.ts'
 export { readDesignGit, designGitReadArguments, DESIGN_GIT_READ_ACTIONS, DESIGN_GIT_READ_DESCRIPTION,
   type DesignGitReadArguments, type DesignGitReadPorts } from './design-git-read.ts'

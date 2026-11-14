@@ -34,7 +34,7 @@ async function fixture(t) {
     },
   })
   const receiver = {
-    selectedProjectForAgent: async owner => owner === parent ? project : undefined,
+    selectedProjectIdentityForAgent: async owner => owner === parent ? project : undefined,
     selectionForAgent: () => ({ projectId: project.projectId, revision: state.revision }),
     assertProjectSelection: (owner, id, revision) => {
       assert.equal(owner, parent); assert.equal(id, project.projectId)
@@ -96,7 +96,7 @@ test('native child requires project/checkpoint pins and cannot select another re
 
 test('unbound and cyclic native ancestry cannot fall back to a project', async t => {
   const f = await fixture(t), args = { action: 'history', project: f.project.projectId, checkpoint: f.commits[1] }
-  f.receiver.selectedProjectForAgent = async () => undefined
+  f.receiver.selectedProjectIdentityForAgent = async () => undefined
   await assert.rejects(f.run(f.child, args), /No selected/)
   f.child.ctx.agents.get = () => f.child
   await assert.rejects(f.run(f.child, args), /Cyclic/)

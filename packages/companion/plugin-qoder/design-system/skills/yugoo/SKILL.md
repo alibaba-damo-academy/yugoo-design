@@ -64,8 +64,9 @@ never disclose its token or search for a latest connection.
 
 ## Native execution specifics
 
-Before choosing a Bundle, read `/absolute/plugin-root/kits/web_app/mindset.md`:
-it already contains the Bundle catalog and selection method. Do not discover
+Before choosing a Bundle, call `design_list_bundles` with this exact connection.
+Read its returned `mindsetMethod` from the selected project's current Kit for the
+Bundle catalog and selection method. Do not discover
 capabilities by searching the empty Design Files or scanning the plugin tree.
 Examples in `native-execution.md` are not a default choice of `page_design`.
 Once selected, use `design_prepare_bundle`. Follow its `execution.mode`: `main`

@@ -1265,7 +1265,7 @@ export default class DesignService extends Service {
       signal?.throwIfAborted()
       if (seen.has(owner)) throw new Error('Cyclic native Agent ancestry')
       seen.add(owner)
-      project = await this.selectedProjectForAgent(owner, signal)
+      project = await this.selectedProjectIdentityForAgent(owner, signal)
       if (project) break
       const parent: typeof caller.session.header.parentSession = owner.session.header.parentSession
       owner = parent === undefined ? undefined : owner.ctx.agents.get(parent)
@@ -1533,14 +1533,24 @@ export default class DesignService extends Service {
    * @returns the structured outcome with triggered profiles and the exact revision target.
    */
   async readReviewPolicy(agent: Agent, signal?: AbortSignal): Promise<DesignReviewPolicy> {
-    const project = await this.projectForAgent(agent, signal)
-    return readDesignReviewPolicy(join(designProjectRecordsRoot(project.root), 'reviews'), project.root)
+    const project = await this.projectIdentityForAgent(agent, signal)
+    const revision = this.selectionForAgent(agent)?.revision
+    const policy = await readDesignReviewPolicy(join(designProjectRecordsRoot(project.root), 'reviews'), project.root)
+    signal?.throwIfAborted()
+    this.assertProjectSelection(agent, project.projectId, revision)
+    return policy
   }
 
   /** Persist only commit/revision references; historical facts remain in DesignJournal/Git. */
   async reviewPublicationQueue<T>(agent: Agent, profile: string, operation: (queue: DesignReviewPublicationQueue<{ checkpoint: string; journal: DesignJournalRead }>) => T): Promise<T> {
-    return this.withJournal(agent, async (root, conversation, project) => {
-      this.assertProjectSelection(agent,project.projectId)
+    // Review queue records refer to Journal facts, not Kit definitions. Reuse
+    // the already-owned project inside a mutation, just as withJournal does.
+    const active = this.activeWorkspaces.get(agent)
+    const project = active && this.projectMutationScope.getStore() === active.project.projectId
+      ? active.project : await this.projectIdentityForAgent(agent)
+    const revision = this.selectionForAgent(agent)?.revision
+    return this.withJournalForProject(project, String(agent.id), async (root, conversation) => {
+      this.assertProjectSelection(agent,project.projectId,revision)
       const identity=createHash('sha256').update(`${conversation}\0${profile}`).digest('hex')
       const file=join(project.stateRoot, `gra-queue-${identity}.json`)
       const journal=await this.journals.read(root,conversation)
@@ -1573,9 +1583,10 @@ export default class DesignService extends Service {
       }}))}
       const temporary=`${file}.${randomUUID()}.tmp`
       await mkdir(project.stateRoot,{recursive:true})
-      this.assertProjectSelection(agent,project.projectId)
+      this.assertProjectSelection(agent,project.projectId,revision)
       try {await writeFile(temporary,JSON.stringify(persisted),'utf8');await rename(temporary,file)}
       finally {await rm(temporary,{force:true})}
+      this.assertProjectSelection(agent,project.projectId,revision)
       return result
     })
   }
@@ -1596,14 +1607,25 @@ export default class DesignService extends Service {
 
   /** User settings entry; automatic reviewers cannot change their own policy. */
   async updateReviewPolicy(agent: Agent, value: unknown, signal?: AbortSignal): Promise<DesignReviewPolicy> {
-    const project = await this.projectForAgent(agent, signal)
-    signal?.throwIfAborted()
-    const policy = await writeDesignReviewPolicy(join(designProjectRecordsRoot(project.root), 'reviews'), value, project.root)
-    await commitDesignProjectRecords({ projectRoot: project.root, paths: ['design_records/reviews/gra-policy.json'],
-      message: 'Record project review settings', spawn: this.spawnAdapter() })
-    await this.advisoryRuntime?.provider.configureReviews?.(agent, policy)
-    this.notifyWorkspaceChange({ kind: 'review-policy-changed', agent, policy })
-    return policy
+    const project = await this.projectIdentityForAgent(agent, signal)
+    const revision = this.selectionForAgent(agent)?.revision
+    const check = () => { signal?.throwIfAborted(); this.assertProjectSelection(agent, project.projectId, revision) }
+    return this.serializeProjectMutation(agent, project.projectId, 'selection', async () => {
+      check()
+      const current = await this.projects.require(project.projectId, signal)
+      check()
+      if (current.root !== project.root || current.designFilesRoot !== project.designFilesRoot) {
+        throw new Error('design: selected project repository identity changed before policy update')
+      }
+      const policy = await writeDesignReviewPolicy(join(designProjectRecordsRoot(project.root), 'reviews'), value, project.root)
+      await commitDesignProjectRecords({ projectRoot: project.root, paths: ['design_records/reviews/gra-policy.json'],
+        message: 'Record project review settings', spawn: this.spawnAdapter() })
+      check()
+      await this.advisoryRuntime?.provider.configureReviews?.(agent, policy)
+      check()
+      this.notifyWorkspaceChange({ kind: 'review-policy-changed', agent, policy })
+      return policy
+    }, signal)
   }
 
   async requestReviews(agent: Agent, profiles?: readonly string[], signal?: AbortSignal): Promise<DesignOrchestrationResult> {
@@ -2878,12 +2900,27 @@ export default class DesignService extends Service {
     return kit
   }
 
-  /** Resolve the selected Design Project, or undefined without a binding. */
-  async selectedProjectForAgent(agent: Agent, signal?: AbortSignal): Promise<RegisteredDesignProject | undefined> {
+  /** Resolve registered project identity without consuming its Kit definitions. */
+  private async selectedProjectIdentityForAgent(agent: Agent, signal?: AbortSignal): Promise<RegisteredDesignProject | undefined> {
     const selection = await this.currentSelection(agent)
     if (selection === undefined) return undefined
     const project = await this.projects.require(selection.projectId, signal)
     this.assertProjectSelection(agent, selection.projectId)
+    return project
+  }
+
+  private async projectIdentityForAgent(agent: Agent, signal?: AbortSignal): Promise<RegisteredDesignProject> {
+    const project = await this.selectedProjectIdentityForAgent(agent, signal)
+    if (project === undefined) {
+      throw new Error('design: no Design Project is selected; use /yugoo new <name> or /yugoo open <id|name|path>')
+    }
+    return project
+  }
+
+  /** Resolve the selected Design Project and its Kit, or undefined without a binding. */
+  async selectedProjectForAgent(agent: Agent, signal?: AbortSignal): Promise<RegisteredDesignProject | undefined> {
+    const project = await this.selectedProjectIdentityForAgent(agent, signal)
+    if (project === undefined) return undefined
     if (!this.workspaceReadScope.getStore()?.active) await this.prepareProjectKit(project)
     return project
   }

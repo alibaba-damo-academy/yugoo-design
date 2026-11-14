@@ -2,6 +2,7 @@
 export {
   parsePanelManifest,
   localizePanelManifest,
+  panelMessagesForLocale,
   validatePanelManifest,
   PANEL_KINDS,
   COMPONENT_KINDS,

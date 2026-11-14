@@ -270,11 +270,12 @@ function InstalledPreview({ authoring, renderPreview: render, client, kit, bundl
     return () => { active = false }
   }, [client, bundle.name, bundle.version, declarative, retry])
   return <section className="ygd-studio-panel-split">
+    <header className="ygd-studio-doc-toolbar ygd-studio-source-toolbar"><FileName path="panel.yaml" locale={locale} />{onEdit && <button className="ygd-studio-btn-secondary" type="button" onClick={onEdit}>{locale === 'zh' ? '编辑' : 'Edit'}</button>}</header>
+    <header className="ygd-studio-doc-toolbar ygd-studio-preview-toolbar"><strong>{locale === 'zh' ? '面板预览' : 'Panel Preview'}</strong><span>{locale === 'zh' ? '随源码更新 · 样例数据' : 'Live source · sample data'}</span></header>
     <section className="ygd-studio-yaml-pane">
-      <header><FileName path="panel.yaml" locale={locale} />{onEdit && <button className="ygd-studio-btn-secondary" type="button" onClick={onEdit}>{locale === 'zh' ? '编辑' : 'Edit'}</button>}</header>
-      {panelSource !== undefined ? <textarea aria-label="Panel YAML" spellCheck={false} value={panelSource} readOnly /> : sourceError
+      <div className="ygd-studio-document-body ygd-studio-source-body">{panelSource !== undefined ? <textarea className="ygd-studio-source-input" aria-label="Panel YAML" spellCheck={false} value={panelSource} readOnly /> : sourceError
         ? <StudioFeedback feedbackId={`source:${retry}:${sourceError}`} tone="error" locale={locale} title={locale === 'zh' ? '无法读取面板定义' : 'Could not read Panel source'} message={sourceError} actions={[{ label: locale === 'zh' ? '重试' : 'Retry', onClick: () => setRetry(value => value + 1) }]} />
-        : declarative ? <LoadingIndicator label={locale === 'zh' ? '正在读取面板定义' : 'Loading Panel definition'} /> : <StudioEmptyState title={locale === 'zh' ? '此面板由原生组件提供' : 'This is a native Panel'} />}
+        : declarative ? <LoadingIndicator label={locale === 'zh' ? '正在读取面板定义' : 'Loading Panel definition'} /> : <StudioEmptyState title={locale === 'zh' ? '此面板由原生组件提供' : 'This is a native Panel'} />}</div>
     </section>
     <section className="ygd-studio-live-pane"><div className="ygd-studio-live-pane-body">
       {!previewInstalled && <StudioEmptyState title={locale === 'zh' ? '此处暂不支持面板预览' : 'Panel preview is unavailable here'} />}

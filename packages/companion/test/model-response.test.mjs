@@ -55,6 +55,47 @@ test('preparation retains the complete method once, exact paths, validation and 
   assert.equal(raw.executionContract.instructions, instructions)
 })
 
+test('default status retains every execution receipt and failure without repeating canonical states and diffs', () => {
+  const raw = { projectId: 'project', checkpoint: 'current-head', access: { writable: true },
+    executionAttempts: [
+      { runId: 'completed', role: 'producer', skill: 'example', phase: 'completed', settledScope: 'completion', settledOutcome: 'complete',
+        diagnostics: [], settlement: { state: { original: 'Canonical content'.repeat(1000) }, diff: 'Original Git diff'.repeat(1000), note: 'Saved design note', commit: 'saved-head' } },
+      { runId: 'working', parentRunId: 'actual-parent', role: 'worker', phase: 'working', artifactFile: 'example/current.html', diagnostics: [] },
+      { runId: 'failed-after-commit', phase: 'failed', diagnostics: ['Host binding unavailable'], accepted: false, committed: true,
+        settlement: { state: { original: 'Already saved content' }, diff: 'Committed diff', commit: 'repair-head', accepted: false,
+          recovery: { stage: 'host-binding', action: 'retry-same-finish-once' }, validation: { issues: ['Keep the actual diagnostic'] } },
+        receipt: { path: 'example/retained.html', sha256: 'original-digest' }, recovery: { instruction: 'Do not rewrite committed content.' } },
+      { runId: 'cancelled', phase: 'cancelled', diagnostics: ['Native turn was interrupted'] },
+      { runId: 'unknown', phase: 'queued', diagnostics: ['No native completion observed'] },
+    ],
+    activeMainBundles: [{ invocationId: 'main-active' }], continuations: [{ kind: 'user_continue', prompt: 'Ask the saved question' }],
+    savedContinuations: [{ status: 'unknown', retryable: false }], savedNotificationError: 'Do not blindly resend',
+    services: { kag: { state: 'unavailable', error: 'Provider is occupied' } } }
+  const before = structuredClone(raw)
+  const result = modelResponse('readWorkspace', raw)
+  assert.deepEqual(result, modelResponse('readWorkspace', raw, { details: false }))
+  assert.deepEqual(result.executionAttempts.map(row => [row.runId, row.phase, row.diagnostics]),
+    raw.executionAttempts.map(row => [row.runId, row.phase, row.diagnostics]), 'no history window or successful-only filter')
+  assert.deepEqual(result.executionAttempts[0].settlement, { commit: 'saved-head' })
+  const failed = result.executionAttempts[2]
+  assert.equal(failed.accepted, false); assert.equal(failed.committed, true)
+  assert.deepEqual(failed.settlement, { commit: 'repair-head', accepted: false,
+    recovery: raw.executionAttempts[2].settlement.recovery, validation: raw.executionAttempts[2].settlement.validation })
+  assert.deepEqual(failed.receipt, raw.executionAttempts[2].receipt)
+  assert.deepEqual(failed.recovery, raw.executionAttempts[2].recovery)
+  for (const key of ['activeMainBundles', 'continuations', 'savedContinuations', 'savedNotificationError', 'services']) assert.deepEqual(result[key], raw[key])
+  assert.deepEqual(raw, before)
+  assert.equal(modelResponse('readWorkspace', raw, { details: true }), raw)
+})
+
+test('unknown execution receipt shapes remain visible rather than being discarded by compact status', () => {
+  for (const executionAttempts of ['unavailable', null, [null, 'unknown record', { runId: 'future', settlement: 'Unavailable receipt', diagnostics: ['Preserve'] }]]) {
+    const raw = { executionAttempts }
+    assert.deepEqual(modelResponse('readWorkspace', raw).executionAttempts, executionAttempts)
+    assert.equal(modelResponse('readWorkspace', raw, { details: true }), raw)
+  }
+})
+
 test('compact settlement never promotes committed recovery to success or hides follow-up work', () => {
   const raw = { accepted: false, committed: true,
     settlement: { skill: 'example', commit: 'checkpoint', state: { large: 'canonical bytes' }, diff: 'large diff', note: 'save note' },

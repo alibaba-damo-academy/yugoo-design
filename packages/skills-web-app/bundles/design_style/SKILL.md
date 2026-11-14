@@ -106,16 +106,18 @@ choices remain here. Load visual domain knowledge progressively:
 
 | Resource | Load rule |
 | --- | --- |
-| `reference/aesthetic_index.yaml` | Read once after forming the physical scenario; choose before reading direction detail. |
-| `reference/aesthetics/<id>/DESIGN.md` | Read exactly one selected seed. It is the seed's semantic and token source. |
+| `reference/aesthetic_index.yaml` | Consult after forming the physical scenario when a seed would help; category matches are product-fit cues, not required choices. |
+| `reference/aesthetics/<id>/DESIGN.md` | Read relevant seeds as needed for their semantic and token principles; adapt only what fits the product. |
 | `reference/aesthetics/<id>/tokens.css` | Deterministic compiled sibling. Usually do not read; inspect only to diagnose CSS reproduction. |
 | `reference/quality_rubric.md` | Read once before materializing a new preview or making a substantial redesign. |
 | `reference/post_check.md` | Read after the preview exists, immediately before rendered review. |
 | `reference/motion.md` | Read only when motion intensity is at least 7 or choreography is material. |
 | `assets/icons/_index.md` | Read only when the preview needs bundled icons. |
 
-Never combine multiple seeds in one proposal. An explicit brand/reference may
-justify a bespoke direction without a seed.
+Seeds are optional starting points. Compare or adapt relevant principles when
+useful, then resolve them into one coherent product-specific visual system.
+A bespoke direction may follow the actual scenario and task without an explicit
+brand reference; preserve supplied brand constraints and settled user decisions.
 
 ## Execution
 
@@ -129,9 +131,10 @@ confirmed product requirement worth recording elsewhere.
 
 Then identify the category's reflexive generic answer and reject it when it
 does not fit. Set design variance, motion intensity, and visual density from
-`0..10` with a short product-specific reason. Read the compact aesthetic index,
-select one direction, and only then read its `DESIGN.md`. Choose the single
-screen where the product's distinctive interaction is clearest.
+`0..10` with a short product-specific reason. Use the compact index and relevant
+seed guidance when useful, or develop a direction from the product's needs.
+Choose one coherent visual direction and the single screen where the product's
+distinctive interaction is clearest.
 
 ### 2. Build and save the complete anchor
 
@@ -147,8 +150,9 @@ state and generated `DESIGN.md`, outside the ordinary preview header.
 ### 3. Materialize the preview
 
 Read `reference/quality_rubric.md`, then prepare one compact, complete responsive
-HTML5 document at `design_style/preview_<name>.html`. Target 8–12 KB and never
-exceed 16 KB. It must prove the product's distinctive hierarchy and primary
+HTML5 document at `design_style/preview_<name>.html`. Keep its source concise
+and complete for the screen's real content, responsive layout and interactions;
+there is no fixed Bundle byte target. It must prove the product's distinctive hierarchy and primary
 interaction in one representative viewport; compact does not mean a generic
 sidebar, toolbar, stock table, or empty shell. Do not block the first useful
 preview on image search, image generation, animation polish, secondary
@@ -168,8 +172,10 @@ content. For a state-only repair, read and retain the existing complete HTML
 unchanged.
 
 - Follow the stylesheet, token and local-dependency requirements in the shared artifact contract.
-- UI icons must be inline SVGs copied from the bundled `assets/icons/` catalog
-  after reading `assets/icons/_index.md`. Never use emoji, bitmap images, icon
+- Use complete safe local inline SVGs with one coherent icon grammar. Reuse
+  suitable bundled `assets/icons/` SVGs after reading `assets/icons/_index.md`,
+  and add matching SVGs when the product needs them. Record their exact markup
+  and semantic mapping in canonical config. Never use emoji, bitmap images, icon
   fonts, or remote icon libraries as interface icons.
 - Use vanilla JS only when interaction demonstrates a material design decision;
   keep it small and inline: no large datasets, SVG path libraries, or duplicated

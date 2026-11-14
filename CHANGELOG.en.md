@@ -4,6 +4,13 @@
 
 This log summarizes major features, noticeable experience changes, and installation or upgrade improvements in the Yugoo Design repository, organized by version. It omits small adjustments and internal refactoring. See the [Git commit history](https://github.com/alibaba-damo-academy/yugoo-design/commits/main/) for the full changes.
 
+## [0.3.6](https://github.com/alibaba-damo-academy/yugoo-design/tree/v0.3.6)
+
+- Simplify native Agent collaboration: remove duplicate method-read proof from child registration and the fixed deadline on the Codex notification channel, and allow authorized repair and independent work to continue after a failed operation.
+- Connect Companion scenario generation to the existing prepare, write and publish lifecycle. Clarify that skipping an optional next-step choice defers that choice.
+- Preserve native HTML form and dialog behavior in interactive previews, align Studio source and preview headers, and improve graph caption localization and status details.
+- Keep Git reads and review settings available when a project's Kit is incomplete. Remove the extra 500-record save limit and fixed content-length and built-in-icon restrictions from visual style guidance.
+
 ## [0.3.5](https://github.com/alibaba-damo-academy/yugoo-design/tree/v0.3.5)
 
 - Improve Companion read and save responsiveness by reusing unchanged project definitions and removing duplicate checks and plugin-imposed deadlines that could abandon slow reads and start repeated requests.

@@ -11,6 +11,8 @@ const TEXT_KEYS = new Set(['title', 'label', 'description', 'guidance', 'placeho
   'add_label', 'row_name', 'custom_description', 'token_add_description', 'menu_description', 'selected_description', 'group_label', 'create_label', 'create_title', 'new_title', 'empty', 'legend', 'references_label'])
 const SKIP_KEYS = new Set(['initial_values', 'item_defaults', 'create', 'derived_fields', 'i18n', 'bindings', 'navigation_map', 'graph', 'matrix', 'board', 'question_policy', 'values', 'tokens'])
 const TOKEN = /^\$t:([a-zA-Z0-9_.-]+)$/
+// Optional schema-caption metadata; ordinary $t tokens retain their own grammar.
+const KNOWLEDGE_LABEL_KEY = /^knowledge\.label:(?:\/(?:[^~]|~[01])*)?$/
 
 /** Fixed endpoint names, not an expression language or executable markup. */
 export function isNavigationLabelTemplate(value: unknown, allowTranslation = false): value is string {
@@ -81,7 +83,7 @@ export function validatePanelTranslations(manifest: PanelManifest, requireMessag
     for (const locale of Object.keys(config.locales)) {
       const messages = config.messages?.[locale]
       if (!messages || typeof messages !== 'object' || Array.isArray(messages)) { errors.push(`missing messages: ${locale}`); continue }
-      for (const [key, value] of Object.entries(messages)) if (typeof value !== 'string' || !/^[a-zA-Z0-9_.-]+$/.test(key)) errors.push(`invalid message: ${locale}.${key}`)
+      for (const [key, value] of Object.entries(messages)) if (typeof value !== 'string' || (!/^[a-zA-Z0-9_.-]+$/.test(key) && !KNOWLEDGE_LABEL_KEY.test(key))) errors.push(`invalid message: ${locale}.${key}`)
       // Validate resolved endpoint labels in every locale, including fallbacks.
       const checkLabels = (node: unknown): void => {
         if (!node || typeof node !== 'object') return
@@ -122,17 +124,22 @@ export function validatePanelTranslations(manifest: PanelManifest, requireMessag
   return errors
 }
 
-/** Missing optional translations fall back to the Bundle's declared default locale. */
-export function localizePanelManifest(manifest: PanelManifest, locale = 'zh-CN'): PanelManifest {
-  const config = manifest.i18n
-  if (!config?.messages) return manifest
+/** Shared locale selection and blank/missing fallback for declared display copy. */
+export function panelMessagesForLocale(config: PanelTranslations | undefined, locale: string): Readonly<Record<string, string>> {
+  if (!config?.messages) return {}
   const normalized = locale.replaceAll('_', '-').toLowerCase()
   const selected = Object.keys(config.locales).find(key => key.toLowerCase() === normalized.toLowerCase())
     ?? Object.keys(config.locales).find(key => key.toLowerCase().split('-')[0] === normalized.split('-')[0]) ?? config.default_locale
+  return { ...config.messages[config.default_locale], ...Object.fromEntries(Object.entries(config.messages[selected] ?? {}).filter(([, value]) => value.trim())) }
+}
+
+/** Missing optional translations fall back to the Bundle's declared default locale. */
+export function localizePanelManifest(manifest: PanelManifest, locale = 'zh-CN'): PanelManifest {
+  if (!manifest.i18n?.messages) return manifest
+  const messages = panelMessagesForLocale(manifest.i18n, locale)
   return mapTexts(manifest, text => {
     const match = TOKEN.exec(text)
     if (!match) return text
-    const translated = config.messages?.[selected]?.[match[1]!]
-    return translated?.trim() ? translated : config.messages?.[config.default_locale]?.[match[1]!] ?? text
+    return messages[match[1]!] ?? text
   }) as PanelManifest
 }

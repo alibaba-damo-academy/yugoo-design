@@ -24,10 +24,10 @@ async function launch(f, id, parent = threadId, parentPath = f.options.transcrip
     item: { type: 'SubAgentActivity', kind: 'started', id: 'call-' + id, agent_path: agentPath, agent_thread_id: id } }, at))
   return { path, agentPath }
 }
-async function consume(f, path, id, skill, connection = f.server.connectionPath) {
+async function consume(f, path, id, skill, connection = f.server.connectionPath, turn = 'turn-' + id) {
   const prepared = await callCompanion(f.server.connectionPath, { method: 'prepareBundle', params: { skill } })
   const at = Date.now() - 1
-  await appendFile(path, event('item_completed', { turn_id: 'turn-' + id, started_at_ms: at, completed_at_ms: at,
+  await appendFile(path, event('item_completed', { turn_id: turn, started_at_ms: at, completed_at_ms: at,
     item: { type: 'McpToolCall', id: 'read-' + id, server: 'design-system', tool: 'design_prepare_bundle', status: 'completed',
       arguments: { connection, skill }, result: { content: [{ type: 'text', text: JSON.stringify(prepared) }] } } }, at))
 }
@@ -52,11 +52,8 @@ test('desktop Producer and its nested Worker use real parent logs, receipts and 
   assert.equal(prepared.execution.mode, 'subagent')
   assert.ok(prepared.workerMethod)
   const p = await launch(f, producer)
-  await assert.rejects(call('registerNativeRun', { role: 'producer', skill: 'research', artifactId: 'research', agentPath: p.agentPath }), /must consume/)
-  await consume(f, p.path, producer, 'research', f.server.connectionPath + '.foreign')
-  await assert.rejects(call('registerNativeRun', { role: 'producer', skill: 'research', artifactId: 'research', agentPath: p.agentPath }), /must consume/)
-  await consume(f, p.path, producer, 'research')
   await call('registerNativeRun', { role: 'producer', skill: 'research', artifactId: 'research', agentPath: p.agentPath })
+  await consume(f, p.path, producer, 'research')
   const w = await launch(f, worker, producer, p.path)
   await consume(f, w.path, worker, 'research')
   const target = { role: 'worker', skill: 'research', parentRunId: producer, artifactId: 'D-001',
@@ -127,39 +124,36 @@ test('desktop attached resolver stays bounded on a long parent and rejects forei
   await assert.rejects(adapter.resolveRun({ agentPath: p.agentPath }), /ambiguous/)
 })
 
-test('Bundle registration consumes only its own successful pinned native first-turn method read', async t => {
-  const root = await realpath(await mkdtemp(join(tmpdir(), 'desktop-native-consumption-'))); t.after(() => rm(root, { recursive: true, force: true }))
-  const main = join(root, 'main.jsonl'), child = join(root, 'child.jsonl'), now = Date.now()
-  await writeFile(main, JSON.stringify({ type: 'session_meta', payload: { id: threadId, cwd: root } }) + '\n')
-  const adapter = await createCodexDesktopExecutionAdapter({ sessionId: threadId, projectRoot: root, mainTranscriptPath: main, startedAt: now - 2000 })
-  const expected = { skill: 'research', version: '1.0', kit: { name: 'web_app', version: '1.0' }, designFiles: join(root, 'design_files') }
-  const connection = join(root, 'private-connection.json'), binding = { runId: producer, parentRunId: threadId, transcriptPath: child }
-  const prefix = JSON.stringify({ type: 'session_meta', payload: { id: producer, cwd: root, timestamp: new Date(now - 1500).toISOString(),
-    source: { subagent: { thread_spawn: { parent_thread_id: threadId } } } } }) + '\n'
-    + event('task_started', { turn_id: 'first' }, now - 1400)
-  const read = () => ({ type: 'event_msg', timestamp: new Date(now - 1000).toISOString(), payload: { type: 'item_completed', turn_id: 'first',
-    started_at_ms: now - 1200, completed_at_ms: now - 1100, item: { type: 'McpToolCall', server: 'design-system', tool: 'design_prepare_bundle', status: 'completed',
-      arguments: { connection, skill: 'research' }, result: { content: [{ type: 'text', text: JSON.stringify({ ...expected, method: 'Complete version-pinned Bundle method' }) }] } } } })
-  const check = async (value, error) => {
-    await writeFile(child, prefix + JSON.stringify(value) + '\n' + event('task_complete', { turn_id: 'first' }, now - 500))
-    if (error) await assert.rejects(adapter.verifyAssignment(binding, expected, connection), error)
-    else await adapter.verifyAssignment(binding, expected, connection)
+test('desktop Bundle registration uses actual ownership across inherited, long and continued context', async t => {
+  for (const scenario of ['inherited parent turn', 'long context', 'continued child']) {
+    await t.test(scenario, async t => {
+      const f = await fixture({ withTranscript: true, serverOptions: desktop }); t.after(() => f.close())
+      const call = (method, params = {}) => callCompanion(f.server.connectionPath, { method, params })
+      const prepared = await call('prepareBundle', { skill: 'research' })
+      const method = await readFile(join(f.options.kitRoot, 'skills/research/SKILL.md'), 'utf8')
+      assert.ok(prepared.method.trimEnd().endsWith(method.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/u, '').trim()), 'the complete current Bundle method body still reaches the Agent')
+      assert.equal(prepared.designFiles, join(f.options.projectRoot, 'design_files'))
+      const p = await launch(f, producer)
+      let turn = 'turn-' + producer
+      if (scenario === 'inherited parent turn') {
+        const [header, ...rest] = (await readFile(p.path, 'utf8')).trimEnd().split('\n')
+        const inherited = JSON.stringify({ type: 'session_meta', payload: { id: threadId, cwd: f.options.nativeCwd } }) + '\n'
+          + event('task_started', { turn_id: 'inherited-parent-turn' }, Date.now() - 60000)
+          + event('task_complete', { turn_id: 'inherited-parent-turn' }, Date.now() - 59000)
+        await writeFile(p.path, header + '\n' + inherited + rest.join('\n') + '\n')
+      } else if (scenario === 'long context') {
+        await appendFile(p.path, JSON.stringify({ type: 'compacted', payload: { summary: 'x'.repeat(4 * 1024 * 1024 + 1024) } }) + '\n')
+      } else {
+        await appendFile(p.path, event('task_complete', { turn_id: turn }))
+        turn = 'followup-' + producer
+        await appendFile(p.path, event('task_started', { turn_id: turn }))
+      }
+      await consume(f, p.path, producer, 'research', f.server.connectionPath, turn)
+      const target = { role: 'producer', skill: 'research', artifactId: 'research', agentPath: p.agentPath }
+      assert.deepEqual(await call('registerNativeRun', target), { registered: true, runId: producer })
+      assert.deepEqual(await call('registerNativeRun', target), { registered: true, runId: producer })
+      await assert.rejects(call('registerNativeRun', { ...target, artifactId: 'another-target' }), /rebound/)
+      await assert.rejects(call('registerNativeRun', { ...target, skill: 'unknown-bundle' }), /Unknown Bundle/)
+    })
   }
-  await check(read())
-  for (const mutate of [
-    r => { r.payload.item.arguments.connection += '.foreign' },
-    r => { r.payload.item.status = 'failed' },
-    r => { r.payload.item.result.isError = true },
-    r => { r.payload.item.result.isError = 'false' },
-    r => { r.payload.turn_id = 'another-turn' },
-    r => { r.payload.started_at_ms = now - 1600 },
-    r => { r.payload.completed_at_ms = now - 900 },
-    r => { r.timestamp = new Date(now - 400).toISOString() },
-    r => { r.timestamp = new Date(Date.now() + 60000).toISOString() },
-    r => { const v = JSON.parse(r.payload.item.result.content[0].text); v.version = 'different'; r.payload.item.result.content[0].text = JSON.stringify(v) },
-    r => { const v = JSON.parse(r.payload.item.result.content[0].text); v.kit.name = 'other-kit'; r.payload.item.result.content[0].text = JSON.stringify(v) },
-    r => { const v = JSON.parse(r.payload.item.result.content[0].text); v.designFiles += '-foreign'; r.payload.item.result.content[0].text = JSON.stringify(v) },
-  ]) { const r = read(); mutate(r); await check(r, /must consume/) }
-  const foreign = read(); foreign.payload.item.arguments.skill = 'smart_questions'
-  await check(foreign, /conflicting Bundle/)
 })

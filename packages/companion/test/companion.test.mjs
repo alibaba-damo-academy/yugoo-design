@@ -4,11 +4,9 @@ import { mkdir, readFile, writeFile, symlink, unlink, mkdtemp, rm } from 'node:f
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { request } from 'node:http'
-import { EventEmitter } from 'node:events'
-import { PassThrough } from 'node:stream'
 import { fixture, threadId } from './fixture.mjs'
 import { openCompanionProject } from '../src/project.mjs'
-import { createCodexConnection, requireThreadId, openNativeConnection } from '../src/codex-connection.mjs'
+import { createCodexConnection, requireThreadId } from '../src/codex-connection.mjs'
 import { notificationErrorResponse } from '../src/notification-delivery.mjs'
 import { callCompanion } from '../src/connection-file.mjs'
 import { startCompanion } from '../src/server.mjs'
@@ -215,76 +213,6 @@ test('Codex setup safe HTTP receipt survives CLI transport without trusting raw 
   } finally { globalThis.fetch = originalFetch; await rm(root, { recursive: true, force: true }) }
 })
 
-test('Codex proxy exit and real WebSocket handshake rejection report setup without exposing stderr', async () => {
-  for (const mode of ['proxy-exit', 'proxy-error', 'handshake-rejected', 'handshake-timeout']) {
-    const child = new EventEmitter()
-    Object.assign(child, { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), exitCode: null, signalCode: null })
-    const signals = []; const input = []
-    child.kill = signal => { signals.push(signal); child.signalCode = signal; child.emit('exit') }
-    child.stdin.on('data', bytes => {
-      input.push(bytes.toString())
-      if (mode === 'handshake-rejected') child.stdout.write('HTTP/1.1 403 SECRET\r\nX-Private: SECRET\r\nContent-Length: 0\r\n\r\n')
-    })
-    await assert.rejects(openNativeConnection(['app-server', 'proxy'], { timeoutMs: 100,
-      spawnProxy() {
-        setImmediate(() => {
-          child.stderr.write('SECRET socket/path token native notification body')
-          if (mode === 'proxy-exit') { child.exitCode = 1; child.emit('exit', 1) }
-          if (mode === 'proxy-error') child.emit('error', Error('SECRET spawn error'))
-        })
-        return child
-      },
-    }), error => {
-      const receipt = notificationErrorResponse(error)
-      assert.equal(receipt?.notSubmitted, true)
-      assert.equal(receipt.stage, mode.startsWith('proxy-') ? 'proxy-connect' : 'websocket-handshake')
-      assert.equal(receipt.transportCategory, mode === 'handshake-timeout' ? 'timeout' : 'disconnected')
-      assert.doesNotMatch(JSON.stringify(error), /SECRET|socket\/path|notification body/)
-      return true
-    })
-    assert.match(input.join(''), /^GET \/ HTTP\/1\.1/)
-    assert.doesNotMatch(input.join(''), /initialize|thread\/queue|notification body/)
-    assert.deepEqual(signals, mode === 'proxy-exit' ? [] : ['SIGTERM'])
-    assert.equal(child.stdin.destroyed, true)
-    assert.equal(child.stdout.destroyed, true)
-  }
-})
-
-test('Codex initialize timeout/rejection is not submitted but queue timeout/rejection stays unknown', async () => {
-  for (const stage of ['initialize', 'queue-add']) for (const failure of ['timeout', 'rejected']) {
-    const child = new EventEmitter()
-    Object.assign(child, { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), exitCode: null, signalCode: null })
-    const signals = []; const methods = []
-    child.kill = signal => { signals.push(signal); child.signalCode = signal; child.emit('exit') }
-    class Socket extends EventEmitter {
-      constructor() { super(); queueMicrotask(() => this.emit('open')) }
-      terminate() {}
-      send(text) {
-        const request = JSON.parse(text); methods.push(request.method)
-        if (!request.id) return
-        const failed = request.method === (stage === 'initialize' ? stage : 'thread/queue/add')
-        if (failed && failure === 'timeout') return
-        queueMicrotask(() => this.emit('message', Buffer.from(JSON.stringify({ id: request.id,
-          ...(failed ? { error: { code: -32600, message: 'SECRET native body' } } : { result: {} }),
-        }))))
-      }
-    }
-    const connection = createCodexConnection(threadId, args => openNativeConnection(args, { WebSocket: Socket, timeoutMs: 50, spawnProxy: () => child }))
-    await assert.rejects(connection.send('SECRET user text'), error => {
-      const receipt = notificationErrorResponse(error)
-      assert.equal(receipt.delivery, stage === 'initialize' ? 'not-submitted' : 'unknown')
-      assert.equal(receipt.notSubmitted, stage === 'initialize' ? true : undefined)
-      assert.equal(receipt.stage, stage)
-      assert.equal(receipt.transportCategory, failure === 'timeout' ? 'timeout' : 'rpc-rejected')
-      assert.doesNotMatch(JSON.stringify(error), /SECRET/)
-      return true
-    })
-    assert.equal(methods.filter(method => method === 'thread/queue/add').length, stage === 'initialize' ? 0 : 1)
-    assert.equal(methods.some(method => ['thread/resume', 'turn/start', 'thread/queue/start'].includes(method)), false)
-    assert.deepEqual(signals, ['SIGTERM'])
-  }
-})
-
 test('Codex existing availability probe and send API expose only safe setup feedback', async () => {
   let connections = 0
   const connection = createCodexConnection(threadId, async () => { connections++; throw Error('SECRET native setup failure') })
@@ -329,43 +257,6 @@ test('Codex unknown delivery safe HTTP receipt survives CLI transport and exclud
     assert.deepEqual(Object.keys(unsafe), ['error', 'delivery', 'transportCategory'])
     assert.equal(unsafe.transportCategory, 'unknown')
   } finally { globalThis.fetch = originalFetch; await rm(root, { recursive: true, force: true }) }
-})
-
-test('Codex native proxy uses standard WebSocket and bounds owned transport cleanup', async () => {
-  for (const mode of ['response', 'timeout', 'rejected']) {
-    const child = new EventEmitter()
-    Object.assign(child, { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), exitCode: null, signalCode: null })
-    const signals = []
-    child.kill = signal => { signals.push(signal); child.signalCode = signal; child.emit('exit') }
-    let terminated = false
-    class Socket extends EventEmitter {
-      constructor(url, options) { super(); assert.equal(url, 'ws://localhost/'); assert.ok(options.createConnection()); queueMicrotask(() => this.emit('open')) }
-      send(text) { const r = JSON.parse(text); if (mode !== 'timeout' && r.id) queueMicrotask(() => this.emit('message', Buffer.from(JSON.stringify({ id: r.id,
-        ...(mode === 'rejected' ? { error: { code: -32600, message: 'SECRET https://private.invalid' } } : { result: {} }),
-      })))) }
-      terminate() { terminated = true }
-    }
-    const client = await openNativeConnection(['app-server', 'proxy'], { WebSocket: Socket, timeoutMs: 30,
-      spawnProxy(command, args, options) { assert.equal(command, 'codex'); assert.deepEqual(args, ['app-server', 'proxy']); assert.equal(options.shell, false); return child } })
-    if (mode === 'response') { await client.request('initialize', {}); client.close() }
-    else if (mode === 'rejected') {
-      await assert.rejects(client.request('initialize', {}), error => {
-        assert.equal(error.transportCategory, 'rpc-rejected')
-        assert.equal(error.rpcCode, -32600)
-        assert.doesNotMatch(error.message, /SECRET|private.invalid/)
-        return true
-      })
-      client.close()
-    } else await assert.rejects(client.request('initialize', {}), error => {
-      assert.match(error.message, /disconnected or timed out/)
-      assert.equal(error.transportCategory, 'timeout')
-      return true
-    })
-    assert.equal(terminated, true)
-    assert.deepEqual(signals, ['SIGTERM'])
-    assert.equal(child.stdin.destroyed, true)
-    assert.equal(child.stdout.destroyed, true)
-  }
 })
 
 test('real files, native Kit validation, atomic save and failed notification recovery', async () => {

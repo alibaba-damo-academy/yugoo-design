@@ -3,6 +3,11 @@ const object = value => value !== null && typeof value === 'object' && !Array.is
 const without = (value, keys) => Object.fromEntries(Object.entries(value).filter(([key]) => !keys.includes(key)))
 const pick = (value, keys) => Object.fromEntries(keys.filter(key => Object.hasOwn(value, key)).map(key => [key, value[key]]))
 
+function compactSettlement(value) {
+  return object(value) && object(value.settlement)
+    ? { ...value, settlement: without(value.settlement, ['state', 'diff', 'note']) } : value
+}
+
 export function modelRequest(request) {
   return request.method === 'readWorkspace'
     ? { ...request, params: { ...request.params, includeServices: true, includeConversation: false } }
@@ -21,6 +26,8 @@ function workspace(value) {
   const result = pick(value, ['projectId', 'projectName', 'projectPath', 'checkpoint', 'access', 'kitReload',
     'publicationError', 'executionAttempts', 'artifactActivities', 'activeMainBundles', 'continuations',
     'savedContinuations', 'savedNotificationError', 'reviews', 'reviewPolicy', 'reviewDispatchOwner', 'autoPanelDefinitions', 'autoPanelStates'])
+  // Status needs every run's receipt, not another copy of its canonical files.
+  if (Array.isArray(result.executionAttempts)) result.executionAttempts = result.executionAttempts.map(compactSettlement)
   if (value.clarity) result.clarity = without(value.clarity, ['assessment', 'explanation'])
   if (value.hostCapabilities) result.hostCapabilities = capabilities(value.hostCapabilities)
   if (value.services) result.services = { ...value.services,
@@ -47,9 +54,7 @@ export function modelResponse(method, value, { details = false } = {}) {
   if (['finishNativeRun', 'finishMainBundle', 'submitReview', 'bindReviewRun', 'bindReviewRuns'].includes(method)) {
     // Keep recovery, diagnostics, declared handoffs, Worker receipts and autoTask
     // prompts verbatim. A committed receipt is not necessarily accepted/complete.
-    const result = without(value, ['hostCapabilities', 'reviews'])
-    if (object(value.settlement)) result.settlement = without(value.settlement, ['state', 'diff', 'note'])
-    return result
+    return compactSettlement(without(value, ['hostCapabilities', 'reviews']))
   }
   return value
 }

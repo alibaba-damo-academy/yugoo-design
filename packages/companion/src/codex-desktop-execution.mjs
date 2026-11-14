@@ -64,42 +64,6 @@ export async function createCodexDesktopExecutionAdapter(context) {
       if (!observed.available) throw Error(observed.error ?? 'Native Bundle child evidence is unavailable.')
       return observed
     },
-    async verifyAssignment(input, expected, connectionPath) {
-      if (!expected || !isAbsolute(connectionPath ?? '')) throw Error('Exact native Bundle method authority is unavailable.')
-      const rows = await readCodexDesktopEvents(input.transcriptPath,
-        { sessionId, runId: input.runId, projectRoot }, input.parentRunId, true)
-      const meta = rows.find(row => row.type === 'session_meta')
-      const start = rows.find(row => row.type === 'event_msg' && row.payload?.type === 'task_started')
-      const turn = start?.payload?.turn_id, created = Date.parse(meta?.payload?.timestamp ?? meta?.timestamp)
-      const began = Date.parse(start?.timestamp), now = Date.now()
-      const terminal = rows.find(row => row.type === 'event_msg' && row.payload?.turn_id === turn
-        && ['task_complete', 'task_completed', 'turn_aborted', 'task_failed', 'error'].includes(row.payload.type))
-      const ended = terminal ? Date.parse(terminal.timestamp) : now
-      if (!turn || ![created, began, ended].every(Number.isFinite) || created < startedAt || began < created || ended < began || ended > now) {
-        throw Error('Native Bundle first-turn consumption boundary is unavailable.')
-      }
-      const reads = rows.flatMap(row => {
-        const q = row.payload, item = q?.item, at = Date.parse(row.timestamp)
-        if (row.type !== 'event_msg' || q?.type !== 'item_completed' || q.turn_id !== turn
-          || item?.type !== 'McpToolCall' || item.server !== 'design-system' || item.tool !== 'design_prepare_bundle'
-          || item.status !== 'completed' || item.error !== undefined || item.arguments?.connection !== connectionPath
-          || item.result?.isError !== undefined && item.result.isError !== false || item.result?.error !== undefined
-          || ![at, q.started_at_ms, q.completed_at_ms].every(Number.isFinite)
-          || q.started_at_ms < Math.max(startedAt, created, began) || q.completed_at_ms < q.started_at_ms
-          || q.completed_at_ms > at || at >= ended || at > now) return []
-        const content = item.result?.content
-        if (!Array.isArray(content) || content.length !== 1 || content[0]?.type !== 'text') return []
-        try { return [{ args: item.arguments, value: JSON.parse(content[0].text) }] } catch { return [] }
-      })
-      if (reads.some(read => read.args.skill !== expected.skill || read.value?.skill !== expected.skill)) {
-        throw Error('Native child consumed a conflicting Bundle assignment.')
-      }
-      if (!reads.some(({ value }) => value?.skill === expected.skill && value.version === expected.version
-        && value.kit?.name === expected.kit.name && value.kit?.version === expected.kit.version
-        && value.designFiles === expected.designFiles && typeof value.method === 'string' && value.method.length > 0)) {
-        throw Error('Native child must consume the exact version-pinned Bundle method before registration.')
-      }
-    },
     createObserver: input => createCodexTranscript(input),
   }
 }

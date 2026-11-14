@@ -288,7 +288,10 @@ try {
   assert.equal(await page.locator('.graph-planar-canvas').getAttribute('data-canvas-theme'), 'dark', 'theme survives returning from 3D')
   assert.ok(await page.evaluate(() => window.previousGraphContexts.every(context => context.isContextLost())), 'leaving 3D releases all preceding WebGL contexts; the new 2D nebula owns a separate context')
 
-  // Narrow layouts keep the drawer and status popover inside the viewport.
+  // Narrow popovers must remain readable above an open record inspector;
+  // bounding boxes alone miss content hidden by another stacking context.
+  await page.locator('svg g[role=button]').first().press('Enter')
+  assert.equal(await page.locator('.graph-inspector').count(), 1)
   await page.setViewportSize({ width: 360, height: 740 })
   await openSettings()
   assert.ok(await page.locator('.graph-settings-drawer').evaluate(element => { const box = element.getBoundingClientRect(); return box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight }))
@@ -296,6 +299,10 @@ try {
   assert.equal(await page.locator('.graph-settings-drawer').count(), 0)
   await page.getByText(/^状态详情/).click()
   assert.ok(await page.locator('.graph-popover[open] .graph-popover-body').evaluate(element => { const box = element.getBoundingClientRect(); return box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight }))
+  assert.ok(await page.locator('.graph-popover[open] .graph-popover-body').evaluate(element => [...element.querySelectorAll('p')].every(p => {
+    const box = p.getBoundingClientRect(), top = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)
+    return top === p || p.contains(top)
+  })), 'every status paragraph is in front of the inspector')
   await page.locator('.graph-popover[open]').press('Escape')
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
 

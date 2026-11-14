@@ -3095,9 +3095,9 @@
     },
     {
       "kind": "file",
-      "path": "packages/core/test/dsh-visible-ack-recovery-sdk.test.mjs",
+      "path": "packages/core/test/dsh-design-invocation-sdk.test.mjs",
       "action": "include",
-      "reason": "Explicit installed RC2 SDK scripted-lifecycle regressions for bounded visible-acknowledgement recovery, with isolated test storage; no live model or Host/profile operation."
+      "reason": "Explicit installed Host SDK scripted-lifecycle regressions for authorized invocation, genuine handoffs and native permission refusal, with isolated test storage; no live model or Host/profile operation."
     },
     {
       "kind": "file",
@@ -11654,6 +11654,18 @@
       "path": "packages/panel/test/bpmn-label-bounds.browser.mjs",
       "action": "include",
       "reason": "Synthetic real-browser regression for repeated label move/save/reimport, old narrow frames and preserved native editing/undo; not an installed Host acceptance claim."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio-ui/tests/preview-alignment-fixture.tsx",
+      "action": "include",
+      "reason": "Synthetic UI-only fixture of the shared source/editor and catalog preview; in-memory data, no native execution or user content."
+    },
+    {
+      "kind": "file",
+      "path": "packages/studio-ui/tests/preview-alignment.browser.mjs",
+      "action": "include",
+      "reason": "Focused browser regression for continuous Studio source/preview dividers, wrapped toolbars, drafts and independent scrolling; isolates and retires its own context and output."
     }
   ]
 }

@@ -368,10 +368,10 @@ export async function startCompanion(options) {
         }
         // Presentation refresh already rechecks metadata and publication. Full
         // Git-open validation belongs to operations, not every visible tick.
-        // Save/send/readGit own fresh full validation inside their operation (save also
+        // Save/send/readGit/experience own fresh full validation inside their operation (save also
         // rechecks after entering its mutation queue). Avoid duplicate Git
         // checks in the HTTP wrapper before entering the same authority.
-        const ownsAccessCheck = ['savePanel', 'sendPrompt', 'readGit'].includes(method)
+        const ownsAccessCheck = ['savePanel', 'sendPrompt', 'readGit', 'experience'].includes(method)
         // Workspace reads own fresh metadata/Kit checks before and after their snapshot.
         const access = method === 'readWorkspace' ? undefined : await project.refreshAccess(ownsAccessCheck)
         if(method==='recheckReviews' && params.executionMode!==undefined && !['background','foreground'].includes(params.executionMode))throw Error('Invalid manual GRA execution mode')
@@ -601,11 +601,6 @@ export async function startCompanion(options) {
           await trialInputGate.assertExecution(params)
           if (method === 'registerNativeRun') {
             const binding = await resolveExecutionRun(params)
-            if (desktopExecutionAdapter) {
-              const skill = project.kit.skills.find(skill => skill.name === params.skill)
-              await desktopExecutionAdapter.verifyAssignment(binding, skill && { skill: skill.name, version: skill.version,
-                kit: { name: project.kit.name, version: project.kit.version }, designFiles: project.project.designFilesRoot }, connectionPath)
-            }
             return send(response, 200, await nativeRuns.registerNativeRun({ ...params, ...binding }))
           }
           return send(response, 200, await nativeRuns.beginMainBundle(params))
@@ -614,7 +609,7 @@ export async function startCompanion(options) {
         if (method === 'prepareAutoPanel' || method === 'submitAutoPanel') return send(response, 200, await project[method](params))
         if (method === 'savePanel') return send(response, 200, await withReviewStatus(await project.savePanel(params), params.includeDerivedStatus !== false))
         if (['registerNativeRun', 'focusArtifact', 'readExecutionLog'].includes(method)) return send(response, 200, await nativeRuns[method](params))
-        const methods = ['readWorkspace', 'readGit', 'reloadKit', 'savePanel', 'retainAutoPanel', 'readArtifact', 'readBinaryArtifact', 'sendPrompt', 'listSkills', 'listProjects', 'prepareBundle']
+        const methods = ['readWorkspace', 'readGit', 'reloadKit', 'savePanel', 'retainAutoPanel', 'readArtifact', 'readBinaryArtifact', 'sendPrompt', 'listSkills', 'listProjects', 'prepareBundle', 'experience']
         if (!methods.includes(method)) return send(response, 400, { error: 'Unsupported companion operation.' })
         return send(response, 200, await project[method](params))
       }

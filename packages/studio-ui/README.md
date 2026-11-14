@@ -101,6 +101,10 @@ object-level Save/Revert controls. Hosts use these as editing context,
 retain revision and native-binding checks, and invalidate late asynchronous
 results on exit or object switch. These hints grant no source or save authority.
 
+The source and preview toolbars share one grid row and the existing file-toolbar
+height token. Their bottom dividers stay aligned in reading, editing and diff
+views, including when either toolbar wraps. The content keeps its own scrolling.
+
 The optional `proposalReplacement` supplement capability derives from the same
 source, title and mount drafts and the existing candidate-save fence. A host can
 replace a pristine proposal during one request, or offer an explicit choice that

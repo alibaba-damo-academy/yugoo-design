@@ -21,6 +21,7 @@
   "scripts": {
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
+    "test:preview-alignment": "node tests/preview-alignment.browser.mjs",
     "test": "node tests/controller.test.mjs && node tests/render.test.mjs && node tests/boundary.test.mjs && node tests/trial-controller.test.mjs && TSX_TSCONFIG_PATH=$PWD/tsconfig.json node --import tsx --test tests/component-library.test.mjs tests/document-reading.test.mjs tests/instance-presentation.test.mjs && pnpm run test:source-candidates && pnpm run test:content-archive",
     "test:content-archive": "TSX_TSCONFIG_PATH=./tsconfig.json node --import tsx --test tests/content-archive-workspace.test.mjs tests/content-zip.test.mjs tests/content-source-import.test.mjs",
     "test:source-candidates": "TSX_TSCONFIG_PATH=tests/source-tsconfig.json node --import tsx --test tests/instance-source-changes.test.mjs tests/studio-feedback.test.mjs tests/read-mount-feedback.test.mjs tests/mount-save.test.mjs",

@@ -6,7 +6,7 @@ import { GraphCanvas, graphSourceColors } from './graph-canvas.js'
 import { graphNodeLabels } from './graph-node-label.ts'
 import { GraphExploration } from './graph-exploration.js'
 import { projectExplorationRecords } from './graph-bundle-model.js'
-import { projectRecords, recordOwner, recordReach, scopeGraph, edgeReading, filterRelations, graphNodeMatches, relationMeaningLabel, relationOriginLabels, relationOriginLabel, type DesignGraph, type GraphEdge } from './graph-model.js'
+import { projectRecords, recordOwner, recordReach, scopeGraph, edgeReading, filterRelations, graphNodeMatches, graphWarningText, relationMeaningLabel, relationOriginLabels, relationOriginLabel, type DesignGraph, type GraphEdge } from './graph-model.js'
 import { GraphInspector } from './graph-inspector.js'
 import { graphStyles } from './graph-styles.js'
 import { Button } from './ported/ui/button.js'
@@ -296,7 +296,7 @@ export function GraphPanel({ read, readStatus, retry, footer, ownerLabels, panel
           {graph.knowledgeRevision && <p>{t('knowledgeGraphRevision', { revision: graph.knowledgeRevision })}</p>}
           {graph.semantic && <p>{graph.semantic.model} · {graph.semantic.message}</p>}
           {memoryCache && <p>{t('knowledgeGraphMemoryHint')}</p>}
-          {graph.warnings.map((w, i) => <p key={i}>{w}</p>)}
+          {graph.warnings.map((w, i) => <p key={i}>{graphWarningText(w, locale)}</p>)}
           {graph.recovery?.state === 'error' && retry && <button disabled={retrying} onClick={() => { setRetrying(true); void retry().then(() => setReload(n => n + 1)).catch(e => setError(String(e))).finally(() => setRetrying(false)) }}>{retrying ? t('knowledgeGraphRetrying') : t('knowledgeGraphRetryRecovery')}</button>}
         </div></details>
         <details className='graph-popover'><summary>{t('knowledgeGraphLegend')}</summary><div className='graph-popover-body'>

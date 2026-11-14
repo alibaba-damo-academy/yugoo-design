@@ -13,24 +13,30 @@ test('shared handoff is source-backed and does not create a second store or new 
   assert.match(DESIGN_CORE_PROGRESSION_PROMPT, /dsh-design-next-step/)
 })
 
-test('required visible design orientation is not suppressed as internal scheduling narration', () => {
+test('ordinary progress orients the user without creating an execution or permission prerequisite', () => {
   assert.ok(DESIGN_CORE_PROGRESSION_PROMPT.includes(DESIGN_INVOCATION_COMMUNICATION_GUIDANCE))
-  assert.match(DESIGN_INVOCATION_COMMUNICATION_GUIDANCE, /Before every ordinary run_design_skill engagement/)
-  assert.match(DESIGN_INVOCATION_COMMUNICATION_GUIDANCE, /takes precedence over the preference to omit tool introductions/)
-  assert.match(DESIGN_INVOCATION_COMMUNICATION_GUIDANCE, /visible assistant text before its corresponding tool call/)
-  assert.match(DESIGN_INVOCATION_COMMUNICATION_GUIDANCE, /Planning, and a tool call alone are not visible acknowledgement/)
+  assert.match(DESIGN_INVOCATION_COMMUNICATION_GUIDANCE, /conversation language/)
+  assert.match(DESIGN_INVOCATION_COMMUNICATION_GUIDANCE, /selected catalog title and useful persistent result/)
+  assert.match(DESIGN_INVOCATION_COMMUNICATION_GUIDANCE, /wording and its placement are guidance, not an execution prerequisite or another permission step/)
   assert.match(DESIGN_INVOCATION_COMMUNICATION_GUIDANCE, /Do not ask the user to confirm an action they already authorized/)
   assert.match(DESIGN_CORE_PROGRESSION_PROMPT, /Keep private deliberation out of user-visible messages/)
 })
 
-test('only an explicitly offered pre-engagement correction may retry once within existing authority', () => {
-  assert.match(DESIGN_INVOCATION_COMMUNICATION_GUIDANCE, /before execution and offers a correction/)
-  assert.match(DESIGN_INVOCATION_COMMUNICATION_GUIDANCE, /retry that same authorized engagement once/)
-  assert.match(DESIGN_INVOCATION_COMMUNICATION_GUIDANCE, /does not retry a failed Bundle execution/)
-  assert.match(DESIGN_INVOCATION_COMMUNICATION_GUIDANCE, /same Host turn and authorized project, Kit, Bundle and purpose/)
-  assert.match(DESIGN_INVOCATION_COMMUNICATION_GUIDANCE, /If the correction is rejected again.*stop and report/)
-  assert.match(DESIGN_INVOCATION_COMMUNICATION_GUIDANCE, /Invalid names, permissions, receipts, and actual failed or cancelled execution are not this exception/)
-  assert.match(DESIGN_CORE_PROGRESSION_PROMPT, /A failed or refused skill ends the current turn/)
+test('communication guidance has no correction quota', () => {
+  assert.doesNotMatch(DESIGN_INVOCATION_COMMUNICATION_GUIDANCE, /retry.*once|correction limit|visible acknowledgement/)
+})
+
+test('known failure permits authorized repair without ending the whole turn or inventing new authority', () => {
+  assert.doesNotMatch(DESIGN_CORE_PROGRESSION_PROMPT, /A failed or refused skill ends the current turn|A genuine retry needs changed user-visible input|without automatic failure retries/)
+  assert.match(DESIGN_CORE_PROGRESSION_PROMPT, /Within existing authorization, diagnose and repair known failures or continue independent requested work/)
+  assert.match(DESIGN_CORE_PROGRESSION_PROMPT, /a new human message is not required merely for diagnosis or repair/)
+  assert.match(DESIGN_CORE_PROGRESSION_PROMPT, /Respect actual Host permission refusals, user cancellation and declared handoffs/)
+  assert.match(DESIGN_CORE_PROGRESSION_PROMPT, /never use another tool or Host to bypass a real permission boundary/)
+  assert.match(DESIGN_CORE_PROGRESSION_PROMPT, /If a submission result is unknown, inspect authoritative saved state or receipts/)
+  assert.match(DESIGN_CORE_PROGRESSION_PROMPT, /never assume the submission did not happen and automatically replay it/)
+  assert.match(DESIGN_CORE_PROGRESSION_PROMPT, /additional persistent result outside the current request/)
+  assert.match(DESIGN_CORE_PROGRESSION_PROMPT, /diagnosis and repair of the current authorized result need no new selection/)
+  assert.match(DESIGN_CORE_PROGRESSION_PROMPT, /When run_design_skill returns a user-continue action, end at that user choice/)
 })
 
 test('user-input guidance names actual controls without inventing completion or another model step', () => {

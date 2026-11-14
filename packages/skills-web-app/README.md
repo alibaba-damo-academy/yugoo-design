@@ -91,7 +91,7 @@ user-side npm dependency or a directly runnable Node script. The built Bundle
 carries the resulting export resource, viewer, Playwright production runtime,
 original license materials and their output correspondence. It includes no
 browser executable or installer. Complete resources remain subject to the same
-32 MiB per-Bundle loading budget used by every Kit.
+64 MiB per-Bundle loading budget used by every Kit.
 
 The npm content package and both Companion packaging routes reuse the same
 three independent Node 22 ESM entries: layout, metrics and search. Search keeps

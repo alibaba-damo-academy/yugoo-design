@@ -17,6 +17,12 @@ export interface GraphEdge extends EdgeSource { kind: string; members?: EdgeSour
 export interface DesignGraph { checkpoint: string; nodes: GraphNode[]; edges: GraphEdge[]; warnings: string[]; projectId?: string; knowledgeRevision?: string; knowledgeStatus?: 'current' | 'due' | 'queued' | 'running' | 'failed' | 'disabled' | 'unavailable' | 'unknown'; recovery?: { state: 'rebuilding' | 'ready' | 'error'; message: string; generation?: string }; coverage?: { projection: string; embedding: string; phase?: 'projection' | 'semantic' | 'publication' | 'ready' | 'error' | 'disabled' | 'unknown'; review: string; ontology?: { contractRevision?: string; declaredTypes: number; instantiatedTypes: number; stable: number; structural: number; anonymous: number; untyped: number } }; freshness?: { sourceCheckpoint: string; indexedCheckpoint?: string; sourceEquivalent?: boolean }; semantic?: { state: string; completed: number; total: number; model: string; message?: string; cache?: 'persistent' | 'memory' } }
 export interface GraphScope { nodes: GraphNode[]; edges: GraphEdge[]; total: number }
 
+/** Translate this known system notice at the display boundary; retain raw diagnostics. */
+export function graphWarningText(warning: string, locale = 'zh-CN'): string {
+  return warning === panelText('knowledgeGraphProjectionNotice', 'zh-CN')
+    ? panelText('knowledgeGraphProjectionNotice', locale) : warning
+}
+
 /** Legacy presentation kinds are not evidence of origin, lifecycle or business meaning. */
 export function edgeReading(edge: EdgeSource): RelationReading {
   if (edge.reading) return edge.reading

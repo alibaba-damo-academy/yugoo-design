@@ -532,7 +532,7 @@ button.ygd-studio-select>span:last-child{display:flex;flex:none;align-items:cent
 .ygd-studio-sidebar-item .ygd-studio-kitmark svg{width:18px;height:18px}
 .ygd-studio-kitmark{background:var(--ds-primary-light);color:var(--ds-primary-dark)}
 .ygd-studio-content-pane{display:flex;flex-direction:column;padding:0;overflow:hidden}
-.ygd-studio-content-pane>.ygd-studio-doc-toolbar{margin:0;padding:9px 14px;border-bottom:1px solid var(--ds-border)}
+.ygd-studio-content-pane>.ygd-studio-doc-toolbar,.ygd-studio-panel-split>.ygd-studio-doc-toolbar{min-width:0;margin:0;padding:9px 14px;border-bottom:1px solid var(--ds-border)}
 .ygd-studio-document-body{flex:1;min-height:0;overflow:auto;padding:18px 24px}
 .ygd-studio-document-body:has(>.ygd-studio-loading),.ygd-studio-live-pane-body:has(>.ygd-studio-loading){display:flex;flex-direction:column}
 .ygd-studio-file-metadata{margin-bottom:18px;border-radius:8px;background:var(--ds-primary-light,#f7f4fe);color:var(--ds-text-secondary)}
@@ -605,13 +605,15 @@ button.ygd-studio-select>span:last-child{display:flex;flex:none;align-items:cent
 .ygd-studio-editor-heading{display:flex;align-items:center;gap:12px;padding:8px 12px;border-bottom:1px solid var(--ds-border);font-size:13px}
 .ygd-studio-editor-heading>span{margin-left:auto;color:var(--ds-text-secondary);font-size:12px}
 .ygd-studio-panel-split,.ygd-studio-trial-workarea.with-input{grid-template-columns:minmax(260px,32%) minmax(0,1fr)}
-.ygd-studio-panel-split{display:grid;grid-template-rows:minmax(0,1fr);flex:1;min-width:0;min-height:0;overflow:hidden}
+.ygd-studio-panel-split{display:grid;grid-template-rows:auto minmax(0,1fr);flex:1;min-width:0;min-height:0;overflow:hidden}
 .ygd-studio-yaml-pane,.ygd-studio-live-pane{display:flex;flex-direction:column;min-width:0;min-height:0}
-.ygd-studio-yaml-pane{border-right:1px solid var(--ds-border)}
-.ygd-studio-yaml-pane>header,.ygd-studio-live-pane>header{display:flex;align-items:center;gap:10px;padding:6px 12px;border-bottom:1px solid var(--ds-border);min-height:34px;font-size:12px}
-.ygd-studio-yaml-pane>header>span,.ygd-studio-live-pane>header>span{color:var(--ds-text-secondary);font-size:11px}
-.ygd-studio-yaml-pane>header>button,.ygd-studio-live-pane>header>button{margin-left:auto;height:30px}
-.ygd-studio-yaml-pane>textarea{flex:1;min-height:0;resize:none;border:0;outline-offset:-2px;padding:12px;background:#fafafa;font:12px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;tab-size:2}
+/* Both dividers belong to one grid row, including when either toolbar wraps. */
+.ygd-studio-panel-split>.ygd-studio-source-toolbar{grid-area:1/1;border-right:1px solid var(--ds-border)}
+.ygd-studio-source-toolbar>.ygd-studio-btn-secondary{margin-left:auto}
+.ygd-studio-panel-split>.ygd-studio-preview-toolbar{grid-area:1/2;font-size:12px}
+.ygd-studio-preview-toolbar>span{color:var(--ds-text-secondary);font-size:11px}
+.ygd-studio-yaml-pane{grid-area:2/1;border-right:1px solid var(--ds-border)}
+.ygd-studio-live-pane{grid-area:2/2}
 .ygd-studio-live-pane-body{display:flex;flex-direction:column;flex:1;min-height:0;overflow:auto;padding:0}
 .ygd-studio-workspace .ygd-studio-trial-availability{padding:16px;max-width:400px;margin:auto;text-align:center;color:var(--ds-text-secondary);font-size:13px;line-height:1.6}
 .ygd-studio-trial-input>.ygd-studio-loading{flex:1}

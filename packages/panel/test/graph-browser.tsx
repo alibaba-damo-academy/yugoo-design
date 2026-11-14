@@ -2,6 +2,7 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { GraphPanel } from '../src/client/graph-panel.tsx'
+import { panelText } from '../src/panel-i18n.tsx'
 import { complexGraph } from './graph-complex-fixture.mjs'
 const nodes = [
   { id: 'a', label: '活动安排', file: 'event/event.json', pointer: '/plan', context: '{"title":"活动安排","role_ref":"host"}', owner: 'event' },
@@ -16,7 +17,7 @@ const read = async () => ({ content: JSON.stringify({ checkpoint: 'fixture-commi
   { id: 'ce', from: 'c', to: 'e', kind: 'contains', label: '包含', evidence: 'roles/roles.json#/roles/host/responsibility' },
   { id: 'bc', from: 'b', to: 'c', kind: 'identifier-match', label: '标识符匹配（非业务确认）', evidence: 'role_ref = host；不表示业务规则已确认' },
   { id: 'de', from: 'd', to: 'e', kind: 'identifier-match', label: '标识符匹配（非业务确认）', evidence: '签到确认规则对应主持人的到场确认职责' },
-], warnings: ['隔离浏览器测试，非用户项目；无 embedding。'] }) })
+], warnings: [panelText('knowledgeGraphProjectionNotice', 'zh-CN'), '隔离浏览器测试，非用户项目；无 embedding。'.repeat(8)] }) })
 const large = async () => ({ content: JSON.stringify({ checkpoint: 'large', warnings: [], edges: [], nodes: Array.from({ length: 200 }, (_, i) => ({ id: 'record' + i, label: 'record' + i, file: 'sample/sample.json', pointer: '/' + i, context: '', owner: 'sample', record: true })) }) })
 const heavy = async () => {
   const graph = { checkpoint: 'heavy', warnings: [], nodes: [] as any[], edges: [] as any[] }

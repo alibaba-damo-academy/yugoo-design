@@ -408,14 +408,15 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
       : <StudioFeedback feedbackId={`preview:${JSON.stringify(diagnostics)}`} tone="error" locale={locale} title={zh ? '面板预览未能生成' : 'Panel preview could not be generated'} details={issueDetails(diagnostics)} />
     : <StudioEmptyState tone="info" title={noPanel ? (zh ? '此技能包无需面板预览' : 'No Panel preview is needed') : (zh ? '此处暂不支持面板预览' : 'Panel preview is unavailable here')} description={zh ? '可在原始文件中查看和编辑技能内容。' : 'View and edit this skill in Source Files.'} />
   const noPanelRequired = sourcePending ? !!candidateState?.matches && candidateState.prepared.candidate.valid && !candidateState.prepared.candidate.preview : !!preview && !preview.diagnostics.length && !preview.preview
-  const sourcePane = <div className="ygd-studio-content-pane">
-      <div className="ygd-studio-doc-toolbar"><div className="ygd-studio-file-heading"><FileName path={path} locale={locale} /></div><div className="ygd-studio-doc-toggle-group">{readOnly && /\.md$/i.test(path) ? <button type="button" className="ygd-studio-doc-toggle" aria-pressed={reading} onClick={() => setReading(!reading)}>{reading ? (zh ? '原文' : 'Source') : (zh ? '阅读' : 'Read')}</button> : !readOnly && <>
+  const sourceToolbar = <div className="ygd-studio-doc-toolbar ygd-studio-source-toolbar"><div className="ygd-studio-file-heading"><FileName path={path} locale={locale} /></div><div className="ygd-studio-doc-toggle-group">{readOnly && /\.md$/i.test(path) ? <button type="button" className="ygd-studio-doc-toggle" aria-pressed={reading} onClick={() => setReading(!reading)}>{reading ? (zh ? '原文' : 'Source') : (zh ? '阅读' : 'Read')}</button> : !readOnly && <>
         <button type="button" className="ygd-studio-doc-toggle" aria-pressed={fileView === 'edit'} onClick={() => setFileView('edit')}>{zh ? '编辑' : 'Edit'}</button>
         <button type="button" className="ygd-studio-doc-toggle" aria-pressed={fileView === 'diff'} onClick={() => setFileView('diff')}>{zh ? '对比' : 'Diff'}</button>
       </>}</div></div>
+  const sourceDocument = <>
       <div className="ygd-studio-document-body ygd-studio-source-body">{file?.editable === false ? <p role="status">{zh ? '此文件不支持文本编辑，复制时会完整保留。' : 'This file is not available for text editing. Copies preserve it in full.'}</p> : !loaded ? <p role="status">{error ? (zh ? '无法读取此文件。' : 'Could not load this file.') : path ? (zh ? '读取中…' : 'Loading…') : (zh ? '没有可读取的文件。' : 'No readable files.')}</p> : !readOnly && fileView === 'diff' ? <SourceFileDiff path={path} before={fileChange?.before ?? saved} after={fileChange && !Object.hasOwn(drafts, path) ? fileChange.after : content} /> : readOnly && reading && /\.md$/i.test(path) ? <div>{renderStudioDocument(content, { locale })}</div> : <textarea ref={sourceEditor} aria-label={path || 'Source file'} spellCheck={false} value={content} readOnly={readOnly || sourceLocked} onChange={event => editSource(event.target.value)} className="ygd-studio-source-input" />}</div>
       <footer className="ygd-studio-doc-footer"><span>{candidateState?.saveUnverified ? (zh ? '保存结果待确认，请刷新内容核对；不会自动重试' : 'Save result needs verification. Refresh the content; saving will not retry automatically.') : selectedFileChanged ? candidatePending && !Object.hasOwn(drafts, path) ? (zh ? '待保存修改' : 'Proposed changes · not saved') : (zh ? '未保存' : 'Unsaved') : !readOnly && file?.editable ? (zh ? '已保存 · 可编辑' : 'Saved · editable') : (zh ? '只读文件' : 'Read-only file')}</span><span>{loaded ? new TextEncoder().encode(content).length : fileChange ? new TextEncoder().encode(fileChange.after ?? '').length : file?.bytes ?? 0} {zh ? '字节' : 'bytes'}</span></footer>
-    </div>
+    </>
+  const sourcePane = <div className="ygd-studio-content-pane">{sourceToolbar}{sourceDocument}</div>
   const mountGeneration = generation.current
   const Root = embedded ? 'section' : 'main'
   return <Root className="ygd-studio-main ygd-studio-bundle-main ygd-studio-instance">
@@ -480,9 +481,10 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
       </form>}<FileExplorer paths={filePaths} selected={path} disabled={sourceLocked} openFile={openFile} /></aside>{sourcePane}{readOnly && <FileInfoSidebar kind={record.kind} locale={locale} description={record.displayDescription?.[locale] ?? record.description} />}</div>
       : opening ? <LoadingIndicator label={zh ? '正在打开内容' : 'Opening content'} /> : null)}
     {tab === 'preview' && record?.kind === 'bundle' && <section className="ygd-studio-panel-split">
-      <section className="ygd-studio-yaml-pane" aria-label={zh ? '面板源码' : 'Panel source'}>{filePaths.includes('panel.yaml') ? sourcePane : <StudioEmptyState tone={noPanelRequired ? 'info' : 'warning'} title={zh ? '未提供面板源码' : 'No Panel source'} description={zh ? '此技能包没有 panel.yaml 文件。' : 'This Bundle has no panel.yaml file.'} />}</section>
+      {filePaths.includes('panel.yaml') ? sourceToolbar : <header className="ygd-studio-doc-toolbar ygd-studio-source-toolbar">{zh ? '面板源码' : 'Panel source'}</header>}
+      <header className="ygd-studio-doc-toolbar ygd-studio-preview-toolbar"><strong>{zh ? '面板预览' : 'Panel Preview'}</strong><span>{zh ? '随源码更新 · 样例数据' : 'Live source · sample data'}</span></header>
+      <section className="ygd-studio-yaml-pane" aria-label={zh ? '面板源码' : 'Panel source'}>{filePaths.includes('panel.yaml') ? <div className="ygd-studio-content-pane">{sourceDocument}</div> : <StudioEmptyState tone={noPanelRequired ? 'info' : 'warning'} title={zh ? '未提供面板源码' : 'No Panel source'} description={zh ? '此技能包没有 panel.yaml 文件。' : 'This Bundle has no panel.yaml file.'} />}</section>
       <section className="ygd-studio-live-pane" aria-label={zh ? '实时面板预览' : 'Live Panel preview'}>
-      <header><strong>{zh ? '面板预览' : 'Panel Preview'}</strong><span>{zh ? '随源码更新 · 样例数据' : 'Live source · sample data'}</span></header>
       <div className="ygd-studio-live-pane-body">
       {sourcePending ? <>
         {preparingDraft ? <LoadingIndicator label={zh ? '正在更新预览' : 'Updating preview'} /> : <>

@@ -17,8 +17,9 @@ Check:
 4. **Layout** — no edge collisions, overlap, clipping, unreadable measure, or
    desktop chrome squeezed into mobile.
 5. **Assets and states** — local image paths exist, alt text is meaningful,
-   icons are coherent inline SVGs from the bundled catalog rather than emoji,
-   and relevant focus/selected/error states are visible.
+   icons are complete safe local inline SVGs with one coherent grammar, reusing
+   suitable bundled icons or adding matching SVGs rather than emoji; relevant
+   focus/selected/error states are visible.
 
 If one real defect is visible, make one targeted native edit, resubmit the
 complete state so projections/hydration refresh, and render once more. Do not

@@ -5,8 +5,11 @@ import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { chromium } from 'playwright'
 import { JSDOM } from 'jsdom'
+import { mkdir } from 'node:fs/promises'
+import { join } from 'node:path'
 import { LivePreview } from '../src/live-preview.tsx'
 import { INTERACTIVE_PREVIEW_SANDBOX, secureDesignSrcDoc } from '../src/client/srcdoc-security.ts'
+import { inlinePreviewStylesheet } from '../src/preview-tokens.ts'
 
 globalThis.React = React
 const dom = new JSDOM('<!doctype html>')
@@ -20,24 +23,42 @@ const server = http.createServer((request, response) => {
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
 let browser, context
 const cdpEndpoint = process.env.PANEL_TEST_CDP_ENDPOINT
+const evidenceDirectory = process.env.PANEL_TEST_EVIDENCE_DIR
+if (evidenceDirectory) await mkdir(evidenceDirectory, { recursive: true })
 try {
   const action = `http://127.0.0.1:${server.address().port}/must-not-submit`
   const html = `<form id="native"><label>Title<input id="title" required></label><button>Submit</button><button type="reset">Cancel</button><output id="result">Waiting</output></form>
     <form id="custom" novalidate><input id="description" required aria-label="Description"><button>Save draft</button><output id="custom-result">Waiting</output></form>
+    <button id="review" type="button">Review schedule</button>
+    <dialog id="schedule" aria-label="Schedule confirmation"><form method="dialog">
+      <label>Reason<input id="reason" required></label>
+      <button value="confirmed">Confirm scheduling</button><button value="cancelled" formnovalidate>Cancel scheduling</button>
+    </form><form method="post" action="${action}"><button formmethod="dialog" value="local-choice">Confirm local choice</button></form></dialog>
+    <output id="schedule-result">Not scheduled</output>
     <script>
     const native=document.getElementById('native'),title=document.getElementById('title'),result=document.getElementById('result');
     title.addEventListener('invalid',()=>{result.textContent='Title required'});
-    native.addEventListener('submit',()=>{result.textContent='Saved: '+title.value});
+    native.addEventListener('submit',event=>{event.preventDefault();result.textContent='Saved: '+title.value});
     native.addEventListener('reset',()=>{result.textContent='Cancelled'});
-    document.getElementById('custom').addEventListener('submit',()=>{const text=document.getElementById('description').value;document.getElementById('custom-result').textContent=text.trim()?'Draft: '+text:'Description required'});
+    document.getElementById('custom').addEventListener('submit',event=>{event.preventDefault();const text=document.getElementById('description').value;document.getElementById('custom-result').textContent=text.trim()?'Draft: '+text:'Description required'});
+    const schedule=document.getElementById('schedule');
+    document.getElementById('review').onclick=()=>schedule.showModal();
+    schedule.addEventListener('close',()=>{document.getElementById('schedule-result').textContent=schedule.returnValue==='confirmed'?'Scheduled: '+document.getElementById('reason').value:schedule.returnValue});
     </script>`
-  const preview = renderToStaticMarkup(React.createElement(LivePreview, { html, variables: {}, title: 'Form prototype' }))
+  const styledHtml = inlinePreviewStylesheet(`<head><link rel="stylesheet" href="./tokens.css"></head>${html}`,
+    '#schedule-result { color: rgb(20, 84, 37); font-weight: 700; }')
+  const preview = renderToStaticMarkup(React.createElement(LivePreview, { html: styledHtml, variables: {}, title: 'Form prototype' }))
   assert.match(preview, /sandbox="allow-scripts allow-forms"/u)
   browser = cdpEndpoint ? await chromium.connectOverCDP(cdpEndpoint) : await chromium.launch({ headless: true })
   context = await browser.newContext()
   const page = await context.newPage()
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.bringToFront()
   await page.setContent(preview)
   const frame = page.frameLocator('iframe[title="Form prototype"]')
+  assert.equal(await page.evaluate(() => document.visibilityState), 'visible')
+  assert.equal(await frame.locator('#schedule-result').evaluate(element => getComputedStyle(element).color), 'rgb(20, 84, 37)',
+    'the declared local stylesheet is already inlined without a network stylesheet capability')
   await frame.getByRole('button', { name: 'Submit', exact: true }).click()
   assert.equal(await frame.locator('#result').textContent(), 'Title required', 'native invalid event must run')
   await frame.getByLabel('Title', { exact: true }).fill('Palette comparison')
@@ -54,6 +75,28 @@ try {
   await frame.getByLabel('Description', { exact: true }).fill('Keep all original reasons')
   await frame.getByRole('button', { name: 'Save draft', exact: true }).click()
   assert.equal(await frame.locator('#custom-result').textContent(), 'Draft: Keep all original reasons')
+
+  // Native local form defaults matter as well as author-installed listeners.
+  // A capture preventDefault() lets the tests above pass but breaks dialog confirmation.
+  await frame.getByRole('button', { name: 'Review schedule', exact: true }).click()
+  await frame.getByRole('button', { name: 'Confirm scheduling', exact: true }).click()
+  assert.equal(await frame.locator('#schedule').evaluate(dialog => dialog.open), true, 'required input keeps the local dialog open')
+  await frame.getByLabel('Reason', { exact: true }).fill('Approved locally')
+  if (evidenceDirectory) await page.screenshot({ path: join(evidenceDirectory, 'native-dialog-before-confirm.png') })
+  await frame.getByRole('button', { name: 'Confirm scheduling', exact: true }).click()
+  assert.equal(await frame.locator('#schedule').evaluate(dialog => dialog.open), false, 'method=dialog must close through the native form default')
+  assert.equal(await frame.locator('#schedule').evaluate(dialog => dialog.returnValue), 'confirmed')
+  await frame.getByText('Scheduled: Approved locally', { exact: true }).waitFor()
+  if (evidenceDirectory) await page.screenshot({ path: join(evidenceDirectory, 'native-dialog-after-confirm.png') })
+  await frame.getByRole('button', { name: 'Review schedule', exact: true }).click()
+  await frame.getByLabel('Reason', { exact: true }).fill('')
+  await frame.getByRole('button', { name: 'Cancel scheduling', exact: true }).click()
+  assert.equal(await frame.locator('#schedule').evaluate(dialog => dialog.open), false, 'formnovalidate cancellation remains native')
+  assert.equal(await frame.locator('#schedule').evaluate(dialog => dialog.returnValue), 'cancelled')
+  await frame.getByRole('button', { name: 'Review schedule', exact: true }).click()
+  await frame.getByRole('button', { name: 'Confirm local choice', exact: true }).click()
+  assert.equal(await frame.locator('#schedule').evaluate(dialog => dialog.open), false, 'submitter formmethod=dialog overrides its form without network submission')
+  assert.equal(await frame.locator('#schedule').evaluate(dialog => dialog.returnValue), 'local-choice')
 
   // No LivePreview submit guard here: prove CSP itself blocks native navigation,
   // including form.submit(), which bypasses validation and submit listeners.

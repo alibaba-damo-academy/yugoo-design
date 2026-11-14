@@ -68,8 +68,13 @@ test('global continuation guidance agrees with the pending visible-tool hint', a
   assert.match(guidance, /call run_design_skill with.*exact.*arguments/)
   assert.doesNotMatch(guidance, /already been entered|must not be invoked/)
   assert.match(h.hint(), /NOT started yet/)
-  assert.match(h.hint(), /call run_design_skill with exactly/)
+  assert.match(h.hint(), /authorized action through run_design_skill with exactly/)
+  assert.doesNotMatch(h.hint(), /acknowledge.*then call/)
   assert.match(h.hint(), /In Producer mode stay attached.*in main mode follow the returned scoped method/)
+  assert.match(h.hint(), /Existing authorization permits diagnosis and repair of known failures without another human message/)
+  assert.match(h.hint(), /Respect real permission refusals, cancellation and declared handoffs/)
+  assert.match(h.hint(), /reconcile an unknown submission with saved state or receipts before another attempt/)
+  assert.doesNotMatch(h.hint(), /do not automatically retry failures/)
 })
 
 test('the real SDK includes an accepted continuation in the first assembled request', async t => {
@@ -94,6 +99,7 @@ test('the real SDK includes an accepted continuation in the first assembled requ
   assert.ok(index >= 0)
   assert.match(first.sections[index].text, /NOT started yet/)
   assert.match(first.sections[index].text, /"name":"research","action":\{"routeId":"execute_plan"\}/)
+  assert.match(first.sections[index].text, /Existing authorization permits diagnosis and repair of known failures without another human message/)
   assert.deepEqual(first.sections.slice(index - 1, index + 2).map(section => section.name),
     ['test:before-resume', 'design:accepted-resume', 'test:after-resume'])
   assert.deepEqual(first.tools, [], 'the hint grants no tool capabilities')

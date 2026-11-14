@@ -16,6 +16,7 @@ test('Graph locale changes retain the transport, reading context and canvas inpu
   const previous = Object.fromEntries(keys.map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]))
   for (const key of keys.slice(0, 6)) Object.defineProperty(globalThis, key, { configurable: true, writable: true, value: dom.window[key] })
   globalThis.React = React; globalThis.IS_REACT_ACT_ENVIRONMENT = true
+  const act = React.act ?? (await import('react-dom/test-utils')).act
   const originalNow = Date.now
   let clock = originalNow(), root
   Date.now = () => clock
@@ -23,9 +24,11 @@ test('Graph locale changes retain the transport, reading context and canvas inpu
     // Exercise the real GraphPanel/model/i18n. A probe replaces only the canvas
     // engine and poll clock, proving their input identities and transport calls.
     // Actual pan/drag/WebGL acceptance remains a separate browser checkpoint.
-    await build({ stdin: { contents: "export { GraphPanel } from './client/graph-panel.tsx'; export { GraphInspector } from './client/graph-inspector.tsx'; export { PanelLocaleContext } from './panel-i18n.tsx'", resolveDir: fileURLToPath(new URL('../src/', import.meta.url)), loader: 'tsx' },
+    await build({ stdin: { contents: "export { GraphPanel } from './client/graph-panel.tsx'; export { GraphInspector } from './client/graph-inspector.tsx'; export { PanelLocaleContext, panelText } from './panel-i18n.tsx'", resolveDir: fileURLToPath(new URL('../src/', import.meta.url)), loader: 'tsx' },
       outfile: join(output, 'graph.mjs'), bundle: true, packages: 'external', external: ['react', 'react/jsx-runtime'], platform: 'node', format: 'esm', jsx: 'automatic',
       plugins: [{ name: 'graph-canvas-and-poll-probe', setup(b) {
+        // This is a source UI check; do not borrow a concurrently rebuilt Core lib.
+        b.onResolve({ filter: /^dsh-design-core\/dsl$/ }, () => ({ path: fileURLToPath(new URL('../../core/src/panel-dsl.ts', import.meta.url)) }))
         b.onResolve({ filter: /^\.\/graph-(?:canvas|exploration)\.js$/ }, () => ({ path: 'canvas', namespace: 'locale-probe' }))
         b.onResolve({ filter: /^\.\/live-poll\.js$/ }, () => ({ path: 'poll', namespace: 'locale-probe' }))
         b.onLoad({ filter: /.*/, namespace: 'locale-probe' }, args => ({ contents: args.path === 'poll'
@@ -39,10 +42,11 @@ test('Graph locale changes retain the transport, reading context and canvas inpu
              }
              export const GraphExploration = GraphCanvas;` }))
       } }] })
-    const { GraphPanel, GraphInspector, PanelLocaleContext } = await import(pathToFileURL(join(output, 'graph.mjs')).href)
+    const { GraphPanel, GraphInspector, PanelLocaleContext, panelText } = await import(pathToFileURL(join(output, 'graph.mjs')).href)
     const { createRoot } = await import('react-dom/client')
     const node = (id, label, context) => ({ id, label, context, owner: 'fixture', file: 'fixture/records.json', pointer: '/' + id, record: true })
-    const base = { checkpoint: 'v1', projectId: 'fixture-project', knowledgeRevision: 'v1', knowledgeStatus: 'current', warnings: [],
+    const rawWarning = '未知诊断 / original context'
+    const base = { checkpoint: 'v1', projectId: 'fixture-project', knowledgeRevision: 'v1', knowledgeStatus: 'current', warnings: [panelText('knowledgeGraphProjectionNotice', 'zh-CN'), rawWarning],
       nodes: [node('source', '客户 Alpha — original', 'Original authored context / 原文'), node('target', 'Beta', 'Second source')],
       edges: [{ id: 'original-edge', from: 'source', to: 'target', kind: 'knowledge', label: 'Original authored relationship', evidence: 'Original evidence / 证据原文', reading: { relationType: 'supports', meaning: 'supports', origin: 'human', direction: 'forward', lifecycle: 'accepted' } }],
     }
@@ -57,26 +61,32 @@ test('Graph locale changes retain the transport, reading context and canvas inpu
     }
     const props = { read, readStatus, footer: null }
     const container = document.getElementById('root'); root = createRoot(container)
-    const render = async () => React.act(async () => root.render(React.createElement(PanelLocaleContext.Provider, { value: locale }, React.createElement(GraphPanel, props))))
-    const sample = async () => { clock += 3_000; await React.act(async () => globalThis.__graphLocalePoll()) }
+    const render = async () => act(async () => root.render(React.createElement(PanelLocaleContext.Provider, { value: locale }, React.createElement(GraphPanel, props))))
+    const sample = async () => { clock += 3_000; await act(async () => globalThis.__graphLocalePoll()) }
     const alert = () => container.querySelector('.graph-notice[role="alert"]')?.textContent ?? ''
     await render()
+    const statusDetails = [...container.querySelectorAll('.graph-popover')].find(e => e.querySelector('summary').textContent.startsWith('状态详情'))
+    statusDetails.open = true
+    assert.deepEqual([...statusDetails.querySelectorAll('p')].map(e => e.textContent).slice(-2), base.warnings)
     assert.equal(reads, 1, 'initial status sampling does not duplicate the initial graph read')
     assert.doesNotMatch(container.querySelector('.graph-legend').parentElement.textContent, /虚线/)
     assert.ok(container.textContent.includes('关系状态见关联详情。'))
     assert.equal(container.querySelector('.graph-legend').parentElement.querySelectorAll('p').length, 1, 'the legend keeps one interaction hint rather than a tutorial')
     const search = container.querySelector('.graph-search input')
-    await React.act(async () => {
+    await act(async () => {
       Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value').set.call(search, 'Alpha')
       search.dispatchEvent(new dom.window.Event('input', { bubbles: true }))
     })
     assert.ok(container.querySelector('.graph-search-results'), 'search exercises actual Panel state')
-    await React.act(async () => container.querySelector('[data-testid="select-source"]').click())
+    await act(async () => container.querySelector('[data-testid="select-source"]').click())
     assert.equal(container.querySelector('.graph-inspector h4').textContent, base.nodes[0].label)
     assert.ok(container.querySelector('.graph-inspector').textContent.includes(base.nodes[0].context))
     const canvasGraph = globalThis.__graphLocaleProbe.graph, layoutEdges = globalThis.__graphLocaleProbe.layoutEdges
     const sampled = statusReads
     locale = 'en-US'; await render()
+    assert.equal(statusDetails.open, true, 'language changes preserve the open status details')
+    assert.deepEqual([...statusDetails.querySelectorAll('p')].map(e => e.textContent).slice(-2), [panelText('knowledgeGraphProjectionNotice', 'en-US'), rawWarning])
+    assert.ok(statusDetails.querySelector('summary').textContent.startsWith('Status details'))
     assert.equal(reads, 1); assert.equal(statusReads, sampled, 'a locale change does not invoke either transport')
     assert.equal(globalThis.__graphLocaleProbe.graph, canvasGraph, 'translation alone must not rebuild the canvas graph and discard camera/pins')
     assert.equal(globalThis.__graphLocaleProbe.layoutEdges, layoutEdges, 'translation alone must not rebuild layout inputs')
@@ -90,11 +100,11 @@ test('Graph locale changes retain the transport, reading context and canvas inpu
 
     const settings = container.querySelector('.graph-settings-trigger')
     settings.focus()
-    await React.act(async () => settings.click())
+    await act(async () => settings.click())
     const drawer = container.querySelector('.graph-settings-drawer')
     assert.deepEqual([...drawer.querySelectorAll('legend')].map(e => e.textContent), ['Layout', 'Relationship filters', 'Content'])
     assert.deepEqual(Array.from([...drawer.querySelectorAll('fieldset')][1].querySelectorAll('label > span'), e => e.textContent), ['Meaning', 'Origin'])
-    await React.act(async () => drawer.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
+    await act(async () => drawer.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
     assert.equal(container.querySelector('.graph-settings-drawer'), null)
     assert.equal(document.activeElement, settings, 'closing view options returns focus to its original icon')
     assert.equal(globalThis.__graphLocaleProbe.graph, canvasGraph, 'opening view options does not recreate or rewrite graph input')
@@ -124,7 +134,7 @@ test('Graph locale changes retain the transport, reading context and canvas inpu
     assert.equal(container.querySelector('.graph-search input').value, 'Alpha')
     assert.equal(container.querySelector('.graph-inspector h4').textContent, base.nodes[0].label)
     assert.equal(globalThis.__graphLocaleProbe.graph.nodes.find(n => n.id === 'source').context, base.nodes[0].context)
-    await React.act(async () => container.querySelector('[data-testid="select-relation"]').click())
+    await act(async () => container.querySelector('[data-testid="select-relation"]').click())
     assert.equal(container.querySelector('.graph-inspector h4').textContent, base.edges[0].label)
     assert.match(container.querySelector('.graph-inspector .dsh-panel-header-meta').textContent, /Supports/i, 'a custom label must not hide the structured business meaning')
     assert.equal(container.querySelector('.graph-evidence pre').textContent, base.edges[0].evidence)
@@ -133,7 +143,7 @@ test('Graph locale changes retain the transport, reading context and canvas inpu
     const members = [1, 2, 3].map(index => ({ ...base.edges[0], id: `member-${index}`, label: `Original label ${index}`, evidence: `Full raw evidence ${index} / 原文 <untouched>`, reading: candidate }))
     const aggregate = { ...base.edges[0], members, reading: candidate }
     let inspectionGraph = base
-    const inspect = async () => React.act(async () => root.render(React.createElement(PanelLocaleContext.Provider, { value: locale }, React.createElement(GraphInspector, { graph: inspectionGraph, edge: aggregate, relations: [], sourceLabels: {}, onClose() {}, onNode() {}, onEdge() {}, onNeighborhood() {}, onExpandEndpoints() {} }))))
+    const inspect = async () => act(async () => root.render(React.createElement(PanelLocaleContext.Provider, { value: locale }, React.createElement(GraphInspector, { graph: inspectionGraph, edge: aggregate, relations: [], sourceLabels: {}, onClose() {}, onNode() {}, onEdge() {}, onNeighborhood() {}, onExpandEndpoints() {} }))))
     await inspect()
     assert.equal(container.querySelectorAll('.dsh-panel-guidance-trigger').length, 1, 'one shared interpretation help, not repeated disclaimer paragraphs')
     assert.ok(container.querySelector('.graph-inspector-body > .dsh-design-record-header-label .dsh-panel-header-meta').textContent.includes('Proposed interpretation'), 'candidate status remains visible outside the collapsed technical details')
@@ -141,7 +151,7 @@ test('Graph locale changes retain the transport, reading context and canvas inpu
     assert.equal(container.querySelectorAll('.graph-relation-detail[open]').length, 1, 'first original relationship is readable; other full evidence remains reachable')
     assert.deepEqual([...container.querySelectorAll('.graph-evidence pre')].map(item => item.textContent), members.map(member => member.evidence))
     const third = container.querySelectorAll('.graph-relation-detail')[2]
-    await React.act(async () => { third.open = true; third.dispatchEvent(new dom.window.Event('toggle')) })
+    await act(async () => { third.open = true; third.dispatchEvent(new dom.window.Event('toggle')) })
     locale = 'zh-CN'; await inspect()
     assert.equal(container.querySelectorAll('.graph-relation-detail')[2], third)
     assert.equal(third.open, true, 'locale changes retain the opened evidence section')
@@ -171,7 +181,7 @@ test('Graph locale changes retain the transport, reading context and canvas inpu
     assert.ok(container.querySelector('.graph-relation-detail .dsh-panel-reading-item').textContent.includes(base.nodes[0].label), 'an exhausted excerpt budget must not hide an endpoint')
     assert.deepEqual(base, original, 'locale and transport transitions do not mutate authored facts')
   } finally {
-    if (root) await React.act(async () => root.unmount())
+    if (root) await act(async () => root.unmount())
     Date.now = originalNow
     dom.window.close()
     for (const key of keys) { if (previous[key]) Object.defineProperty(globalThis, key, previous[key]); else delete globalThis[key] }

@@ -104,7 +104,7 @@ handoff rather than being copied into logs or unrelated tools.
 ## Native execution specifics
 
 Before choosing a Bundle, use `design_list_bundles` on the exact connection for
-the installed Bundle IDs, and read `/absolute/plugin-root/kits/web_app/mindset.md`
+the selected project's current Bundle IDs. Read its returned `mindsetMethod`
 for selection guidance. Kit names and Panel component names are not Bundle IDs.
 Do not discover
 capabilities by searching the empty Design Files or scanning the plugin tree.

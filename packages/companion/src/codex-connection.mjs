@@ -16,12 +16,13 @@ export function createCodexConnection(threadId, connect = openNativeConnection, 
   if (remote !== undefined && (typeof remote !== 'string' || !remote.startsWith('unix:///') || remote.length <= 8 || /[\r\n\0]/.test(remote))) {
     throw new Error('Codex remote must be an explicit unix:///absolute/socket path.')
   }
+  const lifetime = new AbortController()
   async function initializeConnection() {
     let client
     let stage = 'proxy-connect'
     try {
       client = await connect(['app-server', 'proxy',
-        ...(remote === undefined ? [] : ['--sock', remote.slice('unix://'.length)])])
+        ...(remote === undefined ? [] : ['--sock', remote.slice('unix://'.length)])], { signal: lifetime.signal })
       stage = 'initialize'
       await client.request('initialize', { clientInfo: { name: 'design_companion', version: '0.1.0' }, capabilities: { experimentalApi: true } })
       client.notify('initialized', {})
@@ -36,6 +37,7 @@ export function createCodexConnection(threadId, connect = openNativeConnection, 
   }
   return {
     threadId,
+    close() { lifetime.abort() },
     async probe() {
       const client = await initializeConnection()
       try {
@@ -83,8 +85,9 @@ export function createCodexConnection(threadId, connect = openNativeConnection, 
 
 // Standard WebSocket framing over the native proxy; no daemon path discovery,
 // credentials, provider overrides, transcript edits, or second model process.
-export async function openNativeConnection(args, { WebSocket, spawnProxy = spawn, timeoutMs = 15000 } = {}) {
+export async function openNativeConnection(args, { WebSocket, spawnProxy = spawn, signal } = {}) {
   WebSocket ??= (await import('ws')).default
+  if (signal?.aborted) throw notificationSetupError({ stage: 'proxy-connect', transportCategory: 'disconnected' })
   let child
   try { child = spawnProxy('codex', args, { shell: false, stdio: ['pipe', 'pipe', 'pipe'] }) }
   catch { throw notificationSetupError({ stage: 'proxy-connect', transportCategory: 'disconnected' }) }
@@ -95,12 +98,11 @@ export async function openNativeConnection(args, { WebSocket, spawnProxy = spawn
   const pending = new Map()
   let nextId = 0
   let failure
-  let timer
   let disposed = false
   const dispose = () => {
     if (disposed) return
     disposed = true
-    clearTimeout(timer)
+    signal?.removeEventListener('abort', abort)
     socket?.terminate()
     stream.destroy()
     child.stdin.destroy()
@@ -113,18 +115,18 @@ export async function openNativeConnection(args, { WebSocket, spawnProxy = spawn
     }
   }
   const fail = (category, stage = 'websocket-handshake') => {
-    const transportCategory = ['timeout', 'protocol', 'send-failed'].includes(category) ? category : 'disconnected'
-    failure ??= opened ? Object.assign(new Error('Codex native notification transport disconnected or timed out.'), { transportCategory })
+    const transportCategory = ['protocol', 'send-failed'].includes(category) ? category : 'disconnected'
+    failure ??= opened ? Object.assign(new Error('Codex native notification transport disconnected.'), { transportCategory })
       : notificationSetupError({ stage, transportCategory })
     for (const waiter of pending.values()) waiter.reject(failure)
     pending.clear()
     dispose()
   }
+  const abort = () => fail('disconnected')
   // Suppress raw error details: they can contain bodies or private server data.
   child.on('error', () => fail('disconnected', 'proxy-connect'))
   child.on('exit', () => fail('disconnected', 'proxy-connect'))
   stream.on('error', () => fail('disconnected', 'proxy-connect'))
-  timer = setTimeout(() => fail('timeout'), timeoutMs)
   try {
     socket = new WebSocket('ws://localhost/', { createConnection: () => stream, perMessageDeflate: false, maxPayload: 1024 * 1024 })
     socket.on('error', () => fail('disconnected'))
@@ -144,6 +146,8 @@ export async function openNativeConnection(args, { WebSocket, spawnProxy = spawn
     await new Promise((resolve, reject) => {
       pending.set('open', { reject })
       socket.once('open', () => { opened = true; pending.delete('open'); resolve() })
+      signal?.addEventListener('abort', abort, { once: true })
+      if (signal?.aborted) abort()
     })
     return {
       request(method, params) {

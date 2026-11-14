@@ -57,7 +57,7 @@ export const graphStyles = `
 .graph-search-results{position:absolute;z-index:6;top:100%;left:16px;right:16px;max-height:230px;overflow:auto;background:var(--graph-surface);border:1px solid var(--graph-border);box-shadow:0 6px 20px #21354a14;border-radius:0 0 10px 10px;padding:12px}
 .graph-search-results summary{font-size:12px;color:var(--graph-muted);margin-bottom:8px}
 .graph-search-results>div{display:flex;flex-wrap:wrap;gap:6px}
-.graph-statusbar{position:relative;z-index:5;display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;padding:8px 16px;background:var(--graph-surface);border-top:1px solid var(--graph-border);font-size:11px;color:var(--graph-muted);flex-shrink:0}
+.graph-statusbar{position:relative;z-index:8;display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;padding:8px 16px;background:var(--graph-surface);border-top:1px solid var(--graph-border);font-size:11px;color:var(--graph-muted);flex-shrink:0}
 .graph-initial-stage{flex:1;min-height:0;display:grid;place-items:center;overflow:auto;padding:24px}
 .graph-initial-status{position:relative;width:min(100%,460px);padding:24px 28px;border:1px solid var(--graph-border);border-radius:12px;background:var(--graph-surface);color:var(--graph-muted);box-shadow:0 8px 28px #2538500a}
 .graph-initial-status strong{display:block;color:var(--graph-ink);font-size:14px;font-weight:600}

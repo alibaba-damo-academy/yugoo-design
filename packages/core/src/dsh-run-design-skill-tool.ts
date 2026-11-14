@@ -277,16 +277,15 @@ export function designSkillInvocationId(rootCallId: string): DesignExecutionInvo
 }
 
 /**
- * Check that the model made the selected Design action visible before its tool call.
- * Direct controller tests and non-session hosts do not expose a durable event log, so
- * the Host adapter remains responsible for the same interaction requirement there.
+ * Read the invoking Host turn for the existing user-continue lifecycle.
+ * Communication text is guidance, not execution authority.
  * @param agent - Agent requesting the Design engagement.
  * @param rootCallId - root tool call recorded in the current model step.
- * @returns the owning Host turn and whether its current assistant step has visible text.
+ * @returns the owning Host turn when the Host records it.
  */
-function invocationAcknowledgement(agent: Agent, rootCallId: string): { readonly turn?: number; readonly present: boolean } {
+function invocationTurn(agent: Agent, rootCallId: string): number | undefined {
   const session = agent.session as { snapshotEvents?: () => readonly import('@deepseek-ai/dsh-session').SessionEvent[]; readonly events?: readonly import('@deepseek-ai/dsh-session').SessionEvent[] }
-  if (typeof session.snapshotEvents !== 'function' && !Array.isArray(session.events)) return { present: true }
+  if (typeof session.snapshotEvents !== 'function' && !Array.isArray(session.events)) return undefined
   const events = designSessionEvents(session)
   const callIndex = events.findLastIndex((event) => {
     if (event === null || typeof event !== 'object') return false
@@ -295,29 +294,9 @@ function invocationAcknowledgement(agent: Agent, rootCallId: string): { readonly
       && record.data?.callId === rootCallId
       && record.data.name === 'run_design_skill'
   })
-  if (callIndex < 0) return { present: true }
-  const call = events[callIndex] as { readonly data: { readonly turn: number; readonly step: number } }
-  for (let index = callIndex - 1; index >= 0; index -= 1) {
-    const event = events[index]
-    if (event === null || typeof event !== 'object') continue
-    const record = event as {
-      readonly type?: unknown
-      readonly data?: {
-        readonly turn?: unknown
-        readonly step?: unknown
-        readonly message?: { readonly content?: readonly unknown[] }
-      }
-    }
-    if (record.type !== 'assistant/message'
-      || record.data?.turn !== call.data.turn
-      || record.data.step !== call.data.step) continue
-    return { turn: call.data.turn, present: record.data.message?.content?.some((block) => {
-      if (block === null || typeof block !== 'object') return false
-      const candidate = block as { readonly type?: unknown; readonly text?: unknown }
-      return candidate.type === 'text' && typeof candidate.text === 'string' && candidate.text.trim() !== ''
-    }) === true }
-  }
-  return { turn: call.data.turn, present: false }
+  if (callIndex < 0) return undefined
+  const call = events[callIndex] as { readonly data: { readonly turn: number } }
+  return call.data.turn
 }
 
 type RenderableRunDesignSkillResult = (
@@ -480,12 +459,6 @@ export const inject = ['tools']
  */
 export function apply(ctx: Context, port: RunDesignSkillPort): void {
   const awaitingUserContinue = new WeakMap<Agent, { readonly turn?: number }>()
-  // One correction belongs to the Host turn, never to a brief, call id or
-  // concurrent sibling. Consume it synchronously before any engagement await.
-  // Do not clear it at turn-stopping: RC2 may still drain queued steering in
-  // that same turn. The next recorded turn naturally starts a fresh budget.
-  const acknowledgementRecovery = new WeakMap<Agent, { readonly turn?: number; closed: boolean }>()
-
   ctx.on('agent/turn-stopping', ({ agent }) => {
     // A Host may still drain steering in the same recorded turn. Only hosts
     // without a recorded turn need this lifecycle-based compatibility cleanup.
@@ -494,7 +467,7 @@ export function apply(ctx: Context, port: RunDesignSkillPort): void {
 
   ctx.tools.register(defineTool({
     name: 'run_design_skill',
-    description: 'Run one exact, case-sensitive Design skill from the active Kit, or resume its current user-continue gate by exact action route. Before an ordinary engagement, write one concise visible assistant acknowledgement in the conversation language that names the exact localized skill title and intended persistent result; never move silently from a host-native answered question to this tool. State the requested generation, revision, or retry in the brief; the Bundle Skill Body decides which design artifacts need work. When this invocation executes an accepted Design advisory action, pass that exact action receipt as advisoryReceiptId; an advisory acceptance receipt is not tool authority. Never omit, invent, reuse for another Bundle, or infer an action receipt from advisory text. While a user-continue gate is pending, a non-empty brief for that same skill revises its pending plan instead of starting new work. The tool remains attached while its native Subagents run; a completed result identifies its saved Design revision; main-Agent clarity reporting is separate and never a completion prerequisite, and failure/cancellation/user-input waits return their own outcome. For a Bundle configured with execution.mode main, in_progress instead returns the installed method for you to execute here; use design_publish to receive its terminal handoff/clarity result.',
+    description: 'Run one exact, case-sensitive Design skill from the active Kit, or resume its current user-continue gate by exact action route. Keep the user oriented through ordinary progress updates naming the localized skill title and intended persistent result; communication wording does not gate an authorized engagement. State the requested generation, revision, or retry in the brief; the Bundle Skill Body decides which design artifacts need work. When this invocation executes an accepted Design advisory action, pass that exact action receipt as advisoryReceiptId; an advisory acceptance receipt is not tool authority. Never omit, invent, reuse for another Bundle, or infer an action receipt from advisory text. While a user-continue gate is pending, a non-empty brief for that same skill revises its pending plan instead of starting new work. The tool remains attached while its native Subagents run; a completed result identifies its saved Design revision; main-Agent clarity reporting is separate and never a completion prerequisite, and failure/cancellation/user-input waits return their own outcome. For a Bundle configured with execution.mode main, in_progress instead returns the installed method for you to execute here; use design_publish to receive its terminal handoff/clarity result.',
     parameters: {
       name: {
         type: 'string',
@@ -555,30 +528,11 @@ export function apply(ctx: Context, port: RunDesignSkillPort): void {
       // Capture the invoking turn before any asynchronous execution/settlement.
       // A new human turn must reach the controller's existing gate validation,
       // even if the previous turn's stopping hook did not clear local state.
-      const acknowledgement = invocationAcknowledgement(exec.agent, String(exec.rootCallId))
+      const turn = invocationTurn(exec.agent, String(exec.rootCallId))
       const waiting = awaitingUserContinue.get(exec.agent)
       if (waiting !== undefined && (waiting.turn === undefined
-        || acknowledgement.turn === undefined || waiting.turn === acknowledgement.turn)) {
+        || turn === undefined || waiting.turn === turn)) {
         throw new Error('run_design_skill is awaiting the current user-continue action and cannot run again in this user turn')
-      }
-      if (args.action === undefined) {
-        const prior = acknowledgementRecovery.get(exec.agent)
-        const recovery = prior?.turn === acknowledgement.turn ? prior : undefined
-        if (recovery?.closed || !acknowledgement.present) {
-          if (recovery !== undefined) {
-            recovery.closed = true
-            exec.concludeTurn()
-            return snapshotResult({
-              kind: 'invalid',
-              summary: 'The Design skill did not start. The visible-acknowledgement correction limit for this turn has been reached. Do not retry again in this turn; report the obstacle and wait for a new user instruction.',
-            })
-          }
-          acknowledgementRecovery.set(exec.agent, { turn: acknowledgement.turn, closed: false })
-          return snapshotResult({
-            kind: 'invalid',
-            summary: 'The Design skill did not start because its visible acknowledgement is missing. State the exact localized Design skill title and intended persistent result in assistant text, then retry this Design action once in the current turn.',
-          })
-        }
       }
 
       const advisoryReceiptId = args.advisoryReceiptId?.trim()
@@ -663,9 +617,9 @@ export function apply(ctx: Context, port: RunDesignSkillPort): void {
           const prior = awaitingUserContinue.get(settlementAgent)
           // A late main-mode callback belongs to its original invocation; it
           // must neither acquire the current turn nor overwrite a newer wait.
-          if (prior === undefined || (acknowledgement.turn !== undefined
-            && prior.turn !== undefined && acknowledgement.turn > prior.turn)) {
-            awaitingUserContinue.set(settlementAgent, { turn: acknowledgement.turn })
+          if (prior === undefined || (turn !== undefined
+            && prior.turn !== undefined && turn > prior.turn)) {
+            awaitingUserContinue.set(settlementAgent, { turn })
           }
         }
       }

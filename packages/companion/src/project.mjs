@@ -12,7 +12,7 @@ import {
   autoPanelGenerationPrompt, publishAutoPanelComponents,
   projectKitContentHash, sameProjectContentPin,
   ensureProjectKit,
-  readDesignGit, projectKitResource,
+  readDesignGit, projectKitResource, operateExperience,
 } from '../../core/lib/index.js'
 import { createCompanionContentLibrary } from './content-library.mjs'
 import { createAutoPanelTickets } from './auto-panel-tickets.mjs'
@@ -169,6 +169,12 @@ export async function openCompanionProject({ projectRoot, kitRoot, stateRoot, co
           kitReload = { status: 'rejected', revision: kitRevision, error: String(error.message ?? error) }
         }
         return { ...kitReload }
+      })
+    },
+    async experience(params) {
+      return mutate(async () => {
+        await requireWritable()
+        return { ...await operateExperience(store, params), designFiles: project.designFilesRoot }
       })
     },
     async prepareBundle({ skill: name }) {

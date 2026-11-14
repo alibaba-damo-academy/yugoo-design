@@ -71,7 +71,7 @@ This Bundle deepens external facts from `research` at product connection points 
 
 ## Post-write Design projection self-check
 
-After every successful canonical write and before ending this skill, inspect the refreshed revision-pinned Design projection once. Compare the persisted connections with the available `research` and `function_modules` evidence. Repair one deterministic issue owned by `integration_design` with at most one focused follow-up write, then inspect the refreshed projection once more. Ask the user when a real product or connection decision is required. If an upstream Bundle, record, or verified external fact is missing or unresolved, report that non-blocking evidence gap without undoing the valid write, editing another Bundle, or retrying indefinitely. After the write enters the Design Project Git history, G/R/A owns ongoing cross-Bundle drift checks.
+After material changes and before ending this skill, compare the affected connections in the refreshed revision-pinned Design projection with the available `research` and `function_modules` evidence. Reuse unchanged evidence already in context. Repair source-proven issues owned by `integration_design` within the requested scope, then recheck the affected result. Ask the user when a real product or connection decision is required. If an upstream Bundle, record, or verified external fact is missing or unresolved, report that non-blocking evidence gap without undoing the valid write, editing another Bundle, or retrying indefinitely. After the write enters the Design Project Git history, G/R/A owns ongoing cross-Bundle drift checks.
 
 ## When to use
 

@@ -8,7 +8,7 @@
 import { parse } from 'yaml'
 import { COMPONENT_KINDS, SOURCE_BOUND_COMPONENTS, SIDEBAR_TITLE_COMPONENT_KINDS, type ComponentKind } from './panel-component-catalog.ts'
 import { validatePanelTranslations, isNavigationLabelTemplate, type PanelTranslations } from './panel-i18n.ts'
-export { localizePanelManifest, panelTranslationKeys, validatePanelTranslations } from './panel-i18n.ts'
+export { localizePanelManifest, panelMessagesForLocale, panelTranslationKeys, validatePanelTranslations } from './panel-i18n.ts'
 export { COMPONENT_KINDS, WORKSPACE_COMPONENT_KINDS, PANEL_COMPONENT_CATALOG, describePanelComponents, type ComponentKind } from './panel-component-catalog.ts'
 
 /** Closed set of generic panel categories. */

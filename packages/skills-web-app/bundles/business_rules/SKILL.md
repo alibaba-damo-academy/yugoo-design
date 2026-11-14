@@ -41,7 +41,7 @@ This Bundle deepens established capabilities and journey decisions from `functio
 
 ## Post-write Design projection self-check
 
-After every successful canonical write and before ending this skill, inspect the refreshed revision-pinned Design projection once. Compare the persisted rules with the available `function_modules` and `flow_design` evidence. Repair one deterministic issue owned by `business_rules` with at most one focused follow-up write, then inspect the refreshed projection once more. Ask the user when a real product decision is required. If an upstream Bundle or record is missing, malformed, or unresolved, report that non-blocking evidence gap without undoing the valid write, editing another Bundle, or retrying indefinitely. After the write enters the Design Project Git history, G/R/A owns ongoing cross-Bundle drift checks.
+After material changes and before ending this skill, compare the affected rules in the refreshed revision-pinned Design projection with the available `function_modules` and `flow_design` evidence. Reuse unchanged evidence already in context. Repair source-proven issues owned by `business_rules` within the requested scope, then recheck the affected result. Ask the user when a real product decision is required. If an upstream Bundle or record is missing, malformed, or unresolved, report that non-blocking evidence gap without undoing the valid write, editing another Bundle, or retrying indefinitely. After the write enters the Design Project Git history, G/R/A owns ongoing cross-Bundle drift checks.
 
 ## When to use
 

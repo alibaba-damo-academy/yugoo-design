@@ -810,9 +810,8 @@ async function bindProducerWorkspace(
         })
       })
     },
-    async restoreSnapshot(revision, previewToken, userAuthorizedOverwrite, signal) {
+    async restoreSnapshot(revision, previewToken, signal) {
       signal.throwIfAborted()
-      if (!userAuthorizedOverwrite) throw new Error('restore apply requires explicit user_authorized_overwrite=true')
       const preview = restorePreview
       restorePreview = undefined
       if (preview === undefined || preview.token !== previewToken || preview.revision !== revision) {
@@ -934,7 +933,7 @@ export function producerSystemPrompt(skill: DesignSkill, tools: ProducerEvidence
       ? 'Report unresolved decisions without inventing answers.'
       : 'Route unresolved durable user decisions through the active Smart Questions Bundle rather than inventing answers.',
     DESIGN_SKILL_RESOURCE_GUIDANCE,
-    'Historical correction is Bundle-scoped and forward-only. Use design_revisions to select an exact Published ancestor, then design_restore_snapshot preview. Apply only when the user explicitly authorized the previewed overwrite. The restore stages a WorkingCopy snapshot; inspect diff, validate, and publish it as a new commit. Never ask for or attempt Git checkout, switch, reset, fetch, pull, push, repository deletion, or raw Git passthrough.',
+    'Historical correction is Bundle-scoped and forward-only. Use design_revisions to select an exact Published ancestor, then design_restore_snapshot preview. Honor the user\'s existing restoration authorization; ask only when the preview exposes an unresolved choice about overwriting unpublished changes. The restore stages a WorkingCopy snapshot; inspect diff, validate, and publish it as a new commit. Never ask for or attempt Git checkout, switch, reset, fetch, pull, push, repository deletion, or raw Git passthrough.',
     'Artifact work uses the current filesystem worktree; it never requires an intermediate Git checkpoint. Write the canonical definitions before their artifacts, accepting file references only after the corresponding files exist and pass validation. The Host records real Producer/Worker attempt state and rolling logs; do not copy queued, working, execution ids, or attempt errors into Design JSON.',
     KNOWLEDGE_AGENTIC_GUIDANCE,
     DESIGN_EXECUTOR_EVIDENCE_GUIDANCE,

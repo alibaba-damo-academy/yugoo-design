@@ -199,7 +199,9 @@ metadata or its script-side output-target checks.
 
 Model-facing MCP and CLI `call` responses are compact views, not new authorities.
 Status carries one full assessment under `services.ust.assessment` and one review
-list, without conversation history or canonical Design Files. Read
+list, without conversation history or canonical Design Files. Execution attempts
+retain their identities, phases, diagnostics and commit/artifact receipts; nested
+settlement state, Git diff and save notes are included only in the full response. Read
 `design_status` with `details: true`, or CLI `call --full-response`, only when the
 complete workspace/Host protocol is needed. Browser API reads are unchanged.
 Preparation retains the complete version-pinned Bundle method and shared native
@@ -231,6 +233,10 @@ Neither due reviews nor an unavailable derived service inserts a mandatory
 assessment/review stage into ordinary design work. Uncertain delivery is never
 an automatic retry signal, including through the local CLI bridge.
 
+Codex CLI notifications wait for the native response or an actual connection
+failure, without a fixed connection or submission deadline. Closing the Companion
+service cancels its pending notifications and reclaims only its proxy processes.
+
 Studio messages with no saved Panel receipts remain available when Panel
 notification history is unreadable or locked. Their existing Studio request
 binding and native transport still own delivery and its actual failure feedback.
@@ -259,6 +265,22 @@ This mapping does not grant native permissions, spawn an Agent, change placement
 make Workers/GRA available, or allow main to repair a Producer's files. An actual
 missing native file/command capability is reported with the executor's tool and
 permission evidence. Source regressions do not establish installed-host usage.
+
+## Scenario experiences
+
+The Scenarios entry sends recommendations and feedback to the selected native
+conversation. A recommendation discusses the proposed new scenarios; it does
+not pause other design changes the user already authorized. When the user asks
+to generate or refresh a scenario, the native Agent uses `design_experience`
+with the same Companion connection: `prepare` returns the shared authoring
+method and captures current Design File sources, `write` saves the version's
+HTML, and `publish` saves its section index through Core's existing publisher.
+The Panel then reads that committed scenario at one checkpoint.
+
+Scenarios are derived views, separate from Bundle facts and execution. They do
+not require Bundle run registration or a new approval. A changed source or a
+newer publication reports a conflict in that operation and preserves the saved
+view; the Agent can prepare again from the current design.
 
 ## Verified scope
 
@@ -1373,6 +1395,12 @@ the shared Panel stylesheet before the browser, then finish building before
 starting tests/the companion. The plugin and same-source npm candidate builders
 run the existing Panel CSS build themselves. When invoking tsdown directly,
 include the CSS step below so the browser uses the current shared styles.
+
+The server's normal build selects Core APIs through `src/core-entry.ts`. When
+wiring another Core API into Companion, retain its canonical export in that
+entry and its regression in `test/core-entry.test.mjs`, then run the normal
+`tsdown.server.config.ts` build. Core `lib` and source MCP fixture tests exercise
+their own import path and do not cover this packaged selection.
 
 ```sh
 pnpm --filter dsh-design-core build

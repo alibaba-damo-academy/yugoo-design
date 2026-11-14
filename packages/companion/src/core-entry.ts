@@ -10,6 +10,7 @@ export { commitDesignProjectRecords } from '../../core/src/design-project-record
 export { readDesignKnowledgeRecords, saveDesignKnowledgeRecords, restoreDesignKnowledgeRecords } from '../../core/src/design-knowledge-records.ts'
 export { parseDesignCommand, runDesignProjectCommand } from '../../core/src/design-project-adapter.ts'
 export { DesignFilesStore, DesignWriteSettlementError } from '../../core/src/design-files.ts'
+export { operateExperience, type ExperienceRequest } from '../../core/src/experience-service.ts'
 export { GitVersioning } from '../../core/src/git.ts'
 export { readDesignGit, designGitReadArguments, DESIGN_GIT_READ_ACTIONS, DESIGN_GIT_READ_DESCRIPTION } from '../../core/src/design-git-read.ts'
 export { DesignJournalStorage } from '../../core/src/design-journal-storage.ts'

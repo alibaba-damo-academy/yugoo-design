@@ -4,6 +4,13 @@
 
 按版本概述语构设计系统（Yugoo Design）代码仓库中的主要特性、明显体验变化，以及影响安装和升级的重要改进。细小调整和内部重构不逐项列出；完整改动见 [Git 提交历史](https://github.com/alibaba-damo-academy/yugoo-design/commits/main/)。
 
+## [0.3.6](https://github.com/alibaba-damo-academy/yugoo-design/tree/v0.3.6)
+
+- 简化原生 Agent 协作：移除子任务注册的重复方法阅读证明和 Codex 通知通道自设的固定连接截止，允许在既有授权内修复失败、继续独立工作。
+- 补齐 Companion 的场景体验生成入口，沿已有准备、写入和发布流程保存体验；跳过可选下一步时，明确引导 Agent 延后该选择。
+- 交互预览保留 HTML 原生表单与对话框行为，统一 Studio 文件和预览标题栏，并改善图谱的语言适配与状态详情呈现。
+- Git 读取和审阅设置可在项目 Kit 不完整时继续使用；面板保存不再额外拒绝超过 500 条的合法设计记录，视觉风格方法也不再限制固定的内容篇幅和内置图标范围。
+
 ## [0.3.5](https://github.com/alibaba-damo-academy/yugoo-design/tree/v0.3.5)
 
 - 改善 Companion 的读取与保存响应：复用未变的项目定义，清理重复检查和插件自设的固定超时，避免慢读取被放弃后重复发起请求。

@@ -47,13 +47,16 @@ for (const coreRule of [
   'mapping an exact catalog title to its id',
   'No match means no selection; never guess',
   'An answered native question is a valid visible decision receipt even without a new user message',
-  'Before every ordinary run_design_skill engagement, emit one concise user-visible assistant sentence in the conversation language',
-  'Put the sentence in visible assistant text before its corresponding tool call',
+  'Keep the user oriented during authorized Design work with concise progress updates in the conversation language',
+  'Communication wording and its placement are guidance, not an execution prerequisite or another permission step',
   'do not fabricate a duplicate human message',
   'reserve one option for “审阅设计建议（N 条）” / “Review design suggestions (N)”',
   'Advice review and scene actions are not Bundle aliases',
-  'Validator findings, advisory items, recovery suggestions, ordinary dependencies and discovered inconsistencies alone are not that authorization',
-  'report them and get a new native selection/direct instruction',
+  'Validator findings, advisory items, recovery suggestions, ordinary dependencies and discovered inconsistencies alone do not authorize an additional persistent result outside the current request',
+  'diagnosis and repair of the current authorized result need no new selection',
+  'Within existing authorization, diagnose and repair known failures or continue independent requested work',
+  'Respect actual Host permission refusals, user cancellation and declared handoffs',
+  'never assume the submission did not happen and automatically replay it',
   'do not ask again',
   'When the active Kit has a question Bundle, use it for durable grounding questions',
   'including a singleton about background, users, goals, scenarios, scope, constraints or concrete content',
@@ -65,6 +68,9 @@ for (const coreRule of [
 ]) {
   if (!DESIGN_CORE_PROGRESSION_PROMPT.includes(coreRule)) throw new Error(`Design Core missing progression rule: ${coreRule}`)
   if (kit.mindset.includes(coreRule)) throw new Error(`mindset duplicates Design Core progression rule: ${coreRule}`)
+}
+for (const obsoleteRule of ['A failed or refused skill ends the current turn', 'Follow the outcome without automatic failure retries']) {
+  if (DESIGN_CORE_PROGRESSION_PROMPT.includes(obsoleteRule)) throw new Error(`Design Core retains superseded failure guidance: ${obsoleteRule}`)
 }
 for (const mindsetRule of [
   'These relations never impose a fixed execution order',
@@ -373,13 +379,17 @@ for (const name of expected) {
       'report the checks actually performed plus remaining gaps',
     ] : [
       name === 'web_app_prd_assembly' ? 'pinned owner evidence' : 'revision-pinned Design projection',
-      'at most one focused follow-up',
+      'Repair source-proven',
+      'within the requested scope',
       'Ask the user when',
       'non-blocking evidence gap',
       'retrying indefinitely',
       'G/R/A owns ongoing cross-Bundle drift checks',
     ]) {
       if (!skill.content.replace(/\s+/gu, ' ').includes(required)) throw new Error(`skill ${name} missing post-write self-check policy: ${required}`)
+    }
+    if (name !== 'page_design' && /After every successful canonical write|Repair one (?:owned )?deterministic issue|at most one focused follow-up|inspect the refreshed (?:revision-pinned Design )?projection once/iu.test(skill.content)) {
+      throw new Error(`skill ${name} reintroduces a fixed post-write inspection or repair quota`)
     }
   }
   for (const toolName of forbiddenModelToolNames) {

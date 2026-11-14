@@ -33,6 +33,8 @@ test('adding another scene uses the empty-state discussion and retains the publi
     await render()
     await React.act(async () => button('让 AI 推荐').click())
     assert.equal(prompts.length, 1)
+    assert.match(prompts[0], /本次新增场景/)
+    assert.match(prompts[0], /不取消.*已授权.*设计修改/)
     props.experienceFiles = { [indexPath]: 'published', [htmlPath]: 'published' }
     await render()
     const frame = document.querySelector('iframe')
@@ -70,7 +72,9 @@ test('adding another scene uses the empty-state discussion and retains the publi
     assert.ok(prompts[2].includes('Existing scene'), 'authored title is kept in the feedback context')
     assert.doesNotMatch(prompts[2], /[\u3400-\u9fff]/)
     await React.act(async () => button('Add scenario').click())
-    assert.match(prompts[3], /Discuss them with me first; do not generate or change the design yet/)
+    assert.match(prompts[3], /Discuss these new scenarios/)
+    assert.match(prompts[3], /does not cancel or pause.*authorized design changes/)
+    assert.doesNotMatch(prompts[3], /do not generate or change the design yet/)
     assert.equal(document.querySelector('iframe'), frame)
   } finally { await React.act(async () => root.unmount()); dom.window.close() }
 })

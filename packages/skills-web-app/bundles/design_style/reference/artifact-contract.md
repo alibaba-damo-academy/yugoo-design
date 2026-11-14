@@ -23,6 +23,12 @@ size, and stroke width; it never embeds SVG source or the icon-library choice.
 If no brand mark is accepted, use the brand name as a text wordmark rather
 than inventing a Page-local mark.
 
+The local SVG catalog is a reusable starting point, not a closed inventory.
+Preserve supplied assets and the recorded icon grammar; add complete safe local
+SVGs when the product needs them, with consistent size/stroke rules and exact
+markup in `config.icons`. Keep Bundle-relative `asset` provenance only when
+the SVG actually comes from that Bundle resource.
+
 ## State and projections
 
 Use the following shape. Required groups for a completed proposal are marked
@@ -81,7 +87,7 @@ values and vocabulary, not this example's font sizes, icon library or layout.
       }
     },
     "iconography": {
-      "library": "bundled library name", "style": "outline",
+      "library": "chosen local SVG family", "style": "outline",
       "view_box": "0 0 24 24", "stroke_width": "1.75",
       "linecap": "round", "linejoin": "round",
       "size_sm": "16px", "size_md": "20px", "size_lg": "24px"
@@ -168,6 +174,10 @@ again.
 ## Preview file
 
 One complete HTML5 document at `design_style/preview_<name>.html`; its canonical reference is project-relative and accepted only after the actual file passes validation.
+
+Keep the source concise while retaining the screen's necessary content,
+responsive layout and meaningful interactions. Its length follows those needs;
+the Bundle sets no fixed byte target.
 
 Default to a compact composition at the intended device viewport, with the main
 task and action easy to find. Do not stack secondary sections merely to show

@@ -46,8 +46,9 @@ reasoning and state schema live in `SKILL.md`; this file is only the craft floor
 
 ## Icons and imagery
 
-- Use one icon language: the bundled `assets/icons/` inline SVGs; never use
-  emoji, bitmaps, or icon fonts as UI icons.
+- Use one coherent icon grammar with complete safe local inline SVGs. Reuse
+  suitable bundled `assets/icons/` SVGs and add matching SVGs when needed; never
+  use emoji, bitmaps, or icon fonts as UI icons.
 - Imagery is material when the product sells, curates, teaches, documents, or
   emotionally frames something visual. Dense work surfaces often need none.
 - Generated/sourced images must land under `design_files/design_style/images/`,

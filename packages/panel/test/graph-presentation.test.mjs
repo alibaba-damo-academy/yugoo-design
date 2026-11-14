@@ -129,3 +129,83 @@ test('relationship details retain candidate and unknown states independently of 
   assert.equal(edgeReading(legacy).lifecycle, 'unknown', 'legacy similarity is never silently accepted')
   assert.deepEqual(legacy, { kind: 'semantic' })
 })
+
+
+test('actual Style Bundle loader and Core projection localize fixed metadata captions without rewriting design content', async () => {
+  const { readFile, readdir, stat, realpath } = await import('node:fs/promises')
+  const { fileURLToPath } = await import('node:url')
+  const { loadDesignBundle } = await import('../../core/src/kit-loader.ts')
+  const { parseSchemaYaml } = await import('../../core/src/schema.ts')
+  const { projectDesignGraph } = await import('../../core/src/design-graph.ts')
+  const { parsePanelManifest } = await import('../src/dsl.ts')
+  const root = new URL('../../skills-web-app/bundles/design_style/', import.meta.url)
+  const fs = { readText: path => readFile(path, 'utf8').catch(error => { if (error.code !== 'ENOENT') throw error }),
+    listDir: readdir, isDirectory: async path => (await stat(path)).isDirectory(), realPath: realpath }
+  const bundle = await loadDesignBundle(fs, { rootDir: fileURLToPath(root), sourceId: 'test:style-caption' })
+  const { loadDesignBundle: loadBuiltBundle } = await import('../../core/lib/kit-loader.js')
+  const builtBundle = await loadBuiltBundle(fs, { rootDir: fileURLToPath(root), sourceId: 'test:style-caption' })
+  assert.equal(builtBundle.skill.metadata.panelYaml, bundle.skill.metadata.panelYaml, 'normal built loader expands the same optional metadata')
+  const panels = { design_style: { panelYaml: builtBundle.skill.metadata.panelYaml } }
+  const manifest = parsePanelManifest(panels.design_style.panelYaml)
+  const schema = parseSchemaYaml(await readFile(new URL('schema.yaml', root), 'utf8'))
+  const data = JSON.parse(await readFile(new URL('reference/preview.json', root), 'utf8'))
+  const file = 'design_style/design_style.json'
+  const graph = projectDesignGraph({ [file]: data }, 'fixed:style', { [file]: schema })
+  const config = graph.nodes.find(node => node.schemaPointer === '/properties/config')
+  assert.ok(config?.sourceLabel && config.sourceLabel !== config.label, 'real Core projection proves a metadata caption')
+  assert.equal(config.label, '设计风格配置')
+  const before = structuredClone({ panels, graph, data })
+  const en = graphNodeLabels(panels, 'en_GB'), zh = graphNodeLabels(panels, 'zh-CN')
+  assert.equal(en(config), 'Design Style Configuration')
+  assert.equal(zh(config), config.label)
+  assert.equal(graphNodeLabels(panels, 'fr-FR')(config), config.label, 'unsupported locale uses the declared default')
+  const defaultMessages = manifest.i18n.messages[manifest.i18n.default_locale]
+  let resolved = 0
+  for (const node of graph.nodes) {
+    if (!node.contentKind || !node.sourceLabel || node.sourceLabel === node.label) continue
+    const key = 'knowledge.label:' + node.schemaPointer
+    if (!(key in defaultMessages)) continue
+    assert.ok(en(node).startsWith(manifest.i18n.messages['en-US'][key]), node.schemaPointer)
+    assert.equal(zh(node), node.label)
+    resolved++
+  }
+  assert.ok(resolved >= 10, 'representative sample covers container and nested units')
+  for (const change of [{ sourceLabel: undefined }, { sourceLabel: config.label }, { contentKind: undefined },
+    { schemaPointer: undefined }, { schemaPointer: '/properties/unknown' }, { owner: 'other' }, { label: '用户自定义标题' }]) {
+    assert.equal(en({ ...config, ...change }), change.label ?? config.label)
+  }
+  const old = structuredClone(manifest)
+  for (const messages of Object.values(old.i18n.messages)) for (const key of Object.keys(messages)) if (key.startsWith('knowledge.label:')) delete messages[key]
+  assert.equal(graphNodeLabels({ design_style: { panelYaml: JSON.stringify(old) } }, 'en-US')(config), config.label, 'old pinned resources are not upgraded implicitly')
+  const mismatch = structuredClone(manifest)
+  mismatch.i18n.messages['zh-CN']['knowledge.label:/properties/config'] = '另一配置'
+  assert.equal(graphNodeLabels({ design_style: { panelYaml: JSON.stringify(mismatch) } }, 'en-US')(config), config.label)
+  const blank = structuredClone(manifest)
+  blank.i18n.messages['en-US']['knowledge.label:/properties/config'] = ' '
+  assert.equal(graphNodeLabels({ design_style: { panelYaml: JSON.stringify(blank) } }, 'en-US')(config), config.label)
+  const noDefault = structuredClone(manifest)
+  delete noDefault.i18n.messages['zh-CN']['knowledge.label:/properties/config']
+  assert.equal(graphNodeLabels({ design_style: { panelYaml: JSON.stringify(noDefault) } }, 'en-US')(config), config.label, 'a target translation alone cannot prove the original schema caption')
+  assert.deepEqual({ panels, graph, data }, before, 'source facts, graph, provenance and loaded resources stay unchanged')
+})
+
+test('explicit metadata pointers are exact, support escaped keys and root, and keep conflicting captions raw', () => {
+  const key = 'knowledge.label:/properties/a~1b~0c/properties/*'
+  const manifest = { version: 1, panel_kind: 'evidence_workbook', sections: [], fields: [], ui: { component: 'stack', id: 'content', children: [] },
+    i18n: { default_locale: 'zh-CN', locales: { 'zh-CN': 'locales/zh-CN.json', 'en-US': 'locales/en-US.json' },
+      messages: { 'zh-CN': { [key]: '配置', 'knowledge.label:': '根配置' }, 'en-US': { [key]: 'Configuration', 'knowledge.label:': 'Root Configuration' } } } }
+  const node = { id: 'exact', owner: 'custom', label: '配置', sourceLabel: '用户原文', contentKind: 'container',
+    schemaPointer: '/properties/a~1b~0c/properties/*', pointer: '/a~1b~0c/*' }
+  const resolve = m => graphNodeLabels({ custom: { panelYaml: JSON.stringify(m) } }, 'en-US')
+  assert.equal(resolve(manifest)(node), 'Configuration')
+  assert.equal(resolve(manifest)({ ...node, schemaPointer: '/properties/a~1b~0c/properties/value' }), '配置', 'literal asterisk must not become a collection wildcard')
+  assert.equal(resolve(manifest)({ ...node, schemaPointer: '', pointer: '', label: '根配置' }), 'Root Configuration')
+  const ambiguous = structuredClone(manifest)
+  ambiguous.sections = [{ id: 'items', title: 'Items', records_path: 'items', fields_path: 'detail', item_name: 'Item' }]
+  ambiguous.i18n.messages['zh-CN'].detail = '详情'
+  ambiguous.i18n.messages['en-US'].detail = 'Different Details'
+  ambiguous.sections[0].title = '$t:detail'
+  ambiguous.i18n.messages['zh-CN']['knowledge.label:/properties/items/value/properties/detail'] = '详情'
+  ambiguous.i18n.messages['en-US']['knowledge.label:/properties/items/value/properties/detail'] = 'Details'
+  assert.equal(resolve(ambiguous)({ ...node, schemaPointer: '/properties/items/value/properties/detail', label: '详情' }), '详情')
+})

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 const { register } = await import('tsx/esm/api'); register()
@@ -144,4 +144,138 @@ test('mixed mode queues do not postpone every-publication work behind a later au
   assert.equal(q.take(1),undefined)
   q.configure({mode:'auto',autoMergeWindowMs:100})
   assert.deepEqual(q.take(100),{checkpoint:'auto'})
+})
+
+/** Real registered temporary repositories; no Host Agent/model or installed profile. */
+async function servicePolicyFixture(t, { brokenKit = false } = {}) {
+  const { Context } = await import('@deepseek-ai/cordis')
+  const { default: DesignService } = await import('../lib/index.js')
+  const { nodeDesignProjectSpawn } = await import('../src/design-project.ts')
+  const root = await mkdtemp(join(tmpdir(), 'kit-independent-policy-'))
+  const ctx = new Context()
+  t.after(async () => { await ctx.fiber.dispose(); await rm(root, { recursive: true, force: true }) })
+  ctx.provide('systemPrompt', { variable() {}, section() {}, context() {} })
+  ctx.provide('tools', { register() {}, get() {} })
+  ctx.provide('subprocess', {})
+  const service = new DesignService(ctx, { stateRoot: join(root, 'state'), projectsRoot: join(root, 'projects'), hostInstanceId: 'policy-test' })
+  service.spawnAdapter = () => nodeDesignProjectSpawn
+  const agent = { id: 'policy-agent', ctx, session: { id: 'policy-agent', header: {} } }
+  const projects = []
+  for (const name of ['first', 'second']) {
+    const created = await service.projects.create(name, { provider: 'fixture' })
+    if (brokenKit) await service.projects.setKitPin(created.projectId, { name: 'missing_fixture_kit', version: '1.0' })
+    if (brokenKit === 'malformed') {
+      await mkdir(join(created.root, 'design_kit'), { recursive: true })
+      await writeFile(join(created.root, 'design_kit/kit.yaml'), 'name: [malformed\n')
+      await writeFile(join(created.root, 'design_kit/mindset.md'), '# Broken fixture Kit\n')
+    }
+    projects.push(await service.projects.require(created.projectId))
+  }
+  let revision = 0
+  const select = project => service.setActiveWorkspace(agent, { project, binding: { revision: ++revision }, values: {} })
+  select(projects[0])
+  return { service, agent, projects, select, root }
+}
+
+function pendingPolicyStep() {
+  let resolve
+  const promise = new Promise(yes => { resolve = yes })
+  return { promise, resolve }
+}
+
+test('policy update stays in the project selection lane until configuration settles', async t => {
+  const f = await servicePolicyFixture(t), entered = pendingPolicyStep(), release = pendingPolicyStep()
+  f.service.advisoryRuntime = { provider: { async configureReviews() { entered.resolve(); await release.promise } } }
+  const update = f.service.updateReviewPolicy(f.agent, { mode: 'off', autoMergeWindowMs: 30000 })
+  let changing, changed = false
+  try {
+    await entered.promise
+    changing = f.service.serializeProjectMutation(f.agent, f.projects[0].projectId, 'selection', async () => {
+      changed = true
+    }).then(() => f.select(f.projects[1]))
+    await new Promise(resolve => setImmediate(resolve))
+    assert.equal(changed, false, 'selection must wait for the original project policy operation')
+  } finally {
+    release.resolve()
+    await update
+    await changing
+  }
+  assert.equal(changed, true)
+  assert.deepEqual(await f.service.readReviewPolicy(f.agent), DEFAULT_DESIGN_REVIEW_POLICY, 'second project policy must remain unchanged')
+})
+
+test('registered Git and policy operations do not consume missing or malformed Kit definitions', async t => {
+  for (const brokenKit of [true, 'malformed']) {
+    const f = await servicePolicyFixture(t, { brokenKit })
+    const { DshAdvisoryScheduler } = await import('../lib/dsh-advisory-plugin.js')
+    const { OFFICIAL_GROUNDING_PROFILE } = await import('../src/official-advisory-profiles.ts')
+    const scheduler = new DshAdvisoryScheduler({ design: f.service, subagents: {}, warn: message => assert.fail(message) }, { profiles: [OFFICIAL_GROUNDING_PROFILE] })
+    f.service.advisoryRuntime = { provider: scheduler }
+    try {
+      let kitFailure
+      await assert.rejects(f.service.projectForAgent(f.agent), error => { kitFailure = error.message; return true })
+      assert.ok(kitFailure, 'fixture must expose a real missing or malformed Kit problem')
+      const git = await f.service.queryDesignGit(f.agent, { action: 'status' })
+      assert.equal(git.project, f.projects[0].projectId)
+      assert.equal(git.live, true)
+      assert.deepEqual(await f.service.readReviewPolicy(f.agent), DEFAULT_DESIGN_REVIEW_POLICY)
+      // Exercises the cold queue path, then the same real provider inside policy update.
+      await scheduler.configureReviews(f.agent, { mode: 'off', autoMergeWindowMs: 30000 })
+      const policy = { mode: brokenKit === 'malformed' ? 'auto' : 'off', autoMergeWindowMs: 45000, depth: 'thorough' }
+      assert.deepEqual(await f.service.updateReviewPolicy(f.agent, policy), policy)
+      assert.deepEqual(await f.service.readReviewPolicy(f.agent), policy)
+      const queues = (await readdir(f.projects[0].stateRoot)).filter(name => name.startsWith('gra-queue-'))
+      assert.equal(queues.length, 1)
+      const queueFile = join(f.projects[0].stateRoot, queues[0])
+      const queue = JSON.parse(await readFile(queueFile, 'utf8'))
+      assert.deepEqual(queue.policy, policy)
+      assert.deepEqual(await readDesignReviewPolicy(join(f.projects[1].root, 'design_records/reviews'), f.projects[1].root), DEFAULT_DESIGN_REVIEW_POLICY)
+      const corrupt = JSON.stringify({ ...queue, pending: [{ mergeable: false, target: { checkpoint: '0'.repeat(40), journalRevision: 1 } }] })
+      await writeFile(queueFile, corrupt)
+      await assert.rejects(scheduler.configureReviews(f.agent, policy), /Queued GRA publication no longer matches its journal fact/)
+      assert.equal(await readFile(queueFile, 'utf8'), corrupt, 'invalid queue facts must not be silently rewritten')
+      // Real design consumers still require the missing source, including after settings work.
+      await assert.rejects(f.service.projectForAgent(f.agent), error => error.message === kitFailure)
+      const { nodeFs } = await import('../src/service-tools.ts')
+      await assert.rejects(f.service.designFiles(f.agent, nodeFs), error => error.message === kitFailure)
+    } finally { scheduler.dispose() }
+  }
+})
+
+test('a queued policy operation rejects invalidated selection before any write', async t => {
+  const f = await servicePolicyFixture(t), entered = pendingPolicyStep(), release = pendingPolicyStep()
+  let configured = 0
+  f.service.advisoryRuntime = { provider: { async configureReviews() { configured++ } } }
+  const selection = f.service.serializeProjectMutation(f.agent, f.projects[0].projectId, 'selection', async () => {
+    entered.resolve(); await release.promise
+  })
+  await entered.promise
+  const update = f.service.updateReviewPolicy(f.agent, { mode: 'off', autoMergeWindowMs: 30000 })
+  const rejected = assert.rejects(update, /selected Design Project changed/)
+  const invalidated = assert.rejects(selection, /selected Design Project changed/)
+  try { await new Promise(resolve => setImmediate(resolve)); f.select(f.projects[1]) } finally { release.resolve() }
+  await invalidated; await rejected
+  assert.equal(configured, 0)
+  for (const project of f.projects) assert.deepEqual(await readDesignReviewPolicy(join(project.root, 'design_records/reviews'), project.root), DEFAULT_DESIGN_REVIEW_POLICY)
+})
+
+test('policy operations preserve registry failures, no-selection errors and real provider failure', async t => {
+  const f = await servicePolicyFixture(t)
+  f.service.advisoryRuntime = { provider: { async configureReviews() { throw Error('fixture provider failure') } } }
+  const policy = { mode: 'off', autoMergeWindowMs: 30000 }
+  await assert.rejects(f.service.updateReviewPolicy(f.agent, policy), /fixture provider failure/)
+  assert.deepEqual(await f.service.readReviewPolicy(f.agent), policy, 'a provider failure must not disguise the persisted setting or replay the write')
+  await assert.rejects(f.service.updateReviewPolicy(f.agent, { ...policy, mode: 'invented' }), /Invalid GRA mode/)
+  const cancelled = new AbortController()
+  cancelled.abort(Error('fixture cancelled policy update'))
+  await assert.rejects(f.service.updateReviewPolicy(f.agent, policy, cancelled.signal), /fixture cancelled policy update/)
+  f.service.activeWorkspaces.delete(f.agent)
+  await assert.rejects(f.service.readReviewPolicy(f.agent), /no Design Project is selected/)
+  await assert.rejects(f.service.queryDesignGit(f.agent, { action: 'status' }), /No selected Design Project/)
+  f.select(f.projects[0])
+  await rm(f.projects[0].root, { recursive: true, force: true })
+  await assert.rejects(f.service.readReviewPolicy(f.agent))
+  await assert.rejects(f.service.updateReviewPolicy(f.agent, policy))
+  await assert.rejects(f.service.queryDesignGit(f.agent, { action: 'status' }))
+  assert.deepEqual(await readDesignReviewPolicy(join(f.projects[1].root, 'design_records/reviews'), f.projects[1].root), DEFAULT_DESIGN_REVIEW_POLICY)
 })
