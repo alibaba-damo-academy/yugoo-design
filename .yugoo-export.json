@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "6ba7b9db2675293839c85cd46e9778c5c741568d",
+  "revision": "a77ed265400ac527f96e6fcb8e1ed9b8798eff4b",
   "policySha256": "dc6be040bd3a12b8785a11c249e4e0ab72c08e2ff63e0ec25fbd2ae3319b1b06",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -5532,7 +5532,7 @@
       "mode": "100644"
     },
     "packages/panel/src/client/generated/design.tw.css": {
-      "sha256": "b84d8f467e162f4ff31cdf45082c9edebba3397d9bb669493adf2cd1e7333d23",
+      "sha256": "60c0e8a83c11df58057880f26f7247d91f733295f51f9fcb3469218d1e26d497",
       "mode": "100644"
     },
     "packages/panel/src/client/graph-bundle-model.ts": {
