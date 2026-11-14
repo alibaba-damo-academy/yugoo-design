@@ -77,7 +77,7 @@ export function createMainBundleBridge(fallback: DshProducerSkillAgentRuntime) {
             slot.settled = true
             interrupted.delete(request.parent)
             slot.receipt.resolve(receipt)
-            // Includes shared handoff derivation, synchronous clarity and advisory settlement.
+            // Includes the existing failed outcome as well as successful publication/handoff.
             return renderResult(await slot.outcome)
           })
         request.delegation?.install(ctx)
@@ -94,7 +94,7 @@ export function createMainBundleBridge(fallback: DshProducerSkillAgentRuntime) {
       slot.dispose = async () => { await fiber.dispose() }
       await fiber
       request.signal.throwIfAborted()
-      slot.ready.resolve({ kind: 'in_progress', summary: `${request.prompt}\nExecute this Bundle here in the main conversation with the installed Design tools. Do not spawn a Producer. Worker delegation remains available when the Bundle calls for it. Use design_publish to settle the Bundle and receive its handoff/clarity result before proposing the next action.` })
+      slot.ready.resolve({ kind: 'in_progress', summary: `${request.prompt}\nExecute this Bundle here in the main conversation with the installed Design tools. Do not spawn a Producer. Worker delegation remains available when the Bundle calls for it. Use design_publish to settle the Bundle and receive its result before proposing the next action; if it cannot complete, choose action:failed and include concrete diagnostics when available.` })
       return slot.receipt.promise
     },
   }

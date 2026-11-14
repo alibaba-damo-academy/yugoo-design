@@ -113,7 +113,8 @@ test('real Git empty audit commits cannot release but an artifact-only edit can'
   const { promisify } = await import('node:util')
   const { execFile } = await import('node:child_process')
   const { DesignFilesStore } = await import('../src/design-files.ts')
-  const { GitVersioning } = await import('../src/git.ts')
+  // Native Git loads its fixed worker from the normal built package layout.
+  const { GitVersioning } = await import('../lib/index.js')
   const { nodeFs } = await import('../src/service-tools.ts')
   const exec = promisify(execFile)
   const root = await mkdtemp(join(tmpdir(), 'handoff-authority-'))

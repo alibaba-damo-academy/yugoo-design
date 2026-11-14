@@ -939,8 +939,9 @@ export function producerSystemPrompt(skill: DesignSkill, tools: ProducerEvidence
     KNOWLEDGE_AGENTIC_GUIDANCE,
     DESIGN_EXECUTOR_EVIDENCE_GUIDANCE,
     skill.execution.mode === 'main'
-      ? 'You are executing this Bundle in the main conversation, not a child Producer. Use design_publish explicitly to settle this Bundle: it returns shared validation, the saved revision and handoff; optional main-Agent clarity reporting is separate. Do not end your response without publication unless cancelled or blocked; a main turn ending is not evidence of Bundle completion. Publish only at the terminal boundary, not intermediate milestones.'
-      : 'Use design_publish when you need to explicitly select handoff versus complete or end the turn immediately. If you finish without calling it, the Host applies the manifest-safe default through the same validation and publication path. Publish only at the terminal boundary; do not create intermediate milestone commits. Validation diagnostics are repair instructions for the same filesystem worktree. The action is an invocation command, not canonical Design state.',
+      ? 'You are executing this Bundle in the main conversation, not a child Producer. Use design_publish explicitly to settle this Bundle: complete or handoff returns shared validation and the saved revision; failed reports incomplete work without completion publication. Optional main-Agent clarity reporting is separate. Do not end your response without settlement unless cancelled; a main turn ending is not evidence of Bundle completion. Settle only at the terminal boundary, not intermediate milestones.'
+      : 'Use design_publish when you need to explicitly select handoff, complete or failed, or end the turn immediately. If you finish without calling it, the Host applies the manifest-safe default through the same validation and publication path. Settle only at the terminal boundary; do not create intermediate milestone commits. Validation diagnostics are repair instructions for the same filesystem worktree. The action is an invocation command, not canonical Design state.',
+    'When this invocation cannot complete, call design_publish({action:"failed", diagnostics:["the concrete error"]}). Include concrete errors when known; action:failed remains valid without diagnostic detail and must not invent a cause. This settles failure without completion publication, preserves working files and the earlier publication, and reports the error to the caller. A final prose statement such as "incomplete" is not a structured terminal action; without an explicit settlement the existing Host default still applies. Do not use a handoff or erase an existing artifact reference to represent failure.',
     'Optional nested workers are acceleration only. You remain responsible for the complete working copy, canonical JSON, final integration validation, and publication, and must be able to finish without delegation. design_delegate is generic for one artifact: pass artifact_kind, artifact_id, artifact_file, and a complete prompt. When two or more tasks form one independent dependency frontier and design_delegate_frontier is available, prefer one call containing the complete ordered frontier; the Host atomically validates and claims it, applies bounded concurrency, and returns every item after the frontier settles. Use a new batch_id if the ordered items change. The Host does not infer Bundle tasks or run Bundle domain validators. Each successful result carries a Host-computed receipt for bytes the Worker already wrote to its exact pre-bound artifact path. Use that receipt to update only the matching canonical reference; do not read or resend the complete artifact merely to acknowledge completion. Read it only when the Skill requires its content for a real downstream synthesis, or use a Bundle script by path when compact diagnostics or metadata are sufficient. Integrate successful frontier receipts together. For failed, cancelled, or not-started items, take over each artifact with your normal scoped file tools and call design_focus_artifact with the same explicit kind, id, and file before serial work. The Host does not automatically retry delegated work.',
     `Available host evidence tools: ${tools.allowed.length === 0 ? '(none)' : tools.allowed.join(', ')}.`,
     ...tools.unavailableOptional.length === 0
@@ -1081,6 +1082,7 @@ function createProducerPort(input: {
       const main = request.skill.execution.mode === 'main'
       let producerRunId: string | undefined
       let producerTerminal = false
+      let producerFailureDiagnostics: readonly string[] | undefined
       const producerAttemptId = randomUUID()
       const successfulDelegatedArtifacts = new Map<string, NonNullable<DesignExecutionAttemptPayload['receipt']>>()
       const recordAttempt = (
@@ -1366,6 +1368,10 @@ function createProducerPort(input: {
             record: recordAttempt,
           },
           })
+          if (receipt.kind === 'failed') {
+            producerFailureDiagnostics = receipt.diagnostics
+            throw new Error(`Design invocation is not complete: ${receipt.diagnostics.join('; ')}`)
+          }
           producerSucceeded = true
           return Object.freeze({
             kind: 'committed',
@@ -1413,7 +1419,7 @@ function createProducerPort(input: {
             return input.store.head().then(head => head ?? request.pin.stateRevision, () => request.pin.stateRevision)
           })
           const diagnostics = Object.freeze([
-            failure,
+            ...(producerFailureDiagnostics ?? [failure]),
             ...(auditDiagnostic === undefined ? [] : [auditDiagnostic]),
           ])
           return Object.freeze({ kind: outcome, stateRevision, diagnostics })

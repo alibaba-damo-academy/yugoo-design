@@ -296,7 +296,8 @@ export async function runDshProducerAgent(request: DshProducerAgentRequest): Pro
       runId: String(producerSessionId),
       parentRunId: String(request.parent.session.id),
       role: 'producer',
-      phase: 'completed',
+      phase: receipt.kind === 'failed' ? 'failed' : 'completed',
+      ...(receipt.kind === 'failed' ? { diagnostics: [...receipt.diagnostics] } : {}),
     })
     return Object.freeze({ producerSessionId, ...receipt })
   } catch (error) {

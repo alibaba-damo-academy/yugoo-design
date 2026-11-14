@@ -190,8 +190,9 @@ test('canonical pre-admission rejection remains a real error and never becomes a
       u: { score: 1, evidence: 'user intent' }, s: { score: 1, evidence: 'structure' }, t: { score: 1, evidence: 'testability' } } })
   assert.match(text, /Derived design assessment \(not execution evidence\)/)
   assert.match(text, /Assessment text: "Worker-delegation step added/)
-  assert.match(text, /No verified integrated Worker completion receipt/)
-  assert.match(text, /Do not repeat execution or delegation claims from the design assessment/)
+  assert.match(text, /Delegated Worker completion is unverified/)
+  assert.match(text, /whether Producer scripts or validation succeeded or failed/)
+  assert.match(text, /Worker execution claims use these Host observations, not the design assessment/)
   assert.doesNotMatch(text, /Verified integrated Worker completion receipts: [1-9]/)
 })
 
@@ -207,7 +208,10 @@ for (const result of [
 ]) test(`${result.kind} retains missing-provenance honesty, including handoff/recovery branches`, () => {
   const text = renderResult({ ...result, summary: 'Design outcome.' })
   assert.match(text, /Unavailable for this result/)
-  assert.match(text, /Do not report Worker execution as successful/)
+  assert.match(text, /Delegated Worker completion is unverified/)
+  assert.match(text, /whether Producer scripts or validation succeeded or failed/)
+  assert.match(text, /Worker execution claims use these Host observations, not the design assessment/)
+  assert.doesNotMatch(text, /Verified integrated Worker completion receipts: [1-9]/)
   assert.equal((text.match(/Execution provenance \(/g) ?? []).length, 1)
 })
 

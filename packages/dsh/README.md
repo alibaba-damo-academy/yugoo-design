@@ -4,12 +4,30 @@ Yugoo Design turns your DeepSeek Harness conversation into an interactive
 workspace for ideation and design, with editable panels, structured knowledge
 and guided iteration.
 
-To install or update, give the [DSH installation guide](../companion/HOSTS.md#install-or-update-deepseek-harness)
-to the Agent in your existing DSH conversation. It acquires the unified
-`yugoo-design` product from npm and uses the product's release mapping to install
-this aggregate and its internal modules. Request an exact published version, or
-let the Agent resolve `latest` once and use that exact version for the operation.
-Existing projects and host model/search settings must be preserved.
+## Install or update in your DSH conversation
+
+In your current working DeepSeek Harness conversation, give the Agent this request:
+
+```text
+Install or update Yugoo Design in this DeepSeek Harness.
+Reuse a matching installation; otherwise use my requested version or resolve latest once to an exact stable npm release and verify its integrity. If latest is a prerelease, report and stop. Prepare missing Node.js >=22.19.0 and pnpm, then run pnpm add --save-exact yugoo-design@<exact-version> --registry=https://registry.npmjs.org in a persistent version directory outside my projects and host profile.
+Read node_modules/yugoo-design/README.md and run pnpm exec yugoo-design --help. Follow install --host dsh to connect my current profile using the local inputs it requires.
+Keep my projects, Studio content, model/search settings and receipts. Give precise steps for any manual activation or restart, then verify the loaded version, /yugoo, Panel save/reopen and that this conversation receives my saved edits. Use the packaged instructions; do not clone or build the source.
+```
+
+The same `yugoo-design` product connects to the native DSH integration; you do not select its internal modules. See the [DSH installation and recovery guide](../companion/HOSTS.md#install-or-update-deepseek-harness) for additional setup and update details.
+
+### Advanced: update an existing native installation
+
+For an existing Yugoo Design installation managed through DSH's official plugin/profile tools, an exact-version update of the existing `web` profile can use:
+
+```text
+dsh plugin --profile web add --workspace-root --save-exact @yugoo-design/dsh-design-system-dsh@<exact-version>
+```
+
+Replace the version and profile with the intended published release and your existing profile. Follow that DSH CLI version's help and activation instructions. Start a new Yugoo Design installation with the Agent-assisted product route above.
+
+## Integration reference
 
 This README describes the DSH integration and its development references. The
 historical checks below retain their original versions; use the selected

@@ -455,6 +455,26 @@ and settlement reach a terminal outcome; it never becomes detached advisory
 work. The manifest declares real human interaction points such as `must_edit`
 or `user_continue`, not a Worker topology.
 
+In DSH, an executor that cannot finish uses the existing settlement tool with
+`design_publish({action:"failed", diagnostics:[...]})`. Concrete diagnostics
+are encouraged; an omitted or empty list still records explicit failure without
+inventing a cause. This terminal receipt does not publish a complete design or
+run completion validation. The existing failed invocation audit/outcome retains
+working files, earlier publication checkpoints and available errors, and the caller receives an
+incomplete result. Failure does not roll back a live artifact already changed by
+the working copy. Main and subagent placement use the same action. A normal
+native `turn/end` describes the conversation, not domain success; an explicit
+failed receipt takes precedence over automatic publication. Without an explicit
+settlement, the existing subagent manifest default remains unchanged. The Host
+does not infer this action from final prose, a script exit code or an absent
+Worker receipt. Worker completion provenance and Producer script/validation
+results describe separate evidence boundaries.
+
+Companion uses its existing native finish tools with `outcome:"failed"` for the
+same failure outcome. Its operation mapping guides the executor, or the existing
+caller-settlement route, to report that outcome rather than leave only failure
+prose. The adapter's parameter spelling does not change publication semantics.
+
 An ordinary Bundle script is executable only through the Host's confined
 `run_skill_script` capability. The Host binds it to the active, version-pinned
 Skill `scripts/` directory and supplies literal argv. The selected executor names either

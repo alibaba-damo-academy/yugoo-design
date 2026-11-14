@@ -1,7 +1,7 @@
 /** Reconstruct read-only artifact history from existing, paired Host observations. */
 import type { SessionEvent, SessionHeader } from '@deepseek-ai/dsh-session'
 import type { DesignArtifactHistoryEntry } from './artifact-activity.ts'
-import { DESIGN_EXECUTION_PROVENANCE_SCHEMA, renderDesignExecutionProvenance, type DesignExecutionProvenance } from './dsh-execution-provenance.ts'
+import { DESIGN_EXECUTION_PROVENANCE_SCHEMA, DESIGN_EXECUTION_PROVENANCE_HEADING, hasExactDesignExecutionProvenanceFrame, type DesignExecutionProvenance } from './dsh-execution-provenance.ts'
 import { validateJsonSchemaValue, valueSchemaSpecToJsonSchema } from '@deepseek-ai/dsh-tools'
 import { requireDesignFileRelativePath } from './design-file-path.ts'
 import { designSessionEvents } from './dsh-session-events.ts'
@@ -48,13 +48,13 @@ function messageText(event: Extract<SessionEvent, { type: 'tool/result' }>): str
 
 /** Only the Host renderer's final provenance section, never prose or model-authored messages. */
 function provenance(text: string): DesignExecutionProvenance | undefined {
-  const heading = 'Execution provenance (Host observations and accepted publication, not a model assessment):\n'
+  const heading = `${DESIGN_EXECUTION_PROVENANCE_HEADING}\n`
   const offset = text.lastIndexOf(heading)
   if (offset === -1) return undefined
   const value = json(text.slice(offset + heading.length).split('\n')[0] ?? '')
   if (validateJsonSchemaValue(provenanceSchema, value).length > 0) return undefined
   const parsed = value as unknown as DesignExecutionProvenance
-  return text.endsWith(renderDesignExecutionProvenance(parsed)) ? parsed : undefined
+  return hasExactDesignExecutionProvenanceFrame(text, parsed) ? parsed : undefined
 }
 
 function ownEvents(session: DesignHistorySession): readonly SessionEvent[] {

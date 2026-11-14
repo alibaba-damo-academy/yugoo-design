@@ -58,6 +58,9 @@ test('mounted entry stays generic, with full methods limited to the selected exe
       const prompt = producerSystemPrompt({ ...selected, execution: { ...selected.execution, mode } },
         { allowed: [], unavailableOptional: [] }, '/application', false, {}, '/project/design_files')
       assert.ok(prompt.includes(selected.content))
+      assert.match(prompt, /design_publish\(\{action:"failed", diagnostics:/)
+      assert.match(prompt, /preserves working files and the earlier publication/)
+      assert.match(prompt, /final prose statement.*not a structured terminal action/)
       assert.equal(prompt.split(DESIGN_SKILL_RESOURCE_GUIDANCE).length, 2)
       assert.match(prompt, /Host-native read\/read_image\/glob\/grep can also inspect current Design Files/)
       assert.match(prompt, /For long files, you can use the Host reader's available range or pagination options/)

@@ -192,23 +192,25 @@ export function assertSafeDesignProducerInheritedTools(names: readonly string[],
 /** Manifest handoff that permits one authoritative pending publication. */
 export type DesignProducerPauseHandoff = 'must_edit' | 'user_continue'
 
-/** Successful terminal or paused receipt captured by the shared publication path. */
+/** Explicit failure or a successful terminal/paused publication receipt. */
 export type DesignProducerFinishReceipt =
   | ({ readonly kind: 'complete' } & ProducerProjectPublicationReceipt)
   | ({ readonly kind: 'pause'; readonly handoff: DesignProducerPauseHandoff } & ProducerProjectPublicationReceipt)
+  | { readonly kind: 'failed'; readonly diagnostics: readonly string[] }
 
 /** Ephemeral settlement action selected explicitly by the Producer or conservatively by the Host. */
-export type DesignProducerPublishAction = 'handoff' | 'complete'
+export type DesignProducerPublishAction = 'handoff' | 'complete' | 'failed'
 
 /** Result from the single validation-and-publication path shared by tool and Host settlement. */
 export type DesignProducerPublishResult =
+  | { readonly kind: 'failed'; readonly action: 'failed'; readonly diagnostics: string[] }
   | { readonly kind: 'invalid'; readonly action: DesignProducerPublishAction; readonly diagnostics: string[] }
-  | ({ readonly kind: 'unchanged'; readonly action: DesignProducerPublishAction; readonly stateRevision: string }
+  | ({ readonly kind: 'unchanged'; readonly action: Exclude<DesignProducerPublishAction, 'failed'>; readonly stateRevision: string }
       & Pick<ProducerProjectPublicationReceipt, 'indexMaintenance' | 'recovery'>)
-  | ({ readonly kind: 'published'; readonly action: DesignProducerPublishAction } & ProducerProjectPublicationReceipt)
+  | ({ readonly kind: 'published'; readonly action: Exclude<DesignProducerPublishAction, 'failed'> } & ProducerProjectPublicationReceipt)
   | {
     readonly kind: 'conflict'
-    readonly action: DesignProducerPublishAction
+    readonly action: Exclude<DesignProducerPublishAction, 'failed'>
     readonly expectedHead: string
     readonly currentHead: string
     readonly paths: string[]
@@ -217,7 +219,7 @@ export type DesignProducerPublishResult =
 
 /** Handle retained by the Producer owner for explicit or Host-default settlement. */
 export interface DesignProducerToolController {
-  /** The first successful finish receipt, or undefined before publication. */
+  /** The first terminal receipt, or undefined before settlement. */
   finished(): DesignProducerFinishReceipt | undefined
   /** The latest explicit model-selected action, if `design_publish` was attempted. */
   requestedAction(): DesignProducerPublishAction | undefined
@@ -494,7 +496,7 @@ export function registerDshProducerDesignTools(
   scripts?: DesignProducerSkillScriptPort,
   inheritedTools: readonly string[] = [],
   reconstructionSourceRoot?: string,
-  onPublished?: (receipt: DesignProducerFinishReceipt) => Promise<string>,
+  onSettled?: (receipt: DesignProducerFinishReceipt) => Promise<string>,
 ): DesignProducerToolController {
   const register = (definition: ToolDefinition) => {
     workspaceTools.add(definition)
@@ -502,6 +504,7 @@ export function registerDshProducerDesignTools(
   }
   let finishReceipt: DesignProducerFinishReceipt | undefined
   let explicitAction: DesignProducerPublishAction | undefined
+  let failureDiagnostics: readonly string[] = ['Producer explicitly reported that this invocation is incomplete.']
 
   const recover = async (receipt: ProducerProjectPublicationReceipt, mode: ProducerProjectPublicationMode, signal: AbortSignal): Promise<ProducerProjectPublicationReceipt> => {
     if (receipt.recovery === undefined || workspace.recoverPublication === undefined || signal.aborted) return receipt
@@ -522,6 +525,11 @@ export function registerDshProducerDesignTools(
     action: DesignProducerPublishAction,
     signal: AbortSignal,
   ): Promise<DesignProducerPublishResult> => {
+    if (finishReceipt?.kind === 'failed') {
+      return action === 'failed'
+        ? { kind: 'failed', action, diagnostics: [...finishReceipt.diagnostics] }
+        : { kind: 'invalid', action, diagnostics: ['A settled invocation cannot change its outcome.'] }
+    }
     if (finishReceipt !== undefined) {
       const priorAction = finishReceipt.kind === 'pause' ? 'handoff' : 'complete'
       if (action !== priorAction) return { kind: 'invalid', action, diagnostics: ['A committed publication cannot change its outcome.'] }
@@ -535,6 +543,10 @@ export function registerDshProducerDesignTools(
         ...(finishReceipt.indexMaintenance === undefined ? {} : { indexMaintenance: finishReceipt.indexMaintenance }),
         ...(finishReceipt.recovery === undefined ? {} : { recovery: finishReceipt.recovery }),
       }
+    }
+    if (action === 'failed') {
+      finishReceipt = Object.freeze({ kind: 'failed', diagnostics: Object.freeze([...failureDiagnostics]) })
+      return { kind: 'failed', action, diagnostics: [...failureDiagnostics] }
     }
     const unsettled = [...settlementDiagnostics()]
     if (unsettled.length > 0) {
@@ -1014,14 +1026,18 @@ export function registerDshProducerDesignTools(
   register(defineTool({
     name: 'design_publish',
     description: handoff === 'none'
-      ? 'Validate and atomically publish the complete Design working copy, ending this Producer invocation.'
-      : 'Validate and atomically publish once: handoff for the manifest-owned user gate, or complete for terminal completion.',
+      ? 'Settle this invocation: validate and publish complete, or report failed while preserving working files and the earlier publication.'
+      : 'Settle once: handoff for the manifest-owned user gate, complete for publication, or failed without completion publication. Include concrete diagnostics when known.',
     parameters: {
       action: {
         type: 'string',
         required: true,
-        enum: handoff === 'none' ? ['complete'] : ['handoff', 'complete'],
+        enum: handoff === 'none' ? ['complete', 'failed'] : ['handoff', 'complete', 'failed'],
         description: 'This invocation\'s publication action; it is not persisted Design state.',
+      },
+      diagnostics: {
+        type: 'array', items: { type: 'string' },
+        description: 'For failed, include the concrete errors that prevent completion when known. Omitting diagnostics still reports failure without inventing a cause. Working files and the earlier publication remain available.',
       },
     },
     output: {
@@ -1030,8 +1046,17 @@ export function registerDshProducerDesignTools(
           {
             type: 'object', additionalProperties: false,
             properties: {
+              kind: { type: 'string', required: true, const: 'failed' },
+              action: { type: 'string', required: true, const: 'failed' },
+              diagnostics: { type: 'array', required: true, items: { type: 'string' } },
+              settlement: { type: 'string' },
+            },
+          },
+          {
+            type: 'object', additionalProperties: false,
+            properties: {
               kind: { type: 'string', required: true, const: 'invalid' },
-              action: { type: 'string', required: true, enum: ['handoff', 'complete'] },
+              action: { type: 'string', required: true, enum: ['handoff', 'complete', 'failed'] },
               diagnostics: { type: 'array', required: true, items: { type: 'string' } },
             },
           },
@@ -1083,6 +1108,7 @@ export function registerDshProducerDesignTools(
       },
       render: (_args, value) => text([
         'settlement' in value && value.settlement ? value.settlement
+          : value.kind === 'failed' ? `The Design skill is not complete. Working files and the earlier publication are preserved.\n${value.diagnostics.join('\n')}`
           : value.kind === 'invalid' || value.kind === 'conflict' ? value.diagnostics.join('\n')
           : value.kind === 'unchanged' ? `Design state is unchanged at ${value.stateRevision} for ${value.action}.`
             : `Published Design revision ${value.stateRevision} for ${value.action}.`,
@@ -1093,10 +1119,16 @@ export function registerDshProducerDesignTools(
     async execute(args, exec) {
       const action = args.action as DesignProducerPublishAction
       explicitAction = action
+      if (action === 'failed') {
+        const supplied = (args.diagnostics ?? []).filter(value => value.trim() !== '')
+        failureDiagnostics = Object.freeze(supplied.length > 0
+          ? supplied
+          : ['Producer explicitly reported that this invocation is incomplete.'])
+      }
       const result = await settle(action, exec.signal)
-      if (result.kind === 'published' || result.kind === 'unchanged') {
-        if (onPublished !== undefined && finishReceipt !== undefined) {
-          const settlement = await onPublished(finishReceipt)
+      if (result.kind === 'published' || result.kind === 'unchanged' || result.kind === 'failed') {
+        if (onSettled !== undefined && finishReceipt !== undefined) {
+          const settlement = await onSettled(finishReceipt)
           if (finishReceipt.kind === 'pause') exec.concludeTurn()
           return { ...result, settlement }
         }

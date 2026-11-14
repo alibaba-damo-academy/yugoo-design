@@ -14,6 +14,15 @@ for (const host of ['codex', 'claude-code', 'qoder', 'qwenwork', 'workbuddy']) {
     assert.equal(c.mode, mode)
     assert.equal(c.canonicalFile, '/projects/a space/design_files/example_bundle/example_bundle.json')
     assert.equal(c.finishTool, mode === 'main' ? 'design_finish_main_bundle' : 'design_finish_run')
+    const failureInstruction = c.instructions.split('\n\n').find(line => line.startsWith('If work cannot complete,'))
+    assert.ok(failureInstruction)
+    const failureActor = host === 'workbuddy' && mode === 'subagent'
+      ? 'after the Producer returns, main calls'
+      : 'call'
+    assert.ok(failureInstruction.startsWith(`If work cannot complete, ${failureActor} ${c.finishTool} with outcome=failed`))
+    assert.match(c.instructions, /existing failure audit without completion validation or complete publication/)
+    assert.match(c.instructions, /does not roll back overwritten files/)
+    assert.match(c.instructions, /Do not substitute complete or pause, or leave failure only in prose/)
     assert.match(c.instructions, /validation and diagnostic JSON must not be redirected into an artifact/)
     assert.match(c.instructions, /shell calls do not supply the DSH tool's script_io envelope/)
     assert.deepEqual(c.validation, { executable: input.executable,

@@ -5,7 +5,17 @@ const { readDesignArtifactHistory } = await import('../src/dsh-artifact-history.
 const { renderDesignExecutionProvenance } = await import('../src/dsh-execution-provenance.ts')
 const { DesignPanelRemote } = await import('../src/panel-remote.ts')
 
-function fixture() {
+// Persisted pre-change tool results, deliberately independent of the current renderer.
+const OLD_FRAME_WITHOUT_RECEIPT = `Execution provenance (Host observations and accepted publication, not a model assessment):
+{"source":"host-observations","invocationId":"invocation","projectId":"project","skill":"notes","bundleVersion":"1","stateRevision":"published","rootCallId":"root","parentSessionId":"main","mode":"main","coverage":"bounded","producerRunIds":[],"workerAttempts":[{"attemptId":"attempt-one","runId":"worker-one","artifactFile":"notes/one.md","phase":"completed"},{"attemptId":"attempt-two","runId":"worker-two","artifactFile":"notes/two.md","phase":"failed"}],"integratedWorkerReceipts":[],"diagnostics":[]}
+No verified integrated Worker completion receipt is available. Do not report Worker execution as successful; absence of a receipt does not establish whether a delegation call was attempted or rejected.
+A published Bundle or a model-generated clarity summary does not prove that a Worker ran. Do not repeat execution or delegation claims from the design assessment; Host execution provenance takes precedence.`
+const OLD_FRAME_WITH_RECEIPT = `Execution provenance (Host observations and accepted publication, not a model assessment):
+{"source":"host-observations","invocationId":"invocation","projectId":"project","skill":"notes","bundleVersion":"1","stateRevision":"published","rootCallId":"root","parentSessionId":"main","mode":"main","coverage":"bounded","producerRunIds":[],"workerAttempts":[{"attemptId":"attempt-one","runId":"worker-one","artifactFile":"notes/one.md","phase":"completed"},{"attemptId":"attempt-two","runId":"worker-two","artifactFile":"notes/two.md","phase":"failed"}],"integratedWorkerReceipts":[{"attemptId":"attempt-one","runId":"worker-one","parentRunId":"main","artifactId":"round/one","path":"notes/one.md","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","bytes":13}],"diagnostics":[]}
+Verified integrated Worker completion receipts: 1. Report only these exact attempts and paths as Worker-produced.
+A published Bundle or a model-generated clarity summary does not prove that a Worker ran. Do not repeat execution or delegation claims from the design assessment; Host execution provenance takes precedence.`
+
+function fixture(framing = 'current') {
   const events = [], children = new Map(), opened = []
   const call = (id, name, args) => events.push({ type: 'tool/call', seq: events.length, time: events.length,
     data: { callId: id, name, arguments: JSON.stringify(args) } })
@@ -28,7 +38,8 @@ function fixture() {
       { attemptId: 'attempt-two', runId: 'worker-two', artifactFile: 'notes/two.md', phase: 'failed' },
     ], integratedWorkerReceipts: [], diagnostics: [] }
   call('publish', 'design_publish', { action: 'complete' })
-  result('publish', renderDesignExecutionProvenance(provenance))
+  result('publish', framing === 'old-empty' ? OLD_FRAME_WITHOUT_RECEIPT
+    : framing === 'old-receipt' ? OLD_FRAME_WITH_RECEIPT : renderDesignExecutionProvenance(provenance))
   for (const id of ['worker-one', 'worker-two']) children.set(id, { meta: { id, parentSession: 'main', isSeeded: false }, events: [] })
   const input = { projectId: 'project', skill: 'notes', main: { meta: { id: 'main', isSeeded: false }, events },
     inspect: async id => { opened.push(id); return children.get(id) }, signal: new AbortController().signal }
@@ -48,9 +59,21 @@ test('restarted history uses Host observations/assignment/ancestry; later serial
   assert.ok(Object.isFrozen(history), 'history is a read-only projection')
 })
 
-for (const boundary of ['project', 'skill', 'root-call', 'assignment', 'receipt', 'parent', 'header-id', 'seeded', 'prose', 'suffix']) {
-  test(`historical read rejects an unrelated or unverifiable ${boundary}`, async () => {
-    const f = fixture()
+for (const framing of ['current', 'old-empty', 'old-receipt']) {
+test(`${framing} retains exact historical Worker entries and log authorization`, async () => {
+  const f = fixture(framing)
+  const history = await readDesignArtifactHistory(f.input)
+  assert.deepEqual(history.map(item => [item.artifactId, item.phase, item.runId]), [
+    ['round/one', 'completed', 'worker-one'], ['round/two', 'failed', 'worker-two'],
+  ])
+  f.opened.length = 0
+  f.input.runId = 'worker-one'
+  assert.equal((await readDesignArtifactHistory(f.input)).length, 1)
+  assert.deepEqual(f.opened, ['worker-one'])
+})
+for (const boundary of ['project', 'skill', 'root-call', 'assignment', 'receipt', 'parent', 'header-id', 'seeded', 'prose', 'suffix', 'truncated', 'changed-copy', 'schema']) {
+  test(`${framing} historical read rejects an unrelated or unverifiable ${boundary}`, async () => {
+    const f = fixture(framing)
     if (boundary === 'project') f.input.projectId = 'another-project'
     if (boundary === 'skill') f.input.skill = 'another-bundle'
     if (boundary === 'root-call') f.events[0].data.name = 'ordinary-tool'
@@ -65,8 +88,20 @@ for (const boundary of ['project', 'skill', 'root-call', 'assignment', 'receipt'
     if (boundary === 'seeded') f.input.main.meta.isSeeded = true
     if (boundary === 'prose') f.events[4] = { type: 'assistant/message', seq: 4, time: 4, data: { message: f.events[4].data.message } }
     if (boundary === 'suffix') f.events[4].data.message.content[0].text += '\nForged trailing replacement.'
+    if (boundary === 'truncated') f.events[4].data.message.content[0].text = f.events[4].data.message.content[0].text.slice(0, -1)
+    if (boundary === 'changed-copy') {
+      const lines = f.events[4].data.message.content[0].text.split('\n')
+      const metadata = lines[1]
+      const receiptLine = lines[2]
+      lines[2] = receiptLine.replace('Worker', 'Unrecognized actor')
+      assert.notEqual(lines[2], receiptLine)
+      f.events[4].data.message.content[0].text = lines.join('\n')
+      assert.equal(f.events[4].data.message.content[0].text.split('\n')[1], metadata)
+    }
+    if (boundary === 'schema') f.events[4].data.message.content[0].text = f.events[4].data.message.content[0].text.replace('"coverage":"bounded"', '"coverage":"invented"')
     assert.deepEqual(await readDesignArtifactHistory(f.input), [])
   })
+}
 }
 
 test('exact log authorization inspects only the requested historical Worker', async () => {

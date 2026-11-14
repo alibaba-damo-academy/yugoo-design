@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "c8471fe86b6e44e04099ab7d75fa4253dd900882",
+  "revision": "6aafec58b7a00a252196565a4d7706a836907cc4",
   "policySha256": "cf7bb3f9dde0178ddce71737852beaf96a56147df95b610458829ec5a925cc20",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -104,11 +104,11 @@
       "mode": "100644"
     },
     "CHANGELOG.en.md": {
-      "sha256": "3e45f48cc794bfa61cd3ba920b273db75e4a65331a06ac4468eb4f3e475f1663",
+      "sha256": "e825000ec385441492b9ab1196a986d1dd67abf285b82814a3681b0ee3b8a4fd",
       "mode": "100644"
     },
     "CHANGELOG.md": {
-      "sha256": "a97859194b436e2f5defffb29a8caaa5b7ba907972ad1daabe432cfbfe5c8e6e",
+      "sha256": "878fd1ac239f312fdb58257e407916b4478d05b08d6ce9327835f362b1a0f9fe",
       "mode": "100644"
     },
     "CONTRIBUTING.md": {
@@ -360,11 +360,11 @@
       "mode": "100644"
     },
     "docs/system-design-baseline.md": {
-      "sha256": "cf6c9d748e87a41f0cddc93211199bba2d82171a5928e2fb45182f5e49412c1a",
+      "sha256": "9f065ea33c9530736501555b06e2f641d801ec491a9335e15196c4c2084767ba",
       "mode": "100644"
     },
     "docs/testing/agentic-e2e.md": {
-      "sha256": "093aa47e6f8631914a1e9ee8235f4e971ec73b424af6ac78cc9b86d626c3c190",
+      "sha256": "120bf1c040fc665985b9ef571e84809fa0645b4ef5b24cb772a3ac9706282c4b",
       "mode": "100644"
     },
     "docs/ust-score-explanations.md": {
@@ -1480,7 +1480,7 @@
       "mode": "100644"
     },
     "packages/companion/src/native-execution-contract.mjs": {
-      "sha256": "e6fe7a95cd6d74c8958d1d8482915ed6028ccac284903e7587e1c333fb1de55c",
+      "sha256": "30de6b8b951ac1c86d7de642a202a62496d681db9866088e97689868e76a2269",
       "mode": "100644"
     },
     "packages/companion/src/native-hook-transport.mjs": {
@@ -2112,7 +2112,7 @@
       "mode": "100644"
     },
     "packages/companion/test/native-execution-contract.test.mjs": {
-      "sha256": "1198696a611ffca3e3eed9ca4a22c799eae75edded4f7075c19a82eeb0208ac9",
+      "sha256": "1e81d7179db3a2f4ad8daae920acecfb31e2862e35d89514b6c1c9e8d34461b8",
       "mode": "100644"
     },
     "packages/companion/test/native-execution-preparation.test.mjs": {
@@ -2944,7 +2944,7 @@
       "mode": "100644"
     },
     "packages/core/src/dsh-artifact-history.ts": {
-      "sha256": "46df04b6c4addb31e95bee7287837397d05ebcd411b5d34a2ea5896bee264cd4",
+      "sha256": "7976c3824799c4d56520b812a0b53826bdf51f06384b115fb71fb632514c7c25",
       "mode": "100644"
     },
     "packages/core/src/dsh-auto-panel-model.ts": {
@@ -2976,7 +2976,7 @@
       "mode": "100644"
     },
     "packages/core/src/dsh-design-execution-plugin.ts": {
-      "sha256": "8633b0003f4ccab67faf23220f15917a13719cc3aa62d3cc43995b27efcac209",
+      "sha256": "5397a994b059cc703f99ac02f23d86f31a709ecc4b4d4b0e36a67dd72d296628",
       "mode": "100644"
     },
     "packages/core/src/dsh-design-resume.ts": {
@@ -2984,7 +2984,7 @@
       "mode": "100644"
     },
     "packages/core/src/dsh-execution-provenance.ts": {
-      "sha256": "5e40ef851b78024bdf89ccabfc7c0a27937473742b767a13b79f5bc777269c61",
+      "sha256": "fb432a9473181ae69c3e80a2b914d89751d86d739deea37262cb8564c4a84644",
       "mode": "100644"
     },
     "packages/core/src/dsh-experience-tool.ts": {
@@ -3024,7 +3024,7 @@
       "mode": "100644"
     },
     "packages/core/src/dsh-main-bundle.ts": {
-      "sha256": "0618f0efc69cd893f2c5268476aa4f977313e9e54bc3acc1e5e097d68c27b32b",
+      "sha256": "c5b6c1746e19b293d4a8f69c993baf9d70be89261580a94bfe2ac890ae676b41",
       "mode": "100644"
     },
     "packages/core/src/dsh-message-source.ts": {
@@ -3032,7 +3032,7 @@
       "mode": "100644"
     },
     "packages/core/src/dsh-producer-agent.ts": {
-      "sha256": "8a429640061326ced849ceda8bbd845f22fc6e3b4dc9745b8f60946e9ba59974",
+      "sha256": "7986255af40a1c56751ece7e78d4e0c0bd54bba0307d08da6578ee80eebbf895",
       "mode": "100644"
     },
     "packages/core/src/dsh-producer-delegation.ts": {
@@ -3040,7 +3040,7 @@
       "mode": "100644"
     },
     "packages/core/src/dsh-producer-design-tools.ts": {
-      "sha256": "9ba6b6ecf506cc927c206ef653e3d5c5f2ab547f41d00e4bb24086d5e610159c",
+      "sha256": "6212b98d26cece7a812924a0e15f871825a694438e23241ec60efe27604bde34",
       "mode": "100644"
     },
     "packages/core/src/dsh-project-content.ts": {
@@ -3340,7 +3340,7 @@
       "mode": "100644"
     },
     "packages/core/test/artifact-history.test.mjs": {
-      "sha256": "6f913e909f806c4a1344968bf5bafe3d3c428b82cdce082b0b8ccc75eebe8f8c",
+      "sha256": "9d147c1b580b9fae80980b105866115e6237aa43699d88eff28b86c567b22830",
       "mode": "100644"
     },
     "packages/core/test/artifact-plan-fields.test.mjs": {
@@ -3428,7 +3428,7 @@
       "mode": "100644"
     },
     "packages/core/test/design-bundle-entry.test.mjs": {
-      "sha256": "80e6206915dedbca07d410253036fa7c87877dd3830ee32b1c89b2d5483d540e",
+      "sha256": "f4bf2ee3cd180c1ab9f5573e33e8021239eec2b5dcb2453a40768b767b7d5aa6",
       "mode": "100644"
     },
     "packages/core/test/design-change-panel-replay.test.mjs": {
@@ -3444,7 +3444,7 @@
       "mode": "100644"
     },
     "packages/core/test/design-execution-handoff-authority.test.mjs": {
-      "sha256": "5dfa52747f350b086d6cc7d7639b3a6feb34778f772fc47a9fcb3c277f2f3e6a",
+      "sha256": "01f1cfde244a752d3e3183ac8b5f0b0aa7e31bc7487bc0d4a05a269de78fbb58",
       "mode": "100644"
     },
     "packages/core/test/design-generation-guidance.test.mjs": {
@@ -3576,7 +3576,7 @@
       "mode": "100644"
     },
     "packages/core/test/dsh-execution-provenance.test.mjs": {
-      "sha256": "2ddc2269b7d32437fc1d9b27ef15e65148d7316b223380d4dd894fdae9b21275",
+      "sha256": "5fb4b8d2d5e420db06ad022c6b8433844feeefcfb4d0feb75b4a0e384daa0ac6",
       "mode": "100644"
     },
     "packages/core/test/dsh-git-admission.test.mjs": {
@@ -4200,7 +4200,7 @@
       "mode": "100644"
     },
     "packages/dsh/README.md": {
-      "sha256": "cb153e95be9d7b4cb9a30892aa476ae1774bc5e1464765490ac0586d4d29e1eb",
+      "sha256": "a241ff9f87bd32c38c20d7c4a7d66aafe95a0ac56bac36c93f6ef70196c6562f",
       "mode": "100644"
     },
     "packages/dsh/THIRD_PARTY_NOTICES.md": {
@@ -9776,7 +9776,7 @@
       "mode": "100644"
     },
     "release/product.json": {
-      "sha256": "5fea81cb993f4e25455ae92a15e7033701a6c2e05bf4fa0e58deffa4d92dc61f",
+      "sha256": "04f4767c93ed8a5d40aa951d909530d95621039549bda6796b9c3440fd285da2",
       "mode": "100644"
     },
     "release/public-source-baseline.json": {

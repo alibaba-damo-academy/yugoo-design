@@ -188,14 +188,30 @@ export async function projectDesignExecutionProvenance(request: {
 }
 
 /** No free-form design assessment can establish a successful Worker execution. */
-export function renderDesignExecutionProvenance(provenance?: DesignExecutionProvenance): string {
+export const DESIGN_EXECUTION_PROVENANCE_HEADING = 'Execution provenance (Host observations and accepted publication, not a model assessment):'
+
+function renderProvenanceFrame(provenance: DesignExecutionProvenance | undefined, previousCopy: boolean): string {
   const receipts = provenance?.integratedWorkerReceipts ?? []
   return [
-    'Execution provenance (Host observations and accepted publication, not a model assessment):',
+    DESIGN_EXECUTION_PROVENANCE_HEADING,
     ...(provenance === undefined ? ['Unavailable for this result.'] : [JSON.stringify(provenance)]),
     receipts.length === 0
-      ? 'No verified integrated Worker completion receipt is available. Do not report Worker execution as successful; absence of a receipt does not establish whether a delegation call was attempted or rejected.'
+      ? previousCopy
+        ? 'No verified integrated Worker completion receipt is available. Do not report Worker execution as successful; absence of a receipt does not establish whether a delegation call was attempted or rejected.'
+        : 'Delegated Worker completion is unverified; this does not establish whether delegation was attempted or rejected, or whether Producer scripts or validation succeeded or failed.'
       : `Verified integrated Worker completion receipts: ${receipts.length}. Report only these exact attempts and paths as Worker-produced.`,
-    'A published Bundle or a model-generated clarity summary does not prove that a Worker ran. Do not repeat execution or delegation claims from the design assessment; Host execution provenance takes precedence.',
+    previousCopy
+      ? 'A published Bundle or a model-generated clarity summary does not prove that a Worker ran. Do not repeat execution or delegation claims from the design assessment; Host execution provenance takes precedence.'
+      : 'Worker execution claims use these Host observations, not the design assessment. Producer script and validation results are separate evidence.',
   ].join('\n')
+}
+
+export function renderDesignExecutionProvenance(provenance?: DesignExecutionProvenance): string {
+  return renderProvenanceFrame(provenance, false)
+}
+
+/** Retain exact earlier Host frames; accepting metadata/schema/ancestry remains the reader's job. */
+export function hasExactDesignExecutionProvenanceFrame(text: string, provenance: DesignExecutionProvenance): boolean {
+  return text.endsWith(renderProvenanceFrame(provenance, false))
+    || text.endsWith(renderProvenanceFrame(provenance, true))
 }
