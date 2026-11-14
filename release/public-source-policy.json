@@ -7205,6 +7205,12 @@
     },
     {
       "kind": "file",
+      "path": "third-party/companion/bundled-js/mdast-util-to-hast@13.2.2/license",
+      "action": "include",
+      "reason": "Original MIT license from the exact mdast-util-to-hast 13.2.2 npm archive; archive SRI, metadata identity and member provenance are retained in release/dsh-distribution-materials.json. No complete inventory or release license acceptance claim."
+    },
+    {
+      "kind": "file",
       "path": "third-party/companion/bundled-js/mdast-util-to-markdown@2.1.3/license",
       "action": "include",
       "reason": "Original attribution material for identified emitted Companion code; exact package/version and archive-member correspondence in emitted-originals-index.json. Source inclusion only, not complete release licensing or publication acceptance."

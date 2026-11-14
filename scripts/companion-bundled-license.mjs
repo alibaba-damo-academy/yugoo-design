@@ -290,6 +290,7 @@ export const BUNDLED_JS_LICENSE_FILES = Object.freeze([
   "mdast-util-from-markdown@2.0.3/license",
   "remark-parse@11.0.0/license",
   "mdast-util-to-hast@13.2.1/license",
+  "mdast-util-to-hast@13.2.2/license",
   "trim-lines@3.0.1/license",
   "@ungap/structured-clone@1.4.0/LICENSE",
   "unist-util-is@6.0.1/license",

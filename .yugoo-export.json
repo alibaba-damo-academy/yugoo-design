@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": "69f578b1b9d03d1a936ce84de31b330b643afe54",
-  "policySha256": "cf7bb3f9dde0178ddce71737852beaf96a56147df95b610458829ec5a925cc20",
+  "revision": "e6015ed793e3569e189acb71c44410df89b7b9f8",
+  "policySha256": "dc6be040bd3a12b8785a11c249e4e0ab72c08e2ff63e0ec25fbd2ae3319b1b06",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
       "sha256": "99c0ddca35a9a65ca9b097ee9072994a1ca2a4848ef6fe3ca07f5f29956806ed",
@@ -9776,7 +9776,7 @@
       "mode": "100644"
     },
     "release/dsh-distribution-materials.json": {
-      "sha256": "d83b8d45be99c558296bfe7124b45023364dfdcf4a6077a80f98c98440d68347",
+      "sha256": "34aec71d0b80efa8ce336f699dc5817ab32a2480bc498ddf00de42aa9adeeb1e",
       "mode": "100644"
     },
     "release/product-package-template.json": {
@@ -9792,7 +9792,7 @@
       "mode": "100644"
     },
     "release/public-source-policy.json": {
-      "sha256": "b4cb8740e509d6e575d4b8a03e841753535519ff128beba5527020fe4709c944",
+      "sha256": "1825f18c4bfc1008572b48bbd64c01cef8564ac61c4d082d00c10f514df2198a",
       "mode": "100644"
     },
     "release/public-source-test-selection.json": {
@@ -9844,7 +9844,7 @@
       "mode": "100644"
     },
     "scripts/companion-bundled-license.mjs": {
-      "sha256": "8c9cf50976fef540a4d7f5529dea4b535d08081b4dd3ae04ca9b0034db0c14c2",
+      "sha256": "1a3322887b6d0d18c7100d8ada950d1dda2adef000fbf6407ec77ca28273c34b",
       "mode": "100644"
     },
     "scripts/companion-bundled-license.test.mjs": {
@@ -9944,7 +9944,7 @@
       "mode": "100644"
     },
     "scripts/dsh-release-observations.test.mjs": {
-      "sha256": "2ab3e8d504da4d0aaf183980dbae32aa3a3910aa6a06d05e42acfc6c019babd7",
+      "sha256": "3f5579c0c48f2a0de4464546bd234d1f804976eea588f978f61f15738030353c",
       "mode": "100644"
     },
     "scripts/embedded-image-loader-proof.mjs": {
@@ -10164,7 +10164,7 @@
       "mode": "100644"
     },
     "scripts/public-snapshot-preflight.test.mjs": {
-      "sha256": "a083ebf8c2792dedb6b15e665e686c91c7b7963f90b665f7995689a04360ebf7",
+      "sha256": "0dfd29b8fe9d919d30aaaab48877ec971cb23de587e6f04b545b775308b4974b",
       "mode": "100644"
     },
     "scripts/public-snapshot-stage.mjs": {
@@ -11717,6 +11717,10 @@
     },
     "third-party/companion/bundled-js/mdast-util-to-hast@13.2.1/license": {
       "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+      "mode": "100644"
+    },
+    "third-party/companion/bundled-js/mdast-util-to-hast@13.2.2/license": {
+      "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
       "mode": "100644"
     },
     "third-party/companion/bundled-js/mdast-util-to-markdown@2.1.3/license": {

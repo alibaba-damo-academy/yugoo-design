@@ -21,6 +21,24 @@ test('current component associations require actual identity; absent old associa
   for (const module of [{ name: 'example', version: '1.2.4', packageMetadataSha256: 'a'.repeat(64) }, { name: 'example', version: '1.2.3', packageMetadataSha256: 'b'.repeat(64) }, { name: 'example', version: '1.2.3', packageMetadataSha256: 'b'.repeat(64), firstParty: true }]) assert.throws(() => bindObservedComponents(selection, { 'lib/new.js': [module] }), /component identity changed/)
   assert.equal(bindObservedComponents(selection, { 'lib/new.js': [{ name: 'unrecorded', version: '1.0.0' }] }).unassociatedObservedModules.length, 1)
 })
+test('registered Markdown versions retain exact package identity and their original license', async () => {
+  const manifest = JSON.parse(await readFile(new URL('../release/dsh-distribution-materials.json', import.meta.url), 'utf8'))
+  const metadata = '86b29cc061015cbe70dd3c998e31af6c0ebf2d44577bdc63a91407fe84602a78'
+  for (const name of ['dsh-design-panel', 'dsh-design-provider-web-app']) {
+    const selection = manifest.packages[name]
+    const module = { name: 'mdast-util-to-hast', version: '13.2.2', packageMetadataSha256: metadata }
+    const bound = bindObservedComponents(selection, { 'lib/client.js': [module] })
+    const current = selection.components[bound.componentBindings[0].componentIndex]
+    assert.equal(current.version, '13.2.2')
+    assert.deepEqual(current.outputs, [], 'current output association still comes from the actual build')
+    assert.ok(bound.historicalComponentsWithoutCurrentAssociation.some(item => item.name === module.name && item.version === '13.2.1'))
+    const original = selection.components.find(item => item.name === module.name && item.version === '13.2.1')
+    assert.throws(() => bindObservedComponents(selection, { 'lib/client.js': [{ ...module, packageMetadataSha256: original.packageMetadataSha256 }] }), /component identity changed/)
+    assert.throws(() => bindObservedComponents(selection, { 'lib/client.js': [{ ...module, version: '13.2.3' }] }), /component identity changed/)
+    const material = selection.materials.find(item => item.path === current.materials[0].path)
+    assert.equal(sha(await readFile(new URL('../' + material.source, import.meta.url))), 'dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb')
+  }
+})
 test('fonts are associated by actual decoded data bytes, not old chunk names', () => {
   const font = Buffer.from('font fixture'), code = 'x="data:font/woff2;base64,' + font.toString('base64') + '"'
   assert.deepEqual(dataUrls(code), [{ mediaType: 'font/woff2', bytes: font.length, sha256: sha(font) }])
