@@ -2,7 +2,7 @@
 import { createServer } from 'node:http'
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto'
 
-export function createRelayQueue({ now = Date.now, freshMs = 15000, deadlineMs = 30000, terminalLimit = 32 } = {}) {
+export function createRelayQueue({ now = Date.now, freshMs = 15000, terminalLimit = 32 } = {}) {
   let owner, generation = 0, onlineAt = -Infinity, visible = false, closed = false, current
   const jobs = new Map()
   // Bounded tombstones never forget a submitted ID during this service's
@@ -16,16 +16,23 @@ export function createRelayQueue({ now = Date.now, freshMs = 15000, deadlineMs =
     const terminal = [...jobs.values()].filter(job => job !== current && ['submitted_unverified', 'not_delivered'].includes(job.status))
     for (const job of terminal.slice(0, Math.max(0, terminal.length - terminalLimit))) jobs.delete(job.id)
   }
-  const expire = () => { if (current && now() >= current.deadline && ['queued', 'claimed'].includes(current.status)) current.status = current.status === 'queued' ? 'not_delivered' : 'delivery_unknown' }
   const snapshot = job => job ? { id: job.id, status: job.status } : undefined
   const available = () => !closed && visible && now() - onlineAt < freshMs
+  const markUnavailable = () => {
+    if (current?.status === 'queued') current.status = 'not_delivered'
+    else if (current?.status === 'claimed') current.status = 'delivery_unknown'
+  }
+  // A removed Host iframe need not dispatch pagehide. Reuse its existing
+  // heartbeat lease to recognize owner loss, not elapsed message duration.
+  // A late receipt from that same generation can still settle the unknown job.
+  const reconcileOwner = () => { if (!available()) markUnavailable() }
   return {
     pulse(clientId, isVisible, lease) {
       if (closed || !/^[a-f0-9-]{36}$/.test(clientId)) throw Error('Relay is closed or client identity is invalid.')
       if (lease !== undefined && (lease !== generation || clientId !== owner)) throw Error('Stale widget generation. Reopen it from the original conversation.')
       if (owner && owner !== clientId && now() - onlineAt < freshMs) throw Error('Another widget owns this relay. Wait for its lease to expire, then reconnect from the original conversation.')
       if (owner !== clientId) {
-        if (current?.status === 'claimed') current.status = 'delivery_unknown'
+        markUnavailable()
         owner = clientId; generation++
       }
       owner = clientId; onlineAt = now(); visible = isVisible === true
@@ -33,12 +40,11 @@ export function createRelayQueue({ now = Date.now, freshMs = 15000, deadlineMs =
     },
     release(clientId, lease) {
       if (closed || clientId !== owner || lease !== generation) throw Error('Stale widget generation.')
-      if (current?.status === 'claimed') current.status = 'delivery_unknown'
+      markUnavailable()
       owner = undefined; generation++; onlineAt = -Infinity; visible = false
       return { online: false }
     },
     submit(id, text) {
-      expire()
       if (!/^[a-f0-9-]{36}$/.test(id) || typeof text !== 'string' || !text.trim() || text.length > 16000) throw Error('Invalid message.')
       if (jobs.has(id)) {
         if (jobs.get(id).text !== text) throw Error('Message ID reused with different content.')
@@ -48,11 +54,10 @@ export function createRelayQueue({ now = Date.now, freshMs = 15000, deadlineMs =
       if (!available()) throw Error('请回到原 WorkBuddy 对话，保持连接控件打开；当前未发送。')
       if (current && ['queued', 'claimed', 'delivery_unknown'].includes(current.status)) throw Error('前一条消息尚未确认，请检查原会话；不会自动重发。')
       remember(id)
-      current = { id, text, status: 'queued', deadline: now() + deadlineMs }; jobs.set(id, current); prune()
+      current = { id, text, status: 'queued' }; jobs.set(id, current); prune()
       return snapshot(current)
     },
     take(clientId, lease) {
-      expire()
       if (clientId !== owner || (lease !== undefined && lease !== generation) || !available()) throw Error('Original widget is not ready.')
       // Keep this queue quarantined, but expose the existing explicit reopen
       // path. A new owned service can accept new events, never replay this one.
@@ -62,14 +67,13 @@ export function createRelayQueue({ now = Date.now, freshMs = 15000, deadlineMs =
       return { message: { id: current.id, text: current.text } }
     },
     settle(clientId, id, status, lease) {
-      expire()
       if (closed || clientId !== owner || (lease !== undefined && lease !== generation) || current?.id !== id || current.claimant !== clientId || current.claimGeneration !== generation || !['claimed', 'delivery_unknown'].includes(current.status)) throw Error('Stale delivery result.')
       if (!['submitted_unverified', 'delivery_unknown'].includes(status)) throw Error('Invalid delivery status.')
       current.status = status
       return snapshot(current)
     },
-    status(id) { expire(); return { online: available(), ...(id ? { message: snapshot(jobs.get(id)) } : {}), retainedReceipts: jobs.size } },
-    close() { closed = true; visible = false; if (current?.status === 'queued') current.status = 'not_delivered'; else if (current?.status === 'claimed') current.status = 'delivery_unknown' },
+    status(id) { reconcileOwner(); return { online: available(), ...(id ? { message: snapshot(jobs.get(id)) } : {}), retainedReceipts: jobs.size } },
+    close() { closed = true; visible = false; markUnavailable() },
   }
 }
 

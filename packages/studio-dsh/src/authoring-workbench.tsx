@@ -432,8 +432,10 @@ function AuthoringControls({ snapshot, zh, intent, setIntent, attempt, history, 
           actions={connected ? [{ label: t('Check request status', '核对请求结果'), onClick: check, disabled: busy }] : undefined} />}
         {!attempt?.error && !attempt?.uncertain && attempt?.observation?.terminal && !saved && (!attempt.prepared || !attempt.prepared.candidate.valid) && <StudioFeedback
           feedbackId={`repair:${value.id}:${attempt.prepared?.candidate.digest ?? 'none'}`} tone="error" locale={zh ? 'zh' : 'en'}
-          title={attempt.prepared ? t('Changes need repair before saving', '修改仍需完善后才能保存') : t('Execution ended without a candidate', '执行结束，尚无候选')}
-          message={t('Your input and available changes are retained. Describe the repair below and send it to continue this conversation.', '输入和已有修改均已保留。在下方描述修复诉求并发送，即可继续本次对话。')}
+          title={attempt.prepared ? t('Changes need further work', '修改仍需完善') : t('Execution ended without a candidate', '执行结束，尚无候选')}
+          message={attempt.prepared
+            ? t('Your input and changes are retained. Validation issues remain. Review and save a draft, or describe a repair below and send it to continue this conversation.', '输入和已有修改均已保留，校验仍有问题。可审阅并保存草稿，或在下方描述修复诉求并发送，继续本次对话。')
+            : t('Your input and available changes are retained. Describe the repair below and send it to continue this conversation.', '输入和已有修改均已保留。在下方描述修复诉求并发送，即可继续本次对话。')}
           details={attempt.prepared?.candidate.diagnostics.map(item => ({ message: item.message }))}
           actions={[{ label: t('Continue repair', '继续修复'), disabled: !canContinue || !attempt.reference || !attempt.owned || !attempt.observation.consumed || attempt.observation.pendingInput,
             onClick: continueRepair }]} />}

@@ -7,7 +7,7 @@ import { createWorkBuddyConnection } from './workbuddy-connection.mjs'
 export async function startWorkBuddyPanel(options) {
   for (const key of ['projectRoot','nativeCwd','transcriptPath','runtimeRoot','stateRoot']) if (!isAbsolute(options[key] ?? '')) throw Error(`Exact absolute ${key} required.`)
   let panel, started=false
-  const relay=await startWorkBuddyRelay({idleTimeoutMs:3600000,maxLifetimeMs:14400000,
+  const relay=await startWorkBuddyRelay({idleTimeoutMs:3600000,
     getLastActivityAt:()=>panel?.lastAuthenticatedActivityAt,
     onClose:async lifecycle=>{
       // Preserve a bounded, credential-free diagnostic before revoking the live

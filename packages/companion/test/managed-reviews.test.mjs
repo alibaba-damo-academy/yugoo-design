@@ -1,12 +1,14 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
-import {readFile,writeFile} from 'node:fs/promises'
+import {readFile,writeFile,mkdtemp,readdir,rm} from 'node:fs/promises'
+import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {fixture,threadId} from './fixture.mjs'
 import {createCompanionReviews} from '../src/reviews.mjs'
 import {reviewSnapshot,createManagedReviewScheduler} from '../src/managed-reviews.mjs'
 import {callCompanion} from '../src/connection-file.mjs'
 import {fork} from 'node:child_process'
+import {GitVersioning} from '../../core/lib/index.js'
 const alignment={schemaVersion:1,questions:[]}
 const api=(f,id=threadId)=>createCompanionReviews({project:f.server.project,stateRoot:f.options.stateRoot,threadId:id,managedExecution:true})
 const identity=r=>({reviewId:r.reviewId,ownerId:r.execution.ownerId,attemptId:r.execution.attemptId})
@@ -94,6 +96,50 @@ test('snapshot uses committed bytes rather than live design edits',async()=>{
   snapshot=await reviewSnapshot(f.options.projectRoot,w.checkpoint)
   assert.equal(await readFile(join(snapshot.root,path),'utf8'),original)
  }finally{await snapshot?.close();await f.close()}
+})
+
+for(const withSignal of [false,true])test(`snapshot Git reads use the caller signal unchanged (${withSignal?'provided':'absent'})`,async t=>{
+ const f=await fixture();let snapshot
+ try{
+  await f.server.project.savePanel({skill:'smart_questions',state:{questions:{}},eventId:'snapshot-signal'})
+  const {checkpoint}=await f.server.project.readWorkspace(),signal=withSignal?new AbortController().signal:undefined
+  const observed=[]
+  for(const [method,index]of [['listEntriesAt',1],['readBytesAt',2]]){
+   const original=GitVersioning.prototype[method]
+   t.mock.method(GitVersioning.prototype,method,function(...args){observed.push(args[index]);return original.apply(this,args)})
+  }
+  snapshot=await reviewSnapshot(f.options.projectRoot,checkpoint,signal)
+  assert.ok(observed.length>1,'list and file reads both run')
+  for(const actual of observed)assert.equal(actual,signal)
+  assert.ok((await readFile(join(snapshot.root,'design_files/smart_questions/smart_questions.json'),'utf8')).length)
+ }finally{t.mock.restoreAll();await snapshot?.close();await f.close()}
+})
+
+test('caller cancellation during a snapshot read rejects and removes only its temporary snapshot',async t=>{
+ const f=await fixture(),controller=new AbortController(),previousTmp=process.env.TMPDIR
+ const scratch=await mkdtemp(join(tmpdir(),'review-snapshot-cancel-test-'))
+ let started
+ const reading=new Promise(resolve=>{started=resolve})
+ try{
+  await f.server.project.savePanel({skill:'smart_questions',state:{questions:{}},eventId:'snapshot-cancel'})
+  const {checkpoint}=await f.server.project.readWorkspace()
+  t.mock.method(GitVersioning.prototype,'readBytesAt',async function(_checkpoint,_path,signal){
+   started(signal)
+   await new Promise((resolve,reject)=>signal.addEventListener('abort',()=>reject(signal.reason),{once:true}))
+  })
+  process.env.TMPDIR=scratch
+  const running=reviewSnapshot(f.options.projectRoot,checkpoint,controller.signal)
+  const rejection=assert.rejects(running,/Host closed/)
+  const actualSignal=await reading
+  controller.abort(new Error('Host closed'))
+  await rejection
+  assert.equal(actualSignal,controller.signal)
+  assert.deepEqual(await readdir(scratch),[])
+ }finally{
+  t.mock.restoreAll()
+  if(previousTmp===undefined)delete process.env.TMPDIR;else process.env.TMPDIR=previousTmp
+  await rm(scratch,{recursive:true,force:true});await f.close()
+ }
 })
 
 test('switching dispatch mode cannot silently strand or duplicate a native request',async()=>{

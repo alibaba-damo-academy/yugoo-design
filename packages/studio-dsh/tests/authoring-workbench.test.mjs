@@ -39,7 +39,7 @@ const { StudioAuthoringWorkbench } = await import(new URL(built ? '../lib/author
 after(() => { dom.window.close(); hooks.deregister() })
 const h = React.createElement
 const button = label => [...document.querySelectorAll('button')].find(value => value.textContent.trim() === label || value.getAttribute('aria-label') === label)
-const intent = () => document.querySelector('section[aria-label="AI changes"] textarea')
+const intent = () => document.querySelector('.ygd-studio-conversation textarea')
 const source = () => document.querySelector('textarea[aria-label="SKILL.md"], textarea[aria-label="mindset.md"]')
 const deferred = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no }); return { promise, resolve, reject } }
 async function flush() { await React.act(async () => { await new Promise(resolve => setTimeout(resolve, 5)) }) }
@@ -53,6 +53,15 @@ async function change(node, value) {
   })
 }
 async function click(label) { const node = button(label); assert.ok(node, label); assert.equal(node.disabled, false, `${label} is enabled`); await React.act(async () => node.click()); await flush() }
+async function refreshCopy() {
+  const more = document.querySelector('summary[aria-label="More actions"]')
+  assert.ok(more, 'refresh belongs to the existing working-copy actions menu')
+  await React.act(async () => more.click())
+  assert.equal(more.parentElement.open, true)
+  assert.ok(more.parentElement.contains(button('Refresh content')))
+  await click('Refresh content')
+  assert.equal(more.parentElement.open, false, 'choosing refresh closes the existing menu')
+}
 
 async function fixture(t, options = {}) {
   const stateRoot = await mkdtemp(join(tmpdir(), 'studio-authoring-workbench-'))
@@ -79,6 +88,7 @@ async function fixture(t, options = {}) {
   const request = { id: record.id, expectedRevision: record.revision, changes,
     ...(options.kit && !options.noKitPreview ? { bundle: { name: record.mounts[0].bundle.name, version: record.mounts[0].bundle.version } } : {}) }
   const prepared = { request, candidate: await service.prepareChanges(request) }
+  const previewReads = new Set()
   const calls = { start: [], resume: [], cancel: [], save: [], saveSettled: [], changed: [], dirty: [], dirtyDetails: [], observe: [], prepared: [], preview: [] }
   let locator = options.content || options.hostCandidate ? { requestId: 'host-request-1', id: record.id, expectedRevision: record.revision,
     bundle: options.kit ? request.bundle : record.bundle, digest: prepared.candidate.digest } : undefined
@@ -93,7 +103,12 @@ async function fixture(t, options = {}) {
   const instances = {
     ...service,
     read: async input => { if (readGate) await readGate.promise; const value = await service.read(input); return options.record ? options.record(value) : value },
-    preview: async input => { calls.preview.push(input); if (previewGate) return previewGate.promise; return service.preview(input) },
+    preview: input => {
+      calls.preview.push(input)
+      const read = previewGate ? previewGate.promise : service.preview(input)
+      previewReads.add(read)
+      return read.finally(() => previewReads.delete(read))
+    },
     saveChanges: async input => { calls.save.push(input); try { if (saveGate) await saveGate.promise; const value = await service.saveChanges(input); if (saveLost) throw new Error('Save response lost'); return value } finally { calls.saveSettled.push(input) } },
   }
   const dispatch = async input => {
@@ -112,9 +127,9 @@ async function fixture(t, options = {}) {
   }
   const root = createRoot(document.getElementById('root'))
   let mounted = true
-  const render = async (selected = client, nextLocator = locator) => {
+  const render = async (selected = client, nextLocator = locator, locale = 'en') => {
     locator = nextLocator
-    await React.act(async () => root.render(h(StudioAuthoringWorkbench, { client: selected, id: record.id, locale: 'en', onBack() {},
+    await React.act(async () => root.render(h(StudioAuthoringWorkbench, { client: selected, id: record.id, locale, onBack() {},
       initialPrompt: options.initialPrompt,
       presentation: options.content ? 'content-only' : undefined, preparedLocator: locator,
       initialSelection: !calls.changed.length ? locator ? { expectedRevision: locator.expectedRevision, bundle: locator.bundle }
@@ -134,7 +149,14 @@ async function fixture(t, options = {}) {
   await until(() => button('Source Files')); await click('Source Files');
   await click(options.kit ? 'mindset.md' : 'SKILL.md')
   await until(() => source())
+  // Opening the real workbench starts a real S2 preview transaction. Finish
+  // fixture reads before injecting a fabricated native candidate, without
+  // retrying or serializing production operations. Explicit overlap is tested
+  // at Studio's storage boundary.
+  const waitForPreviewReads = () => until(() => previewReads.size === 0)
+  await waitForPreviewReads()
   return { service, storage, record, prepared, calls, client, render, unmount, reviewedOnEntry, locator: () => locator,
+    waitForPreviewReads,
     candidate(value) { candidate = value }, terminal(value) { terminal = value }, owned(value) { owned = value }, turn(value) { turn = value },
     consumed(value) { consumed = value }, nativeStatus(value) { nativeStatus = value }, cancelGate(value) { cancelGate = value },
     poll: async () => {
@@ -157,6 +179,7 @@ async function dismissProposal() {
 }
 
 async function nextProposal(f, marker, extra = []) {
+  await f.waitForPreviewReads()
   const path = f.record.kind === 'kit' ? 'mindset.md' : 'SKILL.md'
   const saved = await f.service.readFile({ id: f.record.id, path })
   const request = { ...f.prepared.request, changes: [{ path, content: saved.content + '\n' + marker + '\n' }, ...extra] }
@@ -170,10 +193,8 @@ test('same running request refreshes invalid then valid candidates, diagnostics 
   await until(() => source()?.value.includes('First invalid proposal'))
   await until(() => !button('Save').disabled)
   assert.equal(document.querySelector('dialog[open]'), null, 'intermediate validation stays noninterrupting')
-  await click('Save')
-  assert.ok(document.querySelector('dialog[open]'))
-  assert.equal(f.calls.save.length, 0)
-  await click('Close error dialog')
+  await assert.rejects(f.service.saveChanges({ ...invalid.request, mode: 'validated', digest: invalid.candidate.digest }), /failed Core preview/)
+  assert.equal(f.calls.save.length, 0, 'explicit validated-save rejection does not submit an ordinary draft save')
   await click('schema.yaml'); await until(() => document.querySelector('textarea[aria-label="schema.yaml"]'))
   await click('Diff')
   const next = await nextProposal(f, 'Complete corrected proposal')
@@ -186,10 +207,9 @@ test('same running request refreshes invalid then valid candidates, diagnostics 
   f.candidate(invalid); await f.poll()
   await until(() => source()?.value.includes('First invalid proposal'))
   await until(() => !button('Save').disabled)
-  await click('Save')
-  assert.ok(document.querySelector('dialog[open]'), 'the returned invalid digest explains its validation instead of writing')
-  assert.equal(f.calls.save.length, 0)
-  await click('Close error dialog')
+  assert.equal(invalid.candidate.valid, false, 'the returned invalid digest retains its actual diagnostics')
+  assert.equal(f.calls.save.length, 0, 'candidate refresh never saves automatically')
+  assert.equal((await f.service.read(f.record.id)).revision, f.record.revision)
   f.candidate(next); await f.poll()
   await until(() => source()?.value.includes('Complete corrected proposal') && !button('Save').disabled)
   assert.equal(f.calls.save.length, 0); assert.equal(f.calls.start.length, 1)
@@ -228,15 +248,15 @@ test('new proposal retains all manual file drafts and prompt until explicit late
 test('title edits made while AI runs survive candidates until explicitly discarded', async t => {
   const f = await fixture(t, { running: true, noCandidate: true }); await f.ask()
   await React.act(async () => document.querySelector('button[aria-label="Rename"]').click())
-  const title = document.querySelector('input[aria-label="Copy title"]'); await change(title, 'My unsaved copy name')
+  const title = document.querySelector('input[aria-label="Name"]'); await change(title, 'My unsaved copy name')
   f.candidate(f.prepared); await f.poll()
   const next = await nextProposal(f, 'Latest after title edit'); f.candidate(next); await f.poll()
-  assert.equal(document.querySelector('input[aria-label="Copy title"]'), title); assert.equal(title.value, 'My unsaved copy name')
+  assert.equal(document.querySelector('input[aria-label="Name"]'), title); assert.equal(title.value, 'My unsaved copy name')
   window.confirm = () => false; t.after(() => { window.confirm = () => true })
   await click('Review latest changes'); assert.equal(title.value, 'My unsaved copy name')
   window.confirm = () => true; await click('Review latest changes')
   await until(() => source()?.value.includes('Latest after title edit'))
-  assert.equal(document.querySelector('input[aria-label="Copy title"]'), null)
+  assert.equal(document.querySelector('input[aria-label="Name"]'), null)
   assert.equal((await f.service.read({ id: f.record.id })).revision, 0)
 })
 
@@ -350,7 +370,7 @@ test('explicit content-only compatibility reviews exact host candidates through 
   await f.render(f.client, locator); await until(() => button('Save') && !button('Save').disabled)
   assert.equal(f.calls.save.length, 1, 'new candidate arrival does not save')
   await click('Save'); await until(() => f.calls.changed.length === 2)
-  assert.deepEqual(f.calls.save[1], { ...request, mode: 'validated', digest: second.candidate.digest })
+  assert.deepEqual(f.calls.save[1], { ...request, mode: 'draft', digest: second.candidate.digest })
   const reopened = await createStudioInstances(f.storage)
   assert.equal((await reopened.read(f.record.id)).revision, 2)
   assert.match((await reopened.readFile({ id: f.record.id, path: 'SKILL.md' })).content, /Confirm the evidence/)
@@ -428,7 +448,7 @@ test('nonempty source → one intent → explicit actual shared Panel review →
   assert.equal(document.querySelector('.dsh-panel-sample-preview input,.dsh-panel-sample-preview textarea'), null)
   assert.equal(f.calls.save.length, 0)
   await click('Save'); await until(() => f.calls.changed.length === 1)
-  assert.deepEqual(f.calls.save[0], { ...f.prepared.request, mode: 'validated', digest: f.prepared.candidate.digest })
+  assert.deepEqual(f.calls.save[0], { ...f.prepared.request, mode: 'draft', digest: f.prepared.candidate.digest })
   const reopened = await createStudioInstances(f.storage)
   assert.equal((await reopened.read({ id: f.record.id })).revision, f.record.revision + 1)
   assert.match((await reopened.readFile({ id: f.record.id, path: 'schema.yaml' })).content, /review/)
@@ -510,7 +530,7 @@ test('Kit authoring without a preview selection uses its definition candidate an
   const reopened = await createStudioInstances(f.storage)
   assert.equal((await reopened.read(f.record.id)).revision, 1)
   assert.match((await reopened.readFile({ id: f.record.id, path: 'mindset.md' })).content, /ask before filling unknown facts/)
-  assert.equal(f.calls.save[0].mode, 'validated'); assert.equal(f.calls.save[0].bundle, undefined)
+  assert.equal(f.calls.save[0].mode, 'draft'); assert.equal(f.calls.save[0].bundle, undefined)
   await change(source(), source().value + '\nHuman amendment after saving the proposal.\n')
   await flush()
   assert.equal(!!button('Review latest changes'), false, 'an already saved proposal is not a newer candidate for later human edits')
@@ -524,7 +544,7 @@ test('refresh reads Host-side changes into the same editor without sending or lo
   await change(intent(), 'Retain this unsent customization request.')
   const before = (await f.service.readFile({ id: f.record.id, path: 'SKILL.md' })).content
   await f.service.saveFile({ id: f.record.id, expectedRevision: 0, path: 'SKILL.md', content: before + '\nHost-side amendment.\n' })
-  await click('Refresh working copy')
+  await refreshCopy()
   await until(() => source()?.value.includes('Host-side amendment.'))
   assert.equal(intent().value, 'Retain this unsent customization request.')
   assert.equal(f.calls.start.length, 0)
@@ -538,10 +558,10 @@ test('refresh keeps local source until the user accepts discarding it', async t 
   const next = (await f.service.readFile({ id: f.record.id, path: 'SKILL.md' })).content + '\nSaved from the Host conversation.\n'
   await f.service.saveFile({ id: f.record.id, expectedRevision: 0, path: 'SKILL.md', content: next })
   window.confirm = () => false
-  await click('Refresh working copy')
+  await refreshCopy()
   assert.equal(source().value, 'Unsubmitted local edits.')
   window.confirm = () => true
-  await click('Refresh working copy')
+  await refreshCopy()
   await until(() => source()?.value === next)
   assert.equal(f.calls.start.length, 0)
 })
@@ -667,11 +687,15 @@ for (const blankDraft of [false, true]) {
     await until(() => document.body.textContent.includes('Proposed changes · not saved'))
     await until(() => !button('Save').disabled)
     if (button('Close error dialog')) await click('Close error dialog')
-    await click('Save')
-    assert.ok(document.querySelector('dialog[open]'), 'unfinished source explains the failed validation')
-    assert.equal(f.calls.save.length, 0, 'draft provenance never grants a validated candidate save')
     await assert.rejects(f.service.saveChanges({ ...f.prepared.request, digest: f.prepared.candidate.digest, mode: 'validated' }), /failed Core preview/)
     assert.equal((await f.service.read(f.record.id)).revision, f.record.revision)
+    await click('Save'); await until(() => f.calls.changed.length === 1)
+    assert.equal(f.calls.save.length, 1)
+    assert.equal(f.calls.save[0].mode, 'draft', 'ordinary saving preserves unfinished source without claiming validated content')
+    const reopened = await createStudioInstances(f.storage)
+    assert.equal((await reopened.readFile({ id: f.record.id, path: 'SKILL.md' })).content, f.prepared.request.changes[0].content)
+    const current = await reopened.read(f.record.id)
+    assert.equal((await reopened.prepareChanges({ ...f.prepared.request, expectedRevision: current.revision })).valid, false)
   })
 }
 
@@ -764,7 +788,7 @@ test('terminal invalid proposal continues the same native conversation without d
   f.candidate(invalid); await f.ask(); await until(() => source()?.value.includes('Retained invalid proposal'))
   await until(() => !button('Save').disabled)
   const notice = document.querySelector('.ygd-studio-conversation .ygd-studio-error-entry')
-  assert.match(notice.textContent, /Changes need repair/)
+  assert.match(notice.textContent, /Changes need further work/)
   assert.equal(document.querySelectorAll('dialog[open]').length, 0, 'terminal failure stays in the conversation without interrupting editing')
   assert.doesNotMatch(document.querySelector('.ygd-studio-save-feedback').textContent, /Validation needed|View issues/)
   const { STUDIO_WORKSPACE_CSS } = await import('dsh-design-studio-ui')
@@ -788,6 +812,65 @@ test('terminal invalid proposal continues the same native conversation without d
   const reopened = await createStudioInstances(f.storage)
   assert.equal((await reopened.readFile({ id: f.record.id, path: 'SKILL.md' })).content, next.request.changes[0].content)
 })
+
+for (const locale of ['en', 'zh']) for (const outcome of ['incomplete', 'invalid', 'valid', 'failed']) {
+  test(`draft feedback distinguishes ${outcome} changes from saving and execution in ${locale}`, async t => {
+    const f = await fixture(t, { blankBundle: outcome === 'incomplete', noCandidate: outcome === 'failed', nativeStatus: outcome === 'failed' ? 'failed' : undefined })
+    let prepared = f.prepared
+    if (outcome === 'incomplete') {
+      const request = { ...f.prepared.request, changes: [{ path: 'reference/notes.md', content: '# Retained draft reference\n' }] }
+      prepared = { request, candidate: await f.service.prepareChanges(request) }
+      f.candidate(prepared)
+    } else if (outcome === 'invalid') {
+      prepared = await nextProposal(f, 'Retained invalid schema', [{ path: 'schema.yaml', content: 'type: unsupported\n' }])
+      f.candidate(prepared)
+    }
+    await f.ask()
+    await until(() => document.querySelector('.ygd-studio-conversation-turn'))
+    await f.render(f.client, undefined, locale)
+    const text = (en, zh) => locale === 'zh' ? zh : en
+    const conversation = () => document.querySelector('.ygd-studio-conversation-log').textContent
+    assert.doesNotMatch(conversation(), /need repair before saving|完善后才能保存/)
+    if (outcome === 'failed') {
+      assert.ok(conversation().includes(text('Execution failed', '执行失败')))
+      assert.ok(conversation().includes(text('Execution ended without a candidate', '执行结束，尚无候选')))
+      assert.equal(document.querySelector('.ygd-studio-conversation .ygd-studio-error-entry') !== null, true)
+      assert.equal(button(text('Save', '保存')).disabled, true)
+      assert.equal(f.calls.save.length, 0)
+      return
+    }
+    if (outcome === 'valid') {
+      assert.equal(prepared.candidate.valid, true)
+      assert.ok(conversation().includes(text('Changes available for review', '修改可审阅')))
+      assert.equal(button(text('Continue repair', '继续修复')), undefined)
+    } else {
+      assert.equal(prepared.candidate.valid, false)
+      assert.ok(conversation().includes(text('Changes need further work', '修改仍需完善')))
+      await click(text('View issues', '查看问题'))
+      const dialog = document.querySelector('dialog[open]')
+      assert.ok(dialog.textContent.includes(text('save a draft', '保存草稿')))
+      assert.ok(dialog.textContent.includes(prepared.candidate.diagnostics[0].message), 'actual Core diagnostics remain available')
+      await click(text('Close error dialog', '关闭错误对话框'))
+      await change(intent(), 'Keep my next request while I review these changes.')
+      await click(text('Continue repair', '继续修复'))
+      assert.equal(document.activeElement, intent())
+      assert.equal(f.calls.resume.length, 0, 'repair only focuses the retained draft; it does not dispatch')
+      assert.equal(intent().value, 'Keep my next request while I review these changes.')
+    }
+    await until(() => !button(text('Save', '保存')).disabled)
+    await click(text('Save', '保存')); await until(() => f.calls.changed.length === 1)
+    assert.equal(f.calls.save.length, 1)
+    assert.equal(f.calls.save[0].mode, 'draft')
+    assert.equal(f.calls.changed[0].changeReceipt.validation, 'not_requested')
+    assert.ok(conversation().includes(text('Changes saved to the working copy', '修改已保存到工作副本')))
+    assert.equal(button(text('Continue repair', '继续修复')), undefined, 'saved source is not shown as a failed save')
+    const reopened = await createStudioInstances(f.storage)
+    for (const change of prepared.request.changes) assert.equal((await reopened.readFile({ id: f.record.id, path: change.path })).content, change.content)
+    const current = await reopened.read(f.record.id)
+    assert.equal((await reopened.prepareChanges({ ...prepared.request, expectedRevision: current.revision })).valid, outcome === 'valid')
+    if (outcome !== 'valid') assert.equal(intent().value, 'Keep my next request while I review these changes.')
+  })
+}
 
 test('choosing repair preserves an already composed follow-up without dispatching it', async t => {
   const f = await fixture(t)
@@ -825,8 +908,8 @@ test('cancelled invalid proposal retains its files, exposes exact file details a
   await f.ask(); await until(() => source()?.value.includes('Cancelled candidate remains'))
   assert.equal(document.querySelector('dialog[open]'), null, 'intermediate validation does not interrupt editing')
   await until(() => button('Save') && !button('Save').disabled)
-  await click('Save')
-  assert.equal(f.calls.save.length, 0, 'an invalid candidate opens its explanation without attempting persistence')
+  await click('Panel Preview'); await click('View issues')
+  assert.equal(f.calls.save.length, 0, 'inspecting failed preview diagnostics does not attempt persistence')
   const blocker = document.querySelector('dialog[open]')
   await React.act(async () => blocker.querySelector('summary').click())
   const links = [...blocker.querySelectorAll('.ygd-studio-error-details button')]

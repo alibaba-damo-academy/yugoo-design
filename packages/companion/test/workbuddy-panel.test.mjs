@@ -141,13 +141,13 @@ test('an old polling callback stays retired after an explicit reconnect',async()
 })
 
 test('expired widget requests same-project recovery through one explicit user message, never stale tool calls',async()=>{
- for(const outcome of ['success','denied','timeout','object-error','stringified-error']){
+ for(const outcome of ['success','denied','pending-disposal','object-error','stringified-error']){
   const listeners={},requests=[],calls=[],timers=new Map(),button={disabled:true},status={};let timer=0
   const args={projectRoot:'/original',sessionId:threadId,nativeCwd:'/native',transcriptPath:'/native/transcript.jsonl'}
   const first={origin:'http://127.0.0.1:31001',widgetToken:'a'.repeat(64),url:'http://127.0.0.1:31002/#'+'b'.repeat(64),projectId:'original',threadId,reopenArgs:args,connectionPath:'/state/old.json'}
   const deliver=data=>listeners.message({source:parent,origin:'https://native.example',data:{jsonrpc:'2.0',...data}})
   const parent={postMessage(message){requests.push(message);if(!message.id)return;
-   if(message.method==='ui/message'&&outcome==='timeout')return;
+   if(message.method==='ui/message'&&outcome==='pending-disposal')return;
    if(message.method==='ui/message'&&['object-error','stringified-error'].includes(outcome)){
     queueMicrotask(()=>deliver({id:message.id,error:{code:-32603,message:outcome==='object-error'?{detail:'opaque'}:'[object Object]'}}));return;
    }
@@ -165,7 +165,7 @@ test('expired widget requests same-project recovery through one explicit user me
   assert.equal(requests.filter(x=>x.method==='ui/message').length,0,'network failure alone grants no send')
   assert.equal(button.textContent,'恢复设计面板')
   const clicked=button.onclick();await drain()
-  if(outcome==='timeout'){const deadline=[...timers.values()].find(x=>x.ms===10000);assert.ok(deadline);deadline.fn()}
+  if(outcome==='pending-disposal')listeners.pagehide()
   await clicked;await drain()
   const messages=requests.filter(x=>x.method==='ui/message');assert.equal(messages.length,1)
   assert.equal(messages[0].params.role,'user')
@@ -183,6 +183,24 @@ test('expired widget requests same-project recovery through one explicit user me
    await button.onclick();assert.equal(requests.filter(x=>x.method==='ui/message').length,1,'no repeat after accepted or unknown delivery')
   }
  }
+})
+
+test('a slow original Host receipt stays in flight and settles once instead of stopping forwarding',async()=>{
+ let delivered=false
+ const f=await controlledWidget({heldMethods:['ui/message'],fetchBridge:body=>bridgeResponse(
+  body.action==='take'&&!delivered?(delivered=true,{message:{id:'slow-saved-notice',text:'saved design notice'}}):{})})
+ await f.button.onclick();await drainWidget()
+ const request=f.requests.find(value=>value.method==='ui/message');assert.ok(request)
+ // Exercise any former RPC deadline. Heartbeats/poll scheduling are independent.
+ for(const [id,timer] of [...f.scheduled])if(timer.ms===10000){f.scheduled.delete(id);timer.fn()}
+ await drainWidget()
+ assert.equal(f.calls.filter(value=>value.body.action==='result').length,0,'waiting is not an unknown delivery result')
+ assert.equal(f.requests.filter(value=>value.method==='ui/message').length,1)
+ f.reply(request);await drainWidget()
+ const results=f.calls.filter(value=>value.body.action==='result')
+ assert.equal(results.length,1);assert.equal(results[0].body.status,'submitted_unverified')
+ assert.match(f.status.textContent,/宿主消息接口已返回/)
+ f.listeners.pagehide();await drainWidget()
 })
 
 test('bridge failures explain recovery without opening a page, sending or retrying a message',async()=>{
@@ -257,10 +275,11 @@ test('WorkBuddy sender waits for original widget receipt and rejects an offline 
  await assert.rejects(connection.send('do not replay'),/不会自动重发/)
 })
 
-test('shared server retains main/save semantics while rejecting unverified native execution',async()=>{
+test('shared server retains main/save semantics while rejecting unverified native execution',{timeout:30000},async()=>{
  const f=await fixture({smartQuestionsMode:'main'}); let server,client,mcp
  try {
-  const queue=createRelayQueue(),owner=randomUUID(),connection=createWorkBuddyConnection({threadId,queue})
+  const queue=createRelayQueue(),owner=randomUUID(),submitted=Promise.withResolvers()
+  const connection=createWorkBuddyConnection({threadId,queue:{...queue,submit(id,text){const value=queue.submit(id,text);submitted.resolve(value);return value}}})
   const transcriptPath=join(f.root,'workbuddy.jsonl')
   const nativeEvent=(id,text)=>JSON.stringify({type:'message',id,role:'user',sessionId:threadId,cwd:f.options.projectRoot,timestamp:Date.now(),content:[{type:'input_text',text}]})+'\n'
   await writeFile(transcriptPath,nativeEvent('earlier','unrelated earlier text'))
@@ -283,7 +302,7 @@ test('shared server retains main/save semantics while rejecting unverified nativ
   assert.notEqual(catalogResult.isError,true)
   const catalog=JSON.parse(catalogResult.content[0].text)
   assert.equal(catalog.mindset,'web_app')
-  assert.equal(catalog.mindsetMethod,join(f.options.kitRoot,'mindset.md'))
+  assert.equal(catalog.mindsetMethod,join(f.options.projectRoot,'design_kit/kit/mindset.md'))
   assert.ok((await readFile(catalog.mindsetMethod,'utf8')).length>0)
   const questions=catalog.skills.find(item=>item.id==='smart_questions')
   assert.equal(questions.execution.mode,'main')
@@ -306,8 +325,8 @@ test('shared server retains main/save semantics while rejecting unverified nativ
   assert.deepEqual(JSON.parse(await readFile(join(server.project.project.designFilesRoot,'smart_questions/smart_questions.json'),'utf8')),{questions:{}})
   queue.pulse(owner,true)
   const delivery=call('sendPrompt',{text:'Please inspect the saved answers'})
-  let message
-  for(let n=0;n<40&&!message;n++){await new Promise(r=>setTimeout(r,20));message=queue.take(owner).message}
+  await Promise.race([submitted.promise,delivery.then(()=>{throw Error('Delivery ended before the original widget claimed it')})])
+  const message=queue.take(owner).message
   assert.ok(message);assert.match(message.text,/Exact Companion connection file/);assert.ok(message.text.includes(server.connectionPath))
   assert.doesNotMatch(message.text,/Follow the native-execution reference for due background reviews/)
   queue.settle(owner,message.id,'submitted_unverified');assert.equal((await delivery).accepted,true)
@@ -475,12 +494,14 @@ test('opted-in WorkBuddy Producer reuses native binding and settlement while Wor
   await assert.rejects(call('registerNativeRun',{runId:'agent-forged',parentRunId:threadId,role:'producer',skill:'smart_questions',artifactId:'questions'}))
   assert.equal((await call('registerNativeRun',{runId,parentRunId:threadId,role:'producer',skill:'smart_questions',artifactId:'questions'})).registered,true)
   await assert.rejects(call('registerNativeRun',{runId,role:'worker'}),/Workers are not verified/)
-  await assert.rejects(call('prepareReviews'),/background reviews are not supported/)
+  await assert.rejects(call('prepareReviews'),/Native background reviewer execution is not verified/)
   await mkdir(join(server.project.project.designFilesRoot,'smart_questions'),{recursive:true})
   await writeFile(join(server.project.project.designFilesRoot,'smart_questions/smart_questions.json'),JSON.stringify({questions:{}}))
   const settled=await call('finishNativeRun',{runId,scope:'state',outcome:'pause'})
   assert.equal(settled.accepted,true)
-  const workspace=await call('readWorkspace');assert.equal(workspace.hostCapabilities.nativeSubagents,true);assert.equal(workspace.hostCapabilities.backgroundReviews,false);assert.deepEqual(workspace.reviews,[])
+  const workspace=await call('readWorkspace');assert.equal(workspace.hostCapabilities.nativeSubagents,true);assert.equal(workspace.hostCapabilities.backgroundReviews,false)
+  assert.ok(workspace.reviews.length>0,'pending reviews remain visible without an available executor')
+  for(const review of workspace.reviews){assert.equal(review.dispatch,false);assert.equal(review.executionAvailability,'unavailable')}
  }finally{await server?.close();await f.close()}
 })
 
@@ -513,6 +534,39 @@ test('normal Panel closure records its exact identity and reason without retaini
   assert.ok(Number.isFinite(receipt.lastAuthenticatedActivityAt))
   assert.ok(!JSON.stringify(receipt).includes(connection.token));assert.ok(!JSON.stringify(receipt).includes(panel.widgetToken))
  } finally {await panel?.close();await f.close()}
+})
+
+test('authenticated Panel stays available after four hours until its owner closes it',async t=>{
+ const f=await fixture({withTranscript:true,serverOptions:{host:'workbuddy'}})
+ let panel
+ try {
+  const runtimeRoot=join(f.root,'runtime')
+  await mkdir(join(runtimeRoot,'kits'),{recursive:true})
+  await symlink(f.options.kitRoot,join(runtimeRoot,'kits/web_app'),'dir')
+  await symlink(f.options.staticRoot,join(runtimeRoot,'web'),'dir')
+  panel=await startWorkBuddyPanel({runtimeRoot,projectRoot:f.options.projectRoot,stateRoot:join(f.root,'panel-state'),nativeCwd:f.options.projectRoot,transcriptPath:f.options.transcriptPath,threadId})
+  const original=JSON.parse(await readFile(panel.connectionPath,'utf8'))
+  t.mock.timers.enable({apis:['Date'],now:Date.now()})
+  t.mock.timers.setTime(Date.now()+4*60*60*1000+1000)
+  const call=()=>callCompanion(panel.connectionPath,{method:'readWorkspace'})
+  assert.equal((await call()).projectId,panel.projectId)
+  // Keep the real relay interval: authenticated reads renew ordinary activity,
+  // while the old factory's total lifetime still closes this exact service.
+  await new Promise(resolve=>setTimeout(resolve,1100))
+  const live=await call().catch(async()=>{
+   const closed=JSON.parse(await readFile(panel.connectionPath+'.closed.json','utf8'))
+   assert.fail(`Authenticated Panel closed: ${closed.reason}`)
+  })
+  assert.equal(live.projectId,panel.projectId)
+  assert.deepEqual(JSON.parse(await readFile(panel.connectionPath,'utf8')),original)
+  await panel.close()
+  await assert.rejects(readFile(panel.connectionPath),error=>error.code==='ENOENT')
+  const receipt=JSON.parse(await readFile(panel.connectionPath+'.closed.json','utf8'))
+  assert.equal(receipt.reason,'explicit-close')
+  assert.equal(receipt.projectId,panel.projectId)
+  assert.equal(receipt.threadId,threadId)
+  assert.ok(receipt.closedAt-receipt.startedAt>4*60*60*1000)
+ } finally {await panel?.close();t.mock.timers.reset();await f.close()}
 })
 
 test('panel widget connects once after both original metadata and host readiness, without navigation or a fabricated message',async()=>{

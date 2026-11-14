@@ -10,7 +10,7 @@ export function relayWidget(relay) {
 <div id="primary-actions"><button id="connect" disabled${relay.dynamic && relay.autoConnect ? ' hidden' : ''}>${relay.dynamic ? (relay.autoConnect ? "在系统浏览器打开" : "连接当前对话") : "连接并打开外部输入页"}</button></div>
 ${relay.dynamic ? '<details id="open-options" hidden><summary>其他打开方式</summary><div id="secondary-actions"></div></details>' : ''}
 <p id="status" role="status">正在连接宿主…</p>
-${relay.dynamic ? '<details><summary>连接帮助</summary><p>请保持当前对话和此控件打开。连接中断不影响已保存文件；恢复连接后可继续。控件与面板均空闲 15 分钟，或运行 4 小时后，连接将关闭。</p><div id="design-browser-guide" hidden><p>需要在右侧浏览器打开页面时，复制地址，在新标签页中选择「打开浏览器」并粘贴。</p><button id="copy-design-url" disabled>复制页面地址</button><label id="manual-copy" hidden>页面地址<input id="design-url" type="text" readonly></label></div></details>' : ''}
+${relay.dynamic ? '<details><summary>连接帮助</summary><p>请保持当前对话和此控件打开。连接中断不影响已保存文件；恢复连接后可继续。控件与面板均空闲一小时后连接将关闭，使用中不会定时结束。</p><div id="design-browser-guide" hidden><p>需要在右侧浏览器打开页面时，复制地址，在新标签页中选择「打开浏览器」并粘贴。</p><button id="copy-design-url" disabled>复制页面地址</button><label id="manual-copy" hidden>页面地址<input id="design-url" type="text" readonly></label></div></details>' : ''}
 </section>
 <script>
 let origin=${JSON.stringify(relay.origin)}, token=${JSON.stringify(relay.widgetToken)}, url=${JSON.stringify(relay.url)};const dynamicMode=${relay.dynamic === true};let hostReady=false;const autoConnectMode=dynamicMode&&${relay.autoConnect === true};let autoConnectAttempted=false;
@@ -24,12 +24,12 @@ const candidates=[error?.message,error?.message?.message,error?.data?.message];
 const text=candidates.find(value=>typeof value==='string'&&value.trim()&&value.trim()!=='[object Object]');
 return Error(text?text.slice(0,500):'WorkBuddy 请求失败，宿主未提供可读原因（WB_HOST_RPC_FAILED）。请在原对话请求重新打开现有项目面板。');
 }
-function request(method,params,timeoutMs=10000){return new Promise((resolve,reject)=>{const key=++id;const timer=setTimeout(()=>{pending.delete(key);reject(Error('宿主响应超时，停止转发，请检查原会话。'));},timeoutMs);pending.set(key,{resolve,reject,timer,method});parent.postMessage({jsonrpc:'2.0',id:key,method,params},hostOrigin||'*');});}
+function request(method,params){return new Promise((resolve,reject)=>{const key=++id;pending.set(key,{resolve,reject,method});parent.postMessage({jsonrpc:'2.0',id:key,method,params},hostOrigin||'*');});}
 function localUrl(value){try{const u=new URL(value);return u.protocol==='http:'&&u.hostname==='127.0.0.1'&&!!u.port&&u.pathname==='/'&&!u.username&&!u.password;}catch{return false;}}
 // Every asynchronous continuation belongs to one transport lifetime. A later
 // explicit reconnect cannot revive old requests or scheduled polling callbacks.
 function transportCurrent(generation){return generation===transportGeneration&&!connectionInvalidated&&!pageDisposed;}
-function stopTransport(){transportGeneration++;active=false;connectPending=false;clearTimeout(pollTimer);clearTimeout(heartbeatTimer);pollTimer=heartbeatTimer=undefined;for(const [key,item] of pending){if(item.method==='ui/initialize')continue;clearTimeout(item.timer);pending.delete(key);item.reject(Error('连接生命周期已结束；未确认的消息不会重发。'));}}
+function stopTransport(){transportGeneration++;active=false;connectPending=false;clearTimeout(pollTimer);clearTimeout(heartbeatTimer);pollTimer=heartbeatTimer=undefined;for(const [key,item] of pending){if(item.method==='ui/initialize')continue;pending.delete(key);item.reject(Error('连接生命周期已结束；未确认的消息不会重发。'));}}
 function validConnection(cfg){if(!cfg||!localUrl(cfg.origin)||!/^[a-f0-9]{64}$/.test(cfg.widgetToken))return false;try{const u=new URL(cfg.url);return u.protocol==='http:'&&u.hostname==='127.0.0.1'&&!!u.port&&!u.username&&!u.password&&((u.pathname==='/'&&/^#[a-f0-9]{64}$/.test(u.hash))||(/^\\/browser\\/[a-f0-9]{32}\\/$/.test(u.pathname)&&!u.hash));}catch{return false;}}
 function connectionUrl(value){const u=new URL(value);u.searchParams.delete('view');return u.href;}
 function sameConnection(cfg){return cfg.origin===origin&&cfg.widgetToken===token&&connectionUrl(cfg.url)===connectionUrl(url)&&cfg.projectId===projectId&&cfg.threadId===threadId&&cfg.connectionPath===connectionPath;}
@@ -73,10 +73,10 @@ window.addEventListener('message',e=>{if(e.source!==parent||(hostOrigin&&e.origi
 const cfg=m.params?._meta?.workbuddyPanel;if(!validConnection(cfg))return;
 if((active||connectPending)&&!sameConnection(cfg)){connectionInvalidated=true;stopTransport();clearCopiedAddress();updateViewControls();status.textContent='项目连接已变更，请重新打开本次连接控件。';return;}
 if(!reopenUnknown&&!connectionInvalidated&&!pageDisposed&&applyConnection(cfg)){status.textContent=active?'已连接当前对话，面板可直接使用。':'项目：'+cfg.projectName;autoConnect();}return;
-}const p=pending.get(m.id);if(!p||(!('result'in m)&&!m.error))return;hostOrigin=e.origin==='null'?undefined:e.origin;pending.delete(m.id);clearTimeout(p.timer);m.error?p.reject(hostError(m.error)):p.resolve(m.result);});
+}const p=pending.get(m.id);if(!p||(!('result'in m)&&!m.error))return;hostOrigin=e.origin==='null'?undefined:e.origin;pending.delete(m.id);m.error?p.reject(hostError(m.error)):p.resolve(m.result);});
 let bridgePolicyBlocked=false;
 window.addEventListener('securitypolicyviolation',e=>{if(e.effectiveDirective==='connect-src'){try{if(new URL(e.blockedURI).origin===origin)bridgePolicyBlocked=true;}catch{}}});
-async function bridge(body){let r;bridgePolicyBlocked=false;try{r=await fetch(origin+'/bridge',{method:'POST',headers:{'Content-Type':'application/json','X-Relay-Token':token},body:JSON.stringify({clientId,generation:leaseGeneration,...body}),signal:AbortSignal.timeout(5000)});}catch(e){
+async function bridge(body){let r;bridgePolicyBlocked=false;try{r=await fetch(origin+'/bridge',{method:'POST',headers:{'Content-Type':'application/json','X-Relay-Token':token},body:JSON.stringify({clientId,generation:leaseGeneration,...body})});}catch(e){
 if(bridgePolicyBlocked)throw Error('宿主安全策略阻止了本地连接（WB_BRIDGE_POLICY）。请报告此错误，不要关闭宿主安全设置。已保存文件不受影响。');
 const code=e.name==='TimeoutError'?'WB_BRIDGE_TIMEOUT':'WB_BRIDGE_NETWORK';
 const error=Error('本地连接请求未完成（'+code+'）。可点击按钮恢复连接；不要重跑设计任务。已保存文件不受影响。');error.bridgeUnavailable=true;throw error;

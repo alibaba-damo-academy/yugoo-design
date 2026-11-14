@@ -1,5 +1,6 @@
-/** Finite, service-owned Codex execution. No main-thread identity or model SDK. */
+/** Service-owned Codex execution. No main-thread identity or model SDK. */
 import { spawn } from 'node:child_process'
+import { constants as bufferConstants } from 'node:buffer'
 import { mkdtemp, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -20,7 +21,7 @@ function classify(text, code) {
   if (/\b429\b|rate.limit|quota/i.test(text)) return 'rate-limit'
   if (/ECONNREFUSED|connection refused|dns error|certificate|connection.*(?:failed|timed out)/is.test(text)) return 'transport'
   return ({ TIMEOUT: 'timeout', CONFIG_CLEANUP_TIMEOUT: 'timeout', ABORTED: 'cancelled', OUTPUT_LIMIT: 'output-limit', SPAWN_FAILED: 'process-start',
-    TRUNCATED_OUTPUT: 'output-incomplete', INVALID_OUTPUT: 'output-format', NATIVE_FAILURE: 'native-error' })[code] ?? 'unclassified'
+    TRUNCATED_OUTPUT: 'output-incomplete', INVALID_OUTPUT: 'output-format', FRAME_TOO_LARGE: 'output-format', NATIVE_FAILURE: 'native-error' })[code] ?? 'unclassified'
 }
 function diagnosticError(error, stage, exitCode = null, signal = null, classification = 'unclassified', timing) {
   const diagnostic = { stage, exitCode: Number.isInteger(exitCode) ? exitCode : null,
@@ -75,7 +76,7 @@ function modelConfig(config, override) {
   return args
 }
 
-/** Bounded JSONL process; raw output/errors are deliberately not surfaced. */
+/** Consume JSONL frames, retaining only the partial frame and diagnostic tail. */
 function jsonProcess({ executable, args, cwd, spawnImpl, signal, timeoutMs, maxOutputBytes, killGraceMs, stage, onStart, onEvent }) {
   return new Promise((accept, reject) => {
     if (signal?.aborted) { reject(failure('ABORTED')); return }
@@ -97,7 +98,7 @@ function jsonProcess({ executable, args, cwd, spawnImpl, signal, timeoutMs, maxO
     }
     let configComplete = false, completionKillSent = false
     let diagnosticText = ''
-    const noteError = text => { if (typeof text === 'string') diagnosticText = (diagnosticText + text.slice(0, 16384)).slice(-16384) }
+    const noteError = text => { if (typeof text === 'string') diagnosticText = (diagnosticText + text.slice(-16384)).slice(-16384) }
     const decoder = new StringDecoder('utf8')
     const finish = (error, exitCode, killed) => {
       if (settled) return
@@ -131,7 +132,7 @@ function jsonProcess({ executable, args, cwd, spawnImpl, signal, timeoutMs, maxO
     const write = value => child.stdin.write(`${JSON.stringify(value)}\n`)
     const completeConfig = () => {
       if (stage !== 'config' || configComplete) throw failure('INVALID_CONFIG_COMPLETION')
-      if (performance.now() - startedAt >= timeoutMs) throw failure('TIMEOUT')
+      if (timeoutMs !== undefined && performance.now() - startedAt >= timeoutMs) throw failure('TIMEOUT')
       configComplete = true
       // The request budget ends at the validated response, not at process EOF.
       // Cleanup has its own finite grace budget; it cannot turn abort into success.
@@ -152,22 +153,32 @@ function jsonProcess({ executable, args, cwd, spawnImpl, signal, timeoutMs, maxO
       }, killGraceMs * 3)
     }
     const consume = chunk => {
-      bytes += chunk.length
-      if (bytes > maxOutputBytes) { stop(failure('OUTPUT_LIMIT')); return false }
+      if (maxOutputBytes !== undefined) {
+        bytes += chunk.length
+        if (bytes > maxOutputBytes) { stop(failure('OUTPUT_LIMIT')); return false }
+      }
       return !fault && !settled
     }
-    child.stdout.on('data', chunk => {
-      if (!consume(chunk)) return
-      buffer += decoder.write(chunk)
-      let newline
-      while (!fault && (newline = buffer.indexOf('\n')) !== -1) {
-        const line = buffer.slice(0, newline); buffer = buffer.slice(newline + 1)
+    const consumeText = text => {
+      let offset = 0
+      while (!fault && !settled && offset < text.length) {
+        const newline = text.indexOf('\n', offset)
+        const part = text.slice(offset, newline === -1 ? text.length : newline)
+        // JSON.parse needs one complete string. Report the actual V8 capacity
+        // at this frame, rather than imposing a quota on the whole review.
+        if (buffer.length + part.length > bufferConstants.MAX_STRING_LENGTH) { stop(failure('FRAME_TOO_LARGE')); return }
+        buffer += part
+        if (newline === -1) return
+        const line = buffer; buffer = ''; offset = newline + 1
         if (!line.trim()) continue
         try { onEvent(JSON.parse(line), { write, completeConfig, noteError, configReadStarted: () => markPhase('read') }) }
         catch (error) { stop(error?.code ? error : failure('INVALID_OUTPUT')) }
       }
+    }
+    child.stdout.on('data', chunk => {
+      if (consume(chunk)) consumeText(decoder.write(chunk))
     })
-    child.stderr.on('data', chunk => { noteError(chunk.toString('utf8')); consume(chunk) })
+    child.stderr.on('data', chunk => { noteError(chunk.subarray(-16384).toString('utf8')); consume(chunk) })
     child.stdin.on('error', () => stop(failure('STDIN_FAILED')))
     child.stdout.on('error', () => stop(failure('STDOUT_FAILED')))
     child.stderr.on('error', () => stop(failure('STDERR_FAILED')))
@@ -177,11 +188,11 @@ function jsonProcess({ executable, args, cwd, spawnImpl, signal, timeoutMs, maxO
       // The CLI may close before a shell descendant does. Do not leave those
       // processes behind, including children that ignored the initial TERM.
       if (spawnImpl === spawn && process.platform !== 'win32') kill('SIGKILL')
-      buffer += decoder.end()
+      consumeText(decoder.end())
       const expectedClose = configComplete && completionKillSent && ['SIGTERM', 'SIGKILL'].includes(killed)
       finish(fault ?? ((code !== 0 || killed) && !expectedClose ? failure('PROCESS_FAILED') : buffer.trim() ? failure('TRUNCATED_OUTPUT') : undefined), code, killed)
     })
-    timer = setTimeout(() => stop(failure('TIMEOUT')), timeoutMs)
+    if (timeoutMs !== undefined) timer = setTimeout(() => stop(failure('TIMEOUT')), timeoutMs)
     signal?.addEventListener('abort', abort, { once: true })
     if (signal?.aborted) abort()
     else {
@@ -193,15 +204,15 @@ function jsonProcess({ executable, args, cwd, spawnImpl, signal, timeoutMs, maxO
 
 /** Result shape/schema semantics are validated by finishManagedReview, not duplicated here. */
 export function createReviewExecutor({ host = 'codex', model, executable = 'codex', spawnImpl = spawn,
-  timeoutMs = 600000, configTimeoutMs = 10000, maxOutputBytes = 4 * 1024 * 1024, killGraceMs = 1000 } = {}) {
+  timeoutMs, configTimeoutMs, maxOutputBytes, killGraceMs = 1000 } = {}) {
   return async ({ prompt, outputSchema, cwd, signal }) => {
     if (host !== 'codex') throw failure('UNSUPPORTED_HOST')
     if (typeof prompt !== 'string' || !prompt.trim() || !record(outputSchema) || typeof cwd !== 'string' || !cwd) throw failure('INVALID_INPUT')
-    if ([timeoutMs, configTimeoutMs, maxOutputBytes, killGraceMs].some(value => !Number.isSafeInteger(value) || value <= 0)) throw failure('INVALID_LIMIT')
+    if ([timeoutMs, configTimeoutMs, maxOutputBytes, killGraceMs].some(value => value !== undefined && (!Number.isSafeInteger(value) || value <= 0))) throw failure('INVALID_LIMIT')
     if (signal?.aborted) throw failure('ABORTED')
     const transport = strictReviewOutput(outputSchema)
     const schema = JSON.stringify(transport.schema)
-    if (Buffer.byteLength(prompt) + Buffer.byteLength(schema) > maxOutputBytes) throw failure('INPUT_LIMIT')
+    if (maxOutputBytes !== undefined && Buffer.byteLength(prompt) + Buffer.byteLength(schema) > maxOutputBytes) throw failure('INPUT_LIMIT')
     const root = await mkdtemp(join(tmpdir(), 'design-review-executor-'))
     // Run outside the evidence repository so project config/instructions cannot
     // restore tools after --ignore-user-config. Evidence paths stay explicit.

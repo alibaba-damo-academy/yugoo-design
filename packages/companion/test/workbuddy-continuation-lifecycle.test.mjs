@@ -9,6 +9,73 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { createSavedContinuation } from '../src/saved-continuation.mjs'
 import { createWorkBuddyPanelMcp } from '../src/workbuddy-panel-mcp.mjs'
+import { createWorkBuddyConnection } from '../src/workbuddy-connection.mjs'
+import { setTimeout as delay } from 'node:timers/promises'
+
+test('live queued and claimed messages wait for actual outcomes beyond the old delivery deadlines', () => {
+  let now = 0
+  const queue = createRelayQueue({ now: () => now }), client = randomUUID(), id = randomUUID()
+  const lease = queue.pulse(client, true)
+  queue.submit(id, 'slow but still live')
+  now = 60000; queue.pulse(client, true, lease.generation)
+  assert.equal(queue.status(id).message.status, 'queued')
+  assert.equal(queue.take(client, lease.generation).message.id, id)
+  now = 120000; queue.pulse(client, true, lease.generation)
+  assert.equal(queue.status(id).message.status, 'claimed')
+  assert.equal(queue.take(client, lease.generation).message, null, 'an in-flight message is not delivered again')
+  queue.settle(client, id, 'submitted_unverified', lease.generation)
+  const next = randomUUID(); queue.submit(next, 'next independent operation')
+  assert.equal(queue.take(client, lease.generation).message.id, next)
+  queue.close()
+  assert.equal(queue.status(next).message.status, 'delivery_unknown', 'actual disposal still retains uncertainty')
+})
+
+test('the original sender waits through elapsed time and completes only on the actual widget receipt', async () => {
+  const realNow = Date.now
+  let now = realNow(), settled = false
+  const queue = createRelayQueue({ now: () => now }), owner = randomUUID(), lease = queue.pulse(owner, true)
+  const connection = createWorkBuddyConnection({ threadId: randomUUID(), queue })
+  try {
+    Date.now = () => now
+    const pending = connection.send('late real receipt').then(value => { settled = true; return value })
+    const message = queue.take(owner, lease.generation).message
+    now += 60000; queue.pulse(owner, true, lease.generation)
+    await delay(80)
+    assert.equal(settled, false, 'elapsed time alone is not an unknown delivery result')
+    queue.settle(owner, message.id, 'submitted_unverified', lease.generation)
+    assert.equal((await pending).accepted, true)
+  } finally { Date.now = realNow; queue.close() }
+})
+
+test('closing the relay settles pending senders without replaying queued or claimed input', async () => {
+  for (const claimed of [false, true]) {
+    const queue = createRelayQueue(), owner = randomUUID(), lease = queue.pulse(owner, true)
+    const pending = createWorkBuddyConnection({ threadId: randomUUID(), queue }).send('close this pending delivery')
+    if (claimed) queue.take(owner, lease.generation)
+    queue.close()
+    const result = await pending
+    assert.equal(result.accepted, false)
+    assert.equal(result.status, claimed ? 'unknown' : 'unavailable')
+    assert.equal(result.notSubmitted, claimed ? undefined : true)
+    assert.throws(() => queue.submit(randomUUID(), 'must not restart'), /当前未发送|不会自动重发/)
+  }
+})
+
+test('losing the existing heartbeat lease ends waiting as unknown while a genuine late receipt can recover', () => {
+  let now = 0
+  const queue = createRelayQueue({ now: () => now }), owner = randomUUID(), id = randomUUID()
+  const lease = queue.pulse(owner, true)
+  queue.submit(id, 'Host iframe removed without pagehide'); queue.take(owner, lease.generation)
+  now = 16000
+  assert.equal(queue.status(id).message.status, 'delivery_unknown')
+  assert.throws(() => queue.submit(randomUUID(), 'cannot replay'), /当前未发送|不会自动重发/)
+  queue.pulse(owner, true, lease.generation)
+  queue.settle(owner, id, 'submitted_unverified', lease.generation)
+  assert.equal(queue.status(id).message.status, 'submitted_unverified')
+  const next = randomUUID(); queue.submit(next, 'a distinct later operation')
+  assert.equal(queue.take(owner, lease.generation).message.id, next)
+  queue.close()
+})
 
 test('normal bridge/RPC latency does not exhaust the production renewal lease', () => {
   let now = 0
@@ -40,15 +107,30 @@ test('authenticated stale-lease remount fences old generation and never replays 
   assert.throws(() => queue.submit(randomUUID(), 'must not replay'), /不会自动重发/)
 })
 
-test('explicit disposal releases only its exact lease; queued but unclaimed delivery can move once', () => {
+test('explicit disposal releases only its exact lease and does not forward unclaimed input in another generation', () => {
   const queue = createRelayQueue(), old = randomUUID(), next = randomUUID(), id = randomUUID()
   const lease = queue.pulse(old, true)
   queue.submit(id, 'not claimed')
   queue.release(old, lease.generation)
   const current = queue.pulse(next, true)
   assert.throws(() => queue.release(old, lease.generation), /Stale/)
-  assert.equal(queue.take(next, current.generation).message.id, id)
+  assert.equal(queue.status(id).message.status, 'not_delivered')
   assert.equal(queue.take(next, current.generation).message, null)
+})
+
+test('unclaimed senders settle as not submitted when their owner explicitly releases or loses its lease', async () => {
+  for (const release of [true, false]) {
+    let now = 0
+    const queue = createRelayQueue({ now: () => now }), owner = randomUUID(), lease = queue.pulse(owner, true)
+    const pending = createWorkBuddyConnection({ threadId: randomUUID(), queue }).send('not yet claimed')
+    if (release) queue.release(owner, lease.generation)
+    else now = 16000
+    const result = await pending
+    assert.equal(result.accepted, false); assert.equal(result.status, 'unavailable'); assert.equal(result.notSubmitted, true)
+    const next = randomUUID(), fresh = queue.pulse(next, true)
+    assert.equal(queue.take(next, fresh.generation).message, null)
+    queue.close()
+  }
 })
 
 test('33rd and later messages work with bounded full receipts and no evicted-ID replay', () => {

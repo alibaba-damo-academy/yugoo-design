@@ -413,6 +413,10 @@ revision/digest check. An uncertain save permits read-only Refresh without
 claiming a verified save or retrying the write. Native execution, candidate availability
 and saved source have separate feedback. An unknown response permits read-only
 checking; a connection change retains input and requires explicit reopening.
+Validation diagnostics remain visible for unfinished candidates without claiming
+that they prevent ordinary draft saves. Saving a draft does not claim that its
+definition is valid or its preview can render; explicit validated saves retain
+their existing validation requirement.
 Historical run controls are not restored by reopening. Run
 `test:authoring-workbench` for React/shared-Panel and temporary S2 checks with
 explicit native RPC fixtures. This component does not activate the Service or

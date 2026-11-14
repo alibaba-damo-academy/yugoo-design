@@ -38,6 +38,33 @@ async function kitFixture(t, { blank = false } = {}) {
   return { service, options, ports, record, file, request }
 }
 
+test('overlapping preview and preparation report the real lock, then an explicit prepare retry preserves source', async t => {
+  const stateRoot = await mkdtemp(join(tmpdir(), 'studio-preview-prepare-'))
+  const ports = adapters(), started = Promise.withResolvers(), release = Promise.withResolvers()
+  const actualPreview = ports.composition.preview
+  ports.composition.preview = async input => { started.resolve(); await release.promise; return actualPreview(input) }
+  let preview
+  t.after(async () => {
+    release.resolve()
+    try { await preview } finally { await rm(stateRoot, { recursive: true, force: true }) }
+  })
+  const service = await createStudioInstances({ stateRoot, ...ports })
+  const record = await service.copy({ kind: 'bundle', bundle: pin })
+  const file = await service.readFile({ id: record.id, path: 'SKILL.md' })
+  const request = { id: record.id, expectedRevision: record.revision,
+    changes: [{ path: file.path, content: file.content + '\nRetain confirmed source.\n' }] }
+  preview = service.preview({ id: record.id, expectedRevision: record.revision, bundle: record.bundle })
+  await started.promise
+  await assert.rejects(service.prepareChanges(request), /Studio is being saved elsewhere/)
+  assert.equal((await service.readFile({ id: record.id, path: file.path })).content, file.content)
+  release.resolve()
+  assert.ok((await preview).preview)
+  const prepared = await service.prepareChanges(request)
+  assert.equal(prepared.valid, true)
+  assert.equal((await service.read(record.id)).revision, record.revision)
+  assert.equal((await service.readFile({ id: record.id, path: file.path })).content, file.content, 'retry prepares without saving')
+})
+
 test('Kit source candidates validate the real retained definition without preview, then save and reopen exact bytes', async t => {
   const f = await kitFixture(t)
   let previewCalls = 0, validationCalls = 0

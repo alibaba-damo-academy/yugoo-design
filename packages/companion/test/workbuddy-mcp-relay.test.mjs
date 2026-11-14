@@ -19,13 +19,14 @@ test('relay rejects offline, stale or competing widgets and claims each message 
  q.pulse(owner,false);assert.equal(q.status().online,false)
 })
 
-test('unknown delivery is never retried, queued expiry is distinguishable and close revokes ownership',()=>{
- let now=0;const q=createRelayQueue({now:()=>now,deadlineMs:15000}),owner=randomUUID(),id=randomUUID()
- q.pulse(owner,true);q.submit(id,'hello');q.take(owner);now=16000;q.pulse(owner,true)
+test('actual owner release keeps delivery unknown, and close distinguishes an unclaimed message',()=>{
+ const q=createRelayQueue(),owner=randomUUID(),id=randomUUID()
+ const lease=q.pulse(owner,true);q.submit(id,'hello');q.take(owner);q.release(owner,lease.generation)
+ q.pulse(owner,true)
  assert.equal(q.status(id).message.status,'delivery_unknown');assert.equal(q.take(owner).message,null)
  assert.throws(()=>q.submit(randomUUID(),'again'),/不会自动重发/)
  q.close();assert.throws(()=>q.settle(owner,id,'submitted_unverified'),/Stale/)
- const b=createRelayQueue({now:()=>now,deadlineMs:15000});b.pulse(owner,true);b.submit(id,'hello');now=32000
+ const b=createRelayQueue();b.pulse(owner,true);b.submit(id,'hello');b.close()
  assert.equal(b.status(id).message.status,'not_delivered')
 })
 
@@ -98,7 +99,7 @@ test('active Panel reads prevent idle shutdown without granting native input ava
  } finally {clearInterval(heartbeat);await relay.close()}
 })
 
-test('maximum service lifetime still expires while Panel activity continues',async()=>{
+test('an explicitly bounded diagnostic relay expires even while activity continues',async()=>{
  let stopped
  const relay=await startWorkBuddyRelay({idleTimeoutMs:120,maxLifetimeMs:120,getLastActivityAt:()=>Date.now(),onClose:reason=>{stopped=reason}})
  try {

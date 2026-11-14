@@ -96,13 +96,14 @@ function diagnosticBase(error) {
 
 test('selected custom provider is whitelisted; unrelated credentials/config never forwarded', async () => {
   const f = fixture({ config: { model: 'saved', model_provider: 'gateway', model_providers: {
-    gateway: { name: 'Gateway', base_url: 'https://example.invalid/v1', env_key: 'REVIEW_API_KEY', wire_api: 'responses', requires_openai_auth: false },
+    gateway: { name: 'Gateway', base_url: 'https://example.invalid/v1', env_key: 'REVIEW_API_KEY', wire_api: 'responses', requires_openai_auth: false, stream_idle_timeout_ms: 987654 },
     unused: { http_headers: { Authorization: 'SECRET' } },
   }, instructions: 'spawn agents', hooks: { command: 'unsafe' } } })
   await f.run({ model: 'explicit' })
   const args = f.calls[1].args
   assert.equal(args[args.indexOf('--model') + 1], 'explicit')
   assert.match(args.join(' '), /REVIEW_API_KEY/)
+  assert.match(args.join(' '), /"stream_idle_timeout_ms"=987654/)
   assert.doesNotMatch(args.join(' '), /SECRET|unsafe|spawn agents/)
 })
 
@@ -158,6 +159,153 @@ test('config preflight is time bounded without model execution', async () => {
   await assert.rejects(f.run({ configTimeoutMs: 15 }), { code: 'TIMEOUT' })
   assert.equal(f.calls.length, 1)
   assert.deepEqual(f.kills, ['SIGTERM'])
+})
+
+for (const phase of ['initialize', 'read', 'exec']) test(`default ${phase} lifetime follows the caller rather than a plugin deadline`, async t => {
+  const f = fixture({ configHang: phase === 'initialize', configReadHang: phase === 'read', hang: phase === 'exec' })
+  let ready
+  const waiting = new Promise(resolve => { ready = resolve })
+  const spawnImpl = (...args) => {
+    const child = f.spawnImpl(...args)
+    if (phase === 'exec' && args[1][0] === 'exec') ready(child)
+    if (phase !== 'exec') child.stdin.on('data', chunk => {
+      if (chunk.toString().includes(`"method":"${phase === 'initialize' ? 'initialize' : 'config/read'}"`)) ready(child)
+    })
+    return child
+  }
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  const running = createReviewExecutor({ spawnImpl, killGraceMs: 5 })(input)
+  running.catch(() => {})
+  try {
+    const child = await waiting
+    t.mock.timers.tick(phase === 'exec' ? 600001 : 10001)
+    if (!child.stdout.writableEnded) {
+      if (phase === 'initialize') child.stdout.write('{"id":1,"result":{}}\n')
+      if (phase !== 'exec') child.stdout.write('{"id":2,"result":{"config":{"model_provider":"openai"}}}\n')
+      else {
+        for (const event of success) child.stdout.write(`${JSON.stringify(event)}\n`)
+        child.stdout.end(); child.stderr.end(); child.emit('close', 0, null)
+      }
+    }
+    assert.deepEqual(await running, { result: { ok: true }, nativeRunId: id })
+    assert.deepEqual(f.kills, [])
+  } finally { t.mock.timers.reset() }
+})
+
+for (const layout of ['many frames', 'one frame']) test(`default output accepts more than four MiB in ${layout} and keeps the last agent result`, async () => {
+  const text = '证据'.repeat(layout === 'one frame' ? 750000 : 25000)
+  const tool = { type: 'item.completed', item: { type: 'command_execution', aggregated_output: text } }
+  const events = [success[0], success[1], { type: 'item.completed', item: { type: 'agent_message', text: 'Still investigating.' } },
+    ...Array(layout === 'one frame' ? 1 : 30).fill(tool), ...success.slice(2)]
+  const f = fixture({ events })
+  assert.deepEqual(await createReviewExecutor({ spawnImpl: f.spawnImpl })(input), { result: { ok: true }, nativeRunId: id })
+})
+
+test('default input accepts a prompt larger than four MiB; explicit input budgets remain enforced', async () => {
+  const f = fixture(), request = { ...input, prompt: 'x'.repeat(4 * 1024 * 1024 + 1) }
+  assert.deepEqual(await createReviewExecutor({ spawnImpl: f.spawnImpl })(request), { result: { ok: true }, nativeRunId: id })
+  const limited = fixture()
+  await assert.rejects(createReviewExecutor({ spawnImpl: limited.spawnImpl, maxOutputBytes: 1024 })(request), { code: 'INPUT_LIMIT' })
+  assert.equal(limited.calls.length, 0)
+})
+
+test('large stderr does not impose a default task quota and retains only safe diagnostic classification', async () => {
+  const stderr = 'x'.repeat(4 * 1024 * 1024 + 1) + '\nSECRET invalid api key'
+  const f = fixture({ stderr })
+  assert.deepEqual(await createReviewExecutor({ spawnImpl: f.spawnImpl })(input), { result: { ok: true }, nativeRunId: id })
+  const failed = fixture({ stderr, exitCode: 1 })
+  await assert.rejects(createReviewExecutor({ spawnImpl: failed.spawnImpl })(input), error => {
+    assert.equal(error.code, 'PROCESS_FAILED')
+    assert.equal(error.diagnostic.classification, 'authentication')
+    assert.doesNotMatch(error.message, /SECRET|xxx/)
+    return true
+  })
+})
+
+for (const [name, suffix, code] of [['incomplete', '', 'TRUNCATED_OUTPUT'], ['invalid', '\n', 'INVALID_OUTPUT']]) {
+  test(`large ${name} output remains a real format failure rather than a default output quota failure`, async () => {
+    const f = fixture({ events: success.slice(0, 2), tail: 'x'.repeat(4 * 1024 * 1024 + 1) + suffix })
+    await assert.rejects(createReviewExecutor({ spawnImpl: f.spawnImpl })(input), { code })
+    await assert.rejects(access(f.calls[1].options.cwd), { code: 'ENOENT' })
+  })
+}
+
+test('controlled Node subprocess survives a slow config response and consumes fragmented large JSONL', {
+  skip: process.platform === 'win32', timeout: 30000,
+}, async () => {
+  const root = await mkdtemp(join(tmpdir(), 'review-pipe-test-')), executable = join(root, 'controlled.mjs')
+  await writeFile(executable, `#!${process.execPath}\n` + String.raw`
+import { createInterface } from 'node:readline'
+if (process.argv[2] === 'app-server') {
+  const input = createInterface({ input: process.stdin })
+  const progress = setInterval(() => process.stdout.write('{"method":"fixture/progress"}\n'), 200)
+  input.on('line', line => {
+    const request = JSON.parse(line)
+    if (request.id === 1) setTimeout(() => process.stdout.write('{"id":1,"result":{}}\n'), 11000)
+    if (request.id === 2) process.stdout.write('{"id":2,"result":{"config":{"model_provider":"openai"}}}\n')
+  })
+  input.on('close', () => { clearInterval(progress); process.exit(0) })
+} else {
+  process.stdin.resume()
+  process.stdin.on('end', async () => {
+    const emit = value => new Promise((resolve, reject) => process.stdout.write(value, error => error ? reject(error) : resolve()))
+    await emit('{"type":"thread.started","thread_id":"01234567-89ab-cdef-0123-456789abcdef"}\n{"type":"turn.started"}\n')
+    await emit('{"type":"item.completed","item":{"type":"agent_message","text":"Investigating."}}\n')
+    const frame = Buffer.from(JSON.stringify({ type: 'item.completed', item: { type: 'command_execution', aggregated_output: '证据'.repeat(900000) } }) + '\n')
+    for (let offset = 0; offset < frame.length; offset += 32768) await emit(frame.subarray(offset, offset + 32768))
+    process.stderr.write('x'.repeat(5 * 1024 * 1024))
+    await emit(JSON.stringify({ type: 'item.completed', item: { type: 'agent_message', text: JSON.stringify({ ok: true, title: '证据✓' }) } }) + '\n{"type":"turn.completed"}\n')
+  })
+}
+`, { mode: 0o700 })
+  try {
+    const result = await createReviewExecutor({ executable, killGraceMs: 50 })({ ...input, outputSchema: {
+      ...input.outputSchema, properties: { ...input.outputSchema.properties, title: { type: 'string' } }, required: ['ok', 'title'],
+    } })
+    assert.deepEqual(result, { result: { ok: true, title: '证据✓' }, nativeRunId: id })
+  } finally { await rm(root, { recursive: true, force: true }) }
+})
+
+test('caller cancellation reclaims the controlled subprocess group including its descendant', {
+  skip: process.platform !== 'linux', timeout: 10000,
+}, async () => {
+  const root = await mkdtemp(join(tmpdir(), 'review-owned-group-test-')), executable = join(root, 'controlled.mjs')
+  await writeFile(executable, `#!${process.execPath}\n` + String.raw`
+import { createInterface } from 'node:readline'
+import { spawn } from 'node:child_process'
+import { writeFileSync } from 'node:fs'
+if (process.argv[2] === 'app-server') {
+  const input = createInterface({ input: process.stdin })
+  input.on('line', line => {
+    const request = JSON.parse(line)
+    if (request.id === 1) process.stdout.write('{"id":1,"result":{}}\n')
+    if (request.id === 2) process.stdout.write('{"id":2,"result":{"config":{"model_provider":"openai"}}}\n')
+  })
+  input.on('close', () => process.exit(0))
+} else {
+  process.on('SIGTERM', () => {})
+  const descendant = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { stdio: 'ignore' })
+  writeFileSync(new URL('./owned-pids.json', import.meta.url), JSON.stringify([process.pid, descendant.pid]))
+  process.stdin.resume(); setInterval(() => {}, 1000)
+}
+`, { mode: 0o700 })
+  const controller = new AbortController()
+  const running = createReviewExecutor({ executable, killGraceMs: 30 })({ ...input, signal: controller.signal })
+  const rejected = assert.rejects(running, { code: 'ABORTED' })
+  try {
+    let pids
+    for (let i = 0; i < 200 && !pids; i++) {
+      try { pids = JSON.parse(await readFile(join(root, 'owned-pids.json'), 'utf8')) } catch (error) { if (error.code !== 'ENOENT') throw error }
+      if (!pids) await new Promise(resolve => setTimeout(resolve, 10))
+    }
+    assert.equal(pids?.length, 2, 'the controlled process and descendant actually started')
+    controller.abort()
+    await rejected
+    for (const pid of pids) {
+      const state = await readFile(`/proc/${pid}/stat`, 'utf8').catch(error => { if (error.code === 'ENOENT') return ''; throw error })
+      assert.ok(!state || /^\d+ \(.*\) Z /.test(state), `owned PID ${pid} is no longer running`)
+    }
+  } finally { controller.abort(); await rejected; await rm(root, { recursive: true, force: true }) }
 })
 
 test('hung exec escalates TERM to KILL; output limit includes stderr', async () => {

@@ -1630,6 +1630,18 @@ project-command write lock or retain the mutable installed Kit. Explicit Kit
 selection and content installation/upgrades still validate immutable content
 and their write ownership.
 
+Codex service-owned reviews follow their owning review's cancellation signal.
+Companion adds no default deadline to configuration reads, model execution or
+immutable snapshot reads, and no default quota on cumulative process output.
+Integration callers can explicitly supply positive `configTimeoutMs`,
+`timeoutMs` or `maxOutputBytes` options to `createReviewExecutor`; native provider
+transport settings remain in effect. The executor consumes complete JSONL frames
+as they arrive, keeps the latest Agent result and a small diagnostic tail, and
+reports incomplete output, parsing failures and process exits at their actual
+boundary. A single frame must fit the Node JSON parser's string capacity.
+Completed configuration probes and cancelled processes still receive owned
+process cleanup, including termination escalation when needed.
+
 WorkBuddy 5.8.3 background review support is conditional on a verified native
 background descriptor created after the current Companion connection opened.
 The public `run_in_background` parameter alone can fall back to synchronous
@@ -2065,25 +2077,39 @@ or shell-driven conversation simulates these results.
 
 WorkBuddy renews its authenticated widget lease independently of message polling
 and native RPC. Expired/disposed widget generations cannot settle another
-generation's claimed message. Full terminal relay receipts are bounded, while
-bounded tombstones reject evicted IDs instead of replaying them; the 33rd message
+generation's claimed message. Queued messages and in-flight Host requests wait
+for their actual result rather than expiring after a fixed delivery deadline.
+Closing or losing the owning widget still preserves an uncertain claimed result
+without resending it. If the browser removes a widget without sending its close
+event, the existing heartbeat lease identifies the lost owner; a late receipt
+from the same generation can still settle that message. An unclaimed message
+whose owner closes or loses its lease is reported as not submitted, rather than
+carried into another widget generation.
+
+Full terminal relay receipts are bounded, while bounded tombstones reject
+evicted IDs instead of replaying them; the 33rd message
 does not exhaust a cumulative submission limit. A claimed message that loses its
 owner remains unknown and quarantines that old relay. The existing explicit
 **Restore design Panel** action asks the original conversation to call
 `yugoo_workbuddy_open_panel` once with the same exact parameters. That MCP call
 starts a fresh owned service (it does not reuse a cached relay), retains private
 unknown/accepted receipts, and permits distinct new events only. It does not
-resend the old event, restart design work or kill the Host. The old service still
-expires under its existing idle/lifetime bounds. Source/VM/temporary-project
+resend the old event, restart design work or kill the Host. An inactive Panel
+service is reclaimed after one hour without authenticated Panel or widget
+activity. Active Panels have no fixed maximum lifetime; standalone diagnostic
+relays retain their explicitly selected lifetime. Source/VM/temporary-project
 fixtures verify these boundaries; native Host behavior remains a separate
 acceptance check.
 
 Companion separates presentation observation from operation authority. A visible
 page has one shared one-second clock; each reader permits one in-flight request.
 Hidden pages stop scheduling reads, and a folded conversation or `panel-only`
-page does not subscribe to foreground history. Workspace and history reads time
-out after ten seconds so a stalled request cannot hold a reader forever. This
-read recovery never retries a save or message submission. A send first displays
+page does not subscribe to foreground history. Workspace and history readers
+wait for their actual result or error without a default deadline; an outstanding
+read keeps its slot while other readers continue. When that read settles, its
+slot becomes available for the next scheduled observation. Read failures retain
+the last received history and unsent draft. Observation never retries a save or
+message submission. A send first displays
 its in-progress state; only the native receipt permits an acceptance notice.
 Recorded history remains the host's durable projection, not a fabricated echo.
 

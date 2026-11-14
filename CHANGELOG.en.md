@@ -4,7 +4,12 @@
 
 This log summarizes major features, noticeable experience changes, and installation or upgrade improvements in the Yugoo Design repository, organized by version. It omits small adjustments and internal refactoring. See the [Git commit history](https://github.com/alibaba-damo-academy/yugoo-design/commits/main/) for the full changes.
 
-## [0.3.6](https://github.com/alibaba-damo-academy/yugoo-design/tree/v0.3.6)
+## [0.3.7](https://github.com/alibaba-damo-academy/yugoo-design/tree/v0.3.7)
+
+- Let background reviews and WorkBuddy continuations wait for actual completion or connection closure, and keep active Panels open without a fixed lifetime. Preserve accurate not-submitted or unknown outcomes when a connection is lost, avoiding duplicate delivery.
+- Distinguish Studio draft saving from content validation. Unfinished changes remain saveable, with validation issues and repair actions available.
+
+## [0.3.6](https://github.com/alibaba-damo-academy/yugoo-design/tree/4fcedfffc475c32aebe3fae05be8ec01b9d71c50)
 
 - Simplify native Agent collaboration: remove duplicate method-read proof from child registration and the fixed deadline on the Codex notification channel, and allow authorized repair and independent work to continue after a failed operation.
 - Connect Companion scenario generation to the existing prepare, write and publish lifecycle. Clarify that skipping an optional next-step choice defers that choice.

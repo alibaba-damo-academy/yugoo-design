@@ -1,4 +1,4 @@
-/** Service-owned finite review execution; no main-conversation tool calls. */
+/** Service-owned review execution; no main-conversation tool calls. */
 import { randomUUID } from 'node:crypto'
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -14,10 +14,8 @@ export async function reviewSnapshot(projectRoot, checkpoint, signal) {
   const root=await mkdtemp(join(tmpdir(),'design-review-'))
   try {
     const git=new GitVersioning(nodeDesignProjectSpawn,projectRoot,'design_files')
-    // Preserve the original per-operation deadline; cancellation is not authority
-    // to abandon a running publication. This consumer only reads committed data.
-    const operationSignal=()=>signal ? AbortSignal.any([signal,AbortSignal.timeout(10000)]) : AbortSignal.timeout(10000)
-    const entries=await git.listEntriesAt(checkpoint,operationSignal(),2*1024*1024)
+    // Read-only snapshots follow the owning review's cancellation signal.
+    const entries=await git.listEntriesAt(checkpoint,signal,2*1024*1024)
     // Validate even excluded derived entries: a symlink is not safe evidence.
     let count=0
     for(const entry of entries) {
@@ -32,7 +30,7 @@ export async function reviewSnapshot(projectRoot, checkpoint, signal) {
       const path=`design_files/${relative}`
       // System-derived demonstrations are not product evidence, including drafts.
       if(path.startsWith('design_files/_experiences/'))continue
-      const content=await git.readBytesAt(checkpoint,relative,operationSignal(),16*1024*1024)
+      const content=await git.readBytesAt(checkpoint,relative,signal,16*1024*1024)
       if(content===undefined)throw new Error('Published review file is unavailable')
       bytes+=content.length
       if(bytes>128*1024*1024)throw new Error('Review snapshot size limit exceeded')
