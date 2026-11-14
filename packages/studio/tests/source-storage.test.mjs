@@ -98,9 +98,13 @@ test('historical Panel trial records and byte sources remain readable without ex
 })
 
 
-test('source retention still rejects complete trees exceeding 32 MiB without losing existing snapshots', async t => {
+test('source retention reopens an exact 64 MiB snapshot and rejects one extra byte without losing existing snapshots', async t => {
   const f = await fixture(t)
-  const large = { path: 'assets/large.bin', base64: Buffer.alloc(32 * 1024 * 1024 + 1).toString('base64') }
-  await assert.rejects(f.sources.retainTree([large]), /32 MiB/)
+  const bytes = Buffer.alloc(64 * 1024 * 1024 + 1, 0xa5)
+  const large = { path: 'assets/large.bin', base64: bytes.toString('base64') }
+  await assert.rejects(f.sources.retainTree([large]), /64 MiB/)
+  const retained = await f.sources.retainTree([{ ...large, base64: bytes.subarray(0, -1).toString('base64') }])
+  const reopened = await f.sources.open(retained.id)
+  assert.deepEqual(await reopened.fs.readBytes(join(reopened.root, large.path)), bytes.subarray(0, -1))
   assert.equal(await f.snapshot.fs.readText(join(f.snapshot.root, 'SKILL.md')), 'saved source')
 })

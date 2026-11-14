@@ -83,7 +83,7 @@ export function encodeStudioContentZip(source: string): Uint8Array {
     if (entries[name]) throw Error('Duplicate ZIP file path.')
     entries[name] = fromBase64(base64)
     sourceBytes += entries[name]!.byteLength
-    if (sourceBytes > STUDIO_SOURCE_MAX_BYTES) throw Error('ZIP source content exceeds 32 MiB.')
+    if (sourceBytes > STUDIO_SOURCE_MAX_BYTES) throw Error('ZIP source content exceeds 64 MiB.')
     return file
   })
   entries[MANIFEST] = encoder.encode(JSON.stringify({ format: 'studio-content-zip/v1', archive: { ...archive, files } }, null, 2))
@@ -149,7 +149,7 @@ export function decodeStudioContentZip(bytes: Uint8Array): string {
     if (data.length !== file.bytes) throw Error(`ZIP file size mismatch: ${file.path}`)
     used.add(name)
     sourceBytes += data.byteLength
-    if (sourceBytes > STUDIO_SOURCE_MAX_BYTES) throw Error('ZIP source content exceeds 32 MiB.')
+    if (sourceBytes > STUDIO_SOURCE_MAX_BYTES) throw Error('ZIP source content exceeds 64 MiB.')
     return { ...file, base64: toBase64(data) }
   })
   if (used.size !== entries.size) throw Error('ZIP contains files that are not listed in its manifest.')

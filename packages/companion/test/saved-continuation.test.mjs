@@ -29,6 +29,19 @@ test('exact save/checkpoint survives reopen without design bytes or automatic su
   assert.equal((await open().snapshot())[0].retryable, true)
 })
 
+test('a known pre-write conflict discards only its uncommitted preparing entry', async t => {
+  const { api, open, saved } = await fixture(t)
+  await api.prepare({ eventId: 'rejected-before-write', skill: 'test_bundle', payloadHash: 'rejected' })
+  await api.prepare({ eventId: 'other-preparing', skill: 'test_bundle', payloadHash: 'other' })
+  await api.discardPreparing('rejected-before-write')
+  assert.deepEqual((await open().snapshot()).map(e => e.eventId), ['save-one', 'other-preparing'])
+  await api.discardPreparing('save-one')
+  assert.equal((await open().snapshot()).find(e => e.eventId === 'save-one').commit, saved[0].commit)
+  await api.begin({ text: 'Continue', requestId: 'uncertain', saved })
+  await api.discardPreparing('save-one')
+  assert.equal((await open().snapshot()).find(e => e.eventId === 'save-one').status, 'unknown')
+})
+
 test('lost receipt and restart preserve unknown without retrying an uncertain send', async t => {
   const { api, open, saved } = await fixture(t)
   const first = await api.begin({ text: 'Continue', requestId: 'request-one', saved })

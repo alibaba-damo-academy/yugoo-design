@@ -235,6 +235,15 @@ Studio messages with no saved Panel receipts remain available when Panel
 notification history is unreadable or locked. Their existing Studio request
 binding and native transport still own delivery and its actual failure feedback.
 
+Ordinary Panel save transport accepts `{ before, artifacts? }` beside the legacy
+artifact list. `before` is the original canonical Bundle object, or `null` when
+its file was absent. The shared write compares it with that Bundle's current
+worktree inside the existing mutation, after exact save-event replay and before
+writing any files. A changed, deleted or unparsable canonical file rejects the
+new save with `PANEL_SAVE_CONFLICT`, preserving current content and artifacts.
+Formatting and unrelated Bundle commits do not conflict. Legacy artifact lists
+and the existing `autoBefore` contract retain their behavior.
+
 Every `prepareBundle` response includes the same shared `executionContract` and
 prefixes its `method` with that contract before the unchanged, version-pinned
 Bundle method. Main and Producer placement use the same mapping: the native Host
@@ -299,8 +308,10 @@ input. Confirmed exit discards that object's unsent input and stops its history
 polling; the next object starts a fresh display interval in the same native thread.
 Late responses cannot change the next object's notices, candidate or input.
 
-Studio source import and archive reading support the shared 32 MiB complete
-source / 64 MiB serialized transport budget. The authenticated HTTP service uses
+Studio source import and archive reading support the shared 64 MiB internal
+source budget and an independent 64 MiB physical JSON/ZIP/transport limit.
+Base64 and metadata count toward JSON/transport bytes, leaving less than 48 MiB
+of usable source capacity in that envelope. The authenticated HTTP service uses
 that envelope only for `studioInstanceImportSources` and
 `studioContentReadArchive`; other methods retain their 12 MiB request limit.
 Browser and token/origin checks still run before reading the body.

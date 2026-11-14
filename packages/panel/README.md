@@ -107,6 +107,13 @@ In record boards, save, failure and retry retain the chosen view, group, selecti
 scroll position. Saving locks editing without becoming a Bundle execution;
 the board's automatic overview transition follows actual execution completion.
 
+Local drafts keep the original canonical content on which editing began, including
+pending native editor input. Incoming Agent updates remain available for Cancel
+without replacing that save baseline. Ordinary saves carry the baseline and
+prepared artifacts through the existing save channel; a concurrent content change
+reports a conflict and preserves both the newer saved content and the local draft.
+Cancel loads the latest content so the user can reconcile and save normally.
+
 Always-expanded question groups share one compact form frame. Single choices
 use the shared dropdown, multiple choices wrap inline, and fields adapt from two
 columns to one at narrow reading widths. Answers, context, ordering and editing

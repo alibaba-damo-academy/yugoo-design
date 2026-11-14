@@ -3,12 +3,13 @@ import type { BeforeSaveRegistration } from './client/panels/shared.ts'
 /** A mounted workspace's editor flush barrier. No callbacks enter Design JSON. */
 export function createPanelSaveBarrier() {
   const editors = new Map<string, Set<{ flush: () => Promise<void>; discard?: () => void }>>()
-  const pendingEditors = new Set<object>(), listeners = new Set<() => void>()
+  const pendingEditors = new Map<object, string>(), listeners = new Set<() => void>()
   const notify = () => { for (const listener of listeners) listener() }
   let disposed = false
   return {
     subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener) } },
     hasPendingChanges: () => pendingEditors.size > 0,
+    pendingSkills: () => new Set(pendingEditors.values()),
     register(skill: string, flush: () => Promise<void>, discard?: () => void): BeforeSaveRegistration {
       if (disposed) return () => {}
       const callbacks = editors.get(skill) ?? new Set()
@@ -22,7 +23,7 @@ export function createPanelSaveBarrier() {
       let live = true
       remove.setPending = pending => {
         if (!live || disposed || pendingEditors.has(identity) === pending) return
-        pending ? pendingEditors.add(identity) : pendingEditors.delete(identity)
+        pending ? pendingEditors.set(identity, skill) : pendingEditors.delete(identity)
         notify()
       }
       return remove

@@ -68,10 +68,25 @@ export function parsePanelArtifacts(
   return Object.freeze(artifacts)
 }
 
-/** One panel save: the owning skill and its full post-edit state. */
+/** Ordinary saves accept the legacy artifact list or a canonical-state envelope. */
+export function parsePanelSaveInput(skill: string, value: unknown): Readonly<{
+  before?: unknown
+  artifacts?: Readonly<Record<string, string | Uint8Array>>
+}> {
+  if (value === undefined || Array.isArray(value)) return { artifacts: parsePanelArtifacts(skill, value) }
+  if (typeof value !== 'object' || value === null || !Object.hasOwn(value, 'before')
+    || Object.keys(value).some(key => key !== 'before' && key !== 'artifacts')) {
+    throw new Error('design panel: expected artifacts or an original-state save envelope')
+  }
+  const envelope = value as { before: unknown; artifacts?: unknown }
+  return { before: envelope.before, artifacts: parsePanelArtifacts(skill, envelope.artifacts) }
+}
+
+/** One panel save, optionally bound to its original canonical object (null for absent). */
 export interface PanelEdit {
   skill: string
   state: unknown
+  before?: unknown
 }
 
 /** The result of applying a panel edit. */
@@ -138,6 +153,7 @@ export async function applyPanelEdit(
 ): Promise<PanelSaveResult> {
   const { commit, diff } = await store.write(edit.skill, edit.state, {
     origin: 'panel',
+    ...(Object.hasOwn(edit, 'before') ? { before: edit.before } : {}),
     ...(validate === undefined ? {} : { validate }),
     ...(artifacts === undefined ? {} : { artifacts }),
     ...(ownedArtifacts === undefined ? {} : { ownedArtifacts }),

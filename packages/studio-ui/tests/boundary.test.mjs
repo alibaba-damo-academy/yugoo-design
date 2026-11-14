@@ -10,6 +10,7 @@ const source = (await Promise.all(files.map((name) => readFile(join(sourceRoot.p
 for (const forbidden of [
   '@deepseek-ai/',
   'dsh-design-core',
+  '../core/',
   'node:fs',
   'node:path',
   'StudioWorkingCopyRepository',

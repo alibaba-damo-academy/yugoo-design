@@ -149,14 +149,14 @@ export function readStudioContentArchive(source: string): StudioContentArchive {
     paths.set(folded, path)
     const parts = folded.split('/'); parts.pop()
     while (parts.length) { directories.add(parts.join('/')); parts.pop() }
-    if (!Number.isSafeInteger(entry.bytes) || (entry.bytes as number) < 0 || (entry.bytes as number) > MAX_BYTES - total) throw Error('Archive content exceeds 32 MiB or has an invalid byte count.')
+    if (!Number.isSafeInteger(entry.bytes) || (entry.bytes as number) < 0 || (entry.bytes as number) > MAX_BYTES - total) throw Error('Archive content exceeds 64 MiB or has an invalid byte count.')
     if (typeof entry.base64 !== 'string' || entry.base64.length > Math.ceil(MAX_BYTES / 3) * 4 || entry.base64.length % 4
       || !/^[A-Za-z0-9+/]*={0,2}$/u.test(entry.base64)) throw Error('Invalid archive base64.')
     const bytes = Buffer.from(entry.base64, 'base64')
     if (bytes.toString('base64') !== entry.base64 || entry.bytes !== bytes.length || typeof entry.sha256 !== 'string'
       || !HASH.test(entry.sha256) || sha(bytes) !== entry.sha256) throw Error('Archive file integrity mismatch.')
     total += bytes.length
-    if (total > MAX_BYTES) throw Error('Archive content exceeds 32 MiB.')
+    if (total > MAX_BYTES) throw Error('Archive content exceeds 64 MiB.')
     return Object.freeze({ path, base64: entry.base64, bytes: bytes.length, sha256: entry.sha256 })
   }).sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0)
   if ([...directories].some(path => paths.has(path))) throw Error('Archive file/directory collision.')
@@ -363,7 +363,7 @@ async function exportArchive(
       safePath(target)
       const bytes = await source.readBytes(resolve(source.root, path))
       total += bytes.byteLength
-      if (total > MAX_BYTES || files.length >= MAX_FILES) throw Error('Archive content exceeds 32 MiB or 4096 files.')
+      if (total > MAX_BYTES || files.length >= MAX_FILES) throw Error('Archive content exceeds 64 MiB or 4096 files.')
       files.push({ path: target, base64: Buffer.from(bytes).toString('base64'), bytes: bytes.byteLength, sha256: sha(bytes) })
     }
   }

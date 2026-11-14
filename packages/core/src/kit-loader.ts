@@ -825,7 +825,7 @@ const MAX_RESOURCE_NODES = 10_000
 const MAX_RESOURCE_DEPTH = 32
 // Retained resources include complete executable browser/font closures, not
 // only method text. Keep one bounded budget for every Bundle and opaque asset.
-const MAX_RESOURCE_BYTES = 32 * 1024 * 1024
+const MAX_RESOURCE_BYTES = 64 * 1024 * 1024
 
 async function collectResourceInputs(
   fs: KitFsLike,

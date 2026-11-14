@@ -40,7 +40,7 @@ function memorySource(entries, budget = { bytes: 0, files: 0 }) {
     const bytes = Buffer.from(base64, 'base64')
     if (bytes.toString('base64') !== base64) throw new Error('Studio source base64 is not canonical.')
     total += bytes.length
-    if (total > MAX_TREE_BYTES) throw new Error('Studio source exceeds 32 MiB.')
+    if (total > MAX_TREE_BYTES) throw new Error('Studio source exceeds 64 MiB.')
     files.set(path, bytes)
     const parts = path.split('/')
     for (let count = 1; count < parts.length; count++) directories.add(parts.slice(0, count).join('/'))

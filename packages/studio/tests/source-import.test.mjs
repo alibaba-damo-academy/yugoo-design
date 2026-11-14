@@ -29,6 +29,38 @@ const kitSources = (mounts = [{ bindingKey: pin.name, ...pin }]) => [
   entry('kit.yaml', JSON.stringify({ version: 1, mounts })),
 ]
 
+test('an exact 32 MiB import remains complete and round-trips after local identity projection', async t => {
+  const { service, options } = await fixture(t)
+  const supplied = structuredClone(originalFiles)
+  const used = supplied.reduce((total, file) => total + Buffer.byteLength(file.base64, 'base64'), 0)
+  const resource = Buffer.alloc(32 * 1024 * 1024 - used, 0xa5)
+  supplied.push({ path: 'assets/boundary.bin', base64: resource.toString('base64') })
+  let record = await service.importSources({ kind: 'bundle', files: supplied })
+  assert.deepEqual(record.readiness, { ready: true, diagnostics: [] })
+  const reopened = await createStudioInstances(options)
+  assert.deepEqual((await reopened.read(record.id)).readiness, record.readiness)
+  let archive
+  for (let cycle = 0; cycle < 2; cycle++) {
+    archive = readStudioContentArchive(await reopened.exportArchive({ id: record.id, expectedRevision: record.revision }))
+    for (const file of supplied.filter(file => file.path !== 'skill.yaml')) {
+      assert.equal(archive.files.find(entry => entry.path === file.path).base64, file.base64)
+    }
+    assert.match(textOf(archive.files, 'skill.yaml'), new RegExp(record.bundle.name))
+    record = await reopened.importSources({ kind: 'bundle', files: archive.files })
+    assert.deepEqual(record.readiness, { ready: true, diagnostics: [] })
+    assert.equal(archive.files.reduce((total, file) => total + file.bytes, 0),
+      32 * 1024 * 1024 + Buffer.byteLength(textOf(archive.files, 'skill.yaml')) - Buffer.byteLength(textOf(supplied, 'skill.yaml')),
+      'only the current projected identity changes the complete source size')
+  }
+  record = await draft(reopened, record, [{ path: 'SKILL.md', content: textOf(supplied, 'SKILL.md') + '\nSaved again.\n' }])
+  const saved = await createStudioInstances(options)
+  assert.equal((await saved.read(record.id)).readiness.ready, true)
+  assert.match(textOf(readStudioContentArchive(await saved.exportArchive({ id: record.id, expectedRevision: record.revision })).files, 'SKILL.md'), /Saved again/)
+  assert.equal((await saved.importSources({ kind: 'bundle', files: [...supplied,
+    { path: 'assets/one-more.bin', base64: 'AQ==' },
+  ] })).readiness.ready, true, '32 MiB + 1 is legal within the shared 64 MiB resource budget')
+})
+
 test('bare SKILL imports without metadata; additions save in stages and readiness follows saved sources after reopen', async t => {
   const { service, options } = await fixture(t)
   let record = await service.importSources({ kind: 'bundle', files: [entry('SKILL.md', '# Human draft\r\nKeep my method.\r\n')] })

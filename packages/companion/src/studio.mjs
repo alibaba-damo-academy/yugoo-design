@@ -139,10 +139,10 @@ export async function createCompanionStudio(kit, kitRoot, stateRoot, contentLibr
       for (const { base, path } of files) {
         const absolute = join(base, path), file = await safe(absolute), info = await lstat(file)
         if (!info.isFile()) throw new Error('Studio expects a regular file.')
-        if (bytes + info.size > STUDIO_SOURCE_MAX_BYTES) throw new Error('Installed preview source exceeds 32 MiB.')
+        if (bytes + info.size > STUDIO_SOURCE_MAX_BYTES) throw new Error('Installed preview source exceeds 64 MiB.')
         const content = await readFile(file)
         bytes += content.length
-        if (bytes > STUDIO_SOURCE_MAX_BYTES) throw new Error('Installed preview source exceeds 32 MiB.')
+        if (bytes > STUDIO_SOURCE_MAX_BYTES) throw new Error('Installed preview source exceeds 64 MiB.')
         const resource = readStudioArchiveResource(absolute, content)
         resources.set(absolute, resource)
         if (resource.kind === 'text' && !resource.content.includes('\0')) texts.set(absolute, resource.content)
@@ -193,10 +193,10 @@ export async function createCompanionStudio(kit, kitRoot, stateRoot, contentLibr
     let total = 0
     for (const path of paths) {
       const file = await safe(join(base, path)), info = await lstat(file)
-      if (!info.isFile() || total + info.size > STUDIO_SOURCE_MAX_BYTES) throw new Error('Content snapshot exceeds 32 MiB or contains an invalid file.')
+      if (!info.isFile() || total + info.size > STUDIO_SOURCE_MAX_BYTES) throw new Error('Content snapshot exceeds 64 MiB or contains an invalid file.')
       const bytes = await readFile(file)
       total += bytes.length
-      if (total > STUDIO_SOURCE_MAX_BYTES) throw new Error('Content snapshot exceeds 32 MiB.')
+      if (total > STUDIO_SOURCE_MAX_BYTES) throw new Error('Content snapshot exceeds 64 MiB.')
       entries.push({ path, base64: bytes.toString('base64') })
     }
     return entries

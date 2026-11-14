@@ -36,6 +36,8 @@ const nativePanelArtifactsSchema = z.array(z.object({
 })).max(64)
 const panelArtifactsSchema = z.union([
   nativePanelArtifactsSchema,
+  z.object({ before: z.unknown(), artifacts: nativePanelArtifactsSchema.optional() }).strict()
+    .refine(value => Object.hasOwn(value, 'before'), 'Original canonical state is required'),
   z.object({ autoBefore: z.unknown(), definitionRevision: z.string().optional() }).strict(),
 ]).optional()
 /** Stable save-operation identity used for idempotent Git auditing. */

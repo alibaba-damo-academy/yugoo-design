@@ -123,11 +123,11 @@ test('Kit and Bundle display names survive actual saved-source ZIP export and re
 })
 
 
-test('24 MiB complete source survives saved ZIP export, browser import, strict RPC and retained reopen', async t => {
+test('32 MiB plus a resource survives saved ZIP export, browser import, strict RPC and retained reopen', async t => {
   const stateRoot = await mkdtemp(join(tmpdir(), 'studio-large-transfer-'))
   t.after(() => rm(stateRoot, { recursive: true, force: true }))
   const options = { stateRoot, ...adapters() }, service = await createStudioInstances(options)
-  const asset = Buffer.alloc(24 * 1024 * 1024, 0xa5).toString('base64')
+  const asset = Buffer.alloc(32 * 1024 * 1024 + 1, 0xa5).toString('base64')
   const files = [...originalFiles, { path: 'assets/large.bin', base64: asset }]
   const saved = await service.importSources({ kind: 'bundle', files })
   const source = await service.exportArchive({ id: saved.id, expectedRevision: saved.revision })
@@ -170,10 +170,10 @@ test('browser and archive reader accept the same JSON byte boundary regardless o
 })
 
 test('oversized source and transport still fail without truncating the selected files', async () => {
-  const bytes = Buffer.alloc(32 * 1024 * 1024 + 1)
+  const bytes = Buffer.alloc(64 * 1024 * 1024 + 1)
   await assert.rejects(readStudioImportFiles('bundle', [text('SKILL.md', '# Method'), {
     name: 'large.bin', size: bytes.length, arrayBuffer: async () => bytes.buffer, text: async () => { throw Error('binary') },
-  }]), /source exceeds 32 MiB/)
+  }]), /transport exceeds 64 MiB/)
   let reads = 0
   await assert.rejects(readStudioImportFiles('bundle', [{ name: 'large.zip', size: 64 * 1024 * 1024 + 1,
     text: async () => { reads++; return '' },

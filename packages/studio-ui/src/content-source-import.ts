@@ -28,7 +28,7 @@ function checkSources(input: StudioSourceImport): StudioSourceImport {
     names.add(key)
     sourceBytes += file.base64.length / 4 * 3 - (file.base64.endsWith('==') ? 2 : file.base64.endsWith('=') ? 1 : 0)
   }
-  if (input.files.length > 4096 || sourceBytes > STUDIO_SOURCE_MAX_BYTES) throw Error('Import source exceeds 32 MiB or 4096 files. No content was truncated.')
+  if (input.files.length > 4096 || sourceBytes > STUDIO_SOURCE_MAX_BYTES) throw Error('Import source exceeds 64 MiB or 4096 files. No content was truncated.')
   if (new TextEncoder().encode(JSON.stringify({ method: 'studioInstanceImportSources', params: input })).length > STUDIO_ARCHIVE_MAX_JSON_BYTES) throw Error('Import transport exceeds 64 MiB. No content was truncated.')
   const required = input.kind === 'bundle' ? ['SKILL.md'] : ['mindset.md', 'kit.yaml']
   for (const path of required) if (!input.files.some(file => file.path === path)) throw Error(`Missing required file: ${path}`)

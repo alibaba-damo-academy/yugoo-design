@@ -568,7 +568,7 @@ function mountPanelShell(ctx: Context): void {
           id: string,
           skill: string,
           state: unknown,
-          artifacts?: readonly { readonly path: string; readonly content: string; readonly encoding?: 'base64' }[] | { readonly autoBefore: unknown; readonly definitionRevision?: string },
+          artifacts?: Parameters<DesignRuntime['savePanel']>[3],
           eventId?: string,
         ): Promise<RemoteResult<{ commit?: string }>>
         readGraph(id: string): Promise<RemoteResult<{ content: string }>>

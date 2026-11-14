@@ -17,6 +17,8 @@ export interface PanelStoreState {
   active: string | undefined
   drafts: Record<string, unknown>
   originals: Record<string, unknown>
+  /** Original content on which each local draft was started, held until save/cancel. */
+  draftBases: Record<string, unknown>
   manifests: Record<string, SkillManifestLite>
   /** Latest Design File publication sequence processed for each skill. */
   changedSeqs: Record<string, number>
@@ -33,6 +35,7 @@ let snap: PanelStoreState = {
   active: undefined,
   drafts: {},
   originals: {},
+  draftBases: {},
   manifests: {},
   changedSeqs: {},
   unread: {},
@@ -141,6 +144,7 @@ export function syncProjection(
   activitySkill?: string,
   artifactFiles?: Readonly<Record<string, string>>,
   renderedSkills?: readonly string[],
+  pendingSkills?: ReadonlySet<string>,
 ): void {
   if (design === undefined) return
   panelVisible = dockOpen
@@ -149,6 +153,7 @@ export function syncProjection(
   const known = new Set(snap.skills)
   const originals = { ...snap.originals }
   const drafts = { ...snap.drafts }
+  const draftBases = { ...snap.draftBases }
   const manifests = { ...snap.manifests }
   const changedSeqs = { ...snap.changedSeqs }
   let changed = false
@@ -187,8 +192,8 @@ export function syncProjection(
     if (previous === undefined && receipts[skill]?.unread) unread[skill] = true
     contentFingerprints[skill] = nextFingerprint
     const hadDraft = skill in drafts
-    const dirty = hadDraft && previous !== undefined
-      && !areRenderEqual(manifests[skill], nativePanels, drafts[skill], previous)
+    const dirty = pendingSkills?.has(skill) === true || (hadDraft && draftBases[skill] !== undefined
+      && !areRenderEqual(manifests[skill], nativePanels, drafts[skill], draftBases[skill]))
     const ownSaveEcho = dirty
       && areRenderEqual(manifests[skill], nativePanels, drafts[skill], entry.state)
     const previousChangedSeq = changedSeqs[skill]
@@ -200,8 +205,11 @@ export function syncProjection(
     }
     if (originals[skill] !== entry.state) {
       originals[skill] = entry.state
-      if (!dirty) drafts[skill] = entry.state
       changed = true
+    }
+    if (!dirty || (ownSaveEcho && pendingSkills?.has(skill) !== true)) {
+      drafts[skill] = entry.state
+      draftBases[skill] = entry.state
     }
     // Content (including owned artifacts), not publication/object identity,
     // determines updates. A matching dirty draft is this panel's save echo;
@@ -231,7 +239,7 @@ export function syncProjection(
     changed = true
   }
   if (!changed && active === snap.active && skills.join(',') === snap.skills.join(',')) return
-  emit({ ...snap, skills, active, originals, drafts, manifests, changedSeqs, unread, flash })
+  emit({ ...snap, skills, active, originals, drafts, draftBases, manifests, changedSeqs, unread, flash })
 }
 
 /** Switch the visible tab and acknowledge its unread badge. */
@@ -250,14 +258,19 @@ export function editDraft(skill: string, next: unknown): void {
 
 /** Replace a just-saved transient editor draft with its canonical wire state. */
 export function settleSavedDraft(skill: string, state: unknown): void {
-  emit({ ...snap, drafts: { ...snap.drafts, [skill]: state }, error: undefined })
+  // An already observed newer Host update must remain the Cancel/read baseline.
+  const original = snap.originals[skill]
+  const originals = canonical(original) === canonical(snap.draftBases[skill])
+    ? { ...snap.originals, [skill]: state } : snap.originals
+  emit({ ...snap, originals, drafts: { ...snap.drafts, [skill]: state },
+    draftBases: { ...snap.draftBases, [skill]: state }, error: undefined })
 }
 
 /** Whether the draft diverges from the host value on render-relevant fields. */
 export function isDirty(skill: string, nativePanels: NativePanelRegistry): boolean {
   return skill in snap.drafts
-    && snap.originals[skill] !== undefined
-    && !areRenderEqual(snap.manifests[skill], nativePanels, snap.drafts[skill], snap.originals[skill])
+    && snap.draftBases[skill] !== undefined
+    && !areRenderEqual(snap.manifests[skill], nativePanels, snap.drafts[skill], snap.draftBases[skill])
 }
 
 /** Any skill with pending local edits (drives the save bar availability). */
@@ -269,7 +282,7 @@ export function hasPendingChanges(nativePanels: NativePanelRegistry): boolean {
 export function revertAll(): void {
   const drafts: Record<string, unknown> = {}
   for (const skill of snap.skills) drafts[skill] = snap.originals[skill]
-  emit({ ...snap, drafts, error: undefined })
+  emit({ ...snap, drafts, draftBases: { ...drafts }, error: undefined })
 }
 
 /** Mark the save round-trip in flight (or finished with an error). */
@@ -329,6 +342,7 @@ export function resetPanelStore(scope?: string): void {
     active: undefined,
     drafts: {},
     originals: {},
+    draftBases: {},
     manifests: {},
     changedSeqs: {},
     unread: {},

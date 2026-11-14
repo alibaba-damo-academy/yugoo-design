@@ -181,8 +181,6 @@ export const DOCK_CSS = `
 .dsh-design-footer .dsh-design-btn-primary{background:var(--ds-brand-6);border-color:var(--ds-brand-6);color:var(--ds-brand-foreground)}
 .dsh-design-footer .dsh-design-btn-primary:hover:not(:disabled){background:var(--ds-brand-7)}
 .dsh-design-footer .dsh-design-btn-primary:disabled{background:var(--ds-brand-3);border-color:var(--ds-brand-3)}
-.dsh-design-save-error{color:var(--ds-error-7);font-size:var(--ds-font-body-lv1);max-width:220px;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 `
 

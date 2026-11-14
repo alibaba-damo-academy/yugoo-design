@@ -49,8 +49,10 @@ missing independent catalog entries. Single-file ZIP imports report an invalid
 archive format before checking for required source files; ZIP resources inside
 an imported source folder retain their original bytes.
 
-Portable import/export uses the shared Studio limits: 32 MiB of complete source
-bytes and 64 MiB for the archive JSON or ZIP. Host RPC wrapping does not count
+Portable import/export uses the shared Studio limits: 64 MiB of complete source
+bytes and an independent 64 MiB physical limit for archive JSON, ZIP and RPC
+transports. Base64 and metadata count toward JSON/transport bytes, leaving less
+than 48 MiB of usable source capacity in that envelope. Host RPC wrapping does not count
 against the archive content limit. Browser import and
 export use the pure `dsh-design-studio/types` entry for these values; no Node
 archive/compiler dependency enters the browser codec. ZIP directories, paths,

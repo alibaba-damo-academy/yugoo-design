@@ -78,6 +78,14 @@ export function createSavedContinuation({ stateRoot, projectId, projectRoot, hos
         if (entry.status === 'preparing') { entry.commit = commit; entry.status = 'not_submitted' }
       })
     },
+    /** Only a confirmed pre-write conflict may remove its uncommitted preparation. */
+    discardPreparing(eventId) {
+      if (!id(eventId)) throw Error('Exact save identity required.')
+      return mutate(value => {
+        value.entries = value.entries.filter(entry => entry.eventId !== eventId
+          || entry.status !== 'preparing' || entry.commit !== undefined)
+      })
+    },
     async snapshot({ kitHash } = {}) {
       await tail
       const value = await read()

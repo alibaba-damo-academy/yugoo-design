@@ -348,7 +348,7 @@ export async function createStudioInstances(options) {
       if (previous !== (content ?? undefined)) diff.push({ path, ...(previous === undefined ? {} : { before: previous }), ...(content === null ? {} : { after: content }) })
     }
     const files = [...entries].map(([path, base64]) => ({ path, base64 }))
-    if (files.length > 4096 || files.reduce((bytes, file) => bytes + Buffer.byteLength(file.base64, 'base64'), 0) > STUDIO_SOURCE_MAX_BYTES) throw new Error('Instance source tree exceeds 4096 files or 32 MiB.')
+    if (files.length > 4096 || files.reduce((bytes, file) => bytes + Buffer.byteLength(file.base64, 'base64'), 0) > STUDIO_SOURCE_MAX_BYTES) throw new Error('Instance source tree exceeds 4096 files or 64 MiB.')
     const paths = new Set(entries.keys())
     for (const path of paths) {
       const parts = path.split('/')

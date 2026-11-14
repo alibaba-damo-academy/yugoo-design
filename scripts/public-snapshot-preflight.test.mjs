@@ -1005,8 +1005,8 @@ test('active bundled materials use exact public paths; historical and future sib
     "sha256": "e132ed46f92916593bab00f4c315510b4a239c2b1504fd1bed6d8bed436c7f54"
   },
   "scripts/companion-bundled-license.mjs": {
-    "bytes": 35720,
-    "sha256": "4543ec8f862a9fa6b5f0d05bab057cec96e54f5bba08c4a33f9f15da0eff9d46"
+    "bytes": 35776,
+    "sha256": "8c9cf50976fef540a4d7f5529dea4b535d08081b4dd3ae04ca9b0034db0c14c2"
   },
   "scripts/companion-bundled-license.test.mjs": {
     "bytes": 16852,

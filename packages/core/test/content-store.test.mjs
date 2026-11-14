@@ -58,9 +58,9 @@ test('optional resource projection retains complete traversal and confines opaqu
 test('opaque resources count their full byte length against the same cumulative resource budget', async () => {
   const f = resourceProjectionFixture()
   const textBytes = [...f.files].filter(([path]) => path !== f.binary).reduce((sum, [, bytes]) => sum + bytes.length, 0)
-  f.files.set(f.binary, Buffer.alloc(32 * 1024 * 1024 - textBytes))
+  f.files.set(f.binary, Buffer.alloc(64 * 1024 * 1024 - textBytes))
   assert.ok(await f.load(), 'exact total byte limit is permitted')
-  f.files.set(f.binary, Buffer.alloc(32 * 1024 * 1024 - textBytes + 1))
+  f.files.set(f.binary, Buffer.alloc(64 * 1024 * 1024 - textBytes + 1))
   await assert.rejects(f.load(), /Bundle resources exceed .* bytes/)
   for (const byteLength of [-1, NaN, Infinity]) {
     await assert.rejects(f.load({ ...f.fs, readResource: async path => path === f.binary

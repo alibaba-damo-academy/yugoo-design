@@ -763,6 +763,7 @@ html[data-dsh-panel-resizing=true], html[data-dsh-panel-resizing=true] * { curso
 .dsh-artifact-markdown img { max-width:100%; } .dsh-artifact-markdown pre { overflow:auto; }
 .dsh-artifact-markdown table { border-collapse:collapse; width:max-content; min-width:100%; } .dsh-artifact-markdown th,.dsh-artifact-markdown td { border:1px solid var(--ds-line-1,#e4e1e9); padding:8px; max-width:28em; }
 .dsh-artifact-warning { flex:none; margin:8px 16px 0; padding:8px 12px; border-left:3px solid #ba8510; }
+.dsh-design-save-error { flex:none; margin:8px 16px; padding:8px 12px; border-radius:6px; color:var(--ds-error-text-primary, light-dark(#b42318,#ff9c91)); background:var(--ds-error-light-bg-default, light-dark(#fff1f0,#3a2020)); font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
 .dsh-record-workspace { position: relative; container-type: inline-size; height: 100%; min-width: 0; min-height: 0; color: var(--ds-text-primary, #272727); }
 .dsh-board-detail-workspace .dsh-record-workspace-frame { height: auto; }
 .dsh-board-detail-workspace .dsh-panel-workspace-main { overflow: visible; }

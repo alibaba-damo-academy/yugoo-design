@@ -72,10 +72,10 @@ test('mounted Workspace hands off only its fully saved, current batch', async t 
       const definition = {
         scrollOwner: 'panel', equalsDraft: (a, b) => JSON.stringify(a) === JSON.stringify(b),
         action: ({ saveAndRegenerate }) => saveAndRegenerate(),
-        render: props => React.createElement('button', {
+        render: overrides.render ?? (props => React.createElement('button', {
           'data-testid': `regenerate-${props.skill}`, disabled: props.running,
           onClick: props.onAction,
-        }, `Regenerate ${props.skill}`),
+        }, `Regenerate ${props.skill}`)),
       }
       const registry = {
         subscribe: () => () => {}, revision: () => 0,
@@ -152,6 +152,74 @@ ui:
       const input = container.querySelector('[data-board-record="c"] textarea')
       Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set.call(input, text)
       input.dispatchEvent(new window.Event('input', { bubbles: true }))
+    })
+
+    for (const regenerate of [false, true]) await t.test(`${regenerate ? 'regeneration' : 'footer save'} retains the draft's base after a concurrent Agent update`, async () => {
+      let canonical = { title: 'Agent B' }
+      await withWorkspace(async fixture => {
+        await fixture.edit('alpha', 'User draft A')
+        await fixture.render({ design: { alpha: { state: canonical,
+          skillManifest: { title: { en: 'Alpha' }, presentation: { mode: 'native', renderer: 'fixture' } } } } })
+        if (regenerate) await click(fixture.container.querySelector('[data-testid="regenerate-alpha"]'))
+        else await fixture.save()
+        await eventually(() => !fixture.controls.saving && fixture.calls.saves.length === 1, 'the conflict should settle')
+        assert.deepEqual(fixture.calls.saves[0][3].before, { title: 'Alpha' }, 'send the actual draft base, not the newer Host value')
+        assert.deepEqual(canonical, { title: 'Agent B' }, 'the newer saved value survives')
+        assert.equal(fixture.controls.dirty, true, 'the failed draft remains available')
+        assert.equal(fixture.calls.prompts.length, 0, 'a conflict cannot continue or regenerate')
+        assert.match(fixture.controls.error, /PANEL_SAVE_CONFLICT/)
+        await React.act(async () => fixture.controls.retract())
+        assert.equal(fixture.controls.dirty, false, 'Cancel loads the latest Host content')
+        await fixture.edit('alpha', 'Reconciled C')
+        await fixture.save()
+        await eventually(() => !fixture.controls.saving && fixture.calls.prompts.length === 1, 'a fresh edit should save normally')
+        assert.deepEqual(fixture.calls.saves[1][3].before, { title: 'Agent B' })
+        assert.deepEqual(canonical, { title: 'Reconciled C' })
+      }, { savePanel: (_session, _skill, state, input) => {
+        if (JSON.stringify(input?.before) !== JSON.stringify(canonical)) throw Error('PANEL_SAVE_CONFLICT: newer saved content')
+        canonical = state
+        return { commit: 'reconciled' }
+      } })
+    })
+
+    await t.test('pending native editor input retains its pre-update save baseline before serialization', async () => {
+      function BufferedEditor(props) {
+        const [value, setValue] = React.useState(props.draft.title)
+        const latest = React.useRef(value), registration = React.useRef()
+        latest.current = value
+        React.useEffect(() => {
+          const remove = props.registerBeforeSave(async () => {
+            props.onChange({ title: latest.current })
+            remove.setPending(false)
+          }, () => { remove.setPending(false) })
+          registration.current = remove
+          return remove
+        }, [props.registerBeforeSave, props.onChange])
+        React.useEffect(() => setValue(props.draft.title), [props.draft])
+        return React.createElement('input', { value, onChange: event => {
+          setValue(event.target.value); registration.current.setPending(true)
+        } })
+      }
+      await withWorkspace(async fixture => {
+        await React.act(async () => {
+          const input = fixture.container.querySelector('input')
+          Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(input, 'Buffered A')
+          input.dispatchEvent(new window.Event('input', { bubbles: true }))
+        })
+        assert.equal(fixture.controls.dirty, true)
+        await fixture.render({ design: { alpha: { state: { title: 'Agent B' },
+          skillManifest: { title: { en: 'Alpha' }, presentation: { mode: 'native', renderer: 'fixture' } } } } })
+        assert.equal(fixture.container.querySelector('input').value, 'Buffered A')
+        await fixture.save()
+        await eventually(() => fixture.calls.saves.length === 1 && !fixture.controls.saving, 'buffered save settles')
+        assert.deepEqual(fixture.calls.saves[0][2], { title: 'Buffered A' })
+        assert.deepEqual(fixture.calls.saves[0][3].before, { title: 'Alpha' })
+        assert.equal(fixture.controls.dirty, true)
+        await React.act(async () => fixture.controls.retract())
+        assert.equal(fixture.container.querySelector('input').value, 'Agent B')
+      }, { render: props => React.createElement(BufferedEditor, props), savePanel: () => {
+        throw Error('PANEL_SAVE_CONFLICT: newer saved content')
+      } })
     })
 
     for (const fail of [false, true]) await t.test(`board saving ${fail ? 'failure and retry' : 'success'} retains the chosen details scope`, async () => {

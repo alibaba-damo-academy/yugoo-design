@@ -185,7 +185,7 @@ export async function createStudioDraftPorts({ stateRoot, kitRoot, readInstalled
         || path.split('/').some(part => !part || ['.', '..', '.git', 'node_modules'].includes(part)) || seen.has(path)
         || typeof base64 !== 'string' || Buffer.from(base64, 'base64').toString('base64') !== base64) throw new Error('Invalid source tree entry.')
       seen.add(path); bytes += Buffer.byteLength(base64, 'base64')
-      if (bytes > MAX_SOURCE_BYTES) throw new Error('Source tree exceeds 32 MiB.')
+      if (bytes > MAX_SOURCE_BYTES) throw new Error('Source tree exceeds 64 MiB.')
       return [path, base64]
     }).sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)
   }
@@ -214,10 +214,10 @@ export async function createStudioDraftPorts({ stateRoot, kitRoot, readInstalled
           if (info.isSymbolicLink()) throw new Error('Studio cannot snapshot source symlinks.')
           if (info.isDirectory()) await walk(file, base, prefix)
           else if (info.isFile()) {
-            if (total + info.size > MAX_SOURCE_BYTES || entries.length >= 4096) throw new Error('Kit preview snapshot exceeds 32 MiB or 4096 files.')
+            if (total + info.size > MAX_SOURCE_BYTES || entries.length >= 4096) throw new Error('Kit preview snapshot exceeds 64 MiB or 4096 files.')
             const bytes = await readFile(file)
             total += bytes.length
-            if (total > MAX_SOURCE_BYTES) throw new Error('Kit preview snapshot exceeds 32 MiB.')
+            if (total > MAX_SOURCE_BYTES) throw new Error('Kit preview snapshot exceeds 64 MiB.')
             entries.push([prefix + relative(base, file).split(sep).join('/'), bytes.toString('base64')])
           } else throw new Error('Studio sources must be regular files or directories.')
         }

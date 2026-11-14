@@ -269,7 +269,7 @@ test('capture bounds total bytes/file count/entries/depth and detects changing f
     const seed = kind === 'files' ? Object.fromEntries(Array.from({ length: 4097 }, (_, i) => ['/root/f' + i, '']))
       : kind === 'depth' ? { ['/root/' + 'd/'.repeat(32) + 'a']: 'a' } : { '/root/a': 'a' }
     const { fs } = memoryFs(seed), source = await openInstalledSourceFiles(fs, '/root')
-    if (kind === 'bytes') { const stat = fs.stat; fs.stat = async target => { const info = await stat(target); return info?.type === 'file' ? { ...info, size: 32 * 1024 * 1024 + 1 } : info } }
+    if (kind === 'bytes') { const stat = fs.stat; fs.stat = async target => { const info = await stat(target); return info?.type === 'file' ? { ...info, size: 64 * 1024 * 1024 + 1 } : info } }
     if (kind === 'entries') fs.listDir = async () => Array.from({ length: 20001 }, (_, i) => ({ name: 'f' + i, type: 'file', target: fs.target('/root/a') }))
     if (kind === 'changed') { const read = fs.readBytes; fs.readBytes = async (...args) => { const bytes = await read(...args); fs.versions.set('/root/a', 'v2'); return bytes } }
     await assert.rejects(source.captureTree(), kind === 'changed' ? /source_changed/ : /source_limit/)

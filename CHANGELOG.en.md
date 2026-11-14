@@ -4,10 +4,12 @@
 
 This log summarizes major features, noticeable experience changes, and installation or upgrade improvements in the Yugoo Design repository, organized by version. It omits small adjustments and internal refactoring. See the [Git commit history](https://github.com/alibaba-damo-academy/yugoo-design/commits/main/) for the full changes.
 
-## [0.3.4](https://github.com/alibaba-damo-academy/yugoo-design/tree/v0.3.4)
+## [0.3.5](https://github.com/alibaba-damo-academy/yugoo-design/tree/v0.3.5)
 
 - Improve Companion read and save responsiveness by reusing unchanged project definitions and removing duplicate checks and plugin-imposed deadlines that could abandon slow reads and start repeated requests.
 - Keep ordinary Studio source work available when component discovery fails, and messages without Panel save receipts independent of the saved-notification ledger. Unify file toolbars, theme colors and unsaved-file status.
+- When an Agent updates the same design content during Panel editing, saving reports a conflict and retains the draft instead of overwriting the newer changes. Cancel loads the latest content for further editing.
+- Fix resource-heavy Studio imports being rejected after their local identity is assigned, preserving complete resources through save, reopen and export.
 
 ## [0.3.3](https://github.com/alibaba-damo-academy/yugoo-design/tree/v0.3.3)
 

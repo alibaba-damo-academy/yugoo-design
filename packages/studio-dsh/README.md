@@ -182,10 +182,11 @@ The shared catalog lists already loaded independent Bundle metadata without
 reading or compiling complete source trees. This adapter keeps broken independent
 registrations visible; their exact capture reports the error when selected.
 Import name collision checks therefore do not read unrelated installed sources.
-Selected complete source capture and retention share Studio's 32 MiB tree budget
-and Core's opaque-resource byte accounting. Archive JSON permits 64 MiB for the
-same content's base64 envelope and browser transfer; the 1 MiB text viewer
-limit is separate. Page navigation does not activate a Host through this entry.
+Selected complete source capture and retention share Studio's 64 MiB tree budget
+and Core's opaque-resource byte accounting. Archive JSON, ZIP and RPC retain
+independent 64 MiB physical limits. Base64 and metadata occupy that envelope,
+so its usable source capacity is below 48 MiB. The 1 MiB text viewer limit is
+separate. Page navigation does not activate a Host through this entry.
 Run `test:authoring-sources` for the explicit
 filesystem-port fixtures with real Core compilation and temporary Studio
 copy/reopen checks; actual DSH filesystem, native model and installed-host
@@ -318,7 +319,7 @@ An export accepts an exact installed Kit or Bundle request
 from S2 and exports every saved overlay, opaque resource and retained mount in
 one read transaction. Stale revisions fail; installed base content is never a
 substitute for the selected copy. Imports and exports retain the existing
-`studio-content-archive/v1` format and validation limits. The shared UI uses the same 32 MiB source / 64 MiB serialized transport budget.
+`studio-content-archive/v1` format and validation limits. The shared UI uses the same 64 MiB internal source / 64 MiB physical transport limits; base64 and metadata count toward the transport limit.
 Installed Bundle export resolves the catalog's exact source and captures immutable
 bytes through the shared archive adapter. It needs no containing Kit and creates
 no working copy. The independent loader rechecks the captured Bundle identity.

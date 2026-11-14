@@ -29,7 +29,7 @@ import type { DesignKnowledgeStatusSnapshot, DesignOrchestrationResult } from '.
 import { KnowledgeReadProgress } from './knowledge-read-progress.ts'
 import { readDesignGraph } from './design-graph.ts'
 import { designOntologyCoverage } from './design-ontology.ts'
-import { applyPanelEdit, buildPanelSaveNote, parsePanelArtifacts } from './panel-save.ts'
+import { applyPanelEdit, buildPanelSaveNote, parsePanelSaveInput } from './panel-save.ts'
 import { projectWorktreeDesign, WORKTREE_REVISION_PREFIX } from './panel-worktree.ts'
 import { assertAutoPanelSave, readAutoPanelCache } from './auto-panel-cache.ts'
 import { type AutoPanelContext } from './auto-panel-spec.ts'
@@ -949,7 +949,8 @@ export class DesignPanelRemote extends TypertRemoteService {
         && Object.keys(artifacts).every(key => key === 'autoBefore' || key === 'definitionRevision') && 'autoBefore' in artifacts
         ? (artifacts as { autoBefore: unknown }).autoBefore : undefined
       if (auto && autoBefore === undefined) throw new Error('auto panel: original Design File state is required')
-      const panelArtifacts = auto ? undefined : parsePanelArtifacts(skill, artifacts)
+      const panelInput = auto ? undefined : parsePanelSaveInput(skill, artifacts)
+      const panelArtifacts = panelInput?.artifacts
       const { checkpoint: priorHead, state: priorStored } = await store.readPublishedSnapshot(skill, signal)
       const journal = await this.design.readDesignJournal(agent)
       const mustEditAuthority = skillDef.execution.handoff === 'must_edit'
@@ -1028,7 +1029,9 @@ export class DesignPanelRemote extends TypertRemoteService {
       this.design.assertProjectSelection(agent, project.projectId)
       let settledNewChange = false
       trace('publication-start')
-      const result = await applyPanelEdit(store, { skill, state: prepared.state }, async (event) => {
+      const result = await applyPanelEdit(store, { skill, state: prepared.state,
+        ...(panelInput && Object.hasOwn(panelInput, 'before') ? { before: panelInput.before } : {}),
+      }, async (event) => {
         trace('commit-accepted')
         this.design.assertProjectSelection(agent, project.projectId)
         const revision = await this.design.recordDesignChange(agent, project.projectId, {

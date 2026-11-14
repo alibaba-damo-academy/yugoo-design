@@ -1,6 +1,7 @@
 /** Atomic persistence for the session-owned Design Files repository. */
 import { snapshotJsonValue } from './json-value.ts'
 import { createHash } from 'node:crypto'
+import { isDeepStrictEqual } from 'node:util'
 import { listDisplayFiles } from './display-files.ts'
 import { requireDesignFileRelativePath } from './design-file-path.ts'
 export { requireDesignFileRelativePath } from './design-file-path.ts'
@@ -48,6 +49,8 @@ export interface DesignWriteEvent {
 /** Atomic write inputs. */
 export interface DesignWriteOptions {
   readonly origin: 'agent' | 'panel'
+  /** Optional original canonical state; null explicitly means the file was absent. */
+  readonly before?: unknown
   readonly validate?: SchemaValidator
   readonly signal?: AbortSignal
   /** Artifact paths relative to the Design Files root. */
@@ -476,7 +479,15 @@ export class DesignFilesStore {
    * the already committed Design Files checkpoint.
    */
   async write(skill: string, state: unknown, options: DesignWriteOptions): Promise<DesignWriteResult> {
-    return this.access.mutate(() => this.writeAuthorized(skill, state, options))
+    let frozenOptions = options
+    if (Object.hasOwn(options, 'before')) {
+      const before = snapshotJsonValue(options.before)
+      if (before !== null && (typeof before !== 'object' || Array.isArray(before))) {
+        throw new Error('design panel: original canonical state must be a JSON object or null')
+      }
+      frozenOptions = { ...options, before }
+    }
+    return this.access.mutate(() => this.writeAuthorized(skill, state, frozenOptions))
   }
 
   /** Commit only system-derived experience files; no Bundle state or Journal event. */
@@ -650,6 +661,21 @@ export class DesignFilesStore {
       const marker = `${EXECUTION_TRAILER}${Buffer.from(JSON.stringify(publication), 'utf8').toString('base64url')}`
       const prior = await priorEventCommit(marker, 'publication invocation')
       if (prior !== undefined) return prior
+    }
+    // Compare only this Bundle's current worktree, after exact event replay and
+    // before any canonical or artifact mutation. Unrelated commits do not fence
+    // a Panel edit; a Native edit must never be silently overwritten.
+    if (Object.hasOwn(options, 'before')) {
+      const text = await readConfinedText(this.fs, this.rootDir, canonicalPath)
+      const absent = text === undefined || text === ''
+      let matches = options.before === null && absent
+      if (options.before !== null && !absent) {
+        try { matches = isDeepStrictEqual(JSON.parse(text), options.before) }
+        catch { matches = false }
+      }
+      if (!matches) throw Object.assign(new Error('PANEL_SAVE_CONFLICT: Design data changed after this Panel draft was opened. Your draft has not been saved.'), {
+        code: 'PANEL_SAVE_CONFLICT',
+      })
     }
     // The original baseline fences a new publication. An exact replay instead
     // reconciles the already committed event above, without writing again.

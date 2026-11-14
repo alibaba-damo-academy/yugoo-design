@@ -9,6 +9,7 @@ const React = await import('react'); globalThis.React = React
 const { act } = await import('react-dom/test-utils')
 const { createRoot } = await import('react-dom/client')
 const { PanelSaveError } = await import('../src/client/panel-save-error.tsx')
+const { PanelLocaleContext } = await import('../src/panel-i18n.tsx')
 
 test('host-owned feedback removes only the exact duplicate, without clearing error authority', async () => {
   assert.match(React.version, /^18\./, 'exercise the supported host React')
@@ -27,5 +28,11 @@ test('host-owned feedback removes only the exact duplicate, without clearing err
     assert.equal(document.querySelector('.dsh-design-save-error').textContent, saved.error)
     await act(async () => root.render(React.createElement(PanelSaveError, { hostReportedError: saved.error })))
     assert.equal(document.querySelector('.dsh-design-save-error'), null)
+    for (const [locale, expected] of [['en-US', /Your draft is preserved.*Cancel/], ['zh-CN', /草稿已保留.*取消/]]) {
+      await act(async () => root.render(React.createElement(PanelLocaleContext.Provider, { value: locale },
+        React.createElement(PanelSaveError, { error: 'PANEL_SAVE_CONFLICT: example changed' }))))
+      assert.match(document.querySelector('[role=alert]').textContent, expected)
+      assert.doesNotMatch(document.querySelector('[role=alert]').textContent, /PANEL_SAVE_CONFLICT/)
+    }
   } finally { await act(async () => root.unmount()); dom.window.close() }
 })

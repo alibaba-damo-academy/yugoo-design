@@ -141,7 +141,7 @@ export {
   type DesignMustEditHandoffDescriptor,
 } from './design-continuation.ts'
 export { parseValidationYaml, evaluateValidationRules, type ValidationDoc, type ValidationRule, type ValidationEnv } from './validation-rules.ts'
-export { applyPanelEdit, buildPanelSaveNote, parsePanelArtifacts, DESIGN_PANEL_SAVE_ASSESSMENT_GUIDANCE, type PanelEdit, type PanelSaveResult } from './panel-save.ts'
+export { applyPanelEdit, buildPanelSaveNote, parsePanelArtifacts, parsePanelSaveInput, DESIGN_PANEL_SAVE_ASSESSMENT_GUIDANCE, type PanelEdit, type PanelSaveResult } from './panel-save.ts'
 export { projectWorktreeDesign, type WorktreeProjection } from './panel-worktree.ts'
 export {
   DESIGN_PROJECT_FORMAT_VERSION,

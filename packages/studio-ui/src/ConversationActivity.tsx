@@ -1,15 +1,13 @@
 /** Shared presentation of Host-recorded messages. Hosts still own execution and transport. */
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { renderStudioMarkdown } from './markdown.tsx'
-import { designText } from '../../core/src/design-locale.ts'
-import type { DesignBilingualText } from '../../core/src/types.ts'
 
 export interface AgentConversationRow {
   id: string
   role: string
   label: string
   /** Adapter-owned UI label only; recorded native text remains verbatim. */
-  labelText?: DesignBilingualText
+  labelText?: Readonly<{ zh: string; en: string }>
   text: string
   status: string
 }
@@ -33,7 +31,7 @@ export function ConversationActivity({ rows, active, terminal, locale = 'zh', re
       {rows.some(row => row.status === 'failed') && <span className="companion-activity-failed">{zh ? ' · 有失败记录' : ' · Includes failed operations'}</span>}
     </summary>
     <div>{rows.map(row => <article key={row.id} data-role="tool" data-message-id={row.id}>
-      <div className="companion-message-label">{row.labelText ? designText(row.labelText, locale) : row.label} · {status(row.status)}</div>
+      <div className="companion-message-label">{row.labelText ? row.labelText[locale] : row.label} · {status(row.status)}</div>
       {row.text && renderText(row.text)}
     </article>)}</div>
   </details>
@@ -43,7 +41,7 @@ export function ConversationMessage({ row, locale = 'zh', renderText = renderStu
   row: AgentConversationRow; locale?: 'zh' | 'en'; renderText?: (text: string) => ReactNode; children?: ReactNode
 }) {
   return <article className="companion-message" data-role={row.role} data-message-id={row.id}>
-    <div className="companion-message-label">{row.labelText ? designText(row.labelText, locale) : row.label}{row.role === 'tool' ? ` · ${row.status}` : ''}</div>
+    <div className="companion-message-label">{row.labelText ? row.labelText[locale] : row.label}{row.role === 'tool' ? ` · ${row.status}` : ''}</div>
     {row.text && <div className="companion-message-content">{renderText(row.text)}</div>}
     {children}
   </article>

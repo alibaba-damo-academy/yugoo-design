@@ -72,10 +72,14 @@ pins, titles, runtime names and optional picker descriptions; it does not captur
 or compile source trees. Selecting a Bundle captures and validates that source,
 so an unrelated unavailable source cannot block an import.
 
-Complete source capture and retention support up to 32 MiB per tree, matching
-Core's Bundle resource budget. A portable archive supports 32 MiB of total source
-bytes; its JSON allows 64 MiB for base64 and the envelope. Existing file, path,
-composition and revision limits still apply.
+Complete source capture and retention support up to 64 MiB per tree, matching
+Core's Bundle resource budget. Archive JSON, ZIP input and browser RPC transports
+keep independent 64 MiB physical limits. Base64 and the envelope count toward
+the JSON/transport limit, so its usable source capacity is below 48 MiB; a
+64 MiB source tree is not guaranteed to fit a portable archive. This leaves room
+for independent identity projection on imported sources without changing their
+resource bytes. Internal snapshots allow 128 MiB for base64 and bounded metadata.
+Existing file, path, composition and revision limits still apply.
 Opaque resources retain their byte lengths during compilation, without text
 conversion. The 1 MiB text editing limit is separate. Browser transports read
 these limits from the pure `dsh-design-studio/types` entry.

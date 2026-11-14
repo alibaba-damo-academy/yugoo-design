@@ -92,7 +92,8 @@ export interface DesignRuntime {
     sessionId: string,
     skill: string,
     state: unknown,
-    artifacts?: readonly NativePanelSaveArtifact[] | { readonly autoBefore: unknown; readonly definitionRevision?: string },
+    artifacts?: readonly NativePanelSaveArtifact[] | { readonly before: unknown; readonly artifacts?: readonly NativePanelSaveArtifact[] }
+      | { readonly autoBefore: unknown; readonly definitionRevision?: string },
     eventId?: string,
   ) => Promise<{ commit?: string }>
   retainAutoPanel?: (sessionId: string, request: { projectId: string; skill: string; sourceRevision: string; definitionRevision: string }) => Promise<{ retained: true }>
@@ -404,8 +405,8 @@ export function DesignWorkspace(props: {
         && runtime.nativePanels.get(presentation.renderer) !== undefined
     }).map(([skill]) => skill)
     syncProjection(design, dockOpen && !graphOpen && !experienceOpen && !pickerOpen,
-      runtime.nativePanels, focus?.skill, props.artifactFiles, renderedSkills)
-  }, [design, dockOpen, graphOpen, experienceOpen, pickerOpen, focus, nativePanelRevision, runtime.nativePanels, props.artifactFiles, props.autoPanelManifests])
+      runtime.nativePanels, focus?.skill, props.artifactFiles, renderedSkills, saveBarrier.pendingSkills())
+  }, [design, dockOpen, graphOpen, experienceOpen, pickerOpen, focus, nativePanelRevision, runtime.nativePanels, props.artifactFiles, props.autoPanelManifests, saveBarrier, pendingEditorInput])
   const readGraph = useCallback(() => sessionId && runtime.readGraph ? runtime.readGraph(sessionId) : Promise.reject(new Error('Graph unavailable')), [runtime, sessionId, projectId])
   const readKnowledgeStatus = useCallback(() => sessionId && runtime.readKnowledgeStatus ? runtime.readKnowledgeStatus(sessionId) : Promise.resolve(undefined), [runtime, sessionId, projectId])
   const retryKnowledge = useCallback(() => sessionId && runtime.retryKnowledge ? runtime.retryKnowledge(sessionId) : Promise.reject(new Error('Recovery unavailable')), [runtime, sessionId, projectId])
@@ -543,7 +544,7 @@ export function DesignWorkspace(props: {
         assertSaveAccess()
         const presentation = panelPresentation(latest.manifests[skill])
         if (presentation.mode === 'auto') {
-          const original = latest.originals[skill]
+          const original = latest.draftBases[skill]
           if (original === undefined) throw new Error('自动面板缺少原始设计文件状态，请刷新后重试。')
           const state = latest.drafts[skill]
           const eventId = browserRandomUuid()
@@ -554,7 +555,8 @@ export function DesignWorkspace(props: {
         } else {
           const prepared = prepareNativePanelSave(presentation, runtime.nativePanels, latest.drafts[skill])
           const eventId = browserRandomUuid()
-          const saved = await runtime.savePanel(sessionId, skill, prepared.state, prepared.artifacts ?? [], eventId)
+          const saved = await runtime.savePanel(sessionId, skill, prepared.state,
+            { before: latest.draftBases[skill] ?? null, artifacts: prepared.artifacts ?? [] }, eventId)
           receipts.push({ eventId, ...saved })
           assertSaveAccess()
           settleSavedDraft(skill, prepared.state)
@@ -599,7 +601,7 @@ export function DesignWorkspace(props: {
       if (isDirty(skill, runtime.nativePanels)) {
         const presentation = panelPresentation(latest.manifests[skill])
         if (presentation.mode === 'auto') {
-          const original = latest.originals[skill]
+          const original = latest.draftBases[skill]
           if (original === undefined) throw new Error('自动面板缺少原始设计文件状态，请刷新后重试。')
           const state = latest.drafts[skill]
           const eventId = browserRandomUuid()
@@ -610,7 +612,8 @@ export function DesignWorkspace(props: {
         } else {
           const prepared = prepareNativePanelSave(presentation, runtime.nativePanels, latest.drafts[skill])
           const eventId = browserRandomUuid()
-          const saved = await runtime.savePanel(sessionId, skill, prepared.state, prepared.artifacts ?? [], eventId)
+          const saved = await runtime.savePanel(sessionId, skill, prepared.state,
+            { before: latest.draftBases[skill] ?? null, artifacts: prepared.artifacts ?? [] }, eventId)
           receipts.push({ eventId, ...saved })
           assertSaveAccess()
           settleSavedDraft(skill, prepared.state)
@@ -765,6 +768,7 @@ export function DesignWorkspace(props: {
         />
       </div>}
       {accessNotice}
+      <PanelSaveError error={store.error} hostReportedError={props.hostReportedSaveError} />
       <div
         className='ai relative h-0 min-h-0 flex-1 overflow-hidden'
       >
@@ -784,7 +788,6 @@ export function DesignWorkspace(props: {
             </div>
           )
           : null}
-        <PanelSaveError error={store.error} hostReportedError={props.hostReportedSaveError} />
         {store.active === undefined ? null : (() => {
           const skill = store.active
           const presentation = panelPresentation(design?.[skill]?.skillManifest)
@@ -808,7 +811,7 @@ export function DesignWorkspace(props: {
                 presentation={presentation}
                 nativePanels={runtime.nativePanels}
                 draft={store.drafts[skill]}
-                originalState={store.originals[skill]}
+                originalState={store.draftBases[skill]}
                 artifactFiles={props.artifactFiles}
                 readArtifact={readArtifact}
                 sourceRevision={checkpoint ?? undefined}

@@ -6,7 +6,7 @@ import { isDeepStrictEqual } from 'node:util'
 import { createHash } from 'node:crypto'
 import {
   DesignProjectManager, DesignFilesStore, GitVersioning, DesignJournalStorage, DesignExecutionHandoffJournal, nodeDesignProjectSpawn,
-  applyPanelEdit, buildPanelSaveNote, parsePanelArtifacts, DESIGN_PANEL_SAVE_ASSESSMENT_GUIDANCE, projectWorktreeDesign, validateSkillDesign, validatorFromSchemaYaml,
+  applyPanelEdit, buildPanelSaveNote, parsePanelSaveInput, DESIGN_PANEL_SAVE_ASSESSMENT_GUIDANCE, projectWorktreeDesign, validateSkillDesign, validatorFromSchemaYaml,
   deriveCurrentDesignExecutionGate, deriveDesignContinuation, pendingMustEditAuthorityForSave,
   parseSchemaYaml, resolveAutoPanel, assertResolvedAutoPanelSave, retainResolvedAutoPanel,
   autoPanelGenerationPrompt, publishAutoPanelComponents,
@@ -394,10 +394,10 @@ export async function openCompanionProject({ projectRoot, kitRoot, stateRoot, co
           })
           artifacts = []
         }
-        if (!Array.isArray(artifacts)) throw new Error('Artifacts must be an array.')
-        const prepared = parsePanelArtifacts(name, artifacts)
-        for (const artifact of artifacts) {
-          if (!artifact.path.startsWith(`${name}/`) || artifact.path === `${name}/${name}.json`) throw new Error('Invalid owned artifact.')
+        const panelInput = parsePanelSaveInput(name, artifacts)
+        const prepared = panelInput.artifacts ?? {}
+        for (const path of Object.keys(prepared)) {
+          if (!path.startsWith(`${name}/`) || path === `${name}/${name}.json`) throw new Error('Invalid owned artifact.')
         }
         const issues = await validateSkillDesign(skill, state, {
           scopes: ['state'],
@@ -415,7 +415,9 @@ export async function openCompanionProject({ projectRoot, kitRoot, stateRoot, co
           if (error.code === 'CONTINUATION_CONFLICT') throw error
           notificationPrepared = false
         }
-        const result = await applyPanelEdit(store, { skill: name, state }, async event => {
+        const result = await applyPanelEdit(store, { skill: name, state,
+          ...(Object.hasOwn(panelInput, 'before') ? { before: panelInput.before } : {}),
+        }, async event => {
           const history = await journal.read(journalId)
           if (event.commit && history.records.some(record => record.type === 'design/changed'
             && record.data?.commit === event.commit && record.data?.skill === name
@@ -425,7 +427,14 @@ export async function openCompanionProject({ projectRoot, kitRoot, stateRoot, co
             ...(event.commit ? { commit: event.commit } : {}),
             panelYaml: skill.metadata.panelYaml, skillManifest: skill.metadata.skillManifest,
           } })
-        }, validatorFromSchemaYaml(skill.metadata.schemaYaml), prepared, undefined, undefined, { eventId, kind: 'panel-save' })
+        }, validatorFromSchemaYaml(skill.metadata.schemaYaml), prepared, undefined, undefined, { eventId, kind: 'panel-save' }).catch(async error => {
+          if (error.code === 'PANEL_SAVE_CONFLICT' && notificationPrepared) {
+            // Core rejected before writing, so this event has no uncertain save
+            // to recover. Other failures retain their existing receipt state.
+            try { await savedContinuation.discardPreparing(eventId) } catch { /* Preserve the canonical conflict. */ }
+          }
+          throw error
+        })
         // Replay the earliest real edit on uncertain saves; audit-only commits
         // never become release authority merely because Git HEAD advanced.
         const releasedPanelRevision = authority?.panelStateRevision ?? (result.diff.trim() === '' ? undefined : result.commit)
