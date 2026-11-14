@@ -15,7 +15,7 @@ export { readDesignGit, designGitReadArguments, DESIGN_GIT_READ_ACTIONS, DESIGN_
 export { DesignJournalStorage } from '../../core/src/design-journal-storage.ts'
 export { DesignExecutionHandoffJournal } from '../../core/src/design-execution-handoff-journal.ts'
 export { pendingMustEditAuthorityForSave } from '../../core/src/design-execution-handoff-authority.ts'
-export { applyPanelEdit, buildPanelSaveNote, parsePanelArtifacts, DESIGN_PANEL_SAVE_ASSESSMENT_GUIDANCE } from '../../core/src/panel-save.ts'
+export { applyPanelEdit, buildPanelSaveNote, parsePanelArtifacts, parsePanelSaveInput, DESIGN_PANEL_SAVE_ASSESSMENT_GUIDANCE } from '../../core/src/panel-save.ts'
 export { projectWorktreeDesign } from '../../core/src/panel-worktree.ts'
 export { workspacePollResult } from '../../core/src/workspace-poll.ts'
 export { validateSkillDesign } from '../../core/src/validate-design.ts'
