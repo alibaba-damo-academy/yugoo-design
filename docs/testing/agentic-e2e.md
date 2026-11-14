@@ -315,7 +315,14 @@ KAG 视觉同时抽查：默认文字密度、定位/搜索/选择/退出、明�
 
 从当前宿主入口在独立 tab/浏览器打开 Studio。只在新建/编辑 Kit 或 Bundle 时出现 AI 对话；保留外层导航、顶部信息与内部文件导航。下面所有 AI 修改必须通过屏幕上的聊天输入交给真实宿主，测试 Agent 不能改文件代演。
 
-先从已安装 Bundle 卡片“打开→面板预览”核左侧原始 `panel.yaml` 和右侧真实只读样例；不能通过新建、复制或编辑副本绕过安装原件路径。预览本身不创建库记录、不修改原件；缺来源、无样例或无预览能力时明确说明。涉及共享渲染器变更时，确认 Studio UI 和宿主 Studio consumer 也使用当前正常构建，不能只核 Core/Panel。
+先用宿主真实 catalog 返回的 Kit/Bundle metadata，从普通 UI 分别核同一已安装源预览检查的两条路径：
+
+- Kit → 其已挂载的 Bundle → “面板预览”（Panel Preview）。
+- Bundle 平铺列表中的独立已安装 Bundle → “打开”（Open）→ “面板预览”（Panel Preview）。
+
+两条路径都须对照实际选择的 Kit/Bundle 身份和安装来源，核左侧原始 `panel.yaml` 与右侧真实只读样例，并记录实际请求和渲染结果。请求须经过当前宿主的真实 wire 边界；不能由测试者预先裁剪 catalog metadata，再用最小 pin 直调 API 代替。Core/CLI/源码 fixture 只证明各自的边界，不能替代上述两条实际 UI 路径，也不能通过新建、复制或编辑副本绕过安装原件路径。
+
+预览本身不创建库记录、不修改原件；缺来源、无样例或无预览能力时明确说明。涉及共享渲染器变更时，确认 Studio UI 和宿主 Studio consumer 也使用当前正常构建，不能只核 Core/Panel。
 
 ### C-BUNDLE 独立创作与持续编辑
 

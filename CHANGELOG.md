@@ -4,6 +4,10 @@
 
 按版本概述语构设计系统（Yugoo Design）代码仓库中的主要特性、明显体验变化，以及影响安装和升级的重要改进。细小调整和内部重构不逐项列出；完整改动见 [Git 提交历史](https://github.com/alibaba-damo-academy/yugoo-design/commits/main/)。
 
+## [0.3.3](https://github.com/alibaba-damo-academy/yugoo-design/tree/v0.3.3)
+
+修复 Studio 从已安装 Kit 打开挂载 Bundle 时无法预览面板的问题；同时明确设计文件工具使用的相对路径，减少 Agent 读写文件时混淆目录。
+
 ## [0.3.2](https://github.com/alibaba-damo-academy/yugoo-design/tree/v0.3.2)
 
 修正设计执行失败的反馈与重试：Agent 可通过现有结束工具明确报告失败，保留工作文件和此前的发布记录，主对话收到真实的失败结果。同步完善 DSH 与 Companion 的执行指导，并保持旧会话中设计执行记录的可读性。

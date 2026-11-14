@@ -52,6 +52,63 @@ test('installed Bundle preview uses read-only management and the independent ren
   } finally { await act(async () => root.unmount()) }
   }
 })
+test('installed previews keep exact Kit pins from selected, unique and ambiguous Kit contexts', async () => {
+  for (const context of ['selected', 'unique', 'ambiguous']) {
+    const kit = { name: 'evidence', version: '2.0' }, otherKit = { name: 'other_evidence', version: '1.0' }
+    const bundle = { name: 'observations', version: '1.0' }, requests = []
+    const usedBy = context === 'unique' ? [kit] : [otherKit, kit]
+    const entry = { ...bundle, title: { zh: '观察记录', en: 'Observations' }, description: 'Read observations.', usedBy }
+    const panelYaml = 'version: 1\npanel_kind: document\nsections: []\nfields: []\n'
+    const kitWorkspace = Object.freeze({ ...kit, description: 'Keep the current evidence context.',
+      displayDescription: { zh: '证据上下文', en: 'Evidence context' }, mindsetSource: '# Evidence mindset',
+      mounts: [{ ...entry, mountedBy: [kit] }], resources: [], relationVocabulary: [],
+    })
+    const client = {
+      workspace: async query => ({ query, kits: [{ ...kit, description: kitWorkspace.description }], bundles: [entry] }),
+      readKitWorkspace: async () => ({ workspace: kitWorkspace, diagnostics: [] }),
+      readKitFiles: async () => ['mindset.md'],
+      readKitFile: async () => ({ content: kitWorkspace.mindsetSource }),
+      readBundleWorkspace: async () => ({ workspace: { ...bundle, kit: kit.name, description: entry.description,
+        files: [{ path: 'panel.yaml', bytes: panelYaml.length }], panel: { kind: 'declarative' } }, diagnostics: [] }),
+      readBundleFile: async () => ({ file: { path: 'panel.yaml', content: panelYaml }, diagnostics: [] }),
+      previewInstalled: async request => {
+        requests.push(request)
+        if (context === 'selected' && requests.length === 1) throw Error('Preview temporarily unavailable')
+        return { preview: { kit: request.kit, bundle, revision: request.revision, panelYaml,
+          sample: { summary: 'Isolated Kit sample' } }, diagnostics: [] }
+      },
+    }
+    const controller = new StudioWorkspaceController(client)
+    await controller.load()
+    if (context !== 'selected') controller.setSection('bundles')
+    const root = createRoot(document.getElementById('root'))
+    const click = async text => { assert.ok(button(text), text); await act(async () => button(text).click()) }
+    try {
+      await act(async () => root.render(React.createElement(StudioWorkspace, { client, controller, locale: 'en',
+        renderPreview: (value, _adopt, options) => {
+          assert.equal(options.readOnly, true)
+          return React.createElement('p', { 'data-testid': 'installed-kit-sample' }, value.sample.summary)
+        },
+      })))
+      await click('Open')
+      if (context === 'selected') {
+        await act(async () => document.getElementById('ygd-studio-tab-mounts').click())
+        await click('Open')
+      }
+      await click('Panel Preview')
+      const expectedKit = context === 'ambiguous' ? undefined : kit
+      assert.deepEqual(requests[0], { kit: expectedKit, bundle, revision: 0 }, context)
+      if (context === 'selected') {
+        assert.equal(document.querySelector('[data-testid="installed-kit-sample"]'), null)
+        await click('Retry')
+        assert.deepEqual(requests[1], { kit, bundle, revision: 1 }, 'retry retains the exact selected Kit pin')
+        assert.equal(controller.getSnapshot().kitWorkspace, kitWorkspace, 'preview does not strip the readable Kit metadata')
+      }
+      assert.equal(document.querySelector('[data-testid="installed-kit-sample"]').textContent, 'Isolated Kit sample')
+      assert.equal(document.querySelector('textarea[aria-label="Panel YAML"]').readOnly, true)
+    } finally { await act(async () => root.unmount()) }
+  }
+})
 async function mount(renderInstanceWorkbench, kind = 'bundle', describe = value => value) {
   const fixture = id => describe(kind === 'bundle' ? record(id) : { ...record(id), kind, source: { kit: { name: 'evidence', version: '1.0' } }, files: [{ path: 'mindset.md', bytes: 9, editable: true }] })
   const calls = [], dirty = [], instances = { list: async () => [fixture('first')], read: async ({ id }) => { calls.push(id); return fixture(id) }, readFile: async ({ id, path }) => ({ id, path, revision: 0, content: '# Fixture' }) }

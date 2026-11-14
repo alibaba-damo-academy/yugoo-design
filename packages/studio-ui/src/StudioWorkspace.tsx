@@ -560,12 +560,13 @@ export function StudioWorkspace({ client, controller: supplied, authoring, rende
     void refreshInstances().catch(error => setAuthoringError(String(error)))
   }
   // A Kit can provide execution context without owning the Bundle source.
-  const bundleContextKit = () => {
+  const bundleContextKit = (): DesignKitVersionPin | undefined => {
     if (!bundleWorkspace) return undefined
     const entry = snapshot.view?.bundles.find(item => item.name === bundleWorkspace.name && item.version === bundleWorkspace.version)
     const candidates = entry?.usedBy ?? snapshot.view?.kits.filter(kit => kit.name === bundleWorkspace.kit) ?? []
-    if (workspace && candidates.some(pin => pin.name === workspace.name && pin.version === workspace.version)) return workspace
-    return candidates.length === 1 ? candidates[0] : undefined
+    const kit = workspace && candidates.some(pin => pin.name === workspace.name && pin.version === workspace.version)
+      ? workspace : candidates.length === 1 ? candidates[0] : undefined
+    return kit ? { name: kit.name, version: kit.version } : undefined
   }
   useEffect(() => () => { createGeneration.current++ }, [])
   // Each opened document starts on its own default view: markdown rich, everything else source.

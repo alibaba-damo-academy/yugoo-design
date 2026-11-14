@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 const { register } = await import('tsx/esm/api'); register()
 const { registerServiceTools } = await import('../src/service-tools.ts')
-const { registerDshProducerDesignTools } = await import('../src/dsh-producer-design-tools.ts')
+const { registerDshProducerDesignTools, createDesignSkillScriptTool } = await import('../src/dsh-producer-design-tools.ts')
 const { renderDesignSkillCatalog, DESIGN_CORE_PROGRESSION_PROMPT } = await import('../src/design-core-prompt.ts')
 const { DESIGN_SKILL_RESOURCE_GUIDANCE } = await import('../src/design-generation-guidance.ts')
 const { producerSystemPrompt } = await import('../src/dsh-design-execution-plugin.ts')
@@ -139,4 +139,31 @@ test('engaged resource reads retain bound authority and the same missing-resourc
     await assert.rejects(tool.execute({ path }, exec), /skill package|relative path|relative|resource paths/)
   }
   assert.equal(reads.length, before, 'invalid paths never reach the resource port')
+})
+
+test('invocation file tools explain the Design Files root rather than the native project cwd', async () => {
+  const script = createDesignSkillScriptTool({}, {}, () => {})
+  for (const parameter of ['input_file', 'input_files', 'output_file']) {
+    assert.match(script.parameters.properties[parameter].description, /relative to design_files\//, parameter)
+  }
+  for (const inherited of [[], ['read']]) {
+    const r = registry(), edits = []
+    registerDshProducerDesignTools(r.ctx, { async edit(...args) {
+      edits.push(args); return { replacements: 1 }
+    } }, { async read() {} }, 'none', {}, () => [], undefined, inherited)
+    const paths = { read_design_file: ['path'], write: ['path'], edit: ['path'], delete: ['path'],
+      move: ['from', 'to'], copy: ['from', 'to'], ...inherited.length ? {} : { read: ['path'] } }
+    for (const [name, parameters] of Object.entries(paths)) {
+      const tool = r.definitions.get(name)
+      for (const parameter of parameters) {
+        const description = tool.parameters.properties[parameter].description
+        assert.match(description, /relative to design_files\//, `${name}.${parameter}`)
+        assert.doesNotMatch(description, /project-relative/i)
+      }
+    }
+    assert.match(r.definitions.get('copy').parameters.properties.from.description, /absolute.*authorized reconstruction input/)
+    assert.equal(r.definitions.has('read'), inherited.length === 0, 'the native reader is not replaced')
+    await r.definitions.get('edit').execute({ path: 'warehouse_planning/state.json', old_text: 'before', new_text: 'after' }, exec)
+    assert.equal(edits[0][0], 'warehouse_planning/state.json', 'canonical paths still go unchanged to the workspace')
+  }
 })

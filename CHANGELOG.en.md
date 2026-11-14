@@ -4,6 +4,10 @@
 
 This log summarizes major features, noticeable experience changes, and installation or upgrade improvements in the Yugoo Design repository, organized by version. It omits small adjustments and internal refactoring. See the [Git commit history](https://github.com/alibaba-damo-academy/yugoo-design/commits/main/) for the full changes.
 
+## [0.3.3](https://github.com/alibaba-damo-academy/yugoo-design/tree/v0.3.3)
+
+Fix Panel previews when opening a mounted Bundle from an installed Kit in Studio. Clarify relative paths in Design File tools to reduce directory confusion during Agent reads and edits.
+
 ## [0.3.2](https://github.com/alibaba-damo-academy/yugoo-design/tree/v0.3.2)
 
 Improve failure reporting and retry for design execution. Agents can explicitly report failure through the existing finish tool, preserving working files and earlier publication records and returning the actual failure to the main conversation. Update DSH and Companion execution guidance and keep design execution records in older conversations readable.

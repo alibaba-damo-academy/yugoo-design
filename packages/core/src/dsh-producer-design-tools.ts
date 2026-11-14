@@ -389,10 +389,10 @@ export function createDesignSkillScriptTool(
       path: { type: 'string', required: true, description: 'Path below scripts/, for example layout.mjs.' },
       args: { type: 'array', items: { type: 'string' }, description: 'Optional literal argv entries; no shell expansion.' },
       input_json: { type: 'object', additionalProperties: true, description: 'Small structured script input. Use this or input_file, never both.' },
-      input_file: { type: 'string', description: 'Working-copy UTF-8 file processed directly by the script.' },
-      input_files: { type: 'array', items: { type: 'string' }, description: 'Optional additional Working-copy UTF-8 files. The Host supplies their exact bytes to the script as input_files keyed by project-relative path.' },
+      input_file: { type: 'string', description: 'UTF-8 input relative to design_files/, e.g. <bundle>/<file>, without the design_files/ prefix.' },
+      input_files: { type: 'array', items: { type: 'string' }, description: 'Optional additional Working-copy UTF-8 files. The Host supplies their exact bytes to the script as input_files keyed by paths relative to design_files/.' },
       input_context: { type: 'object', additionalProperties: true, description: 'Optional small structured context accompanying input_file. In a structured file input, the Host owns script_io input_file/output_file metadata and overrides caller values.' },
-      output_file: { type: 'string', description: 'Only for artifact stdout: on exit 0, write it to this WorkingCopy UTF-8 path and return a compact receipt. Omit for validation or diagnostic JSON.' },
+      output_file: { type: 'string', description: 'Only for artifact stdout: on exit 0, write UTF-8 to this path relative to design_files/, without that prefix, and return a compact receipt. Omit for validation or diagnostic JSON.' },
     },
     output: {
       schema: {
@@ -770,7 +770,7 @@ export function registerDshProducerDesignTools(
       + 'This reads canonical Design JSON and artifacts independently of the native session cwd. '
       + 'For a long text file, you may also use an inherited Host-native reader on the same current file under the disclosed Design Files root, with its available range or pagination options.',
     parameters: {
-      path: { type: 'string', required: true, description: 'Path relative to the bound Design Files root.' },
+      path: { type: 'string', required: true, description: 'Path relative to design_files/, without that prefix.' },
     },
     output: {
       schema: {
@@ -810,7 +810,7 @@ export function registerDshProducerDesignTools(
     description: 'List files visible in the current Design Project working copy. '
       + 'The project and writable scope are already bound; pass only an optional glob pattern.',
     parameters: {
-      pattern: { type: 'string', description: 'Optional glob over project-relative paths.' },
+      pattern: { type: 'string', description: 'Optional glob over paths relative to design_files/.' },
     },
     output: {
       schema: {
@@ -834,10 +834,10 @@ export function registerDshProducerDesignTools(
   // native reader; never register a same-name wrapper that would shadow it.
   if (!inheritedTools.includes('read')) register(defineTool({
       name: 'read',
-      description: 'Read one project-relative file from the current Design Project working copy. '
+      description: 'Read one Design-Files-relative file from the current Design Project working copy. '
         + 'Text is returned as UTF-8 and binary content as base64.',
       parameters: {
-        path: { type: 'string', required: true, description: 'Project-relative file path.' },
+        path: { type: 'string', required: true, description: 'Path relative to design_files/, without that prefix.' },
       },
       output: {
         schema: {
@@ -874,10 +874,10 @@ export function registerDshProducerDesignTools(
 
   register(defineTool({
     name: 'write',
-    description: 'Create or replace one project-relative file in the current invocation Bundle '
+    description: 'Create or replace one Design-Files-relative file in the current invocation Bundle '
       + 'owned state/artifact working copy. The writable Bundle is already bound.',
     parameters: {
-      path: { type: 'string', required: true, description: 'Project-relative destination path.' },
+      path: { type: 'string', required: true, description: 'Destination relative to design_files/, without that prefix.' },
       content: { type: 'string', required: true, description: 'UTF-8 text or base64 bytes according to encoding.' },
       encoding: { type: 'string', enum: ['utf8', 'base64'], description: 'Content encoding. Defaults to utf8.' },
     },
@@ -893,9 +893,9 @@ export function registerDshProducerDesignTools(
 
   register(defineTool({
     name: 'edit',
-    description: 'Replace exact text in one project-relative UTF-8 file owned by the current invocation Bundle workspace.',
+    description: 'Replace exact text in one Design-Files-relative UTF-8 file owned by the current invocation Bundle workspace.',
     parameters: {
-      path: { type: 'string', required: true, description: 'Project-relative text file path.' },
+      path: { type: 'string', required: true, description: 'Path relative to design_files/, without that prefix.' },
       old_text: { type: 'string', required: true, description: 'Exact text to replace.' },
       new_text: { type: 'string', required: true, description: 'Replacement text.' },
       replace_all: { type: 'boolean', description: 'Replace every occurrence instead of requiring one.' },
@@ -925,9 +925,9 @@ export function registerDshProducerDesignTools(
 
   register(defineTool({
     name: 'delete',
-    description: 'Delete one project-relative file from the current invocation Bundle owned working copy.',
+    description: 'Delete one Design-Files-relative file from the current invocation Bundle owned working copy.',
     parameters: {
-      path: { type: 'string', required: true, description: 'Project-relative file path.' },
+      path: { type: 'string', required: true, description: 'Path relative to design_files/, without that prefix.' },
     },
     output: { schema: PATH_RESULT, render: (_args, value) => text(`saved deletion in the filesystem worktree for ${value.path}; the panel can observe it now and Git records the invocation once at its terminal boundary`) },
     async execute(args, exec) {
@@ -940,8 +940,8 @@ export function registerDshProducerDesignTools(
     name: 'move',
     description: 'Move one file inside the current invocation Bundle owned working copy.',
     parameters: {
-      from: { type: 'string', required: true, description: 'Project-relative source path.' },
-      to: { type: 'string', required: true, description: 'Project-relative destination path.' },
+      from: { type: 'string', required: true, description: 'Source relative to design_files/, without that prefix.' },
+      to: { type: 'string', required: true, description: 'Destination relative to design_files/, without that prefix.' },
     },
     output: {
       schema: {
@@ -962,10 +962,10 @@ export function registerDshProducerDesignTools(
 
   register(defineTool({
     name: 'copy',
-    description: 'Copy one existing file byte-for-byte into the current Bundle without moving bytes through model arguments. Use project-relative paths, or an absolute source inside the authorized reconstruction input. No directories; at most 10 MiB. An existing different destination is not overwritten.',
+    description: 'Copy one existing file byte-for-byte into the current Bundle without moving bytes through model arguments. Use Design-Files-relative paths, or an absolute source inside the authorized reconstruction input. No directories; at most 10 MiB. An existing different destination is not overwritten.',
     parameters: {
-      from: { type: 'string', required: true, description: 'Project-relative source, or absolute file in the reconstruction input.' },
-      to: { type: 'string', required: true, description: 'Project-relative destination owned by this Bundle.' },
+      from: { type: 'string', required: true, description: 'Source relative to design_files/, or absolute file in the authorized reconstruction input.' },
+      to: { type: 'string', required: true, description: 'Destination relative to design_files/, without that prefix; owned by this Bundle.' },
     },
     output: { schema: { type: 'object', additionalProperties: false, properties: {
       path: { type: 'string', required: true },
