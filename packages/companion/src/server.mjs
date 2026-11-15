@@ -169,7 +169,12 @@ export async function startCompanion(options) {
     void knowledge.notify().catch(error => console.error('Knowledge startup refresh:', String(error.message ?? error)))
   }
   const knowledgeReads = new KnowledgeReadProgress()
-  const childObserver = desktopExecutionAdapter?.createObserver ?? (!nativeAgentsAvailable ? () => { throw Error(`${nativeUnavailableHost} native subagent observation is not supported yet.`) } : host === 'workbuddy'
+  // Retained bindings remain readable even when this connection cannot observe
+  // native children. Unknown observation must not block the project workspace.
+  const childObserver = desktopExecutionAdapter?.createObserver ?? (!nativeAgentsAvailable ? ({ threadId }) => ({
+    read: async () => ({ available: false, threadId, recordedStatus: 'unknown', rows: [], omitted: 0,
+      error: `${nativeUnavailableHost} native subagent observation is not supported yet.` }),
+  }) : host === 'workbuddy'
     ? input => createWorkBuddyChildTranscript({...input,sessionId:connection.threadId,mainTranscriptPath:options.transcriptPath})
     : host === 'qwenwork'
     ? input => createQwenWorkTranscript({ ...input, sessionId: connection.threadId, agentId: input.threadId })

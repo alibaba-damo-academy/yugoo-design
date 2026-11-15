@@ -17,10 +17,14 @@ export async function fixture({ withTranscript = false, smartQuestionsMode = 'su
   // shipped Smart Questions default. Never rewrite the shared source Kit.
   const kitRoot = join(root, 'kit')
   await mkdir(kitRoot)
-  // This fixture deliberately retains the supported embedded development layout.
-  // Independent installed closures have separate lifecycle integration tests.
+  // Keep the source Kit's explicit mounts while retaining task-owned editable
+  // Bundle paths. Installed closures have separate lifecycle integration tests.
   await cp(join(sourceKitRoot, 'kits/web_app/mindset.md'), join(kitRoot, 'mindset.md'))
+  await cp(join(sourceKitRoot, 'kits/web_app/kit.yaml'), join(kitRoot, 'kit.yaml'))
   await cp(join(sourceKitRoot, 'bundles'), join(kitRoot, 'skills'), { recursive: true })
+  await writeFile(join(kitRoot, 'package.json'), JSON.stringify({ designSystem: { kit: {
+    root: '.', mindset: 'mindset.md', manifest: 'kit.yaml', bundles: 'skills',
+  } } }))
   await writeFile(join(kitRoot, 'relations.yaml'), `schema_version: 1
 relations:
   - type: web_app:corroborates

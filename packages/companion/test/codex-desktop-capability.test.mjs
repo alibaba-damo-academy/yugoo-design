@@ -4,7 +4,7 @@ import { fixture, threadId } from './fixture.mjs'
 import { callCompanion } from '../src/connection-file.mjs'
 import { startCompanion } from '../src/server.mjs'
 import { openCompanionProject } from '../src/project.mjs'
-import { appendFile, readFile, writeFile } from 'node:fs/promises'
+import { appendFile, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { setTimeout } from 'node:timers/promises'
 
@@ -64,6 +64,50 @@ test('desktop connection does not inherit CLI subagent/worker/background capabil
   await assert.rejects(call('registerNativeRun', {}), /Codex desktop native agents/)
   await assert.rejects(call('prepareReview', { profile: 'reflection' }), /not verified/)
   assert.deepEqual(await call('readReviewPolicy'), { mode: 'auto', autoMergeWindowMs: 30000 })
+})
+
+test('desktop status can read retained native bindings while observation is unavailable', async t => {
+  const f = await fixture()
+  let server = f.server
+  t.after(async () => {
+    await server?.close()
+    await rm(f.root, { recursive: true, force: true })
+  })
+  const runId = '00000000-0000-4000-8000-000000000002'
+  const transcriptPath = join(f.root, 'retained-producer.jsonl')
+  await writeFile(transcriptPath, [
+    { type: 'session_meta', payload: { id: runId, cwd: f.options.nativeCwd,
+      source: { subagent: { thread_spawn: { parent_thread_id: threadId } } } } },
+    { type: 'event_msg', payload: { type: 'task_started' } },
+  ].map(JSON.stringify).join('\n') + '\n')
+  const binding = { role: 'producer', runId, parentRunId: threadId, transcriptPath,
+    skill: 'research', artifactId: 'research' }
+  await callCompanion(server.connectionPath, { method: 'registerNativeRun', params: binding })
+  const head = await server.project.store.head()
+  const before = await server.project.readWorkspace({ displayOnly: true })
+  await server.close()
+  server = undefined
+  server = await startCompanion({ ...f.options, codexDesktop: true, browserAccess: 'local', connection: undefined })
+
+  for (const params of [{}, { includeConversation: false }, { includeConversation: false, includeServices: true }]) {
+    const status = await callCompanion(server.connectionPath, { method: 'readWorkspace', params })
+    assert.equal(status.projectId, before.projectId)
+    assert.equal(status.projectPath, before.projectPath)
+    assert.equal(status.checkpoint, before.checkpoint)
+    assert.deepEqual(status.design, before.design)
+    assert.deepEqual(status.access, before.access)
+    assert.equal(status.hostCapabilities.nativeSubagents, false)
+    assert.equal(status.hostCapabilities.nativeWorkers, false)
+    assert.equal(status.executionAttempts.length, 1)
+    assert.equal(status.executionAttempts[0].runId, runId)
+    assert.equal(status.executionAttempts[0].phase, 'queued')
+    assert.match(status.executionAttempts[0].diagnostics.join('\n'), /status is unavailable; no completion inferred/)
+  }
+  await assert.rejects(callCompanion(server.connectionPath, { method: 'readExecutionLog', params: { runId } }),
+    /Codex desktop native agents/, 'status observation must not relax native execution access')
+  assert.equal(await server.project.store.head(), head, 'status reads must not publish Design changes')
+  await assert.rejects(callCompanion(server.connectionPath, { method: 'registerNativeRun', params: binding }),
+    /Codex desktop native agents/)
 })
 
 test('desktop review HTTP paths require current native proof and a fresh exact review child', async t => {

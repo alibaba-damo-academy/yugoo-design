@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "d436c16b1a95cec269d4c140101a7512065733da",
+  "revision": "a0c75f20bb76854d47aca4846099feefcaa54282",
   "policySha256": "69deba1307e600a9b0405596e8d73df3e63f488f50c9e9d708ee09591f7ea269",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -2636,7 +2636,7 @@
       "mode": "100644"
     },
     "packages/companion/src/server.mjs": {
-      "sha256": "cb7a962d822e9135f3eeb262ad2c7516b0be9f91aa9a9e8cd762538ff3f72219",
+      "sha256": "79e348dca9cdc0af020cfb042744819f1a232552adf62227efafb46da7d8b32c",
       "mode": "100644"
     },
     "packages/companion/src/settings.mjs": {
@@ -2868,7 +2868,7 @@
       "mode": "100644"
     },
     "packages/companion/test/codex-desktop-capability.test.mjs": {
-      "sha256": "f3881ec4d36e818c2e7a74395485959002b22b2832f3a59bf9c92470cc86355e",
+      "sha256": "56c2a82e71f6fc068f4f6d5941357f28f50ae22d15bf591fbd0f36a87aaa87e2",
       "mode": "100644"
     },
     "packages/companion/test/codex-desktop-connection.test.mjs": {
@@ -2972,7 +2972,7 @@
       "mode": "100644"
     },
     "packages/companion/test/fixture.mjs": {
-      "sha256": "0fd63ec0daf18c9ca624705e540c426e0655ccb5dcbb69ac08f2770024c897bf",
+      "sha256": "7e494a948f045f59b4e833804cdb938622f6503bbb69070fd8f439970e0c5fcc",
       "mode": "100644"
     },
     "packages/companion/test/fixtures/studio-changes-child.mjs": {
@@ -10800,7 +10800,7 @@
       "mode": "100644"
     },
     "release/product.json": {
-      "sha256": "554886f055aa4724def467552d258723f6294610cca5e6999985d99f9a06066a",
+      "sha256": "1c78c9ec5b44b7d87f521ebd5fb81efe99d5c74aa7e4c804919a1113597b7b53",
       "mode": "100644"
     },
     "release/public-source-baseline.json": {
