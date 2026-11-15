@@ -6,6 +6,9 @@
   },
   "name": "dsh-design-core",
   "version": "0.0.0",
+  "engines": {
+    "dsh": "0.2.0-rc.2 || ^0.2.1-rc.3"
+  },
   "license": "Apache-2.0",
   "type": "module",
   "description": "Design System capability seam for dsh: Mindset and Bundle catalog state, Producer publication, DesignJournal handoffs, and design_state projection.",

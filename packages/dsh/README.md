@@ -75,6 +75,10 @@ own child scope. Older Hosts use `tools.presentAs`; Hosts with the explicit
 executor API use their installed `@deepseek-ai/dsh-tool-executor-native` provider.
 That optional Host peer is loaded only on the explicit-executor path. Neither
 path expands the child's tool allowlist or changes the parent's executor.
+Core declares its supported Host range in `engines.dsh`, separately from that
+optional provider's exact package version. DSH uses this Host declaration for
+plugin admission; an older Host does not need the modern executor package when
+its native `tools.presentAs` path is used.
 
 Each configured Design Project owns one complete current definition tree at
 `design_kit/`, separate from its design data in `design_files/`. Methods,

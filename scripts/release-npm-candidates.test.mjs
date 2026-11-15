@@ -4,6 +4,7 @@ import { readFile, mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
+import { satisfies } from 'semver'
 import { createNpmCandidates, readNpmCandidates, runNpmCandidateCli } from './release-npm-candidates.mjs'
 import { RELEASE_PACKAGES } from './release-consumer-config.mjs'
 
@@ -75,6 +76,17 @@ test('Core archives retain the optional modern Host executor independently of so
   assert.equal(core.peerDependenciesMeta[peer].optional, true)
   assert.equal(core.dependencies?.[peer], undefined)
   assert.equal(core.devDependencies?.[peer], undefined)
+  // DSH's installer uses engines.dsh as the Host boundary; otherwise it treats
+  // even optional DSH peers as requirements on the Host's own version.
+  const hostRange = core.engines.dsh
+  for (const version of ['0.2.0-rc.2', '0.2.1-rc.3', '0.2.2-rc.3']) {
+    assert.equal(satisfies(version, hostRange, { includePrerelease: true }), true)
+  }
+  for (const version of ['0.1.9', '0.2.0-rc.1', '0.3.0', '1.0.0']) {
+    assert.equal(satisfies(version, hostRange, { includePrerelease: true }), false)
+  }
+  assert.equal(satisfies('0.2.1-rc.3', core.peerDependencies[peer]), false,
+    'Host compatibility must not broaden the actual optional provider API range')
 })
 
 test('registry Ladybug stays an exact external dependency without a vendor publication candidate', async () => {

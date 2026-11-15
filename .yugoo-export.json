@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "9c0485a1309ee4134478ab60c2f94581969fea9f",
+  "revision": "d2028869fe95e3c3a4778c1b07254ae81be1524f",
   "policySha256": "69deba1307e600a9b0405596e8d73df3e63f488f50c9e9d708ee09591f7ea269",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -1348,7 +1348,7 @@
       "mode": "100644"
     },
     "docs/testing/agentic-e2e.md": {
-      "sha256": "035bdcebe82c1134b1ea42219be675ec5745daa143ecc4866ee97b181ed3bcb4",
+      "sha256": "035c6937000e22f132ad7ee7477a0e2a5188e858955ad5e4c25be8f728a15ead",
       "mode": "100644"
     },
     "docs/ust-score-explanations.md": {
@@ -5212,7 +5212,7 @@
       "mode": "100644"
     },
     "packages/dsh/README.md": {
-      "sha256": "2884525396986fc154f286e09dc3185fd76c013c2aea7e5cbb954f22b689aa4f",
+      "sha256": "97659c320906e07c43b8074f8c1f1fd881ab50088a8656b9dd9b2d52b546533d",
       "mode": "100644"
     },
     "packages/dsh/THIRD_PARTY_NOTICES.md": {
@@ -11360,7 +11360,7 @@
       "mode": "100644"
     },
     "scripts/release-npm-candidates.test.mjs": {
-      "sha256": "8b2d27ae627f9b4999f93d17a3715216346e9a44663d26c834e6c416510477ab",
+      "sha256": "c6e033177ef89f95fec3a4684077e164b35774a039198d94f1ecb53edb62b538",
       "mode": "100644"
     },
     "scripts/release-own-license.mjs": {
@@ -13612,7 +13612,7 @@
       "mode": "100644"
     },
     "packages/core/package.json": {
-      "sha256": "05f24891c01ac8954ed76ea9e760e352585c2342b2641a8eda38b884e8614477",
+      "sha256": "c0dfb56404719dd8223be330bbaad99224cc8c0026391090b91123036989c844",
       "mode": "100644"
     },
     "packages/dsh/package.json": {
@@ -13697,9 +13697,9 @@
       },
       {
         "path": "packages/core/package.json",
-        "sourceOid": "beb368a911326468353543ab7c1e948fc371701e",
-        "sourceSHA256": "09bd299f78975c21c699fa53e93a45b3a867166657edabd50a2e8daee53bcc51",
-        "outputSHA256": "05f24891c01ac8954ed76ea9e760e352585c2342b2641a8eda38b884e8614477"
+        "sourceOid": "e0fa2109150b89c62c95eaa3448a3e4cb2cfe9f7",
+        "sourceSHA256": "d3e960b97475decec346870cacd819b3ec811974b65919d04dc49887fdcca70a",
+        "outputSHA256": "c0dfb56404719dd8223be330bbaad99224cc8c0026391090b91123036989c844"
       },
       {
         "path": "packages/dsh/package.json",
