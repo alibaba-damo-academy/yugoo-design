@@ -154,7 +154,7 @@ export async function analyzeDshDesignAdvisory(
         profile.prompt,
         renderDesignReviewDepth(depth),
         request.handlingMemory ?? '',
-        'Files under design_files/_experiences/ are derived demonstrations, not authoritative design evidence. Do not use their assumptions or rendered content as new requirements or findings; inspect the original owning Bundle files instead.',
+        'Files under scenarios/ are derived demonstrations, not authoritative design evidence. Do not use their assumptions or rendered content as new requirements or findings; inspect the original owning Bundle files instead.',
         '',
         `Investigation strategy: ${ADVISORY_INVESTIGATION_STRATEGY}`,
         '',

@@ -20,13 +20,13 @@ test('depth changes investigation scope and stopping conditions without a findin
   assert.match(renderDesignReviewDepth('light'), /directly involved saved facts/)
   assert.match(renderDesignReviewDepth('standard'), /relevant neighboring evidence/)
   assert.match(renderDesignReviewDepth('thorough'), /current saved design results/)
-  const paths = ['design_files/changed/changed.json', 'design_files/related/detail.svg', 'design_files/_experiences/demo.json']
+  const paths = ['design_files/changed/changed.json', 'design_files/related/detail.svg', 'scenarios/demo.json']
   const text = renderDesignReviewStartingPoints([{skill:'changed'}, {skill:'related',artifactFile:'related/detail.svg'},
-    {skill:'related',artifactFile:'related/missing.svg'}, {skill:'unknown'}, {skill:'_experiences'}], paths)
+    {skill:'related',artifactFile:'related/missing.svg'}, {skill:'unknown'}, {skill:'scenario'}], paths)
   const points = JSON.parse(text.split('\n')[0].split(': ').at(-1))
   assert.deepEqual(points, [{bundle:'changed',file:paths[0]}, {bundle:'related',file:paths[1]}, {bundle:'related',prefix:'design_files/related/'}])
   assert.match(text, /do not exclude other necessary evidence/)
-  assert.doesNotMatch(text.split('\n')[0], /unknown|missing|_experiences/)
+  assert.doesNotMatch(text.split('\n')[0], /unknown|missing|scenarios/)
   assert.equal(renderDesignReviewStartingPoints([{skill:'unknown'}], paths), '')
 })
 

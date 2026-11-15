@@ -99,8 +99,8 @@ export interface DesignRuntime {
   retainAutoPanel?: (sessionId: string, request: { projectId: string; skill: string; sourceRevision: string; definitionRevision: string }) => Promise<{ retained: true }>
   /** Native-host request delivery, not proof of model execution. */
   requestAutoPanel?: (sessionId: string, skill: string) => Promise<void>
-  readArtifact: (sessionId: string, relPath: string, stateRevision: string) => Promise<{ found: boolean; content: string }>
-  readBinaryArtifact: (sessionId: string, relPath: string, stateRevision: string) => Promise<BinaryArtifactRead>
+  readArtifact: (sessionId: string, relPath: string, stateRevision: string, scope?: 'design-files' | 'scenarios') => Promise<{ found: boolean; content: string }>
+  readBinaryArtifact: (sessionId: string, relPath: string, stateRevision: string, scope?: 'design-files' | 'scenarios') => Promise<BinaryArtifactRead>
   readExecutionLog: (sessionId: string, executionRef: string, afterSeq?: number, target?: import('./types.ts').DesignArtifactLogTarget) => Promise<DesignExecutionLogRead>
   readArtifactHistory?: (sessionId: string, skill: string) => Promise<readonly import('./types.ts').DesignArtifactHistoryEntry[]>
   /** Open a main-Agent turn with an explicit host-generated instruction. */
@@ -465,9 +465,9 @@ export function DesignWorkspace(props: {
   // Experience indexes and versioned resources are read from committed Git,
   // never from the publication's transient worktree writes before commitExact.
   const readExperienceArtifact = useCallback((path: string) => sessionId !== undefined && checkpoint !== null
-    ? runtime.readArtifact(sessionId, path, checkpoint) : Promise.resolve({ found: false, content: '' }), [runtime, sessionId, projectId, checkpoint])
+    ? runtime.readArtifact(sessionId, path, checkpoint, 'scenarios') : Promise.resolve({ found: false, content: '' }), [runtime, sessionId, projectId, checkpoint])
   const readExperienceBinary = useCallback((path: string) => sessionId !== undefined && checkpoint !== null
-    ? runtime.readBinaryArtifact(sessionId, path, checkpoint) : Promise.resolve({ found: false, mediaType: 'image/png' as const, base64: '', byteLength: 0 }), [runtime, sessionId, projectId, checkpoint])
+    ? runtime.readBinaryArtifact(sessionId, path, checkpoint, 'scenarios') : Promise.resolve({ found: false, mediaType: 'image/png' as const, base64: '', byteLength: 0 }), [runtime, sessionId, projectId, checkpoint])
 
   // 跨面板选项源：声明式面板的 options_from_panel 经此解析其他技能的分区
   // 记录。草稿优先（未保存编辑立即可被引用看到），只读返回所点名分区，

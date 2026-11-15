@@ -35,7 +35,7 @@ export async function projectWorktreeDesign(
   previous?: WorktreeProjection,
 ): Promise<WorktreeProjection> {
   const worktreeFiles = store.listDisplayFiles
-    ? await store.listDisplayFiles([...kitSkills.map(skill => skill.name), ...Object.keys(published), '_experiences'])
+    ? await store.listDisplayFiles([...kitSkills.map(skill => skill.name), ...Object.keys(published)])
     : await store.listWorktreeFiles()
   const metadataHash = createHash('sha256')
   for (const file of worktreeFiles) {
@@ -59,7 +59,6 @@ export async function projectWorktreeDesign(
   }
   const hash = createHash('sha256')
   const evidenceHash = createHash('sha256')
-  const isEvidence = (path: string) => path !== '_experiences' && !path.startsWith('_experiences/')
   const design: Record<string, DesignJournalValue> = {}
   // Journal metadata describes the historical publication, not the currently
   // installed Kit. Preserve facts but always render with the pinned Kit's
@@ -95,7 +94,7 @@ export async function projectWorktreeDesign(
       throw new Error(`design panel: worktree Bundle states exceed ${PANEL_WORKTREE_MAX_TOTAL_BYTES} bytes`)
     }
     hash.update(path).update('\0').update(text).update('\0')
-    if (isEvidence(path)) evidenceHash.update(path).update('\0').update(text).update('\0')
+    evidenceHash.update(path).update('\0').update(text).update('\0')
     const digest = Object.freeze({ bytes, sha256: createHash('sha256').update(text).digest('hex') })
     fileDigests.set(path, digest)
     fileCache.set(path, { stamp, digest, text })
@@ -132,7 +131,7 @@ export async function projectWorktreeDesign(
     if (path.includes('/attachments/')) {
       // Never load arbitrary upload bytes into the one-second polling path.
       hash.update(path).update('\0')
-      if (isEvidence(path)) evidenceHash.update(path).update('\0')
+      evidenceHash.update(path).update('\0')
       continue
     }
     const stamp = stamps.get(path)!
@@ -148,7 +147,7 @@ export async function projectWorktreeDesign(
       throw new Error(`design panel: worktree files exceed ${PANEL_WORKTREE_MAX_TOTAL_BYTES} bytes`)
     }
     hash.update(path).update('\0').update(String(digest.bytes)).update('\0').update(digest.sha256).update('\0')
-    if (isEvidence(path)) evidenceHash.update(path).update('\0').update(String(digest.bytes)).update('\0').update(digest.sha256).update('\0')
+    evidenceHash.update(path).update('\0').update(String(digest.bytes)).update('\0').update(digest.sha256).update('\0')
     fileDigests.set(path, digest)
     fileCache.set(path, { stamp, digest })
   }

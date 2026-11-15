@@ -1,5 +1,22 @@
 # Contributor and coding-agent entry
 
+## Confirm UI changes with the user
+
+Every user-facing UI or interaction change requires the user's explicit
+confirmation before implementation. This applies to Panels, canvases/KAG,
+Studio and Host-integrated UI, including displayed content, field and section
+organization, layout, controls, navigation, copy, feedback and default interaction.
+Use the user's confirmed interface as the baseline. Do not change the Design
+Panel's content or presentation at an agent's discretion. Debugging, testing,
+refactoring, migration, robustness work or a missing-data case must not become
+implied permission to redesign the interface or add an entry. When such work
+reveals a UI issue, report the concrete proposed change and obtain agreement
+before implementing it; do not implement first and seek approval afterwards.
+An explicit user request for a specific UI change already authorizes that stated
+scope; do not ask again or extend it. Preserve the agreed UI baseline and verify
+the before/after view. Passing technical tests does not authorize an unconfirmed
+UI change. This is a contributor rule, not an additional runtime permission gate.
+
 ## Start with the owning contract
 
 Read the relevant parts of [the architecture baseline](docs/system-design-baseline.md)

@@ -65,9 +65,14 @@ canonical JSON; the panel sees each filesystem change without an intermediate
 commit.
 After completion validation, call `design_publish({action:"complete"})` once.
 
-The Producer also owns the optional `nodes` supplements and `node_order` in
-that JSON. After integrating each BPMN, bind its meaningful step details to
+The Producer also owns `nodes` supplements and `node_order` in that JSON.
+For every newly generated process, deliver its BPMN and grounded details for
+meaningful steps together in the same complete Bundle publication. A new result
+is not complete when it contains only the diagram and leaves its step details
+for a later user request. After integrating each BPMN, bind those details to
 exact element IDs as described in [the step contract](reference/artifact-contract.md#step-supplements).
+The storage shape remains optional for existing diagram-only projects; that
+compatibility does not make step details optional in a newly generated result.
 Workers still own only their BPMN files. Names, actor lanes, types, branching
 conditions and routing remain in BPMN; never maintain a second editable copy
 of them in JSON. The shared Panel projects those facts beside the supplements.

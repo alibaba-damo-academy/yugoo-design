@@ -31,7 +31,7 @@ export interface DesignReviewTarget {
 }
 
 export function renderDesignReviewStartingPoints(targets: readonly DesignReviewTarget[], paths: readonly string[]): string {
-  const available = new Set(paths.filter(path => path.startsWith('design_files/') && !path.startsWith('design_files/_experiences/')))
+  const available = new Set(paths.filter(path => path.startsWith('design_files/')))
   const points = new Map<string, { bundle: string; file?: string; prefix?: string }>()
   for (const target of targets) {
     const prefix = `design_files/${target.skill}/`

@@ -143,8 +143,8 @@ const runtime: DesignRuntime = {
     requestLivePoll()
     return result
   },
-  readArtifact: (_session, path, revision) => rpc('readArtifact', { path, revision }),
-  readBinaryArtifact: (_session, path, revision) => rpc('readBinaryArtifact', { path, revision }),
+  readArtifact: (_session, path, revision, scope) => rpc('readArtifact', { path, revision, scope }),
+  readBinaryArtifact: (_session, path, revision, scope) => rpc('readBinaryArtifact', { path, revision, scope }),
   readExecutionLog: (_session, runId, afterSeq, target) => rpc('readExecutionLog', { runId, afterSeq, ...target }),
   sendPrompt: async (_session, text, requestId, saved) => {
     const savedNotification = saved !== undefined

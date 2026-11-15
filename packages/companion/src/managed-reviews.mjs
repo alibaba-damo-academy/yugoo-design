@@ -16,20 +16,18 @@ export async function reviewSnapshot(projectRoot, checkpoint, signal) {
     const git=new GitVersioning(nodeDesignProjectSpawn,projectRoot,'design_files')
     // Read-only snapshots follow the owning review's cancellation signal.
     const entries=await git.listEntriesAt(checkpoint,signal,2*1024*1024)
-    // Validate even excluded derived entries: a symlink is not safe evidence.
+    // Validate the published Design Files entries; scenarios/ is outside this scope.
     let count=0
     for(const entry of entries) {
       if(entry.type!=='blob'||(entry.mode!==0o100644&&entry.mode!==0o100755))throw new Error('Review snapshot requires regular committed files')
       if(entry.path.split('/').some(part=>['..','.',''].includes(part))||entry.path.includes('\\'))throw new Error('Unsafe snapshot path')
-      if(!entry.path.startsWith('_experiences/')&&++count>10000)throw new Error('Review snapshot file limit exceeded')
+      if(++count>10000)throw new Error('Review snapshot file limit exceeded')
     }
     if(!count)throw new Error('No published Design Files to review')
     let bytes=0
     for(const {path:relative} of entries) {
       signal?.throwIfAborted()
       const path=`design_files/${relative}`
-      // System-derived demonstrations are not product evidence, including drafts.
-      if(path.startsWith('design_files/_experiences/'))continue
       const content=await git.readBytesAt(checkpoint,relative,signal,16*1024*1024)
       if(content===undefined)throw new Error('Published review file is unavailable')
       bytes+=content.length
@@ -66,7 +64,8 @@ export function createManagedReviewScheduler({reviews,project,knowledge,execute,
     }
     return true
   }
-  const heartbeat=setInterval(()=>{if(active.size)void writable().then(ok=>ok && reviews.renewManagedOwner(ownerId)).catch(onError)},15000)
+  let ownerRenewal=Promise.resolve()
+  const heartbeat=setInterval(()=>{if(active.size)ownerRenewal=ownerRenewal.then(()=>closed ? undefined : writable().then(ok=>ok && reviews.renewManagedOwner(ownerId))).catch(onError)},15000)
   heartbeat.unref?.()
   async function run(request) {
     const controller=new AbortController()
@@ -260,6 +259,7 @@ export function createManagedReviewScheduler({reviews,project,knowledge,execute,
       closed=true;clearTimeout(timer);clearInterval(heartbeat)
       clock.close()
       for(const controller of active.values())controller.abort(new Error('Companion closed'))
+      await ownerRenewal
       // Executor owns its bounded cancellation; wait for cleanup, never kill
       // arbitrary PIDs discovered in another process's registry.
       while(draining)await new Promise(resolve=>setTimeout(resolve,10))

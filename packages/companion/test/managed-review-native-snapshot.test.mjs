@@ -19,7 +19,7 @@ async function fixture(t, files = { 'design_files/example/content.json': Buffer.
     await mkdir(join(root, path, '..'), { recursive: true })
     await writeFile(join(root, path), content)
   }
-  await git('add', '--', 'design_files')
+  await git('add', '--', ...new Set(Object.keys(files).map(path => path.split('/')[0])))
   const commit = async () => {
     await git('-c', 'user.name=fixture', '-c', 'user.email=fixture@local', '-c', 'commit.gpgsign=false', 'commit', '--quiet', '-m', 'fixture')
     return git('rev-parse', 'HEAD')
@@ -43,7 +43,7 @@ test('review snapshot preserves committed binary/executable paths and excludes d
   const f = await fixture(t, {
     'design_files/example/中文 data.bin': bytes,
     'design_files/example/run.sh': '#!/bin/sh\n',
-    'design_files/_experiences/example/derived.json': '{}',
+    'scenarios/example/derived.json': '{}',
   })
   await chmod(join(f.root, 'design_files/example/run.sh'), 0o755)
   await f.git('update-index', '--chmod=+x', 'design_files/example/run.sh')
@@ -54,19 +54,25 @@ test('review snapshot preserves committed binary/executable paths and excludes d
   assert.deepEqual(await readFile(join(snapshot.root, 'design_files/example/中文 data.bin')), bytes)
   assert.equal(await readFile(join(snapshot.root, 'design_files/example/run.sh'), 'utf8'), '#!/bin/sh\n')
   if (process.platform !== 'win32') assert.equal((await stat(join(snapshot.root, 'design_files/example/run.sh'))).mode & 0o777, 0o400)
-  await assert.rejects(access(join(snapshot.root, 'design_files/_experiences')))
+  await assert.rejects(access(join(snapshot.root, 'scenarios')))
   await assert.rejects(access(join(snapshot.root, '.git')))
 })
 
-test('review snapshot rejects committed symlinks even in excluded derived paths', async t => {
-  for (const path of ['design_files/example/link', 'design_files/_experiences/example/link']) {
+test('review snapshot rejects Design File symlinks and never reads sibling scenario symlinks', async t => {
+  for (const path of ['design_files/example/link', 'scenarios/example/link']) {
     const f = await fixture(t)
     const target = join(f.root, 'symlink-content')
     await writeFile(target, '/outside/private')
     const oid = await f.git('hash-object', '-w', target)
     await f.git('update-index', '--add', '--cacheinfo', `120000,${oid},${path}`)
     const checkpoint = await f.commit()
-    await withoutExternalGit(() => assert.rejects(reviewSnapshot(f.root, checkpoint), /regular committed files/))
+    if (path.startsWith('design_files/')) {
+      await withoutExternalGit(() => assert.rejects(reviewSnapshot(f.root, checkpoint), /regular committed files/))
+    } else {
+      const snapshot = await withoutExternalGit(() => reviewSnapshot(f.root, checkpoint))
+      t.after(snapshot.close)
+      await assert.rejects(access(join(snapshot.root, 'scenarios')))
+    }
   }
 })
 
@@ -77,6 +83,7 @@ test('review snapshot rejects a committed blob beyond its 16 MiB read limit', as
 })
 
 test('snapshot retains metadata/file/aggregate bounds and checks paths before writing', async t => {
+  const signal = new AbortController().signal
   let entries = [], totalReads = 0
   t.mock.method(GitVersioning.prototype, 'listEntriesAt', async (_checkpoint, signal, maxBytes) => {
     assert.equal(maxBytes, 2 << 20)
@@ -91,16 +98,16 @@ test('snapshot retains metadata/file/aggregate bounds and checks paths before wr
   })
   const entry = path => ({ path, mode: 0o100644, type: 'blob', oid: 'a'.repeat(40) })
   entries = [entry('../outside')]
-  await assert.rejects(reviewSnapshot('/fixture', 'a'.repeat(40)), /Unsafe snapshot path/)
+  await assert.rejects(reviewSnapshot('/fixture', 'a'.repeat(40), signal), /Unsafe snapshot path/)
   assert.equal(totalReads, 0)
-  entries = [entry('_experiences/example/derived.json')]
-  await assert.rejects(reviewSnapshot('/fixture', 'a'.repeat(40)), /No published Design Files/)
+  entries = []
+  await assert.rejects(reviewSnapshot('/fixture', 'a'.repeat(40), signal), /No published Design Files/)
   assert.equal(totalReads, 0)
   entries = Array.from({ length: 10001 }, (_, i) => entry(`example/${i}.json`))
-  await assert.rejects(reviewSnapshot('/fixture', 'a'.repeat(40)), /file limit/)
+  await assert.rejects(reviewSnapshot('/fixture', 'a'.repeat(40), signal), /file limit/)
   assert.equal(totalReads, 0)
   entries = Array.from({ length: 9 }, (_, i) => entry(`example/${i}.bin`))
-  await assert.rejects(reviewSnapshot('/fixture', 'a'.repeat(40)), /size limit/)
+  await assert.rejects(reviewSnapshot('/fixture', 'a'.repeat(40), signal), /size limit/)
   assert.equal(totalReads, 9)
 })
 

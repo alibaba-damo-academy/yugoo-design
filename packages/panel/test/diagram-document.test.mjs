@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { JSDOM } from 'jsdom'
 
-test('continuous node details anchor within one process and legacy migration is a recoverable scoped Agent request', async () => {
+test('continuous details preserve drafts and missing details request completion only after Details confirmation', async () => {
   const dom = new JSDOM('<style></style><div id="root" class="dsh-design-panel"></div>', { url: 'https://panel.test/' })
   for (const key of ['window', 'document', 'HTMLElement', 'Element', 'Node']) globalThis[key] = dom.window[key]
   globalThis.getComputedStyle = dom.window.getComputedStyle
@@ -26,8 +26,10 @@ test('continuous node details anchor within one process and legacy migration is 
   } }
   let data = { processes: { first: { title: 'First process' }, second: { title: 'Second process', file: 'neutral/second.bpmn' } },
     steps: { a: { title: 'First step', process: 'first', element: 'BPMN-TECHNICAL-ELEMENT' }, b: { title: 'Second step', process: 'first' } }, unrelated: { preserve: true } }
-  const before = structuredClone(data), prompts = [], updates = []
-  let reject = true
+  const before = structuredClone(data), prompts = [], updates = [], confirmations = [], alerts = []
+  let reject = true, confirm = false
+  window.confirm = message => { confirmations.push(message); return confirm }
+  window.alert = message => alerts.push(message)
   const show = (locale = 'en-US') => React.act(async () => root.render(React.createElement(PanelLocaleContext.Provider, { value: locale }, React.createElement(DiagramWorkspace, {
     manifest, node, data, options: { skill: 'neutral', editable: true, onPanelUpdate: update => updates.push(update), sendPrompt: async prompt => {
       prompts.push(prompt); if (reject) throw Error('Agent unavailable')
@@ -98,23 +100,31 @@ test('continuous node details anchor within one process and legacy migration is 
     await click(item('Second process'))
     assert.equal(document.querySelector('.dsh-diagram-document'), null, 'an existing flow without step details stays readable on its canvas')
     assert.equal(document.querySelector('.dsh-diagram-body').hidden, false)
-    assert.equal(details().disabled, true)
-    assert.equal(details().title, 'No step details yet')
+    assert.equal(details().disabled, false, 'Details remains the existing entry for a legacy diagram')
     assert.doesNotMatch(document.querySelector('.dsh-diagram-workspace').textContent, /Add details to this saved flow/)
+    assert.equal(document.querySelector('.dsh-diagram-migration'), null, 'no permanent migration row changes the canvas layout')
+    assert.equal([...document.querySelectorAll('button')].some(button => button.textContent === 'Migrate this flow'), false)
     await click(details())
-    assert.equal(document.querySelector('.dsh-diagram-document'), null, 'disabled Details does not open an empty form')
-    const migration = () => [...document.querySelectorAll('button')].find(button => button.textContent === 'Migrate this flow')
-    await click(migration())
-    assert.match(document.querySelector('[role="alert"]').textContent, /Agent unavailable/)
-    reject = false; await click(migration())
-    assert.equal(document.querySelector('[role="alert"]'), null)
+    assert.equal(document.querySelector('.dsh-diagram-document'), null, 'cancel preserves the current diagram')
+    assert.equal(confirmations.length, 1)
+    assert.match(confirmations[0], /Would you like the Agent/)
+    assert.equal(prompts.length, 0, 'opening Details alone does not request Agent work')
+    assert.deepEqual(data, before)
+    confirm = true
+    await click(details())
+    assert.match(alerts.at(-1), /request could not be sent[\s\S]*Agent unavailable/)
+    assert.equal(prompts.length, 1)
+    assert.equal(document.querySelector('.dsh-diagram-migration'), null, 'failure does not append another canvas status strip')
+    reject = false; await click(details())
+    assert.equal(prompts.length, 2, 'retry uses the same existing Details entry')
     assert.match(prompts.at(-1), /Process: second\nDiagram: neutral\/second.bpmn/)
     assert.deepEqual(data, before); assert.equal(updates.length, 0)
     data = { ...data, steps: { ...data.steps, c: { title: 'Migrated step', process: 'second' } } }; await show()
-    assert.equal(migration(), undefined, 'completed node supplements remove the migration notice')
     assert.equal(details().disabled, false)
     assert.ok(item('Migrated step'))
-    await click(item('Migrated step'))
+    const confirmationCount = confirmations.length
+    await click(details())
+    assert.equal(confirmations.length, confirmationCount, 'saved details open normally without asking to regenerate')
     assert.match(nodesHeading().textContent, /Process nodes\(1\)/, 'the count belongs to the current process, not all flows')
   } finally { await React.act(async () => root.unmount()); dom.window.close() }
 })

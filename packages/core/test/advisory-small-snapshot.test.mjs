@@ -76,12 +76,12 @@ test('a small snapshot contains every allowed original fact page, including empt
     'design_files/intent/原文.json': '{\r\n  "intent": "中文 😀", "number": 9007199254740993\r\n}\r\n',
     'design_files/artifacts/design.svg': '<svg><!-- saved artifact, not a JSON record --></svg>\n',
     'README.md': 'Outside canonical project evidence.',
-    'design_files/_experiences/demo/view.json': 'Derived experience, not canonical facts.',
+    'scenarios/demo/view.json': 'Derived experience, not canonical facts.',
   }
   const f = await fixture(entries)
   const fullManifest = JSON.stringify(f.evidence.manifest)
   const expected = new Map([['project.json', f.projectText],
-    ...Object.entries(entries).filter(([path]) => path.startsWith('design_files/') && !path.startsWith('design_files/_experiences/'))])
+    ...Object.entries(entries).filter(([path]) => path.startsWith('design_files/') && !path.startsWith('scenarios/'))])
   const snapshot = await f.evidence.readSmallSnapshot(freshSignal())
   assertComplete(snapshot, expected)
   assert.equal(JSON.stringify(f.evidence.manifest), fullManifest)

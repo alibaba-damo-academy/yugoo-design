@@ -1,5 +1,5 @@
 /** Host-neutral, derived experience views. No Kit names, domain facts or step semantics. */
-export const EXPERIENCE_ROOT = '_experiences'
+export const EXPERIENCE_ROOT = 'scenarios'
 export interface ExperienceSection {
   id: string
   title: string
@@ -31,7 +31,7 @@ export function experienceId(value: unknown, field = 'id'): asserts value is str
 }
 export function experienceSource(path: unknown): asserts path is string {
   if (typeof path !== 'string' || path !== path.trim() || !path || path.includes('\\') || /[:\u0000-\u001f\u007f]/u.test(path)
-    || path.split('/').some(p => !p || p === '.' || p === '..' || p === '.git') || path.split('/')[0] === EXPERIENCE_ROOT) throw new Error('Experience sources must be non-derived relative Design Files')
+    || path.split('/').some(p => !p || p === '.' || p === '..' || p === '.git')) throw new Error('Experience sources must be non-derived relative Design Files')
 }
 export function readExperienceView(value: unknown): ExperienceView {
   if (!record(value)) throw new Error('Invalid experience view')

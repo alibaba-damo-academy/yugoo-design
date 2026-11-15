@@ -19,8 +19,8 @@ test('Scene shell shares Panel typography and host colors while its authored fra
       const source = 'intent/intent.json', hash = 'a'.repeat(64);
       const files = {};
       for (const [id, title] of [['one', 'Saved scenario / 用户场景'], ['two', 'Second saved scenario']]) {
-        const htmlFile = '_experiences/' + id + '/v1/main.html';
-        files['_experiences/' + id + '/view.json'] = JSON.stringify({id, title, version:'v1', purpose:'Saved purpose',
+        const htmlFile = 'scenarios/' + id + '/v1/main.html';
+        files['scenarios/' + id + '/view.json'] = JSON.stringify({id, title, version:'v1', purpose:'Saved purpose',
           sourceVersions:{[source]:hash}, sections:[{id:'main',title,htmlFile,sources:[source],assumptions:['Saved assumption']}]});
         files[htmlFile] = '<!doctype html><style>body{background:rgb(243,246,250);color:rgb(32,37,43)}</style><p id="authored">' + title + '</p>';
       }

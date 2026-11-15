@@ -768,8 +768,8 @@ export class DesignPanelRemote extends TypertRemoteService {
     }
     this.continuationReads.set(agent, { key: continuationKey, value: continuations, mustEditHandoffs })
     if (projectWorkspace.checkpoint !== null) {
-      experienceFiles = Object.fromEntries((await store.listPathsAt(projectWorkspace.checkpoint, signal))
-        .filter(path => path.startsWith('_experiences/')).map(path => [path, projectWorkspace.checkpoint!]))
+      experienceFiles = Object.fromEntries((await store.projectFiles().listPathsAt(projectWorkspace.checkpoint, signal))
+        .filter(path => path.startsWith('scenarios/')).map(path => [path, projectWorkspace.checkpoint!]))
       needsReassessment = authority !== undefined && (kit === undefined
         || !(await store.sameDesignEvidenceAt(authority.assessedCheckpoint, projectWorkspace.checkpoint, signal))
         || !designClarityInputMatches(authority.report, { kit: kit.name, version: kit.version,
@@ -1218,10 +1218,14 @@ export class DesignPanelRemote extends TypertRemoteService {
     agent: Agent,
     relPath: string,
     stateRevision: string,
+    scope: 'design-files' | 'scenarios' = 'design-files',
     signal: AbortSignal,
   ): Promise<{ found: boolean; content: string }> {
     const project = await this.design.projectForAgent(agent, signal)
-    const store = await this.design.designFilesForProject(agent, project.projectId, nodeFs, signal)
+    const files = await this.design.designFilesForProject(agent, project.projectId, nodeFs, signal)
+    if (scope !== 'design-files' && scope !== 'scenarios') throw new Error('Unknown artifact scope')
+    if (scope === 'scenarios' && !relPath.startsWith('scenarios/')) throw new Error('Scenario path must be below scenarios/')
+    const store = scope === 'scenarios' ? files.projectFiles() : files
     const content = stateRevision.startsWith(WORKTREE_REVISION_PREFIX)
       ? await store.readWorktreeText(relPath)
       : await store.readTextAt(stateRevision, relPath, signal)
@@ -1239,6 +1243,7 @@ export class DesignPanelRemote extends TypertRemoteService {
     agent: Agent,
     relPath: string,
     stateRevision: string,
+    scope: 'design-files' | 'scenarios' = 'design-files',
     signal: AbortSignal,
   ): Promise<BinaryArtifactRead> {
     const mediaType = relPath.endsWith('.pdf')
@@ -1250,7 +1255,10 @@ export class DesignPanelRemote extends TypertRemoteService {
           : relPath.endsWith('.webp') ? 'image/webp' as const : undefined
     if (mediaType === undefined) throw new Error('design panel: binary artifact path must use a supported PDF or image extension')
     const project = await this.design.projectForAgent(agent, signal)
-    const store = await this.design.designFilesForProject(agent, project.projectId, nodeFs, signal)
+    const files = await this.design.designFilesForProject(agent, project.projectId, nodeFs, signal)
+    if (scope !== 'design-files' && scope !== 'scenarios') throw new Error('Unknown artifact scope')
+    if (scope === 'scenarios' && !relPath.startsWith('scenarios/')) throw new Error('Scenario path must be below scenarios/')
+    const store = scope === 'scenarios' ? files.projectFiles() : files
     signal.throwIfAborted()
     const content = stateRevision.startsWith(WORKTREE_REVISION_PREFIX)
       ? await store.readWorktreeBytes(relPath)

@@ -1313,7 +1313,6 @@ html[data-dsh-panel-resizing=true], html[data-dsh-panel-resizing=true] * { curso
   background-color:hsl(var(--background,0 0% 100%)); cursor:not-allowed;
 }
 .dsh-diagram-details { flex:1; min-height:0; overflow:auto; background:var(--ds-bg-gary-default,var(--ds-fill-2,#f8f8fa)); }
-.dsh-diagram-migration { display:flex; flex:none; align-items:center; flex-wrap:wrap; gap:var(--ygd-panel-detail-control-gap,8px); padding:8px var(--ygd-panel-content-gutter,16px); }
 .dsh-diagram-body[hidden] { display: none; }
 .dsh-diagram-document { display: flex; flex-direction: column; gap: var(--ygd-panel-detail-section-gap, 16px); padding: var(--ygd-panel-content-gutter, 16px); }
 .dsh-diagram-document-section { display: flex; flex-direction: column; min-width: 0; gap: var(--ygd-panel-detail-control-gap, 8px); scroll-margin-top: var(--ygd-panel-detail-section-gap, 16px); }

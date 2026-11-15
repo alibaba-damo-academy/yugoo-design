@@ -9,6 +9,9 @@
   "fieldHelp": "{field}说明",
   "diagramDetails": "详情",
   "diagramDetailsUnavailable": "尚无步骤说明",
+  "diagramSupplementConfirm": "是否让 Agent 根据已有流程图补全节点详情？",
+  "diagramSupplementUnavailable": "当前流程尚无节点详情，请在原对话中让 Agent 根据已有流程图补全。",
+  "diagramSupplementFailed": "补全请求未能发送，请再次点击详情重试。",
   "diagramProcessNodes": "流程节点",
   "diagramProcessInformation": "流程信息",
   "dismissGuidance": "关闭操作引导",
@@ -772,7 +775,6 @@
   "diagramShowCanvas": "流程图",
   "diagramPerformer": "负责角色",
   "diagramNext": "后续节点",
-  "diagramMigrationSent": "已请求迁移",
   "artifactActivityUnavailable": "此条目暂无可用的活动记录。",
   "diagramStepMissing": "此节点已无法对应流程图元素。说明已保留，请让 Agent 修复关联。",
   "knowledgeGraphLineStatusHint": "关系状态见关联详情。"

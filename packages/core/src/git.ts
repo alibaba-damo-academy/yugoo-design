@@ -146,6 +146,14 @@ export class GitVersioning {
     if (pathPrefix !== undefined) requireListedPath(pathPrefix)
   }
 
+  /** Reuse this project's repository/backend for files outside Design Files. */
+  projectFiles(): GitVersioning {
+    if (this.pathPrefix === undefined) return this
+    return new GitVersioning(this.spawn, this.repoRoot, undefined, this.cachePinnedReads, this.backend)
+  }
+
+  get projectRoot(): string { return this.repoRoot }
+
   private get nativeEnabled(): boolean { return this.backend === 'native' }
 
   private async nativeResult(operation: NativeGitOperation, signal?: AbortSignal): Promise<NativeGitResult> {
@@ -499,7 +507,7 @@ export class GitVersioning {
     if (cached !== undefined) return cached
     // Keep path, type, mode and blob identity, including binary artifacts and
     // project metadata. Only the system-owned derived namespace is excluded.
-    const prefix = this.repositoryPath('_experiences')
+    const prefix = 'scenarios'
     const stdout = this.nativeEnabled
       ? (await this.nativeTreeRecords(commit, signal, { fullRepository: true })).map(record => `${record}\0`).join('')
       : (await this.requireSuccess(['git', 'ls-tree', '-r', '-z', commit], signal)).stdout

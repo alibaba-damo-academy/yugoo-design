@@ -35,6 +35,7 @@ export async function operateExperience(store: DesignFilesStore, args: Experienc
     for (const field of ['title', 'purpose'] as const) if (typeof args[field] !== 'string' || !args[field]?.trim()) throw new Error(`publish requires nonempty ${field}`)
     if (!Array.isArray(args.sections) || !args.sections.length) throw new Error('publish requires sections; each sections[].id must match a written artifactId')
   }
+  const viewStore = store.projectFiles()
   const currentPath = `${EXPERIENCE_ROOT}/${args.id}/view.json`
   if (args.action === 'prepare') {
     const sources = [...new Set([...(args.sources ?? []), ...(args.stylesheet ? [args.stylesheet] : [])])]
@@ -47,17 +48,17 @@ export async function operateExperience(store: DesignFilesStore, args: Experienc
       if (!bytes?.length) throw new Error(`Missing source: ${path}`)
       versions[path] = hash(bytes)
     }
-    const current = await store.readWorktreeText(currentPath)
+    const current = await viewStore.readWorktreeText(currentPath)
     const draft: Draft = { id: args.id, version: randomUUID(), base: current === undefined ? null : hash(current), sources: versions,
       ...(args.stylesheet ? { stylesheet: args.stylesheet } : {}) }
-    await store.writeWorktreeText(`${EXPERIENCE_ROOT}/${args.id}/${draft.version}/draft.json`, JSON.stringify(draft))
-    return { id: draft.id, version: draft.version, sources,
+    await viewStore.writeWorktreeText(`${EXPERIENCE_ROOT}/${args.id}/${draft.version}/draft.json`, JSON.stringify(draft))
+    return { id: draft.id, version: draft.version, sources, scenariosRoot: `${viewStore.projectRoot}/${EXPERIENCE_ROOT}`,
       authoring: { version: EXPERIENCE_AUTHORING_VERSION, guide: EXPERIENCE_AUTHORING_GUIDE, htmlStarter: EXPERIENCE_HTML_STARTER },
       writeExample: { action: 'write', id: draft.id, version: draft.version, artifactId: 'overview', content: '<html><body>Replace with the evidence-based experience.</body></html>', offset: 0 },
-      instructions: 'Read these sources directly. Each write requires id, returned version, artifactId (section name without .html, e.g. overview), and content. Choose a separate artifactId for each section; publish sections[].id must match its artifactId. Write bounded standalone HTML; content may be a comparison, diagram, simulation or narrative. No mandatory steps/pages. The panel supplies scene/section navigation, title, purpose, source details and a demo label. Name scenes around user situations; focus each section on what the user needs to judge, not a repeated report introduction. Split independently useful views into sections rather than one long document. If an element looks actionable, provide its source-backed local demo response or visibly identify it as a non-interactive illustration; do not invent product behavior to create interactivity. Demo interactions are temporary, reset on section changes, and must not write product facts or call host actions. Cite sources and explicitly list demo assumptions; distinguish sample data and unconfirmed behavior within the scene itself. Resource support: inline CSS/JS/SVG and data images; one selected CSS stylesheet; PNG/JPEG/WebP img src files included in sources, referenced relative to the version HTML path. CSS url/@import, external fonts/scripts, srcset and other external dependencies are NOT hydrated. Inline the needed presentation or clearly disclose the limitation; do not silently omit branding. Publish after checking fidelity and visible presentation. Current view stays unchanged until publish.' }
+      instructions: 'Read these sources directly. Each write requires id, returned version, artifactId (section name without .html, e.g. overview), and content. Choose a separate artifactId for each section; publish sections[].id must match its artifactId. Write bounded HTML documents or fragments; the browser supplies the document wrapper for fragments. A write receipt confirms saved bytes, not visual completeness; content may be a comparison, diagram, simulation or narrative. No mandatory steps/pages. The panel supplies scene/section navigation, title, purpose, source details and a demo label. Name scenes around user situations; focus each section on what the user needs to judge, not a repeated report introduction. Split independently useful views into sections rather than one long document. If an element looks actionable, provide its source-backed local demo response or visibly identify it as a non-interactive illustration; do not invent product behavior to create interactivity. Demo interactions are temporary, reset on section changes, and must not write product facts or call host actions. Cite sources and explicitly list demo assumptions; distinguish sample data and unconfirmed behavior within the scene itself. Resource support: inline CSS/JS/SVG and data images; one selected CSS stylesheet; PNG/JPEG/WebP img src files included in sources, referenced relative to the version HTML path. CSS url/@import, external fonts/scripts, srcset and other external dependencies are NOT hydrated. Inline the needed presentation or clearly disclose the limitation; do not silently omit branding. Publish after checking fidelity and visible presentation. Current view stays unchanged until publish.' }
   }
   const prefix = `${EXPERIENCE_ROOT}/${args.id}/${args.version}`
-  const draftText = await store.readWorktreeText(`${prefix}/draft.json`)
+  const draftText = await viewStore.readWorktreeText(`${prefix}/draft.json`)
   if (!draftText) throw new Error('Prepare this view first')
   const draft = JSON.parse(draftText) as Draft
   if (draft === null || typeof draft !== 'object' || draft.id !== args.id || draft.version !== args.version
@@ -71,22 +72,22 @@ export async function operateExperience(store: DesignFilesStore, args: Experienc
   if (args.action === 'write') {
     if (typeof args.content !== 'string' || Buffer.byteLength(args.content) > 32 * 1024) throw new Error('Write at most 32 KiB per chunk')
     const path = `${prefix}/${args.artifactId}.html`
-    const prior = await store.readWorktreeText(path) ?? ''
+    const prior = await viewStore.readWorktreeText(path) ?? ''
     const offset = args.offset ?? 0
     if (!Number.isSafeInteger(offset) || offset < 0 || (offset !== 0 && offset !== Buffer.byteLength(prior))) throw new Error('Append offset must match the current UTF-8 byte length; 0 replaces the draft artifact')
     const next = offset === 0 ? args.content : prior + args.content
     if (Buffer.byteLength(next) > 512 * 1024) throw new Error('One view artifact must not exceed 512 KiB')
     // Published version files are immutable; edits require another prepare.
-    const head = await store.head(signal)
-    if (head && await store.readTextAt(head, path, signal) !== undefined) throw new Error('Published artifacts are immutable; prepare a new revision')
-    await store.writeWorktreeText(path, next)
-    return { path, artifactId: args.artifactId, bytes: Buffer.byteLength(next), complete: /<\/html\s*>/iu.test(next) }
+    const head = await viewStore.head(signal)
+    if (head && await viewStore.readTextAt(head, path, signal) !== undefined) throw new Error('Published artifacts are immutable; prepare a new revision')
+    await viewStore.writeWorktreeText(path, next)
+    return { path, artifactId: args.artifactId, bytes: Buffer.byteLength(next), written: true }
   }
   if (args.action !== 'publish') throw new Error('Unknown experience operation')
   const view = readExperienceView({ id: args.id, version: args.version, title: args.title, purpose: args.purpose,
     sourceVersions: draft.sources, ...(draft.stylesheet ? { stylesheet: draft.stylesheet } : {}),
     sections: args.sections?.map(s => ({ ...s, htmlFile: `${prefix}/${s.id}.html` })) })
-  const current = await store.readWorktreeText(currentPath)
+  const current = await viewStore.readWorktreeText(currentPath)
   if ((current === undefined ? null : hash(current)) !== draft.base) throw new Error('The published view changed since prepare; reread before replacing it')
   const files: Record<string, string | Uint8Array> = {}
   let resourceBytes = 0
@@ -100,12 +101,12 @@ export async function operateExperience(store: DesignFilesStore, args: Experienc
     }
   }
   for (const section of view.sections) {
-    const html = await store.readWorktreeText(section.htmlFile)
-    if (!html || !/<html\b/iu.test(html) || !/<body\b/iu.test(html) || !/<\/html\s*>/iu.test(html)) throw new Error(`Incomplete HTML: ${section.htmlFile}`)
+    const html = await viewStore.readWorktreeText(section.htmlFile)
+    if (!html?.trim()) throw new Error(`Missing HTML content: ${section.htmlFile}; write this artifact before publishing`)
     files[section.htmlFile] = html
   }
   files[currentPath] = `${JSON.stringify(view, null, 2)}\n`
-  const commit = await store.commitExperienceFiles(args.id, files, signal)
+  const commit = await viewStore.commitExperienceFiles(args.id, files, signal)
   return { published: true, id: view.id, version: view.version, commit, viewFile: currentPath,
     resourceSupport: 'Frozen selected CSS and captured PNG/JPEG/WebP img src only; inline contents are retained in HTML. External fonts, CSS url/@import, srcset and other linked dependencies are not hydrated. Verify the visible result; publication is not visual-quality certification.',
     next: 'Invite the user to open 场景体验 in the Design Panel. It is a derived view, not confirmed product facts.' }

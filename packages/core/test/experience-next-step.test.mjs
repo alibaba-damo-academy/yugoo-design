@@ -19,7 +19,7 @@ test('scene action shares the existing optional selector, never a Bundle alias',
 })
 
 test('published identity, artifact availability and source bytes precede readiness', () => {
-  assert.match(scene, /actual published _experiences\/<id>\/view\.json index/)
+  assert.match(scene, /actual published scenarios\/<id>\/view\.json index/)
   assert.match(scene, /referenced section artifacts exist/)
   assert.match(scene, /title and purpose to judge relevance/)
   assert.match(scene, /hashes of the current original source bytes/)

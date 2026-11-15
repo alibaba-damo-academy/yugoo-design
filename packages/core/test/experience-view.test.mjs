@@ -21,16 +21,16 @@ test('managed review snapshot excludes derived views but preserves owning eviden
   let snapshot
   try {
     await mkdir(join(root, 'design_files/intent'), { recursive: true })
-    await mkdir(join(root, 'design_files/_experiences/paper'), { recursive: true })
+    await mkdir(join(root, 'scenarios/paper'), { recursive: true })
     await writeFile(join(root, 'design_files/intent/intent.json'), '{"goal":"owner fact"}')
-    await writeFile(join(root, 'design_files/_experiences/paper/view.json'), '{"demo":"not evidence"}')
+    await writeFile(join(root, 'scenarios/paper/view.json'), '{"demo":"not evidence"}')
     await exec('git', ['init', root])
     await exec('git', ['-C', root, 'add', 'design_files'])
     await exec('git', ['-C', root, '-c', 'user.name=Test', '-c', 'user.email=test@localhost', 'commit', '-m', 'fixture'])
     const { stdout } = await exec('git', ['-C', root, 'rev-parse', 'HEAD'])
     snapshot = await reviewSnapshot(root, stdout.trim())
     assert.match(await readFile(join(snapshot.root, 'design_files/intent/intent.json'), 'utf8'), /owner fact/)
-    await assert.rejects(readFile(join(snapshot.root, 'design_files/_experiences/paper/view.json')), { code: 'ENOENT' })
+    await assert.rejects(readFile(join(snapshot.root, 'scenarios/paper/view.json')), { code: 'ENOENT' })
   } finally { await snapshot?.close(); await rm(root, { recursive: true, force: true }) }
 })
 const digest = value => createHash('sha256').update(value).digest('hex')
@@ -40,7 +40,7 @@ test('section evidence requires captured own keys, not inherited object properti
   const view = {
     id: 'generic', version: 'v1', title: 'Comparison', purpose: 'Understand a bounded decision',
     sourceVersions: { [source]: digest('saved source') },
-    sections: [{ id: 'comparison', title: 'Comparison', htmlFile: '_experiences/generic/v1/comparison.html', sources: [source], assumptions: [] }],
+    sections: [{ id: 'comparison', title: 'Comparison', htmlFile: 'scenarios/generic/v1/comparison.html', sources: [source], assumptions: [] }],
   }
   assert.equal(readExperienceView(view), view)
   for (const path of ['constructor', 'toString', 'hasOwnProperty']) {
@@ -58,11 +58,11 @@ test('section evidence requires captured own keys, not inherited object properti
 test('product tree identity excludes only root experiences, preserving path/type/mode/content and failing closed', async () => fixture(async ({ root, git, store }) => {
   const base = await store.head()
   const commit = async entries => git.commitExact('arbitrary message', new Map(entries), await store.head())
-  const one = await commit([['_experiences/demo/view.json', 'demo']])
-  const two = await commit([['_experiences/demo/view.json', 'changed']])
-  const three = await commit([['_experiences/demo/view.json', undefined]])
+  const one = await commit([['scenarios/demo/view.json', 'demo']])
+  const two = await commit([['scenarios/demo/view.json', 'changed']])
+  const three = await commit([['scenarios/demo/view.json', undefined]])
   for (const head of [one,two,three]) assert.equal(await store.sameDesignEvidenceAt(base,head), true)
-  for (const path of ['intent/new.json','intent/page.html','intent/style.css','intent/logo.png','intent/_experiences/business.json']) {
+  for (const path of ['intent/new.json','intent/page.html','intent/style.css','intent/logo.png','intent/scenarios/business.json']) {
     const before = await store.head()
     const added = await commit([[path, Buffer.from([1,2,3])]])
     assert.equal(await store.sameDesignEvidenceAt(before,added), false, `add ${path}`)
@@ -72,7 +72,7 @@ test('product tree identity excludes only root experiences, preserving path/type
     assert.equal(await store.sameDesignEvidenceAt(changed,removed), false, `delete ${path}`)
     assert.equal(await store.sameDesignEvidenceAt(before,removed), true, 'Restored identical evidence is equivalent')
   }
-  const mixed = await commit([[source, 'real change'],['_experiences/demo/view.json','demo']])
+  const mixed = await commit([[source, 'real change'],['scenarios/demo/view.json','demo']])
   assert.equal(await store.sameDesignEvidenceAt(base,mixed), false)
   assert.equal(await store.sameDesignEvidenceAt('f'.repeat(40),mixed), false)
   assert.equal(await store.sameDesignEvidenceAt('f'.repeat(40),'f'.repeat(40)), false)
@@ -194,7 +194,7 @@ test('registered tool explains conditional fields and recovers omitted artifactI
 }))
 test('publishes exact view files, preserves unrelated dirty source, not a Bundle projection', async () => fixture(async ({ store, call, ready, publish }) => {
   const version = await ready()
-  assert.equal(await store.readWorktreeText('_experiences/reading/view.json'), undefined)
+  assert.equal(await store.readWorktreeText('scenarios/reading/view.json'), undefined)
   await store.writeWorktreeText('unrelated/unrelated.json', '{"draft":true}')
   const result = await publish(version)
   const paths = await store.listPathsAt(result.commit)
@@ -202,7 +202,7 @@ test('publishes exact view files, preserves unrelated dirty source, not a Bundle
   assert.ok(!paths.some(p => p.endsWith('draft.json')))
   const view = readExperienceView(JSON.parse(await store.readWorktreeText(result.viewFile)))
   const snapshot = await projectWorktreeDesign(store, {}, [], result.commit)
-  assert.ok(!('_experiences' in snapshot.design))
+  assert.ok(!('scenario' in snapshot.design))
   assert.equal(experienceFreshness(view, Object.fromEntries([...snapshot.fileDigests].map(([p, v]) => [p, v.sha256]))).status, 'current')
   assert.equal(view.sourceVersions[source], digest(await store.readWorktreeBytes(source)))
   assert.match(experienceFeedback(view, view.sections[0], {}), /前后对比/)
@@ -210,12 +210,12 @@ test('publishes exact view files, preserves unrelated dirty source, not a Bundle
 }))
 test('source drift blocks publication, not viewing or feedback; no source write', async () => fixture(async ({ store, ready, publish }) => {
   await publish(await ready())
-  const current = await store.readWorktreeText('_experiences/reading/view.json')
+  const current = await store.readWorktreeText('scenarios/reading/view.json')
   const head = await store.head(), version = await ready()
   await store.writeWorktreeText(source, '{"goal":"新的阅读目标"}')
   await assert.rejects(publish(version), /Source changed/)
   assert.equal(await store.head(), head)
-  assert.equal(await store.readWorktreeText('_experiences/reading/view.json'), current)
+  assert.equal(await store.readWorktreeText('scenarios/reading/view.json'), current)
   const view = readExperienceView(JSON.parse(current))
   assert.equal(experienceFreshness(view, { [source]: digest('changed') }).status, 'stale')
   assert.equal(experienceFreshness(view, {}).status, 'stale')
@@ -237,17 +237,20 @@ test('stale concurrent draft cannot replace a newer view; prior version remains 
   await publish(await ready())
   await assert.rejects(call({ action: 'write', version: one, artifactId: 'comparison', content: html }), /immutable/)
 }))
-test('bounded UTF-8 append and incomplete output diagnostics', async () => fixture(async ({ call, ready, publish }) => {
+test('bounded UTF-8 append does not use closing tags as publication gates', async () => fixture(async ({ call, ready, publish }) => {
   const version = await ready()
   await call({ action: 'write', version, artifactId: 'comparison', content: '<html><body>中文' })
-  await assert.rejects(publish(version), /Incomplete HTML/)
-  await assert.rejects(call({ action: 'write', version, artifactId: 'comparison', content: '</body></html>', offset: 14 }), /offset/)
-  await call({ action: 'write', version, artifactId: 'comparison', content: '</body></html>', offset: Buffer.byteLength('<html><body>中文') })
   await publish(version)
-  await assert.rejects(call({ action: 'write', version, artifactId: 'x', content: 'x'.repeat(32769) }), /32 KiB/)
+  const next = await call({ action: 'prepare', sources: [source] })
+  const appendVersion = next.version
+  await call({ action: 'write', version: appendVersion, artifactId: 'comparison', content: '<html><body>中文' })
+  await assert.rejects(call({ action: 'write', version: appendVersion, artifactId: 'comparison', content: '</body></html>', offset: 14 }), /offset/)
+  await call({ action: 'write', version: appendVersion, artifactId: 'comparison', content: '</body></html>', offset: Buffer.byteLength('<html><body>中文') })
+  await publish(appendVersion)
+  await assert.rejects(call({ action: 'write', version: appendVersion, artifactId: 'x', content: 'x'.repeat(32769) }), /32 KiB/)
 }))
 test('path confinement and derived-source recursion rejection', async () => fixture(async ({ root, call }) => {
-  for (const path of ['../escape', '/etc/passwd', '_experiences/reading/view.json']) await assert.rejects(call({ action: 'prepare', sources: [path] }))
+  for (const path of ['../escape', '/etc/passwd', 'scenarios/reading/view.json']) await assert.rejects(call({ action: 'prepare', sources: [path] }))
   await symlink('/etc/hosts', join(root, 'escaped.txt'))
   await assert.rejects(call({ action: 'prepare', sources: ['escaped.txt'] }))
   await assert.rejects(call({ action: 'prepare', sources: ['missing.json'] }), /Missing source/)
@@ -255,11 +258,11 @@ test('path confinement and derived-source recursion rejection', async () => fixt
 }))
 test('Git failure leaves previous published view intact and no foreign files committed', async () => fixture(async ({ store, git, ready, publish }) => {
   await publish(await ready())
-  const previous = await store.readWorktreeText('_experiences/reading/view.json'), head = await store.head()
+  const previous = await store.readWorktreeText('scenarios/reading/view.json'), head = await store.head()
   const version = await ready(), commit = git.commitExact
   git.commitExact = async () => { throw new Error('injected Git failure') }
   try { await assert.rejects(publish(version), /injected Git failure/) } finally { git.commitExact = commit }
-  assert.equal(await store.readWorktreeText('_experiences/reading/view.json'), previous)
+  assert.equal(await store.readWorktreeText('scenarios/reading/view.json'), previous)
   assert.equal(await store.head(), head)
 }))
 test('frozen CSS/image bytes survive source removal and other views are preserved', async () => fixture(async ({ store, call, publish }) => {
@@ -273,19 +276,64 @@ test('frozen CSS/image bytes survive source removal and other views are preserve
   await store.removeWorktreeFile('visual/tokens.css'); await store.removeWorktreeFile('visual/logo.png')
   assert.equal(await store.readTextAt(saved.commit, experienceResource(view, 'visual/tokens.css')), css)
   assert.deepEqual(await store.readWorktreeBytes(experienceResource(view, 'visual/logo.png')), image)
-  await store.writeWorktreeText('_experiences/other/view.json', '{"other":true}')
+  await store.writeWorktreeText('scenarios/other/view.json', '{"other":true}')
   const d2 = await call({ action: 'prepare', sources: [source] })
   await call({ action: 'write', version: d2.version, artifactId: 'comparison', content: html })
   await publish(d2.version)
-  assert.equal(await store.readWorktreeText('_experiences/other/view.json'), '{"other":true}')
-  await assert.rejects(store.write('_experiences', {}, { origin: 'agent', ownedArtifacts: [], settleEvent: async () => {} }), /invalid Design File skill/)
+  assert.equal(await store.readWorktreeText('scenarios/other/view.json'), '{"other":true}')
+  await assert.rejects(store.commitExperienceFiles('reading', { 'scenarios/reading/view.json': '{}', 'intent/intent.json': 'foreign change' }), /cannot change other files/)
 }))
 test('corrupt prepared metadata fails closed', async () => fixture(async ({ store, ready, publish }) => {
-  const version = await ready(), path = `_experiences/reading/${version}/draft.json`
+  const version = await ready(), path = `scenarios/reading/${version}/draft.json`
   const original = JSON.parse(await store.readWorktreeText(path))
   for (const bad of [null, { ...original, base: 'bad' }, { ...original, sources: [] }, { ...original, sources: { [source]: 'bad' } }, { ...original, sources: { '../escape': 'a'.repeat(64) } }]) {
     await store.writeWorktreeText(path, JSON.stringify(bad))
     await assert.rejects(publish(version))
-    assert.equal(await store.readWorktreeText('_experiences/reading/view.json'), undefined)
+    assert.equal(await store.readWorktreeText('scenarios/reading/view.json'), undefined)
+  }
+}))
+
+// Use the real project/Design Files split rather than an unscoped test store.
+test('HTML fragments publish under project scenarios/, alongside an unrelated Bundle named scenarios', async () => fixture(async ({ root, git }) => {
+  const filesRoot = join(root, 'design_files')
+  const { nodeDesignProjectSpawn } = await import('../src/design-project.ts')
+  const sourceStore = new DesignFilesStore(nodeFs, new GitVersioning(nodeDesignProjectSpawn, root, 'design_files', false, 'cli'), filesRoot)
+  await sourceStore.write('intent', { goal: 'retained owner fact' }, { origin: 'agent', settleEvent: async () => {} })
+  await sourceStore.write('scenarios', { realBusinessFact: true }, { origin: 'agent', settleEvent: async () => {} })
+  const before = await sourceStore.head()
+  const prepared = await operateExperience(sourceStore, { action: 'prepare', id: 'fragment', sources: [source] })
+  assert.equal(prepared.scenariosRoot, join(root, 'scenarios'))
+  const content = '<section><h2>退回后重新提交</h2><button type="button" onclick="this.textContent=\'已补充\'">补充依据</button></section>'
+  const written = await operateExperience(sourceStore, { action: 'write', id: 'fragment', version: prepared.version, artifactId: 'loop', content })
+  assert.equal(written.written, true)
+  assert.equal(Object.hasOwn(written, 'complete'), false, 'writing bytes does not pretend to certify HTML completeness')
+  const published = await operateExperience(sourceStore, { action: 'publish', id: 'fragment', version: prepared.version, title: '退回体验', purpose: '判断退回后的补充与重提', sections: [{ id: 'loop', title: '退回循环', sources: [source], assumptions: [] }] })
+  assert.equal(published.published, true)
+  assert.equal(await readFile(join(root, written.path), 'utf8'), content)
+  await assert.rejects(readFile(join(filesRoot, written.path)), { code: 'ENOENT' })
+  assert.equal(await sourceStore.sameDesignEvidenceAt(before, published.commit), true)
+  assert.deepEqual(await sourceStore.readWorktreeText('scenarios/scenarios.json'), '{\n  "realBusinessFact": true\n}\n')
+  const projectFiles = sourceStore.projectFiles()
+  assert.equal(await projectFiles.readTextAt(published.commit, written.path), content)
+  assert.ok((await projectFiles.listPathsAt(published.commit)).includes(written.path))
+
+  // Exercise the actual DSH reader with identical relative paths in both roots.
+  const { DesignPanelRemote } = await import('../src/panel-remote.ts')
+  const remote = Object.create(DesignPanelRemote.prototype)
+  remote.design = { projectForAgent: async () => ({ projectId: 'scope-test' }), designFilesForProject: async () => sourceStore }
+  remote.maxBinaryArtifactBytes = 10 * 1024 * 1024
+  const imagePath = 'scenarios/fragment/image.png'
+  const png = Buffer.from([137,80,78,71,13,10,26,10])
+  await projectFiles.commitExperienceFiles('fragment', { [published.viewFile]: await projectFiles.readTextAt(published.commit, published.viewFile), [imagePath]: png })
+  const bundleHtml = '<p>Ordinary Bundle content</p>'
+  await sourceStore.git.commitExact('Save same-named Bundle artifacts', new Map([[written.path, bundleHtml], [imagePath, Buffer.concat([png, Buffer.from('bundle')])]]), await sourceStore.head())
+  await sourceStore.writeWorktreeText(written.path, bundleHtml)
+  await sourceStore.writeWorktreeBytes(imagePath, Buffer.concat([png, Buffer.from('bundle')]))
+  const checkpoint = await sourceStore.head(), signal = new AbortController().signal
+  for (const revision of [checkpoint, 'worktree:live']) {
+    assert.equal((await remote.readArtifact({}, written.path, revision, undefined, signal)).content, bundleHtml)
+    assert.equal((await remote.readArtifact({}, written.path, revision, 'scenarios', signal)).content, content)
+    assert.equal((await remote.readBinaryArtifact({}, imagePath, revision, undefined, signal)).byteLength, png.length + 6)
+    assert.equal((await remote.readBinaryArtifact({}, imagePath, revision, 'scenarios', signal)).byteLength, png.length)
   }
 }))

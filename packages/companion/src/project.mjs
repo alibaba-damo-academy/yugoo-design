@@ -255,8 +255,10 @@ export async function openCompanionProject({ projectRoot, kitRoot, stateRoot, co
           const states = {}
           const experienceFiles = {}
           let totalBytes = 0, count = 0
+          if (checkpoint) for (const path of await store.projectFiles().listPathsAt(checkpoint)) {
+            if (path.startsWith('scenarios/')) experienceFiles[path] = checkpoint
+          }
           if (checkpoint) for (const path of await store.listPathsAt(checkpoint)) {
-            if (path.startsWith('_experiences/')) experienceFiles[path] = checkpoint
             const parts = path.split('/')
             if (parts.length !== 2 || parts[1] !== `${parts[0]}.json`) continue
             const text = await store.readTextAt(checkpoint, path)
@@ -460,19 +462,25 @@ export async function openCompanionProject({ projectRoot, kitRoot, stateRoot, co
       saves.set(eventId, { payload, promise })
       try { return await promise } catch (error) { saves.delete(eventId); throw error }
     },
-    async readArtifact({ path, revision }) {
+    async readArtifact({ path, revision, scope = 'design-files' }) {
+      if (scope !== 'design-files' && scope !== 'scenarios') throw new Error('Unknown artifact scope')
+      if (scope === 'scenarios' && !path?.startsWith('scenarios/')) throw new Error('Scenario path must be below scenarios/')
+      const files = scope === 'scenarios' ? store.projectFiles() : store
       const content = revision === undefined || revision.startsWith('worktree:')
-        ? await store.readWorktreeText(requireArtifact(path))
-        : await store.readTextAt(revision, requireArtifact(path))
+        ? await files.readWorktreeText(requireArtifact(path))
+        : await files.readTextAt(revision, requireArtifact(path))
       return { found: content !== undefined, content: content ?? '' }
     },
-    async readBinaryArtifact({ path, revision }) {
+    async readBinaryArtifact({ path, revision, scope = 'design-files' }) {
+      if (scope !== 'design-files' && scope !== 'scenarios') throw new Error('Unknown artifact scope')
+      if (scope === 'scenarios' && !path?.startsWith('scenarios/')) throw new Error('Scenario path must be below scenarios/')
+      const files = scope === 'scenarios' ? store.projectFiles() : store
       const types = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', pdf: 'application/pdf' }
       const mediaType = types[path?.split('.').pop()?.toLowerCase()]
       if (!mediaType) throw new Error('Unsupported binary preview format.')
       const bytes = revision === undefined || revision.startsWith('worktree:')
-        ? await store.readWorktreeBytes(requireArtifact(path))
-        : await store.readBytesAt(revision, requireArtifact(path), undefined, 10 * 1024 * 1024)
+        ? await files.readWorktreeBytes(requireArtifact(path))
+        : await files.readBytesAt(revision, requireArtifact(path), undefined, 10 * 1024 * 1024)
       if (bytes?.length > 10 * 1024 * 1024) throw new Error('Preview exceeds 10 MiB.')
       return { found: bytes !== undefined, mediaType, base64: bytes ? Buffer.from(bytes).toString('base64') : '', byteLength: bytes?.length ?? 0 }
     },

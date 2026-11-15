@@ -13,13 +13,13 @@ const { ExperiencePanel } = await import('../src/client/experience-panel.tsx')
 test('image hydration mounts a new experience document while unchanged polling retains it', async () => {
   const root = createRoot(document.getElementById('root'))
   const image = 'visual/logo.png', hash = 'a'.repeat(64)
-  const htmlPath = '_experiences/demo/v1/overview.html'
+  const htmlPath = 'scenarios/demo/v1/overview.html'
   const view = { id: 'demo', version: 'v1', title: 'Saved scene', purpose: 'Check frozen image hydration',
     sourceVersions: { [image]: hash }, sections: [
       { id: 'overview', title: 'Overview', htmlFile: htmlPath, sources: [image], assumptions: [] },
     ] }
-  const indexPath = '_experiences/demo/view.json'
-  const frozenImage = '_experiences/demo/v1/resources/visual/logo.png'
+  const indexPath = 'scenarios/demo/view.json'
+  const frozenImage = 'scenarios/demo/v1/resources/visual/logo.png'
   const html = '<html><body><h1>Saved scene</h1><img src="../../../visual/logo.png" alt="Frozen logo"></body></html>'
   let resolveImage
   const binaryCalls = []

@@ -27,7 +27,7 @@ export function ExperiencePanel(props: ExperiencePanelProps): ReactElement {
   const [selected, setSelected] = useState(''), [sectionId, setSectionId] = useState('')
   const [pending, setPending] = useState(false), [sendError, setSendError] = useState('')
   const [navigationOpen, setNavigationOpen] = useState(false)
-  const paths = Object.keys(props.experienceFiles ?? {}).filter(path => /^_experiences\/[A-Za-z0-9_-]+\/view\.json$/u.test(path)).sort()
+  const paths = Object.keys(props.experienceFiles ?? {}).filter(path => /^scenarios\/[A-Za-z0-9_-]+\/view\.json$/u.test(path)).sort()
   const indexes = useTextArtifactContents(paths.map(path => ({ id: path, path })), props.readArtifact, null, props.experienceFiles)
   const views: ExperienceView[] = [], errors: string[] = []
   for (const path of paths) {
@@ -35,7 +35,7 @@ export function ExperiencePanel(props: ExperiencePanelProps): ReactElement {
     if (typeof content !== 'string') continue
     try {
       const view = readExperienceView(JSON.parse(content))
-      if (path !== `_experiences/${view.id}/view.json`) throw new Error('View index identity mismatch')
+      if (path !== `scenarios/${view.id}/view.json`) throw new Error('View index identity mismatch')
       views.push(view)
     } catch (error) { errors.push(`${path}: ${String(error)}`) }
   }

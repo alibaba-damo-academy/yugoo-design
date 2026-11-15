@@ -1214,8 +1214,12 @@ node record cards. Selecting a child reveals its process group without resetting
 the mounted editors or their draft. Omission retains the existing side inspector.
 
 Optional `inspector.migration: {message, action_label, prompt}` supplies a
-Bundle-authored notice and ordinary Agent request when a saved diagram has no
-node supplements. This does not prevent browsing or saving, replace project
+Bundle-authored explanation and ordinary Agent request when a saved diagram has
+no node supplements. The existing Details button asks for confirmation only
+when clicked in that state; it sends the request only after confirmation.
+Existing details open normally. There is no persistent migration button or
+notice on the canvas; `action_label` remains accepted for definition compatibility.
+This does not prevent browsing or saving, replace project
 definitions, invent node assignments, or run a project migration. An Agent first
 compares and updates only the authorized project Bundle files through ordinary
 editing, then follows its current method to supplement the saved design. The

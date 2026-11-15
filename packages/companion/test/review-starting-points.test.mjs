@@ -21,7 +21,7 @@ test('prepared depth and starting points use existing pinned evidence and surviv
     store: {
       designEvidenceRevisionAt: async value => value,
       sameDesignEvidenceAt: async (a, b) => a === b,
-      listPathsAt: async value => { lists.push(value); return ['changed/changed.json', 'related/related.json', '_experiences/demo.json'] },
+      listPathsAt: async value => { lists.push(value); return ['changed/changed.json', 'related/related.json', 'scenarios/demo.json'] },
     },
   }
   const records = join(designProjectRecordsRoot(root), 'reviews')
@@ -34,7 +34,7 @@ test('prepared depth and starting points use existing pinned evidence and surviv
   const startingLine = first.prompt.split('\n').find(line => line.startsWith('Priority investigation starting points'))
   assert.match(startingLine, /design_files\/changed\/changed.json/)
   assert.match(startingLine, /design_files\/related\/related.json/)
-  assert.doesNotMatch(startingLine, /missing|_experiences/)
+  assert.doesNotMatch(startingLine, /missing|scenarios/)
   assert.deepEqual(lists, [checkpoint])
   await writeDesignReviewPolicy(records, { mode: 'off', depth: 'thorough', autoMergeWindowMs: 30000 }, root)
   latest = { skill: 'related', commit: future }
@@ -45,12 +45,12 @@ test('prepared depth and starting points use existing pinned evidence and surviv
   const next = await reviews.prepareReview({ profile: 'alignment', manualRequestId: 'thorough-request' })
   assert.equal(next.depth, 'thorough')
   assert.doesNotMatch(next.prompt, /Priority investigation starting points/, 'a newer live journal change cannot describe this older pinned snapshot')
-  assert.match(next.prompt, /known consequential risk beyond/)
+  assert.match(next.prompt, /Review scope: Entire project/)
   assert.deepEqual(lists, [checkpoint], 'absent valid focus does not scan files for a replacement target')
   project.readDesignJournal = async () => { throw new Error('Optional starting locator unavailable') }
   const unavailable = await reviews.prepareReview({ profile: 'alignment', manualRequestId: 'no-locator-request' })
   assert.doesNotMatch(unavailable.prompt, /Priority investigation starting points/)
-  assert.match(unavailable.prompt, /known consequential risk beyond/)
+  assert.match(unavailable.prompt, /Review scope: Entire project/)
   const assessment = await reviews.prepareReview({ profile: 'clarity' })
   // Legacy observed-work identity for this fixed evidence revision and empty context.
   assert.equal(assessment.requestKey, 'a1d1b7363d7f748bcbee5a7aed750580088e99a5a2e4233c05b0571b2df5c884')

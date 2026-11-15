@@ -69,6 +69,9 @@ presentation or revising an unrelated path.
 Optional `nodes` is a map of stable supplement IDs, with optional `node_order`
 for reading order. Each node has string `process_ref` (the process map key) and
 `bpmn_element_ref` (the exact element ID in that process's accepted BPMN).
+Optional storage preserves existing diagram-only files. When generating a new
+process, deliver the BPMN and grounded details for its meaningful steps in the
+same complete Bundle result; do not leave the details for a later user task.
 Reuse existing supplement IDs. For a new supplement prefer an `N-001`-style
 business ID; the explicit process/element pair remains the mapping authority. The order
 is reading order, never execution order or a substitute for BPMN connections.
@@ -125,9 +128,13 @@ second graph to make a missing binding appear valid.
 
 ### Existing projects
 
-Absent `nodes`/`node_order` remains valid. The optional step-detail notice asks
-the current Native Agent to supplement this Flow, without blocking reading,
-editing or saving the existing diagram. Use the project's actual current Flow
+Absent `nodes`/`node_order` remains valid. Reading, editing and saving the existing
+diagram remain available. Clicking the existing Details entry opens saved
+details when present; when absent, it asks whether the user wants the Native
+Agent to supplement this Flow from its saved diagram. Only an affirmative
+answer sends that request. Cancellation leaves the diagram and data unchanged;
+no permanent migration action or notice is added to the canvas.
+Use the project's actual current Flow
 definition. Updating that definition is an ordinary, explicitly requested edit
 of this Bundle's files in `design_kit`; a library save alone does not update it.
 Do not add a version gate or migrate the whole Kit. Read the existing Flow JSON

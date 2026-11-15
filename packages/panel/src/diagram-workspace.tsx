@@ -15,7 +15,6 @@ import { diagramContextRecords, diagramNodeForElement, diagramRecords, diagramRe
 import { ArtifactStatusIcon } from './artifact-status-icon.tsx'
 import { PanelContentState } from './panel-content-state.tsx'
 import type { BpmnElementContext } from './bpmn-context.ts'
-import { Button } from './client/ported/ui/button.tsx'
 
 export function DiagramWorkspace({ node, manifest, data, options, render }: { node: ComponentNode; manifest: PanelManifest
   data: DesignData; options?: RenderOptions; render: (id: string, section?: string, editable?: boolean) => ReactElement }) {
@@ -30,12 +29,10 @@ export function DiagramWorkspace({ node, manifest, data, options, render }: { no
   const [unmappedElement, setUnmappedElement] = useState(false)
   const [navigationError, setNavigationError] = useState(''), [switching, setSwitching] = useState(false)
   const [contexts, setContexts] = useState<Record<string, readonly BpmnElementContext[]>>({})
-  const [migrationSent, setMigrationSent] = useState<string>()
-  const [migrationError, setMigrationError] = useState('')
   const [anchor, setAnchor] = useState<{ process: string; node?: string }>()
   const content = useRef<HTMLDivElement>(null)
   const selected = choice && ids.includes(choice) ? choice : ids[0]
-  useEffect(() => { setEditing(false); selectLoose(undefined); setUnmappedElement(false); setMigrationError('') }, [selected])
+  useEffect(() => { setEditing(false); selectLoose(undefined); setUnmappedElement(false) }, [selected])
   const value = selected ? fieldValuesOf(raw[selected]!, binding.fieldsPath) : undefined
   const inspector = config.inspector
   const documentMode = inspector?.presentation === 'document'
@@ -121,6 +118,20 @@ export function DiagramWorkspace({ node, manifest, data, options, render }: { no
   }
   const detailsLabel = t('diagramDetails')
   const detailsUnavailable = documentMode && !details && !looseRecord && nodes.length === 0
+  const canRequestDetails = !!inspector?.migration && !!selected && !!file
+  const requestDetails = async () => {
+    if (!canRequestDetails) return
+    if (!options?.sendPrompt) {
+      window.alert(t('diagramSupplementUnavailable'))
+      return
+    }
+    if (!window.confirm(`${inspector!.migration!.message}\n\n${t('diagramSupplementConfirm')}`)) return
+    try {
+      await options.sendPrompt(`${inspector!.migration!.prompt}\nBundle: ${options.skill ?? ''}\nProcess: ${selected}\nDiagram: ${file}`)
+    } catch (failure) {
+      window.alert(`${t('diagramSupplementFailed')}\n${failure instanceof Error ? failure.message : String(failure)}`)
+    }
+  }
   const canEdit = !!options?.editable && !!options.onStageArtifact && !!options.registerBeforeSave && !!file && canonical === file && !!xml
   const openDocument = (process: string, id?: string) => {
     select(process); selectNode(id); selectLoose(undefined); setUnmappedElement(false); setEditing(false)
@@ -209,24 +220,11 @@ export function DiagramWorkspace({ node, manifest, data, options, render }: { no
       <PanelRecordHeader placement="workspace" className="dsh-diagram-heading"><PanelRecordId value={selected} /><strong>{selected ? labelFor(selected) : node.title || t('diagram')}</strong>
         {value ? config.tags?.map(tag => { const key = String(value[tag.field] ?? ''); const field = manifest.fields.find(field => field.key === tag.field && field.applies_to?.includes(section)); return key && field && !field.hidden ? <span key={tag.field} className={`dsh-diagram-tag is-${tag.tones?.[key] ?? 'neutral'}`}>{tag.labels?.[key] ?? field?.options?.find(option => option.value === key)?.label ?? key}</span> : null }) : null}
         {execution.status !== 'completed' ? <span role="status" className={`dsh-diagram-status is-${execution.status}`}>{t(`artifact_${execution.status}`)}</span> : null}
-        <button type="button" disabled={switching || detailsUnavailable} title={detailsUnavailable ? t('diagramDetailsUnavailable') : undefined} aria-expanded={documentMode ? details : inspector ? inspectorOpen : details} onClick={() => { void navigable(() => { if (documentMode) { if (details) showDetails(false); else if (selected) openDocument(selected, nodeChoice) } else if (inspector) setInspectorOpen(!inspectorOpen); else showDetails(!details); setEditing(false) }) }}>{documentMode && details ? t('diagramShowCanvas') : detailsLabel}{documentMode ? null : <PanelDisclosureIcon expanded={inspector ? inspectorOpen : details} />}</button>
+        <button type="button" disabled={switching || (detailsUnavailable && !canRequestDetails)} title={detailsUnavailable && !canRequestDetails ? t('diagramDetailsUnavailable') : undefined} aria-expanded={documentMode ? details : inspector ? inspectorOpen : details} onClick={() => { void navigable(async () => { if (detailsUnavailable) { await requestDetails(); return } if (documentMode) { if (details) showDetails(false); else if (selected) openDocument(selected, nodeChoice) } else if (inspector) setInspectorOpen(!inspectorOpen); else showDetails(!details); setEditing(false) }) }}>{documentMode && details ? t('diagramShowCanvas') : detailsLabel}{documentMode ? null : <PanelDisclosureIcon expanded={inspector ? inspectorOpen : details} />}</button>
         {!(documentMode && details) ? <button type="button" disabled={switching || (!inspector && details) || !canEdit} aria-pressed={editing} onClick={() => { void navigable(() => setEditing(!editing)) }}>{editing ? t('finishEditing') : t('editDiagram')}</button> : null}
         {pending ? <span aria-label={t('unsavedDiagram')}>●</span> : null}
       </PanelRecordHeader>
       {navigationError ? <p role="alert">{t('diagramSaveError')} {navigationError}</p> : null}
-      {inspector?.migration && selected && file && !nodes.length && (options?.sendPrompt || migrationError || migrationSent === selected) ? <div className="dsh-diagram-migration">
-        {options?.sendPrompt ? <Button type="button" variant="outline" size="sm" disabled={switching || options.running} onClick={() => {
-          void navigable(async () => {
-            setMigrationError('')
-            try {
-              await options.sendPrompt!(`${inspector.migration!.prompt}\nBundle: ${options.skill ?? ''}\nProcess: ${selected}\nDiagram: ${file}`)
-              setMigrationSent(selected)
-            } catch (failure) { setMigrationError(String(failure)) }
-          })
-        }}>{inspector.migration.action_label}</Button> : null}
-        {migrationError || migrationSent === selected ? <PanelContentState state={migrationError ? 'error' : 'empty'} appearance="inline"
-          message={migrationError || t('diagramMigrationSent')} /> : null}
-      </div> : null}
       {documentMode && details && inspector && selected ? <div ref={content} className="dsh-diagram-details dsh-diagram-document">
         {looseRecord ? <><p className="dsh-diagram-context-hint">{t('diagramUnassignedHint')}</p>{renderSections(looseRecord.group.sections, looseRecord.id)}</> : <Fragment key={selected}>
           <PanelContentGroup className="dsh-diagram-document-group dsh-diagram-document-overview" title={t('diagramProcessInformation')}>

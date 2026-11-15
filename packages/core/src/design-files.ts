@@ -160,7 +160,7 @@ export class DesignWriteSettlementError extends Error {
 }
 
 function requireSkillName(skill: string): void {
-  if (skill === '' || skill === '.' || skill === '..' || skill === '.git' || skill === '_experiences' || skill.includes('/') || skill.includes('\\') || skill.includes('\0')) {
+  if (skill === '' || skill === '.' || skill === '..' || skill === '.git' || skill.includes('/') || skill.includes('\\') || skill.includes('\0')) {
     throw new Error(`invalid Design File skill ${JSON.stringify(skill)}`)
   }
 }
@@ -183,6 +183,13 @@ export class DesignFilesStore {
     this.rootDir = rootDir
     this.access = access
   }
+
+  /** Project files share the same repository, mutation lane and selection checks. */
+  projectFiles(): DesignFilesStore {
+    return new DesignFilesStore(this.fs, this.git.projectFiles(), this.git.projectRoot, this.access)
+  }
+
+  get projectRoot(): string { return this.git.projectRoot }
 
   /** Absolute canonical JSON path for one Bundle. */
   pathFor(skill: string): string {
@@ -493,7 +500,7 @@ export class DesignFilesStore {
   /** Commit only system-derived experience files; no Bundle state or Journal event. */
   async commitExperienceFiles(id: string, files: Readonly<Record<string, string | Uint8Array>>, signal?: AbortSignal): Promise<string | undefined> {
     if (!/^[A-Za-z0-9_-]{1,80}$/u.test(id)) throw new Error('Invalid experience ID')
-    const prefix = `_experiences/${id}/`
+    const prefix = `scenarios/${id}/`
     const contents = new Map(Object.entries(files))
     if (!contents.has(`${prefix}view.json`)) throw new Error('Experience publication needs its view index')
     for (const [path, value] of contents) {

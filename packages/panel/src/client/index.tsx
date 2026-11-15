@@ -575,10 +575,10 @@ function mountPanelShell(ctx: Context): void {
         readKnowledgeStatus(id: string): Promise<RemoteResult<import('../../../core/src/design-knowledge-status.ts').DesignKnowledgeStatusSnapshot | undefined>>
         retryKnowledge(id: string): Promise<RemoteResult<{ accepted: boolean }>>
         queryKnowledge(id: string, args: import('../../../core/src/design-knowledge-query.ts').KnowledgeReadArguments): Promise<RemoteResult<import('../../../core/src/design-knowledge-query.ts').KnowledgeReadResult>>
-        readArtifact(id: string, relPath: string, stateRevision: string): Promise<RemoteResult<{ found: boolean; content: string }>>
+        readArtifact(id: string, relPath: string, stateRevision: string, scope?: 'design-files' | 'scenarios'): Promise<RemoteResult<{ found: boolean; content: string }>>
         readArtifactHistory(id: string, skill: string): Promise<RemoteResult<readonly import('./types.ts').DesignArtifactHistoryEntry[]>>
         readExecutionLog(id: string, executionRef: string, afterSeq?: number): Promise<RemoteResult<DesignExecutionLogRead>>
-        readBinaryArtifact(id: string, relPath: string, stateRevision: string): Promise<RemoteResult<BinaryArtifactRead>>
+        readBinaryArtifact(id: string, relPath: string, stateRevision: string, scope?: 'design-files' | 'scenarios'): Promise<RemoteResult<BinaryArtifactRead>>
         listSkills(id: string): Promise<RemoteResult<{
           mindset: string | undefined
           skills: { id: string; description: string; manifest: Record<string, unknown> }[]
@@ -626,15 +626,15 @@ function mountPanelShell(ctx: Context): void {
     readKnowledgeStatus: async sessionId => unwrap('designPanel/readKnowledgeStatus', await face.remote.designPanel.readKnowledgeStatus(sessionId)),
     retryKnowledge: async sessionId => unwrap('designPanel/retryKnowledge', await face.remote.designPanel.retryKnowledge(sessionId)),
     queryKnowledge: async (sessionId, args) => unwrap('designPanel/queryKnowledge', await face.remote.designPanel.queryKnowledge(sessionId, args)),
-    readArtifact: async (sessionId, relPath, stateRevision) => unwrap('designPanel/readArtifact', await face.remote.designPanel.readArtifact(sessionId, relPath, stateRevision)),
+    readArtifact: async (sessionId, relPath, stateRevision, scope) => unwrap('designPanel/readArtifact', await face.remote.designPanel.readArtifact(sessionId, relPath, stateRevision, scope)),
     readArtifactHistory: async (sessionId, skill) => unwrap('designPanel/readArtifactHistory', await face.remote.designPanel.readArtifactHistory(sessionId, skill)),
     readExecutionLog: async (sessionId, executionRef, afterSeq) => unwrap(
       'designPanel/readExecutionLog',
       await face.remote.designPanel.readExecutionLog(sessionId, executionRef, afterSeq),
     ),
-    readBinaryArtifact: async (sessionId, relPath, stateRevision) => unwrap(
+    readBinaryArtifact: async (sessionId, relPath, stateRevision, scope) => unwrap(
       'designPanel/readBinaryArtifact',
-      await face.remote.designPanel.readBinaryArtifact(sessionId, relPath, stateRevision),
+      await face.remote.designPanel.readBinaryArtifact(sessionId, relPath, stateRevision, scope),
     ),
     listSkills: async (sessionId) => unwrap('designPanel/listSkills', await face.remote.designPanel.listSkills(sessionId)),
     listProjects: async (sessionId) => unwrap('designPanel/listProjects', await face.remote.designPanel.listProjects(sessionId)),

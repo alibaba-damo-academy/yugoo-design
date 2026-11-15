@@ -505,6 +505,11 @@ export const TYPERT_REMOTE = {
             create: () => z.string(),
           },
         },
+        {
+          name: 'scope', wire: 'scope', source: 'json', acceptsUndefined: true,
+          codec: { mode: 'strict', typeSymbol: 'dsh-design-core#designPanel/readArtifact:scope',
+            create: () => z.enum(['design-files', 'scenarios']).optional() },
+        },
       ],
       cancellation: { parameter: 'signal' },
       result: {
@@ -593,6 +598,11 @@ export const TYPERT_REMOTE = {
             typeSymbol: 'dsh-design-core#designPanel/readBinaryArtifact:stateRevision',
             create: () => z.string(),
           },
+        },
+        {
+          name: 'scope', wire: 'scope', source: 'json', acceptsUndefined: true,
+          codec: { mode: 'strict', typeSymbol: 'dsh-design-core#designPanel/readBinaryArtifact:scope',
+            create: () => z.enum(['design-files', 'scenarios']).optional() },
         },
       ],
       cancellation: { parameter: 'signal' },

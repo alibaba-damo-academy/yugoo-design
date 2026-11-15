@@ -6,14 +6,14 @@ import { createCompanionReviews } from '../src/reviews.mjs'
 import { createManagedReviewScheduler } from '../src/managed-reviews.mjs'
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { readDesignClarityAuthority } from '../../core/lib/index.js'
+import { readDesignClarityAuthority, designProjectRecordsRoot } from '../../core/lib/index.js'
 import { callCompanion } from '../src/connection-file.mjs'
 import { register } from 'tsx/esm/api'
 register()
 const { operateExperience } = await import('../../core/src/experience-service.ts')
 const emptyAlignment = { schemaVersion: 1, questions: [] }
 const identity = r => ({ reviewId: r.reviewId, ownerId: r.execution.ownerId, attemptId: r.execution.attemptId })
-const derived = (project, value) => project.store.commitExperienceFiles('demo', { '_experiences/demo/view.json': JSON.stringify({ value }) })
+const derived = (project, value) => project.store.projectFiles().commitExperienceFiles('demo', { 'scenarios/demo/view.json': JSON.stringify({ value }) })
 async function until(check) {
   for (let i = 0; i < 300; i++) { if (await check()) return; await new Promise(r => setTimeout(r, 10)) }
   throw new Error('Timed out')
@@ -54,7 +54,7 @@ test('in-flight managed clarity retains its actual checkpoint across derived com
     assert.equal((await api.finishManagedReview({ ...identity(r), result })).status, 'completed')
     const clarity = await api.readClarity()
     assert.equal(clarity.needsReassessment, false)
-    const authority = await readDesignClarityAuthority(join(f.options.stateRoot, project.project.metadata.id), project.project.metadata.id)
+    const authority = await readDesignClarityAuthority(designProjectRecordsRoot(project.project.root), project.project.metadata.id)
     assert.equal(authority.assessedCheckpoint, r.revision.checkpoint)
     const next = await api.claimManagedReview({ profile: 'alignment', ownerId: 'test' })
     await project.savePanel({ skill: 'smart_questions', state: { questions: { goal: { prompt: 'Goal', kind: 'text', answer: 'new' } } }, eventId: 'source' })
@@ -72,7 +72,7 @@ test('native currency ignores derived files, preserves empty/binary worktree che
     const r = await api.prepareReview({ profile: 'alignment' })
     await derived(project, 1)
     assert.equal((await api.readReview({ reviewId: r.reviewId })).revisionChanged, false)
-    await writeFile(join(project.store.rootDir, '_experiences/demo/view.json'), 'unpublished draft')
+    await writeFile(join(project.project.root, 'scenarios/demo/view.json'), 'unpublished draft')
     assert.equal((await api.readReview({ reviewId: r.reviewId })).revisionChanged, false)
     const source = join(project.store.rootDir, 'smart_questions/extra.png')
     await writeFile(source, Buffer.alloc(0))
@@ -83,14 +83,16 @@ test('native currency ignores derived files, preserves empty/binary worktree che
     const legacyProject = { ...project, readWorkspace: async () => { const { evidenceWorktreeRevision, ...rest } = await project.readWorkspace(); return rest } }
     const legacy = createCompanionReviews({ project: legacyProject, stateRoot: f.options.stateRoot, threadId })
     const old = await legacy.prepareReview({ profile: 'reflection' })
-    await writeFile(join(project.store.rootDir, '_experiences/demo/view.json'), 'another draft')
-    assert.equal((await legacy.readReview({ reviewId: old.reviewId })).revisionChanged, true, 'Older host full hash is conservative')
+    await writeFile(join(project.project.root, 'scenarios/demo/view.json'), 'another draft')
+    assert.equal((await legacy.readReview({ reviewId: old.reviewId })).revisionChanged, false, 'Scenarios are outside the Design Files scope even for a host without evidence metadata')
+    await writeFile(source, Buffer.from([1, 2, 3]))
+    assert.equal((await legacy.readReview({ reviewId: old.reviewId })).revisionChanged, true, 'Older host fallback still notices actual Design Files changes')
     const missing = createCompanionReviews({ project: { ...project, readWorkspace: async () => ({ checkpoint: r.revision.checkpoint }) }, stateRoot: f.options.stateRoot, threadId })
     await assert.rejects(missing.prepareReview({ profile: 'alignment' }), /worktree revision/)
   } finally { await f.close() }
 })
 
-test('managed notify keeps derived-only work alive and cancels for source and Kit changes', async () => {
+test('managed notify preserves finite execution while source and Kit changes remain detectable', async () => {
   const f = await fixture()
   let scheduler
   const signals = [], errors = []
@@ -106,19 +108,23 @@ test('managed notify keeps derived-only work alive and cancels for source and Ki
     } })
     await scheduler.notify()
     await until(() => signals.length === 1)
+    const before = await reviews.reviewRevision()
     await derived(project, 1)
     await scheduler.notify()
     assert.equal(signals[0].aborted, false)
     assert.equal(signals.length, 1)
     await project.savePanel({ skill: 'smart_questions', state: { questions: { goal: { prompt: 'Goal', kind: 'text', answer: 'new' } } }, eventId: 'source' })
     await scheduler.notify()
-    assert.equal(signals[0].aborted, true)
-    await until(() => signals.length === 2)
+    assert.notEqual((await reviews.reviewRevision()).checkpoint, before.checkpoint)
+    assert.equal(signals[0].aborted, false, 'A newer publication does not abort the finite evaluator')
     wrapped.kit.version = '2.0'
     await scheduler.notify()
-    assert.equal(signals[1].aborted, true)
+    assert.equal((await reviews.reviewRevision()).version, '2.0')
+    assert.equal(signals[0].aborted, false)
+    assert.equal(signals.length, 1, 'The next evaluation waits for the current finite one')
     assert.deepEqual(errors, [])
   } finally { await scheduler?.close(); await f.close() }
+  assert.equal(signals[0].aborted, true, 'Closing still cancels its owned execution')
 })
 
 test('Companion preserves completed review and clarity currency after a derived-only commit', async () => {

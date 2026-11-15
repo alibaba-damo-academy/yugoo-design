@@ -170,7 +170,7 @@ test('native evidence fingerprint includes project metadata beyond the facade sc
   assert.notEqual(revised, before)
   assert.equal(revised, await cli.designEvidenceRevisionAt(metadataOnly))
   assert.deepEqual(await f.git.listPathsAt(metadataOnly), ['state.json'])
-  const derivedOnly = await publish(metadataOnly, 'design_files/_experiences/preview.html', '<p>derived</p>')
+  const derivedOnly = await publish(metadataOnly, 'scenarios/preview.html', '<p>derived</p>')
   assert.equal(await f.git.designEvidenceRevisionAt(derivedOnly), revised)
   assert.equal(await cli.designEvidenceRevisionAt(derivedOnly), revised)
 })

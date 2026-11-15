@@ -8,6 +8,19 @@ function descriptor(method) {
   return found
 }
 
+test('artifact wire carries an explicit root without shifting cancellation or ordinary Bundle reads', () => {
+  for (const name of ['readArtifact', 'readBinaryArtifact']) {
+    const method = descriptor(name)
+    assert.deepEqual(method.parameters.map(parameter => parameter.name), ['agent', 'relPath', 'stateRevision', 'scope'])
+    const scope = method.parameters.at(-1)
+    assert.equal(scope.acceptsUndefined, true)
+    assert.equal(scope.codec.create().parse(undefined), undefined)
+    for (const value of ['design-files', 'scenarios']) assert.equal(scope.codec.create().parse(value), value)
+    assert.throws(() => scope.codec.create().parse('outside'))
+    assert.equal(method.cancellation.parameter, 'signal')
+  }
+})
+
 test('workspace wire retains generated auto Panel and progress instead of stripping them', () => {
   const schema = descriptor('readWorkspace').result.create()
   const state = {

@@ -9,6 +9,9 @@
   "fieldHelp": "Help for {field}",
   "diagramDetails": "Details",
   "diagramDetailsUnavailable": "No step details yet",
+  "diagramSupplementConfirm": "Would you like the Agent to add step details from the existing diagram?",
+  "diagramSupplementUnavailable": "This flow has no step details yet. Ask the Agent in the original conversation to add them from the existing diagram.",
+  "diagramSupplementFailed": "The request could not be sent. Click Details to try again.",
   "diagramProcessNodes": "Process nodes",
   "diagramProcessInformation": "Flow information",
   "dismissGuidance": "Dismiss panel guidance",
@@ -772,7 +775,6 @@
   "diagramShowCanvas": "Diagram",
   "diagramPerformer": "Responsible",
   "diagramNext": "Continues to",
-  "diagramMigrationSent": "Migration requested",
   "artifactActivityUnavailable": "No activity log is available for this item.",
   "diagramStepMissing": "This step is no longer linked to a diagram element. Its notes are preserved; ask the Agent to repair the link.",
   "knowledgeGraphLineStatusHint": "Status is shown in relationship details."

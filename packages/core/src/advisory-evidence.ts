@@ -78,7 +78,7 @@ export async function createAdvisoryEvidence(input: {
     throw new Error('advisory evidence: exact committed Kit is unavailable')
   }
   const paths = (await input.git.listPathsAt(input.commit, input.signal)).filter(p =>
-    p === 'project.json' || (p.startsWith('design_files/') && !p.startsWith('design_files/_experiences/')))
+    p === 'project.json' || (p.startsWith('design_files/')))
   if (paths.length > MAX_FILES) throw new Error('advisory evidence: snapshot exceeds file limit')
   const allowed = new Set(paths.map(path))
   const cache = new Map<string, string>([['project.json', Buffer.from(metadataBytes).toString('utf8')]])

@@ -28,6 +28,8 @@
 │   └── <Bundle 名>/
 │       ├── <规范设计数据>.json
 │       └── <引用的文档、图片、图表或预览产物>
+├── scenarios/
+│   └── <场景名>/<版本>/           场景 HTML 与捕获的展示资源
 └── design_records/
     ├── clarity.json
     ├── journal/*.jsonl
@@ -45,6 +47,7 @@
 | `.git/` | 提交、对象、分支等 Git 历史元数据 | 版本管理维护；它承载历史，而不是另一个被 Git 跟踪的普通文件夹 |
 | `design_kit/` | 项目自己的完整 Kit 与挂载 Bundle 方法、定义和资源；`source.json` 记录布局与来源 | 首次选择 Kit 时复制；之后通过获准的文件编辑、校验与 Git 操作维护，完整备份须包含它 |
 | `design_files/` | 规范设计数据（canonical data）及它引用的实际产物 | 用户通过 Panel、Agent 通过所属 Bundle 修订；校验发布后 Git 跟踪 |
+| `scenarios/` | 跨 Bundle 生成的场景体验、索引和展示资源，独立于 `design_files/` | 场景工具写入并精确提交到同一项目 Git；作为派生视图保存，不作为产品设计事实 |
 | `design_records/clarity.json` | 最近一次成功保存的 U/S/T 评估及其所依据版本 | 评估报告工具写入；Git 跟踪 |
 | `design_records/journal/*.jsonl` | 设计过程中的持久化事实，例如保存、评估和交接记录 | 共享 Journal 服务追加；Git 跟踪，不是宿主完整聊天记录 |
 | `design_records/reviews/*.jsonl` | 已发布的审查建议、用户处理决定及相关记录 | 审查与建议服务维护；Git 跟踪，不等于仍存活的后台任务 |
@@ -143,7 +146,7 @@ GRA 策略文件中的 `mode` 可为 `auto`、`continuous`、`every-publication`
 
 ## 备份、分享与清理
 
-先保存编辑，确认没有正在写入的任务。完整备份应保留项目根目录，包括隐藏的 `.git/`、`design_kit/`、`design_files/` 和 `design_records/`。旧格式项目尚未形成项目内 Kit 文件时，还需保留其实际所用的完整 Kit/Bundle 原件；独立 Provider 和安装依赖另行备份。仅做 Git clone 不会带走尚未提交或未跟踪的文件。
+先保存编辑，确认没有正在写入的任务。完整备份应保留项目根目录，包括隐藏的 `.git/`、`design_kit/`、`design_files/`、`scenarios/` 和 `design_records/`。旧格式项目尚未形成项目内 Kit 文件时，还需保留其实际所用的完整 Kit/Bundle 原件；独立 Provider 和安装依赖另行备份。仅做 Git clone 不会带走尚未提交或未跟踪的文件。
 
 复制项目用于备份不会生成新身份。同一注册表不接受同一个 ID 同时指向两个项目路径；不要手改 ID 来制造分支项目。使用副本继续工作前先明确保留哪一份登记，或使用 `migrate` 创建新项目。
 

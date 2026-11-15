@@ -14,7 +14,7 @@ const { PanelLocaleContext } = await import('../src/panel-i18n.tsx')
 test('adding another scene uses the empty-state discussion and retains the published scene on failure', async () => {
   const root = createRoot(document.getElementById('root'))
   const source = 'intent/intent.json', hash = 'a'.repeat(64)
-  const indexPath = '_experiences/demo/view.json', htmlPath = '_experiences/demo/v1/overview.html'
+  const indexPath = 'scenarios/demo/view.json', htmlPath = 'scenarios/demo/v1/overview.html'
   const view = { id: 'demo', version: 'v1', title: 'Existing scene', purpose: 'Keep the saved view',
     sourceVersions: { [source]: hash }, sections: [
       { id: 'overview', title: 'Overview', htmlFile: htmlPath, sources: [source], assumptions: [] },
