@@ -157,10 +157,29 @@ test('actual copy, full candidate/preview, explicit save and fresh reopen surviv
   assert.deepEqual(await reopened.read(copied.id), savedWithoutReceipt(saved))
   const preview = await f.client.instances.preview({ id: saved.id, expectedRevision: 1, bundle: saved.bundle, locale: 'en-US' })
   assert.equal(preview.preview.revision, 1)
+  assert.equal(preview.panelSource, (await reopened.readFile({ id: saved.id, path: 'panel.yaml' })).content)
+  assert.notEqual(preview.panelSource, preview.preview.panelYaml, 'the remote result retains original text separately from compiled translations')
   assert.equal(Object.hasOwn(f.calls.at(-1).request.payload.args.request, 'locale'), false, 'renderer locale is not a new S2 source parameter')
   for (const change of additions()) assert.equal((await reopened.readFile({ id: saved.id, path: change.path })).content, change.content)
 })
 function savedWithoutReceipt(saved) { const { changeReceipt, ...record } = saved; return record }
+
+test('both preview clients retain the complete production result, including source when a sample is missing', async () => {
+  const source = adapters(), captured = await source.catalog.captureBundle(pin)
+  const panelSource = Buffer.from(captured.files.find(file => file.path === 'panel.yaml').base64, 'base64').toString('utf8')
+  for (const missingSample of [false, true]) {
+    const prepared = await source.composition.preview({ kind: 'bundle', bundle: pin, revision: 3,
+      sourceId: captured.sourceId, runtimeName: captured.runtimeName,
+      bundleFiles: missingSample ? captured.files.filter(file => file.path !== 'reference/preview.json') : captured.files })
+    assert.equal(prepared.panelSource, panelSource)
+    if (missingSample) assert.equal(prepared.diagnostics[0].code, 'preview.sample_missing')
+    else assert.notEqual(prepared.panelSource, prepared.preview.panelYaml)
+    const scoped = clientFor(request => reply(request, prepared))
+    assert.deepEqual(await scoped.client.instances.preview({ id: 'saved-owner', expectedRevision: 3, bundle: pin }), prepared)
+    const installed = createSameOriginStudioRemote(async (_url, init) => reply(JSON.parse(init.body), prepared))
+    assert.deepEqual(await installed.previewInstalled({ bundle: pin, revision: 3 }), { ok: true, value: prepared })
+  }
+})
 
 test('retained synthetic preview files cross strict source-candidate codecs without admitting an arbitrary reader', async t => {
   const stateRoot = await mkdtemp(join(tmpdir(), 'studio-sample-artifact-wire-'))

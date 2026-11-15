@@ -86,7 +86,9 @@ test('installed catalog Open renders the real sample through session-free previe
     bundleFiles: captured.files, sourceId: captured.sourceId, runtimeName: captured.runtimeName,
     sampleSource: JSON.stringify({ items: { sample: { title: 'Installed sample observation', status: 'open' } } }) })
   assert.ok(prepared.preview)
-  const preview = prepared.preview, panelYaml = preview.panelYaml
+  const panelSource = prepared.panelSource
+  assert.equal(panelSource, Buffer.from(captured.files.find(file => file.path === 'panel.yaml').base64, 'base64').toString('utf8'))
+  assert.notEqual(panelSource, prepared.preview.panelYaml)
   const root = createRoot(document.getElementById('root'))
   const remote = createSameOriginStudioRemote(async (url, init) => {
     const request = JSON.parse(init.body), method = url.pathname.split('/').at(-1)
@@ -94,9 +96,9 @@ test('installed catalog Open renders the real sample through session-free previe
     calls.push({ method, args: request.payload.args })
     assert.ok(['workspace', 'readBundleWorkspace', 'readBundleFile', 'previewInstalled'].includes(method), 'only installed reads are used')
     const value = method === 'workspace' ? await client.workspace(request.payload.args.query)
-      : method === 'readBundleWorkspace' ? { workspace: { ...pin, description: 'Installed method.', files: [{ path: 'panel.yaml', bytes: panelYaml.length }], panel: { kind: 'declarative' } }, diagnostics: [] }
-      : method === 'readBundleFile' ? { file: { path: 'panel.yaml', content: panelYaml }, diagnostics: [] }
-      : { preview, diagnostics: [] }
+      : method === 'readBundleWorkspace' ? { workspace: { ...pin, description: 'Installed method.', files: [{ path: 'panel.yaml', bytes: Buffer.byteLength(panelSource) }], panel: { kind: 'declarative' } }, diagnostics: [] }
+      : method === 'readBundleFile' ? { file: { path: 'panel.yaml', content: panelSource }, diagnostics: [] }
+      : prepared
     return new Response(JSON.stringify({ type: 'server-response', rpcId: request.rpcId, result: { ok: true, value } }))
   })
   try {
@@ -104,6 +106,7 @@ test('installed catalog Open renders the real sample through session-free previe
     await click('Bundles'); await until(() => button('Open'))
     await click('Open'); await until(() => button('Panel Preview'))
     await click('Panel Preview'); await until(() => document.querySelector('.dsh-panel-sample-preview'))
+    assert.equal(document.querySelector('textarea[aria-label="Panel YAML"]').value, panelSource)
     assert.match(document.querySelector('.dsh-panel-sample-preview').textContent, /Installed sample observation/)
     assert.equal(document.querySelector('.dsh-panel-sample-preview input:not([readonly]):not([disabled])'), null, 'installed sample is read-only')
     assert.deepEqual(calls.find(call => call.method === 'previewInstalled').args, { request: { bundle: pin, revision: 0 } })

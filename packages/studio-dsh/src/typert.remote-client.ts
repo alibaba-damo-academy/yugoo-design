@@ -3,7 +3,7 @@ import { z } from 'zod'
 import type {
   StudioKitView, StudioBundleView, StudioWorkspaceView,
   StudioBundleMountView, StudioKitWorkspaceView, StudioBundleWorkspaceView,
-  StudioPanelPreview,
+  StudioPanelPreview, StudioPanelPreviewResult,
 } from 'dsh-design-studio'
 
 /** Strict factory contract; the Host requires a parser, not a validator library. */
@@ -109,9 +109,9 @@ export const STUDIO_PANEL_PREVIEW_SCHEMA = z.object({
 export const STUDIO_INSTALLED_PREVIEW_REQUEST = z.object({
   kit: previewPin.optional(), bundle: previewPin, revision: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER), sampleSource: z.string().optional(),
 }).strict()
-const installedPreviewResult = z.object({ preview: STUDIO_PANEL_PREVIEW_SCHEMA.optional(),
+const installedPreviewResult = z.object({ panelSource: z.string().optional(), preview: STUDIO_PANEL_PREVIEW_SCHEMA.optional(),
   diagnostics: z.array(diagnostic.extend({ severity: z.literal('warning').optional() }).strict()),
-}).strict()
+} satisfies Record<keyof StudioPanelPreviewResult, z.ZodType>).strict()
 
 const direct = { kind: 'direct' as const }
 const json = (name: string, schema: z.ZodType, acceptsUndefined = false) => ({

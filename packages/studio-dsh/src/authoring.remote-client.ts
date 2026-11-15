@@ -2,7 +2,7 @@
 import { z } from 'zod'
 import { STUDIO_ARCHIVE_MAX_JSON_BYTES } from 'dsh-design-studio/types'
 import type { InvocationDescriptor } from '@deepseek-ai/dsh-typert-protocol'
-import type { StudioInstanceCandidate, StudioInstanceChangeReceipt, StudioDiagnostic, StudioContentArchive } from 'dsh-design-studio'
+import type { StudioInstanceCandidate, StudioInstanceChangeReceipt, StudioPanelPreviewResult, StudioDiagnostic, StudioContentArchive } from 'dsh-design-studio'
 import { STUDIO_PANEL_PREVIEW_SCHEMA as preview } from './typert.remote-client.ts'
 import type { StudioInstanceDescription, StudioInstanceMount, StudioInstanceBundleChoice } from 'dsh-design-studio/node'
 import type { StudioAuthoringReference, StudioAuthoringObservation, StudioAuthoringScope } from './authoring-agent.types.ts'
@@ -47,7 +47,9 @@ const instance = z.object({
 const diagnostic = z.object({
   code: text, message: text, subject: text.optional(), severity: z.literal('warning').optional(),
 } satisfies Record<keyof StudioDiagnostic, z.ZodType>).strict()
-const previewResult = z.object({ preview: preview.optional(), diagnostics: z.array(diagnostic) }).strict()
+const previewResult = z.object({
+  panelSource: text.optional(), preview: preview.optional(), diagnostics: z.array(diagnostic),
+} satisfies Record<keyof StudioPanelPreviewResult, z.ZodType>).strict()
 const candidate = z.object({
   id: identity, baseRevision: revision, revision, digest: text.regex(/^[a-f0-9]{64}$/u),
   diff: z.array(z.object({ path: text, before: text.optional(), after: text.optional() }).strict()),

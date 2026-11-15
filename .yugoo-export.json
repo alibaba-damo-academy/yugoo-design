@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "52c8bae51e16d5448607f7fcfc88d50c16b653cf",
+  "revision": "d436c16b1a95cec269d4c140101a7512065733da",
   "policySha256": "69deba1307e600a9b0405596e8d73df3e63f488f50c9e9d708ee09591f7ea269",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -1348,7 +1348,7 @@
       "mode": "100644"
     },
     "docs/testing/agentic-e2e.md": {
-      "sha256": "9f83fdd3c1ff638cabcb3d7faaa9660fed8b3e715e63464b2aec37b5df8b4a7b",
+      "sha256": "1222d7c1b2a090acf3ab51e8a94c65ec2372a4c75dd3c3a7d57d84886e7aaa04",
       "mode": "100644"
     },
     "docs/ust-score-explanations.md": {
@@ -10192,7 +10192,7 @@
       "mode": "100644"
     },
     "packages/studio-dsh/src/authoring.remote-client.ts": {
-      "sha256": "110fe88e8b7714bcbb36fdbf23cc56d911d47adf101ac1ddb770e7bf8ee36342",
+      "sha256": "6e67f7b23c653186a89e1ac95eefd6b3e2cc9144e0b8e3ad4cbdb10cad659bff",
       "mode": "100644"
     },
     "packages/studio-dsh/src/client-adapter.tsx": {
@@ -10248,7 +10248,7 @@
       "mode": "100644"
     },
     "packages/studio-dsh/src/typert.remote-client.ts": {
-      "sha256": "f455d263b35c9128f0a5580ece9715450a2352d93fc675e74d588e2e2edf3694",
+      "sha256": "b29907aa9b982ada205372322801f4c62b653bdd8387be7fb1b478b0c321dc33",
       "mode": "100644"
     },
     "packages/studio-dsh/tests/authoring-agent-sdk.test.mjs": {
@@ -10276,7 +10276,7 @@
       "mode": "100644"
     },
     "packages/studio-dsh/tests/authoring-rpc.test.mjs": {
-      "sha256": "d94a22942a3d845f8d172ddf6acb61c5d3f69699d375241e14dce9857645fa11",
+      "sha256": "a5db3970d633b2294e1721e3bd3c7c4dc26cc565fa91a7d662e598135c907749",
       "mode": "100644"
     },
     "packages/studio-dsh/tests/authoring-service-sdk.test.mjs": {
@@ -10316,7 +10316,7 @@
       "mode": "100644"
     },
     "packages/studio-dsh/tests/page-authoring.test.mjs": {
-      "sha256": "ff304b806c3683fc712711116393c467d6c4ad4bf7bab05bb058e4e14c3a9c30",
+      "sha256": "db7af0b8c319d2eb5b03ed2098b2787c3af7ccef5efb6d66ede989309197a3d5",
       "mode": "100644"
     },
     "packages/studio-dsh/tests/page-loader.test.mjs": {
@@ -10800,7 +10800,7 @@
       "mode": "100644"
     },
     "release/product.json": {
-      "sha256": "840e721f810b9b4baa0b385f56103c9d169959aa469ba75967800765cb40baf3",
+      "sha256": "554886f055aa4724def467552d258723f6294610cca5e6999985d99f9a06066a",
       "mode": "100644"
     },
     "release/public-source-baseline.json": {
