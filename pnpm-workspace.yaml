@@ -1,6 +1,7 @@
 packages:
   - packages/*
 overrides:
+  dsh-design-core@0.0.0>@deepseek-ai/dsh-tool-executor-native: "-"
   hast-util-raw@^9.0.0: 9.1.0
   mdast-util-gfm-task-list-item@^2.0.0: 2.0.0
   vfile-location@^5.0.0: 5.0.3

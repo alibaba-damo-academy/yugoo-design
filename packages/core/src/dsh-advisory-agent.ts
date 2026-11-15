@@ -11,12 +11,12 @@ import type { AdvisorySubagentPort } from './dsh-advisory-runner.ts'
 import { designUnseededChildSessionMeta } from './dsh-child-session-meta.ts'
 import { designSessionEvents } from './dsh-session-events.ts'
 import { createYugooDesignMessage } from './dsh-message-source.ts'
-import { dshSubagentBackend } from './dsh-subagent-backend.ts'
+import { dshSubagentBackend, selectDshChildNativeTools } from './dsh-subagent-backend.ts'
 import { renderDesignReviewStartingPoints } from './design-review-depth.ts'
 
 /** Select only the two public Host capability shapes covered by SDK tests. */
-export function dshAdvisoryBackend(runtime: unknown): 'one-shot-runtime' | 'agent-factory' {
-  return dshSubagentBackend(runtime, 'design advisory')
+export function dshAdvisoryBackend(runtime: unknown, agents?: unknown): 'one-shot-runtime' | 'agent-factory' {
+  return dshSubagentBackend(runtime, 'design advisory', agents)
 }
 
 /** Completion requires a successful structured tool record and a normal native end. */
@@ -69,7 +69,7 @@ export function createDshAdvisoryAgent(evidenceFor: (parent: Agent, commit: stri
     if (!request.outputSchema) throw new Error('design advisory: structured output schema required')
     const runtime = request.parent.ctx.get('subagents')
     if (!runtime) throw new Error('design advisory: native Subagent Runtime is unavailable')
-    const backend = dshAdvisoryBackend(runtime)
+    const backend = dshAdvisoryBackend(runtime, request.parent.ctx.agents)
     const prompt = [...request.prompt]
     // Derived only from this child's native delivery / successful tool result;
     // it is not another persisted review state or a model-reported assertion.
@@ -143,7 +143,7 @@ async function startReadOnlyReview(
     try {
       handle = await request.parent.ctx.agents.create({
         sessionId, parentAgent: request.parent, meta, agentOptions, signal: request.signal,
-        setup(ctx, agent) {
+        async setup(ctx, agent) {
           if (setupClaimed || agent.id !== sessionId || agent.session.header.parentSession !== request.parent.id) {
             throw new Error('design advisory: no active immutable review setup grant')
           }
@@ -154,7 +154,7 @@ async function startReadOnlyReview(
           appendDelegatedPolicyOverrides(agent.session, { sandboxMode: 'read-only', approvalPolicy: 'never', permissionPreset: undefined })
           applyChildComposition(ctx, request.parent, { toolFilter: { allow: [] } })
           // This child exposes data capabilities, never a code execution transport.
-          ctx.tools.presentAs('native')
+          await selectDshChildNativeTools(ctx)
           const register = (definition: ToolDefinition) => {
             Object.freeze(definition)
             definitions.set(definition.name, definition); ctx.tools.register(definition)

@@ -11,6 +11,7 @@ assert.ok(Boolean(process.env.DSH_TEST_WEB_ANCHOR) !== Boolean(process.env.DSH_T
 const runtime = loadDshTestRuntime({ webAnchor: process.env.DSH_TEST_WEB_ANCHOR, asar: process.env.DSH_TEST_ASAR })
 const { Context } = await import('@deepseek-ai/cordis')
 const { createDshAdvisoryAgent, dshAdvisoryBackend } = await import('../src/dsh-advisory-agent.ts')
+const { registerDesignFileWorkerDispatcher } = await import('../src/dsh-file-worker-agent.ts')
 const { analyzeDshDesignAdvisory } = await import('../src/dsh-advisory-runner.ts')
 const { OFFICIAL_GROUNDING_PROFILE } = await import('../src/official-advisory-profiles.ts')
 const { evaluatePublishedDesignClarity } = await import('../src/dsh-clarity-evaluator.ts')
@@ -23,7 +24,7 @@ const [llm, sessions, prompt, tools, agents, loop, projections, subagents, query
   ['dsh-llm', 'dsh-session', 'dsh-system-prompt', 'dsh-tools', 'dsh-agent', 'dsh-agent-loop', 'dsh-session-projection', 'dsh-subagent', 'dsh-session-query']
     .map(name => import('@deepseek-ai/' + name)))
 test.after(() => runtime.close())
-const factoryBackend = dshAdvisoryBackend(subagents.default.prototype) === 'agent-factory'
+const factoryBackend = dshAdvisoryBackend(subagents.default.prototype, agents.default.prototype) === 'agent-factory'
 const schema = { type: 'object', additionalProperties: false, required: ['value'], properties: { value: { type: 'string' } } }
 const call = (name, args) => [
   { type: 'block-start', index: 0, blockType: 'tool-call' },
@@ -37,6 +38,9 @@ async function fixture(t, options = {}) {
   const ctx = new Context(); t.after(() => ctx.fiber.dispose())
   for (const [plugin, config] of [[llm.default], [sessions.default], [prompt.default, { persona: 'review isolation test' }],
     [tools.default], [projections.default], [query.default], [agents.default], [loop.default, { agents: [] }]]) await ctx.plugin(plugin, config)
+  if (typeof ctx.tools.setExecutor === 'function') {
+    await ctx.plugin(await import('@deepseek-ai/dsh-tool-executor-native'))
+  }
   // RC3 requires the public working-directory service. Its real filesystem
   // implementation is rooted in this test's owned directory, not a Host profile.
   if (subagents.default.inject?.includes('workingDirectory')) {
@@ -66,8 +70,10 @@ async function fixture(t, options = {}) {
   ctx.on('agent/created', async ({ agent }) => {
     if (agent === parent.agent) return
     children.push(agent)
-    assert.equal(agent.session.snapshotEvents().filter(e => e.type === 'sandbox/mode').at(-1).data.mode, 'read-only')
-    assert.equal(agent.session.snapshotEvents().filter(e => e.type === 'approval/policy').at(-1).data.policy, 'never')
+    if (!options.worker) {
+      assert.equal(agent.session.snapshotEvents().filter(e => e.type === 'sandbox/mode').at(-1).data.mode, 'read-only')
+      assert.equal(agent.session.snapshotEvents().filter(e => e.type === 'approval/policy').at(-1).data.policy, 'never')
+    }
     await options.created?.(agent)
   })
   const evidence = options.evidence ?? { manifest: { checkpoint: 'a'.repeat(40), paths: ['project.json'] }, list: () => ['project.json'],
@@ -82,6 +88,117 @@ test('unknown runtime shapes reject rather than choosing an exception fallback',
   for (const shape of [undefined, {}, { start: 'not callable' }, { startActivation() {} }]) {
     assert.throws(() => dshAdvisoryBackend(shape), /unavailable|unsupported/)
   }
+})
+
+test('installed activation runtime mounts the file Worker dispatcher without legacy registration', { skip: !factoryBackend }, async t => {
+  const f = await fixture(t, { step: () => { throw Error('mounting must not run a model') } })
+  const service = f.ctx.subagents
+  const register = service.registerProvider
+  service.registerProvider = () => { throw Error('factory backend must not register a legacy provider') }
+  t.after(() => { service.registerProvider = register })
+  const dispatcher = registerDesignFileWorkerDispatcher(f.ctx)
+  try {
+    await assert.rejects(dispatcher.start({ parent: f.parent.agent,
+      signal: AbortSignal.abort(Error('cancelled before child creation')),
+      label: 'bounded file Worker', prompt: [], maxDepth: 3,
+      inheritedToolNames: [], installWorkerTools() {} }), /cancelled before creation/)
+    assert.equal(f.children.length, 0)
+    assert.equal(f.seen.length, 0)
+  } finally { dispatcher.dispose(); dispatcher.dispose() }
+})
+
+test('explicit executor Host runs readonly children without inheriting the parent executor', {
+  skip: typeof tools.default.prototype.setExecutor !== 'function',
+}, async t => {
+  const f = await fixture(t, { step: () => call('structured_output', { value: 'native-child' }) })
+  const parentExecutor = {
+    describe() { return { schemas: [] } },
+    execute() { throw Error('child must not execute through parent transport') },
+  }
+  f.parent.agent.ctx.tools.setExecutor(parentExecutor)
+  const run = await f.port.start('spawn', f.request)
+  try {
+    assert.deepEqual(await run.result, { stopReason: 'completed', structured: { value: 'native-child' }, knowledgeUsed: false })
+    const child = f.children[0]
+    assert.equal(child.session.header.parentSession, f.parent.agent.id)
+    assert.notEqual(child.ctx.tools.selectExecutor(child), parentExecutor)
+    assert.equal(f.parent.agent.ctx.tools.selectExecutor(f.parent.agent), parentExecutor)
+    assert.ok(f.seen.flat().includes('structured_output'))
+    assert.ok(!f.seen.flat().includes('run_code'))
+    assert.equal(f.parent.agent.session.snapshotEvents().filter(e => e.type === 'turn/start').length, 0)
+  } finally { await run.dispose() }
+  assert.equal(f.ctx.agents.get(run.id), undefined)
+})
+
+test('explicit executor Host runs a Worker with only its assigned local tools', {
+  skip: typeof tools.default.prototype.setExecutor !== 'function',
+}, async t => {
+  let writes = 0
+  const f = await fixture(t, { worker: true, step: n => n === 0 ? call('assigned_write', { text: 'bounded result' }) : stop() })
+  const dispatcher = registerDesignFileWorkerDispatcher(f.ctx)
+  const run = await dispatcher.start({ parent: f.parent.agent, signal: f.request.signal,
+    label: 'assigned Worker', prompt: [{ type: 'text', text: 'Produce the assigned result.' }], maxDepth: 3, inheritedToolNames: [],
+    installWorkerTools(ctx) {
+      ctx.tools.register(tools.defineTool({ name: 'assigned_write', description: 'Test assignment output',
+        parameters: { text: { type: 'string', required: true } },
+        output: { schema: { type: 'object', properties: { saved: { type: 'boolean', required: true } }, additionalProperties: false },
+          render: value => [{ type: 'text', text: JSON.stringify(value) }] },
+        async execute(args) { assert.equal(args.text, 'bounded result'); writes++; return { saved: true } },
+      }))
+    },
+  })
+  try {
+    assert.equal((await run.result).stopReason, 'completed')
+    assert.equal(writes, 1)
+    assert.deepEqual(f.seen, [['assigned_write'], ['assigned_write']])
+    assert.equal(f.children[0].session.header.parentSession, f.parent.agent.id)
+  } finally { await run.dispose(); dispatcher.dispose() }
+  assert.equal(f.ctx.agents.get(run.id), undefined)
+})
+
+test('explicit executor Host cancels an active readonly child without a captured result', {
+  skip: typeof tools.default.prototype.setExecutor !== 'function',
+}, async t => {
+  const abort = new AbortController()
+  const f = await fixture(t, { step: () => { abort.abort(); return stop() } })
+  const run = await f.port.start('spawn', { ...f.request, signal: abort.signal })
+  try { await assert.rejects(run.result) } finally { await run.dispose() }
+  assert.equal(f.children.length, 1)
+  assert.equal(f.ctx.agents.get(run.id), undefined)
+  assert.equal(agents.foldConsumedWork(f.children[0].session.snapshotEvents()).end.data.reason.kind, 'aborted')
+  assert.equal(f.parent.agent.session.snapshotEvents().filter(e => e.type === 'turn/start').length, 0)
+})
+
+test('installed Cordis mounts execution dispatcher inside its declared service scope', { skip: !factoryBackend }, async t => {
+  const f = await fixture(t, { step: () => { throw Error('mounting must not run a model') } })
+  const execution = await import('../src/dsh-design-execution-plugin.ts')
+  f.ctx.provide('design', {
+    registerClarityRuntime: () => () => {},
+    registerWorkspaceChangeListener: () => () => {},
+  })
+  f.ctx.provide('subprocess', {})
+  const factory = f.ctx.agents
+  const get = factory.get
+  const previous = Object.getOwnPropertyDescriptor(factory, 'get')
+  let factoryReads = 0
+  Object.defineProperty(factory, 'get', { configurable: true, get() { factoryReads++; return get } })
+  t.after(() => {
+    if (previous) Object.defineProperty(factory, 'get', previous)
+    else delete factory.get
+  })
+  const fibers = []
+  f.ctx.on('internal/plugin', fiber => fibers.push(fiber))
+  const mounted = f.ctx.plugin(execution, {
+    delegation: { provider: 'dsh-design-file-worker', maxDepth: 3 },
+    maxArtifactInputFiles: 10, maxArtifactInputPathBytes: 1024,
+    maxArtifactInputFileBytes: 1024, maxArtifactInputTotalBytes: 10240,
+  })
+  await mounted
+  await new Promise(resolve => setImmediate(resolve))
+  assert.ok(factoryReads > 0, 'the actual injected dispatcher must reach its native Agent factory')
+  assert.equal(fibers.filter(fiber => fiber.state === 3).length, 0, 'no silently failed nested injection')
+  assert.equal(f.seen.length, 0)
+  await mounted.dispose()
 })
 
 for (const systemPromptUpdate of [undefined, 'in-history']) test(`native runtime context changes assessment identity without repeating stable system instructions (${systemPromptUpdate ?? 'replace'})`, async t => {
@@ -258,7 +375,8 @@ test('cancelled evidence load cannot publish a late native child', async t => {
   release()
   await assert.rejects(run, /cancelled while loading evidence/)
   assert.equal(f.children.length, 0)
-  assert.equal(f.ctx.subagents.list().length, 0)
+  if (typeof f.ctx.subagents.list === 'function') assert.equal(f.ctx.subagents.list().length, 0)
+  else assert.deepEqual(await f.ctx.subagents.listDescendants(f.parent.agent.id, f.request.signal), [])
 })
 
 test('native route snapshot precedes a parent model switch during evidence loading', { skip: !factoryBackend }, async t => {

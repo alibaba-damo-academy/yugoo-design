@@ -70,6 +70,12 @@ children have real native Sessions and tool logs; they do not claim the
 Subagent Runtime's manager catalog, events or capacity pool. A failed start is
 reported rather than retried through a different backend.
 
+Bounded Workers and read-only reviewers select native tool execution in their
+own child scope. Older Hosts use `tools.presentAs`; Hosts with the explicit
+executor API use their installed `@deepseek-ai/dsh-tool-executor-native` provider.
+That optional Host peer is loaded only on the explicit-executor path. Neither
+path expands the child's tool allowlist or changes the parent's executor.
+
 Each configured Design Project owns one complete current definition tree at
 `design_kit/`, separate from its design data in `design_files/`. Methods,
 schemas, Panels, resources and scripts load from that project's Kit and mounted

@@ -4,6 +4,10 @@
 
 按版本概述语构设计系统（Yugoo Design）代码仓库中的主要特性、明显体验变化，以及影响安装和升级的重要改进。细小调整和内部重构不逐项列出；完整改动见 [Git 提交历史](https://github.com/alibaba-damo-academy/yugoo-design/commits/main/)。
 
+## 0.3.13
+
+修复 DSH Desktop 0.2.2-rc.3 中设计子任务无法启动或调用工具的问题，恢复文件 Worker 和后台只读审阅的原生执行；继续使用宿主提供的工具能力，保留原有面板与保存接续方式。
+
 ## [0.3.9](https://github.com/alibaba-damo-academy/yugoo-design/tree/4712577bca4d62e2dfc5e188680d812bb68b6381)
 
 - 安装器移除重复的固定短超时，减少慢安装被提前中断的情况，并保留真实失败与主动取消的处理。

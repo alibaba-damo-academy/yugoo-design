@@ -7,7 +7,7 @@ import { createYugooDesignMessage } from './dsh-message-source.ts'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { designSessionEvents } from './dsh-session-events.ts'
 import { designUnseededChildSessionMeta } from './dsh-child-session-meta.ts'
-import { dshSubagentBackend } from './dsh-subagent-backend.ts'
+import { dshSubagentBackend, selectDshChildNativeTools } from './dsh-subagent-backend.ts'
 import {
   appendDelegatedPolicyOverrides, applyChildComposition, captureDelegatedPolicyOverrides,
   finalAssistantOutput, resolveChildAgentOptions, resolveChildDepth,
@@ -54,7 +54,7 @@ export function registerDesignFileWorkerDispatcher(ctx: Context): {
   dispose(): void
 } {
   let disposed = false
-  const backend = dshSubagentBackend(ctx.subagents, 'design file worker')
+  const backend = dshSubagentBackend(ctx.subagents, 'design file worker', ctx.agents)
   if (backend === 'agent-factory') {
     // RC3 cannot adopt an already-created native Agent as an external
     // activation. Like the Producer and readonly reviewer, create the scoped
@@ -167,7 +167,7 @@ export async function startDesignFileWorker(request: DesignFileWorkerRequest): P
       // Do not inherit an open-ended preset tool surface. Explicit local tools
       // are registered after composition, in the child's own unpublished scope.
       applyChildComposition(ctx, request.parent, { toolFilter: { allow: [] } })
-      ctx.tools.presentAs('native')
+      await selectDshChildNativeTools(ctx)
       for (const definition of tools) ctx.tools.register(definition)
       await request.installWorkerTools(ctx, worker)
       let recorded = false

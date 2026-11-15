@@ -68,6 +68,15 @@ test('only the canonical scoped aggregate receives the selected target scope onc
   assert.throws(() => createNpmCandidates(collision, registryOptions), /Dependency name collision/)
 })
 
+test('Core archives retain the optional modern Host executor independently of source-build omission', async () => {
+  const report = createNpmCandidates(await registrySources(), registryOptions)
+  const core = report.candidates['dsh-design-core'], peer = '@deepseek-ai/dsh-tool-executor-native'
+  assert.equal(core.peerDependencies[peer], '0.2.2-rc.3')
+  assert.equal(core.peerDependenciesMeta[peer].optional, true)
+  assert.equal(core.dependencies?.[peer], undefined)
+  assert.equal(core.devDependencies?.[peer], undefined)
+})
+
 test('registry Ladybug stays an exact external dependency without a vendor publication candidate', async () => {
   const original = await registrySources(), before = structuredClone(original)
   const report = createNpmCandidates(original, registryOptions)

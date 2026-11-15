@@ -153,6 +153,10 @@ Public exports currently omit the internal lockfile: on that input,
 CI first resolves a public-registry lock, then performs a strict frozen install.
 The resolved lock is a run input, not a committed reproducibility guarantee.
 Dependency caching is explicitly disabled in both setup Actions.
+The legacy source-build SDK omits Core's optional modern Host executor through
+an exact workspace override. Its peer declaration remains in exported source
+and npm manifests; installed Hosts supply it. Strict peer checks remain enabled,
+and the newer Host execution path is verified in its actual installed environment.
 Build permissions come only from `pnpm-workspace.yaml`; preserve exact approved
 versions and explicit denials. The existing workspace overrides also pin reviewed
 direct runtime inputs and observed transitive drift when public CI resolves its

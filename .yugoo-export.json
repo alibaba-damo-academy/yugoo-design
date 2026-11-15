@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "f5510f9bd21f84ace0c63dcf57700f9f8e1b7910",
+  "revision": "9c0485a1309ee4134478ab60c2f94581969fea9f",
   "policySha256": "69deba1307e600a9b0405596e8d73df3e63f488f50c9e9d708ee09591f7ea269",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -104,15 +104,15 @@
       "mode": "100644"
     },
     "CHANGELOG.en.md": {
-      "sha256": "2056e229b105a695504d0a98079f9d5d11b17d9e07732958892c44a2000a0b60",
+      "sha256": "10f11c64ca5d1f97a78d05f9ebffa18ee014fcb755a663e84da249ab34141e0e",
       "mode": "100644"
     },
     "CHANGELOG.md": {
-      "sha256": "9cad081ab03f23e7f7939e48d62b86258d8992ff9d5d38fea8994661bf3eae14",
+      "sha256": "480bc886e7bdc95b9822d7cb6b3bc46254a6e6048788668c8e544b6ac58a2c99",
       "mode": "100644"
     },
     "CONTRIBUTING.md": {
-      "sha256": "11bdfca9ca112a83a498734714269b8b0e169eb89fbae464f02988bd3f0be15e",
+      "sha256": "51bfce5f94539e6833cd469ede390718c27dd10345035a74edc82177a64e12a9",
       "mode": "100644"
     },
     "LICENSE": {
@@ -1348,7 +1348,7 @@
       "mode": "100644"
     },
     "docs/testing/agentic-e2e.md": {
-      "sha256": "c398cdaabdd69a84d1c6f08b5403b7b026b52efe8d04da1d5bc9db8072df1bf9",
+      "sha256": "035bdcebe82c1134b1ea42219be675ec5745daa143ecc4866ee97b181ed3bcb4",
       "mode": "100644"
     },
     "docs/ust-score-explanations.md": {
@@ -3936,7 +3936,7 @@
       "mode": "100644"
     },
     "packages/core/src/dsh-advisory-agent.ts": {
-      "sha256": "7bcb2d392a84d1c4e71a4d0c0211c1a2f7d0e0fdf655e6491df257ad9b385d99",
+      "sha256": "ae60f1c81590cf4a8b1d97cf7d441c78b999761b0c9715eaf5dc418cbbe40a9a",
       "mode": "100644"
     },
     "packages/core/src/dsh-advisory-plugin.ts": {
@@ -3984,7 +3984,7 @@
       "mode": "100644"
     },
     "packages/core/src/dsh-design-execution-plugin.ts": {
-      "sha256": "16a57d9a057b89604fadc365d8d0ade3962c20b88aa69dc526bbad9c5149da16",
+      "sha256": "34b02cc90257def716e8d5f896edfbb9394d596dc7c4f856af395067c612b407",
       "mode": "100644"
     },
     "packages/core/src/dsh-design-resume.ts": {
@@ -4000,7 +4000,7 @@
       "mode": "100644"
     },
     "packages/core/src/dsh-file-worker-agent.ts": {
-      "sha256": "e9e72b056cdd5332af89ac70ed8b0036be64edd47f0ff01ae04402f527deb180",
+      "sha256": "1488e105cf1d894ce441bdd038f126ac5d12e26c8027da6381f117d6c5686105",
       "mode": "100644"
     },
     "packages/core/src/dsh-git-protocol.ts": {
@@ -4072,7 +4072,7 @@
       "mode": "100644"
     },
     "packages/core/src/dsh-subagent-backend.ts": {
-      "sha256": "2130e7d555b6bf65a8fd9ae50339b15aefa8e8e64dc0a24dcc2fa40b7a859473",
+      "sha256": "b1eb931a4566e39577ec4a82730d0f4f40f4c36f6c4db7ca69d46c03ade534be",
       "mode": "100644"
     },
     "packages/core/src/dsh-timing-diagnostics.ts": {
@@ -4540,7 +4540,7 @@
       "mode": "100644"
     },
     "packages/core/test/dsh-advisory-agent-sdk.test.mjs": {
-      "sha256": "31178262417917a0f39f2e4ea4176e7d012b1cab2c3cb76aa13bd765b565f024",
+      "sha256": "c00233392d46db913c45384da1202a84054abe356c476ed07e96113476246b7a",
       "mode": "100644"
     },
     "packages/core/test/dsh-asar-test-loader.mjs": {
@@ -4572,7 +4572,7 @@
       "mode": "100644"
     },
     "packages/core/test/dsh-dependency-baseline.test.mjs": {
-      "sha256": "5b7cd497a8615675161b49ecc196f26f7178a9880bff2c14f2c33d1663fb8baf",
+      "sha256": "97c992d30f111609578a50c1403e5cbe12a8d113b686f43f3d1042785351701c",
       "mode": "100644"
     },
     "packages/core/test/dsh-dependency-helpers.mjs": {
@@ -4668,7 +4668,7 @@
       "mode": "100644"
     },
     "packages/core/test/file-worker-root-wiring.test.mjs": {
-      "sha256": "96d5930694cee49d39929fc498f3b0adf39a4a9c52ee48f63c6607b34140e293",
+      "sha256": "f4581377821c927d295217cc25f2139252203aa6ff54f12102decdf538e24098",
       "mode": "100644"
     },
     "packages/core/test/fixtures/component-package/fixture.mjs": {
@@ -5212,7 +5212,7 @@
       "mode": "100644"
     },
     "packages/dsh/README.md": {
-      "sha256": "4bd218377c10fae909cf75093cca65083a8578852b80b4196f9d33564fd0ea03",
+      "sha256": "2884525396986fc154f286e09dc3185fd76c013c2aea7e5cbb954f22b689aa4f",
       "mode": "100644"
     },
     "packages/dsh/THIRD_PARTY_NOTICES.md": {
@@ -10800,11 +10800,11 @@
       "mode": "100644"
     },
     "release/product.json": {
-      "sha256": "fb0de9fd44aef531dd7b7a73afaa3ea01cfd18677cb118d97634ff95996fc96c",
+      "sha256": "3d44bc0bd103cba4b335c04912aafaac0646e26221112f5dc1efa5a51eb8aaa4",
       "mode": "100644"
     },
     "release/public-source-baseline.json": {
-      "sha256": "856ec4b219b6056c0fe7c7c5baf5c7fa3ae740048bd74f0f9e769a6b3302b42f",
+      "sha256": "6b39c2abcdae7b4d851ed950bc0ae4bf4a972d56a88589201d3eb685b72b1b3c",
       "mode": "100644"
     },
     "release/public-source-policy.json": {
@@ -11196,11 +11196,11 @@
       "mode": "100644"
     },
     "scripts/public-source-config.mjs": {
-      "sha256": "52c3c0087d2222028951b20987495a65b94c8f796404e99c59b62726261ed721",
+      "sha256": "c03030f91ccd86f4d830fd9e6a6d244d9875997ca3241208ab8202c39858040c",
       "mode": "100644"
     },
     "scripts/public-source-config.test.mjs": {
-      "sha256": "87c60c8d2784a2aede44d8da485d3bd4fb571281e9a842d1982ceb47c71f0af0",
+      "sha256": "59c1291596ceea562c427d48c912a059cc436e4722f04a65d203cdd9042b0b3c",
       "mode": "100644"
     },
     "scripts/public-sync-apply.mjs": {
@@ -11360,7 +11360,7 @@
       "mode": "100644"
     },
     "scripts/release-npm-candidates.test.mjs": {
-      "sha256": "b17a2c4a5dbcd9c209a1f7cf88d7c1c6bf7f067ce4094df399af50f253987e97",
+      "sha256": "8b2d27ae627f9b4999f93d17a3715216346e9a44663d26c834e6c416510477ab",
       "mode": "100644"
     },
     "scripts/release-own-license.mjs": {
@@ -13604,7 +13604,7 @@
       "mode": "100644"
     },
     "pnpm-workspace.yaml": {
-      "sha256": "814d339b2dee553aac717225bbfe9e34b0c0223a51e389363f5eb4f90fa16832",
+      "sha256": "5d0bfb7c6525e9081fc528110192a4a550516d9eb98c4212bd1c5de0275a5642",
       "mode": "100644"
     },
     "packages/companion-dev/package.json": {
@@ -13612,7 +13612,7 @@
       "mode": "100644"
     },
     "packages/core/package.json": {
-      "sha256": "5e698682229acaa2561a36669ff0f02b50106588bb351c21a1c751cdaca1d569",
+      "sha256": "05f24891c01ac8954ed76ea9e760e352585c2342b2641a8eda38b884e8614477",
       "mode": "100644"
     },
     "packages/dsh/package.json": {
@@ -13667,8 +13667,8 @@
     "inputs": [
       {
         "path": "release/public-source-baseline.json",
-        "sourceOid": "7b66a96ebd465b9972a218300bfbcf89e92bc1c3",
-        "sourceSHA256": "856ec4b219b6056c0fe7c7c5baf5c7fa3ae740048bd74f0f9e769a6b3302b42f"
+        "sourceOid": "857d4fafd737b64c22169b4110b5e5cee2556049",
+        "sourceSHA256": "6b39c2abcdae7b4d851ed950bc0ae4bf4a972d56a88589201d3eb685b72b1b3c"
       },
       {
         "path": "release/public-source-test-selection.json",
@@ -13685,9 +13685,9 @@
       },
       {
         "path": "pnpm-workspace.yaml",
-        "sourceOid": "f29364a244ee0837a5fdcf1c133fa22b20fe4ae6",
-        "sourceSHA256": "54b878cd9b9e5de77168eaf60bc461462ac443f409fcd865aa5e58a0d5e10537",
-        "outputSHA256": "814d339b2dee553aac717225bbfe9e34b0c0223a51e389363f5eb4f90fa16832"
+        "sourceOid": "81ecd9343624f2574c7a149f2f0d207de4541e09",
+        "sourceSHA256": "74651ae32b1d2b3a94ef4bd54d39733f52f52a411af142534f8aa27afd754ef4",
+        "outputSHA256": "5d0bfb7c6525e9081fc528110192a4a550516d9eb98c4212bd1c5de0275a5642"
       },
       {
         "path": "packages/companion-dev/package.json",
@@ -13697,9 +13697,9 @@
       },
       {
         "path": "packages/core/package.json",
-        "sourceOid": "7697a8865acd851cd9af0affe66ff5acdb9932dc",
-        "sourceSHA256": "72c89b2c28c52cb298a01fd89a9ee8c558b118c6a62d6c503730e363e951b8e9",
-        "outputSHA256": "5e698682229acaa2561a36669ff0f02b50106588bb351c21a1c751cdaca1d569"
+        "sourceOid": "beb368a911326468353543ab7c1e948fc371701e",
+        "sourceSHA256": "09bd299f78975c21c699fa53e93a45b3a867166657edabd50a2e8daee53bcc51",
+        "outputSHA256": "05f24891c01ac8954ed76ea9e760e352585c2342b2641a8eda38b884e8614477"
       },
       {
         "path": "packages/dsh/package.json",

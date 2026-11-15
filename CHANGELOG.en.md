@@ -4,6 +4,10 @@
 
 This log summarizes major features, noticeable experience changes, and installation or upgrade improvements in the Yugoo Design repository, organized by version. It omits small adjustments and internal refactoring. See the [Git commit history](https://github.com/alibaba-damo-academy/yugoo-design/commits/main/) for the full changes.
 
+## 0.3.13
+
+Fix design subtasks failing to start or invoke tools in DSH Desktop 0.2.2-rc.3, restoring native execution for file Workers and background read-only reviews. Use the host's tool capabilities while preserving the existing Panel and save-and-continue interaction.
+
 ## [0.3.9](https://github.com/alibaba-damo-academy/yugoo-design/tree/4712577bca4d62e2dfc5e188680d812bb68b6381)
 
 - Remove redundant fixed short timeouts in the installer, reducing premature interruptions during slow installations while retaining actual failure handling and explicit cancellation.

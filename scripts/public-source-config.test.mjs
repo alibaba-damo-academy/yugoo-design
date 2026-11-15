@@ -45,6 +45,29 @@ test('reviewed development-only test exclusions are exact, immutable and recorde
   ]) { const bad = structuredClone(before); mutate(bad); assert.throws(() => proposePublicSourceConfig(bad)) }
 })
 
+test('source builds can omit an optional Host-only peer without erasing its runtime contract', () => {
+  const input = fixture(), peer = '@deepseek-ai/dsh-tool-executor-native'
+  const core = input.packages['packages/core/package.json']
+  core.version = '0.0.0'
+  core.peerDependencies[peer] = '0.2.2-rc.3'
+  core.peerDependenciesMeta = { [peer]: { optional: true } }
+  input.officialVersions[peer] = '0.2.2-rc.3'
+  input.workspace.overrides = input.reviewedWorkspaceOverrides = { [`core@0.0.0>${peer}`]: '-' }
+  const before = structuredClone(input), output = proposePublicSourceConfig(input)
+  assert.deepEqual(input, before)
+  assert.equal(output.packages['packages/core/package.json'].peerDependencies[peer], '0.2.2-rc.3')
+  assert.equal(output.packages['packages/core/package.json'].peerDependenciesMeta[peer].optional, true)
+  assert.deepEqual(output.workspace.overrides, before.workspace.overrides)
+  for (const mutate of [
+    x => { x.packages['packages/core/package.json'].peerDependenciesMeta[peer].optional = false },
+    x => { x.packages['packages/core/package.json'].version = '0.0.1' },
+    x => { delete x.packages['packages/core/package.json'].peerDependencies[peer] },
+    x => { x.packages['packages/core/package.json'].devDependencies[peer] = '0.2.2-rc.3' },
+    x => { x.packages['packages/core/package.json'].dependencies = { [peer]: '0.2.2-rc.3' } },
+    x => { x.packages['packages/core/package.json'].optionalDependencies = { [peer]: '0.2.2-rc.3' } },
+  ]) { const bad = structuredClone(before); mutate(bad); assert.throws(() => proposePublicSourceConfig(bad), /optional Host-only peer/) }
+})
+
 test('proposal keeps source immutable, internal names/edges and workspace safeguards', () => {
   const input = fixture(), before = structuredClone(input), result = proposePublicSourceConfig(input)
   assert.deepEqual(input, before)
@@ -323,7 +346,7 @@ test('current source inventory proposes official edges, not dogfood or host sour
   const baseline = JSON.parse(readFileSync(new URL('release/public-source-baseline.json', repo), 'utf8'))
   const { officialVersions, ladybugVersion, rootScripts, reviewedWorkspaceOverrides } = baseline
   const result = proposePublicSourceConfig({ root, workspace, packages, officialVersions, ladybugVersion, rootScripts, reviewedWorkspaceOverrides })
-  assert.equal(Object.keys(officialVersions).length, 30)
+  assert.equal(Object.keys(officialVersions).length, 31)
   const projectedCore = result.packages['packages/core/package.json']
   const scopeVersion = officialVersions['@deepseek-ai/dsh-scope']
   assert.ok(satisfies(scopeVersion, projectedCore.peerDependencies['@deepseek-ai/dsh-scope']))

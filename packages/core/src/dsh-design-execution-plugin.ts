@@ -1716,7 +1716,9 @@ export function apply(ctx: Context, config: Config): void {
   registerReconstructionKnowledgeTool(ctx, (ctx as unknown as DshExecutionHost).design)
   let subagentStart: DesignSubagentStart | undefined
   let fileWorkerStart: DesignFileWorkerStart | undefined
-  ctx.inject(['subagents'], (subagentCtx) => {
+  // Dispatcher admission reads the Agent factory in this nested plugin scope.
+  // Cordis requires that service to be declared here, even when it exists globally.
+  ctx.inject(['subagents', 'agents'], (subagentCtx) => {
     const dispatcher = resolvedConfig.delegation?.provider === 'dsh-design-file-worker'
       ? registerDesignFileWorkerDispatcher(subagentCtx) : undefined
     // The dispatcher start function owns only closure state; no receiver binding.

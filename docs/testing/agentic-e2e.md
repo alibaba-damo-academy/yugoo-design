@@ -217,6 +217,8 @@ Producer 脚本或校验失败，也不能单独阻止普通串行完成。按�
 
 ### A-FLOW 文件 Worker、脚本与整合
 
+涉及 DSH 子代理接口变更时，从实际安装宿主的普通插件作用域启动 Worker 和只读审阅，核对工具调用与终态，不能只检查插件已加载或子会话已建立。记录宿主版本及其 Agent factory、工具执行器的实际来源；新宿主的官方执行器与旧宿主的 scoped native 入口分别验证，父会话工具模式不变。源码模拟上下文通过不能替代真实 Cordis 注入作用域及已安装宿主的执行结果。
+
 涉及文件脚本接口变更时，核 DSH Producer/Worker 的结构化输入由 Host 写入真实 `script_io.input_file/output_file`，覆盖调用者同名内容；不请求输出时 output_file 为 null，无上下文的原始文件输入和 input_json 保留原格式。验证诊断不得写回产物：只用未引用的隔离 probe 输出路径检查拒写及原文件未变，正常产物操作仍应写入。Companion 原生 Shell 按 Bundle CLI 区分诊断与产物 stdout，不宣称存在 DSH 元数据保护。涉及恢复预览时，核模型可见结果包含实际 preview_token，apply 使用该 token；原有未授权、失效或草稿变化检查继续有效。
 
 ```text

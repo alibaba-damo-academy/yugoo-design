@@ -14,7 +14,7 @@ function overrideSelector(selector) {
     const match = /^((?:@[a-z0-9._-]+\/)?[a-z0-9._-]+)@([^>]+)>((?:@[a-z0-9._-]+\/)?[a-z0-9._-]+)$/u.exec(selector)
     assert.ok(match, 'Only a single exact parent version and bare child name are supported')
     assert.equal(valid(match[2]), match[2], 'Override parent must use an exact canonical version')
-    return { name: match[3], parent: match[1], range: null }
+    return { name: match[3], parent: match[1], parentVersion: match[2], range: null }
   }
   const match = /^((?:@[a-z0-9._-]+\/)?[a-z0-9._-]+)(?:@([~^])(.+))?$/u.exec(selector)
   assert.ok(match, 'Only package names or single bounded version selectors are supported')
@@ -39,8 +39,21 @@ export function proposePublicSourceConfig({ root, workspace, packages, officialV
   assert.ok(reviewedWorkspaceOverrides && typeof reviewedWorkspaceOverrides === 'object'
     && !Array.isArray(reviewedWorkspaceOverrides), 'Explicit reviewed workspace overrides required')
   assert.deepEqual(workspace.overrides ?? {}, reviewedWorkspaceOverrides, 'Workspace overrides require exact explicit review')
+  const omittedOptionalHostPeers = new Set()
   for (const [selector, version] of Object.entries(reviewedWorkspaceOverrides)) {
-    const { name, parent, range } = overrideSelector(selector)
+    const { name, parent, parentVersion, range } = overrideSelector(selector)
+    if (version === '-') {
+      // pnpm installs workspace peer declarations as direct build inputs, even
+      // optional ones. An absent optional Host provider needs no substitute SDK.
+      // The exported and packaged manifests retain the original runtime peer.
+      const owner = Object.values(packages).find(pkg => pkg.name === parent && pkg.version === parentVersion)
+      assert.ok(owner && host(name) && owner.peerDependencies?.[name]
+        && owner.peerDependenciesMeta?.[name]?.optional === true
+        && ['dependencies', 'devDependencies', 'optionalDependencies'].every(field => !owner[field]?.[name]),
+      'Build omission requires an exact own package and an optional Host-only peer')
+      omittedOptionalHostPeers.add(selector)
+      continue
+    }
     assert.ok([name, parent].filter(Boolean).every(value => !host(value) && value !== '@ladybugdb/wasm-core'),
       'Host and Ladybug selections use their explicit version inputs')
     assert.equal(typeof version, 'string', 'Override must be an exact registry version')
@@ -80,6 +93,7 @@ export function proposePublicSourceConfig({ root, workspace, packages, officialV
     names.set(manifest.name, path)
   }
   assert.ok(Object.keys(reviewedWorkspaceOverrides).every(selector => {
+    if (omittedOptionalHostPeers.has(selector)) return true
     const { name, parent } = overrideSelector(selector)
     return !names.has(name) && !names.has(parent)
   }), 'Own package overrides require a separate release mapping')

@@ -118,9 +118,13 @@
     "@deepseek-ai/dsh-subprocess-local": "0.2.0-rc.2 || ^0.2.1-rc.3",
     "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2 || ^0.2.1-rc.3",
     "@deepseek-ai/dsh-tools": "0.2.0-rc.2 || ^0.2.1-rc.3",
+    "@deepseek-ai/dsh-tool-executor-native": "0.2.2-rc.3",
     "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.2 || ^0.2.1-rc.3"
   },
   "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-tool-executor-native": {
+      "optional": true
+    },
     "@deepseek-ai/dsh-subprocess-local": {
       "optional": true
     }

@@ -62,6 +62,12 @@ test('current DSH peer admission preserves rc2 and uses the compatible rc3 API r
   for (const packageName of ['core', 'panel', 'provider-web-app', 'studio-dsh']) {
     const value = JSON.parse(readFileSync(new URL(`../../${packageName}/package.json`, import.meta.url), 'utf8'))
     for (const [name, range] of Object.entries(value.peerDependencies).filter(([name]) => name.startsWith('@deepseek-ai/dsh-'))) {
+      if (name === '@deepseek-ai/dsh-tool-executor-native') {
+        assert.equal(packageName, 'core')
+        assert.equal(range, '0.2.2-rc.3')
+        assert.equal(value.peerDependenciesMeta[name].optional, true, 'legacy Hosts do not load this peer')
+        continue
+      }
       assert.equal(range, current, `${packageName}/${name}: one checked Host API range`)
       changed++
       for (const version of ['0.2.0-rc.2', '0.2.1-rc.3', '0.2.1-rc.4', '0.2.1-rc.5', '0.2.1-rc.6', '0.2.1', '0.2.2']) assertPeer(name, version, range)
