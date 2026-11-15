@@ -28,7 +28,7 @@ test('adding another scene uses the empty-state discussion and retains the publi
   }
   let locale = 'zh-CN'
   const render = async () => React.act(async () => root.render(React.createElement(PanelLocaleContext.Provider, { value: locale }, React.createElement(ExperiencePanel, props))))
-  const button = text => [...document.querySelectorAll('button')].find(e => e.textContent.includes(text))
+  const button = text => [...document.querySelectorAll('button')].find(e => (e.getAttribute('aria-label') ?? e.textContent).includes(text))
   try {
     await render()
     await React.act(async () => button('让 AI 推荐').click())

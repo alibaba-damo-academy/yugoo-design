@@ -329,6 +329,30 @@ assert.ok(titleDiagnostic.diagnostics.some(text => text.startsWith('state.title 
 assert.equal(prepared.status, 0, prepared.stderr || prepared.stdout)
 assert.equal(prepared.output.valid, true)
 
+// The template permits omitting an inapplicable conditional chapter. Its
+// visual region must not force an empty chapter or invented source annotation.
+const withoutWhiteboardChapter = html.replace(/<h2\b[^>]*data-prd-section-id="design_explanations"[\s\S]*?(?=<h2\b|<\/main>)/u, '')
+assert.doesNotMatch(withoutWhiteboardChapter, /all_whiteboards|design_explanations/)
+for (const sources of [input_files, { ...input_files, 'whiteboard/whiteboard.json': '{"boards":{},"board_order":[]}' }]) {
+  for (const action of ['validate-html-file', 'materialize-visuals', 'finalize-html-file']) {
+    const result = run(action, withoutWhiteboardChapter, { state, input_files: sources })
+    assert.equal(result.status, 0, `${action}: ${result.stdout || result.stderr}`)
+    if (action !== 'validate-html-file') assert.doesNotMatch(result.output, /all_whiteboards|design_explanations/)
+  }
+}
+for (const [broken, expected] of [
+  [html.replace('<!-- prd-visual:all_whiteboards:start --><!-- prd-visual:all_whiteboards:end -->', ''), /all_whiteboards/],
+  [withoutWhiteboardChapter.replace('<!-- prd-visual:function_scope_map:start --><!-- prd-visual:function_scope_map:end -->', ''), /function_scope_map/],
+  [withoutWhiteboardChapter.replace('</main>', '<!-- prd-visual:all_whiteboards:start --></main>'), /all_whiteboards/],
+  [withoutWhiteboardChapter.replace('<!-- prd-visual:design_preview:end -->', '<!-- prd-visual:design_preview:end --><!-- prd-visual:all_whiteboards:start --><!-- prd-visual:all_whiteboards:end -->'), /wrong chapter/],
+]) {
+  for (const action of ['validate-html-file', 'finalize-html-file']) {
+    const result = run(action, broken, { state, input_files })
+    assert.equal(result.status, 1, action)
+    assert.match(result.output.diagnostics.join('\n'), expected)
+  }
+}
+
 // Exercise the existing single-file workflow: skeleton -> chapter edits ->
 // interrupted/reopened file -> remaining edits -> existing final validator.
 // This verifies the mechanics, not whether a model will follow the instructions.
@@ -483,6 +507,9 @@ const whiteboardHtml = html.replace('data-prd-section-id="design_explanations" d
   .replace('<!-- prd-visual:all_whiteboards:start --><!-- prd-visual:all_whiteboards:end -->', `<!-- prd-visual:all_whiteboards:start -->${whiteboardFigure}<!-- prd-visual:all_whiteboards:end -->`)
 const boardValidation = run('validate-html-file', whiteboardHtml, { state, template, input_files: whiteboardSources })
 assert.equal(boardValidation.status, 0, boardValidation.stdout)
+const omittedSavedBoard = run('validate-html-file', withoutWhiteboardChapter, { state, input_files: whiteboardSources })
+assert.equal(omittedSavedBoard.status, 1)
+assert.match(omittedSavedBoard.output.diagnostics.join('\n'), /one ordered all_whiteboards visual region/)
 const unusedSceneImage = JSON.stringify({ elements: [], appState: {}, files: { old: { path: 'whiteboard/attachments/old.png', mimeType: 'image/png' } } })
 const unusedImageValidation = run('validate-html-file', whiteboardHtml.replace(sha(emptyScene), sha(unusedSceneImage)), { state, template, input_files: { ...whiteboardSources, 'whiteboard/boards/idea.json': unusedSceneImage } })
 assert.equal(unusedImageValidation.status, 0, 'retained undo image refs do not obstruct projection of an empty scene')

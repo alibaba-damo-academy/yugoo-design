@@ -778,12 +778,12 @@ to an already published package. Users do not install DSH and Companion separate
 | Host | Native installation route |
 | --- | --- |
 | Codex | `install --host codex`: run the existing plan, runtime check and apply transaction, retaining each receipt. |
-| Codex Desktop | `install --host codex-desktop`: prepare a small npm-backed local source and owned personal catalog; install or update it through the native plugin UI. |
+| Codex Desktop | `install --host codex-desktop`: prepare a small npm-backed local source and owned personal catalog; use the supported official `codex plugin add` command, then activate/reload in the desktop when required. |
 | Claude Code | `install --host claude-code`: native user-scope registration. |
 | Qoder CLI | `install --host qoder`: native user-scope registration and independent readback. |
 | QwenWork | `install --host qwenwork`: prepare the expert suite and its MCP configuration; import and enable through the host. |
 | WorkBuddy | `install --host workbuddy`: prepare the stable marketplace and plugin; import or update and enable through the host. |
-| DSH | `install --host dsh`: run the existing plan/apply transaction with the bound aggregate, official CLI/Loader and an explicitly selected existing profile. |
+| DSH | `install --host dsh`: return the exact native `plugin_manager` call; execute it in the current DSH conversation, whose host owns installation and activation. |
 
 For a fresh WorkBuddy preparation, the native suite example is `0.3.30`
 (`--suite-version 0.3.30`), with the verified Node executable and a persistent
@@ -860,7 +860,28 @@ existing settings, the previous runtime and the owning receipt on an update.
 
 #### DSH inputs and native activation
 
-The Agent prepares `--dsh-config` from the **existing official DSH installation**;
+Run `yugoo-design install --host dsh` in the acquired package directory.
+It reads the release mapping and returns `native-action-required` with the
+exact `plugin_manager install_bundle` arguments. Execute that tool in the
+current DSH conversation. The host uses its current profile and package manager,
+checks the package and compatibility, registers the bundle and applies it when
+supported. Follow its normal approval and any reported restart step, then confirm
+the loaded version in Plugins and invoke `/yugoo`. A matching loaded version can
+be reused. The returned request alone does not establish installation.
+
+This normal route needs no `--dsh-config`, `--profile`, `--receipt-dir`,
+executable fingerprints or manual dependency audit. If the native tool is
+not exposed, use the normal Plugins UI with the exact returned target. Project
+creation, Panel save/reopen, GRA and embedding preparation are subsequent usage
+tasks; they are not installation steps.
+
+This route uses the public `plugin_manager install_bundle` operation available
+in official DSH `0.2.2-rc.3`. Use it only when the current host exposes that
+operation. Older hosts retain their supported Plugins UI or the explicit CLI
+transaction below; a prepared request is not proof of native capability.
+
+**Advanced CLI transaction.** For an explicitly selected profile outside the
+normal in-conversation route, prepare `--dsh-config` from the **existing official DSH installation**;
 the user does not need to guess its fields. Save an absolute JSON file with the
 following eight required keys. Replace every example path, version and hash
 with values read from that installation:
@@ -1043,7 +1064,9 @@ do not install a second Companion product after installing yugoo-design.
 For DSH, the installer reads the product's `release-hosts.json`
 and installs the mapped aggregate and internal modules automatically into an
 existing DSH host; users do not separately acquire each internal module.
-DSH remains an external host. DSH installation still requires an existing
+DSH remains an external host. The default entry returns the mapped native
+`plugin_manager` request for execution in the current DSH conversation.
+An explicitly selected advanced CLI transaction requires an existing
 `--profile`, official `--dsh-config` pins and an external `--receipt-dir`.
 Use `--dry-run`, inspect the saved plan, then `--apply --plan <saved-file>`.
 An optional aggregate override must equal the bound product mapping. An explicit
@@ -1265,10 +1288,21 @@ source at their recorded paths. `--user-root` selects an explicit profile root
 for preparation, including an isolated test profile.
 
 Preparation returns `hostRegistered: false`, `installed: false` and
-`loaded: false`. Install or update that exact local source through Codex Desktop's
-native plugin UI. If the host needs a normal restart, keep and return to the
-current conversation, then verify the loaded version and original-conversation
-save receipt. Preparing the catalog does not establish native activation.
+`loaded: false`. With an official Codex CLI that supports `plugin add` and uses
+the intended desktop user/profile, install the returned selector:
+
+```sh
+codex plugin add RETURNED_SELECTOR --json
+```
+
+For the default personal catalog, that selector is `yugoo-design@personal`.
+Otherwise use the desktop's supported plugin installation entry. Ask the user
+only for required UI activation or normal reload, then return to the intended
+conversation. Confirm the actually loaded version and invoke `$yugoo` for help
+or project listing. Preparing the catalog or completing `plugin add` does not
+prove that an existing conversation loaded it. Ordinary installation does not
+require creating a project, downloading embedding models or running a full
+Panel save/reopen regression.
 
 For an owned update, acquire the next exact npm version in a new stable directory,
 choose a new source directory, and pass the previous successful
@@ -1312,22 +1346,29 @@ do not establish a complete user design cycle or arbitrary upgrades. The separat
 aggregate route and its partial-state limits are documented in the
 [DSH installation guide](../dsh/README.md#installation-target-and-current-package-composition).
 
-DSH package installation waits for the official CLI to finish; it has no default
+Advanced DSH CLI package installation waits for the official CLI to finish; it has no default
 120-second probe deadline. Programmatic callers may supply a cancellation signal
 or an explicit deadline. The npm entry forwards cancellation through the Desktop
 bridge rather than killing that bridge before it can retain an installation
 receipt. A cancellation request or a parent CLI exit does not prove that Windows
 pnpm descendants have stopped: interrupted receipts mark that state unverified
 and never authorize an automatic retry or takeover of a partial aggregate.
-Command output is bounded to 1 MiB per stream and retained in private files beside
+Retained diagnostic output is bounded to 1 MiB per stream in private files beside
 the external receipt, with paths and hashes rather than raw output in the JSON.
+Receipts record total observed bytes and whether the retained log was truncated.
+Filling that log does not stop the command or turn a successful install into a failure.
+The CLI also streams that output to stderr while installation runs, including
+through the Desktop bridge, even after the retained log fills; stdout remains the
+final JSON result. Progress output does not establish completion and does not
+trigger another installation.
 On Windows, an existing receipt directory must pass the shared owner, protected
 DACL and safe-ancestor checks; its permissions are never silently repaired.
 New receipt directories receive the shared private-storage protection. An unsafe
 existing directory is refused before native installation or raw output writes;
 choose a new owned receipt directory instead of modifying old evidence.
-Receipts distinguish timeout, cancellation, output limit, launch and native exit
-failures. `userConfigurationStatus: unverified` means readback failed, not that
+Receipts distinguish timeout, cancellation, launch and native exit failures.
+An isolated custom runner can also report its own output-limit failure.
+`userConfigurationStatus: unverified` means readback failed, not that
 user configuration was proven changed. Workspace and foreign-ownership checks
 remain strict; native exit zero alone cannot establish registration success.
 Configuration readback accepts each profile Bundle's current official single-file

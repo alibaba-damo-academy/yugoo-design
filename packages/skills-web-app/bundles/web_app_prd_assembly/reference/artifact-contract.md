@@ -28,6 +28,10 @@ Concise compresses explanations and repeated rows; detailed expands all
 applicable records. `policy: required` chapters always appear. A
 `policy: conditional` chapter appears only when the product has that concern,
 the corresponding owner evidence exists, or the user explicitly requests it.
+When such a chapter is inapplicable and has no owner visuals, omit its visual
+regions along with the chapter; do not add an empty chapter or invent a source
+annotation to satisfy a region check. Every included chapter keeps its declared
+ordered region pairs, and available owner visuals still require their projection.
 
 ## Visual evidence
 

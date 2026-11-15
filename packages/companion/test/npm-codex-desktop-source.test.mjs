@@ -22,12 +22,19 @@ test('desktop preparation requests bounded inputs and never substitutes CLI regi
   await assert.rejects(agentInstallation({ host: 'codex-desktop', 'codex-executable': '/not-run' }), /unsupported/)
   const result = await agentInstallation({ host: 'codex-desktop', destination: '/source', 'receipt-dir': '/receipts' }, {
     codexDesktopPrepare: async () => ({ status: 'prepared-native-install-pending', marketplacePrepared: true,
+      selector: 'yugoo-design@personal',
       hostRegistered: false, installed: false, loaded: false }),
   })
   assert.equal(result.installation.registration, 'not-performed')
   assert.equal(result.installation.activation, 'required')
   assert.equal(result.usable, false)
   assert.equal(result.installation.nextActions[0].action, 'activate-native-plugin')
+  assert.match(result.installation.nextActions[0].message, /codex plugin add yugoo-design@personal --json/)
+  assert.deepEqual(result.installation.nextActions.map(step => step.action), ['activate-native-plugin', 'verify-native-session'])
+  const planned = await agentInstallation({ host: 'codex-desktop', destination: '/source', 'receipt-dir': '/receipts' }, {
+    codexDesktopPrepare: async () => ({ status: 'desktop-plan-ready', planFile: '/receipts/plan.json', marketplacePrepared: false }),
+  })
+  assert.deepEqual(planned.installation.nextActions.map(step => step.action), ['apply-prepared-catalog'])
 })
 
 /** Explicit acquired npm inputs; not a fixture standing in for a native Host. */
@@ -123,6 +130,28 @@ test('real acquired npm A/B prepare, saved-plan apply, owned update and rejectio
     const oldMapping = JSON.parse(await readFile(join(sourceA, 'codex-desktop.json')))
     const preserved = await verifyCodexDesktopNpmSource(sourceA, oldMapping)
     assert.equal(preserved.npmRoot, config.A.npmRoot); assert.equal(preserved.version, config.A.packageVersion)
+  })
+  await t.test('A and B source bindings preserve the existing recursive package inventory format', async () => {
+    // An independent disk walk reproduces the already-persisted schema-1 format,
+    // rather than deriving the expected hash from the new runtime-pin projection.
+    for (const [choice, source] of [['A', sourceA], ['B', sourceB]]) {
+      const files = {}, hash = bytes => createHash('sha256').update(bytes).digest('hex')
+      async function walk(directory, prefix = '') {
+        const entries = await readdir(directory, { withFileTypes: true })
+        entries.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0)
+        for (const entry of entries) {
+          const path = join(directory, entry.name), name = prefix + entry.name
+          if (entry.isDirectory()) await walk(path, name + '/')
+          else {
+            assert.ok(entry.isFile())
+            files[name] = hash(await readFile(path))
+          }
+        }
+      }
+      await walk(config[choice].npmRoot)
+      const mapping = JSON.parse(await readFile(join(source, 'codex-desktop.json')))
+      assert.equal(mapping.source.packageInventorySha256, hash(JSON.stringify(files)))
+    }
   })
   await t.test('wrong package identity and version cannot create an output source', async () => {
     for (const bad of [{ packageName: '@wrong/companion' }, { packageVersion: '9.9.9' }])

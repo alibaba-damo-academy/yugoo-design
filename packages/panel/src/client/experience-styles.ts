@@ -1,15 +1,17 @@
 /** Container-sized navigation: a dock can be narrow even on a wide desktop. */
 export const EXPERIENCE_CSS = `
 .dsh-experience-workspace{display:flex;flex-direction:column;height:100%;min-height:0;min-width:0}
-.dsh-experience-body{flex:1;min-height:0;min-width:0;padding:12px}
+.dsh-experience-body{flex:1;min-height:0;min-width:0}
 .dsh-experience-footer{display:flex;align-items:center;gap:8px;overflow-x:auto}
 .dsh-experience-footer>*{flex-shrink:0}
-.dsh-experience{container-type:inline-size;container-name:experience;display:flex;flex-direction:column;height:100%;min-height:0;min-width:0;overflow:hidden;background:var(--ds-bg-white,#fff);color:var(--ds-text-primary,#272727);border:1px solid var(--ds-line-1,#e5e7eb);border-radius:10px;font:inherit}
+.dsh-experience{container-type:inline-size;container-name:experience;display:flex;flex-direction:column;height:100%;min-height:0;min-width:0;overflow:hidden;background:var(--ds-fill-1,#fff);color:var(--ds-text-primary,#272727);font:inherit}
 .dsh-experience *{box-sizing:border-box}
 .dsh-experience-layout{display:flex;flex:1;min-height:0;min-width:0}
 /* Typography, button geometry, hover and selection come from shared declarative navigation. */
 .dsh-experience-directory{width:220px;flex:0 0 220px;overflow:auto;background:var(--ds-fill-1,#fff);border-right:1px solid var(--ds-line-1,#e5e7eb)}
-.dsh-experience-directory-heading h2{justify-content:space-between}
+.dsh-experience-directory-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.dsh-experience-directory-heading h2{min-width:0}
+.dsh-experience-directory-heading-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .dsh-experience-directory-title{display:inline-flex;align-items:center;gap:6px}
 .dsh-experience-info{display:inline-flex;align-items:center;color:var(--ds-text-tertiary,#6d6d6d);cursor:help}
 .dsh-experience-count{color:var(--ds-text-tertiary,#6d6d6d)}
@@ -41,7 +43,6 @@ export const EXPERIENCE_CSS = `
  .dsh-experience-directory-toggle{display:block;flex-shrink:0;text-align:left;padding:10px 14px;background:var(--ds-fill-1,#fbfbfb);border:0;border-bottom:1px solid var(--ds-line-1,#e5e7eb);color:inherit;cursor:pointer}
  .dsh-experience-directory{display:none;width:100%;flex:0 0 auto;max-height:180px;border-right:0;border-bottom:1px solid var(--ds-line-1,#e5e7eb)}
  .dsh-experience-directory.is-open{display:block}
- .dsh-experience-directory-heading{display:none}
  .dsh-experience-heading{padding:10px 12px 6px}
  .dsh-experience-evidence{padding:0 12px 8px}
 }

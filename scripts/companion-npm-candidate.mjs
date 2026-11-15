@@ -260,7 +260,7 @@ const cancel=()=>cancellation.abort()
 const cancellable=dshInstall||args[0]==='prepare-embedding'
 if(cancellable) { process.on('SIGINT',cancel);process.on('SIGTERM',cancel) }
 try {
-  const result=await installerMain(args,{npmRoot:fileURLToPath(new URL('../',import.meta.url)),signal:cancellable?cancellation.signal:undefined})
+  const result=await installerMain(args,{npmRoot:fileURLToPath(new URL('../',import.meta.url)),signal:cancellable?cancellation.signal:undefined,onDshOutput:chunk=>process.stderr.write(chunk)})
   console.log(JSON.stringify(result))
   if(args[0]==='prepare-embedding'&&!['assets-ready','ready','not-applicable'].includes(result.status))process.exitCode=1
   if(process.argv[2]==='check-runtime'&&!['load-verified','disabled','not-applicable'].includes(result.status))process.exitCode=1

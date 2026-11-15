@@ -1,15 +1,33 @@
 import { isPathWithin } from './npm-installer-paths.mjs'
 import { assertWindowsPrivate } from './windows-private-storage.mjs'
 import assert from 'node:assert/strict'
-import { execFile } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
 import { lstat, readFile, realpath, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { isDeepStrictEqual, promisify } from 'node:util'
+import { isDeepStrictEqual } from 'node:util'
 import { createRequire } from 'node:module'
 
-const exec = promisify(execFile)
+/** Stream pipes without retaining output or imposing an output-volume process limit. */
+export function spawnDshProcess(command, args, { maxBuffer: _unused, ...options } = {}) {
+  let child
+  const pending = new Promise((resolve, reject) => {
+    child = spawn(command, args, { ...options, shell: false, stdio: ['pipe', 'pipe', 'pipe'] })
+    let failure
+    child.once('error', error => { failure = error })
+    // Wait for closed pipes even after cancellation so the bounded diagnostic sees the final bytes.
+    child.once('close', (code, signal) => {
+      if (failure) reject(failure)
+      else if (code !== 0) reject(Object.assign(Error('Native command did not complete successfully'), {
+        code, signal, killed: child.killed,
+      }))
+      else resolve({ exitCode: code })
+    })
+  })
+  pending.child = child
+  return pending
+}
 const admitted = new WeakMap()
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 const canonical = value => Array.isArray(value) ? value.map(canonical) : value && typeof value === 'object'
@@ -20,14 +38,21 @@ const exactVersion = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Z
 export const DSH_INSTALL_MAX_OUTPUT_BYTES = 1024 * 1024
 
 /** Install duration belongs to the native package manager, not a probe timer. */
-export async function executeDshInstall(command, args, options, { run = exec, signal, timeoutMs = 0 } = {}) {
+export async function executeDshInstall(command, args, options, { run = spawnDshProcess, signal, timeoutMs = 0, onOutput } = {}) {
   assert.ok(Number.isSafeInteger(timeoutMs) && timeoutMs >= 0 && timeoutMs <= 2147483647, 'Invalid install deadline')
   const started = performance.now(), cancellation = new AbortController()
   let requested = null, timer, pending, output = {}, failure = null, invoked = false
   const captured = { stdout: [], stderr: [] }, sizes = { stdout: 0, stderr: 0 }
+  const total = { stdout: 0, stderr: 0 }
   const capture = stream => chunk => {
-    const bytes = Buffer.from(chunk).subarray(0, DSH_INSTALL_MAX_OUTPUT_BYTES - sizes[stream])
-    if (bytes.length) { captured[stream].push(bytes); sizes[stream] += bytes.length }
+    const raw = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+    total[stream] += raw.length
+    // Continue live output after the retained diagnostic fills.
+    try { onOutput?.(raw, stream) } catch {}
+    const bytes = Buffer.from(raw.subarray(0, DSH_INSTALL_MAX_OUTPUT_BYTES - sizes[stream]))
+    if (bytes.length) {
+      captured[stream].push(bytes); sizes[stream] += bytes.length
+    }
   }
   const stop = reason => {
     if (requested !== null) return
@@ -48,25 +73,29 @@ export async function executeDshInstall(command, args, options, { run = exec, si
   } catch (error) { failure = error; output = error }
   finally { clearTimeout(timer); signal?.removeEventListener('abort', cancel) }
   const buffer = value => Buffer.isBuffer(value) ? value : Buffer.from(value ?? '')
-  const stdout = sizes.stdout ? Buffer.concat(captured.stdout) : buffer(output.stdout).subarray(0, DSH_INSTALL_MAX_OUTPUT_BYTES)
-  const stderr = sizes.stderr ? Buffer.concat(captured.stderr) : buffer(output.stderr).subarray(0, DSH_INSTALL_MAX_OUTPUT_BYTES)
-  const overflow = failure?.code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER'
-    || buffer(output.stdout).length > stdout.length || buffer(output.stderr).length > stderr.length
+  for (const stream of ['stdout', 'stderr']) {
+    if (!total[stream] && output[stream]) capture(stream)(output[stream])
+    total[stream] = Math.max(total[stream], buffer(output[stream]).length)
+  }
+  const stdout = Buffer.concat(captured.stdout), stderr = Buffer.concat(captured.stderr)
+  const outputLimitFailure = failure?.code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER'
+  const truncated = total.stdout > stdout.length || total.stderr > stderr.length
   // DOMException.code identifies an API error, never a native process exit.
   // A pre-cancelled request has not invoked the runner even if its reason has a code.
   const observedCode = failure ? (invoked && failure.name !== 'AbortError' && !(failure instanceof DOMException)
     && Number.isInteger(failure.code) ? failure.code : null) : output.exitCode ?? output.status ?? 0
   const code = observedCode ?? 1
-  const state = requested ?? (overflow ? 'output-limit' : failure?.signal ? 'terminated'
+  const state = requested ?? (outputLimitFailure ? 'output-limit' : failure?.signal ? 'terminated'
     : failure ? (failure.code === 'ENOENT' || failure.code === 'EACCES' ? 'launch-failed' : 'failed')
       : code === 0 ? 'completed' : 'failed')
   const execution = { state, elapsedMs: Math.round(performance.now() - started), timeoutMs,
     maxOutputBytesPerStream: DSH_INSTALL_MAX_OUTPUT_BYTES, exitCode: observedCode, pid: pending?.child?.pid ?? null,
     signal: failure?.signal ?? pending?.child?.signalCode ?? null, killed: pending?.child?.killed ?? failure?.killed ?? null,
-    cancellationRequested: requested !== null, outputComplete: requested === null && !overflow && (!failure || observedCode !== null),
+    cancellationRequested: requested !== null, outputComplete: requested === null && !truncated && !outputLimitFailure && (!failure || observedCode !== null),
     // An AbortError or a dead parent CLI cannot establish Windows pnpm tree exit.
     processTreeState: state === 'completed' ? 'not-asserted' : 'unverified', retrySafe: false,
-    output: { stdout: { bytes: stdout.length, sha256: sha(stdout) }, stderr: { bytes: stderr.length, sha256: sha(stderr) } } }
+    output: { stdout: { bytes: stdout.length, totalBytes: total.stdout, truncated: total.stdout > stdout.length, sha256: sha(stdout) },
+      stderr: { bytes: stderr.length, totalBytes: total.stderr, truncated: total.stderr > stderr.length, sha256: sha(stderr) } } }
   return { execution, stdout, stderr,
     exitCode: state === 'completed' ? 0 : code || 1,
     executionError: failure ? String(failure.code ?? failure.name) : state === 'completed' ? null : state }
@@ -270,9 +299,9 @@ async function previousOwnership(path, state, input, product) {
 /** Pins are caller-selected release inputs, not host discovery or publication proof. */
 export async function createDshInstallerAdapter({ scope = 'official-pinned', dshHome,
   node, cli, hostManifest, loader, loaderManifest, desktopHostManifest, hostVersion, loaderVersion,
-  run = exec }) {
+  run = spawnDshProcess }) {
   assert.ok(['official-pinned', 'isolated-test-contract'].includes(scope), 'Unknown adapter scope')
-  assert.ok(scope === 'isolated-test-contract' || run === exec, 'Production uses execFile, not an injected runner')
+  assert.ok(scope === 'isolated-test-contract' || run === spawnDshProcess, 'Production uses the streaming process runner, not an injected runner')
   await safeDirectory(dshHome)
   const pins = structuredClone({ node, cli, hostManifest, loader, loaderManifest, ...(desktopHostManifest ? { desktopHostManifest } : {}) })
   for (const pin of Object.values(pins)) await checkPin(pin)
@@ -564,7 +593,7 @@ async function preservedConfigPins(before, after, workspaceBefore) {
 }
 
 /** Runs only the pinned public CLI; retains partial state on failure, never rolls back. */
-export async function applyDshInstallation(plan, { adapter, signal, timeoutMs = 0, logDirectory } = {}) {
+export async function applyDshInstallation(plan, { adapter, signal, timeoutMs = 0, logDirectory, onOutput } = {}) {
   plan = structuredClone(plan)
   const { planSha256, ...unsigned } = plan
   assert.equal(digest(unsigned), planSha256, 'Plan or profile changed; replan before execution')
@@ -587,7 +616,7 @@ export async function applyDshInstallation(plan, { adapter, signal, timeoutMs = 
       // ORT's supported policy skips its extra CUDA download, not dependency lifecycle scripts.
       env: { ...process.env, ONNXRUNTIME_NODE_INSTALL_CUDA: 'skip', DSH_HOME: state.dshHome,
         ...(state.pins.desktopHostManifest ? { ELECTRON_RUN_AS_NODE: '1' } : {}) } },
-    { run: state.run, signal, timeoutMs })
+    { run: state.run, signal, timeoutMs, onOutput })
     ;({ exitCode, executionError, execution } = command)
     try { await retainCommandOutput(logDirectory, command) }
     catch (error) { diagnosticError = String(error.code ?? error.name) }

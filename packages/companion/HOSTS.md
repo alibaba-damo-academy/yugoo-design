@@ -112,7 +112,9 @@ must be inspected through its existing receipt before retrying.
 
 ### Installation checklist for the Agent
 
-1. Identify the current host from the session. Reuse a compatible public Node.js
+1. Use the host specified by the request or website selector; do not ask or
+   rediscover it. Only an unspecified target needs session context or one question.
+   Reuse a compatible public Node.js
    `>=22.19.0` selected by the user, system or version manager. Do not borrow a
    Preview, application-private or plugin-bundled Node, or change global PATH.
    Prepare a missing prerequisite once through the existing system/version manager
@@ -191,17 +193,18 @@ See [Codex registration and recovery](README.md#persistent-registration-transact
 ### Install or update: Codex Desktop
 
 > Install or update Yugoo Design in this Codex Desktop conversation. Resolve
-> the requested `yugoo-design` release to its exact published version, retain its integrity, and acquire
+> the requested `yugoo-design` release to its exact published version and acquire
 > it in a durable version directory. Read that package's actual help and the
 > Desktop guide below. Reuse an existing compatible public Node. Use its
 > `install --host codex-desktop` route to prepare a new immutable source under
-> my home and review the saved personal catalog plan. For an owned update,
+> my home and prepare the personal catalog. For an owned update,
 > supply the previous successful receipt; keep the old source and npm directory.
-> Apply only that owned plan, then install or update the exact source through
-> the native Plugins UI and select it in this conversation. If a normal restart
-> is needed, give me that step and return to this same conversation afterwards.
-> Confirm the actual loaded version and entry, then check a meaningful Panel
-> edit/save/reopen and original-Agent consumption. Report missing capabilities;
+> Install its returned selector using the official Codex CLI's supported
+> `plugin add` command for this desktop user/profile, or the desktop's supported
+> installation entry. Ask me only for required UI activation or normal reload,
+> then return to this conversation. Confirm the loaded version and invoke
+> `$yugoo` for help or project listing. Do not create a project or download models
+> as part of installation. Report missing capabilities;
 > preserve project pins, credentials and unrelated plugins.
 
 See [npm preparation and native activation](hosts/codex-desktop/README.md#install-or-update-from-npm).
@@ -244,20 +247,28 @@ See [Qoder persistent registration](README.md#claude-code-and-qoder-cli-persiste
 ### Install or update: DeepSeek Harness
 
 > Install or update Yugoo Design in this existing official DeepSeek Harness.
-> Resolve the requested `yugoo-design` release to its exact published version from
-> `https://registry.npmjs.org` as the product installer. Reuse a matching retained
-> runtime or acquire the exact version in a new durable directory. Check its
-> `release-hosts.json` for the exact DSH aggregate and verify its complete exact
-> dependency set is available, including any declared native Git helper. Do not
-> install internal packages manually or change external dependency pins.
-> Inspect installer help and the existing official DSH
-> CLI/Loader versions. Use `install --host dsh` with the intended existing
-> profile, pinned DSH config and external receipts; prepare a dry-run plan and
-> apply that saved plan. Preserve existing models, search and projects. If an
-> operation fails after changing state, retain its partial-state receipt.
-> After normal DSH restart, verify loaded versions, `/yugoo`, embedded Panel
-> save/reopen and native continuation; test KAG/GRA only through the real host
-> and report their results separately. Do not modify the host's source.
+> Use my requested version, or resolve npm latest once to an exact stable
+> `yugoo-design` version. Reuse that retained package or acquire it in a new
+> durable version directory using the package-manager instructions above.
+> Run `pnpm exec yugoo-design install --host dsh` there and execute the returned
+> native `plugin_manager` installation call in this conversation. DSH handles
+> the current profile, dependencies, configuration and activation. Follow its
+> normal approval and any reported restart step. Preserve projects and settings.
+> Confirm the loaded version in Plugins and invoke `/yugoo`, then give me one
+> request to start a project with Web App Kit. Do not create a project as part of
+> installation.
+
+The target is already DSH. No separate host identification, executable
+fingerprints, hand-written configuration or dependency-by-dependency registry
+audit is needed. npm/pnpm and DSH perform their normal integrity and compatibility
+checks. If the native tool is not exposed, use DSH's Plugins UI with the same
+exact target. The CLI output is a request for that native action, not proof of
+installation. Only restart when the native result requires it. Panel save/reopen
+and model execution are subsequent usage checks, not prerequisites for finishing
+installation.
+
+Older acquired versions may require the explicit CLI transaction described
+below; do not invent options that their help does not support.
 
 See [DSH installer and recovery limits](../dsh/README.md#candidate-npm-installer-dsh-route-and-recovery-limits).
 

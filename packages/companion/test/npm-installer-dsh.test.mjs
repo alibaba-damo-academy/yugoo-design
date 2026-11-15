@@ -16,6 +16,33 @@ const json = value => JSON.stringify(value, null, 2) + '\n'
 const canonical = value => Array.isArray(value) ? value.map(canonical) : value && typeof value === 'object'
   ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])])) : value
 const digest = value => sha(JSON.stringify(canonical(value)))
+
+test('native package output arrives before completion and remains in the bounded receipt', async () => {
+  let child
+  const observed = []
+  const run = (...args) => {
+    const pending = promisify(execFile)(...args)
+    child = pending.child
+    return pending
+  }
+  const result = await executeDshInstall(process.execPath, ['-e',
+    'process.stdout.write("installing");process.stdin.once("data",()=>{process.stderr.write("finished");process.stdin.destroy()})'],
+  {}, { run, timeoutMs: 3000, onOutput: (chunk, stream) => {
+    observed.push({ stream, text: chunk.toString() })
+    if (stream === 'stdout') {
+      assert.equal(child.exitCode, null)
+      child.stdin.end('continue')
+    }
+  } })
+  assert.equal(result.execution.state, 'completed')
+  assert.deepEqual(observed, [{ stream: 'stdout', text: 'installing' }, { stream: 'stderr', text: 'finished' }])
+  assert.equal(result.stdout.toString(), 'installing')
+  assert.equal(result.stderr.toString(), 'finished')
+  const disconnected = await executeDshInstall(process.execPath, ['-e', 'process.stdout.write("retained")'], {},
+    { onOutput: () => { throw Error('observer disconnected') } })
+  assert.equal(disconnected.execution.state, 'completed')
+  assert.equal(disconnected.stdout.toString(), 'retained')
+})
 // Simulates only the public Loader contract. No official host/CLI is executed.
 const loaderSource = `
 import assert from 'node:assert/strict';
@@ -987,11 +1014,64 @@ test('controlled native commands wait for completion and distinguish deadline, c
   assert.equal(failed.execution.state, 'failed'); assert.equal(failed.exitCode, 7)
   assert.equal(failed.execution.exitCode, 7)
   assert.equal(failed.stderr.toString(), 'native reason')
-  const overflow = await executeDshInstall(process.execPath, ['-e', `process.stdout.write('x'.repeat(${DSH_INSTALL_MAX_OUTPUT_BYTES + 65536}))`], {})
+  // An injected legacy buffered runner can still report its own output failure.
+  const overflow = await executeDshInstall(process.execPath, ['-e', `process.stdout.write('x'.repeat(${DSH_INSTALL_MAX_OUTPUT_BYTES + 65536}))`], {}, { run: promisify(execFile) })
   assert.equal(overflow.execution.state, 'output-limit'); assert.notEqual(overflow.exitCode, 0)
   assert.ok(overflow.stdout.length <= DSH_INSTALL_MAX_OUTPUT_BYTES)
   const missing = await executeDshInstall(join(process.cwd(), 'absent-dsh-command'), [], {})
   assert.equal(missing.execution.state, 'launch-failed')
+})
+
+test('verbose native success and failure stream every byte while retaining bounded diagnostics', async () => {
+  const size = 3 * DSH_INSTALL_MAX_OUTPUT_BYTES + 137
+  for (const code of [0, 7]) {
+    const observed = { stdout: 0, stderr: 0 }, tails = {}
+    const result = await executeDshInstall(process.execPath, ['-e', `
+      process.stdout.write(Buffer.alloc(${size}, 120));
+      process.stderr.write(Buffer.alloc(${size}, 121));
+      process.stdout.write('stdout-end'); process.stderr.write('stderr-end');
+      process.exitCode = ${code};
+    `], {}, { onOutput: (chunk, stream) => {
+      observed[stream] += chunk.length
+      tails[stream] = chunk.toString().slice(-10)
+    } })
+    assert.equal(result.execution.state, code === 0 ? 'completed' : 'failed')
+    assert.equal(result.exitCode, code)
+    assert.equal(result.execution.exitCode, code)
+    assert.equal(result.execution.killed, false)
+    assert.equal(result.execution.outputComplete, false)
+    for (const stream of ['stdout', 'stderr']) {
+      assert.equal(observed[stream], size + 10)
+      assert.equal(tails[stream], stream + '-end')
+      assert.equal(result[stream].length, DSH_INSTALL_MAX_OUTPUT_BYTES)
+      assert.deepEqual(result.execution.output[stream], {
+        bytes: DSH_INSTALL_MAX_OUTPUT_BYTES, totalBytes: size + 10,
+        truncated: true, sha256: sha(result[stream]),
+      })
+    }
+  }
+})
+
+test('cancellation after the retained log fills still stops the native command', async () => {
+  const cancel = new AbortController()
+  let observed = 0
+  const result = await executeDshInstall(process.execPath, ['-e', `
+    process.stdout.write(Buffer.alloc(${3 * DSH_INSTALL_MAX_OUTPUT_BYTES}, 120));
+    setInterval(() => {}, 1000);
+  `], {}, { signal: cancel.signal, timeoutMs: 5000, onOutput: chunk => {
+    observed += chunk.length
+    if (observed > DSH_INSTALL_MAX_OUTPUT_BYTES) cancel.abort()
+  } })
+  assert.ok(observed > DSH_INSTALL_MAX_OUTPUT_BYTES)
+  assert.equal(result.execution.state, 'cancelled')
+  assert.equal(result.execution.killed, true)
+  assert.equal(result.execution.exitCode, null)
+  assert.notEqual(result.exitCode, 0)
+  assert.equal(result.stdout.length, DSH_INSTALL_MAX_OUTPUT_BYTES)
+  assert.equal(result.execution.output.stdout.totalBytes, observed)
+  assert.equal(result.execution.output.stdout.truncated, true)
+  assert.equal(result.execution.processTreeState, 'unverified')
+  assert.equal(result.execution.retrySafe, false)
 })
 
 test('an already cancelled request does not spawn, and abort retains observed output without claiming tree exit', async () => {

@@ -30,7 +30,7 @@ test('missing conversation identity asks one host choice without inspecting a pa
 })
 
 test('supported hosts report only their missing prerequisites, without an automatic package or native operation', async () => {
-  for (const host of AGENT_INSTALL_HOSTS) {
+  for (const host of AGENT_INSTALL_HOSTS.filter(host => host !== 'dsh')) {
     const result = await agentInstallation({ host }, { npmRoot: '/not-read', invoke: noOperation, desktopPrepare: noOperation, platform: 'win32' })
     assert.equal(result.status, 'inputs-required'); assert.equal(result.hostRegistered, false)
     assert.ok(result.missing.length); assert.equal(result.usable, false)
@@ -41,6 +41,49 @@ test('supported hosts report only their missing prerequisites, without an automa
   assert.equal(desktop.status, 'inputs-required'); assert.equal(desktop.usable, false)
   assert.deepEqual(desktop.missing, ['receipt-dir', 'destination'])
   await assert.rejects(installerMain(['install', '--host', 'made-up-host'], { npmRoot: '/not-read' }), /supported host/)
+})
+
+test('DSH uses its native plugin manager without probing or writing a host profile', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'agent-dsh-native-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  await writeFile(join(root, 'package.json'), JSON.stringify({ name: 'yugoo-design', version: '1.2.3' }))
+  const mapping = { schemaVersion: 1, hosts: { dsh: {
+    aggregatePackage: '@yugoo-design/dsh-design-system-dsh', aggregateVersion: '1.2.3', registry: 'https://registry.npmjs.org/',
+  } } }
+  await writeFile(join(root, 'release-hosts.json'), JSON.stringify(mapping))
+  const context = { npmRoot: root, userRoot: join(root, 'must-not-create'), dshAdapterFactory: noOperation }
+  const result = await installerMain(['install', '--host', 'dsh'], context)
+  assert.equal(result.status, 'native-action-required')
+  assert.equal(result.route, 'native-plugin-manager')
+  assert.equal(result.hostRegistered, false)
+  assert.equal(result.usable, false)
+  assert.deepEqual(result.installation.nextActions[0].tool, {
+    name: 'plugin_manager', arguments: { action: 'install_bundle',
+      target: '@yugoo-design/dsh-design-system-dsh@1.2.3', registry: 'https://registry.npmjs.org/' },
+  })
+  assert.equal(result.installation.registration, 'not-performed')
+  assert.equal(result.installation.activation, 'not-performed')
+  assert.equal(result.installation.registryAcquisitionVerified, false)
+  assert.deepEqual((await readdir(root)).sort(), ['package.json', 'release-hosts.json'])
+  const mirrored = await installerMain(['install', '--host', 'dsh', '--registry', 'https://mirror.example/npm'], context)
+  assert.equal(mirrored.installation.nextActions[0].tool.arguments.registry, 'https://mirror.example/npm')
+  for (const registry of ['http://mirror.example/', 'https://token@mirror.example/', 'https://mirror.example/?token=secret'])
+    await assert.rejects(installerMain(['install', '--host', 'dsh', '--registry', registry], context), /HTTPS registry/)
+  mapping.hosts.dsh.aggregateVersion = '1.2.4'
+  await writeFile(join(root, 'release-hosts.json'), JSON.stringify(mapping))
+  await assert.rejects(installerMain(['install', '--host', 'dsh'], context), /match the acquired product version/)
+  mapping.hosts.dsh.aggregateVersion = null
+  mapping.hosts.dsh.registry = null
+  await writeFile(join(root, 'release-hosts.json'), JSON.stringify(mapping))
+  await assert.rejects(installerMain(['install', '--host', 'dsh'], context), /no released DSH installation target/)
+})
+
+test('explicit DSH transaction inputs never silently switch to the native-tool route', async () => {
+  for (const key of ['dsh-config', 'profile', 'receipt-dir', 'previous-receipt', 'aggregate-selector']) {
+    const result = await agentInstallation({ host: 'dsh', [key]: '/explicit-input' }, { npmRoot: '/not-read', invoke: noOperation })
+    assert.equal(result.status, 'inputs-required')
+    assert.equal(result.installation.registration, 'not-performed')
+  }
 })
 
 test('native Windows desktop discovery does not request a separate Node for each adapter', async () => {
@@ -180,14 +223,21 @@ test('native POSIX desktop discovery does not request Windows mappings or a sepa
   }
 })
 
-test('every prepared host guides model readiness without claiming activation, inference or project usability', () => {
+test('installation keeps model readiness separate from basic Desktop loading and never claims usability', () => {
   for (const host of AGENT_INSTALL_HOSTS) {
     const result = installationResult(host, { status: 'registered', hostRegistered: true, package: identity })
     const step = result.installation.nextActions.find(item => item.action === 'prepare-local-embedding')
-    assert.deepEqual(step.command, ['prepare-embedding'])
-    assert.match(step.message, /actual runtime user and operating system/)
-    assert.match(step.message, /--allow-download only when permitted/)
-    assert.match(step.message, /--probe/)
+    if (host === 'codex-desktop') {
+      assert.equal(step, undefined)
+      const entry = result.installation.nextActions.find(item => item.action === 'verify-native-session')
+      assert.match(entry.message, /help or existing-project listing/)
+      assert.match(entry.message, /Do not create a project, download embedding models/)
+    } else {
+      assert.deepEqual(step.command, ['prepare-embedding'])
+      assert.match(step.message, /actual runtime user and operating system/)
+      assert.match(step.message, /--allow-download only when permitted/)
+      assert.match(step.message, /--probe/)
+    }
     assert.deepEqual(result.installation.embedding, { status: 'unverified', blocksBasicDesign: false })
     assert.equal(result.installation.activation, 'required')
     assert.equal(result.installation.usability, 'unverified')

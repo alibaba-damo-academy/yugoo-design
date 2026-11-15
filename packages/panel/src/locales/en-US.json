@@ -463,7 +463,7 @@
   "experienceEmpty": "No saved scenarios are available yet. Explore a specific situation to see how the parts of your design work together.",
   "experienceRecommend": "Ask AI to suggest scenarios",
   "experienceRecommendPrompt": "Based on the saved design, suggest one or two specific scenarios worth exploring and explain what each would help me evaluate. Discuss these new scenarios before publishing them; this request does not cancel or pause other authorized design changes.",
-  "experienceHint": "You can revisit saved scenarios at any time. They do not replace your Design Files.",
+  "experienceHint": "Explore the design through concrete user scenarios and assess key flows and interactions. Examples and assumptions support exploration and discussion; apply confirmed changes to Design Files.",
   "experienceAdd": "Add scenario",
   "experienceDemo": "Demo · not a confirmed design",
   "experienceAssumptionCount": "Assumptions: {count}",

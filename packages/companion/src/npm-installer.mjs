@@ -662,7 +662,7 @@ async function writeDshOutput(directory,name,value) {
   await safePath(path);await writeFile(path,encode(value),{flag:'wx',mode:0o600})
   return path
 }
-async function dshInstallerEntry(values,{npmRoot,dshAdapterFactory,args,signal,dshInstallTimeoutMs}) {
+async function dshInstallerEntry(values,{npmRoot,dshAdapterFactory,args,signal,dshInstallTimeoutMs,onDshOutput}) {
   assert.ok(values['dry-run']===true&&values.apply!==true||values.apply===true&&values['dry-run']!==true,'Choose exactly dry-run or apply')
   for(const key of ['codex-executable','user-root','runtime-receipt','disable-embedding','receipt'])
     assert.ok(!Object.hasOwn(values,key),`DSH install does not accept --${key}`)
@@ -671,7 +671,7 @@ async function dshInstallerEntry(values,{npmRoot,dshAdapterFactory,args,signal,d
   const selection=await dshReleaseSelection(values,npmRoot)
   const configPath=values['dsh-config'],config=await dshConfiguration(configPath)
   if (config.desktopHostManifest && !process.versions.electron)
-    return runDesktopDshInstaller({ node:config.node, args, npmRoot, signal, timeoutMs:dshInstallTimeoutMs })
+    return runDesktopDshInstaller({ node:config.node, args, npmRoot, signal, timeoutMs:dshInstallTimeoutMs, onOutput:onDshOutput })
   const output=await dshOutputDirectory(values['receipt-dir'],{npmRoot,config,configPath})
   const adapter=await dshAdapterFactory({...config,scope:'official-pinned'})
   let aggregateDirectory
@@ -706,7 +706,7 @@ async function dshInstallerEntry(values,{npmRoot,dshAdapterFactory,args,signal,d
     schemaVersion:2,kind:'dsh-installation-prepared',id,planSha256:plan.planSha256,planSnapshot:plan,
     receiptPath,ownershipEstablished:false,phase:'prepared',retrySafe:false})
   try {
-    const result=await applyDshInstallation(plan,{adapter,signal,timeoutMs:dshInstallTimeoutMs,logDirectory:output})
+    const result=await applyDshInstallation(plan,{adapter,signal,timeoutMs:dshInstallTimeoutMs,logDirectory:output,onOutput:onDshOutput})
     const body={...result,id,receiptPath,preparedRecordFile}
     const receipt={...body,receiptSha256:digest(body)}
     const receiptFile=await writeDshOutput(output,id+'.dsh-result.json',receipt)
@@ -773,7 +773,7 @@ export async function nativePluginDirectory({npmRoot,host}) {
   }
 }
 
-export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=codexAdapter,dshAdapterFactory=createDshInstallerAdapter,claudeAdapterFactory=createClaudeNativeAdapter,qoderInstaller=installQoderPlugin,agentDispatch=true,signal,dshInstallTimeoutMs}={}) {
+export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=codexAdapter,dshAdapterFactory=createDshInstallerAdapter,claudeAdapterFactory=createClaudeNativeAdapter,qoderInstaller=installQoderPlugin,agentDispatch=true,signal,dshInstallTimeoutMs,onDshOutput}={}) {
   if(args[0]==='prepare-desktop')return desktopPreparationMain(args.slice(1),{npmRoot})
   if(args[0]==='prepare-embedding')return embeddingPreparationMain(args.slice(1),{npmRoot,signal})
   const {values,positionals}=parseArgs({args,allowPositionals:true,options:{host:{type:'string'},'dry-run':{type:'boolean'},
@@ -788,7 +788,7 @@ export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=cod
       'resolve-node':'Discover and verify an existing compatible Node without a host, npm package or configuration writes.',
       'prepare-desktop':'Prepare a small QwenWork suite or stable WorkBuddy market from this exact acquired npm package. Uses --target, --package-name/--package-version, --suite-version, --node-executable and an external --destination; does not register a host. Updates use the previous preparation receipt.',
       'prepare-embedding':'Check the fixed local model cache; --allow-download explicitly prepares resources and --probe verifies actual offline CPU inference. No host or project required.',
-      install:'The current Agent selects --host from trusted context or one user choice. Direct install orchestrates existing native routes or Codex Desktop/QwenWork/WorkBuddy preparation. Missing inputs and pending activation are explicit. Existing --dry-run / --apply remain available.',
+      install:'Use the host already specified in the installation request. DSH returns the exact native plugin_manager installation call for this conversation, without profile discovery or executable fingerprints. Other routes perform native registration or desktop preparation. Existing explicit --dry-run / --apply remain available.',
       'plugin-directory':'Inspect the optional Claude/Qoder session-only --plugin-dir entry; this is not persistent installation.',
       'check-runtime':'Check runtime prerequisites and write an external runtime receipt; does not install.',
       recover:'Recover an owned Codex or Claude installation transaction using --receipt.',
@@ -809,7 +809,7 @@ export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=cod
       '--codex-executable <path>':'Explicit Codex executable for native apply/recovery/uninstall.',
       '--user-root <directory>':'Profile root; production native registration requires the actual user profile.',
       '--disable-embedding':'Explicitly disable local embedding in the plan or runtime check.',
-      '--dsh-config <file>':'DSH install only: absolute JSON with dshHome, official node/CLI/Loader file pins and host/Loader versions; desktopHostManifest selects the official Electron Desktop CLI. No scope or runner override.',
+      '--dsh-config <file>':'Advanced DSH CLI transaction only: absolute JSON with dshHome and official runtime pins. Omit for the normal native plugin_manager route; the running host owns its profile and runtime.',
       '--profile <name>':'DSH install only: explicitly selected existing profile; never initialized implicitly.',
       '--aggregate-selector <name@version>':'DSH install only: optional exact aggregate override matching the product release mapping; required for old or unbound candidates.',
       '--registry <https-url>':'DSH install only: explicit credential-free HTTPS download registry or mirror; defaults to the product mapping. Preserves the exact mapped aggregate and binds the saved plan/receipt; no automatic fallback. Required for old or unbound candidates.',
@@ -821,7 +821,7 @@ export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=cod
       '--previous-receipt <file>':'DSH: optional successful installation history to verify; ordinary Host-managed registry updates use the current profile and require no historical receipt. Supplied receipts must remain valid. Desktop: reuse an owned preparation or prepare a newer native suite/npm version.',
       '--npm-root-windows, --destination-windows':'Desktop: explicit Windows path mappings required when preparing from another platform; native Windows paths must match actual roots.',
     },
-    limitations:['plugin-directory is an optional session-only diagnostic, not installation. Codex requires an admitted adapter; DSH requires pinned public CLI inputs. Desktop preparation needs native import and activation. Exit 2 means host selection or inputs are required; exit 0 does not establish a usable native session.',
+    limitations:['plugin-directory is an optional session-only diagnostic, not installation. Codex requires an admitted adapter. DSH native-action-required returns a host tool request, not an installed plugin; explicit advanced CLI transactions retain their pinned inputs. Desktop preparation needs native import and activation. Exit 2 means host selection or inputs are required; exit 0 does not establish a usable native session.',
       'DSH failures retain partial state without rollback. Configuration parsing is not actual host runtime or release acceptance.',
       'Uninstall requires a successful owned receipt. Package installation is not Bundle/Panel/GRA/KAG acceptance.'],
   }
@@ -834,7 +834,7 @@ export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=cod
     return installCodexDesktopFromNpm(values,{npmRoot,userRoot,
       invokeRuntime:nextArgs=>installerMain(nextArgs,{npmRoot,userRoot,agentDispatch:false})})
   if(agentDispatch&&positionals[0]==='install'&&!values['dry-run']&&!values.apply) {
-    const context={npmRoot,userRoot,adapter,dshAdapterFactory,claudeAdapterFactory,qoderInstaller,agentDispatch:false,signal,dshInstallTimeoutMs}
+    const context={npmRoot,userRoot,adapter,dshAdapterFactory,claudeAdapterFactory,qoderInstaller,agentDispatch:false,signal,dshInstallTimeoutMs,onDshOutput}
     return agentInstallation(values,{npmRoot,admittedCodexAdapter:adapter!==codexAdapter,
       invoke:nextArgs=>installerMain(nextArgs,context),
       desktopPrepare:nextArgs=>desktopPreparationMain(nextArgs,{npmRoot}),
@@ -898,7 +898,7 @@ export async function installerMain(args,{npmRoot,userRoot=homedir(),adapter=cod
     return {...plan,planFile:path}
   }
   if(values.apply)assert.ok(!values['node-executable'],'Apply uses the saved plan Node; do not select another executable')
-  if(values.host==='dsh'&&positionals[0]==='install')return dshInstallerEntry(values,{npmRoot,dshAdapterFactory,args,signal,dshInstallTimeoutMs})
+  if(values.host==='dsh'&&positionals[0]==='install')return dshInstallerEntry(values,{npmRoot,dshAdapterFactory,args,signal,dshInstallTimeoutMs,onDshOutput})
   if(adapter===codexAdapter&&values['codex-executable']&&positionals[0]!=='check-runtime') {
     assert.equal(values.host,'codex','Native executable is only valid for the Codex host')
     const profile=resolve(values['user-root']??userRoot)

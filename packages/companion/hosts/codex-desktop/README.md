@@ -16,14 +16,13 @@ Acquire an exact `yugoo-design` npm release in a durable version directory using
 [shared installation entry](../../HOSTS.md#agent-led-installation-and-updates).
 Read the acquired package's actual `yugoo-design --help`; older releases may
 not expose the npm-backed Desktop route. From that installation's consumer
-directory, prepare a source and review its catalog plan:
+directory, prepare the source and its catalog entry:
 
 ```sh
 npx --no-install yugoo-design install --host codex-desktop \
   --destination /absolute/user-home/plugins/yugoo-design/EXACT_VERSION \
   --receipt-dir /absolute/external/receipts \
-  --node-executable /absolute/existing/public/node \
-  --dry-run
+  --node-executable /absolute/existing/public/node
 ```
 
 The source must be new, inside the intended user's home, outside the acquired
@@ -33,12 +32,13 @@ Runtime files, dependencies and Node are not copied. Keep both directories at
 their recorded paths. Public Node runs the shared service; the app's signed
 runtime remains specific to the host-launched bridge described below.
 
-Review the plan's source, version, profile and owned catalog-entry change. The
-command verifies the installed runtime; an existing exact `--runtime-receipt`
+The command retains its source, version, profile and owned catalog-entry change
+in the preparation receipt. It verifies the installed runtime; an exact `--runtime-receipt`
 for this package and Node can be reused during preparation. Runtime loading does
 not prepare the embedding model cache or establish KAG/GRA acceptance.
 
-Apply the saved plan from the same acquired package:
+If you need a separate plan review, add `--dry-run` to the preparation command.
+That saves a plan without updating the catalog. Apply it from the same acquired package:
 
 ```sh
 npx --no-install yugoo-design install --host codex-desktop \
@@ -47,9 +47,9 @@ npx --no-install yugoo-design install --host codex-desktop \
 ```
 
 Apply uses the saved source, Node and ownership proof. Do not add a destination,
-Node override or previous receipt to that command. The result still reports
-`hostRegistered: false`, `installed: false` and `loaded: false`; native activation
-is the next step.
+Node override or previous receipt to that command. Either preparation route
+reports `hostRegistered: false`, `installed: false` and `loaded: false`; install
+and activate the prepared entry next.
 
 For an owned update, acquire the next exact npm version into a new durable
 directory, choose a new source directory, and add
@@ -59,14 +59,28 @@ owned entry before replacing only that entry's source. Preserve old directories
 and the receipt chain. An ownership conflict or edited source is reported and
 retained, rather than repaired by overwriting it.
 
-## Activate in the native plugin UI
+<a id="activate-in-the-native-plugin-ui"></a>
 
-Install Yugoo Design through the desktop Plugins UI. Verify the actual installed
-cache version/files and select the plugin in the current conversation. If a
-normal restart is required to refresh local plugins, the user performs it and
-returns to this same conversation. After loading, use `$yugoo` to select a project
-and follow the installed desktop entry. Registration, loading, restart and idle
-wake require their own on-site evidence.
+## Install and activate the plugin
+
+The Agent can install the prepared entry using the official Codex CLI when its
+`plugin add` command is available for the intended desktop user/profile:
+
+```sh
+codex plugin add RETURNED_SELECTOR --json
+```
+
+Use the preparation result's selector; the default personal catalog returns
+`yugoo-design@personal`. Keep the selected user/profile consistent with the
+prepared catalog. If that CLI route is unavailable, use the desktop's supported
+plugin installation entry.
+
+Ask the user only for required UI activation or normal reload, then return to
+the intended conversation. Confirm the loaded version and invoke `$yugoo` for
+help or project listing. A successful CLI install does not prove that an
+already-running conversation loaded the version. Creating a project, downloading
+embedding models and running a complete design regression are separate work;
+they are not prerequisites for ordinary installation completion.
 
 ## Start from the original conversation
 

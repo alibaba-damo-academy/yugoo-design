@@ -120,10 +120,11 @@ export async function planCodexDesktopMarketplace({ pluginRoot, userRoot = homed
   const mapping = JSON.parse(await text(join(source, 'codex-desktop.json')))
   assert.equal(manifest.name, 'yugoo-design'); assert.equal(manifest.requires_local_executor, true)
   assert.match(manifest.version ?? '', /^[A-Za-z0-9_.+-]+$/u, 'Exact desktop plugin version required')
-  assert.equal(mapping.host, 'codex-desktop'); await verifyNodeRuntime(mapping.nodeRuntime)
+  assert.equal(mapping.host, 'codex-desktop')
   const files = await tree(source)
   const npmPackage = mapping.source !== undefined ? await verifyCodexDesktopNpmSource(source, mapping) : null
   if (!npmPackage) {
+    await verifyNodeRuntime(mapping.nodeRuntime)
     for (const file of ['scripts/design.mjs', 'scripts/codex-desktop-bridge.mjs', 'scripts/codex-desktop-marketplace.mjs',
       'skills/design-panel/codex-desktop.md', 'skills/yugoo/SKILL.md', 'web/index.html']) {
       assert.ok(files.files[file], 'Missing desktop closure input: ' + file)
@@ -268,7 +269,7 @@ export async function applyCodexDesktopMarketplace(plan, { receiptDirectory, che
     const after = await text(plan.marketplacePath)
     if (after !== next) throw Object.assign(Error('Marketplace changed after preparation; no automatic rollback'), { code: 'CODEX_DESKTOP_MARKETPLACE_CONFLICT' })
     transaction = { ...transaction, phase: 'prepared-native-install-pending', marketplacePrepared: true, afterSha256: hash(after),
-      next: 'Install this exact local plugin through the desktop native plugin UI, verify its loaded cache, and use a normal user-controlled restart if needed. Keep the current conversation.' }
+      next: `Install the prepared entry with the official Codex CLI for this desktop user/profile when plugin add is supported: codex plugin add ${plan.selector} --json. Otherwise use the desktop's supported plugin installation entry. Ask for required UI activation or normal reload, then verify the loaded version in the current conversation.` }
     await save()
     return transaction
   } catch (error) {

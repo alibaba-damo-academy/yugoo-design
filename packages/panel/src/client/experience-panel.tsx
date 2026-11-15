@@ -6,7 +6,7 @@ import { useTextArtifactContents } from './panels/artifact-text-hydration.ts'
 import { useHtmlImageContents } from './panels/artifact-html-images.ts'
 import { INTERACTIVE_PREVIEW_SANDBOX, secureDesignSrcDoc } from './srcdoc-security.ts'
 import { Button } from './ported/ui/button.tsx'
-import { Info } from 'lucide-react'
+import { Info, Plus } from 'lucide-react'
 import { EXPERIENCE_CSS } from './experience-styles.ts'
 import { DesignPanelSurface } from './design-panel-surface.tsx'
 import { usePanelI18n } from '../panel-i18n.tsx'
@@ -76,10 +76,15 @@ export function ExperiencePanel(props: ExperiencePanelProps): ReactElement {
     </div> : <div className='dsh-experience-layout'>
       <button type='button' className='dsh-experience-directory-toggle' aria-expanded={navigationOpen} onClick={() => setNavigationOpen(v => !v)}>{t('experienceDirectory')} · {views.length} {navigationOpen ? '▴' : '▾'}</button>
       <nav aria-label={t('experienceDirectory')} className={`dsh-experience-directory dsh-panel-workspace-navigation dsh-record-workspace-flat-nav${navigationOpen ? ' is-open' : ''}`}>
-        <header className='dsh-experience-directory-heading'><h2><span className='dsh-experience-directory-title'>{t('experienceTitle')}<span className='dsh-experience-info' title={t('experienceHint')} aria-label={t('experienceHint')} tabIndex={0}><Info size={14} aria-hidden='true' /></span></span><span className='dsh-experience-count'>{views.length}</span></h2></header>
+        <header className='dsh-experience-directory-heading'>
+          <h2><span className='dsh-experience-directory-title'>{t('experienceTitle')}<span className='dsh-experience-info' title={t('experienceHint')} aria-label={t('experienceHint')} tabIndex={0}><Info size={14} aria-hidden='true' /></span></span></h2>
+          <div className='dsh-experience-directory-heading-actions'>
+            <span className='dsh-experience-count'>{views.length}</span>
+            <Button type='button' variant='ghostIcon' size='icon' aria-label={t('experienceAdd')} title={t('experienceAdd')} disabled={!props.writable || pending}
+              onClick={() => void send(t('experienceRecommendPrompt'))}><Plus aria-hidden='true' /></Button>
+          </div>
+        </header>
         <div className='dsh-panel-workspace-nav-items'>
-        <button type='button' className='dsh-experience-add dsh-record-workspace-flat-add' aria-label={t('experienceAdd')} disabled={!props.writable || pending}
-          onClick={() => void send(t('experienceRecommendPrompt'))}><span aria-hidden='true'>＋</span>{t('experienceAdd')}</button>
         {views.map(v => <div key={v.id} className='dsh-experience-nav-group'>
           <button type='button' className='dsh-experience-scene' aria-current={v.id === view.id ? 'page' : undefined}
             onClick={() => { if (v.id !== view.id) { setSelected(v.id); setSectionId('') }; setNavigationOpen(false) }}>{v.title}</button>

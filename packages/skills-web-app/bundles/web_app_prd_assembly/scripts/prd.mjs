@@ -448,6 +448,9 @@ async function materializeVisuals(html, sourceFiles) {
   let outputHtml = html
   try {
     for (const name of VISUAL_REGIONS) {
+      // An omitted conditional chapter has no empty region to materialize.
+      // Final document validation retains chapter and marker requirements.
+      if (plan[name].length === 0 && !new RegExp(`<!--\\s*prd-visual:${name}:(?:start|end)\\s*-->`, 'iu').test(outputHtml)) continue
       outputHtml = DISTRIBUTED_VISUAL_REGIONS.has(name)
         ? replaceDistributedVisualRegion(outputHtml, name, plan[name], diagnostics, copy)
         : replaceVisualRegion(outputHtml, name, plan[name].map(item => renderVisual(item, copy)).join('\n'))
@@ -691,15 +694,19 @@ function htmlDiagnostics(state, html, template, sourceFiles) {
     }
   }
 
+  const visual = visualPlan(sourceFiles)
+  diagnostics.push(...visual.diagnostics)
+  const requiredVisuals = new Set(templateSections
+    .filter(section => section.policy === 'required' || actualSections.has(section.id))
+    .flatMap(section => section.visualRegions))
   for (const name of declaredVisuals) {
     const starts = [...html.matchAll(new RegExp(`<!--\\s*prd-visual:${name}:start\\s*-->`, 'giu'))]
     const ends = [...html.matchAll(new RegExp(`<!--\\s*prd-visual:${name}:end\\s*-->`, 'giu'))]
+    if (!requiredVisuals.has(name) && (visual.plan[name] ?? []).length === 0 && starts.length === 0 && ends.length === 0) continue
     if (starts.length !== 1 || ends.length !== 1 || (starts[0]?.index ?? 0) >= (ends[0]?.index ?? 0)) diagnostics.push(`prd.html must keep one ordered ${name} visual region`)
   }
   for (const match of html.matchAll(/<!--\s*prd-visual:([A-Za-z0-9_-]+):(?:start|end)\s*-->/giu)) if (!declaredVisuals.has(match[1])) diagnostics.push(`prd.html contains unsupported visual region ${JSON.stringify(match[1])}`)
 
-  const visual = visualPlan(sourceFiles)
-  diagnostics.push(...visual.diagnostics)
   for (const name of declaredVisuals) {
     const region = new RegExp(`<!--\\s*prd-visual:${name}:start\\s*-->(?<body>[\\s\\S]*?)<!--\\s*prd-visual:${name}:end\\s*-->`, 'iu').exec(html)?.groups?.body ?? ''
     const expected = visual.plan[name] ?? []

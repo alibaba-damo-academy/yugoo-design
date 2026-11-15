@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { lstat, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { CODEX_DESKTOP_INSTALL_OPTIONS } from './npm-installer-codex-desktop.mjs'
+import { validateReleaseHosts } from './npm-installer-dsh.mjs'
 
 export const AGENT_INSTALL_HOSTS = ['dsh', 'codex', 'codex-desktop', 'claude-code', 'qoder', 'qwenwork', 'workbuddy']
 export const DESKTOP_INSTALL_OPTIONS = ['destination', 'node-executable', 'suite-version', 'npm-root-windows',
@@ -30,6 +31,40 @@ function pending(host, status, missing, message) {
     installation: { host: host ?? null, acquisition: 'unverified', registration: 'not-performed',
       activation: 'not-performed', usability: 'unverified', nextActions: [{ action: 'supply-inputs', automatic: false, message }] } }
 }
+
+/** The running DSH owns its profile and package manager; this CLI only supplies the release target. */
+async function dshNativeInstallation(values, npmRoot) {
+  const read = async name => {
+    const path = join(npmRoot, name), info = await lstat(path)
+    assert.ok(info.isFile() && info.size <= 1024 * 1024, 'Expected bounded acquired product metadata')
+    return JSON.parse(await readFile(path, 'utf8'))
+  }
+  const manifest = await read('package.json')
+  const mapping = await read('release-hosts.json')
+  const selected = validateReleaseHosts(mapping)
+  assert.ok(selected, 'This package has no released DSH installation target')
+  assert.equal(mapping.hosts.dsh.aggregateVersion, manifest.version, 'DSH target must match the acquired product version')
+  const registry = values.registry === undefined ? selected.registry
+    : validateReleaseHosts({ ...mapping, hosts: { dsh: { ...mapping.hosts.dsh, registry: values.registry } } }).registry
+  const tool = { name: 'plugin_manager', arguments: {
+    action: 'install_bundle', target: selected.aggregateSelector, registry,
+  } }
+  return {
+    schemaVersion: 1, kind: 'agent-installation', host: 'dsh', route: 'native-plugin-manager',
+    status: 'native-action-required', hostRegistered: false, usable: false,
+    package: { name: manifest.name, version: manifest.version },
+    installation: {
+      host: 'dsh', acquisition: 'available', registryAcquisitionVerified: false,
+      registration: 'not-performed', activation: 'not-performed', usability: 'unverified',
+      nextActions: [
+        { action: 'install-native-bundle', tool,
+          message: 'In this DSH conversation, use its exposed native plugin_manager operation with these arguments. The host owns the current profile, package manager, registration and activation. Reuse an already loaded matching version. Follow the host result for any required approval, build permission or restart; do not recreate host configuration or calculate executable fingerprints. If this tool is not exposed, use the normal Plugins UI with the same exact target. A denied or failed action is not permission to retry through another route.' },
+        { action: 'verify-native-entry',
+          message: 'Confirm the loaded version in Plugins and invoke /yugoo in this conversation. Report incomplete activation. Installation does not require creating a project, running GRA, downloading an embedding model or repeating package checks. Give one first-project request using Web App Kit.' },
+      ],
+    },
+  }
+}
 const qwenConnectorInstructions = 'Reuse an already working design-system connector instead of adding a duplicate. Discover the current host\'s native entries with qw_query({key:"qwenwork"}), then query its advertised qwenwork.settings.connector.custom entry. If add is advertised and needed, the host Agent can use qw_action({key:"qwenwork.settings.connector.custom",action:"add",params:{name:"design-system",config:CONFIG}}), where CONFIG is the unchanged mcpServers["design-system"] entry in this generated design-system-mcp.json (command, args and any env). Query the exact detail key returned by the host and confirm connected status and tools. These are native Host tools, not Yugoo CLI or MCP-wrapper calls; a documented action alone does not prove it ran. If the host cannot perform this action or requires user interaction, open Extensions → Connectors → Add → Paste JSON configuration, paste the contents of this generated design-system-mcp.json, import and enable it. Keep one active connector and follow the organization\'s connector policy.'
 
 function activationActions(host, result, disableEmbedding) {
@@ -38,9 +73,14 @@ function activationActions(host, result, disableEmbedding) {
     message: 'Use this acquired product\'s prepare-embedding to check the fixed model cache under the actual runtime user and operating system. Match the runtime\'s --embedding-cache and selected Node; a WSL cache is not a Windows runtime cache. Reuse complete files. If resources are missing or invalid, explain the model download and use --allow-download only when permitted; use --probe to verify CPU inference. DSH custom provider/model settings remain owned by DSH and must not be replaced with defaults. Report resource integrity, CPU inference and the real project\'s semantic status separately. Missing embeddings do not block basic design or available source-projection context.' }]
   const verify = { action: 'verify-native-session', automatic: true,
     message: 'In the intended native conversation, verify the actually loaded Yugoo Design version and tools; then open a project and verify Panel save/reopen and original-conversation receipt. Registration alone is not usability.' }
+  if (host === 'codex-desktop' && result.status === 'desktop-plan-ready') return [
+    { action: 'apply-prepared-catalog', automatic: false, path: result.planFile,
+      message: 'Apply this saved catalog plan with the same acquired package and receipt directory before native plugin installation. No plugin has been installed or loaded.' }]
   if (host === 'codex-desktop') return [
     { action: 'activate-native-plugin', automatic: false, path: result.marketplacePath,
-      message: 'Install or update this exact prepared local Yugoo Design source through Codex Desktop. If a normal restart is required, keep and return to the current conversation. Retain the exact npm version and previous owned source until the loaded version is verified.' }, ...embedding, verify]
+      message: `Use the official Codex CLI for the intended desktop user/profile when it supports plugin add: run codex plugin add ${result.selector ?? 'RETURNED_SELECTOR'} --json to install the prepared catalog entry. Otherwise use the desktop's supported plugin installation entry. Ask the user only for required UI activation or normal reload, then return to this conversation. Preserve the acquired npm package and previous owned source. A successful add does not establish that this conversation loaded the version.` },
+    { action: 'verify-native-session', automatic: true,
+      message: 'Confirm the actually loaded Yugoo Design version and invoke $yugoo for help or existing-project listing in the intended desktop conversation. Report any missing tool or required activation step. Do not create a project, download embedding models or run a full design/save/reopen regression as part of ordinary installation.' }]
   if (host === 'qwenwork') return [
     { action: 'import-expert-suite', automatic: false, path: result.nativeImport?.archive, suitePath: result.nativeImport?.suite,
       message: 'First use the current QwenWork host\'s advertised native tools: discover its actual entries with qw_query({key:"qwenwork"}), then inspect qwenwork.settings.plugins. Use install_from_path only if that entry advertises it, and follow its returned schema: supply the prepared suite directory at suitePath or archive at path only in the form that action actually accepts; do not assume a ZIP is accepted. If native tools cannot perform the required action, open Extensions → Expert Kits → Add → Upload suite, select the generated ZIP at path, install and enable it. Preparing files is not native installation.' },
@@ -101,6 +141,8 @@ export async function agentInstallation(values, { npmRoot, invoke, desktopPrepar
   const desktop = host === 'qwenwork' || host === 'workbuddy'
   const allowed = desktop ? ['host', ...DESKTOP_INSTALL_OPTIONS] : nativeOptions[host]
   for (const key of Object.keys(values)) assert.ok(allowed.includes(key), `${host} install accepts only ${allowed.map(k => '--' + k).join(', ')}; unsupported option --${key}`)
+  if (host === 'dsh' && !['dsh-config', 'profile', 'receipt-dir', 'previous-receipt', 'aggregate-selector'].some(key => Object.hasOwn(values, key)))
+    return dshNativeInstallation(values, npmRoot)
   const required = desktop ? ['destination', 'suite-version'] : ['receipt-dir']
   const windowsTarget = Object.hasOwn(values, 'npm-root-windows') || Object.hasOwn(values, 'destination-windows')
   if (desktop && windowsTarget && platform !== 'win32') required.push('node-executable')

@@ -10,9 +10,9 @@ In your current working DeepSeek Harness conversation, give the Agent this reque
 
 ```text
 Install or update Yugoo Design in this DeepSeek Harness.
-Reuse a matching installation; otherwise use my requested version or resolve latest once to an exact stable npm release and verify its integrity. If latest is a prerelease, report and stop. Prepare missing Node.js >=22.19.0 and pnpm, then run pnpm add --save-exact yugoo-design@<exact-version> --registry=https://registry.npmjs.org in a persistent version directory outside my projects and host profile.
-Read node_modules/yugoo-design/README.md and run pnpm exec yugoo-design --help. Follow install --host dsh to connect my current profile using the local inputs it requires.
-Keep my projects, Studio content, model/search settings and receipts. Give precise steps for any manual activation or restart, then verify the loaded version, /yugoo, Panel save/reopen and that this conversation receives my saved edits. Use the packaged instructions; do not clone or build the source.
+Reuse a matching installation; otherwise use my requested version or resolve latest once to an exact stable npm release. If latest is a prerelease, report and stop. Run pnpm add --save-exact yugoo-design@<exact-version> in a persistent version directory outside my projects and host profile, preparing compatible Node/pnpm only if missing.
+Run pnpm exec yugoo-design install --host dsh there and execute its returned native plugin_manager call in this conversation. DSH handles the current profile, package checks, configuration and activation; do not build a host fingerprint/configuration file.
+Keep my projects, Studio content and model/search settings. Follow the host approval and any required restart step, confirm the loaded version in Plugins, and invoke /yugoo. Give me one first-project request using Web App Kit; do not create a project during installation.
 ```
 
 The same `yugoo-design` product connects to the native DSH integration; you do not select its internal modules. See the [DSH installation and recovery guide](../companion/HOSTS.md#install-or-update-deepseek-harness) for additional setup and update details.
@@ -507,7 +507,16 @@ and release.
 
 ### Candidate npm installer: DSH route and recovery limits
 
-The product CLI route is `install --host dsh`. Acquire the selected exact
+The default product CLI route, `install --host dsh`, returns an exact
+`plugin_manager install_bundle` call from the acquired release mapping.
+The Agent executes it through the current DSH conversation; the native host
+owns profile selection, package installation, configuration and activation.
+The returned request does not claim an installation or a loaded runtime.
+No executable hashes or profile configuration file are needed for this route.
+If the tool is not exposed, use the normal Plugins UI with the returned target.
+
+The advanced explicit CLI transaction remains available for an intentionally
+selected profile. Acquire the selected exact
 published `yugoo-design` version using the shared installation guide; the older
 Companion package versions remain in the historical checks below. This is an installer adapter
 for the separately installed official DSH
@@ -517,7 +526,7 @@ the exact mapped aggregate and its internal modules automatically; users do
 not install the internal packages individually. DSH itself remains an external
 host. The Companion payload is not registered as a DSH bundle.
 
-This route requires an existing isolated or user-selected DSH profile, an
+This advanced route requires an existing isolated or user-selected DSH profile, an
 absolute `--dsh-config` JSON file pinning the official Node/CLI/Loader inputs,
 `--profile`, and an external `--receipt-dir`. A bound product
 `release-hosts.json` supplies the exact aggregate version and default HTTPS

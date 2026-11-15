@@ -324,6 +324,13 @@ test('candidate uses fixed versions and deterministic inventory; source and lice
     assert.equal(result.status, expectedExit, result.stderr)
   }
   await writeFile(join(wrapperFixture, 'installer.mjs'),
+    'export async function installerMain(args, {onDshOutput}) { onDshOutput(Buffer.from("native progress")); return {status:"native-action-required",hostRegistered:false} }\n')
+  const progress = spawnSync(process.execPath, [join(wrapperFixture, 'yugoo-design.mjs'), 'install', '--host=dsh'],
+    { cwd: root, encoding: 'utf8' })
+  assert.equal(progress.status, 0)
+  assert.equal(progress.stderr, 'native progress')
+  assert.deepEqual(JSON.parse(progress.stdout), {status:'native-action-required',hostRegistered:false})
+  await writeFile(join(wrapperFixture, 'installer.mjs'),
     'export async function installerMain() { throw Object.assign(Error("native failed"), {installation:{host:"claude-code",registration:"failed-or-unconfirmed",receiptFile:"retained-receipt.json"}}) }\n')
   const failed = spawnSync(process.execPath, [join(wrapperFixture, 'yugoo-design.mjs'), 'install'], { cwd: root, encoding: 'utf8' })
   assert.equal(failed.status, 1)
@@ -514,15 +521,22 @@ test('real overlay MCP metadata launches relative and copied registrations from 
   }
 })
 
-test('public bin routes pending Companion plans and requires explicit DSH and Claude inputs', async t => {
+test('public bin returns the native DSH action and retains explicit CLI transaction inputs', async t => {
   const { root, options } = await setup(t)
-  const { target } = await buildCompanionCandidate(options)
+  const { target } = await buildCompanionCandidate({ ...options, version: productVersion })
   const relocated = join(root, 'installer relocated with spaces')
   await rename(target, relocated)
   const bin = join(relocated, 'bin/yugoo-design.mjs')
   const userRoot = join(root, 'isolated home'); await mkdir(userRoot)
   const receipts = join(root, 'external receipts')
   const before = await readFile(join(relocated, 'release-manifest.json'))
+  const nativeDsh = execute(bin, ['install', '--host', 'dsh'], root)
+  assert.equal(nativeDsh.status, 'native-action-required')
+  assert.equal(nativeDsh.hostRegistered, false)
+  assert.equal(nativeDsh.usable, false)
+  assert.equal(nativeDsh.installation.nextActions[0].tool.name, 'plugin_manager')
+  assert.equal(nativeDsh.installation.nextActions[0].tool.arguments.target,
+    '@yugoo-design/dsh-design-system-dsh@' + productVersion)
   // Exercise the shipped bin, retaining the existing host overlays and shared shim.
   for(const host of ['claude-code','qoder']) {
     const prefix=host==='claude-code'?'claude':'qoder'

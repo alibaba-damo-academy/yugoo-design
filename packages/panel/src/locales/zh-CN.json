@@ -463,7 +463,7 @@
   "experienceEmpty": "尚无可读取的已发布体验。从一个具体情境出发，把分散的设计放在一起看。",
   "experienceRecommend": "让 AI 推荐体验情境",
   "experienceRecommendPrompt": "请根据目前已经落盘的设计，推荐一两个值得体验的具体情境，说明各自能帮助我判断什么。本次新增场景先讨论建议，不直接发布；这不取消或暂停已授权的其他设计修改。",
-  "experienceHint": "已保存的体验可随时回看，不替代设计文件。",
+  "experienceHint": "通过具体使用场景体验设计，检查关键流程与交互是否符合预期。场景中的示例和假设用于探索、讨论；确认后的调整再更新到设计文件。",
   "experienceAdd": "新增场景",
   "experienceDemo": "演示 · 非已确认设计",
   "experienceAssumptionCount": "{count} 项假设",

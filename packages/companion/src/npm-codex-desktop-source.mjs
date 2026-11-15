@@ -5,7 +5,7 @@ import { lstat, mkdir, readFile, readdir, realpath, writeFile } from 'node:fs/pr
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { isPathWithin } from './npm-installer-paths.mjs'
-import { resolveNodeRuntime, verifyNodeRuntime } from './npm-node-runtime.mjs'
+import { resolveNodeRuntime } from './npm-node-runtime.mjs'
 import { nodeRegistrationFiles } from './npm-node-registration.mjs'
 import { assertDesktopNpmIdentity } from './npm-desktop-preparation.mjs'
 import { assertRuntimePath, inspectRuntime, assertInstalledRuntimeReceipt } from './npm-runtime-check.mjs'
@@ -51,6 +51,35 @@ function launcher(path) {
   return `const entry = new URL(${JSON.stringify(pathToFileURL(path).href)}); await import(entry.href)\n`
 }
 
+// Preserve the existing recursive inventory order while reusing the runtime
+// inspector's freshly read bytes. This is per-call data, not a verification cache.
+function packageInventoryFromRuntime(root, pins) {
+  const tree = new Map()
+  for (const pin of pins) {
+    if (!isPathWithin(root, pin.path)) continue
+    const parts = relative(root, pin.path).split(/[\\/]/u)
+    let node = tree
+    for (const part of parts.slice(0, -1)) {
+      if (!node.has(part)) node.set(part, new Map())
+      node = node.get(part)
+      assert.ok(node instanceof Map, 'Conflicting runtime inventory path')
+    }
+    const name = parts.at(-1)
+    if (node.has(name)) assert.equal(node.get(name), pin.sha256, 'Runtime inventory changed during inspection')
+    node.set(name, pin.sha256)
+  }
+  const files = {}
+  const visit = (node, prefix = '') => {
+    for (const name of [...node.keys()].sort()) {
+      const value = node.get(name), path = prefix + name
+      if (value instanceof Map) visit(value, path + '/')
+      else files[path] = value
+    }
+  }
+  visit(tree)
+  return files
+}
+
 async function inputs({ npmRoot, packageName, packageVersion, nodeRuntime, runtimeReceipt, disableEmbedding = false }) {
   await canonical(npmRoot)
   const packageBytes = await regular(join(npmRoot, 'package.json'), 1024 * 1024)
@@ -59,17 +88,6 @@ async function inputs({ npmRoot, packageName, packageVersion, nodeRuntime, runti
   assert.equal(manifest.version, packageVersion, 'Desktop npm package version mismatch')
   assertDesktopNpmIdentity(packageName, packageVersion)
   assert.equal(manifest['x-design-release-review']?.fixture, false, 'Desktop preparation requires a non-fixture acquired package')
-  await verifyNodeRuntime(nodeRuntime)
-  const packageInventory = await inventory(npmRoot)
-  const shared = join(npmRoot, 'payload/shared'), overlay = join(npmRoot, 'payload/overlays/codex')
-  for (const file of requiredShared) assert.ok(packageInventory['payload/shared/' + file], 'Missing desktop shared runtime asset: ' + file)
-  const bytes = await inventory(overlay, true)
-  for (const file of ['.codex-plugin/plugin.json', '.mcp.json', 'scripts/design.mjs',
-    'skills/yugoo/SKILL.md', 'skills/design-panel/SKILL.md', 'skills/design-panel/codex-desktop.md'])
-    assert.ok(bytes[file], 'Missing desktop overlay asset: ' + file)
-  const plugin = JSON.parse(bytes['.codex-plugin/plugin.json'])
-  assert.equal(plugin.name, 'yugoo-design'); assert.equal(plugin.version, packageVersion)
-  assert.equal(plugin.skills, './skills/'); assert.equal(plugin.mcpServers, './.mcp.json')
   await canonical(runtimeReceipt)
   assert.ok(!isPathWithin(npmRoot, runtimeReceipt), 'Runtime receipt must remain outside npm package')
   const receiptInfo = await lstat(runtimeReceipt)
@@ -79,6 +97,18 @@ async function inputs({ npmRoot, packageName, packageVersion, nodeRuntime, runti
   const receipt = JSON.parse(receiptBytes)
   assert.equal(receipt.scope, 'installed-runtime-readonly', 'Actual installed-runtime receipt required')
   const current = await inspectRuntime({ npmRoot, host: 'codex-desktop', nodeRuntime, disableEmbedding })
+  const packageInventory = packageInventoryFromRuntime(npmRoot, current.pins)
+  const shared = join(npmRoot, 'payload/shared'), overlay = join(npmRoot, 'payload/overlays/codex')
+  for (const file of requiredShared) assert.ok(packageInventory['payload/shared/' + file], 'Missing desktop shared runtime asset: ' + file)
+  const bytes = await inventory(overlay, true)
+  for (const [file, content] of Object.entries(bytes))
+    assert.equal(sha(content), packageInventory['payload/overlays/codex/' + file], 'Desktop overlay changed during inspection')
+  for (const file of ['.codex-plugin/plugin.json', '.mcp.json', 'scripts/design.mjs',
+    'skills/yugoo/SKILL.md', 'skills/design-panel/SKILL.md', 'skills/design-panel/codex-desktop.md'])
+    assert.ok(bytes[file], 'Missing desktop overlay asset: ' + file)
+  const plugin = JSON.parse(bytes['.codex-plugin/plugin.json'])
+  assert.equal(plugin.name, 'yugoo-design'); assert.equal(plugin.version, packageVersion)
+  assert.equal(plugin.skills, './skills/'); assert.equal(plugin.mcpServers, './.mcp.json')
   const runtime = assertInstalledRuntimeReceipt({ npmRoot, disableEmbedding }, receipt, current, sha(receiptBytes))
   return { manifest, bytes, shared, overlay, runtime, packageInventorySha256: digest(packageInventory), runtimeReceiptSha256: sha(receiptBytes) }
 }
