@@ -1,6 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { fixture } from './fixture.mjs'
+import { fixture, threadId } from './fixture.mjs'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { callCompanion } from '../src/connection-file.mjs'
 import { createNativeReviewScheduler } from '../src/native-review-scheduler.mjs'
 import { DesignReviewPublicationQueue } from '../../core/lib/index.js'
@@ -33,18 +35,61 @@ test('continuous native notices create fresh cycles at the same checkpoint and d
   } finally {await scheduler.close()}
 })
 const policy = mode => ({ mode, autoMergeWindowMs: 1000 })
+test('definite input setup failure retains exact prepared refs without an automatic retry loop', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  const current = policy('every-publication'), q = new DesignReviewPublicationQueue(current), state = {}
+  const refs = [{ reviewId: 'same-review', dispatch: true }]
+  let available = false, prepared = 0, sends = 0
+  const scheduler = createNativeReviewScheduler({
+    getPolicy: async () => current, getConnectionPath: () => '/exact/connection.json',
+    project: { project: { metadata: { name: 'fixture' }, designFilesRoot: '/test/design_files' }, refreshAccess: async () => ({ writable: true }) },
+    connection: { send: async () => { sends++; return available ? { accepted: true } : { accepted: false, status: 'unavailable', notSubmitted: true } } },
+    reviews: { publicationQueue: async fn => fn(q, state), publishedRevision: async checkpoint => ({ checkpoint }),
+      preparePublicationReviews: async () => { prepared++; return { requests: refs } } },
+    onError: error => { throw error },
+  })
+  const flush = async () => { for (let i = 0; i < 100; i++) await Promise.resolve() }
+  try {
+    await scheduler.notify('', { checkpoint: 'published' })
+    t.mock.timers.tick(0); await flush()
+    assert.equal(sends, 1); assert.equal(prepared, 1)
+    assert.equal(state.nativeDelivery.status, 'prepared-unavailable')
+    assert.deepEqual(state.nativeDelivery.requests, refs)
+    t.mock.timers.tick(600000); await flush()
+    assert.equal(sends, 1, 'unavailable input does not create a timer retry')
+    available = true
+    await scheduler.resumePending()
+    t.mock.timers.tick(0); await flush()
+    assert.equal(sends, 2); assert.equal(prepared, 1, 'explicit recovery uses the original prepared requests')
+    assert.equal(state.nativeDelivery.status, 'queued')
+    await scheduler.resumePending()
+    t.mock.timers.tick(600000); await flush()
+    assert.equal(sends, 2, 'accepted delivery is not replayed')
+  } finally { await scheduler.close() }
+})
 const state = answer => ({ questions: { goal: { prompt: 'Goal', kind: 'text', answer } } })
 async function until(check) {
-  for(let i=0;i<200;i++){ if(await check())return; await new Promise(resolve=>setTimeout(resolve,10)) }
+  const deadline=performance.now()+10000
+  while(performance.now()<deadline){ if(await check())return; await new Promise(resolve=>setTimeout(resolve,10)) }
   throw new Error('Timed out')
 }
-test('native auto coalesces publications into one background notice with committed evidence pins',async()=>{
+test('native auto coalesces publications into one background notice with committed evidence pins',async t=>{
   const f=await fixture()
   const call=(method,params={})=>callCompanion(f.server.connectionPath,{method,params})
+  // Real Git saves can take longer than the merge window on a loaded machine.
+  // Hold admission time until both publications exist; keep real I/O/timers.
+  let now=Date.now()
+  t.mock.method(Date,'now',()=>now)
   try {
     await call('updateReviewPolicy',{policy:policy('auto')})
     await call('savePanel',{skill:'smart_questions',state:state('first'),eventId:'native-auto-first'})
     const last=await call('savePanel',{skill:'smart_questions',state:state('second'),eventId:'native-auto-second'})
+    const queueFile=join(f.options.stateRoot,f.server.project.project.metadata.id,`reviews-${threadId}.json`)
+    // HTTP save deliberately does not wait for optional derived admission.
+    await until(async()=>JSON.parse(await readFile(queueFile,'utf8')).publicationQueue?.seen.includes(last.commit))
+    assert.equal(f.messages.length,0)
+    now+=1000
+    await call('updateReviewPolicy',{policy:policy('auto')})
     await until(()=>f.messages.length===1)
     assert.match(f.messages[0],new RegExp(last.commit))
     assert.match(f.messages[0],/queued notice is not a running reviewer/)

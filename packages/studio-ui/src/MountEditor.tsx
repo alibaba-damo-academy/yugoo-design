@@ -10,6 +10,27 @@ export interface MountEditorActions {
 }
 
 interface MountEditorProps { client: StudioInstanceClient; record: StudioInstance; locale: 'zh' | 'en'; onSaved: (value: StudioInstance) => void; onActions: (actions: MountEditorActions | undefined) => void; onDirtyChange?: (dirty: boolean) => void; onBusyChange?: (busy: boolean) => void }
+
+/** Read the Kit's saved bindings without activating mount editing. */
+export function MountedBundleBrowser({ record, locale, onPreview }: {
+  record: StudioInstance; locale: 'zh' | 'en'; onPreview: (bundle: { name: string; version: string }) => void
+}) {
+  const zh = locale === 'zh'
+  return <section className="ygd-studio-content-body" aria-label={zh ? '已挂载技能包' : 'Mounted Bundles'}>
+    <div className="ygd-studio-bundles-list">
+      {record.mounts.map((mount, index) => {
+        const bundle = { ...mount.bundle, ...mount.display }
+        const label = bundle.title?.[locale] ?? bundle.name
+        return <BundleCard key={`${bundle.name}@${bundle.version}:${index}`} bundle={bundle} locale={locale}>
+          <button type="button" className="ygd-studio-btn-secondary" aria-label={`${label} · ${zh ? '面板预览' : 'Panel Preview'}`}
+            onClick={() => onPreview({ name: bundle.name, version: bundle.version })}>{zh ? '面板预览' : 'Panel Preview'}</button>
+        </BundleCard>
+      })}
+      {!record.mounts.length && <p className="ygd-studio-empty">{zh ? '此套件尚未挂载技能包。' : 'This Kit has no mounted Bundles yet.'}</p>}
+    </div>
+  </section>
+}
+
 export function MountEditor(props: MountEditorProps) {
   return <MountEditorSession key={`${props.record.id}:${props.record.revision}`} {...props} />
 }

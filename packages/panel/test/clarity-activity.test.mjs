@@ -113,6 +113,44 @@ test('previous scores remain explicit and unchanged, in the original two-line pr
   } finally { await act(async () => root.unmount()) }
 })
 
+test('header metadata hides whole overflowing rows and restores them when space returns', async () => {
+  const root = mount(), observers = []
+  globalThis.ResizeObserver = class {
+    constructor(callback) { this.callback = callback; observers.push(this) }
+    observe() {}
+    disconnect() { this.disconnected = true }
+  }
+  try {
+    await act(async () => root.render(React.createElement('div', { className: 'dsh-design-project-header' },
+      React.createElement(DesignDockMeta, { clarity: view(undefined, assessment), projectName: 'A real project title' }))))
+    const meta = document.querySelector('[data-testid="design-dock-meta"]')
+    const [scores, identity] = meta.children
+    let available = 600
+    for (const [row, required] of [[scores, 520], [identity, 210]]) {
+      Object.defineProperty(row, 'clientWidth', { get: () => available })
+      Object.defineProperty(row, 'scrollWidth', { get: () => Math.max(available, required) })
+    }
+    const measure = () => observers.at(-1).callback()
+    measure()
+    assert.equal(scores.hasAttribute('data-overflow'), false)
+    assert.equal(identity.hasAttribute('data-overflow'), false)
+    available = 400; measure()
+    assert.equal(scores.hasAttribute('data-overflow'), true, 'the reassessment badge hides with its scores')
+    assert.equal(identity.hasAttribute('data-overflow'), false, 'the shorter name remains readable')
+    available = 180; measure()
+    assert.equal(identity.hasAttribute('data-overflow'), true)
+    available = 600; measure()
+    assert.equal(meta.querySelector('[data-testid="design-clarity-dock-stale"]').textContent, 'Needs reassessment')
+    assert.equal(scores.hasAttribute('data-overflow'), false)
+    assert.equal(identity.hasAttribute('data-overflow'), false)
+    assert.deepEqual([...scores.querySelectorAll('[role="progressbar"]')].map(node => node.getAttribute('aria-valuenow')), ['80', '60', '40'])
+  } finally {
+    await act(async () => root.unmount())
+    assert.equal(observers.every(observer => observer.disconnected), true)
+    delete globalThis.ResizeObserver
+  }
+})
+
 test('activity details are keyboard accessible, escaped, viewport bounded and dismissible without a job action', async () => {
   const root = mount(), detail = '<script>diagnostic</script>' + ' Long detail.'.repeat(300)
   try {
@@ -181,7 +219,7 @@ test('existing absent, unassessed and rejected render branches remain distinct; 
     assert.equal(document.querySelector('[data-testid="design-clarity-dock-unassessed"]').textContent, 'Not assessed yet')
     assert.match(CLARITY_DOCK_CSS, /prefers-reduced-motion: reduce[^}]+\.dsh-clarity-dock-activity \.animate-spin \{ animation: none;/)
     assert.match(CLARITY_DOCK_CSS, /\.dsh-clarity-dock-activity[^}]+font-size: 12px;/)
-    assert.match(CLARITY_DOCK_CSS, /\.dsh-clarity-dock\[data-single-line=true\]\{flex-wrap:wrap\}/, 'the readout can still wrap at narrow widths')
+    assert.match(CLARITY_DOCK_CSS, /\.dsh-clarity-dock\[data-single-line=true\]\{flex-wrap:wrap\}/, 'the readout can still wrap at narrow widths outside the fixed project header')
     assert.match(CLARITY_DOCK_CSS, /\.dsh-clarity-dock-dim\s*\{[^}]*min-width: max-content;[^}]*grid-template-columns: auto 64px;/, 'the three abbreviated labels retain equal readable tracks')
   } finally { await act(async () => root.unmount()) }
 })

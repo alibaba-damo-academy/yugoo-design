@@ -109,16 +109,85 @@ test('installed previews keep exact Kit pins from selected, unique and ambiguous
     } finally { await act(async () => root.unmount()) }
   }
 })
-async function mount(renderInstanceWorkbench, kind = 'bundle', describe = value => value) {
+async function mount(renderInstanceWorkbench, kind = 'bundle', describe = value => value, renderPreview) {
   const fixture = id => describe(kind === 'bundle' ? record(id) : { ...record(id), kind, source: { kit: { name: 'evidence', version: '1.0' } }, files: [{ path: 'mindset.md', bytes: 9, editable: true }] })
   const calls = [], dirty = [], instances = { list: async () => [fixture('first')], read: async ({ id }) => { calls.push(id); return fixture(id) }, readFile: async ({ id, path }) => ({ id, path, revision: 0, content: '# Fixture' }) }
   const client = { workspace: async query => ({ query, kits: [], bundles: [] }) }
   const controller = new StudioWorkspaceController(client)
   await controller.load(); controller.setSection(kind === 'kit' ? 'kits' : 'bundles')
   const root = createRoot(document.getElementById('root'))
-  await act(async () => root.render(React.createElement(StudioWorkspace, { client, controller, instances, locale: 'en', renderInstanceWorkbench, onDraftDirtyChange: value => dirty.push(value) })))
+  await act(async () => root.render(React.createElement(StudioWorkspace, { client, controller, instances, locale: 'en', renderInstanceWorkbench, renderPreview, onDraftDirtyChange: value => dirty.push(value) })))
   return { instances, controller, calls, dirty, click: async text => { assert.ok(button(text), text); await act(async () => button(text).click()) }, close: async () => { await act(async () => root.unmount()) } }
 }
+test('ordinary current Kit Open browses saved mounts and previews their owner source without entering editing', async () => {
+  const pin = { name: 'retained_notes', version: '1.0' }, requests = [], renders = [], fileReads = []
+  const panelYaml = 'version: 1\n# Saved Kit snapshot, distinct from the live Bundle\nsections: []\n'
+  let authoringEntries = 0
+  const f = await mount(() => { authoringEntries++; return undefined }, 'kit', value => ({
+    ...value, current: true, revision: 7,
+    files: [{ path: 'mindset.md', bytes: 9, editable: true }, { path: 'reference/notes.md', bytes: 15, editable: true }],
+    mounts: [{ bundle: { ...pin, source: { snapshot: 'retained-snapshot', sourceId: 'imported-notes' } },
+      display: { title: { zh: '保存的笔记', en: 'Saved Notes' }, description: 'The source retained by this Kit.' } }],
+  }), (value, _adopt, options) => {
+    renders.push({ value, options }); return React.createElement('p', { 'data-testid': 'mounted-sample' }, value.sample.summary)
+  })
+  f.instances.readFile = async input => { fileReads.push(input); return { ...input, revision: 7, content: '# ' + input.path } }
+  f.instances.preview = async input => { requests.push(input); return { preview: { bundle: pin, revision: 7, panelYaml, sample: { summary: 'Saved snapshot sample' } }, diagnostics: [] } }
+  try {
+    await f.click('Open')
+    await act(async () => document.querySelector('.ygd-studio-file-tree button[title="reference/notes.md"]').click())
+    await f.click('Source')
+    assert.equal(document.querySelector('textarea').value, '# reference/notes.md')
+    await f.click('Mounted Bundles')
+    assert.equal(button('Mounted Bundles').disabled, false, 'reading mounts needs no updateMounts capability')
+    assert.match(document.querySelector('section[aria-label="Mounted Bundles"]').textContent, /Saved Notes/)
+    assert.equal(button('Add'), undefined); assert.equal(button('Remove'), undefined)
+    await act(async () => document.querySelector('button[aria-label="Saved Notes · Panel Preview"]').click())
+    assert.deepEqual(requests, [{ id: 'first', expectedRevision: 7, bundle: pin, locale: 'en-US' }], 'preview resolves the saved Kit owner, never a global Bundle with the same pin')
+    assert.equal(document.querySelector('textarea[aria-label="panel.yaml"]').value, panelYaml)
+    assert.equal(document.querySelector('textarea').readOnly, true)
+    assert.equal(document.querySelector('[data-testid="mounted-sample"]').textContent, 'Saved snapshot sample')
+    assert.deepEqual(renders.at(-1).options, { readOnly: true, toolbarTarget: null })
+    assert.deepEqual(fileReads.map(value => value.path), ['mindset.md', 'reference/notes.md'], 'mounted YAML comes from the resolved preview, not a fabricated Kit file path')
+    await f.click('Back to Mounted Bundles'); await f.click('Source Files')
+    assert.equal(document.querySelector('textarea[aria-label="reference/notes.md"]').value, '# reference/notes.md', 'source selection and reading mode survive the round trip')
+    assert.equal(authoringEntries, 0)
+    await f.click('Mounted Bundles'); await f.click('Panel Preview'); await f.click('Edit')
+    assert.ok(authoringEntries > 0, 'host authoring starts only after explicit Edit')
+    assert.equal(button('Source Files').getAttribute('aria-pressed'), 'true', 'editing returns to Kit files rather than editing a mounted snapshot')
+    assert.equal(document.querySelector('textarea[aria-label="mindset.md"]').readOnly, false)
+  } finally { await f.close() }
+})
+
+test('mounted preview can be left while loading; late results and failures stay with their selection', async () => {
+  const pins = ['first_notes', 'second_notes'].map(name => ({ name, version: '1.0' }))
+  const pending = []
+  const f = await mount(undefined, 'kit', value => ({ ...value, mounts: pins.map(bundle => ({ bundle })) }), value => React.createElement('p', { 'data-testid': 'mounted-sample' }, value.sample.summary))
+  f.instances.preview = input => new Promise((resolve, reject) => pending.push({ input, resolve, reject }))
+  try {
+    await f.click('Open'); await f.click('Mounted Bundles'); await f.click('Panel Preview')
+    assert.equal(pending.length, 1)
+    await f.click('Back to Mounted Bundles')
+    await act(async () => document.querySelector(`button[aria-label="${pins[1].name} · Panel Preview"]`).click())
+    assert.equal(pending.length, 2)
+    const result = (pin, summary) => ({ preview: { bundle: pin, revision: 0, panelYaml: '# ' + summary, sample: { summary } }, diagnostics: [] })
+    await act(async () => pending[1].resolve(result(pins[1], 'Second saved source')))
+    await act(async () => pending[0].resolve(result(pins[0], 'Late first source')))
+    assert.equal(document.querySelector('textarea').value, '# Second saved source')
+    assert.equal(document.querySelector('[data-testid="mounted-sample"]').textContent, 'Second saved source')
+    await f.click('Back to Mounted Bundles'); await f.click('Panel Preview')
+    await act(async () => pending[2].reject(Error('Mounted source is unavailable')))
+    assert.equal(document.querySelector('[data-testid="mounted-sample"]'), null, 'an error cannot leave another mount\'s sample visible')
+    assert.match(document.body.textContent, /Panel preview could not be loaded/)
+    assert.doesNotMatch(document.body.textContent, /No Panel source|has no panel.yaml|Panel preview is unavailable here/, 'a failed read is not evidence that the source or preview capability is absent')
+    assert.ok(button('Back to Mounted Bundles'))
+    await f.click('View issues')
+    assert.match(document.querySelector('.ygd-studio-error-details').textContent, /Mounted source is unavailable/)
+    await act(async () => document.querySelector('dialog button[aria-label="Close error dialog"]').click())
+    await f.click('Back to Mounted Bundles'); await f.click('Source Files')
+    assert.match(document.body.textContent, /Fixture/, 'a failed preview leaves ordinary Kit reading available')
+  } finally { await f.close() }
+})
 test('local Bundle cards show existing Kit references and open the shared mount view without an installed catalog lookup', async () => {
   const pin = { name: 'local_observations', version: '1.0' }
   const kit = { id: 'referencing-kit', kind: 'kit', kit: { name: 'local_kit', version: '1.0' }, revision: 4,

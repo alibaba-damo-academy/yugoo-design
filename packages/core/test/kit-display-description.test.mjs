@@ -7,12 +7,16 @@ import { loadDesignKit } from '../src/kit-loader.ts'
 import { renderDesignSkillCatalog } from '../src/design-core-prompt.ts'
 
 const mindsetPath = fileURLToPath(new URL('../../skills-web-app/kits/web_app/mindset.md', import.meta.url))
+const kitManifestPath = fileURLToPath(new URL('../../skills-web-app/kits/web_app/kit.yaml', import.meta.url))
 const original = await readFile(mindsetPath, 'utf8')
 const withoutDisplay = original.replace(/\ndisplay_description:\n[\s\S]*?(?=\n---)/, '')
-const fs = source => ({
+const fs = (source, changeMounts) => ({
   async readText(path) {
     if (path === mindsetPath) return source
-    try { return await readFile(path, 'utf8') } catch (error) { if (error.code === 'ENOENT') return undefined; throw error }
+    try {
+      const text = await readFile(path, 'utf8')
+      return changeMounts && path === kitManifestPath ? changeMounts(text) : text
+    } catch (error) { if (error.code === 'ENOENT') return undefined; throw error }
   },
   listDir: readdir, isDirectory: async path => (await stat(path)).isDirectory(), realPath: realpath,
 })
@@ -22,16 +26,14 @@ const sourceLocation = {
   rootDir: fileURLToPath(new URL('../../skills-web-app/kits/web_app/', import.meta.url)),
   mindsetPath, skillsDir: bundlesDir, bundlesDir,
 }
-const load = source => loadDesignKit(fs(source), sourceLocation, { sourceId: 'fixture:kit-display-copy' })
+const load = (source, changeMounts) => loadDesignKit(fs(source, changeMounts), sourceLocation, { sourceId: 'fixture:kit-display-copy' })
 
 test('official Web App keeps ordered membership while mounted descriptions supply the full routing catalog', async () => {
   const kit = await load(original)
   const mounts = parse(await readFile(`${sourceLocation.rootDir}/kit.yaml`, 'utf8')).mounts
   const names = mounts.map(mount => mount.bindingKey)
-  const block = kit.mindset.match(/<design_skills>([\s\S]*?)<\/design_skills>/)[1]
   assert.equal(names.length, 15)
-  assert.deepEqual([...block.matchAll(/^## (.+)$/gm)].map(match => match[1]), names)
-  assert.equal(block.replace(/^## .+$/gm, '').trim(), '', 'official membership does not repeat capability prose')
+  assert.ok(!kit.mindset.includes('<design_skills>'), 'official Mindset does not duplicate runtime membership')
   assert.deepEqual(kit.skills.map(skill => skill.name), names)
   assert.equal(kit.mindsetSource, original, 'loading preserves the complete saved source')
 
@@ -62,7 +64,7 @@ test('official Web App keeps ordered membership while mounted descriptions suppl
 test('custom Mindset catalog prose remains saved and model-visible without generic stripping', async () => {
   const rule = 'A restored request must retain its observed rejection reason and handoff owner.'
   const source = original.replace(/^name: web_app$/m, 'name: custom_catalog')
-    .replace('## smart_questions', `## smart_questions\n\n${rule}`)
+    + `\n<design_skills>\n## smart_questions\n\n${rule}\n</design_skills>\n`
   const kit = await load(source)
   assert.equal(kit.name, 'custom_catalog')
   assert.equal(kit.mindsetSource, source)
@@ -71,12 +73,28 @@ test('custom Mindset catalog prose remains saved and model-visible without gener
     'custom domain instructions do not replace the mounted Bundle routing description')
 })
 
-test('an ids-only catalog still rejects changed mount order and duplicate membership', async () => {
-  const reordered = original.replace(/^## (smart_questions|research)$/gm,
-    (_, name) => `## ${name === 'smart_questions' ? 'research' : 'smart_questions'}`)
-  await assert.rejects(load(reordered), /Mindset catalog differs from authoritative mounts/)
-  const duplicate = original.replace('</design_skills>', '## smart_questions\n</design_skills>')
-  await assert.rejects(load(duplicate), /repeats skill names: smart_questions/)
+test('legacy Mindset headings cannot override or gate exact mounts', async () => {
+  const legacy = `${original}\n<design_skills>\n## ghost_bundle\n\nKeep this custom domain rule.\n## ghost_bundle\n</design_skills>\n`
+  const kit = await load(legacy)
+  const expected = parse(await readFile(`${sourceLocation.rootDir}/kit.yaml`, 'utf8')).mounts
+  assert.deepEqual(kit.skills.map(skill => skill.name), expected.map(mount => mount.bindingKey))
+  assert.equal(kit.mindsetSource, legacy)
+  assert.ok(kit.mindset.includes('Keep this custom domain rule.'))
+  assert.ok(!renderDesignSkillCatalog(kit).includes('ghost_bundle'))
+})
+
+test('the manifest alone changes catalog order and membership without rewriting Mindset', async () => {
+  const kit = await load(original, text => {
+    const manifest = parse(text)
+    manifest.mounts = manifest.mounts.filter(mount => mount.bindingKey !== 'whiteboard').reverse()
+    return JSON.stringify(manifest)
+  })
+  const expected = parse(await readFile(`${sourceLocation.rootDir}/kit.yaml`, 'utf8')).mounts
+    .map(mount => mount.bindingKey).filter(name => name !== 'whiteboard').reverse()
+  assert.deepEqual(kit.skills.map(skill => skill.name), expected)
+  assert.deepEqual([...renderDesignSkillCatalog(kit).matchAll(/^- id: (.+)$/gm)].map(match => match[1]), expected)
+  assert.equal(kit.mindsetSource, original)
+  assert.ok(!kit.resources['whiteboard/SKILL.md'])
 })
 
 test('optional Kit display copy is bilingual while methods, routing and exact mounts remain unchanged', async () => {

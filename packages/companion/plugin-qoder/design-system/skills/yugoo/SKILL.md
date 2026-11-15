@@ -65,8 +65,9 @@ never disclose its token or search for a latest connection.
 ## Native execution specifics
 
 Before choosing a Bundle, call `design_list_bundles` with this exact connection.
-Read its returned `mindsetMethod` from the selected project's current Kit for the
-Bundle catalog and selection method. Do not discover
+Use the returned Bundle IDs and descriptions as the current catalog. Read
+`mindsetMethod` from the selected project's current Kit for domain judgment and
+selection guidance; the Mindset does not maintain another Bundle list. Do not discover
 capabilities by searching the empty Design Files or scanning the plugin tree.
 Examples in `native-execution.md` are not a default choice of `page_design`.
 Once selected, use `design_prepare_bundle`. Follow its `execution.mode`: `main`

@@ -113,13 +113,17 @@ async function abortable(promise, signal) {
   try { return await Promise.race([promise, aborted]) } finally { signal.removeEventListener('abort', rejectAbort) }
 }
 function cancelBody(response) { response?.body?.cancel().catch(() => {}) }
-/** Unauthenticated, bounded transport. Tests may narrow, never remove, its deadline. */
-export async function downloadDarwinNativeInput({ workspace, fetchImpl = fetch, timeoutMs = 30000 } = {}) {
-  assert.ok(Number.isSafeInteger(timeoutMs) && timeoutMs > 0 && timeoutMs <= 30000, 'Invalid native input timeout')
+/** Unauthenticated, byte-pinned transport; a total deadline is caller-selected. */
+export async function downloadDarwinNativeInput({ workspace, fetchImpl = fetch, timeoutMs = 0, signal } = {}) {
+  assert.ok(Number.isSafeInteger(timeoutMs) && timeoutMs >= 0 && timeoutMs <= 2147483647, 'Invalid native input timeout')
+  signal?.throwIfAborted()
   const { source } = await readCurrentSource(workspace)
   const item = source.artifacts.find(item => item.path === DARWIN_NATIVE_INPUT.path)
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(new DOMException('Native input deadline exceeded', 'TimeoutError')), timeoutMs)
+  const cancel = () => controller.abort(signal.reason)
+  if (signal?.aborted) cancel()
+  else signal?.addEventListener('abort', cancel, { once: true })
+  const timer = timeoutMs > 0 ? setTimeout(() => controller.abort(new DOMException('Native input deadline exceeded', 'TimeoutError')), timeoutMs) : undefined
   let response, reader
   try {
     let url = new URL(DARWIN_NATIVE_INPUT.url)
@@ -156,26 +160,31 @@ export async function downloadDarwinNativeInput({ workspace, fetchImpl = fetch, 
     return bytes
   } finally {
     clearTimeout(timer)
+    signal?.removeEventListener('abort', cancel)
     controller.abort()
     if (reader) { reader.cancel().catch(() => {}); reader.releaseLock() } else cancelBody(response)
   }
 }
-export async function downloadNativeDonor({ fetchImpl = fetch } = {}) {
-  const response = await fetchImpl(NATIVE_DONOR.url, { redirect: 'error', credentials: 'omit', signal: AbortSignal.timeout(300000) })
-  assert.equal(response.status, 200, 'Native donor download failed')
-  const chunks = []; let size = 0
-  for await (const chunk of response.body) {
-    size += chunk.length
-    assert.ok(size <= NATIVE_DONOR.bytes, 'Native donor exceeds pinned size')
-    chunks.push(chunk)
-  }
-  const archive = Buffer.concat(chunks)
-  verifyNativeDonor(archive)
-  return archive
+export async function downloadNativeDonor({ fetchImpl = fetch, signal } = {}) {
+  signal?.throwIfAborted()
+  const response = await fetchImpl(NATIVE_DONOR.url, { redirect: 'error', credentials: 'omit', signal })
+  try {
+    assert.equal(response.status, 200, 'Native donor download failed')
+    const chunks = []; let size = 0
+    for await (const chunk of response.body) {
+      signal?.throwIfAborted()
+      size += chunk.length
+      assert.ok(size <= NATIVE_DONOR.bytes, 'Native donor exceeds pinned size')
+      chunks.push(chunk)
+    }
+    const archive = Buffer.concat(chunks)
+    verifyNativeDonor(archive)
+    return archive
+  } finally { cancelBody(response) }
 }
 /** No fallback: an unavailable Darwin input fails before the large donor download. */
-export async function acquireNativeInputs({ workspace, destination, fetchImpl = fetch } = {}) {
-  const darwinBytes = await downloadDarwinNativeInput({ workspace, fetchImpl })
-  const archive = await downloadNativeDonor({ fetchImpl })
+export async function acquireNativeInputs({ workspace, destination, fetchImpl = fetch, signal } = {}) {
+  const darwinBytes = await downloadDarwinNativeInput({ workspace, fetchImpl, signal })
+  const archive = await downloadNativeDonor({ fetchImpl, signal })
   return stageNativeDonor({ workspace, destination, archive, darwinBytes })
 }

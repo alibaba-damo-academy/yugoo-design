@@ -32,7 +32,7 @@ const buttonVariants = cva(
         default: 'h-8 px-4 py-[5px] text-[14px] leading-[22px]',
         sm: 'h-7 px-3 py-[5px] text-[12px] leading-[18px]',
         lg: 'h-9 px-8 text-[16px]',
-        icon: 'h-8 w-8 rounded-[var(--ds-radius-4)] text-[var(--ds-icon-outline-default)] hover:bg-[var(--ds-bg-gary-hover)] active:bg-[var(--ds-bg-gary-active)] [&_svg]:!h-5 [&_svg]:!w-5',
+        icon: 'h-8 w-8 rounded-[var(--ds-radius-4)] text-[var(--ds-icon-outline-default)] hover:bg-[var(--ds-bg-gary-hover)] active:bg-[var(--ds-bg-gary-active)]',
       },
     },
     compoundVariants: [

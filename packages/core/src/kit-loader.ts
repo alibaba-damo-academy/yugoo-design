@@ -179,7 +179,7 @@ const MINDSET_SKILL_CATALOG = /<design_skills>\s*([\s\S]*?)\s*<\/design_skills>/
 const MINDSET_SKILL_HEADING = /^##\s+(.+?)\s*$/gm
 
 /**
- * Read the authoritative Bundle allowlist from a Mindset body.
+ * Read the Bundle allowlist from a manifestless Mindset body.
  * @param body - Mindset Markdown without frontmatter.
  * @param mindsetName - Mindset id used in diagnostics.
  * @returns skill ids in authored catalog order.
@@ -1119,10 +1119,7 @@ export async function loadDesignKit(
     manifestText = await fs.readText(manifestPath)
   } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error }
   const mounts = manifestText === undefined ? undefined : parseKitMounts(manifestText)
-  const catalog = parseMindsetSkillNames(body, name)
-  if (mounts && JSON.stringify(catalog) !== JSON.stringify(mounts.map(m => m.bindingKey))) {
-    throw new Error('design kit: Mindset catalog differs from authoritative mounts')
-  }
+  const catalog = mounts === undefined ? parseMindsetSkillNames(body, name) : []
   if (!mounts) {
     await assertRealPathInside(fs, realKitRoot, paths.skillsDir)
     const entries = await fs.listDir(paths.skillsDir)

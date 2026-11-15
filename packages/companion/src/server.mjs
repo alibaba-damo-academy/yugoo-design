@@ -25,6 +25,7 @@ import { notificationErrorResponse } from './notification-delivery.mjs'
 import { createCodexTranscript } from './codex-transcript.mjs'
 import { createDesignConversationObserver } from './conversation-start.mjs'
 import { createQoderHookConnection } from './qoder-hook-transport.mjs'
+import { deferNativeConnection } from './native-hook-transport.mjs'
 import { createQoderTranscript, verifyQoderChild } from './qoder-transcript.mjs'
 import { createClaudeHookConnection } from './claude-hook-transport.mjs'
 import { createClaudeTranscript, verifyClaudeChild } from './claude-transcript.mjs'
@@ -106,8 +107,8 @@ export async function startCompanion(options) {
     ? await createQwenWorkPanelConnection({ sessionId: options.threadId, nativeCwd, transcriptPath: options.transcriptPath,
       qwenworkDesktop: options.qwenworkDesktop, qwenworkEventsOnly: options.qwenworkEventsOnly })
     : host === 'qoder'
-    ? await createQoderHookConnection({ sessionId: options.threadId, nativeCwd })
-    : host === 'claude-code' ? await createClaudeHookConnection({ sessionId: options.threadId, nativeCwd })
+    ? deferNativeConnection({ host, threadId: options.threadId, open: () => createQoderHookConnection({ sessionId: options.threadId, nativeCwd }) })
+    : host === 'claude-code' ? deferNativeConnection({ host, threadId: options.threadId, open: () => createClaudeHookConnection({ sessionId: options.threadId, nativeCwd }) })
       : codexDesktop ? createCodexDesktopRelay(options.threadId)
       : createCodexConnection(options.threadId, undefined, { remote: options.codexRemote }))
   if (codexDesktop && (connection.host !== 'codex' || connection.inputMode !== 'desktop' || connection.threadId !== options.threadId)) throw Error('Codex desktop requires its exact bound desktop connection.')
@@ -130,6 +131,22 @@ export async function startCompanion(options) {
   const hostCapabilities = () => ({ mainBundles: true, foregroundReviews: true, nativeSubagents: nativeAgentsAvailable, nativeWorkers: nativeWorkersAvailable, backgroundReviews: nativeReviewExecutionAvailable,
     ...(desktopExecutionAdapter ? { nativeExecutionProtocol: desktopExecutionAdapter.protocol } : {}),
     ...(backgroundAdapter ? { ...nativeCapabilityStatus(backgroundReviewReadiness), backgroundReviewProtocol: backgroundAdapter.protocol(backgroundReviewReadiness) } : {}) })
+  let knowledge, server, devFrontend, studioConversationRequests, trials, reviewRecovery
+  let connectionFileOwned = false
+  const closeOpened = async () => {
+    const failures = []
+    const close = async operation => { try { await operation() } catch (error) { failures.push(error) } }
+    await close(() => studioConversationRequests?.close())
+    await close(async () => { if (trials) await (await trials).close() })
+    await close(() => reviewScheduler?.close())
+    await close(() => reviewRecovery)
+    await close(() => knowledge?.close())
+    await close(() => devFrontend?.close())
+    server?.closeAllConnections()
+    if (server?.listening) await close(() => new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve())))
+    if (connectionFileOwned) await close(async () => { await rm(connectionPath, { force: true }); connectionFileOwned = false })
+    if (failures.length) throw new AggregateError(failures, 'Companion resource cleanup failed')
+  }
   try {
   const project = await openCompanionProject({ ...options, connection, nativeCwd, transcriptPath: options.transcriptPath,
     getConnectionPath: () => connectionPath,
@@ -139,7 +156,7 @@ export async function startCompanion(options) {
     ? await createDesignConversationObserver({ host, ...(host === 'workbuddy' ? {readHeader:readWorkBuddyHeader} : {}), createObserver: host === 'workbuddy' ? createWorkBuddyTranscript : createCodexTranscript, stateRoot: options.stateRoot, projectId: project.project.metadata.id,
       projectRoot: project.project.root, nativeCwd, threadId: connection.threadId, transcriptPath: options.transcriptPath })
     : undefined
-  const knowledge = createCompanionKnowledge({ project, stateRoot: options.stateRoot,
+  knowledge = createCompanionKnowledge({ project, stateRoot: options.stateRoot,
     ...(options.knowledgeRuntime ? { loadRuntime: options.knowledgeRuntime } : {}),
     ...(options.embedding ? { embedding: options.embedding } : {}),
   })
@@ -179,12 +196,11 @@ export async function startCompanion(options) {
   const studio = () => project.contentLibrary.studio()
   // A public generation marker detects stale browser bindings; it is not a credential.
   const studioConversationBinding = { bindingId: randomBytes(16).toString('hex'), threadId: connection.threadId }
-  const studioConversationRequests = options.studioTrial ? undefined : createStudioConversationRequests({
+  studioConversationRequests = options.studioTrial ? undefined : createStudioConversationRequests({
     binding: studioConversationBinding,
     readInstance: async input => (await studio()).readInstance(input),
     prepareChanges: async input => (await studio()).prepareInstanceChanges(input),
   })
-  let trials
   const getTrials = () => {
     if (codexDesktop) throw new Error('Codex desktop Studio trial execution is not verified yet.')
     if (options.studioTrial) throw new Error('Nested Studio trials are disabled. Return to the originating Studio.')
@@ -283,7 +299,6 @@ export async function startCompanion(options) {
   mainContext = createCompanionMainContext({ project, reviews, knowledge })
   // A resumed evaluator may settle immediately. Its current-main check must
   // have the exact live input reader before any pending work is resumed.
-  await managed?.resumePending()
   const mainAssessmentContext = async () => {
     try { return { available: true, ...await mainContext.context({ includeKnowledge: false }) } }
     catch (error) { return { available: false, error: String(error.message ?? error),
@@ -310,8 +325,7 @@ export async function startCompanion(options) {
     response.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' })
     response.end(JSON.stringify(value))
   }
-  let devFrontend
-  const server = createServer(async (request, response) => {
+  server = createServer(async (request, response) => {
     try {
       if (request.headers.host !== new URL(origin).host) return send(response, 403, { error: 'Invalid local Host.' })
       const browserRequest = request.url === `${browserBase}api`
@@ -432,7 +446,10 @@ export async function startCompanion(options) {
           const activeSkills = new Set(native.executionAttempts.filter(run => run.role === 'producer' && ['queued', 'working'].includes(run.phase)).map(run => run.skill))
           for (const run of native.activeMainBundles ?? []) activeSkills.add(run.skill)
           const reviewPresentation = workspace.access?.writable
-            ? await reviews.readPresentation({ workspace, activeWork: observedWork(native) })
+            ? await reviews.readPresentation({ workspace, activeWork: observedWork(native) }).catch(error => ({
+              reviews: [], clarity: { assessment: null, needsReassessment: true }, advisories: [],
+              error: String(error.message ?? error),
+            }))
             // Missing or unavailable project access cannot certify fresh scores.
             // Keep the existing access reason as the recovery authority; reads
             // never start an assessment merely to fill this display snapshot.
@@ -446,7 +463,9 @@ export async function startCompanion(options) {
           const snapshot = { ...workspace, ...native,
             clarity: reviewPresentation.clarity, advisories: reviewPresentation.advisories,
             reviews: reviewStates, reviewPolicy:await getReviewPolicy(), hostCapabilities:hostCapabilities(), reviewDispatchOwner,
-            backgroundReviews: { reviews:reviewStates, rows:presentation?.backgroundRows ?? [] },
+            backgroundReviews: { reviews:reviewStates, rows:presentation?.backgroundRows ?? [],
+              ...(reviewPresentation.error ? { error: reviewPresentation.error } : {}) },
+            ...(reviewPresentation.error ? { reviewStatusError: reviewPresentation.error } : {}),
             continuations: workspace.continuations.filter(gate => !activeSkills.has(gate.skill)),
             ...(presentation ? { conversation: presentation.conversation } : {}) }
           // Native status explicitly asks for the complete service read models.
@@ -460,6 +479,8 @@ export async function startCompanion(options) {
               checkpoint: workspace.checkpoint, clarity: snapshot.clarity, mainContext: main, knowledge: knowledgeStatus,
               reviewPolicy: snapshot.reviewPolicy, hostCapabilities: snapshot.hostCapabilities,
               reviewDispatchOwner, reviews: reviewStates })
+            if (reviewPresentation.error) snapshot.services.gra = { ...snapshot.services.gra,
+              state: 'unavailable', error: reviewPresentation.error, dispatchAllowed: false }
           }
           // Legacy tools/internal readers retain the full response. Only the
           // browser opts into conditional transport, after all fresh reads.
@@ -651,19 +672,17 @@ export async function startCompanion(options) {
   })
   origin = `http://127.0.0.1:${server.address().port}`
   if (options.devFrontend) {
-    try { devFrontend = await options.devFrontend({ server, origin }) }
-    catch (error) {
-      server.closeAllConnections()
-      await new Promise(resolve => server.close(resolve))
-      await reviewScheduler?.close()
-      await knowledge.close()
-      throw error
-    }
+    devFrontend = await options.devFrontend({ server, origin })
   }
   connectionPath = join(options.stateRoot, 'connections', `${token.slice(0, 24)}.json`)
   await mkdir(dirname(connectionPath), { recursive: true, mode: 0o700 })
   await writeFile(connectionPath, JSON.stringify({ origin, token, host, threadId: connection.threadId, projectRoot: project.project.root, nativeCwd, ...(codexDesktop ? { codexDesktop: true } : {}) }), { mode: 0o600, flag: 'wx' })
-  await nativeReviewScheduler?.resumePending()
+  connectionFileOwned = true
+  // Review recovery owns derived queue state, not the native conversation's
+  // readiness. Keep its diagnostics and join it during teardown.
+  reviewRecovery = reviewScheduler?.resumePending().catch(error => {
+    console.error('Background review recovery:', String(error.message ?? error))
+  })
   return { origin, token, connectionPath, browserAccess, browserGeneration, inputMode: connection.inputMode,
     url: browserAccess === 'local' ? `${origin}${browserBase}` : `${origin}/#${token}`, project, knowledge,
     async readTrialEvidence({ id, projectId, source }) {
@@ -674,21 +693,13 @@ export async function startCompanion(options) {
       return studioTrialEvidence({ id, projectId, owners: nativeRuns.getTrialBindings(source.bundle.name),
         attempts: native.executionAttempts, mainLog: await transcript?.read() })
     }, get lastAuthenticatedActivityAt() { return lastAuthenticatedActivityAt }, async close() {
-    studioConversationRequests?.close()
-    let trialCloseError
-    try { if (trials) await (await trials).close() } catch (error) { trialCloseError = error }
-    connection.close?.()
-    await reviewScheduler?.close()
-    await knowledge.close()
-    await devFrontend?.close()
-    server.closeAllConnections()
-    await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
-    await rm(connectionPath, { force: true })
-    if (trialCloseError) throw trialCloseError
+    try { await connection.close?.() } finally { await closeOpened() }
   } }
   } catch (error) {
-    // A verified transport may own a helper before project/server startup fails.
-    connection.close?.()
+    const failures = [error]
+    try { await connection.close?.() } catch (error) { failures.push(error) }
+    try { await closeOpened() } catch (error) { failures.push(error) }
+    if (failures.length > 1) throw new AggregateError(failures, 'Companion startup failed during resource cleanup', { cause: error })
     throw error
   }
 }

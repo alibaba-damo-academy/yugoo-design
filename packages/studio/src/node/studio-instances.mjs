@@ -40,13 +40,14 @@ function archiveSnapshot(root, entries, sourceId) {
  * catalog.captureKit(pin): Promise<{files:Entry[],title?:Title,mounts:Array<Pin & {bindingKey:string}>}>
  * catalog.captureBundle(pin): Promise<{files:Entry[],title:Title,sourceId:string,runtimeName:string}>
  * composition.forkBundle({files:Entry[],from:Pin,to:Pin,runtimeName:string}): Promise<Entry[]>
- * composition.projectMounts({kit:Pin,kitFiles:Entry[],mounts:Array<Pin & {bindingKey:string}>,resolveBundle(pin)}): Promise<Entry[]>
+ * composition.projectMounts({kit:Pin,kitFiles:Entry[],mounts:Array<Pin & {bindingKey:string}>}): Promise<Entry[]>
  * composition.validateKit({kit:Pin,kitFiles:Entry[],mounts:Mount[],resolveBundle(pin)}): Promise<void>
  * resolveBundle returns {files:Entry[],sourceId:string} for retained exact pins only.
  * Optional composition.preview returns the existing StudioPanelPreviewResult:
  * Kit input adds {kind:'kit',bundle,revision,sampleSource} to validateKit input.
  * Bundle input: {kind:'bundle',bundle,runtimeName,bundleFiles,sourceId,revision,sampleSource}.
- * projectMounts owns kit.yaml AND generated XML. forkBundle changes ONLY skill.yaml identity;
+ * projectMounts owns kit.yaml and projects only Kit identity in Mindset frontmatter;
+ * its domain body is preserved. forkBundle changes ONLY skill.yaml identity;
  * runtime name, SKILL frontmatter/body and validation paths remain byte-identical.
  */
 const MAX_TEXT = 1024 * 1024
@@ -101,7 +102,7 @@ function blankSources(kind, identity, title) {
   const frontmatter = stringify({ ...identity, description: kind === 'kit' ? 'A new Design Kit being authored.' : 'A new design Bundle being authored.' })
   if (kind === 'kit') return [
     entry('mindset.md', '---\n' + frontmatter + '---\n\n# ' + title.en + '\n\n' +
-      'Define this Kit’s design purpose, domain judgment and Bundle selection guidance.\n\n<design_skills>\n</design_skills>\n'),
+      'Define this Kit’s design purpose, domain judgment and Bundle selection guidance.\n'),
     entry('kit.yaml', stringify({ version: 1, mounts: [] })),
   ]
   return [
@@ -221,10 +222,6 @@ export async function createStudioInstances(options) {
   }
   const displayDiagnostics = (record, diagnostics) => diagnostics.map(diagnostic => {
     if (record.kind !== 'kit') return diagnostic
-    if (/Mindset .*?(?:must contain|has an empty).*?<design_skills> catalog/.test(diagnostic.message)) return {
-      ...diagnostic, subject: 'mindset.md',
-      message: 'mindset.md 的技能目录尚未完善：请保留方法正文，并按 kit.yaml 中的挂载补充一个 <design_skills> 目录。\nComplete one <design_skills> catalog in mindset.md using the mounts in kit.yaml, while preserving the method guidance.',
-    }
     return { ...diagnostic, message: diagnostic.message.replaceAll(record.kit.name, `${record.title.zh} / ${record.title.en}`) }
   })
   const readinessDiagnostics = (record, diagnostics) => displayDiagnostics(record, diagnostics)

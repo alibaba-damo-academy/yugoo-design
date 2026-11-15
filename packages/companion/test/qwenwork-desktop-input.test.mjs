@@ -113,25 +113,44 @@ test('normal QwenWork entry uses verified user input; background events stay sep
   desktop:async input=>{assert.deepEqual(input,binding);calls.push('desktop');return {...await f.open(),close:()=>closed++}},
   hooks:async input=>{assert.deepEqual(input,{...binding,timeoutMs:30000});calls.push('hooks');return {send:async text=>({accepted:true,status:'hook_received',text})}},
  })
- assert.equal(c.inputMode,'desktop');assert.deepEqual(calls,['desktop'])
+ assert.equal(c.inputMode,'desktop');assert.deepEqual(calls,[])
  assert.equal((await c.send('user message')).status,'user_input_accepted')
  assert.deepEqual(calls,['desktop'],'A user message never selects Hooks')
  assert.equal((await c.sendEvent('background event')).status,'hook_received')
  assert.deepEqual(calls,['desktop','hooks'])
  assert.equal(f.calls.filter(x=>x.method==='task.submit').length,1,'Background events never submit user input')
- c.close();assert.equal(closed,1)
+ await c.close();assert.equal(closed,1)
 })
 
-test('desktop startup failure and uncertain delivery never fall back or replay',async()=>{
+test('missing desktop readiness leaves the selected Panel route usable and cannot submit a prompt', async () => {
+ let opens=0,events=0
+ const c=await createQwenWorkPanelConnection({sessionId:'native-one'}, {
+  desktop:async()=>{opens++;throw Error('endpoint unavailable')},
+  hooks:async()=>({send:async()=>{events++;return {accepted:true,status:'hook_received'}}}),
+ })
+ try {
+  assert.equal(c.host,'qwenwork');assert.equal(c.threadId,'native-one');assert.equal(c.inputMode,'desktop')
+  assert.equal(opens,0,'opening a Panel does not open an optional user-input channel')
+  assert.deepEqual(await c.send('keep this unsent'),{accepted:false,status:'unavailable',notSubmitted:true})
+  assert.equal(opens,1);assert.equal(events,0,'unavailable desktop input never becomes a Hook message')
+  assert.equal((await c.sendEvent('an independently authorized event')).status,'hook_received')
+  assert.equal(events,1);assert.equal(opens,1,'the event route does not require desktop readiness')
+ } finally {await c.close?.()}
+})
+
+test('desktop opening failure and uncertain delivery never fall back or replay',async()=>{
  let hooks=0, desktop=0
  const unavailable={desktop:async()=>{desktop++;throw Error('endpoint unavailable')},hooks:async()=>{hooks++;throw Error('must not run')}}
- await assert.rejects(createQwenWorkPanelConnection({},unavailable),/不会自动改用 Hook.*endpoint unavailable/)
+ const missing=await createQwenWorkPanelConnection({},unavailable)
+ assert.deepEqual(await missing.send('unsent'),{accepted:false,status:'unavailable',notSubmitted:true})
+ await missing.close()
  assert.equal(desktop,1);assert.equal(hooks,0)
  const f=fixture()
  const c=await createQwenWorkPanelConnection({},{desktop:f.open,hooks:unavailable.hooks})
  f.state.fail=true
  await assert.rejects(c.send('once'),/提交未确认/)
  assert.equal(f.calls.filter(x=>x.method==='task.submit').length,1);assert.equal(hooks,0)
+ await c.close()
 })
 
 test('limited events require an explicit mode, and old desktop flags remain compatible',async()=>{
@@ -150,7 +169,9 @@ test('limited events require an explicit mode, and old desktop flags remain comp
   desktop:async()=>{throw Error('must not start desktop')},
   hooks:async()=>{hooks++;return {send:async()=>({accepted:true,status:'hook_received'})}},
  })
- assert.equal(c.inputMode,'events-only');assert.equal(hooks,1)
+ assert.equal(c.inputMode,'events-only');assert.equal(hooks,0)
  assert.equal((await c.send('explicit event')).status,'hook_received')
  assert.match(requireNotificationAccepted(await c.send('explicit event'),'QwenWork'),/尚未作为用户消息提交/)
+ assert.equal(hooks,1)
+ await c.close()
 })

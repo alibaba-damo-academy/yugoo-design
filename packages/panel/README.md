@@ -73,13 +73,21 @@ components in `ui`.
 
 ## Shared presentation and editing
 
+Ordinary icon actions use a 16px glyph centered inside a 32px click target.
+`Button` owns this default; native providers import that same control from
+`dsh-design-panel/client-api` instead of copying its variants. Keep glyph size
+separate from hit-area geometry; see the [shared control rules](../../docs/panel-uiux-standard.md#5-输入按钮和编辑状态).
+Specialist content and existing compact control roles retain their own sizes.
+
 The workspace exposes two icon buttons in its top-right header: one switches
 Chinese/English, and one switches light/dark from the actual current appearance. Host adapters supply controlled values and save through their existing
 settings owner; changing either preference retains the design draft and does
 not translate authored content. The workspace has no separate close button;
 embedded hosts retain their native Panel toggle. Nested Studio previews omit
 these global choices, while a workspace that hides project metadata retains a
-compact preference toolbar. Relationship canvases can override appearance and
+compact preference toolbar when the host supplies these controls there.
+Companion's panel-only scene places the same controls in its right sidebar and
+omits that toolbar. Relationship canvases can override appearance and
 return to following the page without rearranging the graph.
 
 Page title bars share `PanelRecordHeader` across forms, questions, diagrams,

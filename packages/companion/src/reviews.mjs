@@ -83,17 +83,36 @@ export function createCompanionReviews({ project, stateRoot, threadId, host = 'c
     await mkdir(root, { recursive: true })
     const lock = join(root, 'review.lock')
     const deadline = Date.now() + 5000
+    const owner = `owner-${process.pid}-${randomUUID()}`
     for (;;) {
       try { await mkdir(lock); break } catch (error) {
         if (error.code !== 'EEXIST') throw error
+        // Only a known-dead process can release its exact ownership entry.
+        // Empty legacy locks and unknown owners have no safe recovery proof.
+        let entries
+        try { entries = await readdir(lock) } catch (error) { if (error.code === 'ENOENT') continue; throw error }
+        const match = entries.length === 1 && /^owner-([1-9][0-9]*)-[a-f0-9-]{36}$/.exec(entries[0])
+        if (match) {
+          try { process.kill(Number(match[1]), 0) } catch (error) {
+            if (error.code === 'ESRCH') {
+              // Competing recoverers cannot both remove this unique entry. A
+              // loser must retry, never remove a successor's lock directory.
+              try { await rmdir(join(lock, entries[0])) } catch (error) { if (error.code === 'ENOENT') continue; throw error }
+              await rmdir(lock)
+              continue
+            }
+            if (error.code !== 'EPERM') throw error
+          }
+        }
         if (Date.now() >= deadline) throw new Error(`Review storage is locked: ${lock}. If a service crashed, stop all companion services for this project before removing this empty lock directory.`)
         await delay(50)
       }
     }
+    await mkdir(join(lock, owner))
     try {
       for (const path of [advisoryPath, 'design_records/clarity.json']) await core.resolveConfinedFilePath(project.project.root, path)
       return await operation()
-    } finally { await rmdir(lock) }
+    } finally { await rmdir(join(lock, owner)); await rmdir(lock) }
   })
   const supported = skill => typeof actionExecutionSupported === 'function' ? actionExecutionSupported(skill) : actionExecutionSupported
   const foreground = request => request.executionMode === 'foreground' && typeof request.manualRequestId === 'string'

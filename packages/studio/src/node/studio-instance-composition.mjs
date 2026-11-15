@@ -2,7 +2,7 @@
 import { resolve, relative, isAbsolute, sep } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { parseDocument, isMap, isSeq, isScalar, stringify } from 'yaml'
-import { loadDesignBundle, loadDesignKit, parseFrontmatter, parseKitMounts, parseMindsetSkillNames } from 'dsh-design-core'
+import { loadDesignBundle, loadDesignKit, parseFrontmatter, parseKitMounts } from 'dsh-design-core'
 import { STUDIO_SOURCE_MAX_BYTES, readStudioArchiveResource } from '../content-archive.ts'
 import { finalizeStudioPanelPreview } from '../panel-preview.ts'
 
@@ -112,49 +112,19 @@ function projectRelationIdentifiers(source, from, to) {
   return source
 }
 
-async function projectMindset(source, kit, mounts, describeBundle, allowEmptyDraft = false) {
+function projectMindset(source, kit) {
   const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/)
   if (!match) throw new Error('Kit Mindset requires explicit YAML frontmatter.')
-  const parsed = parseFrontmatter(source, 'mindset.md')
-  // Core parses existing authored catalog syntax; the adapter only selects source spans.
-  const catalogs = [...parsed.body.matchAll(/<design_skills>\s*([\s\S]*?)\s*<\/design_skills>/g)]
-  const emptyDraft = allowEmptyDraft && catalogs.length === 1 && catalogs[0][1].trim() === ''
-  if (!emptyDraft) parseMindsetSkillNames(parsed.body, String(parsed.meta.name))
   let frontmatter = scalarEdit(match[1], 'name', kit.name)
   frontmatter = scalarEdit(frontmatter, 'version', kit.version)
   const frontStart = source.indexOf(match[1]), frontEnd = frontStart + match[1].length
-  const renamed = source.slice(0, frontStart) + frontmatter + source.slice(frontEnd)
-  const bodyStart = renamed.length - parseFrontmatter(renamed, 'mindset.md').body.length
-  const marker = renamed.indexOf('<design_skills>', bodyStart)
-  if (marker < 0) throw new Error('Mindset has no generated Bundle catalog block.')
-  const start = marker + '<design_skills>'.length
-  const end = renamed.indexOf('</design_skills>', start)
-  const block = renamed.slice(start, end), headings = [...block.matchAll(/^##\s+(.+?)\s*$/gm)]
-  if (end < start || (headings.length === 0 && !emptyDraft)) throw new Error('Mindset generated Bundle catalog is empty or malformed.')
-  const sections = new Map(headings.map((heading, index) => [heading[1], block.slice(heading.index, headings[index + 1]?.index ?? block.length)]))
-  const newline = renamed.includes('\r\n') ? '\r\n' : '\n'
-  const selected = []
-  for (const mount of mounts) {
-    if (sections.has(mount.bindingKey)) selected.push(sections.get(mount.bindingKey))
-    else {
-      const description = (await describeBundle(mount)).trim().replace(/\r\n?/g, '\n')
-      if (!description) throw new Error(`Bundle ${mount.name} needs a SKILL frontmatter routing description before it can enter the Mindset catalog.`)
-      const escaped = description.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\n', newline)
-      selected.push(`## ${mount.bindingKey}${newline}${newline}${escaped}${newline}${newline}`)
-    }
-  }
-  const generated = block.slice(0, headings[0]?.index ?? block.length) + selected.join('')
-  const projected = renamed.slice(0, start) + generated + renamed.slice(end)
-  const names = allowEmptyDraft && mounts.length === 0 ? [] : parseMindsetSkillNames(parseFrontmatter(projected, 'mindset.md').body, kit.name)
-  if (JSON.stringify(names) !== JSON.stringify(mounts.map(mount => mount.bindingKey))) throw new Error('Generated Mindset catalog differs from Kit mounts.')
-  return projected
+  return source.slice(0, frontStart) + frontmatter + source.slice(frontEnd)
 }
 
 /**
  * trusted.listBundles(): Promise<Pin[]>; trusted.captureBundle(pin): {files,sourceId};
  * trusted.captureKit(pin): {files,title?}. Captures are exact, host-selected sources.
- * composition.projectMounts additionally accepts resolveBundle(pin) for retained local sources;
- * the trusted installed capture is used only when that resolver is omitted.
+ * composition.loadKit uses resolveBundle(pin) to read the retained mounted sources.
  * Optional trusted.preview overrides the default Core-backed retained-source preview.
  * Returned catalog/composition match createStudioInstances; there is no legacy-tree fallback.
  */
@@ -289,25 +259,19 @@ export function createStudioInstanceAdapters(trusted) {
       if (after.content.skill.name !== runtimeName || after.content.skill.content !== before.content.skill.content) throw new Error('A fork cannot alter the runtime name or Bundle method.')
       return next
     },
-    async projectMounts({ kit, kitFiles, mounts, allowEmptyDraft = false, resolveBundle = pin => trusted.captureBundle(pin) }) {
+    async projectMounts({ kit, kitFiles, mounts, allowEmptyDraft = false }) {
       kit = pinOf(kit)
       const declaration = stringify({ version: 1, mounts: mounts.map(mount => ({ bindingKey: mount.bindingKey, ...pinOf(mount) })) })
-      const normalized = allowEmptyDraft && mounts.length === 0 ? [] : parseKitMounts(declaration), source = memorySource(kitFiles)
-      const budget = { bytes: 0, files: 0 }
+      if (!allowEmptyDraft || mounts.length !== 0) parseKitMounts(declaration)
+      const source = memorySource(kitFiles)
       const originalMindset = source.text('mindset.md')
       let mindset
       try {
-        mindset = await projectMindset(originalMindset, kit, normalized, async mount => {
-          const captured = await resolveBundle(pinOf(mount))
-          if (!captured) throw new Error(`Missing exact Bundle ${mount.name}@${mount.version} for catalog projection.`)
-          const loaded = await loadBundle(captured.files, captured.sourceId, mount, budget)
-          if (loaded.content.skill.name !== mount.bindingKey) throw new Error('Bundle bindingKey must preserve the runtime name.')
-          return loaded.content.skill.description
-        }, allowEmptyDraft)
+        mindset = projectMindset(originalMindset, kit)
       } catch (error) {
         if (!allowEmptyDraft) throw error
         // The mount owner can save its declaration before an imported method has
-        // a generated catalog. Keep the unfinished method; readiness reports it.
+        // valid frontmatter. Keep the unfinished method; readiness reports it.
         const files = composition.projectSourceIdentity({ kind: 'kit', files: source.entries, identity: kit })
         return [...files.filter(file => file.path !== 'kit.yaml'), entry('kit.yaml', declaration)]
       }

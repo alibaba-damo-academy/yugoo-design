@@ -14,8 +14,9 @@ subsequent calls return that same record with `current: true`. Ordinary saves ke
 its identity. `copy` explicitly creates a new independent identity while preserving
 Bundle runtime names and data paths. Created and imported sources use the same editor.
 
-Kit membership belongs to `kit.yaml`; its Mindset catalog is the generated readable
-projection. Mounts select stable Bundle identities. A mounted local Bundle reads its
+Kit membership and order belong only to `kit.yaml`; the runtime generates one
+model catalog from the loaded Bundles. Mindset retains domain methods without
+a second membership list. Mounts select stable Bundle identities. A mounted local Bundle reads its
 current saved source, including overlays, rather than locking an earlier revision.
 A Kit imported with unbound Bundle snapshots keeps those saved bytes, including
 sources captured from the catalog to fill an absent closure. Copying that Kit

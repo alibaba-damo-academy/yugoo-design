@@ -18,7 +18,11 @@ const reviews = createCompanionReviews({ ...options, project: {
   },
 } })
 process.on('message', async ({ id, method, params }) => {
-  try { process.send({ id, value: await reviews[method](params) }) }
+  try {
+    if (method === 'holdLock') {
+      await reviews.mutateAssessment(async () => { process.send({ id, locked: true }); await new Promise(() => {}) })
+    } else process.send({ id, value: await reviews[method](params) })
+  }
   catch (error) { process.send({ id, error: error.message }) }
 })
 process.send({ ready: true })

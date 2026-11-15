@@ -204,9 +204,9 @@ Retention mapping for the Mindset reorganization:
 - The complete experience guidance moves from the opening to section 5.
 - Case strategies and enterprise calibration move to sections 6–7; reconstruction
   and source-evidence review remain complete in section 8.
-- The ordered `design_skills` headings remain at the end as the runtime
-  membership list, matching `kit.yaml`. Capability descriptions come from each
-  mounted Bundle's `SKILL.md` frontmatter rather than repeating them in Mindset.
+- Membership and order come only from `kit.yaml`. The runtime generates one
+  routing catalog from the loaded Bundles and their `SKILL.md` frontmatter;
+  the former manual `design_skills` list is removed from Mindset.
   The professional guidance in sections 1–8 remains complete.
 - Those descriptions retain the same-source AI graph and Host boundary, Plugin
   URL/Secret requirements/Prompt and recovery, observable acceptance scenarios

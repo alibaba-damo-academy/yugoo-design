@@ -11666,6 +11666,12 @@
       "path": "packages/studio-ui/tests/preview-alignment.browser.mjs",
       "action": "include",
       "reason": "Focused browser regression for continuous Studio source/preview dividers, wrapped toolbars, drafts and independent scrolling; isolates and retires its own context and output."
+    },
+    {
+      "kind": "file",
+      "path": "packages/panel/test/experience-theme-browser.test.mjs",
+      "action": "include",
+      "reason": "Synthetic shared Scene shell Chromium regression over the source component and built CSS; covers theme, navigation typography, narrow disclosure and authored iframe isolation without native Host or saved project content."
     }
   ]
 }

@@ -1,9 +1,11 @@
+import { PanelContentState } from '../../panel/src/panel-content-state.tsx'
 import type { RecordedConversation } from './conversation.tsx'
 import { companionChromeText, type CompanionChromeKey } from './locale.ts'
 
 export interface BackgroundReviews {
   reviews: { profile:string; status:string; revisionChanged?:boolean; scopeChanged?:boolean; error?:string; executionAvailability?:string; executionMode?:string }[]
   rows: RecordedConversation['rows']
+  error?: string
 }
 const names: Record<string, CompanionChromeKey> = { grounding: 'reviewProfileGrounding', reflection: 'reviewProfileReflection', alignment: 'reviewProfileAlignment', clarity: 'reviewProfileClarity' }
 const labels: Record<string, CompanionChromeKey> = { due: 'reviewDue', prepared: 'reviewPrepared', running: 'reviewRunning', completed: 'reviewCompleted',
@@ -14,6 +16,7 @@ export function BackgroundReviewPanel({ value, disconnected, locale = 'zh' }: { 
   const t = (key: CompanionChromeKey, values?: Record<string, string | number>) => companionChromeText(key, locale, values)
   return <section aria-label={t('reviewStatus')}>
     <p>{t('reviewSummary')}</p>
+    {value?.error && <PanelContentState state="error" appearance="inline" message={`${t('reviewStorageUnavailable')} ${value.error}`} />}
     {disconnected && <p role="status">{t('reviewDisconnected')}</p>}
     <ul className="companion-review-statuses">{(value?.reviews ?? []).map(review=><li key={review.profile}>
       <strong>{names[review.profile] ? t(names[review.profile]) : review.profile}</strong>
@@ -22,7 +25,7 @@ export function BackgroundReviewPanel({ value, disconnected, locale = 'zh' }: { 
       {(review.revisionChanged || review.scopeChanged) && <small>{t('reviewSourceChanged')}</small>}
       {review.error && <small>{review.error}</small>}
     </li>)}</ul>
-    {!value?.reviews.length && <p>{t('reviewEmpty')}</p>}
+    {!value?.error && !value?.reviews.length && <p>{t('reviewEmpty')}</p>}
     <details><summary>{t('reviewActivityHistory', { count: value?.rows.length ?? 0 })}</summary>
       <ul>{value?.rows.map(row=><li key={row.id}>{row.label} · {row.status}</li>)}</ul>
     </details>

@@ -21,6 +21,24 @@ test('public install routes to persistent Qoder registration and rejects unrelat
 
 const execute=promisify(execFile)
 
+test('a pending Qoder registration can complete after the former probe deadline without a second install', {timeout:45000}, async t=>{
+  const f=await fixture(),n=nativeFixture(f)
+  t.after(()=>rm(f.root,{recursive:true,force:true}))
+  let delayed=0
+  const run=async(exe,args,options)=>{
+    if(args.includes('install')) {
+      delayed++
+      const result=await execute(process.execPath,['-e','setTimeout(()=>process.stdout.write("registered"),16050)'],options)
+      assert.equal(result.stdout,'registered')
+    }
+    return n.run(exe,args,options)
+  }
+  const result=await installQoderPlugin({...f,run})
+  assert.equal(result.status,'registered')
+  assert.equal(delayed,1)
+  assert.equal(n.calls.filter(args=>args.includes('install')).length,1)
+})
+
 test('missing Qoder native execution method rejects before any native invocation or staging',async()=>{
   const f=await fixture()
   try {

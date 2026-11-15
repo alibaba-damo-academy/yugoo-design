@@ -79,10 +79,10 @@ async function state(adapter) {
   const s=adapters.get(adapter);assert.ok(s,'Unrecognized Claude adapter')
   await executableFence(s);await nativeCwdFence(s);return s
 }
-async function call(s,args) {
+async function call(s,args,{timeout=30000}={}) {
   await executableFence(s);await nativeCwdFence(s)
   let result
-  try { result=await s.run(s.identity.executable,args,{cwd:s.identity.nativeCwd,env:s.env,timeout:30000,maxBuffer:1048576}) }
+  try { result=await s.run(s.identity.executable,args,{cwd:s.identity.nativeCwd,env:s.env,timeout,maxBuffer:1048576}) }
   finally { await executableFence(s);await nativeCwdFence(s) }
   assert.ok(result.code===undefined||result.code===0,'Claude command failed')
   assert.ok(!result.signal,'Claude command signalled');return result.stdout??''
@@ -283,7 +283,7 @@ async function compensate(receipt,s) {
   if(owned.plugin) {
     assert.ok(receipt.installAttempted,'Foreign plugin without owned install intent');await verifyCache(p,owned,receipt.cacheFiles)
     const foreign=await foreignState(s,rows,p);receipt.phase='uninstall-intent';await atomic(receipt.receiptFile,receipt)
-    await call(s,['plugin','uninstall',p.selector,'--scope','user','--keep-data'])
+    await call(s,['plugin','uninstall',p.selector,'--scope','user','--keep-data'],{timeout:0})
     const after=await lists(s);assert.ok(!ownedRows(after,p).plugin,'Claude uninstall not observed');assert.deepEqual(await foreignState(s,after,p),foreign,'Foreign state changed during uninstall')
   }
   const current=await lists(s),market=ownedRows(current,p)
@@ -291,7 +291,7 @@ async function compensate(receipt,s) {
     assert.ok(receipt.marketAttempted,'Foreign marketplace without owned add intent')
     assert.ok(!market.plugin,'Plugin remains; marketplace cascade forbidden')
     const foreign=await foreignState(s,current,p);receipt.phase='market-remove-intent';await atomic(receipt.receiptFile,receipt)
-    await call(s,['plugin','marketplace','remove',MARKET,'--scope','user'])
+    await call(s,['plugin','marketplace','remove',MARKET,'--scope','user'],{timeout:0})
     const after=await lists(s);assert.ok(!ownedRows(after,p).market,'Claude marketplace removal not observed');assert.deepEqual(await foreignState(s,after,p),foreign,'Foreign state changed during marketplace removal')
   }
   if(await tree(p.paths.target)) { await validateReceipt(receipt,s);await rm(p.paths.target,{recursive:true}) }
@@ -335,11 +335,11 @@ export async function applyClaudeInstallation(plan,{adapter,runtimeReceipt,check
       const foreign=await foreignState(s,before,plan)
       if(plan.nodeRuntime)await verifyNodeRuntime(plan.nodeRuntime)
       receipt.marketAttempted=true;receipt.phase='market-add-intent';await atomic(receipt.receiptFile,receipt)
-      await call(s,['plugin','marketplace','add',target,'--scope','user'])
+      await call(s,['plugin','marketplace','add',target,'--scope','user'],{timeout:0})
       const added=await lists(s);assert.ok(ownedRows(added,plan).market);assert.deepEqual(await foreignState(s,added,plan),foreign,'Foreign state changed during marketplace add')
       if(plan.nodeRuntime)await verifyNodeRuntime(plan.nodeRuntime)
       receipt.installAttempted=true;receipt.phase='install-intent';await atomic(receipt.receiptFile,receipt)
-      await call(s,['plugin','install',SELECTOR,'--scope','user'])
+      await call(s,['plugin','install',SELECTOR,'--scope','user'],{timeout:0})
       const installed=await lists(s);await verifyCache(plan,ownedRows(installed,plan),receipt.cacheFiles);assert.deepEqual(await foreignState(s,installed,plan),foreign,'Foreign state changed during install')
       receipt.phase='verified';await atomic(receipt.receiptFile,receipt);await checkpoint('verified',structuredClone(receipt));return receipt
     } catch(error) {

@@ -58,7 +58,10 @@ an unknown result does not prove non-delivery and must not cause blind resending
 
 ## Bundle and agent execution
 
-Read the selected Kit's returned mindset file for its Bundle catalog and routing.
+Before choosing a Bundle, use `design_list_bundles` with the exact connection for
+the selected project's current Bundle IDs, descriptions and execution declarations.
+Read its returned `mindsetMethod` for domain judgment and selection guidance;
+the Mindset does not maintain another Bundle list.
 Do not discover capabilities by scanning empty Design Files. Use
 `design_prepare_bundle` and follow its `execution.mode`: `main` uses
 `design_begin_main_bundle` before editing and `design_finish_main_bundle` after

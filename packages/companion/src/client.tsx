@@ -14,6 +14,7 @@ import { registerWebAppNativePanels } from '../../provider-web-app/src/client/pa
 import { DesignProjectSidebarEntry } from '../../panel/src/client/design-project-sidebar-entry.tsx'
 import { DesignContinuationBar, designContinuationOf, continuationDismissKey } from '../../panel/src/client/design-continuation-bar.tsx'
 import { CurrentProjectSidebarEntry } from '../../panel/src/client/current-project-sidebar-entry.tsx'
+import { DesignWorkspacePreferenceControls } from '../../panel/src/client/workspace-preferences.tsx'
 import { subscribeLivePoll, requestLivePoll } from '../../panel/src/client/live-poll.ts'
 import { createWorkspacePollReader } from '../../panel/src/client/workspace-poll-reader.ts'
 import { equalWorkspaceEmission, type DesignPanelWorkspaceRead, type DesignProjectCatalogRead } from '../../panel/src/client/types.ts'
@@ -162,9 +163,10 @@ const runtime: DesignRuntime = {
       requestLivePoll()
     } catch (error) {
       if (savedNotification) {
-        onNotice(currentChrome('filesSavedDeliveryFailed', { message: error instanceof Error ? error.message : String(error) }))
+        // The conversation owns this send's failure feedback; clear its pending notice.
+        onNotice('')
         lastNotificationFailure = error instanceof Error ? error.message : String(error)
-        onNotificationError(String(error))
+        onNotificationError(lastNotificationFailure)
       }
       throw error
     }
@@ -263,9 +265,6 @@ function App() {
   const lastKitReloadError = useRef<string>()
   const [pollError, setPollError] = useState('')
   const [notificationError, setNotificationError] = useState('')
-  const [savedContinuations, setSavedContinuations] = useState<SavedContinuation[]>([])
-  const [savedContinuationError, setSavedContinuationError] = useState('')
-  const [recoveringNotification, setRecoveringNotification] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(!designOnly)
   const [conversationOpen, setConversationOpen] = useState(!designOnly)
@@ -297,17 +296,14 @@ function App() {
   const [laterContinuation, setLaterContinuation] = useState<string>()
   const [continuationAttempt, setContinuationAttempt] = useState<{ key: string; sending: boolean }>()
   const attemptedContinuation = useRef<string>()
-  const unresolvedSave = !!savedContinuationError || savedContinuations.some(entry => entry.retryable || ['unknown', 'preparing'].includes(entry.status))
   const continuationStatus = pollError || !panelControlsReady
     ? (locale === 'zh_CN' ? '正在核对设计工作区，请稍后。' : 'Checking the design workspace. Please wait.')
     : !workspace?.access.writable
       ? (locale === 'zh_CN' ? '当前项目只读，不能继续执行。' : 'This project is read-only. Execution cannot continue.')
       : panelDirty
         ? (locale === 'zh_CN' ? '请先保存或撤回面板修改，再继续。' : 'Save or discard the Panel edits before continuing.')
-        : panelSaving || recoveringNotification
+        : panelSaving
           ? (locale === 'zh_CN' ? '请等待当前保存或通知完成。' : 'Wait for the current save or notification to finish.')
-          : unresolvedSave
-            ? (locale === 'zh_CN' ? '请先核对保存后的通知状态。' : 'Check the saved notification status first.')
             : continuationAttempt?.key === continuationKey && continuationAttempt?.sending
               ? (locale === 'zh_CN' ? '正在发送继续请求…' : 'Sending the continuation request…')
               : continuationAttempt?.key === continuationKey
@@ -354,6 +350,7 @@ function App() {
       failedPreferences.current = desired
       const message = currentChrome('interfacePreferencesSaveFailed')
       setPreferenceError(message)
+      if (designOnly) setSidebarOpen(true)
       throw new Error(message)
     })
   }
@@ -393,8 +390,6 @@ function App() {
           setPollError('')
           if (next === lastSnapshot) return
           lastSnapshot = next
-          setSavedContinuations(prior => JSON.stringify(prior) === JSON.stringify(next.savedContinuations ?? []) ? prior : next.savedContinuations ?? [])
-          setSavedContinuationError(next.savedNotificationError ?? '')
           setWorkspace(prior => prior && equalWorkspaceEmission(prior, next)
             && JSON.stringify(prior.access) === JSON.stringify(next.access) ? prior : next)
           // History has its own reader; a late workspace response must not
@@ -450,7 +445,7 @@ function App() {
           setReviewLogError(next.conversation.available ? '' : next.conversation.error ?? currentChrome('reviewActivityUnreadable'))
           setConversation(prior => JSON.stringify(prior) === JSON.stringify(next.conversation) ? prior : next.conversation)
           setBackgroundReviews(prior => {
-            const value = { reviews: prior?.reviews ?? [], rows: next.backgroundRows }
+            const value = { ...prior, reviews: prior?.reviews ?? [], rows: next.backgroundRows }
             return JSON.stringify(prior) === JSON.stringify(value) ? prior : value
           })
         }
@@ -478,7 +473,7 @@ function App() {
         if (!disposed) {
           setReviewLogError(next.available ? '' : next.error ?? currentChrome('reviewActivityUnreadable'))
           setBackgroundReviews(prior => {
-            const value = { reviews: prior?.reviews ?? [], rows: next.backgroundRows }
+            const value = { ...prior, reviews: prior?.reviews ?? [], rows: next.backgroundRows }
             return JSON.stringify(prior) === JSON.stringify(value) ? prior : value
           })
         }
@@ -621,6 +616,7 @@ function App() {
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14"/><circle cx="7" cy="5" r="2"/><circle cx="13" cy="10" r="2"/><circle cx="8" cy="15" r="2"/></svg>
           {sidebarOpen && <span>{chrome('settings')}</span>}
         </button>
+        {designOnly && preferences && <DesignWorkspacePreferenceControls preferences={preferences} />}
         {sidebarOpen && <div className="companion-sidebar-meta">{chrome('projectKitLabel')}{workspace?.access && 'kit' in workspace.access
           ? `${workspace.access.kit.name}@${workspace.access.kit.version}${workspace.access.mode === 'recovery' ? chrome('projectNeedsRecovery') : ''}`
           : workspace?.access.mode === 'unconfigured' ? chrome('notSelected') : '—'}</div>}
@@ -634,23 +630,10 @@ function App() {
         beforeComposer={conversationVisible && advisoryInbox} continuation={conversationVisible && continuationBar} />}
       {conversationVisible && <ConversationResize locale={locale} width={chatWidth} onChange={resizeChat} />}
       <div className="dsh-design-dock">
-        {!conversationVisible && continuationBar}
-        {savedContinuationError && <p role="alert">{locale === 'zh_CN' ? savedContinuationError : 'Saved notification status is unavailable. Check the authoritative files in the original conversation; do not blindly resend.'}</p>}
-        {!trialPanelPage && savedContinuations.some(entry => entry.retryable || ['unknown', 'preparing'].includes(entry.status)) && <section aria-label={locale === 'zh_CN' ? '保存后的通知状态' : 'Saved notification status'}>
-          <span role="status">{savedContinuations.some(entry => ['unknown', 'preparing'].includes(entry.status))
-            ? (locale === 'zh_CN' ? '已保存内容请在原会话核对；有未确认的保存或投递，不会自动重发。' : 'Check the saved content in the original conversation. A save or delivery is unconfirmed; it will not be replayed.')
-            : (locale === 'zh_CN' ? '文件已保存，接续通知尚未提交。' : 'Files are saved; the continuation has not been submitted.')}</span>
-          {savedContinuations.some(entry => entry.retryable) && <Button type="button" variant="outline" size="sm" disabled={recoveringNotification || panelSaving || !!pollError || !thread} onClick={() => {
-            if (recoveringNotification || !thread || panelStore.getSnapshot().saving) return
-            setRecoveringNotification(true)
-            const saved = savedContinuations.filter(entry => entry.retryable).map(({ eventId, commit }) => ({ eventId, commit }))
-            void runtime.sendPrompt(thread, locale === 'zh_CN' ? '请读取这些已保存的修改，继续当前已授权的设计工作；不要重新保存或重跑 Bundle。' : 'Read these saved changes and continue the authorized design work. Do not save again or rerun the Bundle.', browserRandomUuid(), saved)
-              .catch(() => {}).finally(() => { setRecoveringNotification(false); requestLivePoll() })
-          }}>{recoveringNotification ? (locale === 'zh_CN' ? '正在通知…' : 'Notifying…') : (locale === 'zh_CN' ? '仅恢复通知' : 'Recover notification only')}</Button>}
-        </section>}
-        {workspace && thread ? <DesignWorkspace hideProjectHeader={designOnly} {...workspace} experienceAvailable preferences={preferences} sessionId={thread} runtime={runtime} dockOpen
+        {workspace && thread ? <DesignWorkspace hideProjectHeader={designOnly} {...workspace} experienceAvailable preferences={designOnly ? undefined : preferences} sessionId={thread} runtime={runtime} dockOpen
           presentation={trialPanelPage ? 'panel-only' : 'workspace'} demonstrationSave={trialPanelPage} onControlsChange={publishControls}
           hostReportedSaveError={lastNotificationFailure} /> : <PanelContentState state="loading" kind="panel" message={chrome('designFilesReading')} />}
+        {!conversationVisible && continuationBar}
       </div>
       </div>
       {(error || pollError || notificationError || notice) && <div className={`dsh-design-toast companion-feedback${error || pollError || notificationError ? ' dsh-design-toast-error' : ''}`}>

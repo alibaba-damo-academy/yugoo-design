@@ -1,4 +1,5 @@
 /** Public client interfaces and shared UI services for native panel providers. */
+export { Button, buttonVariants, type ButtonProps } from './client/ported/ui/button.tsx'
 export { PanelSelect, type PanelSelectOption, PANEL_SELECT_MENU_CSS } from './select.ts'
 export {
   PREVIEW_CONTEXT_ELEMENT_ID,

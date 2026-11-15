@@ -33,6 +33,10 @@ Hosts can supply `renderPreview` for installed-source and saved-instance sample
 Panels, including read-only **Open**, independently of the legacy Panel-draft `authoring` client.
 The renderer receives the existing isolated preview and read-only context;
 supplying it does not enter native authoring or grant a save capability.
+Read-only Kit **Open** includes **Mounted Bundles / 挂载内容**. Select a mounted
+Bundle's **Panel Preview** to read its saved `panel.yaml` beside the sample,
+then return to the same Kit's bindings or source files. Preview uses the Kit's
+saved owner and revision, including retained imported sources.
 Optional `instances.create` adds **New Kit / New Bundle**, creating a real blank S2
 record before entering its editor. Empty definitions may still require content or
 mounts before validation succeeds.

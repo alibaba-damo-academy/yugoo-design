@@ -11,6 +11,8 @@ styles inherit those definitions instead of publishing another palette or reset.
 Both stylesheet load orders must keep shared surfaces readable in light and dark
 appearance. Isolated renderer fixtures load the same generated Panel stylesheet
 explicitly before the provider; their fake registry is not another theme owner.
+Ordinary buttons and their variants come from `dsh-design-panel/client-api`;
+the retained local import path re-exports that control without another default.
 
 Build with `pnpm --filter dsh-design-provider-web-app build` after building Panel.
 `node smoke-panel-css.mjs` checks the composed style boundary and retained canvas

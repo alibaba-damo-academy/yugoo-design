@@ -344,9 +344,10 @@ Every active Kit participates in one host-neutral design progression loop. When 
 
 Bundles form one logically flat, searchable library. Membership is many-to-many:
 a library Kit binds stable Bundle identities without creating another Bundle.
-`kit.yaml` owns the ordered bindings; the Mindset's `<design_skills>` section is
-its model-facing projection. Each binding preserves its runtime name, optional
-configuration and relationship mappings. Duplicate runtime bindings and genuinely
+`kit.yaml` alone owns the ordered bindings. The runtime renders one model-facing
+catalog from the loaded Bundles; Mindset prose does not maintain a second list.
+Each binding preserves its runtime name, optional configuration and relationship
+mappings. Duplicate runtime bindings and genuinely
 unresolvable execution dependencies are diagnosed by the compiler.
 
 The library stores one current saved state per identity. Editing updates that

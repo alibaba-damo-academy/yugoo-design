@@ -3,7 +3,8 @@ import { test } from 'node:test'
 import { cp, lstat, mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, symlink, writeFile } from 'node:fs/promises'
 import { dirname, join, relative } from 'node:path'
 import { tmpdir } from 'node:os'
-import { fork } from 'node:child_process'
+import { fork, execFile } from 'node:child_process'
+import { promisify } from 'node:util'
 import { createHash } from 'node:crypto'
 import { once } from 'node:events'
 import { createClaudeNativeAdapter, planClaudeInstallation, applyClaudeInstallation, recoverClaudeInstallation } from '../src/npm-installer-claude.mjs'
@@ -79,8 +80,26 @@ async function fixture(t,{retainKnownMarketplace=false}={}) {
   const options={npmRoot,userRoot,receiptDirectory,adapter,disableEmbedding:true}
   const runtimeReceipt=await checkRuntime({npmRoot,host:'claude-code',disableEmbedding:true,receiptDirectory:join(root,'runtime')})
   const mutations=()=>native.commands.filter(args=>args[1]==='install'||args[1]==='uninstall'||(args[1]==='marketplace'&&['add','remove'].includes(args[2])))
-  return {root,npmRoot,userRoot,receiptDirectory,exe,exeBytes,put,target,native,adapter,make,options,runtimeReceipt,mutations,foreignMarket,foreignPlugin,foreignSettings,settingsFile,overlay}
+  return {root,npmRoot,userRoot,receiptDirectory,exe,exeBytes,put,target,native,adapter,make,options,runtimeReceipt,mutations,foreignMarket,foreignPlugin,foreignSettings,settingsFile,overlay,run}
 }
+
+test('a pending Claude marketplace mutation can finish after the former probe deadline without replay', {timeout:60000}, async t=>{
+  const f=await fixture(t)
+  let delayed=0
+  const run=async(exe,args,options)=>{
+    if(args[1]==='marketplace'&&args[2]==='add') {
+      delayed++
+      const result=await promisify(execFile)(process.execPath,['-e','setTimeout(()=>process.stdout.write("market-added"),31050)'],options)
+      assert.equal(result.stdout,'market-added')
+    }
+    return f.run(exe,args,options)
+  }
+  const adapter=await f.make({run}),plan=await planClaudeInstallation({...f.options,adapter})
+  const result=await applyClaudeInstallation(plan,{adapter,runtimeReceipt:f.runtimeReceipt})
+  assert.equal(result.phase,'verified')
+  assert.equal(delayed,1)
+  assert.equal(f.native.commands.filter(args=>args[1]==='install').length,1)
+})
 
 async function treeSnapshot(root) {
   const result={}
@@ -199,7 +218,8 @@ test('Claude scoped removal keeps exact transport context and foreign project/lo
       XDG_CACHE_HOME:join(f.userRoot,'.cache'),XDG_DATA_HOME:join(f.userRoot,'.local/share'),
       TMPDIR:join(f.userRoot,'.claude/tmp'),LANG:'C.UTF-8',LC_ALL:'C.UTF-8',
       DISABLE_AUTOUPDATER:'1',NODE_OPTIONS:'',NODE_PATH:''})
-    assert.equal(call.timeout,30000);assert.equal(call.maxBuffer,1048576)
+    const mutation=call.args[0]==='plugin'&&(['install','uninstall'].includes(call.args[1])||call.args[1]==='marketplace'&&['add','remove'].includes(call.args[2]))
+    assert.equal(call.timeout,mutation?0:30000);assert.equal(call.maxBuffer,1048576)
   }
   // The retained npm working directory avoids the HOME/project alias. These
   // declaration files are byte sentinels, not a native scope resolver.

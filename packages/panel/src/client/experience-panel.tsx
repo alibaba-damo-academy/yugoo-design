@@ -66,7 +66,7 @@ export function ExperiencePanel(props: ExperiencePanelProps): ReactElement {
     try { await props.sendPrompt(text) } catch (e) { setSendError(String(e)) }
     finally { setPending(false) }
   }
-  return <div className='dsh-experience-workspace'>
+  return <div className='dsh-experience-workspace dsh-design-panel'>
     <style>{EXPERIENCE_CSS}</style>
     <div className='dsh-experience-body'><DesignPanelSurface><div className='dsh-experience' data-testid='experience-panel'>
     {errors.map(error => <p key={error} role='alert' className='dsh-experience-error'>{error}</p>)}

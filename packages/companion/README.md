@@ -86,6 +86,15 @@ scripts still reject every external npm dependency; only the exact sibling
 asset is admitted and physically checked. Source execution uses the same
 Companion module directly.
 
+Review-queue recovery runs after the service is ready. A review storage
+error is reported on that recovery/operation and does not prevent the bound
+conversation or ordinary Panel editing from opening. The review status area
+shows the concrete error instead of an empty healthy queue. Startup failure closes already opened HTTP, frontend,
+transport and owned connection-file resources. Review mutation locks retain
+cross-process exclusion and record their process owner; a confirmed exited owner
+can be recovered without an age-based expiry. Ownerless legacy locks and unknown
+owners are retained with the existing explicit recovery diagnostic.
+
 The sidebar can collapse to an icon rail. Its conversation button toggles the
 message column without discarding the draft or reading position. The native
 project header stays at the top; connection details live inside the conversation.
@@ -107,7 +116,9 @@ entries default to `"full"`. A page can override the default with
 The panel-only page keeps the design workspace, project tools, settings, review
 status and suggestions. It omits history/composer and the conversation toggle.
 Its right sidebar starts collapsed. The workspace omits the project metadata
-header and keeps compact language and light/dark icon toggles above the Bundle tabs.
+header. Its existing language and light/dark icon controls sit in the right sidebar
+beside Settings, including while the sidebar is collapsed; they do not reserve a
+separate row above the workspace.
 A "Current project" entry in the right sidebar
 opens on hover/focus and pins on click, showing the shared U/S/T assessment,
 project name and full wrapping path. Score explanations remain keyboard accessible;
@@ -1920,7 +1931,13 @@ contents are not messages; notifications reside in private local state. The
 CwdChanged Hook keeps watching the original signal path when the agent changes
 working directory. Restarting Qoder still requires reopening the Panel against
 the new native process. A missing/disabled Hook fails the
-connection probe instead of pretending browser messages were delivered.
+connection probe instead of pretending browser messages were delivered. Optional
+Qoder/Claude Hook and QwenWork input connections open only for a send or an
+explicit readiness probe. Missing input readiness does not prevent opening the
+Panel, reading files, or saving local edits. An opening failure reports
+unavailable/not submitted; after restoring the native channel, retry the existing
+notification without saving again. Once a real send starts, its native receipt
+or uncertain result remains authoritative and is never automatically replayed.
 See [verified scope and remaining acceptance limits](#verified-scope).
 
 Studio trial verification has separate layers. `studio-trials-http.test.mjs`
@@ -2036,11 +2053,12 @@ replacement entry for users. See [preconfiguration findings and current limits](
 With explicit user opt-in, launch QwenWork with
 `QWENWORK_DESKTOP_CONTROL_ENABLED=1`, then use the existing `serve` command with
 `--host qwenwork` (desktop input by default; the explicit `--qwenwork-desktop`
-alias remains supported). Startup fails if verified user input is unavailable;
-it never silently selects Hook events. `--qwenwork-events-only` explicitly opts
+alias remains supported). The Panel remains usable when verified user input is
+unavailable; sending reports that no message was submitted if the connection
+could not open. It never silently selects Hook events. `--qwenwork-events-only` explicitly opts
 into the limited event transport, which is not automatic user input. Startup
-reports the selected `inputMode` and actual capability rather than inferring it
-from whether a flag was supplied. This is a version-pinned preview of the
+reports the selected `inputMode`; input readiness is checked when sending or
+explicitly probing the connection, not inferred from the launch flag. This is a version-pinned preview of the
 installed desktop control protocol, not a claim of a stable public QwenWork API.
 A normal app restart may disable the entry; reopen the Panel against the new
 native process. The flag does not change Bundle execution or model selection.

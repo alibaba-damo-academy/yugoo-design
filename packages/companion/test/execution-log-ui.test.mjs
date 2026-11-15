@@ -38,6 +38,10 @@ test('review labels distinguish confirmed main checks from native background bin
   assert.match(disconnected, /状态同步已断开/)
   assert.match(disconnected, /主对话同步评审中/)
   assert.doesNotMatch(disconnected, /companion-spinner/)
+  const unavailable = renderToStaticMarkup(React.createElement(BackgroundReviewPanel, { value: { reviews: [], rows: [], error: 'Review storage is locked: isolated/review.lock' }, disconnected: false }))
+  assert.match(unavailable, /role="alert".*Review storage is locked/)
+  assert.match(unavailable, /可以继续编辑和保存设计/)
+  assert.doesNotMatch(unavailable, /暂无评审状态/,'a storage failure must not appear to be a healthy empty queue')
 })
 
 test('MCP discovery returns the compiled Core execution_log catalog without claiming generation or edit access', async () => {
@@ -81,10 +85,10 @@ test('shared artifact log reads exact main segments over RPC, resets on focus an
     assert.ok(predicate(), 'bounded bridge observation did not arrive')
   }
   let invocationId
-  const render = async (id, status = 'working') => {
+  const render = async (id, status = 'working', retainHistory = false) => {
     const item = { ...focus(id), id, title: id, points: [], links: [], status, runId: threadId,
       logTarget: { artifactId: focus(id).artifactId, invocationId } }
-    await React.act(async () => root.render(React.createElement(ExecutionTrace, { item, read })))
+    await React.act(async () => root.render(React.createElement(ExecutionTrace, { item, read, retainHistory })))
   }
   const poll = async () => React.act(async () => requestLivePoll())
   try {
@@ -126,6 +130,8 @@ test('shared artifact log reads exact main segments over RPC, resets on focus an
     assert.doesNotMatch(document.body.textContent, /B-ONLY|UNRELATED-PRIVATE-PREFIX|A-FIRST|A-RECOVERED/)
     await control('finishMainBundle', { invocationId, outcome: 'cancelled' })
     await render('A', 'failed')
+    assert.equal(document.getElementById('root').innerHTML, '', 'inline progress disappears after execution settles')
+    await render('A', 'failed', true)
     assert.equal(document.querySelector('button').getAttribute('aria-expanded'), 'false')
     await React.act(async () => document.querySelector('button').click())
     await until(() => document.body.textContent.includes('A-TAIL-204'))

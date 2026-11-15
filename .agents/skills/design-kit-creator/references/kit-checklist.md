@@ -14,7 +14,7 @@
 
 - frontmatter name/version/description 与目录装载契约一致。
 - 可选双语展示简介使用 mindset.md frontmatter 的 `display_description: {zh, en}`，两种语言都非空；保留原 description 和完整方法正文。Studio 卡片与文件说明栏共享 loader 投影，不另设页面私有简介或逐文件用途描述。英文文案按 docs/panel-uiux-standard.md 的角色规则编写。
-- `<design_skills>` 精确公开名称及有意义的选择描述；检查当前 `packages/core/src/kit-loader.ts`、`kit-discovery.ts` 的发现规则，不手工修改 Host 白名单。
+- `kit.yaml` 挂载声明提供精确成员和顺序，运行时从实际加载的 Bundle 生成模型目录与选择描述；Mindset 不手工重复维护清单。检查当前 `packages/core/src/kit-loader.ts`、`kit-discovery.ts` 的发现规则，不手工修改 Host 白名单。
 - 领域专家的职责与协作风格、设计目标、事实边界、最小有价值闭环和已有内容的修改策略；咨询式不是唯一形式。
 - 提问仅解决实际用户决策缺口；知识可查证，安全可逆的假设可以明示。示例不是用户事实。
 - 跨 Bundle 的输入依赖是证据需求，不是固定串行阶段；缺失输入要说明当前任务的影响，不阻止无关工作。
@@ -27,7 +27,7 @@
 
 这四个入口路径均相对于包根目录，不相对于 Kit 的 `root`。Kit 身份来自 Mindset frontmatter；独立 Bundle 的 `identity` 用于目录和挂载项 `name`，运行时 `name` 与挂载 `bindingKey`、SKILL frontmatter 及 canonical 路径对应，不能仅改目录名后批量替换运行时字段。
 
-`kit.yaml` 是精确 Bundle 挂载的权威，Mindset 的 `<design_skills>` 是其模型侧投影，二者须保持一致。加载包根目录时使用通用包 resolver；只提供 Kit 目录时还须配置能解析精确引用的 Bundle resolver。纯本地内容目录另验证目标宿主的 discovery，不要求每个 Kit 发布 npm 包。
+`kit.yaml` 是精确 Bundle 挂载及顺序的唯一来源。运行时复用已加载 Bundle 的名称与 frontmatter 描述生成一个模型目录；Mindset 只维护领域方法，不另写同一份清单。没有 `kit.yaml` 的既有 Kit 仍使用其原有 `<design_skills>` 目录装载方式。加载包根目录时使用通用包 resolver；只提供 Kit 目录时还须配置能解析精确引用的 Bundle resolver。纯本地内容目录另验证目标宿主的 discovery，不要求每个 Kit 发布 npm 包。
 
 既有 `mindset.md + skills/<bundle>/` 内容只按支持该布局的 loader 使用。保留方法、资源和版本引用；不要把旧兼容示例或旧脚手架作为新结构的默认模板。当前契约见 `docs/bundle-contract.md` 和 `docs/wiki/extending.md`。
 

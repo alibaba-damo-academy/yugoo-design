@@ -257,10 +257,11 @@ not this Kit-only field.
 
 The structured Kit binding declaration is the authoritative Bundle allowlist.
 Each binding must resolve to the Bundle identity in the current source tree; unknown and
-duplicate members fail Kit loading. When the Mindset displays a
-`<design_skills>` catalog, it is generated from the binding declaration or is
-the co-located structured representation of that same authority. Bundle
-definitions not bound by the Kit remain invisible to it.
+duplicate members fail Kit loading. For a Kit with `kit.yaml`, the runtime
+renders one model-facing catalog from the resolved mounts and their Bundle
+metadata; Mindset does not need or maintain a duplicate list. Existing Kits
+without a binding manifest retain their Mindset `<design_skills>` loading path.
+Bundle definitions not bound by the Kit remain invisible to it.
 
 A declarative Kit author creates Bundle definitions, a Mindset, and Kit bindings.
 Discovery, validation, Mindset catalog injection, generic `design_state`
@@ -336,9 +337,9 @@ save, cache refresh and invocation consistency; they are not local product versi
 
 ## SKILL.md frontmatter: the unified gap contract
 
-The Mindset's `<design_skills>` section is the condensed routing index injected
-into the parent Agent on every turn. Each `SKILL.md` frontmatter description is
-Bundle metadata available to Design System catalog consumers; it is not
+The runtime-generated catalog of the active Kit's loaded Bundles is the
+condensed routing index injected into the parent Agent on every turn. Each
+`SKILL.md` frontmatter description is Bundle metadata available to Design System catalog consumers; it is not
 published through the stock dsh `skill` service. The following five items are
 a useful routing-description structure, not a loader-required item count:
 

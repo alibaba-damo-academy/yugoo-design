@@ -100,20 +100,23 @@ test('fork changes only identity; real loader preserves runtime paths and cannot
   assert.equal(textOf(second, 'SKILL.md'), textOf(original, 'SKILL.md'))
 })
 
-test('Kit projection changes only declared identity/catalog slots and Core rejects mismatches', async () => {
+test('Kit projection preserves the entire domain body while exact mounts own membership', async () => {
   const f = await fixture(), original = textOf(f.owned, 'mindset.md')
   const newKit = { name: 'x', version: '1.0' }
   const projected = await f.composition.projectMounts({ kit: newKit, kitFiles: f.owned, mounts: [{ bindingKey: otherPin.name, ...otherPin }, { bindingKey: originalPin.name, ...originalPin }] })
   const body = textOf(projected, 'mindset.md')
-  const stripOwned = text => text.replace(/^name:.*$/m, '').replace(/^version:.*$/m, '').replace(/<design_skills>[\s\S]*?<\/design_skills>/, '')
+  const stripOwned = text => text.replace(/^name:.*$/m, '').replace(/^version:.*$/m, '')
   assert.equal(stripOwned(body), stripOwned(original))
-  assert.ok(body.includes('Maintain the coherent product background'))
-  assert.ok(body.includes('Define testable preconditions'))
+  assert.equal(parseFrontmatter(body, 'mindset.md').body, parseFrontmatter(original, 'mindset.md').body)
   await f.composition.validateKit({ kit: newKit, kitFiles: projected, mounts: mountsFor(otherPin, originalPin), resolveBundle: pin => f.catalog.captureBundle(pin) })
   await assert.rejects(f.composition.validateKit({ kit: newKit, kitFiles: projected, mounts: mountsFor(originalPin), resolveBundle: pin => f.catalog.captureBundle(pin) }), /authoritative kit.yaml/)
-  const staleXml = projected.map(file => file.path === 'mindset.md' ? entry(file.path, body.replace('## smart_questions', '## absent_bundle')) : file)
-  await assert.rejects(f.composition.validateKit({ kit: newKit, kitFiles: staleXml, mounts: mountsFor(otherPin, originalPin), resolveBundle: pin => f.catalog.captureBundle(pin) }), /catalog differs/)
-  await assert.rejects(f.composition.projectMounts({ kit: newKit, kitFiles: f.projected, mounts: [{ bindingKey: 'wrong_runtime', ...originalPin }] }), /bindingKey must preserve/)
+  const staleXml = projected.map(file => file.path === 'mindset.md' ? entry(file.path, body + '\n<design_skills>\n## absent_bundle\nKeep custom reasoning.\n</design_skills>\n') : file)
+  await f.composition.validateKit({ kit: newKit, kitFiles: staleXml, mounts: mountsFor(otherPin, originalPin), resolveBundle: pin => f.catalog.captureBundle(pin) })
+  const customProjected = await f.composition.projectMounts({ kit: newKit, kitFiles: staleXml, mounts: [{ bindingKey: originalPin.name, ...originalPin }] })
+  assert.equal(textOf(customProjected, 'mindset.md'), textOf(staleXml, 'mindset.md'))
+  const wrongBinding = await f.composition.projectMounts({ kit: newKit, kitFiles: f.projected, mounts: [{ bindingKey: 'wrong_runtime', ...originalPin }] })
+  await assert.rejects(f.composition.validateKit({ kit: newKit, kitFiles: wrongBinding,
+    mounts: [{ bindingKey: 'wrong_runtime', bundle: originalPin }], resolveBundle: pin => f.catalog.captureBundle(pin) }), /bindingKey must preserve/)
   await assert.rejects(f.composition.projectMounts({ kit: newKit, kitFiles: f.projected, mounts: [] }), /nonempty/)
 })
 
@@ -197,20 +200,23 @@ test('identity-only YAML edit supports document directives, CRLF and flow mappin
   }
 })
 
-test('new runtime catalog sections include real retained method descriptions; native-only forks reject', async () => {
+test('mount edits do not copy descriptions into Mindset; loaded catalog retains descriptions and native-only forks reject', async () => {
   const f = await fixture(), original = f.bundleFiles.get(originalPin.name), forkPin = { name: 'local_described_fork', version: '1.0' }
   const fork = await f.composition.forkBundle({ files: original, from: originalPin, to: forkPin, runtimeName: originalPin.name })
   const withoutRules = await f.composition.projectMounts({ kit: kitPin, kitFiles: f.owned, mounts: [{ bindingKey: otherPin.name, ...otherPin }] })
   let resolves = 0
   const withFork = await f.composition.projectMounts({ kit: kitPin, kitFiles: withoutRules, mounts: [{ bindingKey: otherPin.name, ...otherPin }, { bindingKey: originalPin.name, ...forkPin }],
     resolveBundle: async pin => { resolves++; assert.deepEqual(pin, forkPin); return { files: fork, sourceId: `local:bundle:${forkPin.name}` } } })
-  assert.equal(resolves, 1, 'unchanged authored sections are preserved, only newly mounted descriptions resolved')
+  assert.equal(resolves, 0, 'mount projection preserves the method and does not fetch descriptions to rewrite it')
   const description = parseFrontmatter(textOf(original, 'SKILL.md'), 'SKILL.md').meta.description
-  assert.ok(textOf(withFork, 'mindset.md').includes(description))
-  await f.composition.validateKit({ kit: kitPin, kitFiles: withFork, mounts: mountsFor(otherPin, { ...forkPin, runtimeName: originalPin.name }),
-    resolveBundle: pin => pin.name === forkPin.name ? Promise.resolve({ files: fork, sourceId: `local:bundle:${forkPin.name}` }) : f.catalog.captureBundle(pin) })
-  const malformed = f.projected.map(file => file.path === 'mindset.md' ? entry(file.path, textOf(f.projected, file.path).replace(/<design_skills>[\s\S]*?<\/design_skills>/, '<design_skills></design_skills>')) : file)
-  await assert.rejects(f.composition.projectMounts({ kit: kitPin, kitFiles: malformed, mounts: [{ bindingKey: originalPin.name, ...originalPin }] }), /empty|malformed/)
+  assert.equal(textOf(withFork, 'mindset.md'), textOf(withoutRules, 'mindset.md'))
+  const input = { kit: kitPin, kitFiles: withFork, mounts: mountsFor(otherPin, { ...forkPin, runtimeName: originalPin.name }),
+    resolveBundle: pin => pin.name === forkPin.name ? Promise.resolve({ files: fork, sourceId: `local:bundle:${forkPin.name}` }) : f.catalog.captureBundle(pin) }
+  await f.composition.validateKit(input)
+  const loaded = await f.composition.loadKit(input)
+  assert.equal(loaded.skills.find(skill => skill.name === originalPin.name).description, description)
+  const malformed = f.projected.map(file => file.path === 'mindset.md' ? entry(file.path, 'Missing YAML frontmatter.') : file)
+  await assert.rejects(f.composition.projectMounts({ kit: kitPin, kitFiles: malformed, mounts: [{ bindingKey: originalPin.name, ...originalPin }] }), /frontmatter/)
   const nativeManifest = parse(textOf(original, 'skill.yaml'))
   nativeManifest.presentation = { mode: 'native', renderer: 'test.native-panel/v1' }
   delete nativeManifest.summary
@@ -308,16 +314,15 @@ test('existing shared Kit preview keeps exact pin checks and compiles independen
 
 test('only explicit blank drafts can keep an empty Kit; adding its first real mount uses Core and preserves authored prose', async () => {
   const f = await fixture(), kit = { name: 'local_kit_blank_fixture', version: '1.0' }
-  const body = '---\nname: local_kit_blank_fixture\nversion: "1.0"\ndescription: "New Kit"\n---\n\nUser-owned purpose.\n\n<design_skills>\n</design_skills>\n'
+  const body = '---\nname: local_kit_blank_fixture\nversion: "1.0"\ndescription: "New Kit"\n---\n\nUser-owned purpose.\n'
   const files = [entry('mindset.md', body), entry('kit.yaml', 'version: 1\nmounts: []\n')]
   await assert.rejects(f.composition.projectMounts({ kit, kitFiles: files, mounts: [] }), /nonempty/)
   const blank = await f.composition.projectMounts({ kit, kitFiles: files, mounts: [], allowEmptyDraft: true })
   assert.equal(parseFrontmatter(textOf(blank, 'mindset.md'), 'mindset.md').body, parseFrontmatter(body, 'mindset.md').body)
   await assert.rejects(f.composition.validateKit({ kit, kitFiles: blank, mounts: [], resolveBundle: pin => f.catalog.captureBundle(pin) }), /nonempty/)
   const mounted = await f.composition.projectMounts({ kit, kitFiles: blank, mounts: [{ bindingKey: originalPin.name, ...originalPin }], allowEmptyDraft: true })
-  assert.match(textOf(mounted, 'mindset.md'), /User-owned purpose\.[\s\S]*## business_rules/)
+  assert.equal(parseFrontmatter(textOf(mounted, 'mindset.md'), 'mindset.md').body, parseFrontmatter(body, 'mindset.md').body)
   await f.composition.validateKit({ kit, kitFiles: mounted, mounts: mountsFor(originalPin), resolveBundle: pin => f.catalog.captureBundle(pin) })
-  await assert.rejects(f.composition.projectMounts({ kit, kitFiles: [entry('mindset.md', body.replace('<design_skills>', '<design_skills>Not an authored catalog'))], mounts: [], allowEmptyDraft: true }), /empty|catalog/)
 })
 
 
@@ -338,7 +343,9 @@ test('new source objects save and reopen through the real adapter; incomplete Bu
   assert.equal(mounted.mounts.length, 1)
   assert.deepEqual(mounted.mounts[0].bundle.name, originalPin.name)
   const reopened = await createStudioInstances(options)
-  assert.match((await reopened.readFile({ id: kit.id, path: 'mindset.md' })).content, /## business_rules[\s\S]*My domain purpose\./)
+  const reopenedMindset = (await reopened.readFile({ id: kit.id, path: 'mindset.md' })).content
+  assert.match(reopenedMindset, /My domain purpose\./)
+  assert.doesNotMatch(reopenedMindset, /<design_skills>/)
   const preview = await reopened.preview({ id: kit.id, expectedRevision: mounted.revision, bundle: originalPin })
   assert.ok(preview.preview, 'first real mount uses the actual Core loader and shared declarative preview')
 })

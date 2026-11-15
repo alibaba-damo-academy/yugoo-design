@@ -1,14 +1,14 @@
 ---
 name: yugoo
-description: Create and manage Design Projects, open interactive Panels, or customize reusable Kits and Bundles in Studio through the current native conversation.
+description: Create and manage Design Projects, maintain project-owned Kit files, open interactive Panels, or customize reusable Kits and Bundles in Studio through the current native conversation.
 ---
 
 # Design System
 
 Resolve the plugin root two directories above this installed skill directory.
 Codex invokes this entry as `$yugoo`; command arguments are the text after it.
-Use the existing Core project commands rather than editing project metadata by
-hand. Obtain the exact native thread identity from trusted host context; never
+Use the existing Core project commands for project identity, selection and Kit
+selection. Obtain the exact native thread identity from trusted host context; never
 pick the latest session. Commands do not start a second agent or change cwd.
 
 ```sh
@@ -36,6 +36,20 @@ project history. Never modify the source. For
 reconstruction follow the returned evidence-extraction instructions, not normal
 forward design generation. Do not claim migration or reconstruction finished
 merely because the target project was created.
+
+## Maintain the selected project's definitions
+
+For an authorized change to this project's own `design_kit/` methods, schemas,
+Panels or locale resources, use the native Host's ordinary file tools against
+`selected.root`. Compare the requested source with those project files and merge
+the needed changes while preserving customizations, source references and Kit
+identity. No dedicated editing API, reinstall or version upgrade is required.
+For method, schema or Panel authoring, use the same authoring guides linked below.
+Project definitions are separate from Core-owned project metadata and from
+Studio's reusable library copies; neither library edits nor plugin upgrades
+silently replace them. Changes to design facts still use their owning Bundle's
+normal validation and publication. Subsequent reads use the current project
+files; handle an actual in-flight definition conflict against those files.
 
 ## Customize Kits and Bundles in Studio
 

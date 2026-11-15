@@ -33,6 +33,7 @@ export function createNativeReviewScheduler({ reviews, project, connection, getC
   async function drain(periodicTarget) {
     if (closed || draining) return
     draining = true
+    let inputUnavailable = false
     try {
       const policy = await getPolicy()
       // Keep the existing queue intact while native background readiness is
@@ -58,6 +59,7 @@ export function createNativeReviewScheduler({ reviews, project, connection, getC
         await reduce((queue, state) => {
           state.nativeDelivery = { checkpoint: target.checkpoint, target, status: 'prepared-unavailable', requests: refs }
         })
+        inputUnavailable = true
         return
       }
       // Persist the attempt BEFORE entering a transport that may accept a
@@ -69,13 +71,20 @@ export function createNativeReviewScheduler({ reviews, project, connection, getC
         `Exact prepared review references: ${JSON.stringify(refs)}.`,
         'Read the project GRA policy first. If off, do not launch these automatic reviews. Otherwise use the plugin native-execution reference to launch independent native background reviewers for these exact IDs, then bind the actual native launches in one batch. Each reviewer reads its own request and submits its own result. These reviews are immutable publication snapshots: a historical revision is intentional, not permission to change its target. Do not prepare another batch, wait for reviews, busy-poll, or block the user task. If the host cannot spawn native children, report that capability limitation; a queued notice is not a running reviewer.',
       ].join('\n\n'))
-      await reduce((_queue, state) => { state.nativeDelivery = { checkpoint: target.checkpoint, status: result?.accepted === true ? 'queued' : 'delivery-unknown', requests: refs } })
+      inputUnavailable = result?.accepted !== true && result?.notSubmitted === true
+      await reduce((_queue, state) => {
+        state.nativeDelivery = inputUnavailable
+          ? { checkpoint: target.checkpoint, target, status: 'prepared-unavailable', requests: refs }
+          : { checkpoint: target.checkpoint, status: result?.accepted === true ? 'queued' : 'delivery-unknown', requests: refs }
+      })
     } catch (error) { onError(error) }
     finally {
       try {
         // The final queue read still owns storage. Keep close() joined until
         // every drain operation is done, not merely the transport callback.
-        if (!closed) {
+        // A definite setup failure waits for an ordinary later lifecycle trigger;
+        // do not turn prepared-unavailable's zero delay into a retry loop.
+        if (!closed && !inputUnavailable) {
           const next = await pending()
           if (!closed && next.size && await canDispatch()) schedule(next.delay)
         }

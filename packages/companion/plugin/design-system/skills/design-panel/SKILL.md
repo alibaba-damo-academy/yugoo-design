@@ -14,6 +14,9 @@ For creating or changing reusable Kit/Bundle source in Studio, follow
 [the customization entry](../yugoo/SKILL.md#customize-kits-and-bundles-in-studio).
 Use its authoring skills and the same connection; design Bundle execution below
 does not author reusable content.
+For an authorized change to the selected project's own definitions or resources,
+follow [project-local maintenance](../yugoo/SKILL.md#maintain-the-selected-projects-definitions)
+using ordinary Host file tools, rather than creating a Studio library copy.
 
 ## Choose the current Codex entry
 

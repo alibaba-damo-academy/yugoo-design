@@ -63,12 +63,18 @@ export const DOCK_CSS = `
 .dsh-design-dock-panels{flex:1;min-height:0;position:relative}
 .dsh-design-dock-panel{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden}
 .dsh-design-dock-panel[data-hidden]{display:none}
-.dsh-design-project-header{display:flex;flex-wrap:wrap;min-width:0;
-  min-height:var(--dsh-host-primary-header-height,76px);flex:0 0 auto;
+.dsh-design-project-header{display:flex;flex-wrap:nowrap;min-width:0;
+  height:var(--dsh-host-primary-header-height,76px);flex:0 0 auto;
   align-items:center;gap:12px;box-sizing:border-box;padding:4px var(--ds-space-4,16px);background:var(--ds-bg-white,light-dark(#fff,#19191c));
   border-bottom:1px solid var(--ds-line-1,#e8e8e8);text-align:left}
-.dsh-design-project-header[data-testid="design-project-header"]{min-height:64px;padding:6px var(--ds-space-4,16px)}
-.dsh-design-project-header>[data-testid="design-dock-meta"]{flex:1 1 120px;align-items:flex-start}
+.dsh-design-project-header[data-testid="design-project-header"]{height:64px;padding:6px var(--ds-space-4,16px)}
+.dsh-design-project-header>[data-testid="design-dock-meta"]{flex:1 1 0;align-items:flex-start}
+.dsh-design-project-header .dsh-design-dock-meta>div{width:100%;flex-wrap:nowrap;white-space:nowrap}
+.dsh-design-project-header .dsh-clarity-dock-label,
+.dsh-design-project-header .dsh-clarity-dock-dims{flex:0 0 auto}
+.dsh-design-project-header .dsh-clarity-dock-dims{flex-wrap:nowrap}
+.dsh-design-project-header [data-testid="design-dock-meta-name"]{flex:0 0 auto;overflow:visible;text-overflow:clip}
+.dsh-design-project-header [data-overflow]{visibility:hidden;overflow:clip;pointer-events:none}
 .dsh-design-dock-toolbar{display:flex;justify-content:flex-end;flex:none;padding:6px var(--ds-space-4,16px)}
 .dsh-workspace-preferences{display:flex;flex:0 1 auto;flex-direction:column;align-items:flex-end;align-self:flex-start;gap:4px;min-width:0;max-width:100%;margin-left:auto}
 .dsh-workspace-preference-controls{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:var(--ds-space-2,8px);max-width:100%}
@@ -86,7 +92,7 @@ export const DOCK_CSS = `
 .dsh-design-project-folder:disabled{cursor:wait;opacity:.55}
 .dsh-design-project-folder-error{color:var(--ds-error-6);font-size:12px;line-height:20px}
 .dsh-design-dock .dsh-design-project-header[data-testid="design-project-header"]:not([data-compact=true]){
-  position:relative;height:auto;min-height:var(--dsh-host-primary-header-height,64px);
+  position:relative;height:var(--dsh-host-primary-header-height,64px);
   padding-block:4px;border-bottom-width:.5px}
 .dsh-design-dock .dsh-design-project-header[data-testid="design-project-header"]:not([data-compact=true]) .dsh-design-project-folder{width:24px;height:24px}
 .dsh-design-dock .dsh-design-project-header[data-testid="design-project-header"]:not([data-compact=true]) .dsh-design-project-folder-error{
@@ -107,8 +113,9 @@ export const DOCK_CSS = `
 .dsh-current-project-info .dsh-design-dock-meta>div{white-space:normal;overflow:visible;overflow-wrap:anywhere}
 .dsh-current-project-info .dsh-clarity-dock-dims{margin-inline-start:0;flex:1 0 100%;max-width:none}
 .dsh-current-project-info .dsh-clarity-dock-dim{min-width:80px}
-.dsh-design-project-header[data-compact=true]{min-height:44px;padding:4px var(--ds-space-3,12px)}
+.dsh-design-project-header[data-compact=true]{height:44px;padding:4px var(--ds-space-3,12px)}
 .dsh-design-project-header[data-compact=true]>.dsh-design-dock-meta{flex-direction:row;align-items:center;justify-content:space-between;gap:12px}
+.dsh-design-project-header[data-compact=true]>.dsh-design-dock-meta>div{width:auto;flex:0 0 auto}
 .dsh-design-compact-project{display:flex;align-items:center;gap:6px;min-width:0;margin-left:auto!important;white-space:nowrap;font-size:13px;color:var(--ds-text-secondary)}
 .dsh-design-compact-project>[data-testid="design-dock-meta-name"]{overflow:hidden;text-overflow:ellipsis}
 .dsh-design-view-switcher{display:flex;flex:0 0 auto;align-self:stretch;min-width:0;gap:4px;justify-content:flex-start}

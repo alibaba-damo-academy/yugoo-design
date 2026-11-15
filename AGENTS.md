@@ -81,6 +81,10 @@ for non-canvas Bundles or add a new loader requirement.
 Keep Bundle capability descriptions in `SKILL.md` frontmatter, not a second
 `skill.yaml` description. Optional translated picker copy belongs in the existing
 panel locale resources (`bundleDescription`), not another routing authority.
+`kit.yaml` is the sole maintained Bundle membership and ordering source; derive
+the model-facing catalog from its resolved mounts. Do not repeat a manually
+maintained Bundle inventory in Mindset. Retain domain reasoning and meaningful
+cross-Bundle cooperation guidance there rather than duplicating the catalog.
 Declarative manifests need `presentation.mode`, not
 the fixed interpreter id; native renderer ids remain explicit. Simplifying
 metadata must not trim domain methods or output contracts. Verify loaded

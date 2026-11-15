@@ -44,6 +44,24 @@ export function DesignDockMeta(props: {
   const [folderAvailable, setFolderAvailable] = useState(false)
   const [operation, setOperation] = useState({ pending: false, failed: false })
   const generation = useRef(0)
+  const metadata = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const element = metadata.current
+    if (!element?.closest('.dsh-design-project-header')) return
+    // Keep each header line intact. Hidden lines retain their measured extent,
+    // so widening the dock can reveal them without a second layout authority.
+    const rows = props.compact ? [element] : [...element.querySelectorAll<HTMLElement>(':scope > div')]
+    const measure = (): void => {
+      for (const row of rows) row.toggleAttribute('data-overflow', row.scrollWidth > row.clientWidth)
+    }
+    measure()
+    const observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(measure)
+    for (const row of rows) {
+      observer?.observe(row)
+      for (const child of row.children) observer?.observe(child)
+    }
+    return () => observer?.disconnect()
+  }, [props.clarity, props.compact, name, folderAvailable, t])
   useEffect(() => {
     const current = ++generation.current
     setFolderAvailable(false)
@@ -67,7 +85,7 @@ export function DesignDockMeta(props: {
   }
   if (!hasDockMeta(props.clarity, props.projectPath, props.projectName)) return null
   return (
-    <div className={`dsh-design-dock-meta${props.compact ? ' dsh-design-dock-meta-compact' : ''}`} data-testid='design-dock-meta'>
+    <div ref={metadata} className={`dsh-design-dock-meta${props.compact ? ' dsh-design-dock-meta-compact' : ''}`} data-testid='design-dock-meta'>
       <ClarityDockReadout value={props.clarity} compact={props.compact} singleLine={!props.compact} />
       {name || folderAvailable ? (
         <div className={props.compact ? 'dsh-design-compact-project' : 'dsh-design-project-identity'}>

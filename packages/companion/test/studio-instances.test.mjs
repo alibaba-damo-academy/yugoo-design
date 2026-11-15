@@ -15,7 +15,6 @@ const entry = (path, text) => ({ path, base64: Buffer.from(text).toString('base6
 const textOf = (files, path) => Buffer.from(files.find(file => file.path === path).base64, 'base64').toString('utf8')
 const method = 'Complete method. Preserve domain reasoning, failures, and output protocols.\n'
 const initialMindset = '---\nname: fixture_kit\n---\n\nUser-owned prose.\n<design_skills>\n## alpha\n</design_skills>\nTrailing custom prose.\n'
-const projectedMindset = (text, mounts) => text.replace(/<design_skills>[\s\S]*?<\/design_skills>/, `<design_skills>\n${mounts.map(mount => `## ${mount.bindingKey}\n`).join('')}</design_skills>`)
 
 // Deliberate fixture ports: these prove storage contracts, not Core composition or native trust.
 function ports() {
@@ -43,7 +42,7 @@ function ports() {
       return files.map(file => file.path === 'skill.yaml' ? entry(file.path, JSON.stringify({ ...manifest, identity: to.name })) : file)
     },
     async projectMounts({ kit: _kit, kitFiles, mounts }) {
-      const projected = kitFiles.map(file => file.path === 'mindset.md' ? entry(file.path, projectedMindset(textOf(kitFiles, file.path), mounts)) : file)
+      const projected = kitFiles
       const declaration = entry('kit.yaml', JSON.stringify({ version: 1, mounts }))
       return [...projected.filter(file => file.path !== 'kit.yaml'), declaration]
     },
@@ -210,7 +209,7 @@ test('negative ports fail without visible half-copies; invalid mounts and stale 
   assert.equal((await service.list()).length, 2)
 })
 
-test('Kit generated catalog projection preserves prose and mount refs across reopen', async t => {
+test('Kit mount updates preserve the complete Mindset body and mount refs across reopen', async t => {
   const { service, options } = await fixture(t)
   const created = await service.copy({ kind: 'kit', kit })
   const original = (await service.readFile({ id: created.id, path: 'mindset.md' })).content
@@ -218,9 +217,8 @@ test('Kit generated catalog projection preserves prose and mount refs across reo
   await service.saveFile({ id: created.id, expectedRevision: 0, path: 'mindset.md', content: custom })
   const next = await service.updateMounts({ id: created.id, expectedRevision: 1, bundles: [beta] })
   const read = (await service.readFile({ id: created.id, path: 'mindset.md' })).content
-  const outside = text => [text.split('<design_skills>')[0], text.split('</design_skills>')[1]]
-  assert.deepEqual(outside(read), outside(custom))
-  await assert.rejects(service.saveFile({ id: created.id, expectedRevision: 2, path: 'mindset.md', content: original }), /mount management/)
+  assert.equal(read, custom)
+  await service.saveFile({ id: created.id, expectedRevision: 2, path: 'mindset.md', content: original })
   const reopened = await createStudioInstances(options)
   assert.deepEqual((await reopened.read({ id: created.id })).mounts, next.mounts)
   assert.ok((await reopened.read({ id: created.id })).availableBundles.some(item => item.name === alpha.name))
@@ -233,7 +231,7 @@ test('batch Kit edits keep mount ownership and do not partially add files on mem
   for (const changes of [
     [{ path: 'kit.yaml', content: '{}' }],
     [{ path: 'skills/alpha/SKILL.md', content: method }],
-    [{ path: 'notes.md', content: 'must not be partially added' }, { path: 'mindset.md', content: mindset.replace('## alpha', '## other') }],
+    [{ path: 'notes.md', content: 'must not be partially added' }, { path: 'kit.yaml', content: '{}' }],
   ]) await assert.rejects(service.saveChanges({ id: created.id, expectedRevision: 0, changes }), /mount management|Kit-owned/)
   assert.equal((await service.read(created.id)).revision, 0)
   await assert.rejects(service.readFile({ id: created.id, path: 'notes.md' }), /does not exist/)
@@ -318,7 +316,7 @@ test('blank Kit and Bundle creation retains new sources without copying installe
   assert.deepEqual(kit.files.map(file => file.path).sort(), ['kit.yaml', 'mindset.md'])
   const mindset = await f.service.readFile({ id: kit.id, path: 'mindset.md' })
   assert.match(mindset.content, /^---\nname:/)
-  assert.match(mindset.content, /<design_skills>\n<\/design_skills>/)
+  assert.doesNotMatch(mindset.content, /<design_skills>/)
   assert.equal(bundle.runtimeName, bundle.bundle.name)
   assert.notEqual(kit.id, bundle.id)
   assert.equal(bundle.files.length, 7)

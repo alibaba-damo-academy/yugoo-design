@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto'
 import { qwenworkProcess } from './qwenwork-connection.mjs'
 import { createWindowsProcessInspector } from './windows-native-platform.mjs'
 import { createQwenWorkHookConnection } from './qwenwork-hook-transport.mjs'
-import { readNativePrivateFile } from './native-hook-transport.mjs'
+import { deferNativeConnection, readNativePrivateFile } from './native-hook-transport.mjs'
 
 /** Browser user actions need a user-input transport, not an event receipt. */
 export function resolveQwenWorkInputMode({ host = 'codex', qwenworkDesktop, qwenworkEventsOnly } = {}) {
@@ -25,18 +25,13 @@ export async function createQwenWorkPanelConnection(options, {
 } = {}) {
   const inputMode = resolveQwenWorkInputMode({ ...options, host: 'qwenwork' })
   const binding = { sessionId: options.sessionId, nativeCwd: options.nativeCwd, transcriptPath: options.transcriptPath }
-  const openEvents = () => hooks({ ...binding, timeoutMs: 30000 })
-  if (inputMode === 'events-only') return { ...await openEvents(), inputMode }
-  let connection
-  try { connection = await desktop(binding) }
-  catch (error) {
-    throw new Error('QwenWork 用户消息通道不可用，面板未启动。请检查已授权的桌面控制设置与当前会话绑定；不会自动改用 Hook 通知。原因：' + error.message, { cause: error })
+  const defer = open => deferNativeConnection({ host: 'qwenwork', threadId: options.sessionId, open })
+  const events = defer(() => hooks({ ...binding, timeoutMs: 30000 }))
+  if (inputMode === 'events-only') return { ...events, inputMode }
+  const connection = defer(() => desktop(binding))
+  return { ...connection, inputMode, sendEvent: events.send,
+    async close() { await Promise.all([connection.close(), events.close()]) },
   }
-  let events
-  return { ...connection, inputMode, async sendEvent(text) {
-    events ??= await openEvents()
-    return events.send(text)
-  } }
 }
 
 export async function createDesktopInputConnection({ sessionId, nativeCwd, request, verifyBinding }) {

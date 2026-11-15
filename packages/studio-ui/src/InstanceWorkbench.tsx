@@ -1,12 +1,12 @@
 /** Editable local source instances. Persistence and preview remain host capabilities. */
-import { useEffect, useId, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type ReactElement, type ReactNode, type Ref } from 'react'
 import type { DesignBundleVersionPin, DesignKitVersionPin, StudioPanelPreviewResult } from 'dsh-design-studio'
 import type { StudioInstanceChangeRequest, StudioInstanceCandidate, StudioInstanceSaveChanges, StudioInstanceChangeReceipt } from 'dsh-design-studio'
 import type { StudioAuthoring } from './authoring.ts'
 import { renderStudioDocument } from './markdown.tsx'
 import { LoadingIndicator } from './LoadingIndicator.tsx'
 import type { StudioBundleCardContent } from './BundleCard.tsx'
-import { MountEditor, type MountEditorActions } from './MountEditor.tsx'
+import { MountEditor, MountedBundleBrowser, type MountEditorActions } from './MountEditor.tsx'
 import { FileExplorer } from './FileExplorer.tsx'
 import { FileInfoSidebar, FileName } from './FileInfoSidebar.tsx'
 import { useSourceCandidate, type SourceCandidateOptions, type StudioPreparedSourceChanges } from './source-candidate-state.ts'
@@ -92,6 +92,13 @@ export interface InstanceWorkbenchProps {
   initialSelection?: { expectedRevision: number; bundle?: DesignBundleVersionPin }
 }
 
+function SourceTextArea({ label, content, readOnly, inputRef, onChange }: {
+  label: string; content: string; readOnly: boolean; inputRef?: Ref<HTMLTextAreaElement>; onChange?: (value: string) => void
+}) {
+  return <textarea ref={inputRef} aria-label={label} spellCheck={false} value={content} readOnly={readOnly}
+    onChange={onChange ? event => onChange(event.target.value) : undefined} className="ygd-studio-source-input" />
+}
+
 export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExport, renderPreview, onDirtyChange, renderSupplement, authoringIntent, embedded = false, readOnly = false, onEdit, initialView = 'files', initialSelection, sourceChanges }: InstanceWorkbenchProps): ReactElement {
   const zh = locale === 'zh'
   const [record, setRecord] = useState<StudioInstance>()
@@ -111,6 +118,7 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
   const [newFileOpen, setNewFileOpen] = useState(false), [newFilePath, setNewFilePath] = useState(''), [newFileError, setNewFileError] = useState('')
   const newFileErrorId = useId()
   const [preview, setPreview] = useState<StudioPanelPreviewResult>(), [previewBusy, setPreviewBusy] = useState(false)
+  const [selectedMount, setSelectedMount] = useState<DesignBundleVersionPin>()
   const [mountsDirty, setMountsDirty] = useState(false), [mountsBusy, setMountsBusy] = useState(false)
   const [mountsEpoch, setMountsEpoch] = useState(0)
   const busy = sourceBusy || mountsBusy
@@ -118,11 +126,14 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
   const generation = useRef(0), fileRequest = useRef(0), previewRequest = useRef(0), prepareRequest = useRef(0)
   const sourceDirty = Object.keys(drafts).length > 0
   const dirty = sourceDirty || mountsDirty
+  const mountedSelection = selectedMount ?? initialSelection?.bundle
   const selectedBundle = record?.kind === 'bundle' ? record.bundle ?? record.source.bundle
-    : record?.mounts.find(mount => mount.bundle.name === initialSelection?.bundle?.name && mount.bundle.version === initialSelection.bundle.version)?.bundle
+    : record?.mounts.find(mount => mount.bundle.name === mountedSelection?.name && mount.bundle.version === mountedSelection.version)?.bundle
   // Storage retains source/mount provenance; preview and host targets accept only the exact pin.
   const previewBundle = useMemo(() => selectedBundle ? { name: selectedBundle.name, version: selectedBundle.version } : undefined,
     [selectedBundle?.name, selectedBundle?.version])
+  const mountedPreviewTitle = record?.mounts.find(mount => mount.bundle.name === previewBundle?.name && mount.bundle.version === previewBundle.version)?.display?.title?.[locale] ?? previewBundle?.name
+  const readingMountedPreview = readOnly && record?.kind === 'kit' && tab === 'preview'
   const titleDirty = renaming && title !== record?.title[locale]
   const notifyDirty = useRef(onDirtyChange); notifyDirty.current = onDirtyChange
   const fail = (failure: unknown) => setError(failure instanceof Error ? failure.message : String(failure))
@@ -192,6 +203,7 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
   useEffect(() => {
     const current = ++generation.current
     ++fileRequest.current; ++previewRequest.current
+    setSelectedMount(undefined)
     setRecord(undefined); setOpening(true); setPath(''); setContent(''); setSaved(''); setDrafts({}); setPreparedDraft(undefined); setFileView('edit'); setLoaded(false); setBusy(false); setError(''); setPreview(undefined); setPreviewBusy(false); setRenaming(false); setMountsDirty(false); setMountsBusy(false); setMountActions(undefined); setTab(initialView); setNewFileOpen(false); setNewFilePath(''); setNewFileError('')
     void client.read({ id }).then(value => {
       if (generation.current !== current || value.id !== id) return
@@ -206,7 +218,8 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
       setRecord(value)
       setPath(initialView === 'preview' && value.kind === 'bundle' && value.files?.some(file => file.path === 'panel.yaml') ? 'panel.yaml'
         : value.files?.find(file => /(^|\/)(mindset|SKILL)\.md$/.test(file.path))?.path ?? value.files?.[0]?.path ?? '')
-      if (value.kind === 'kit' || !value.files?.some(file => file.path === 'panel.yaml')) setTab('files')
+      if (value.kind === 'kit') setTab(readOnly && initialView === 'preview' && selected ? 'preview' : 'files')
+      else if (!value.files?.some(file => file.path === 'panel.yaml')) setTab('files')
     }, failure => { if (generation.current === current) fail(failure) }).finally(() => { if (generation.current === current) setOpening(false) })
     return () => { ++generation.current; ++fileRequest.current; ++previewRequest.current; notifyDirty.current?.(false) }
   // Entry props apply once for this client/copy. Consuming a handoff after save must not reset its file selection.
@@ -258,8 +271,8 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
   const dismissChanges = () => { sourceChanges?.onDismiss(); setPath(previous => record?.files?.some(file => file.path === previous) ? previous : record?.files?.[0]?.path ?? ''); setError('') }
   const changeTab = (next: 'files' | 'preview' | 'mounts') => {
     if (next === tab || busy || candidateBusy || mountActions?.isSaveSubmitted()) return
-    if (next === 'mounts' || tab === 'mounts') { if (!discard()) return; restore() }
-    if (next === 'preview' && filePaths.includes('panel.yaml') && !openFile('panel.yaml')) return
+    if (!readOnly && (next === 'mounts' || tab === 'mounts')) { if (!discard()) return; restore() }
+    if (next === 'preview' && record?.kind === 'bundle' && filePaths.includes('panel.yaml') && !openFile('panel.yaml')) return
     setTab(next)
   }
   const mutate = async (action: () => Promise<StudioInstance | undefined>) => {
@@ -308,7 +321,7 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
   }
 
   useEffect(() => {
-    if (tab !== 'preview' || record?.kind !== 'bundle' || busy || candidatePending || sourceDirty) return
+    if (tab !== 'preview' || !record || (record.kind === 'kit' && !readOnly) || busy || candidatePending || sourceDirty) return
     const bundle = previewBundle
     setPreview(undefined)
     if (!bundle) return
@@ -320,7 +333,7 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
       setPreview(value)
     }, failure => { if (scope === generation.current && current === previewRequest.current) fail(failure) }).finally(() => { if (scope === generation.current && current === previewRequest.current) setPreviewBusy(false) })
     return () => { ++previewRequest.current }
-  }, [client, id, record?.revision, record?.kind, tab, previewBundle, locale, busy, candidatePending, sourceDirty])
+  }, [client, id, record?.revision, record?.kind, tab, previewBundle, locale, busy, candidatePending, sourceDirty, readOnly])
 
   const file = record?.files?.find(entry => entry.path === path)
   const exportDisabled = !record || record.id !== id || busy || candidateBusy || candidateState?.saveUnverified || mountActions?.isSaveSubmitted()
@@ -415,7 +428,7 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
         <button type="button" className="ygd-studio-doc-toggle" aria-pressed={fileView === 'diff'} onClick={() => setFileView('diff')}>{zh ? '对比' : 'Diff'}</button>
       </>}</div></div>
   const sourceDocument = <>
-      <div className="ygd-studio-document-body ygd-studio-source-body">{file?.editable === false ? <p role="status">{zh ? '此文件不支持文本编辑，复制时会完整保留。' : 'This file is not available for text editing. Copies preserve it in full.'}</p> : !loaded ? <p role="status">{error ? (zh ? '无法读取此文件。' : 'Could not load this file.') : path ? (zh ? '读取中…' : 'Loading…') : (zh ? '没有可读取的文件。' : 'No readable files.')}</p> : !readOnly && fileView === 'diff' ? <SourceFileDiff path={path} before={fileChange?.before ?? saved} after={fileChange && !Object.hasOwn(drafts, path) ? fileChange.after : content} /> : readOnly && reading && /\.md$/i.test(path) ? <div>{renderStudioDocument(content, { locale })}</div> : <textarea ref={sourceEditor} aria-label={path || 'Source file'} spellCheck={false} value={content} readOnly={readOnly || sourceLocked} onChange={event => editSource(event.target.value)} className="ygd-studio-source-input" />}</div>
+      <div className="ygd-studio-document-body ygd-studio-source-body">{file?.editable === false ? <p role="status">{zh ? '此文件不支持文本编辑，复制时会完整保留。' : 'This file is not available for text editing. Copies preserve it in full.'}</p> : !loaded ? <p role="status">{error ? (zh ? '无法读取此文件。' : 'Could not load this file.') : path ? (zh ? '读取中…' : 'Loading…') : (zh ? '没有可读取的文件。' : 'No readable files.')}</p> : !readOnly && fileView === 'diff' ? <SourceFileDiff path={path} before={fileChange?.before ?? saved} after={fileChange && !Object.hasOwn(drafts, path) ? fileChange.after : content} /> : readOnly && reading && /\.md$/i.test(path) ? <div>{renderStudioDocument(content, { locale })}</div> : <SourceTextArea inputRef={sourceEditor} label={path || 'Source file'} content={content} readOnly={readOnly || sourceLocked} onChange={editSource} />}</div>
       <footer className="ygd-studio-doc-footer"><span>{candidateState?.saveUnverified ? (zh ? '保存结果待确认，请刷新内容核对；不会自动重试' : 'Save result needs verification. Refresh the content; saving will not retry automatically.') : selectedFileChanged ? candidatePending && !Object.hasOwn(drafts, path) ? (zh ? '待保存修改' : 'Proposed changes · not saved') : (zh ? '未保存' : 'Unsaved') : !readOnly && file?.editable ? (zh ? '已保存 · 可编辑' : 'Saved · editable') : (zh ? '只读文件' : 'Read-only file')}</span><span>{loaded ? new TextEncoder().encode(content).length : fileChange ? new TextEncoder().encode(fileChange.after ?? '').length : file?.bytes ?? 0} {zh ? '字节' : 'bytes'}</span></footer>
     </>
   const sourcePane = <div className="ygd-studio-content-pane">{sourceToolbar}{sourceDocument}</div>
@@ -432,7 +445,7 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
       <div className="ygd-studio-hero-actions">
         {record && <>
           <button type="button" className="ygd-studio-btn-secondary" disabled={sourceLocked || candidatePending} onClick={duplicate}>{zh ? '复制' : 'Copy'}</button>
-          {readOnly && onEdit && <button type="button" className="ygd-studio-btn-primary" disabled={busy || candidatePending} onClick={() => { if (!busy && !candidatePending) onEdit() }}>{zh ? '编辑' : 'Edit'}</button>}
+          {readOnly && onEdit && <button type="button" className="ygd-studio-btn-primary" disabled={busy || candidatePending} onClick={() => { if (!busy && !candidatePending) { if (record.kind === 'kit' && tab === 'preview') setTab('files'); onEdit() } }}>{zh ? '编辑' : 'Edit'}</button>}
           {!readOnly && <div className="ygd-studio-save-feedback"><div className="ygd-studio-editor-actions" role="group" aria-label={zh ? '编辑操作' : 'Editor actions'}>
             <span className="ygd-studio-mounts-change-status" role="status">{tab === 'mounts' ? mountActions?.status ?? (zh ? '已保存' : 'Saved') : sourceStatus}</span>
             <button type="button" className="ygd-studio-btn-secondary" disabled={sourceLocked || !(sourcePending || mountsDirty || titleDirty)} onClick={revertCurrent}>{zh ? '还原' : 'Revert'}</button>
@@ -456,10 +469,10 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
         { label: zh ? '继续编辑' : 'Continue editing', primary: !draftError, onClick: () => { setTab('files'); setTimeout(() => sourceEditor.current?.focus(), 0) } },
       ]} />
     {!readOnly && renderSupplement?.({ record, dirty: dirty || titleDirty || candidatePending, busy: busy || candidateBusy, previewBundle, currentFile: (tab === 'files' || (tab === 'preview' && path === 'panel.yaml')) && path ? path : undefined, intent: authoringIntent, proposalReplacement })}
-    {record && (record.kind === 'bundle' || !readOnly) && <div className="ygd-studio-workplane-bar" aria-label={record.kind === 'kit' ? 'Kit content' : 'Bundle content'}>
+    {record && <div className="ygd-studio-workplane-bar" aria-label={record.kind === 'kit' ? 'Kit content' : 'Bundle content'}>
       <button type="button" className="ygd-studio-workplane-tab" aria-pressed={tab === 'files'} disabled={busy || candidateBusy || mountActions?.isSaveSubmitted()} onClick={() => changeTab('files')}>{zh ? '原始文件' : 'Source Files'}</button>
       {record.kind === 'kit'
-        ? <button type="button" className="ygd-studio-workplane-tab" aria-pressed={tab === 'mounts'} disabled={sourceLocked || candidatePending || !client.updateMounts} onClick={() => changeTab('mounts')}>{zh ? '挂载管理' : 'Mount management'}</button>
+        ? <button type="button" className="ygd-studio-workplane-tab" aria-pressed={tab === 'mounts' || tab === 'preview'} disabled={busy || candidateBusy || (!readOnly && (sourceLocked || candidatePending || !client.updateMounts))} onClick={() => changeTab('mounts')}>{readOnly ? (zh ? '挂载内容' : 'Mounted Bundles') : (zh ? '挂载管理' : 'Mount management')}</button>
         : <button type="button" className="ygd-studio-workplane-tab" aria-pressed={tab === 'preview'} disabled={busy || candidateBusy} onClick={() => changeTab('preview')}>{zh ? '面板预览' : 'Panel Preview'}</button>}
     </div>}
     <div className="ygd-studio-instance-feedback">
@@ -467,13 +480,17 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
         title={candidateState.saveUnverified ? (zh ? '保存结果待核对' : 'Verify the save result') : (zh ? '暂不能保存这次修改' : 'These changes cannot be saved yet')}
         message={zh ? '输入和修改均已保留。请先核对已保存内容，再继续编辑。' : 'Your input and changes are retained. Verify the saved content before continuing.'}
         details={[{ message: candidateState.error }]} actions={candidateState.saveUnverified ? [{ label: zh ? '核对保存结果' : 'Verify saved copy', primary: true, onClick: refresh }] : undefined} />}
-      {error && <StudioFeedback feedbackId={`source:${error}`} tone="error" locale={locale} title={zh ? '操作未完成' : 'The operation could not be completed'} message={error} />}
+      {error && <StudioFeedback feedbackId={`source:${error}`} tone="error" locale={locale}
+        title={readingMountedPreview ? (zh ? '面板预览未能读取' : 'Panel preview could not be loaded') : (zh ? '操作未完成' : 'The operation could not be completed')} message={error}
+        actions={readingMountedPreview ? [{ label: zh ? '返回挂载内容' : 'Back to Mounted Bundles', onClick: () => changeTab('mounts') }] : undefined} />}
     </div>
     {tab === 'mounts' && !readOnly && record?.kind === 'kit' && <MountEditor key={`${id}:${record.revision}:${mountsEpoch}`} client={client} record={record} locale={locale}
       onDirtyChange={setMountsDirty} onBusyChange={setMountsBusy} onActions={setMountActions} onSaved={value => {
         if (generation.current !== mountGeneration || value.id !== id) return
         setRecord(value); setMountsDirty(false); onChanged(value)
       }} />}
+    {tab === 'mounts' && readOnly && record?.kind === 'kit' && <MountedBundleBrowser record={record} locale={locale}
+      onPreview={bundle => { setPreview(undefined); setPreviewBusy(true); setError(''); setSelectedMount(bundle); setTab('preview') }} />}
 
     {tab === 'files' && (record?.id === id ? <div className="ygd-studio-workspace-body ygd-studio-files-layout"><aside className="ygd-studio-file-tree-pane"><div className="ygd-studio-file-tree-header"><span>{zh ? '全部文件' : 'All Files'} · {filePaths.length}</span>{!readOnly && batchSource && <button type="button" className="ygd-studio-btn-link" disabled={sourceLocked} onClick={() => { setNewFileOpen(true); setNewFileError('') }}>{zh ? '新建文件' : 'New file'}</button>}</div>
       {newFileOpen && <form className="ygd-studio-new-file" onSubmit={event => { event.preventDefault(); createFile() }}>
@@ -482,10 +499,16 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
         <div className="ygd-studio-editor-actions"><button type="button" className="ygd-studio-btn-secondary" disabled={sourceLocked} onClick={() => setNewFileOpen(false)}>{zh ? '取消' : 'Cancel'}</button><button type="submit" className="ygd-studio-btn-primary" disabled={sourceLocked || !newFilePath.trim()}>{zh ? '新建' : 'Create'}</button></div>
       </form>}<FileExplorer paths={filePaths} selected={path} disabled={sourceLocked} openFile={openFile} /></aside>{sourcePane}{readOnly && <FileInfoSidebar kind={record.kind} locale={locale} description={record.displayDescription?.[locale] ?? record.description} />}</div>
       : opening ? <LoadingIndicator label={zh ? '正在打开内容' : 'Opening content'} /> : null)}
-    {tab === 'preview' && record?.kind === 'bundle' && <section className="ygd-studio-panel-split">
-      {filePaths.includes('panel.yaml') ? sourceToolbar : <header className="ygd-studio-doc-toolbar ygd-studio-source-toolbar">{zh ? '面板源码' : 'Panel source'}</header>}
-      <header className="ygd-studio-doc-toolbar ygd-studio-preview-toolbar"><strong>{zh ? '面板预览' : 'Panel Preview'}</strong><span>{zh ? '随源码更新 · 样例数据' : 'Live source · sample data'}</span></header>
-      <section className="ygd-studio-yaml-pane" aria-label={zh ? '面板源码' : 'Panel source'}>{filePaths.includes('panel.yaml') ? <div className="ygd-studio-content-pane">{sourceDocument}</div> : <StudioEmptyState tone={noPanelRequired ? 'info' : 'warning'} title={zh ? '未提供面板源码' : 'No Panel source'} description={zh ? '此技能包没有 panel.yaml 文件。' : 'This Bundle has no panel.yaml file.'} />}</section>
+    {tab === 'preview' && record && (record.kind === 'bundle' || (readOnly && record.kind === 'kit' && previewBundle)) && <section className="ygd-studio-panel-split">
+      {record.kind === 'kit' ? <header className="ygd-studio-doc-toolbar ygd-studio-source-toolbar"><button type="button" className="ygd-studio-btn-link" onClick={() => changeTab('mounts')}>{zh ? '返回挂载内容' : 'Back to Mounted Bundles'}</button><FileName path="panel.yaml" locale={locale} /></header>
+        : filePaths.includes('panel.yaml') ? sourceToolbar : <header className="ygd-studio-doc-toolbar ygd-studio-source-toolbar">{zh ? '面板源码' : 'Panel source'}</header>}
+      <header className="ygd-studio-doc-toolbar ygd-studio-preview-toolbar"><strong>{record.kind === 'kit' ? mountedPreviewTitle : zh ? '面板预览' : 'Panel Preview'}</strong><span>{record.kind === 'kit' ? (zh ? '已保存源码 · 样例数据' : 'Saved source · sample data') : (zh ? '随源码更新 · 样例数据' : 'Live source · sample data')}</span></header>
+      <section className="ygd-studio-yaml-pane" aria-label={zh ? '面板源码' : 'Panel source'}>{record.kind === 'kit' ? <div className="ygd-studio-content-pane">
+        {previewBusy || (!preview && !error) ? <LoadingIndicator label={zh ? '正在读取面板源码' : 'Loading Panel source'} /> : error ? null : preview?.preview?.panelYaml !== undefined ? <>
+          <div className="ygd-studio-document-body ygd-studio-source-body"><SourceTextArea label="panel.yaml" content={preview.preview.panelYaml} readOnly /></div>
+          <footer className="ygd-studio-doc-footer"><span>{zh ? '只读文件' : 'Read-only file'}</span><span>{new TextEncoder().encode(preview.preview.panelYaml).length} {zh ? '字节' : 'bytes'}</span></footer>
+        </> : <StudioEmptyState tone={noPanelRequired ? 'info' : 'warning'} title={zh ? '未提供面板源码' : 'No Panel source'} description={zh ? '此技能包没有 panel.yaml 文件。' : 'This Bundle has no panel.yaml file.'} />}
+      </div> : filePaths.includes('panel.yaml') ? <div className="ygd-studio-content-pane">{sourceDocument}</div> : <StudioEmptyState tone={noPanelRequired ? 'info' : 'warning'} title={zh ? '未提供面板源码' : 'No Panel source'} description={zh ? '此技能包没有 panel.yaml 文件。' : 'This Bundle has no panel.yaml file.'} />}</section>
       <section className="ygd-studio-live-pane" aria-label={zh ? '实时面板预览' : 'Live Panel preview'}>
       <div className="ygd-studio-live-pane-body">
       {sourcePending ? <>
@@ -494,7 +517,7 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
         </>}
       </> : <>
         {previewBusy && <LoadingIndicator label={zh ? '正在准备预览' : 'Preparing preview'} />}
-        {preview?.preview && renderPreview ? renderPreview(preview.preview, () => {}, { readOnly, toolbarTarget: null }) : !previewBusy && previewState(preview?.diagnostics ?? [], noPanelRequired)}
+        {preview?.preview && renderPreview ? renderPreview(preview.preview, () => {}, { readOnly, toolbarTarget: null }) : !previewBusy && !(readingMountedPreview && error) && previewState(preview?.diagnostics ?? [], noPanelRequired)}
       </>}
       </div></section>
     </section>}

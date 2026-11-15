@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { writeFile, appendFile, readFile } from 'node:fs/promises'
+import { writeFile, appendFile, readFile, readdir, stat, utimes } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fixture, threadId } from './fixture.mjs'
 import { callCompanion } from '../src/connection-file.mjs'
@@ -408,4 +408,60 @@ test('display review snapshot shares one lock with writers and releases it after
     assert.deepEqual(recovered.reviews, [], 'hosts without background reviews keep that boundary')
     assert.deepEqual(recovered.clarity, combined.clarity)
   } finally { release(); await f.close() }
+})
+
+
+test('a killed review owner is recovered once while live and successor locks are preserved', async () => {
+  const f = await fixture(), children = []
+  try {
+    await f.server.project.savePanel({ skill: 'smart_questions', state: { questions: {} }, eventId: 'crash-lock' })
+    const base = { stateRoot: f.options.stateRoot, workspace: await f.server.project.readWorkspace(), project: {
+      project: f.server.project.project, kit: { name: f.server.project.kit.name, version: f.server.project.kit.version, skills: [] },
+    } }
+    async function start(threadId) {
+      const child = fork(new URL('./review-process.mjs', import.meta.url), [JSON.stringify({ ...base, threadId })], { silent: true })
+      children.push(child)
+      await new Promise((resolve, reject) => { child.once('message', resolve); child.once('error', reject) })
+      let sequence = 0
+      return { child, call(method) { return new Promise((resolve, reject) => {
+        const id = ++sequence
+        const listener = message => {
+          if (message.id !== id) return
+          child.off('message', listener)
+          message.error ? reject(Error(message.error)) : resolve(message)
+        }
+        child.on('message', listener); child.send({ id, method, params: { profile: 'clarity' } })
+      }) } }
+    }
+    const holder = await start(threadId)
+    assert.equal((await holder.call('holdLock')).locked, true)
+    const lock = join(f.options.stateRoot, f.server.project.project.metadata.id, 'review.lock')
+    const owner = await readdir(lock)
+    assert.equal(owner.length, 1)
+    assert.ok(owner[0].startsWith(`owner-${holder.child.pid}-`))
+    await utimes(lock, 1, 1)
+    const contenders = await Promise.all(['00000000-0000-4000-8000-000000000087', '00000000-0000-4000-8000-000000000088'].map(start))
+    let completed = 0
+    const pending = contenders.map(({ call }, index) => call('holdLock').then(message => { completed++; return { ...message, index } }))
+    await new Promise(resolve => setTimeout(resolve, 150))
+    assert.equal(completed, 0, 'even an old lock is retained while its PID is alive')
+    assert.deepEqual(await readdir(lock), owner)
+    const stop = child => new Promise(resolve => { child.once('exit', resolve); child.kill('SIGKILL') })
+    await stop(holder.child)
+    const successor = await Promise.race(pending)
+    assert.equal(successor.locked, true)
+    await new Promise(resolve => setTimeout(resolve, 150))
+    assert.equal(completed, 1, 'a competing recoverer must not delete the live successor lock')
+    assert.ok((await readdir(lock))[0].startsWith(`owner-${contenders[successor.index].child.pid}-`))
+    await stop(contenders[successor.index].child)
+    const last = await pending[1 - successor.index]
+    assert.equal(last.locked, true)
+    await stop(contenders[last.index].child)
+    const api = createCompanionReviews({ project: f.server.project, stateRoot: f.options.stateRoot, threadId })
+    assert.ok(Array.isArray(await api.readReviewStatus()))
+    await assert.rejects(stat(lock), { code: 'ENOENT' })
+  } finally {
+    await Promise.all(children.filter(child => child.exitCode === null && child.signalCode === null).map(child => new Promise(resolve => { child.once('exit', resolve); child.kill('SIGKILL') })))
+    await f.close()
+  }
 })

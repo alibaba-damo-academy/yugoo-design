@@ -6,8 +6,9 @@ import { join } from 'node:path'
 import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+import { createServer } from 'node:http'
 import YAML from 'yaml'
-import { NATIVE_DONOR, DARWIN_NATIVE_INPUT, stageNativeDonor, verifyNativeDonorInheritance, downloadDarwinNativeInput, acquireNativeInputs } from './companion-release-native-donor.mjs'
+import { NATIVE_DONOR, DARWIN_NATIVE_INPUT, stageNativeDonor, verifyNativeDonorInheritance, downloadDarwinNativeInput, downloadNativeDonor, acquireNativeInputs } from './companion-release-native-donor.mjs'
 const read = path => readFile(new URL('../' + path, import.meta.url), 'utf8')
 test('product runtime consumer rejects outputs inside the checkout', () => {
  const helper=fileURLToPath(new URL('./check-product-node-runtime.mjs',import.meta.url));
@@ -126,7 +127,7 @@ test('Darwin transport accepts only fixed unauthenticated GitHub input and one r
     assert.ok(options.signal instanceof AbortSignal)
   }
   assert.equal(calls[0].options.signal, calls[1].options.signal)
-  assert.ok(calls[0].options.signal.aborted, 'Owned deadline/network scope closes after success')
+  assert.ok(calls[0].options.signal.aborted, 'Owned transfer scope closes after success')
   assert.deepEqual(await downloadDarwinNativeInput({ workspace: f.root, fetchImpl: async () => new Response(f.body) }), f.body)
 })
 test('Darwin transport rejects foreign/insecure/credentialed/extra redirects without fetching them', async t => {
@@ -148,6 +149,99 @@ test('Darwin transport rejects foreign/insecure/credentialed/extra redirects wit
   await assert.rejects(downloadDarwinNativeInput({ workspace: f.root,
     fetchImpl: async () => new Response(null, { status: 302 }) }), /Missing native input redirect/)
 })
+test('a progressing Darwin transfer survives the former default total deadline', async t => {
+  const f=await mockNativeSource(t)
+  t.mock.timers.enable({apis:['setTimeout']})
+  let release,entered,requestSignal,cancelled=false
+  const gate=new Promise(resolve=>{release=resolve}),waiting=new Promise(resolve=>{entered=resolve})
+  const middle=Math.floor(f.body.length/2)
+  const stream=new ReadableStream({
+    start(controller){controller.enqueue(f.body.subarray(0,middle))},
+    async pull(controller){entered();await gate;if(!cancelled){controller.enqueue(f.body.subarray(middle));controller.close()}},
+    cancel(){cancelled=true},
+  })
+  const result=downloadDarwinNativeInput({workspace:f.root,fetchImpl:async(_url,options)=>{requestSignal=options.signal;return new Response(stream)}})
+    .then(value=>({value}),error=>({error}))
+  try {
+    await waiting
+    t.mock.timers.tick(31000)
+    assert.equal(requestSignal.aborted,false,'byte progress must not lose to an unrequested total deadline')
+    release()
+    const observed=await result
+    assert.ifError(observed.error)
+    assert.deepEqual(observed.value,f.body)
+  } finally {release();await result}
+})
+
+test('Darwin input honors caller cancellation locally and leaves the next transfer usable', async t => {
+  const f=await mockNativeSource(t),controller=new AbortController()
+  const reason=new DOMException('Stop this acquisition','AbortError')
+  let entered,cancelled=false
+  const waiting=new Promise(resolve=>{entered=resolve})
+  const result=downloadDarwinNativeInput({workspace:f.root,signal:controller.signal,
+    fetchImpl:async()=>new Response(new ReadableStream({pull(){entered()},cancel(){cancelled=true}},{highWaterMark:0}))})
+    .then(value=>({value}),error=>({error}))
+  await waiting
+  controller.abort(reason)
+  assert.equal((await result).error,reason)
+  assert.equal(cancelled,true)
+  await assert.rejects(downloadDarwinNativeInput({workspace:f.root,signal:controller.signal,
+    fetchImpl:()=>assert.fail('a pre-cancelled transfer must not fetch')}),error=>error===reason)
+  assert.deepEqual(await downloadDarwinNativeInput({workspace:f.root,fetchImpl:async()=>new Response(f.body)}),f.body)
+})
+
+test('a rejected donor response closes its body without a timer or another request', async () => {
+  let calls=0,cancelled=false
+  await assert.rejects(downloadNativeDonor({fetchImpl:async()=>{
+    calls++
+    return new Response(new ReadableStream({cancel(){cancelled=true}}),{status:503})
+  }}),/Native donor download failed/)
+  assert.equal(calls,1)
+  assert.equal(cancelled,true)
+})
+
+test('a progressing donor has no default total deadline and still rejects unpinned bytes', async t => {
+  t.mock.timers.enable({apis:['setTimeout']})
+  let release,entered,requestSignal
+  const gate=new Promise(resolve=>{release=resolve}),waiting=new Promise(resolve=>{entered=resolve})
+  const stream=new ReadableStream({
+    start(controller){controller.enqueue(new Uint8Array([1]))},
+    async pull(controller){entered();await gate;controller.close()},
+  })
+  const result=downloadNativeDonor({fetchImpl:async(_url,options)=>{requestSignal=options.signal;return new Response(stream)}})
+    .then(value=>({value}),error=>({error}))
+  try {
+    await waiting
+    t.mock.timers.tick(300001)
+    assert.ok(!requestSignal?.aborted,'progress must not lose to an unrequested donor deadline')
+    release()
+    assert.match((await result).error?.message??'',/Native donor archive size changed/)
+  } finally {release();await result}
+})
+
+test('donor caller cancellation stops an actual fetch and a pre-cancelled request never starts', {timeout:10000}, async t => {
+  const controller=new AbortController(),reason=new DOMException('Stop this donor','AbortError')
+  let entered,seenSignal
+  const waiting=new Promise(resolve=>{entered=resolve})
+  const server=createServer((_request,response)=>{
+    response.writeHead(200,{'content-type':'application/octet-stream'})
+    response.write(new Uint8Array([1]))
+    entered()
+  })
+  t.after(()=>new Promise(resolve=>{server.close(resolve);server.closeAllConnections()}))
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve))
+  const result=downloadNativeDonor({signal:controller.signal,fetchImpl:(_url,options)=>{
+    seenSignal=options.signal
+    return fetch(`http://127.0.0.1:${server.address().port}/`,options)
+  }}).then(value=>({value}),error=>({error}))
+  await waiting
+  controller.abort(reason)
+  assert.equal(seenSignal,controller.signal)
+  assert.equal((await result).error,reason)
+  await assert.rejects(downloadNativeDonor({signal:controller.signal,
+    fetchImpl:()=>assert.fail('a pre-cancelled donor must not fetch')}),error=>error===reason)
+})
+
 test('Darwin HTTP/body/deadline errors fail closed and never fall back to the large donor', async t => {
   const f = await mockNativeSource(t)
   for (const status of [204, 401, 403, 404, 429, 500]) {
@@ -176,9 +270,13 @@ test('Darwin HTTP/body/deadline errors fail closed and never fall back to the la
   await assert.rejects(downloadDarwinNativeInput({ workspace: f.root, timeoutMs: 5,
     fetchImpl: async () => new Response(new ReadableStream({ cancel() { cancelled = true } })) }), /deadline exceeded/)
   assert.equal(cancelled, true)
-  for (const timeoutMs of [0, -1, 30001, Infinity, NaN]) {
+  for (const timeoutMs of [-1, 2147483648, Infinity, NaN]) {
     await assert.rejects(downloadDarwinNativeInput({ workspace: f.root, timeoutMs,
       fetchImpl: () => assert.fail('invalid deadline must not fetch') }), /Invalid native input timeout/)
+  }
+  for (const timeoutMs of [0, 30001, 300000]) {
+    assert.deepEqual(await downloadDarwinNativeInput({ workspace: f.root, timeoutMs,
+      fetchImpl: async () => new Response(f.body) }), f.body)
   }
 })
 test('Darwin acquisition rejects nonregular current SOURCE before network effects', async t => {

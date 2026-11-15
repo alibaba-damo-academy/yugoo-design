@@ -26,6 +26,44 @@ import FooterButtons from '../src/client/ported/design/FooterButtons.tsx'
 import { STUDIO_WORKSPACE_CSS } from '../../studio-ui/src/styles.ts'
 import { projectDistributionCode } from '../../../scripts/assemble-dsh-distribution.mjs'
 import { dshClientStyles } from '../../../scripts/tsdown-client-styles.ts'
+import { Button } from '../src/client/ported/ui/button.tsx'
+import { DesignWorkspacePreferenceControls } from '../src/client/workspace-preferences.tsx'
+import { GraphCameraTools } from '../src/client/graph-canvas-presentation.tsx'
+import { Settings2, X } from 'lucide-react'
+
+test('workspace and graph actions share 16px glyphs inside unchanged 32px targets', async () => {
+  const browser = await chromium.launch({ headless: true })
+  try {
+    const page = await browser.newPage()
+    const css = await readFile(new URL('../src/client/generated/design.tw.css', import.meta.url), 'utf8')
+    const content = renderToStaticMarkup(createElement(PanelLocaleContext.Provider, { value: 'en-US' },
+      createElement('div', { className: 'dsh-design-root' },
+        createElement(DesignWorkspacePreferenceControls, { preferences: {
+          language: 'en', effectiveAppearance: 'light', onLanguageChange() {}, onAppearanceChange() {},
+        } }),
+        createElement('div', { className: 'design-graph-view', style: { height: 220 } },
+          createElement(Button, { variant: 'ghostIcon', size: 'icon', className: 'graph-settings-trigger', 'aria-label': 'View options' }, createElement(Settings2, { strokeWidth: 1.5 })),
+          createElement(GraphCameraTools, { dark: false, onToggleDark() {}, onZoom() {}, onFit() {}, onRestart() {}, onFollowPage() {} }),
+          createElement('aside', { className: 'graph-inspector' },
+            createElement(Button, { variant: 'ghostIcon', size: 'icon', 'aria-label': 'Close graph details' }, createElement(X, { size: 16 })))))))
+    for (const width of [1000, 400]) for (const scheme of ['light', 'dark']) {
+      await page.setViewportSize({ width, height: 600 })
+      await page.setContent(`<style>${css}${DOCK_CSS}${graphStyles}</style>${content}`)
+      await page.evaluate(value => { document.documentElement.style.colorScheme = value }, scheme)
+      const actions = await page.locator('button').evaluateAll(nodes => nodes.map(button => {
+        const b = button.getBoundingClientRect(), s = button.querySelector('svg').getBoundingClientRect()
+        return { name: button.getAttribute('aria-label'), target: [b.width, b.height], glyph: [s.width, s.height],
+          centered: Math.abs(s.x + s.width / 2 - b.x - b.width / 2) < .5 && Math.abs(s.y + s.height / 2 - b.y - b.height / 2) < .5 }
+      }))
+      assert.equal(actions.length, 10)
+      for (const action of actions) {
+        assert.deepEqual(action.target, [32, 32], `${width}/${scheme}/${action.name}: keep the click target`)
+        assert.deepEqual(action.glyph, [16, 16], `${width}/${scheme}/${action.name}: use the common action glyph`)
+        assert.equal(action.centered, true, `${action.name}: icon remains centered`)
+      }
+    }
+  } finally { await browser.close() }
+})
 
 test('readonly saved question choices retain readable text and selected surfaces in both themes and locales', async () => {
   const browser = await chromium.launch({ headless: true })

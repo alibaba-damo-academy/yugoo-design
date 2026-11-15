@@ -4,10 +4,11 @@ import { readFile } from 'node:fs/promises'
 import { JSDOM } from 'jsdom'
 
 const css=await readFile(new URL('../src/visual-components.css',import.meta.url),'utf8')
-const nativeButton=await readFile(new URL('../../provider-web-app/src/client/ported/ui/button.tsx',import.meta.url),'utf8')
+// Native providers consume this same control through client-api.
+const nativeButton=await readFile(new URL('../src/client/ported/ui/button.tsx',import.meta.url),'utf8')
 const nativeFlow=await readFile(new URL('../../provider-web-app/src/client/ported/design/FlowDesignPanel/FlowDesignPanel.tsx',import.meta.url),'utf8')
-const nativeCss=await readFile(new URL('../../provider-web-app/src/client/generated/design.tw.css',import.meta.url),'utf8')
-// Read the real native size utilities; no second hard-coded dimension baseline.
+const nativeCss=await readFile(new URL('../src/client/generated/design.tw.css',import.meta.url),'utf8')
+// The shared Panel stylesheet ships this control's real utilities; providers load it too.
 const small=/sm: '([^']+)'/.exec(nativeButton)[1].split(' ')
 const escapeClass=value=>value.replace(/[^a-zA-Z0-9_-]/g,char=>'\\'+char)
 const nativeSizeCss=small.map(name=>{

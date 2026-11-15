@@ -26,6 +26,46 @@ export async function readNativePrivateFile(path) {
   } finally { await file.close() }
 }
 
+/** Optional input readiness belongs to the send/probe, not Panel startup.
+ * Only opening failures prove that no real message was submitted. Once send
+ * starts, preserve the native transport's result/error without retrying it.
+ */
+export function deferNativeConnection({ host, threadId, open: openConnection }) {
+  let active, opening, closing
+  const unavailable = () => ({ accepted: false, status: 'unavailable', notSubmitted: true })
+  function ready() {
+    if (closing) return Promise.reject(new Error('Native connection is closed.'))
+    if (active) return Promise.resolve(active)
+    opening ??= Promise.resolve().then(openConnection).then(connection => {
+      active = connection
+      return connection
+    }).finally(() => { opening = undefined })
+    return opening
+  }
+  return {
+    host, threadId,
+    async send(...args) {
+      let connection
+      try { connection = await ready() } catch { return unavailable() }
+      if (closing) return unavailable()
+      return connection.send(...args)
+    },
+    async probe() {
+      let connection
+      try { connection = await ready() } catch { return { status: 'unavailable' } }
+      if (closing) return { status: 'unavailable' }
+      return connection.probe ? connection.probe() : { status: 'unknown' }
+    },
+    close() {
+      closing ??= Promise.resolve().then(async () => {
+        try { await opening } catch { /* Opening failed before retaining a connection. */ }
+        await active?.close?.()
+      })
+      return closing
+    },
+  }
+}
+
 export function createNativeHookTransport({ host, label, noticeFile, inspectProcess, nativeHookProcess, registrationEvents = ['SessionStart'], requireTranscript = false, resumeEvents = [] }) {
   const prefixes = { qoder: 'qoder', 'claude-code': 'claude', qwenwork: 'qwenwork' }
   const prefix = prefixes[host]

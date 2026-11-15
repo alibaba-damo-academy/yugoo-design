@@ -76,7 +76,7 @@ export async function installQoderPlugin({npmRoot,executable='qodercli',configDi
   assert.ok(rel==='..'||rel.startsWith('..'+sep)||isAbsolute(rel),'Receipt/staging directory must be outside the npm installation')
   // Do not guess Qoder's default profile. Omitted configDir leaves native env/default resolution intact.
   const args=configDir?['--config-dir',resolve(configDir)]:[]
-  const invoke=async tail=>run(executable,[...args,...tail],{cwd:resolve(cwd),timeout:15000,maxBuffer:4*1024*1024,env:process.env})
+  const invoke=async(tail,{timeout=15000}={})=>run(executable,[...args,...tail],{cwd:resolve(cwd),timeout,maxBuffer:4*1024*1024,env:process.env})
   const list=async()=>{
     const result=JSON.parse((await invoke(['plugin','list','--json'])).stdout)
     assert.ok(Array.isArray(result),'Qoder list must return a JSON array')
@@ -124,7 +124,7 @@ export async function installQoderPlugin({npmRoot,executable='qodercli',configDi
     assert.deepEqual(files,expectedFiles,'Packaged overlay changed during staging')
     await writeFile(join(plugin,marker),JSON.stringify({schemaVersion:1,npmRoot:root,version:pkg.version,nodeRuntime,files},null,2)+'\n',{flag:'wx'})
     await verifyNodeRuntime(nodeRuntime)
-    const installed=JSON.parse((await invoke(['plugin','install',plugin,'--scope','user','--json'])).stdout)
+    const installed=JSON.parse((await invoke(['plugin','install',plugin,'--scope','user','--json'],{timeout:0})).stdout)
     assert.equal(installed.ok,true,'Native Qoder install did not confirm success')
     assert.equal(installed.pluginId,'yugoo-design@local','Native Qoder install returned wrong identity')
     const afterRows=await list()

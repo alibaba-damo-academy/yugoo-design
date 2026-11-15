@@ -133,7 +133,7 @@ my-content-package/
 }
 ```
 
-npm 包只是分发容器；Kit 与 Bundle 的身份、版本和生命周期各自独立。加载包根目录时使用通用 Kit resolver；仅加载 Kit 目录时还需提供能解析其挂载的 Bundle resolver。Bundle 目录名与 `skill.yaml.identity` 对应，挂载项的 `name` 使用该身份，`bindingKey` 与运行时 `skill.yaml.name` 一致；Mindset 中的 `<design_skills>` 按 `bindingKey` 展示方法入口。具体配置见[官方内容包](../../packages/skills-web-app/README.md)；实际加载步骤见[Companion 显式选择](kit-sharing.md#companion显式目录与项目选择)。
+npm 包只是分发容器；Kit 与 Bundle 的身份、版本和生命周期各自独立。加载包根目录时使用通用 Kit resolver；仅加载 Kit 目录时还需提供能解析其挂载的 Bundle resolver。Bundle 目录名与 `skill.yaml.identity` 对应，挂载项的 `name` 使用该身份，`bindingKey` 与运行时 `skill.yaml.name` 一致；运行时按实际挂载的 `bindingKey` 和 Bundle frontmatter 生成模型目录，Mindset 不再手工重复清单。具体配置见[官方内容包](../../packages/skills-web-app/README.md)；实际加载步骤见[Companion 显式选择](kit-sharing.md#companion显式目录与项目选择)。
 
 仓库旧脚手架 `scripts/create-design-system.mjs` 仍生成 `mindset.md + skills/` 布局，不能直接作为当前独立目录结构的模板。创建新内容请使用现有 [Kit Creator](../../.agents/skills/design-kit-creator/SKILL.md) 与当前内容包；兼容旧布局的示例须按其目标 loader 版本验证。Kit 内容保持宿主无关，不包含 Cordis profile patch、模型 Provider 或 DSH 依赖。
 
