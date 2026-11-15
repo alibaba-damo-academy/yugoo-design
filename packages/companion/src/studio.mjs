@@ -174,12 +174,12 @@ export async function createCompanionStudio(kit, kitRoot, stateRoot, contentLibr
       // Author-owned demonstration data is distinct from runtime initialization.
       // Read only the captured Bundle path; never search a project or invent data.
       const example = texts.get(join(bundleRoot, 'reference', 'preview.json'))
-      if (requestedSample === undefined && example === undefined && initial === undefined) return diagnostic('preview.sample_missing', 'No preview sample is provided. Add reference/preview.json to this Bundle or supply isolated sample JSON.')
+      if (requestedSample === undefined && example === undefined && initial === undefined) return { ...diagnostic('preview.sample_missing', 'No preview sample is provided. Add reference/preview.json to this Bundle or supply isolated sample JSON.'), panelSource }
       const sampleSource = requestedSample ?? example ?? JSON.stringify(initial)
       // This is an unedited installed Panel, already compiled above from the
       // confined capture. Reuse the shared sample finalizer; the authoring
       // overlay path would redundantly compile this unchanged Kit twice more.
-      return finalizeStudioPanelPreview({ compiled: bundle, kit: kitPin, bundle: bundlePin, revision, sampleSource,
+      return finalizeStudioPanelPreview({ compiled: bundle, kit: kitPin, bundle: bundlePin, revision, sampleSource, panelSource,
         readSampleResource: path => texts.get(join(bundleRoot, path)) })
     } catch (error) { return diagnostic('preview.definition', error instanceof Error ? error.message : String(error)) }
   }

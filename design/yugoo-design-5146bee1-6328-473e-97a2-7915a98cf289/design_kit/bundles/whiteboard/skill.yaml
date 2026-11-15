@@ -1,0 +1,21 @@
+name: whiteboard
+version: "1.0"
+title: { zh: 自由白板, en: Whiteboards }
+label: { zh: 画出想法, en: Sketch an idea }
+order: 14
+icon: pencil
+execution:
+  handoff: none
+presentation:
+  mode: declarative
+
+# Optional model-facing summary; omission does not block design work.
+# The index owns topic identity, title and order. Read each native scene file for
+# drawn content; image bytes are separate local artifacts, never index fields.
+summary:
+  collections:
+    - source: boards
+      title: Whiteboards
+      title_fields: [title]
+      order: board_order
+      fields: [title, artifact_file]

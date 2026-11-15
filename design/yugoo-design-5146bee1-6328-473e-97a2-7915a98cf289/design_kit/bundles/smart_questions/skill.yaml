@@ -1,0 +1,53 @@
+# Skill manifest. Repository authoring guide: docs/bundle-contract.md.
+
+# Stable internal id; must equal this directory name.
+name: smart_questions
+version: "1.0"
+
+# Bilingual FE heading and progress title.
+title:
+  zh: 智能提问
+  en: Smart Questions
+
+# Bilingual picker fallback label.
+label:
+  zh: 先把关键问题理清楚
+  en: Talk through the key questions
+
+
+# FE display order only; never selects a skill.
+order: 1
+
+# FE icon name.
+icon: question-circle
+
+# Default to must-edit handoff for new questions awaiting user input.
+# Explicit complete close-out remains available for saved decisions or reconstruction.
+execution:
+  mode: main
+  handoff: must_edit
+
+# Content-owned presentation composed from the shared question workspace.
+presentation:
+  mode: declarative
+
+# Optional candidate hint; the main Agent chooses whether this method fits.
+# This neither binds Alignment to this Bundle nor grants execution authority.
+review_support: [alignment]
+
+# Optional model-facing summary; omission does not block design work.
+# # 问题清单摘要
+#
+# 摘要分别显示轮次介绍、已保存的回答与补充说明。选项、逐题 round 和附件
+# 在面板及 canonical 文件中保留；需要详情时读取原文件。轮次介绍不是回答
+# 或用户确认，不把空回答当作确认。
+summary:
+  collections:
+    - source: rounds
+      title: 轮次介绍
+      title_fields: [title]
+      fields: [description]
+    - source: questions
+      title: 问题与回答
+      title_fields: [prompt]
+      fields: [answer, detail, rejected]

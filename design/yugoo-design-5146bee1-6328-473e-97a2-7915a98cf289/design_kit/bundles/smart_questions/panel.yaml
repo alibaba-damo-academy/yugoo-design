@@ -1,0 +1,69 @@
+version: 1
+i18n:
+  default_locale: zh-CN
+  locales: {zh-CN: locales/zh-CN.json, en-US: locales/en-US.json}
+panel_kind: evidence_workbook
+empty_description: "$t:empty"
+sections:
+  - id: questions
+    title: "$t:questions"
+  - id: rounds
+    title: "$t:rounds"
+fields:
+  - key: title
+    label: "$t:roundTitle"
+    control: text
+    readonly: true
+    applies_to: [rounds]
+  - key: description
+    label: "$t:roundDescription"
+    control: textarea
+    readonly: true
+    applies_to: [rounds]
+  - key: prompt
+    label: "$t:prompt"
+    control: textarea
+    applies_to: [questions]
+  - key: answer
+    label: "$t:answer"
+    control: textarea
+    applies_to: [questions]
+  - key: detail
+    label: "$t:detail"
+    control: textarea
+    applies_to: [questions]
+  - key: rejected
+    label: "$t:skip"
+    control: toggle
+    applies_to: [questions]
+ui:
+  component: question_workspace
+  guidance: "$t:guidance"
+  sidebar_icon: message-circle-question
+  id: questions-workspace
+  title: "$t:rounds"
+  source: questions
+  rounds_source: rounds
+  card_groups:
+    - id: app_basics
+      title: "$t:appBasics"
+      question_ids: [const_identity_needs, const_data_retention, const_usage_devices]
+      presentation:
+        always_expanded: true
+        show_detail: true
+        show_attachments: false
+    - id: configuration
+      title: "$t:configuration"
+      question_ids: [const_auth_mode, const_storage_mode]
+      presentation:
+        always_expanded: true
+        show_detail: true
+        show_attachments: false
+  question_policy:
+    show_ids: true
+    first_round_ids: [const_identity_needs, const_data_retention, const_usage_devices, const_auth_mode, const_storage_mode]
+    protected_ids: [const_identity_needs, const_data_retention, const_usage_devices, const_auth_mode, const_storage_mode]
+    history_readonly: true
+    numbered_rounds: true
+    allow_rejection: true
+    allow_choice_actions: true

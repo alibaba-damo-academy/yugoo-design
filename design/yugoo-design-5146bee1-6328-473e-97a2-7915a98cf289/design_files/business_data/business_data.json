@@ -1,0 +1,449 @@
+{
+  "schema_version": 3,
+  "objects": {
+    "BO-001": {
+      "id": "BO-001",
+      "name": "设计项目",
+      "description": "一个产品设计的长期资料单位，有稳定身份、自己的定义与版本历史；不是某一Host会话。",
+      "fields": {
+        "identity": {
+          "id": "identity",
+          "name": "项目身份",
+          "meaning": "区分同名或改名后的同一项目；实际由项目管理产生，不要求用户重填。",
+          "value_type": "text",
+          "requirement": "always",
+          "required_when": "",
+          "example": "",
+          "options": []
+        },
+        "name": {
+          "id": "name",
+          "name": "项目名称",
+          "meaning": "用户辨认设计对象的名称。",
+          "value_type": "text",
+          "requirement": "always",
+          "required_when": "",
+          "example": "",
+          "options": []
+        },
+        "kit": {
+          "id": "kit",
+          "name": "采用的设计方法",
+          "meaning": "项目当前采用的Kit及项目自有完整定义。",
+          "value_type": "text",
+          "requirement": "optional",
+          "required_when": "",
+          "example": "",
+          "options": []
+        }
+      },
+      "field_order": [
+        "identity",
+        "name",
+        "kit"
+      ],
+      "states": {},
+      "state_order": []
+    },
+    "BO-002": {
+      "id": "BO-002",
+      "name": "项目设计定义",
+      "description": "项目自己的Kit及Bundle方法、schema、Panel、校验和资源，是当前项目解释设计的依据。",
+      "fields": {
+        "method": {
+          "id": "method",
+          "name": "领域方法",
+          "meaning": "支持当前设计任务的思考方法与产出责任。",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "required_when": "",
+          "example": "",
+          "options": []
+        },
+        "contract": {
+          "id": "contract",
+          "name": "内容契约",
+          "meaning": "规范数据和产物的结构及校验语义。",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "required_when": "",
+          "example": "",
+          "options": []
+        },
+        "source": {
+          "id": "source",
+          "name": "来源说明",
+          "meaning": "最初采用的内容来源，不能代替当前完整文件或充当升级gate。",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "required_when": "",
+          "example": "",
+          "options": []
+        }
+      },
+      "field_order": [
+        "method",
+        "contract",
+        "source"
+      ],
+      "states": {},
+      "state_order": []
+    },
+    "BO-003": {
+      "id": "BO-003",
+      "name": "规范设计记录",
+      "description": "由所属Bundle管理、用户可理解和改写的产品事实，例如功能、规则、页面或数据对象。",
+      "fields": {
+        "content": {
+          "id": "content",
+          "name": "设计内容",
+          "meaning": "当前记录真正表达的产品含义。",
+          "value_type": "long_text",
+          "requirement": "always",
+          "required_when": "",
+          "example": "",
+          "options": []
+        },
+        "notes": {
+          "id": "notes",
+          "name": "备注",
+          "meaning": "补充依据、理由、未决点和必要限制；不是新增的通用疑问集合。",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "required_when": "",
+          "example": "",
+          "options": []
+        }
+      },
+      "field_order": [
+        "content",
+        "notes"
+      ],
+      "states": {},
+      "state_order": []
+    },
+    "BO-004": {
+      "id": "BO-004",
+      "name": "设计产物",
+      "description": "与原生设计记录一起保存的具体报告、图表、页面、图片或体验内容。",
+      "fields": {
+        "name": {
+          "id": "name",
+          "name": "产物名称",
+          "meaning": "识别其表达的设计对象。",
+          "value_type": "text",
+          "requirement": "optional",
+          "required_when": "",
+          "example": "",
+          "options": []
+        },
+        "content": {
+          "id": "content",
+          "name": "产物内容",
+          "meaning": "可查看的实际文件，不用一条计划引用冒充已生成。",
+          "value_type": "file",
+          "requirement": "always",
+          "required_when": "",
+          "example": "",
+          "options": []
+        },
+        "meaning": {
+          "id": "meaning",
+          "name": "表达目的",
+          "meaning": "该产物帮助用户判断什么，与哪项设计有关。",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "required_when": "",
+          "example": "",
+          "options": []
+        }
+      },
+      "field_order": [
+        "name",
+        "content",
+        "meaning"
+      ],
+      "states": {},
+      "state_order": []
+    },
+    "BO-005": {
+      "id": "BO-005",
+      "name": "设计版本",
+      "description": "已保存设计的可识别状态，支持比较变化、恢复和判断引用是否过期。",
+      "fields": {
+        "identity": {
+          "id": "identity",
+          "name": "版本标识",
+          "meaning": "实际保存形成的版本定位，不从聊天推断或伪造。",
+          "value_type": "text",
+          "requirement": "always",
+          "required_when": "",
+          "example": "",
+          "options": []
+        },
+        "change": {
+          "id": "change",
+          "name": "本次变化",
+          "meaning": "该版本保存了哪些有意义的设计变化。",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "required_when": "",
+          "example": "",
+          "options": []
+        }
+      },
+      "field_order": [
+        "identity",
+        "change"
+      ],
+      "states": {},
+      "state_order": []
+    },
+    "BO-006": {
+      "id": "BO-006",
+      "name": "设计建议",
+      "description": "独立审阅对具体设计证据提出的待处理建议；它本身不是已确认需求。",
+      "fields": {
+        "finding": {
+          "id": "finding",
+          "name": "问题与依据",
+          "meaning": "指出具体不一致、可能遗漏或意图偏移，并保留来源范围。",
+          "value_type": "long_text",
+          "requirement": "always",
+          "required_when": "",
+          "example": "",
+          "options": []
+        },
+        "proposal": {
+          "id": "proposal",
+          "name": "建议处理",
+          "meaning": "可供用户判断的修订方向，不代表已执行。",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "required_when": "",
+          "example": "",
+          "options": []
+        }
+      },
+      "field_order": [
+        "finding",
+        "proposal"
+      ],
+      "states": {
+        "pending": {
+          "id": "pending",
+          "name": "待处理",
+          "meaning": "尚未得到用户处理决定。"
+        },
+        "deferred": {
+          "id": "deferred",
+          "name": "已延后",
+          "meaning": "用户选择暂不处理，理由和上下文仍有用。"
+        },
+        "accepted": {
+          "id": "accepted",
+          "name": "已接受",
+          "meaning": "用户决定接受建议；不等同目标设计已经修订。"
+        },
+        "rejected": {
+          "id": "rejected",
+          "name": "已拒绝",
+          "meaning": "用户决定不采用，保留实际处理记录。"
+        }
+      },
+      "state_order": [
+        "pending",
+        "deferred",
+        "accepted",
+        "rejected"
+      ]
+    },
+    "BO-007": {
+      "id": "BO-007",
+      "name": "建议处理决定",
+      "description": "用户对某一建议作出的接受、拒绝或延后决定，独立于后台任务状态。",
+      "fields": {
+        "decision": {
+          "id": "decision",
+          "name": "处理决定",
+          "meaning": "接受、拒绝或延后及其有用说明。",
+          "value_type": "long_text",
+          "requirement": "always",
+          "required_when": "",
+          "example": "",
+          "options": []
+        },
+        "context": {
+          "id": "context",
+          "name": "决定背景",
+          "meaning": "帮助后续理解本次决定的设计事实与理由。",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "required_when": "",
+          "example": "",
+          "options": []
+        }
+      },
+      "field_order": [
+        "decision",
+        "context"
+      ],
+      "states": {},
+      "state_order": []
+    },
+    "BO-008": {
+      "id": "BO-008",
+      "name": "构思评估",
+      "description": "针对特定设计版本的U/S/T结果与理由，不是另一份产品事实或审批。",
+      "fields": {
+        "dimensions": {
+          "id": "dimensions",
+          "name": "维度结果",
+          "meaning": "可理解、结构化、可验证各自的实际评估。",
+          "value_type": "long_text",
+          "requirement": "always",
+          "required_when": "",
+          "example": "",
+          "options": []
+        },
+        "basis": {
+          "id": "basis",
+          "name": "评估依据",
+          "meaning": "对应的设计版本、范围和有意义的理由。",
+          "value_type": "long_text",
+          "requirement": "always",
+          "required_when": "",
+          "example": "",
+          "options": []
+        }
+      },
+      "field_order": [
+        "dimensions",
+        "basis"
+      ],
+      "states": {},
+      "state_order": []
+    },
+    "BO-009": {
+      "id": "BO-009",
+      "name": "设计知识关系",
+      "description": "项目知识归档中保留的来源关联、提议和已记录决定；与原生事实及派生视图区分。 中立归档archive必须随项目携带，包含人的关系、提议和决定；Ladybug数据库与向量缓存可重建。结构恢复依赖DesignFiles加archive，单靠原生文件不能还原全部人的处置；语义重建依赖实际模型能力。",
+      "fields": {
+        "meaning": {
+          "id": "meaning",
+          "name": "关系含义",
+          "meaning": "具体连接了什么、依据是什么，不能只留一条无含义的线。",
+          "value_type": "long_text",
+          "requirement": "always",
+          "required_when": "",
+          "example": "",
+          "options": []
+        },
+        "basis": {
+          "id": "basis",
+          "name": "来源与适用范围",
+          "meaning": "关系可以回查的原生来源及证据限制。",
+          "value_type": "long_text",
+          "requirement": "always",
+          "required_when": "",
+          "example": "",
+          "options": []
+        },
+        "decision": {
+          "id": "decision",
+          "name": "提议与决定说明",
+          "meaning": "区分观察、提议和人的决定；状态不能由相似度或图形位置推定。",
+          "value_type": "long_text",
+          "requirement": "optional",
+          "required_when": "",
+          "example": "",
+          "options": []
+        }
+      },
+      "field_order": [
+        "meaning",
+        "basis",
+        "decision"
+      ],
+      "states": {},
+      "state_order": []
+    }
+  },
+  "object_order": [
+    "BO-001",
+    "BO-002",
+    "BO-003",
+    "BO-004",
+    "BO-005",
+    "BO-006",
+    "BO-007",
+    "BO-008",
+    "BO-009"
+  ],
+  "relations": {
+    "REL-001": {
+      "id": "REL-001",
+      "kind": "association",
+      "name": "持有当前定义",
+      "source": "BO-001",
+      "target": "BO-002",
+      "description": "项目采用并维护自己的完整定义；库更新不静默替换。"
+    },
+    "REL-002": {
+      "id": "REL-002",
+      "kind": "association",
+      "name": "记录产品事实",
+      "source": "BO-001",
+      "target": "BO-003",
+      "description": "规范记录属于选定项目，具体Bundle拥有其语义。"
+    },
+    "REL-003": {
+      "id": "REL-003",
+      "kind": "association",
+      "name": "引用表达产物",
+      "source": "BO-003",
+      "target": "BO-004",
+      "description": "规范记录引用实际产物；报告或预览不能反向成为新独立事实源。"
+    },
+    "REL-004": {
+      "id": "REL-004",
+      "kind": "association",
+      "name": "形成保存版本",
+      "source": "BO-001",
+      "target": "BO-005",
+      "description": "项目设计保存形成版本；本机运行状态不混入。"
+    },
+    "REL-005": {
+      "id": "REL-005",
+      "kind": "association",
+      "name": "基于证据提出",
+      "source": "BO-006",
+      "target": "BO-003",
+      "description": "建议只针对其实际审阅证据，不因后来文件变化就被称为当前结论。"
+    },
+    "REL-006": {
+      "id": "REL-006",
+      "kind": "association",
+      "name": "记录处理",
+      "source": "BO-007",
+      "target": "BO-006",
+      "description": "处理决定对应实际建议；接受不意味着后续执行已完成。"
+    },
+    "REL-007": {
+      "id": "REL-007",
+      "kind": "association",
+      "name": "针对设计版本",
+      "source": "BO-008",
+      "target": "BO-005",
+      "description": "评估对应实际输入版本；过期结果保留其原依据。"
+    },
+    "REL-008": {
+      "id": "REL-008",
+      "kind": "association",
+      "name": "关联原生来源",
+      "source": "BO-009",
+      "target": "BO-003",
+      "description": "知识关系能回到原始事实核查；数量在没有明确证据时不猜。"
+    }
+  }
+}

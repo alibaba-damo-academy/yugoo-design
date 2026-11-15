@@ -11672,6 +11672,12 @@
       "path": "packages/panel/test/experience-theme-browser.test.mjs",
       "action": "include",
       "reason": "Synthetic shared Scene shell Chromium regression over the source component and built CSS; covers theme, navigation typography, narrow disclosure and authored iframe isolation without native Host or saved project content."
+    },
+    {
+      "kind": "prefix",
+      "path": "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/",
+      "action": "include",
+      "reason": "Reviewed Yugoo Design own-product Design Project: ordinary metadata, full project-owned Kit/Bundle definitions and source-based canonical records. Preserve actual durable knowledge archives when produced; no nested Git metadata, local Ladybug/vector caches, credentials, active connections or test environments are tracked/exported. Static design review is separate from native or installed-product acceptance."
     }
   ]
 }

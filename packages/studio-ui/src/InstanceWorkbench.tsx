@@ -504,10 +504,10 @@ export function InstanceWorkbench({ client, id, locale, onBack, onChanged, onExp
         : filePaths.includes('panel.yaml') ? sourceToolbar : <header className="ygd-studio-doc-toolbar ygd-studio-source-toolbar">{zh ? '面板源码' : 'Panel source'}</header>}
       <header className="ygd-studio-doc-toolbar ygd-studio-preview-toolbar"><strong>{record.kind === 'kit' ? mountedPreviewTitle : zh ? '面板预览' : 'Panel Preview'}</strong><span>{record.kind === 'kit' ? (zh ? '已保存源码 · 样例数据' : 'Saved source · sample data') : (zh ? '随源码更新 · 样例数据' : 'Live source · sample data')}</span></header>
       <section className="ygd-studio-yaml-pane" aria-label={zh ? '面板源码' : 'Panel source'}>{record.kind === 'kit' ? <div className="ygd-studio-content-pane">
-        {previewBusy || (!preview && !error) ? <LoadingIndicator label={zh ? '正在读取面板源码' : 'Loading Panel source'} /> : error ? null : preview?.preview?.panelYaml !== undefined ? <>
-          <div className="ygd-studio-document-body ygd-studio-source-body"><SourceTextArea label="panel.yaml" content={preview.preview.panelYaml} readOnly /></div>
-          <footer className="ygd-studio-doc-footer"><span>{zh ? '只读文件' : 'Read-only file'}</span><span>{new TextEncoder().encode(preview.preview.panelYaml).length} {zh ? '字节' : 'bytes'}</span></footer>
-        </> : <StudioEmptyState tone={noPanelRequired ? 'info' : 'warning'} title={zh ? '未提供面板源码' : 'No Panel source'} description={zh ? '此技能包没有 panel.yaml 文件。' : 'This Bundle has no panel.yaml file.'} />}
+        {previewBusy || (!preview && !error) ? <LoadingIndicator label={zh ? '正在读取面板源码' : 'Loading Panel source'} /> : error ? null : preview?.panelSource !== undefined ? <>
+          <div className="ygd-studio-document-body ygd-studio-source-body"><SourceTextArea label="panel.yaml" content={preview.panelSource} readOnly /></div>
+          <footer className="ygd-studio-doc-footer"><span>{zh ? '只读文件' : 'Read-only file'}</span><span>{new TextEncoder().encode(preview.panelSource).length} {zh ? '字节' : 'bytes'}</span></footer>
+        </> : <StudioEmptyState tone="info" title={zh ? '原始源码暂不可用' : 'Original Panel source is unavailable'} />}
       </div> : filePaths.includes('panel.yaml') ? <div className="ygd-studio-content-pane">{sourceDocument}</div> : <StudioEmptyState tone={noPanelRequired ? 'info' : 'warning'} title={zh ? '未提供面板源码' : 'No Panel source'} description={zh ? '此技能包没有 panel.yaml 文件。' : 'This Bundle has no panel.yaml file.'} />}</section>
       <section className="ygd-studio-live-pane" aria-label={zh ? '实时面板预览' : 'Live Panel preview'}>
       <div className="ygd-studio-live-pane-body">

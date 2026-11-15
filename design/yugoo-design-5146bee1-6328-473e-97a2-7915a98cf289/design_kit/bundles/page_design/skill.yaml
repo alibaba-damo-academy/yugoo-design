@@ -1,0 +1,62 @@
+# Skill manifest. Repository authoring guide: docs/bundle-contract.md.
+
+# Stable internal id; must equal this directory name.
+name: page_design
+version: "1.0"
+
+# Bilingual FE heading and progress title.
+title:
+  zh: 页面设计
+  en: Page Design
+
+# Bilingual picker fallback label.
+label:
+  zh: 细化页面和交互
+  en: Design pages and interactions
+
+
+# FE display order only; never selects a skill.
+order: 13
+
+# FE icon name.
+icon: layout
+
+# The foreground Producer publishes the Page map for confirmation, then owns
+# serial completion of all Page artifacts; optional delegation only accelerates
+# independent exact-path HTML work.
+execution:
+  handoff: user_continue
+  resume_action:
+    route_id: execute_plan
+    label:
+      zh: 继续生成页面
+      en: Generate Pages
+    aliases:
+      zh:
+        - 生成全部页面
+        - 继续生成页面
+        - 开始生成页面
+      en:
+        - Generate all pages
+        - Continue generating pages
+
+# Presentation contract: shared declarative navigation workspace; artifact
+# ownership, execution policy and the confirmation handoff remain unchanged.
+presentation:
+  mode: declarative
+
+# Optional model-facing summary; omission does not block design work.
+# 页面、跳转、分区和产物引用保持 canonical 身份。地图坐标不表示导航关系；
+# 执行状态由宿主提供，不写入页面记录。摘要不替代页面产物与实际热点检查。
+summary:
+  collections:
+    - source: pages
+      title: 页面
+      order: page_order
+      title_fields: [name]
+      fields: [purpose, page_type, artifact_file]
+    - source: connections
+      title: 页面跳转
+      order: connection_order
+      title_fields: [label]
+      fields: [source_page_id, target_page_id, source_element_id]

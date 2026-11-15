@@ -43,6 +43,8 @@ test('official declarative Bundle previews load without caller-authored JSON', a
     const result = await service.previewInstalledPanel({ kit, bundle: { name, version: String(manifest.version) }, revision: 1 })
     assert.deepEqual(result.diagnostics, [], `${name}: default preview must compile`)
     assert.ok(result.preview, `${name}: no manual JSON prerequisite`)
+    assert.equal(result.panelSource, await readFile(join(packageRoot, 'bundles', name, 'panel.yaml'), 'utf8'), `${name}: original installed source survives compilation`)
+    assert.notEqual(result.panelSource, result.preview.panelYaml, `${name}: compiled locale messages are renderer input, not the saved source`)
     count++
   }
   assert.equal(count, 15, 'cover all official declarative Bundles explicitly')
@@ -94,12 +96,14 @@ test('installed preview is confined sample-only inspection, not a retained draft
     const missing = await call('studioInstalledPreview', { kit, bundle, revision: 2 })
     assert.equal(missing.preview, undefined)
     assert.equal(missing.diagnostics[0].code, 'preview.sample_missing')
+    assert.equal(missing.panelSource, original, 'missing sample keeps the original installed source readable')
     const input = { kit, bundle, revision: 3, sampleSource: '{"questions":{}}' }
     const result = await call('studioInstalledPreview', input)
     assert.deepEqual(result.diagnostics, [])
     assert.equal(result.preview.revision, 3)
     assert.deepEqual(result.preview.kit, kit)
     assert.deepEqual(result.preview.bundle, bundle)
+    assert.equal(result.panelSource, original)
     const sample = { questions: { user: { prompt: 'Isolated sample', kind: 'text', answer: '' } } }
     const edited = await call('studioInstalledPreview', { ...input, revision: 4, sampleSource: JSON.stringify(sample) })
     assert.deepEqual(edited.diagnostics, [])

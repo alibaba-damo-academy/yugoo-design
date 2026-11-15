@@ -1,0 +1,18 @@
+skill: whiteboard
+rules:
+  - id: scene_files
+    scope: [state, completion]
+    code: whiteboard.missing_scene
+    check:
+      referenced_files: ["boards.*.artifact_file"]
+  - id: board_order
+    scope: [state, completion]
+    code: whiteboard.invalid_order
+    check:
+      order_refs_map: { order: board_order, map: boards }
+  - id: titles
+    scope: [state]
+    code: whiteboard.empty_title
+    check:
+      for_each_in_order: { order: board_order, map: boards }
+      non_empty_string: title

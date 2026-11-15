@@ -153,7 +153,8 @@ export function createStudioInstanceAdapters(trusted) {
     return loaded
   }
   const previewRetained = async input => {
-    const failure = (code, message) => ({ diagnostics: [{ code, message }] })
+    let panelSource
+    const failure = (code, message) => ({ ...(panelSource === undefined ? {} : { panelSource }), diagnostics: [{ code, message }] })
     if (!input || !['kit', 'bundle'].includes(input.kind) || !Number.isSafeInteger(input.revision) || input.revision < 0) {
       return failure('preview.request', 'Select a retained Kit or Bundle and a non-negative revision.')
     }
@@ -176,6 +177,7 @@ export function createStudioInstanceAdapters(trusted) {
       if (kind === 'bundle') {
         if (oversizedPanel(bundleFiles)) return failure('preview.size', 'Panel source is limited to 1 MiB.')
         retained = await loadBundle(bundleFiles, sourceId, bundle)
+        panelSource = retained.source.entries.some(file => file.path === 'panel.yaml') ? retained.source.text('panel.yaml') : undefined
         compiled = retained.content.skill
         if (runtimeName !== undefined && compiled.name !== runtimeName) return failure('preview.bundle_pin', 'The retained runtime name does not match the selected Bundle.')
       } else {
@@ -185,9 +187,10 @@ export function createStudioInstanceAdapters(trusted) {
         if (!captured) return failure('preview.bundle_pin', 'The retained Bundle source is missing.')
         const selected = { files: structuredClone(captured.files), sourceId: captured.sourceId }
         if (oversizedPanel(selected.files)) return failure('preview.size', 'Panel source is limited to 1 MiB.')
+        retained = { source: memorySource(selected.files) }
+        panelSource = retained.source.entries.some(file => file.path === 'panel.yaml') ? retained.source.text('panel.yaml') : undefined
         const loaded = await compileKit({ kit, kitFiles, mounts, resolveBundle: pin => samePin(pin, bundle) ? Promise.resolve(selected) : resolveBundle(pin) })
         compiled = loaded.skills.find(skill => (skill.catalogName ?? skill.name) === bundle.name)
-        retained = { source: memorySource(selected.files) }
       }
       if (!compiled) return failure('preview.bundle_pin', 'The source does not match the selected Bundle version.')
       if (typeof compiled.metadata?.panelYaml !== 'string') return failure('preview.not_declarative', 'Only an existing declarative Panel can be previewed.')
@@ -198,7 +201,7 @@ export function createStudioInstanceAdapters(trusted) {
         else if (compiled.metadata.panelManifest?.initial_values !== undefined) sample = JSON.stringify(compiled.metadata.panelManifest.initial_values)
         else return failure('preview.sample_missing', 'Add reference/preview.json, Panel initial_values, or explicit isolated sample JSON.')
       }
-      return finalizeStudioPanelPreview({ compiled, bundle: { ...bundle, version: String(compiled.version) }, ...(kit === undefined ? {} : { kit }), revision, sampleSource: sample,
+      return finalizeStudioPanelPreview({ compiled, bundle: { ...bundle, version: String(compiled.version) }, ...(kit === undefined ? {} : { kit }), revision, sampleSource: sample, panelSource,
         readSampleResource: path => retained.source.entries.some(file => file.path === path) ? retained.source.text(path) : undefined })
     } catch (error) { return failure('preview.definition', error instanceof Error ? error.message : String(error)) }
   }

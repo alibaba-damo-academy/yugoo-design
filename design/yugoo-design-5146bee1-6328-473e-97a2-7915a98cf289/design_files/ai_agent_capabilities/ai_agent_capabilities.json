@@ -1,0 +1,320 @@
+{
+  "schema_version": 1,
+  "agents": {
+    "A-001": {
+      "id": "A-001",
+      "name": "原生主Agent",
+      "description": "理解用户当前目标，选择已授权设计结果并协调对应事实owner；原生会话仍是人机沟通入口。",
+      "entries": {
+        "conversation": {
+          "name": "当前原生设计会话",
+          "trigger": "conversation",
+          "location": "已选项目的原Host会话",
+          "auto_context": "当前用户请求和明确选择的项目；设计资料按授权读取。",
+          "input_modes": [
+            "当前会话消息"
+          ],
+          "feedback": "说明所做修改、依据及真正影响决定的未知点。"
+        }
+      },
+      "context": "当前用户授权、选定项目DesignFiles/Kit方法和可读取的保存版本；不能借另一会话身份或凭据。",
+      "actions": {
+        "action-1": {
+          "action": "组织和协调设计",
+          "condition": "用户明确请求设计结果，或结果显然属于当前Kit的独立领域能力。",
+          "result": "选择相关Bundle及执行方式；普通讨论可直接回答，不强迫先进入固定阶段。"
+        },
+        "action-2": {
+          "action": "在主会话执行所选Bundle",
+          "condition": "当前Bundle声明main，且执行已在所属范围开始。",
+          "result": "按同一领域方法维护所属规范数据，使用现有校验与保存路径；不是绕过Bundle所有权。"
+        },
+        "action-3": {
+          "action": "接收用户已保存的Panel修改",
+          "condition": "原Panel保存成功，原会话收到本次真实差异。",
+          "result": "读取当前设计继续协作，不重放答案或制造第二次保存。"
+        }
+      },
+      "exceptions": {
+        "exception-1": {
+          "condition": "资料或能力缺失",
+          "handling": "说明具体依赖；继续可做的阅读与修复，不把缺失当作全产品不可用。"
+        },
+        "exception-2": {
+          "condition": "跨Bundle事实冲突",
+          "handling": "把来源和差异交给目标owner，不擅自代写所有Bundle。"
+        }
+      },
+      "notes": "这是职责归档，不是新增主Agent或改写实际system prompt；原可执行指令仍由Core和Host维护。对应F-003/F-005/F-012/F-013。",
+      "tool_refs": [
+        "T-001",
+        "T-002",
+        "T-003"
+      ],
+      "model_source_ref": "M-001",
+      "knowledge_resource_refs": [
+        "K-001",
+        "K-002"
+      ],
+      "collaborations": {
+        "bundle": {
+          "agent_ref": "A-002",
+          "condition": "当前任务明确需要某一Bundle结果。",
+          "handoff": "目标、资料、实际定义与授权范围。",
+          "result": "所属设计与实际校验结果；缺口返回主会话协调。"
+        }
+      }
+    },
+    "A-002": {
+      "id": "A-002",
+      "name": "所属Bundle执行者",
+      "description": "依领域方法生成或修订一个明确设计结果，保留原事实和用户改写。",
+      "entries": {
+        "selected": {
+          "name": "明确选择的Bundle任务",
+          "trigger": "action",
+          "location": "主会话已明确的设计任务",
+          "auto_context": "目标Bundle、项目定义、所需事实和约定范围。",
+          "feedback": "内容与校验问题可被原会话理解；生成不代表确认。"
+        }
+      },
+      "context": "目标Bundle完整方法、schema、产物契约及当前保存的相关设计；只授权其真实拥有的目标。",
+      "actions": {
+        "action-1": {
+          "action": "维护所属规范设计",
+          "condition": "任务已选中该Bundle且本轮编辑位于其实际所有范围。",
+          "result": "保留未受影响的标识、来源、用户字段和产物，按原契约校验并记录结果。"
+        },
+        "action-2": {
+          "action": "分派独立产物",
+          "condition": "该Bundle方法确需产物分工且原Host具备真实原生子Agent能力。",
+          "result": "将具体产物和完整约束交给Worker；规范JSON与集成仍由执行者负责。"
+        }
+      },
+      "exceptions": {
+        "exception-1": {
+          "condition": "Worker失败或不可用",
+          "handling": "执行者按原方法接管具体产物，或说明部分结果，不虚构并发成功。"
+        },
+        "exception-2": {
+          "condition": "校验不通过",
+          "handling": "在同一结果内修复实际问题，保留有效内容，不为了通过删除有意义的边界。"
+        }
+      },
+      "notes": "执行位置可为当前主Agent或真正的原生Producer；本记录不是固定的新常驻角色，也不引入另一个工作流。当前任务为用户特许的事后普通文件整理，没有运行该执行机制。",
+      "tool_refs": [
+        "T-001",
+        "T-002",
+        "T-003"
+      ],
+      "model_source_ref": "M-001",
+      "knowledge_resource_refs": [
+        "K-001",
+        "K-002"
+      ],
+      "collaborations": {
+        "artifact": {
+          "agent_ref": "A-003",
+          "condition": "方法确需且Host允许独立产物分工。",
+          "handoff": "确切产物路径及完整约束。",
+          "result": "实际文件与失败信息，父执行者继续集成与接管。"
+        }
+      }
+    },
+    "A-003": {
+      "id": "A-003",
+      "name": "原生产物Worker",
+      "description": "在父执行者分派的确切产物范围内完成文件，返回可核对的实际结果。",
+      "entries": {
+        "delegated": {
+          "name": "父执行者的具体产物分工",
+          "trigger": "action",
+          "location": "真实原生子任务入口",
+          "auto_context": "确切产物身份、路径、契约、共享输入及失败交接。",
+          "feedback": "返回真实文件及紧凑结果，不用长文本冒充已落盘。"
+        }
+      },
+      "context": "父执行者提供且获准读取的资料及该单一产物；不继承其他项目或会话的任意权限。",
+      "actions": {
+        "action-1": {
+          "action": "写入已绑定的产物",
+          "condition": "父执行者授权该确切文件，并提供所需方法与资料。",
+          "result": "完成并静态核对该文件；父执行者整合对应引用。"
+        }
+      },
+      "exceptions": {
+        "exception-1": {
+          "condition": "需要超出产物边界改规范JSON",
+          "handling": "返回具体缺口给父执行者，不自行取得其他文件的写入权。"
+        },
+        "exception-2": {
+          "condition": "停止或失败",
+          "handling": "保留必要的实际部分结果和诊断，交父执行者接管；不自行重放有副作用操作。"
+        }
+      },
+      "notes": "Worker不编辑规范JSON，不自行发布整个Bundle；Host提供身份、状态及权限，不能模拟子任务。对应F-003。",
+      "tool_refs": [
+        "T-001",
+        "T-004"
+      ],
+      "model_source_ref": "M-001",
+      "knowledge_resource_refs": [
+        "K-001",
+        "K-002"
+      ]
+    },
+    "A-004": {
+      "id": "A-004",
+      "name": "独立设计评审",
+      "description": "以G/R/A各自职责审阅已保存证据，返回有来源且可由人处理的建议。",
+      "entries": {
+        "review": {
+          "name": "现有审查策略允许的评审",
+          "trigger": "background",
+          "location": "原有GRA机制在真实Host能力可用时按用户策略触发",
+          "auto_context": "精确项目与已保存证据范围；阅读快照与后来编辑分开。",
+          "feedback": "建议进入已有建议区；不能因评审失败假装健康空队列。"
+        }
+      },
+      "context": "只读设计文件、保存版本及获准的知识查询；不使用主会话连接和写权限冒充自己的工具。",
+      "actions": {
+        "action-1": {
+          "action": "核对设计证据并提交建议",
+          "condition": "现有策略或用户请求授权该确切评审。",
+          "result": "返回有来源的建议和允许范围内的派生关系观察；用户处理后由所属设计执行修订。"
+        }
+      },
+      "exceptions": {
+        "exception-1": {
+          "condition": "KAG不完整或不可用",
+          "handling": "回到获准的原始设计文件；如实说明覆盖限制。"
+        },
+        "exception-2": {
+          "condition": "证据已变化或任务中断",
+          "handling": "保留实际范围和状态，不把历史结果说成当前已验证结论。"
+        }
+      },
+      "notes": "G/R/A相互独立，不是评分器；评审不直接写规范设计、提问状态或知识事实。关系观察也只沿已有受控服务归档，不能自动采纳。对应F-010。",
+      "tool_refs": [
+        "T-001",
+        "T-003",
+        "T-005"
+      ],
+      "model_source_ref": "M-001",
+      "knowledge_resource_refs": [
+        "K-001",
+        "K-002"
+      ]
+    },
+    "A-005": {
+      "id": "A-005",
+      "name": "构思评估职责",
+      "description": "由既有主会话依据当前设计证据报告U/S/T及理由，让人看清仍待明确的内容。",
+      "entries": {
+        "assessment": {
+          "name": "现有构思评估入口",
+          "trigger": "action",
+          "location": "原生主会话或现有评估机制",
+          "auto_context": "明确项目、当前设计输入和已有评估依据。",
+          "feedback": "当前、上次、失效、失败和不可用分开表达。"
+        }
+      },
+      "context": "当前设计原始事实及其实际版本；不能从会话文字猜分数或从结果数量算完成度。",
+      "actions": {
+        "action-1": {
+          "action": "报告有依据的构思评估",
+          "condition": "存在可查证的设计输入，并通过已有评估报告入口执行。",
+          "result": "记录实际维度与理由；未得到新结果时不虚构当前分数。"
+        }
+      },
+      "exceptions": {
+        "exception-1": {
+          "condition": "评估未成功",
+          "handling": "原设计保存不受撤销；保留上次结果及实际失效状态。"
+        }
+      },
+      "notes": "这是可由A-001既有原生主会话承担的职责视角，主Agent可通过report_design_clarity报告评估；不要求另起评分Agent、独立Actor、审批或第二模型客户端。保留A-005仅为说明评估职责及其输入输出，不代表独立部署或调用链。评估不负责维护知识关系，也不构成执行gate；本次静态整理未执行评估。对应F-009。",
+      "tool_refs": [
+        "T-001",
+        "T-006"
+      ],
+      "model_source_ref": "M-001",
+      "knowledge_resource_refs": [
+        "K-001",
+        "K-002"
+      ]
+    }
+  },
+  "tools": {
+    "T-001": {
+      "id": "T-001",
+      "name": "读取项目事实",
+      "purpose": "读取获准项目的DesignFiles、方法、产物和保存版本，返回原内容及位置。",
+      "scope": "选定项目与本次任务实际允许的资料；读工具不是写入授权。",
+      "notes": "能力职责归档；具体Host工具和权限由现有适配器提供，本记录不新增接口、连接或授权。"
+    },
+    "T-002": {
+      "id": "T-002",
+      "name": "校验并保存所属设计",
+      "purpose": "检查所属Bundle的规范数据及产物并沿原保存流程记录结果。",
+      "scope": "仅当前真实Bundle任务拥有的目标；不能据此修改其他Bundle或任意项目元数据。",
+      "notes": "能力职责归档；具体Host工具和权限由现有适配器提供，本记录不新增接口、连接或授权。"
+    },
+    "T-003": {
+      "id": "T-003",
+      "name": "查询设计知识",
+      "purpose": "定位有来源的设计关系并返回范围与版本，帮助回查原始事实。",
+      "scope": "保留项目、checkpoint、revision及查询过滤范围；未命中不是不存在。",
+      "notes": "能力职责归档；具体Host工具和权限由现有适配器提供，本记录不新增接口、连接或授权。"
+    },
+    "T-004": {
+      "id": "T-004",
+      "name": "维护单个产物",
+      "purpose": "通过Host文件能力维护父执行者已绑定的确切文件。",
+      "scope": "只限绑定产物，不拥有规范JSON或整个设计目录。",
+      "notes": "能力职责归档；具体Host工具和权限由现有适配器提供，本记录不新增接口、连接或授权。"
+    },
+    "T-005": {
+      "id": "T-005",
+      "name": "提交评审结果",
+      "purpose": "将结构化建议返回原评审请求，由既有服务持久化到对应结果。",
+      "scope": "精确评审绑定及实际证据范围；不是直接修改DesignFiles/KAG。",
+      "notes": "能力职责归档；具体Host工具和权限由现有适配器提供，本记录不新增接口、连接或授权。"
+    },
+    "T-006": {
+      "id": "T-006",
+      "name": "报告构思评估",
+      "purpose": "将有依据的U/S/T和理由交给已有评估报告服务记录。",
+      "scope": "精确项目和实际输入版本；不伪造当前成功状态。",
+      "notes": "能力职责归档；具体Host工具和权限由现有适配器提供，本记录不新增接口、连接或授权。"
+    }
+  },
+  "model_sources": {
+    "M-001": {
+      "id": "M-001",
+      "name": "用户原生Host的既有模型接入",
+      "description": "由正在使用的原生Agent Host管理模型、账号、凭据与可用原生能力；不是Yugoo另建的模型服务。",
+      "model_connection": "other",
+      "notes": "不存真实密钥、端点或本机会话标识；不同Host的能力与实际验收分开。"
+    }
+  },
+  "knowledge_resources": {
+    "K-001": {
+      "id": "K-001",
+      "name": "项目原始设计资料",
+      "kind": "knowledge_base",
+      "description": "项目完整定义、规范DesignFiles及真实产物。",
+      "source_and_maintenance": "由各自所属方法和普通保存路径维护，保留用户字段与来源。",
+      "access_scope": "只有明确选定项目且当前任务获准的范围。"
+    },
+    "K-002": {
+      "id": "K-002",
+      "name": "项目设计知识归档与查询",
+      "kind": "knowledge_base",
+      "description": "用于定位原生来源及有依据的关系、提议和决定；不是完整事实的替代品。",
+      "source_and_maintenance": "真实知识流程保存中立archive；数据库和向量索引为本机可重建状态。",
+      "access_scope": "沿当前项目和实际版本只读查询，结果回源核实。",
+      "notes": "本次未运行知识流程，不伪造archive或把README/PRD新增为独立知识源。"
+    }
+  }
+}

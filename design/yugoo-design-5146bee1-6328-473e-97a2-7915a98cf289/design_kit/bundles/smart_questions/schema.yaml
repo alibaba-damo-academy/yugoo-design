@@ -1,0 +1,78 @@
+# smart_questions Design Files data contract (write-time validation).
+# Faithful declarative translation of sdk-pilot
+# skill/design_skills/smart_questions/schema.py (Pydantic, extra="forbid").
+#
+# Executor-owned App basics (not automatic schema/Core seeding):
+# new first panels use the neutral questions in reference/artifact-contract.md.
+# Existing login/storage IDs, values and answers retain their original meaning.
+# A revision preserves its existing question set; it does not automatically
+# replace old settings or add a new interview. panel.yaml declares UI grouping
+# and protection. This schema accepts both generations without rewriting data.
+#
+# Choice quality, answer resolution, fixed-card, and attachment-quality
+# semantics are Producer self-checks in SKILL.md; this schema owns the stable
+# persisted shape only.
+type: object
+additional_properties: false
+properties:
+  # Optional for existing files. New rounds have independently authored display
+  # copy keyed by the saved nonnegative integer round's decimal string, not its
+  # consecutive UI label. Meaningful nonempty copy is an executor self-check.
+  rounds:
+    type: map
+    value:
+      type: object
+      additional_properties: false
+      required: [title, description]
+      properties:
+        title: { type: string }
+        description: { type: string }
+  questions:
+    type: map
+    value:
+      type: object
+      additional_properties: false
+      required: [prompt]
+      properties:
+        prompt: { type: string }
+        kind: { type: enum, values: [single, multiple, text] }
+        choices:
+          type: array
+          items:
+            type: object
+            additional_properties: false
+            required: [value, label]
+            properties:
+              value: { type: string }
+              label: { type: string }
+              recommended: { type: boolean }
+        # The direct response: text questions store their substantive answer here;
+        # choice questions store selected choice values. Source-supported answers
+        # in reconstruction belong here too, without implying user confirmation.
+        # Leave genuinely unknown answers empty; never promote a proposal as an answer.
+        answer: { type: string }
+        # Optional choice-question explanation, constraints or source locations.
+        # Text questions use only answer and leave detail empty. A choice response outside the
+        # available options may be preserved here without inventing a selection.
+        # Supplementary detail alone does not mark the question answered.
+        detail: { type: string }
+        multimodal_answer:
+          # The native panel prepares each local Bundle-owned Design File and
+          # its reference together for generic atomic Panel Save. New uploads
+          # use a SHA-256 filename. Browser-only transport bytes are never
+          # persisted in canonical state.
+          type: array
+          items:
+            type: object
+            additional_properties: false
+            required: [type, file_md5, filename, mime_type, size_bytes]
+            properties:
+              # `image` remains readable for references created before generic files.
+              type: { type: enum, values: [file, image] }
+              file_md5: { type: string }
+              filename: { type: string }
+              mime_type: { type: string }
+              size_bytes: { type: number }
+              artifact_file: { type: string }
+        round: { type: number }
+        rejected: { type: boolean }

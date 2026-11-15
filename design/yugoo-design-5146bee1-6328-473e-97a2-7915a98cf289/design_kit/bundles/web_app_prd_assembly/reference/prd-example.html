@@ -1,0 +1,40 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>合成 PRD 排版示例</title><style data-prd-document-style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    html { background: #ffffff; }
+    body.prd-document { margin: 0; background: #ffffff; color: #171717; font: 14px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+    .prd-container { width: min(920px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 40px; }
+    .prd-header { margin: 0 0 20px; padding: 0 0 12px; border-bottom: 1px solid #d4d4d4; }
+    .prd-title { margin: 0 0 6px; color: #0a0a0a; font-size: 20px; line-height: 1.4; font-weight: 700; letter-spacing: -0.02em; }
+    .prd-subtitle, .prd-meta { margin: 0; color: #737373; font-size: 13px; }
+    h2 { margin: 24px 0 10px; padding-bottom: 8px; border-bottom: 1px solid #d4d4d4; color: #0a0a0a; font-size: 16px; line-height: 1.5; font-weight: 700; }
+    h3 { margin: 16px 0 8px; color: #171717; font-size: 14px; line-height: 1.6; font-weight: 650; }
+    h4 { margin: 16px 0 8px; color: #262626; font-size: 14px; line-height: 1.6; font-weight: 650; }
+    p { margin: 0 0 12px; }
+    ul, ol { margin: 0 0 14px; padding-left: 24px; }
+    li { margin: 6px 0; }
+    .prd-function { margin: 0 0 20px; padding-bottom: 16px; border-bottom: 1px solid #eeeeee; }
+    .prd-function:last-child { border-bottom: 0; }
+    .prd-function-summary { margin-bottom: 12px; }
+    .prd-function-meta { margin-bottom: 12px; color: #404040; }
+    .prd-function-meta li::marker { color: #737373; }
+    .prd-function-flow { margin-bottom: 12px; }
+    .prd-function-notes { color: #404040; }
+    strong { color: #0a0a0a; }
+    a { color: #1d4ed8; text-decoration: underline; text-underline-offset: 2px; }
+    code { padding: 1px 4px; border: 1px solid #e5e5e5; border-radius: 3px; background: #fafafa; color: #171717; font: 0.9em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    table { width: 100%; margin: 16px 0 22px; border-collapse: collapse; table-layout: auto; font-size: 14px; }
+    th, td { padding: 9px 10px; border: 1px solid #d4d4d4; background: #ffffff; text-align: left; vertical-align: top; }
+    th { background: #f5f5f5; color: #171717; font-weight: 650; }
+    blockquote, .prd-note, .prd-warning, .ai-provenance { margin: 16px 0; padding: 10px 14px; border-left: 3px solid #737373; background: #fafafa; }
+    .prd-warning { border-left-color: #b45309; background: #fffbeb; }
+    .ai-provenance { border-left-color: #7c3aed; background: #faf5ff; }
+    .prd-visual-figure { margin: 16px 0 24px; overflow-x: auto; }
+    .prd-visual-caption { margin: 0 0 10px; color: #525252; font-size: 13px; font-weight: 650; }
+    .prd-visual-svg { display: block; width: 100%; height: auto; max-height: 720px; border: 1px solid #d4d4d4; background: #ffffff; }
+    .prd-visual-svg[data-prd-bpmn-renderer] { width: auto; max-width: none; max-height: none; }
+    .prd-page-image { display: block; width: 100%; height: auto; object-fit: contain; border: 1px solid #d4d4d4; background: #ffffff; }
+    .prd-whiteboard-image { display: block; max-width: 100%; height: auto; border: 1px solid #d4d4d4; background: #ffffff; }
+    @media (max-width: 720px) { .prd-container { width: min(100% - 28px, 920px); padding-top: 16px; } table { display: block; overflow-x: auto; } }
+    @media print { .prd-container { width: 100%; padding: 0; } a { color: inherit; } .prd-visual-figure { break-inside: avoid; } }
+  </style></head><body class="prd-document"><main class="prd-container"><header class="prd-header"><h1 class="prd-title">合成 PRD 排版示例</h1><p class="prd-subtitle">仅演示报告阅读，不是用户需求或模型执行结果。</p></header><h2 data-prd-section-id="product_definition" data-prd-sources="user" data-prd-provenance-ids="">产品定义</h2><p>这里用短段落演示背景、目标与边界。标题用于定位，正文用于表达判断，空白用于分组。</p><h2 data-prd-section-id="capability_architecture" data-prd-sources="user" data-prd-provenance-ids="">功能与行为</h2><h3>功能示例</h3><p>真实规格需要有来源的场景、动作、结果和异常；此页不补造业务决策。</p><h2 data-prd-section-id="assembly_traceability" data-prd-sources="user" data-prd-provenance-ids="">来源与待确认</h2><p>真实文档可以从章节来源返回原设计。此页是隔离的合成排版样例。</p></main></body></html>

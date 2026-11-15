@@ -15,6 +15,15 @@ as plans: confirm implemented behavior in source and focused tests.
 - `packages/companion`, `packages/dsh`, `packages/studio-dsh`: host integration.
 - `packages/studio`, `packages/studio-ui`: shared authoring domain and UI.
 
+Yugoo Design's own product records are indexed in
+[the repository design project](design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/README.md).
+Before changing feature, UI or Agent behavior, read the relevant records and
+owning technical contracts. Preserve agreed design facts and update affected
+records with authorized changes. These records are an initial source-based
+capture: respect their stated gaps and verify implemented behavior. Engineering
+and runtime protocols keep their existing owners; moving product details must
+retain their meanings rather than remove requirements.
+
 Do not hard-code a Bundle name in a shared layer to repair one Bundle. Reuse
 existing save, validation, publication and host adapters rather than creating
 parallel authorities. A graph and its detail form edit the same canonical data.

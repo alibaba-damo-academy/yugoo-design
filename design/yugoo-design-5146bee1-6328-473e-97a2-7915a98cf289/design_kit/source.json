@@ -1,0 +1,71 @@
+{
+  "format": 1,
+  "kit": {
+    "sourceId": "local:kit:web_app",
+    "mindset": "mindset.md",
+    "manifest": "kit.yaml",
+    "relations": "relations.yaml"
+  },
+  "bundles": [
+    {
+      "name": "smart_questions",
+      "sourceId": "companion:explicit-kit"
+    },
+    {
+      "name": "research",
+      "sourceId": "companion:explicit-kit"
+    },
+    {
+      "name": "function_modules",
+      "sourceId": "companion:explicit-kit"
+    },
+    {
+      "name": "ai_agent_capabilities",
+      "sourceId": "companion:explicit-kit"
+    },
+    {
+      "name": "flow_design",
+      "sourceId": "companion:explicit-kit"
+    },
+    {
+      "name": "design_style",
+      "sourceId": "companion:explicit-kit"
+    },
+    {
+      "name": "business_data",
+      "sourceId": "companion:explicit-kit"
+    },
+    {
+      "name": "business_rules",
+      "sourceId": "companion:explicit-kit"
+    },
+    {
+      "name": "role_access",
+      "sourceId": "companion:explicit-kit"
+    },
+    {
+      "name": "integration_design",
+      "sourceId": "companion:explicit-kit"
+    },
+    {
+      "name": "notification_design",
+      "sourceId": "companion:explicit-kit"
+    },
+    {
+      "name": "quality_acceptance",
+      "sourceId": "companion:explicit-kit"
+    },
+    {
+      "name": "page_design",
+      "sourceId": "companion:explicit-kit"
+    },
+    {
+      "name": "web_app_prd_assembly",
+      "sourceId": "companion:explicit-kit"
+    },
+    {
+      "name": "whiteboard",
+      "sourceId": "companion:explicit-kit"
+    }
+  ]
+}

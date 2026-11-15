@@ -25,6 +25,8 @@ assert.deepEqual(valid.diagnostics, [])
 assert.equal(valid.preview.revision, 3)
 assert.equal(valid.preview.sample.rules.rule_a.title, 'Sample eligibility')
 assert.match(valid.preview.panelYaml, /messages:/, 'use loader-resolved locale content, not raw uncompiled YAML')
+assert.equal(valid.panelSource, request.panelSource, 'source metadata preserves the exact draft independently of renderer compilation')
+assert.notEqual(valid.panelSource, valid.preview.panelYaml)
 assert.equal(await source.readText(`${root}/bundles/business_rules/panel.yaml`), original, 'installed source stays byte-identical')
 
 const resourceReads = []

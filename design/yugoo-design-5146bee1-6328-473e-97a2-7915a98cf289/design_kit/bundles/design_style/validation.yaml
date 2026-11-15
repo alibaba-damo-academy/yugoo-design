@@ -1,0 +1,48 @@
+# design_style validation contract.
+# Issue codes, messages and repair hints ported verbatim from sdk-pilot
+# skill/design_skills/design_style/validation.py.
+#
+# Terminal artifacts are generated DESIGN.md + tokens.css handoffs plus one
+# representative preview HTML page. scripts/design-style.mjs has two deterministic
+# file projection actions and one preview-file validation action. The completion
+# rule below Host-enforces the accepted preview
+# ref at design_publish(complete); the deeper preview HTML content checks (token
+# use, self-contained assets, projection byte-match) stay script-driven.
+skill: design_style
+
+constants:
+  min_ds_var_refs: 5            # preview HTML must reference >= 5 var(--ds-*) tokens
+  tokens_stylesheet: tokens.css # preview must link ./tokens.css as canonical stylesheet
+
+rules:
+  - id: referenced_files_present
+    scope: [state]
+    code: design_style.referenced_artifact_invalid
+    check:
+      referenced_files: ["config.preview_page.html_file", "config.preview_pages.*.html_file", "config.images.*.path", "config.brand.logo_image.path"]
+
+  # ---- validate_state ----
+  - id: empty_config
+    scope: [state]
+    code: design_style.empty_config
+    message: "The canonical visual-style config is empty."
+    repair_hint: "Submit the complete selected tokens and visual direction."
+    check: { non_empty_map: config }
+
+  # ---- validate_completion ----
+  - id: required_projection_files
+    scope: [completion]
+    code: design_style.required_artifact_invalid
+    check:
+      required_files: [design_style/DESIGN.md, design_style/tokens.css]
+
+  - id: completed_preview_ref
+    scope: [completion]
+    code: design_style.incomplete
+    message: "The visual system has no accepted preview HTML artifact reference."
+    repair_hint: "Author design_style/preview_<name>.html, set config.preview_page.html_file to that exact path, run design-style.mjs validate-preview-file, then publish the state, projections, and preview atomically."
+    check:
+      non_empty_string: config.preview_page.html_file
+
+  # Preview HTML content (token use, self-contained assets, tokens.css link) and
+  # deterministic projections are written by scripts/design-style.mjs file operations.

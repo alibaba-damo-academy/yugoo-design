@@ -121,7 +121,8 @@ async function mount(renderInstanceWorkbench, kind = 'bundle', describe = value 
 }
 test('ordinary current Kit Open browses saved mounts and previews their owner source without entering editing', async () => {
   const pin = { name: 'retained_notes', version: '1.0' }, requests = [], renders = [], fileReads = []
-  const panelYaml = 'version: 1\n# Saved Kit snapshot, distinct from the live Bundle\nsections: []\n'
+  const panelSource = '# 保存原文 · keep this comment\nversion: 1\nsections: []\n'
+  const panelYaml = 'version: 1\ni18n:\n  messages:\n    en-US:\n      title: Compiled translation\nsections: []\n'
   let authoringEntries = 0
   const f = await mount(() => { authoringEntries++; return undefined }, 'kit', value => ({
     ...value, current: true, revision: 7,
@@ -132,7 +133,7 @@ test('ordinary current Kit Open browses saved mounts and previews their owner so
     renders.push({ value, options }); return React.createElement('p', { 'data-testid': 'mounted-sample' }, value.sample.summary)
   })
   f.instances.readFile = async input => { fileReads.push(input); return { ...input, revision: 7, content: '# ' + input.path } }
-  f.instances.preview = async input => { requests.push(input); return { preview: { bundle: pin, revision: 7, panelYaml, sample: { summary: 'Saved snapshot sample' } }, diagnostics: [] } }
+  f.instances.preview = async input => { requests.push(input); return { panelSource, preview: { bundle: pin, revision: 7, panelYaml, sample: { summary: 'Saved snapshot sample' } }, diagnostics: [] } }
   try {
     await f.click('Open')
     await act(async () => document.querySelector('.ygd-studio-file-tree button[title="reference/notes.md"]').click())
@@ -144,7 +145,9 @@ test('ordinary current Kit Open browses saved mounts and previews their owner so
     assert.equal(button('Add'), undefined); assert.equal(button('Remove'), undefined)
     await act(async () => document.querySelector('button[aria-label="Saved Notes · Panel Preview"]').click())
     assert.deepEqual(requests, [{ id: 'first', expectedRevision: 7, bundle: pin, locale: 'en-US' }], 'preview resolves the saved Kit owner, never a global Bundle with the same pin')
-    assert.equal(document.querySelector('textarea[aria-label="panel.yaml"]').value, panelYaml)
+    assert.equal(document.querySelector('textarea[aria-label="panel.yaml"]').value, panelSource)
+    assert.match(document.querySelector('.ygd-studio-yaml-pane .ygd-studio-doc-footer').textContent, new RegExp(`${Buffer.byteLength(panelSource)} bytes`))
+    assert.equal(renders.at(-1).value.panelYaml, panelYaml, 'the renderer still receives compiled translations, separately from the original source pane')
     assert.equal(document.querySelector('textarea').readOnly, true)
     assert.equal(document.querySelector('[data-testid="mounted-sample"]').textContent, 'Saved snapshot sample')
     assert.deepEqual(renders.at(-1).options, { readOnly: true, toolbarTarget: null })
@@ -170,7 +173,7 @@ test('mounted preview can be left while loading; late results and failures stay 
     await f.click('Back to Mounted Bundles')
     await act(async () => document.querySelector(`button[aria-label="${pins[1].name} · Panel Preview"]`).click())
     assert.equal(pending.length, 2)
-    const result = (pin, summary) => ({ preview: { bundle: pin, revision: 0, panelYaml: '# ' + summary, sample: { summary } }, diagnostics: [] })
+    const result = (pin, summary) => ({ panelSource: '# ' + summary, preview: { bundle: pin, revision: 0, panelYaml: '# Compiled ' + summary, sample: { summary } }, diagnostics: [] })
     await act(async () => pending[1].resolve(result(pins[1], 'Second saved source')))
     await act(async () => pending[0].resolve(result(pins[0], 'Late first source')))
     assert.equal(document.querySelector('textarea').value, '# Second saved source')
@@ -186,6 +189,24 @@ test('mounted preview can be left while loading; late results and failures stay 
     await act(async () => document.querySelector('dialog button[aria-label="Close error dialog"]').click())
     await f.click('Back to Mounted Bundles'); await f.click('Source Files')
     assert.match(document.body.textContent, /Fixture/, 'a failed preview leaves ordinary Kit reading available')
+  } finally { await f.close() }
+})
+test('mounted source remains readable without a sample, and missing raw metadata never displays compiled YAML as source', async () => {
+  const pin = { name: 'saved_notes', version: '1.0' }, panelSource = '# Retain my saved comment\nversion: 1\n', compiled = 'version: 1\ni18n:\n  messages: {}\n'
+  const f = await mount(undefined, 'kit', value => ({ ...value, mounts: [{ bundle: pin }] }), () => React.createElement('p', { 'data-testid': 'mounted-sample' }, 'Available sample'))
+  let withSample = false
+  f.instances.preview = async () => withSample
+    ? { preview: { bundle: pin, revision: 0, panelYaml: compiled, sample: {} }, diagnostics: [] }
+    : { panelSource, diagnostics: [{ code: 'preview.sample_missing', message: 'No sample' }] }
+  try {
+    await f.click('Open'); await f.click('Mounted Bundles'); await f.click('Panel Preview')
+    assert.equal(document.querySelector('textarea[aria-label="panel.yaml"]').value, panelSource)
+    assert.match(document.body.textContent, /Preview sample is missing/)
+    assert.doesNotMatch(document.body.textContent, /Original Panel source is unavailable|has no panel.yaml/)
+    await f.click('Back to Mounted Bundles'); withSample = true; await f.click('Panel Preview')
+    assert.equal(document.querySelector('.ygd-studio-yaml-pane textarea'), null)
+    assert.match(document.body.textContent, /Original Panel source is unavailable/)
+    assert.equal(document.querySelector('[data-testid="mounted-sample"]').textContent, 'Available sample', 'a legacy response without original source metadata can still render its sample')
   } finally { await f.close() }
 })
 test('local Bundle cards show existing Kit references and open the shared mount view without an installed catalog lookup', async () => {

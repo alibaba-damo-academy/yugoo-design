@@ -1,0 +1,31 @@
+# Skill manifest. Repository authoring guide: docs/bundle-contract.md.
+name: quality_acceptance
+version: "1.0"
+
+title:
+  zh: 验收标准
+  en: Acceptance Criteria
+
+label:
+  zh: 定义怎样才算通过
+  en: Define what passing means
+
+
+order: 17
+icon: check-circle
+
+execution:
+  handoff: none
+
+presentation:
+  mode: declarative
+
+# Optional model-facing summary; omission does not block design work.
+# 有序验收要求的摘要；编辑和顺序由面板绑定原有 requirements 与 requirement_order。
+summary:
+  collections:
+    - source: requirements
+      title: 验收要求
+      title_fields: [title]
+      order: requirement_order
+      fields: [group, condition, pass_criteria, verification]

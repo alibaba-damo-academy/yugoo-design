@@ -1,0 +1,59 @@
+# Declarative translation of role_access/schema.py. Defaults are documented
+# because schema.yaml validates writes but does not materialize Pydantic defaults.
+type: object
+additional_properties: false
+required: [schema_version]
+properties:
+  schema_version: { knowledge: { role: metadata }, type: enum, values: [5] }
+  title: { type: string }          # default ""
+  summary: { type: string }        # default ""
+  roles:
+    type: map
+    value:
+      type: object
+      additional_properties: false
+      required: [id, title]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        assignment_rule: { type: string } # default ""
+  role_order:
+    knowledge: { role: metadata }
+    type: array
+    items: { type: string }
+  # Optional: absence or an empty map retains the original flat role model.
+  # One canonical child -> parent edge; roles never store a second parent_ref.
+  inheritances:
+    type: map
+    value:
+      type: object
+      additional_properties: false
+      required: [id, title, kind, source, target]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        kind: { type: enum, values: [inherits] }
+        source: { type: string, knowledge: { role: reference, target: '#/roles' } }
+        target: { type: string, knowledge: { role: reference, target: '#/roles' } }
+        description: { type: string }
+  policies:
+    type: map
+    value:
+      type: object
+      additional_properties: false
+      required: [id, title]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        role_ref: { type: string, knowledge: { role: reference, target: '#/roles' } } # default ""
+        capability: { type: string }        # default ""
+        effect: { type: enum, values: [allow, deny] } # default allow
+        applies_when: { type: string }      # default ""
+        requirements:
+          type: array
+          items: { type: enum, values: [confirm, reauthenticate, custom] }
+        custom_requirement: { type: string } # default ""
+  policy_order:
+    knowledge: { role: metadata }
+    type: array
+    items: { type: string }

@@ -1,0 +1,170 @@
+skill: ai_agent_capabilities
+rules:
+  - id: agents
+    scope:
+      - completion
+    code: ai_agent_capabilities.empty
+    message: At least one Agent or direct-model unit is required.
+    check:
+      non_empty_map: agents
+  - id: skills_ids
+    scope:
+      - state
+    code: ai_agent_capabilities.skills_id
+    message: Map key must match record id.
+    check:
+      map_keys_match_field:
+        map: skills
+        field: id
+  - id: skills_sources
+    scope:
+      - state
+      - completion
+    code: ai_agent_capabilities.source_location
+    message: Source references must retain safe exact project locations.
+    check:
+      for_each_in_map: skills
+      source_reference_map: references
+  - id: skills_names
+    scope:
+      - completion
+    code: ai_agent_capabilities.name
+    message: Completed records need a name.
+    check:
+      for_each_in_map: skills
+      non_empty_string: name
+  - id: tools_ids
+    scope:
+      - state
+    code: ai_agent_capabilities.tools_id
+    message: Map key must match record id.
+    check:
+      map_keys_match_field:
+        map: tools
+        field: id
+  - id: tools_sources
+    scope:
+      - state
+      - completion
+    code: ai_agent_capabilities.source_location
+    message: Source references must retain safe exact project locations.
+    check:
+      for_each_in_map: tools
+      source_reference_map: references
+  - id: tools_names
+    scope:
+      - completion
+    code: ai_agent_capabilities.name
+    message: Completed records need a name.
+    check:
+      for_each_in_map: tools
+      non_empty_string: name
+  - id: agents_ids
+    scope:
+      - state
+    code: ai_agent_capabilities.agents_id
+    message: Map key must match record id.
+    check:
+      map_keys_match_field:
+        map: agents
+        field: id
+  - id: agents_sources
+    scope:
+      - state
+      - completion
+    code: ai_agent_capabilities.source_location
+    message: Source references must retain safe exact project locations.
+    check:
+      for_each_in_map: agents
+      source_reference_map: references
+  - id: agents_names
+    scope:
+      - completion
+    code: ai_agent_capabilities.name
+    message: Completed records need a name.
+    check:
+      for_each_in_map: agents
+      non_empty_string: name
+  - id: description
+    scope:
+      - completion
+    code: ai_agent_capabilities.responsibility
+    message: Completed Agents need a responsibility.
+    check:
+      for_each_in_map: agents
+      non_empty_string: description
+  - id: skill_refs
+    scope:
+      - state
+      - completion
+    code: ai_agent_capabilities.missing_reference
+    message: A resource or delegation reference must name an existing record. Unlink it before deleting the target.
+    check:
+      for_each_in_map: agents
+      members_of_map:
+        value: skill_refs
+        map: skills
+  - id: tool_refs
+    scope:
+      - state
+      - completion
+    code: ai_agent_capabilities.missing_reference
+    message: A resource or delegation reference must name an existing record. Unlink it before deleting the target.
+    check:
+      for_each_in_map: agents
+      members_of_map:
+        value: tool_refs
+        map: tools
+  - id: delegate_refs
+    scope:
+      - state
+      - completion
+    code: ai_agent_capabilities.missing_reference
+    message: A resource or delegation reference must name an existing record. Unlink it before deleting the target.
+    check:
+      for_each_in_map: agents
+      members_of_map:
+        value: delegate_refs
+        map: agents
+  - id: collaboration_refs
+    scope:
+      - state
+      - completion
+    code: ai_agent_capabilities.missing_collaborator
+    message: A selected collaborator must exist. Unlink it before deleting the Agent.
+    check:
+      for_each_in_map: agents
+      members_of_map:
+        value: collaborations
+        item_field: agent_ref
+        map: agents
+  - id: model_sources_ids
+    scope: [state]
+    code: ai_agent_capabilities.model_sources_id
+    message: Map key must match record id.
+    check: {map_keys_match_field: {map: model_sources, field: id}}
+  - id: model_sources_names
+    scope: [completion]
+    code: ai_agent_capabilities.name
+    message: Completed resources need a name.
+    check: {for_each_in_map: model_sources, non_empty_string: name}
+  - id: knowledge_resources_ids
+    scope: [state]
+    code: ai_agent_capabilities.knowledge_resources_id
+    message: Map key must match record id.
+    check: {map_keys_match_field: {map: knowledge_resources, field: id}}
+  - id: knowledge_resources_names
+    scope: [completion]
+    code: ai_agent_capabilities.name
+    message: Completed resources need a name.
+    check: {for_each_in_map: knowledge_resources, non_empty_string: name}
+  - id: model_source_ref
+    scope: [state, completion]
+    code: ai_agent_capabilities.missing_model_source
+    message: A selected model entry must exist. Unlink it before deleting the entry.
+    check: {for_each_in_map: agents, member_of_map: {value: model_source_ref, map: model_sources}}
+  - id: knowledge_resource_refs
+    scope: [state, completion]
+    code: ai_agent_capabilities.missing_knowledge_resource
+    message: A knowledge or memory reference must exist. Unlink it before deleting the resource.
+    check: {for_each_in_map: agents, members_of_map: {value: knowledge_resource_refs, map: knowledge_resources}}

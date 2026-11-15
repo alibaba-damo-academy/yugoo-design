@@ -1,0 +1,14 @@
+{
+  "kind": "dsh-design-project",
+  "formatVersion": 3,
+  "id": "9936c39d-a4cf-475d-a889-e0e736ff6640",
+  "name": "Yugoo Design",
+  "createdAt": "2026-11-15T05:02:16.634Z",
+  "knowledge": {
+    "provider": "ladybug-wasm"
+  },
+  "kit": {
+    "name": "web_app",
+    "version": "1.2"
+  }
+}

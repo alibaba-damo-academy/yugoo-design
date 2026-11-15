@@ -1,0 +1,191 @@
+{
+  "skill_name": "design_style",
+  "epoch": 0,
+  "config": {
+    "theme": "安静、清楚、可改写的原生设计工作区",
+    "layout": {
+      "mode": "sidebar",
+      "content_width": "full",
+      "density": "compact"
+    },
+    "colors": {
+      "primary": "#7c5af6",
+      "background": "#ffffff",
+      "surface": "#f7f7f7",
+      "text": "#272727",
+      "textSecondary": "#4c4c4c",
+      "border": "#dfdfdf"
+    },
+    "typography": {
+      "bodyFont": "var(--font-main, var(--ds-font-main, system-ui, sans-serif))",
+      "headingFont": "var(--font-main, var(--ds-font-main, system-ui, sans-serif))",
+      "baseFontSize": "14px",
+      "lineHeight": "1.6",
+      "headingWeight": "600",
+      "supportingTextSize": "12px",
+      "compactBodySize": "13px"
+    },
+    "hierarchy": {
+      "page_title": "共享页面标题使用14px/20px及对应标题角色；记录标题、组标题和正文各由既有语义角色确定，不在Bundle重设字表。",
+      "body": "普通阅读与编辑同一角色；正文14px，内容槽紧凑时13px；专业画布符号按领域呈现。",
+      "supporting_text": "说明与状态保留12px下限、次要颜色和足够行高；长正文不能靠缩字或固定裁切变短。",
+      "studio_title": "Studio详情标题沿其已确认18px/24px、500字重的专用角色；不把普通页面14px角色覆盖到此。"
+    },
+    "components": {
+      "borderRadius": "8px",
+      "buttonStyle": "复用共享Button的普通、轻量和图标操作变体，原反馈与焦点语义不变。",
+      "inputStyle": "常规单行36px、参数inspector32px；颜色与字体继承共享语义，不把普通输入框尺寸套到所有控件。 普通字段标题依次为名称、声明中的必填星号、有内容的帮助图标；标记与无障碍要求沿既有required/required_in及所属分区，真实保存校验由schema/validation负责。对象可编辑标题不重复加可见星号，编辑控件保留真实无障碍要求。同名字段与分组只呈现一次标记和帮助。",
+      "cardStyle": "记录卡保留轻边界；具名内容组使用语义灰色表面，不逐字段堆卡片。",
+      "iconAction": "普通可见glyph16×16px、点击目标32×32px；图形与热区分别定义。",
+      "scope": "这是语构设计系统自身工具界面；不改写用户设计产物的品牌与颜色。"
+    },
+    "component_patterns": {
+      "workspace_navigation": {
+        "description": "所有Kit共用侧栏/树；导航和正文各自拥有滚动区域，长内容末尾可达，不另加整页嵌套滚动。长名称保留可读层级，切换不丢草稿。Panel顶部保持固定高度，宽度不足时整体隐藏项目名、U/S/T及过期提示组成的信息行，不换行撑高；错误沿受影响操作的已有反馈位置呈现，不占该信息位置。",
+        "anatomy": [
+          "工作区身份",
+          "结构导航",
+          "选中记录内容",
+          "现有全局保存操作"
+        ],
+        "variants": [
+          "DSH嵌入",
+          "Companion完整会话",
+          "Companion仅面板",
+          "Studio预览"
+        ],
+        "states": [
+          "选中",
+          "展开/收起",
+          "只读",
+          "缺少可用定义"
+        ]
+      },
+      "record_read_edit": {
+        "description": "图和详情表单读写同一记录；只读先让人理解，编辑入口就地明确，不重建一套数据。 帮助仅解释标签无法表达的具体格式、业务边界、选择后果或例子，不复述标签、不自动堆通用提示；动作必需的要求和错误在最近上下文直接可见。补充帮助复用PanelHelp，由悬停、键盘聚焦或点击打开，Esc关闭并保留焦点，正文可读可滚动并提供真实无障碍描述；无说明不显示空图标，不另用原生title制造普通字段提示。",
+        "anatomy": [
+          "标题与数量",
+          "实际字段",
+          "可选备注",
+          "所属操作"
+        ],
+        "states": [
+          "阅读",
+          "编辑",
+          "校验问题",
+          "保存中",
+          "取消后恢复"
+        ]
+      },
+      "icon_action": {
+        "description": "相机缩放/适应/外观/重置和页面语言/主题共用普通图标动作尺度；画布缩放不放大工具。",
+        "anatomy": [
+          "16px线性glyph",
+          "32px点击目标",
+          "悬停与键盘焦点",
+          "操作名称"
+        ],
+        "variants": [
+          "普通16/32",
+          "输入区既有紧凑14/28",
+          "既有标签关闭16/24"
+        ],
+        "states": [
+          "正常",
+          "悬停",
+          "键盘焦点",
+          "按下",
+          "禁用"
+        ]
+      },
+      "workspace_preferences": {
+        "description": "中英文及明暗直接切换，名称说明下一次动作；沿Host已有owner保存，不翻译产物、不重置图或草稿。",
+        "variants": [
+          "完整工作区既有位置",
+          "Companion仅面板右侧栏设置附近",
+          "Studio内嵌预览不重复顶层入口"
+        ],
+        "states": [
+          "当前值",
+          "保存中",
+          "未保存且可重试"
+        ]
+      },
+      "feedback": {
+        "description": "同事件一个主要反馈位置。普通成功短反馈；可恢复错误在原对话或受影响区域；真正覆盖/丢弃选择才用现有模态。",
+        "states": [
+          "加载",
+          "空数据",
+          "执行中",
+          "成功",
+          "部分/失效",
+          "失败",
+          "不可用"
+        ],
+        "variants": [
+          "字段问题就地",
+          "执行问题在原任务反馈",
+          "审阅读取失败在原状态区"
+        ]
+      },
+      "canvas": {
+        "description": "画布内容保留领域视觉；外层导航、工具与详情复用共享基础。图谱默认跟页面，可单独外观并恢复跟随。",
+        "anatomy": [
+          "可理解的节点和关系",
+          "现有相机工具",
+          "原记录详情",
+          "有意义的来源与状态"
+        ],
+        "states": [
+          "默认",
+          "选择/聚焦",
+          "拖动",
+          "工具不可用",
+          "长内容可达"
+        ]
+      }
+    },
+    "iconography": {
+      "library": "既有Lucide线性图标及共享语义映射；宿主身份图标沿其已确认资源。",
+      "style": "outline",
+      "view_box": "0 0 24 24",
+      "stroke_width": "1.5",
+      "linecap": "round",
+      "linejoin": "round",
+      "size_sm": "14px",
+      "size_md": "16px"
+    },
+    "semantic_colors": {
+      "success": "#199b51",
+      "warning": "#c85f04",
+      "error": "#d65350",
+      "info": "#367abd"
+    },
+    "dark_mode": {
+      "colors": {
+        "primary": "#a68bff",
+        "background": "#19191c",
+        "surface": "#232326",
+        "text": "#f2f2f5",
+        "textSecondary": "#c7c7cf",
+        "border": "#46464e"
+      }
+    },
+    "spacing": {
+      "base": "4px",
+      "scale": [
+        "4px",
+        "8px",
+        "12px",
+        "16px",
+        "20px",
+        "24px"
+      ]
+    },
+    "brand": {
+      "name": "语构设计系统",
+      "name_en": "Yugoo Design"
+    },
+    "notes": "事后整理范围是已有工具界面规范，不是新风格提案，也不是产物页面的Design Style。colors/dark_mode记录visual-components.css的无Host覆盖基准；运行时实际Host语义token与已解析color-scheme优先，不能据这些值重新硬编码另一套palette。语义状态色只表达其角色，品牌色不替代成功、失败、只读或链接。通用图标16/32由用户反馈确认，Root57944bb2已修共享Button并报告实屏；本文件不宣称正式安装验收。身份图标、状态占位和专业画布不套普通glyph规则。来源：docs/panel-uiux-standard.md、packages/panel/README.md、packages/panel/src/visual-components.css及已确认国际化要求。本次没有运行插件或生成HTML预览、DESIGN.md、tokens.css，不声称完成一次design_style Bundle交付。待Root审阅后，新增或变更仍回同一现有字段/备注。"
+  }
+}

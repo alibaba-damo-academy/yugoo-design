@@ -5,6 +5,11 @@ validation, archives and isolated Panel previews. Hosts provide storage and trus
 source readers; the library does not create native sessions or depend on a browser.
 Core owns definition loading, schema validation and declarative Panel compilation.
 
+Preview results keep the captured original `panelSource` separate from the
+renderer input `preview.panelYaml`, which includes loader-resolved translations.
+Source readers show the original text and byte count; rendering uses the compiled
+YAML. An unavailable sample does not discard an already captured source file.
+
 ## Edit current content
 
 The optional `dsh-design-studio/node` entry exposes `createStudioInstances` and its

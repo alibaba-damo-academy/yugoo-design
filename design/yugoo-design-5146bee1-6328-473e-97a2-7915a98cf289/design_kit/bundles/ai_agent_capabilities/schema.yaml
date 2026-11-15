@@ -1,0 +1,394 @@
+type: object
+additional_properties: false
+required:
+  - schema_version
+properties:
+  schema_version:
+    type: enum
+    values:
+      - 1
+    knowledge:
+      role: metadata
+  skills:
+    type: map
+    value:
+      type: object
+      additional_properties: false
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          knowledge:
+            role: metadata
+        name:
+          type: string
+        notes:
+          type: string
+        evidence:
+          type: string
+        references:
+          type: map
+          knowledge:
+            role: metadata
+            source_reference: true
+          value:
+            type: object
+            additional_properties: false
+            required:
+              - file
+              - revision
+            properties:
+              file:
+                type: string
+              revision:
+                type: string
+              pointer:
+                type: string
+              note:
+                type: string
+              subject_pointer:
+                type: string
+        purpose:
+          type: string
+        activation:
+          type: string
+        body:
+          type: string
+        source:
+          type: string
+        resources:
+          type: array
+          items:
+            type: string
+  tools:
+    type: map
+    value:
+      type: object
+      additional_properties: false
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          knowledge:
+            role: metadata
+        name:
+          type: string
+        notes:
+          type: string
+        evidence:
+          type: string
+        references:
+          type: map
+          knowledge:
+            role: metadata
+            source_reference: true
+          value:
+            type: object
+            additional_properties: false
+            required:
+              - file
+              - revision
+            properties:
+              file:
+                type: string
+              revision:
+                type: string
+              pointer:
+                type: string
+              note:
+                type: string
+              subject_pointer:
+                type: string
+        scope:
+          type: string
+        approval:
+          type: string
+        failure:
+          type: string
+        purpose:
+          type: string
+        transport:
+          type: enum
+          values:
+            - stdio
+            - http
+            - undecided
+        config_json:
+          type: string
+        source:
+          type: string
+        tool_kind:
+          type: enum
+          values:
+            - function
+            - mcp
+        interface:
+          type: string
+  model_sources:
+    type: map
+    value:
+      type: object
+      additional_properties: false
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          knowledge: {role: metadata}
+        name:
+          type: string
+        description:
+          type: string
+        model_connection:
+          type: enum
+          values: [runtime, existing, other]
+        integration_ref:
+          type: string
+          knowledge:
+            role: reference
+            target: integration_design/integration_design.json#/integrations
+        notes:
+          type: string
+  knowledge_resources:
+    type: map
+    value:
+      type: object
+      additional_properties: false
+      required: [id, name, kind]
+      properties:
+        id:
+          type: string
+          knowledge: {role: metadata}
+        name:
+          type: string
+        kind:
+          type: enum
+          values: [knowledge_base, long_term_memory]
+        description:
+          type: string
+        source_and_maintenance:
+          type: string
+        formation_and_update:
+          type: string
+        user_management:
+          type: string
+        access_scope:
+          type: string
+        notes:
+          type: string
+  agents:
+    type: map
+    value:
+      type: object
+      additional_properties: false
+      required:
+        - id
+        - name
+        - description
+      properties:
+        id:
+          type: string
+          knowledge:
+            role: metadata
+        name:
+          type: string
+        description:
+          type: string
+        result:
+          type: string
+        boundary:
+          type: string
+        function_refs:
+          type: array
+          items:
+            type: string
+            knowledge:
+              role: reference
+              target: function_modules/function_modules.json#/functions
+        entries:
+          type: map
+          value:
+            type: object
+            additional_properties: false
+            required:
+              - name
+              - trigger
+            properties:
+              name:
+                type: string
+              trigger:
+                type: enum
+                values:
+                  - conversation
+                  - action
+                  - background
+              location:
+                type: string
+              auto_context:
+                type: string
+              input_modes:
+                type: array
+                items:
+                  type: string
+              feedback:
+                type: string
+        system_prompt:
+          type: string
+        context:
+          type: string
+        memory_retrieval:
+          type: string
+        memory_retention:
+          type: string
+        harness:
+          type: string
+        model_access:
+          type: enum
+          values:
+            - inherit
+            - configure
+        execution_policy:
+          type: string
+        actions:
+          type: map
+          value:
+            type: object
+            additional_properties: false
+            required:
+              - action
+              - condition
+            properties:
+              action:
+                type: string
+              condition:
+                type: string
+              result:
+                type: string
+        result_adoption:
+          type: string
+        failure_handling:
+          type: string
+        usage_requirements:
+          type: string
+        test_cases:
+          type: map
+          value:
+            type: object
+            additional_properties: false
+            required:
+              - input
+              - expected
+            properties:
+              input:
+                type: string
+              expected:
+                type: string
+        notes:
+          type: string
+        evidence:
+          type: string
+        references:
+          type: map
+          knowledge:
+            role: metadata
+            source_reference: true
+          value:
+            type: object
+            additional_properties: false
+            required:
+              - file
+              - revision
+            properties:
+              file:
+                type: string
+              revision:
+                type: string
+              pointer:
+                type: string
+              note:
+                type: string
+              subject_pointer:
+                type: string
+        skill_refs:
+          type: array
+          items:
+            type: string
+            knowledge:
+              role: reference
+              target: ai_agent_capabilities/ai_agent_capabilities.json#/skills
+        tool_refs:
+          type: array
+          items:
+            type: string
+            knowledge:
+              role: reference
+              target: ai_agent_capabilities/ai_agent_capabilities.json#/tools
+        delegate_refs:
+          type: array
+          items:
+            type: string
+            knowledge:
+              role: reference
+              target: ai_agent_capabilities/ai_agent_capabilities.json#/agents
+        resource_policy:
+          type: string
+        handoff:
+          type: string
+        external_delegation:
+          type: string
+        exceptions:
+          type: map
+          value:
+            type: object
+            additional_properties: false
+            properties:
+              condition:
+                type: string
+              handling:
+                type: string
+        collaborations:
+          type: map
+          value:
+            type: object
+            additional_properties: false
+            properties:
+              agent_ref:
+                type: string
+                knowledge:
+                  role: reference
+                  target: ai_agent_capabilities/ai_agent_capabilities.json#/agents
+              external_target:
+                type: string
+              condition:
+                type: string
+              handoff:
+                type: string
+              result:
+                type: string
+        model_source_ref:
+          type: string
+          knowledge:
+            role: reference
+            target: ai_agent_capabilities/ai_agent_capabilities.json#/model_sources
+        model_selection:
+          type: string
+        knowledge_resource_refs:
+          type: array
+          items:
+            type: string
+            knowledge:
+              role: reference
+              target: ai_agent_capabilities/ai_agent_capabilities.json#/knowledge_resources
+        model_connection:
+          type: enum
+          values: [runtime, existing, other]
+        model_service:
+          type: string
+        integration_ref:
+          type: string
+          knowledge:
+            role: reference
+            target: integration_design/integration_design.json#/integrations

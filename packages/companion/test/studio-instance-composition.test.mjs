@@ -270,11 +270,37 @@ test('retained preview sample fallback is explicit and never hides invalid refer
   }
   const panel = parse(textOf(files, 'panel.yaml')); delete panel.initial_values
   const withoutSample = missingReference.map(file => file.path === 'panel.yaml' ? entry(file.path, stringify(panel)) : file)
-  assert.equal((await f.composition.preview({ ...input, bundleFiles: withoutSample })).diagnostics[0].code, 'preview.sample_missing')
+  const noSample = await f.composition.preview({ ...input, bundleFiles: withoutSample })
+  assert.equal(noSample.diagnostics[0].code, 'preview.sample_missing')
+  assert.equal(noSample.panelSource, textOf(withoutSample, 'panel.yaml'), 'a missing sample does not discard readable saved source')
   const nativeManifest = parse(textOf(files, 'skill.yaml')); nativeManifest.presentation = { mode: 'native', renderer: 'test.preview-native/v1' }; delete nativeManifest.summary
   const native = files.filter(file => file.path !== 'panel.yaml').map(file => file.path === 'skill.yaml' ? entry(file.path, stringify(nativeManifest)) : file)
   assert.equal((await f.composition.preview({ ...input, bundleFiles: native })).diagnostics[0].code, 'preview.not_declarative')
   assert.equal((await f.composition.preview({ ...input, revision: -1 })).diagnostics[0].code, 'preview.request')
+})
+
+test('retained previews return original source separately from compiled YAML from one captured Bundle', async () => {
+  const f = await fixture(), crlf = String.fromCharCode(13, 10)
+  const raw = '# 保存原文 · keep my comment' + crlf + textOf(f.bundleFiles.get(originalPin.name), 'panel.yaml').replaceAll('\n', crlf)
+  const retained = f.bundleFiles.get(originalPin.name).map(file => file.path === 'panel.yaml' ? entry(file.path, raw) : structuredClone(file))
+  let reads = 0
+  const input = { kind: 'kit', kit: kitPin, kitFiles: f.projected, bundle: originalPin, mounts: mountsFor(originalPin), revision: 8,
+    resolveBundle: async pin => { reads++; assert.deepEqual(pin, { bindingKey: originalPin.name, ...originalPin }); return { files: retained, sourceId } } }
+  for (const request of [input, { kind: 'bundle', bundle: originalPin, runtimeName: originalPin.name, sourceId, bundleFiles: retained, revision: 8 }]) {
+    const result = await f.composition.preview(request)
+    assert.deepEqual(result.diagnostics, [])
+    assert.equal(result.panelSource, raw, 'comments, Unicode and CRLF survive without recompilation or a second source read')
+    assert.notEqual(result.preview.panelYaml, raw)
+    assert.match(result.preview.panelYaml, /messages:/, 'rendering still uses loader-resolved translations')
+    const invalidSample = await f.composition.preview({ ...request, sampleSource: '{' })
+    assert.equal(invalidSample.diagnostics[0].code, 'preview.sample_json')
+    assert.equal(invalidSample.panelSource, raw, 'a sample error cannot hide the readable original source')
+  }
+  assert.equal(reads, 2, 'each Kit preview resolves the selected saved Bundle exactly once')
+  const oversized = retained.map(file => file.path === 'panel.yaml' ? entry(file.path, 'x'.repeat(1_048_577)) : file)
+  const oversizedResult = await f.composition.preview({ kind: 'bundle', bundle: originalPin, runtimeName: originalPin.name, sourceId, bundleFiles: oversized, revision: 8 })
+  assert.equal(oversizedResult.diagnostics[0].code, 'preview.size')
+  assert.equal(oversizedResult.panelSource, undefined, 'source metadata does not bypass the existing source size limit')
 })
 
 test('retained Kit preview verifies real Kit and mount pins and captures revision before awaits', async () => {

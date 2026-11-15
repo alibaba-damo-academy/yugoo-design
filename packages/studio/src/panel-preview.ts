@@ -27,6 +27,8 @@ export interface StudioPanelPreview {
 }
 
 export interface StudioPanelPreviewResult {
+  /** Original panel.yaml from the same confined source capture; never compiled YAML. */
+  readonly panelSource?: string
   readonly preview?: StudioPanelPreview
   readonly diagnostics: readonly StudioDiagnostic[]
 }
@@ -42,9 +44,15 @@ export function finalizeStudioPanelPreview(input: {
   readonly kit?: DesignKitVersionPin
   readonly revision: number
   readonly sampleSource: string
+  readonly panelSource?: string
   /** Reads only the already confined definition snapshot, not a project. */
   readonly readSampleResource?: (path: string) => string | undefined
 }): StudioPanelPreviewResult {
+  const result = finalizePreviewContent(input)
+  return input.panelSource === undefined ? result : { ...result, panelSource: input.panelSource }
+}
+
+function finalizePreviewContent(input: Parameters<typeof finalizeStudioPanelPreview>[0]): StudioPanelPreviewResult {
   const { compiled, revision, sampleSource } = input
   const bundle = { ...input.bundle }, kit = input.kit === undefined ? undefined : { ...input.kit }
   if (!Number.isSafeInteger(revision) || revision < 0 || typeof sampleSource !== 'string') {
@@ -157,7 +165,7 @@ export async function prepareStudioPanelPreview(
     const candidate = await loadStudioKit(overlay, kitRoot, loadOptions)
     const compiled = candidate.skills.find(skill => (skill.catalogName ?? skill.name) === bundlePin.name)
     if (compiled === undefined) return failure('preview.bundle_pin', 'The source does not match the selected Bundle version.')
-    return finalizeStudioPanelPreview({ compiled, revision, kit: kitPin, bundle: bundlePin, sampleSource,
+    return finalizeStudioPanelPreview({ compiled, revision, kit: kitPin, bundle: bundlePin, sampleSource, panelSource,
       readSampleResource: path => candidate.resources[`${compiled.name}/${path}`] })
   } catch (error) {
     return failure('preview.definition', error instanceof Error ? error.message : String(error))

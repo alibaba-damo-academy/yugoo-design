@@ -1,0 +1,45 @@
+# Skill manifest. Repository authoring guide: docs/bundle-contract.md.
+
+# Stable internal id; must equal this directory name.
+name: design_style
+version: "1.0"
+
+# Bilingual FE heading and progress title.
+title:
+  zh: 视觉风格
+  en: Design Style
+
+# Bilingual picker fallback label.
+label:
+  zh: 定一下视觉风格
+  en: Pin down the visual style
+
+
+# FE display order only; never selects a skill.
+order: 5
+
+# FE icon name.
+icon: palette
+
+# The foreground Producer owns the complete visual result. Optional delegation
+# may return a bounded preview candidate, but never owns persistence.
+execution:
+  handoff: none
+
+# Shared declarative preview; palette/token bindings are Bundle-owned data.
+presentation:
+  mode: declarative
+
+# Optional model-facing summary; omission does not block design work.
+# Read `config` for the visual direction, layout, colors, typography and component
+# language. `config.preview_page.html_file` references the representative artifact;
+# `tokens.css` and `DESIGN.md` remain generated outputs of the owning Bundle.
+# The Panel edits only declared canonical configuration paths, never HTML bytes.
+# Unexposed configuration and artifact references are preserved on every edit.
+summary:
+  fields:
+    - {source: config.theme, title: Visual direction}
+    - {source: config.layout.mode, title: Layout mode}
+    - {source: config.colors.primary, title: Primary color}
+    - {source: config.typography.bodyFont, title: Body font}
+    - {source: config.preview_page.html_file, title: Representative preview}

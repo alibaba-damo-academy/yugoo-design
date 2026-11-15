@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": "2fd530824e3d84ea79e971a85880f72784ebba72",
-  "policySha256": "256e9114dd531de79af293801865277443b978454916f495cb1720cfd12cbf9f",
+  "revision": "6a20d9b8e0983df914033f954b7f77ec036c6112",
+  "policySha256": "69deba1307e600a9b0405596e8d73df3e63f488f50c9e9d708ee09591f7ea269",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
       "sha256": "99c0ddca35a9a65ca9b097ee9072994a1ca2a4848ef6fe3ca07f5f29956806ed",
@@ -100,7 +100,7 @@
       "mode": "100644"
     },
     "AGENTS.md": {
-      "sha256": "3be8036993970c073ec9fe76a496228e46893f92adb08681dfe08eede29257a9",
+      "sha256": "89f127b4af32a60b150322091a8cb9c5840446603a78e78c5813582fc5d57877",
       "mode": "100644"
     },
     "CHANGELOG.en.md": {
@@ -137,6 +137,990 @@
     },
     "THIRD_PARTY_NOTICES.md": {
       "sha256": "d58b8655b35ead7a236f0c930cf716b7614052587f21b05b8bff15be068166fd",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/.gitignore": {
+      "sha256": "f68fbc9dd3e7488fd5da85bf4c365c438d133fdf91a62b6ecd7340be9da51bc2",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/README.md": {
+      "sha256": "e309cb958bd21783a877494d464a7f3bbb71978e7f96f72dddcf4dce2ceda07f",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_files/ai_agent_capabilities/ai_agent_capabilities.json": {
+      "sha256": "754891d170881e36a33640d5f2b3bf33b6362e59a8d351d4e3e090f587940415",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_files/business_data/business_data.json": {
+      "sha256": "594973efea4d7f8495dca46c42d0377bea923e59fcf964d20a0fe706109c86ad",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_files/business_rules/business_rules.json": {
+      "sha256": "bd36a548a978aa5c101b41946966c90d6640adf08b0f64af6b6b94c319c06db9",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_files/design_style/design_style.json": {
+      "sha256": "8e845f9be06b9ebc18ffdeb9d854a0a164db066b5965836b12bb09ac5fa452ef",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_files/function_modules/function_modules.json": {
+      "sha256": "7be6db67fa68054e28479e5496202b82972537a08d057c1288828928c9718594",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_files/quality_acceptance/quality_acceptance.json": {
+      "sha256": "3d8fa8214f3d15f24a6b3ff440bb909690252daeb85909df42bf67426166f8e7",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/ai_agent_capabilities/SKILL.md": {
+      "sha256": "9ead360d5df672afcba0212a1a05f2f8f4dd0e6ad5d0b973328c82928cdb7e81",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/ai_agent_capabilities/locales/en-US.json": {
+      "sha256": "453197c325e4a99dc1a296f041fd7623605e9750443ae8aa973ab5ea32f32e96",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/ai_agent_capabilities/locales/zh-CN.json": {
+      "sha256": "bc3f72e673471a282292a878e1722b6a0a638e6d32ce62cb77c824572910c20c",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/ai_agent_capabilities/panel.yaml": {
+      "sha256": "5c24d42858d9742f8362c972fdbfdb83250d1a16163491e6697d74aac7e95bae",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/ai_agent_capabilities/reference/agent-canvas-example.json": {
+      "sha256": "5ffb5375c28f331ddbaf0e96521c73b26128d1fff27d9691166a9a2dab0630da",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/ai_agent_capabilities/reference/artifact-contract.md": {
+      "sha256": "007bee93dc7f0f3b8e5f3d8b000d90309ee2954f39925d164a37cb14d918c643",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/ai_agent_capabilities/reference/canvas-guide.md": {
+      "sha256": "c19f1eb5649ce95ac53b2f02d28214fe27037cd340e397e1f3900f7c9d00dc78",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/ai_agent_capabilities/reference/cooperation-guide.md": {
+      "sha256": "8df7657422c50995fb383245c750ec54adc42654ea613ef16f681cacd5f4c514",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/ai_agent_capabilities/reference/example.json": {
+      "sha256": "58360c0733f434d6d61afcb21e36773b4c68fba47e16bac9e55f7d540d881e64",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/ai_agent_capabilities/reference/preview.json": {
+      "sha256": "eeadf0101e1b359d5887353ec6a01d9fd9dcb6514044a2a46e24b40cc1997638",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/ai_agent_capabilities/reference/runtime-guide.md": {
+      "sha256": "827f9c387cf6cd1e1a264817d4b2d5b6f8bda04d1b2876c0d50e9c2d37951cf2",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/ai_agent_capabilities/schema.yaml": {
+      "sha256": "b6e10d1b7a2792a4a95968f8b4b0e1452ff0502736b19c0090454e8b28194260",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/ai_agent_capabilities/skill.yaml": {
+      "sha256": "46fe89c6e5928a41cd620c9de428962456d9510b6e0b6c699acdb4982c8ae30c",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/ai_agent_capabilities/validation.yaml": {
+      "sha256": "fe129a0b887cef39925fe25694628b6440173b7f5cf6456d2ecd8b5c6ff4f986",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/business_data/SKILL.md": {
+      "sha256": "848a210e91878f187b81cd9420b6709290282a034ca1658cf8d9354e41928123",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/business_data/locales/en-US.json": {
+      "sha256": "cc00ac852406b0fe6b89cf3d761b5ca9a54a00c23e98b6914a17a4474f8ae191",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/business_data/locales/zh-CN.json": {
+      "sha256": "8cef889c5e7947adb77c6797b253896261cc1f079d5c7b76854386b4e3e6f79c",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/business_data/panel.yaml": {
+      "sha256": "eabf4512cd4c026b1de5f10aca081f77d2f23e6525121d334c5bb1f138b97164",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/business_data/reference/artifact-contract.md": {
+      "sha256": "fcb7e870c31450756725ea667e33175cd8cf158126a7df8ed24db61ae660251d",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/business_data/reference/canvas-guide.md": {
+      "sha256": "b15bdd0e83791410cba292eb39dd5a73aa3c8cb6d8789345160eb628a6368501",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/business_data/reference/example.json": {
+      "sha256": "ea3599ae2e5647a1e8b3f1bfa181c9fbcbac47daaec4c6c64736adf52f450bc5",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/business_data/reference/preview.json": {
+      "sha256": "802fb915f8f956cd4df4ff08dbc124ef5838c567e2d1119a6eb4e1b5e65ecfd7",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/business_data/schema.yaml": {
+      "sha256": "77380ec387ea99cae63bec8587c65c4ae6e2b7820dcbf33eceb263c96a76d24c",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/business_data/skill.yaml": {
+      "sha256": "8c36ac04e824a3c0d2d5d2c1a436a062c03366fa18eb2f00bdb2caf07025885e",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/business_data/validation.yaml": {
+      "sha256": "e431df0ad2bcbbef5d18c1c930091876b589d5b21164a2996f4a4aed6bce0d59",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/business_rules/SKILL.md": {
+      "sha256": "3616c8f721a1a96da1f865296be7ceb19d18a00146756d84713becbfe141b04c",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/business_rules/locales/en-US.json": {
+      "sha256": "0fbf4c9bd3536bc87a34e51df37bb5fea2a65295d3e2e7f330f5fabb64822183",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/business_rules/locales/zh-CN.json": {
+      "sha256": "a0e2c29542b6db993f0ca20c4995a4c40734181780513c1d716a72222f2619d5",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/business_rules/panel.yaml": {
+      "sha256": "7c1da67a1090d3437b42ef330f7544830deb3abe72f0706dc759fe77e0e5cdf8",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/business_rules/reference/artifact-contract.md": {
+      "sha256": "f4b8612269d98d3770e66d95f7b2dbb2bc226802c9ba9141b78d04d63b851f0f",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/business_rules/reference/preview.json": {
+      "sha256": "1f74b0a47af1d581eacd1eb3fe81ef947e2fd16398d4af7fd04c5946c5ed42c2",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/business_rules/schema.yaml": {
+      "sha256": "078ffe8971961e900a3c12a0b7c03b69b10e5cee3488c25f24985d43a8a752c5",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/business_rules/skill.yaml": {
+      "sha256": "a91662a4dbc22a5a627f501f32485c0019e52365e7770a60eb188f56227ed575",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/business_rules/validation.yaml": {
+      "sha256": "e602782ac72f4117d8756d07cb9a9882c3e17f0dd79251c1ab8b2073bbcac0a5",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/SKILL.md": {
+      "sha256": "59f60172d73aa321a8d2701646298193cfb14a09fb3cc8cadd8b9b9b9001aee8",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/THIRD_PARTY_NOTICES.md": {
+      "sha256": "78c6e38716bf00cf980c681f47865918ddf7ef8fce56e5f397387e0e8458313c",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/assets/icons/_index.md": {
+      "sha256": "b5221c1d1d5a949904c9430851a0904fe3c5011a74af6e496e0712b5d8a15698",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/assets/icons/alert.svg": {
+      "sha256": "4cdf14bbdccd5e35538ddf0b3fab46101b50ccaaebcfa29d8bb64aaecdef2cce",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/assets/icons/arrow-right.svg": {
+      "sha256": "ff5f768676a08743c0edd9d2a88dfd990802977961571d8880e7145fc7fe9504",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/assets/icons/arrow-up-right.svg": {
+      "sha256": "d9ea47258ddc613e62e518f379e76f8f926da5c8929d25a8616bc06398f8c0a3",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/assets/icons/check.svg": {
+      "sha256": "5b9f227f5b315eed0377c6f26a5beb006844d28b92cc2d63cb7f9cb6b92e8a87",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/assets/icons/chevron-down.svg": {
+      "sha256": "d1dc38bd6afbe2802c32dac90b11a335997c25f5c6218accb3d2bf0333c8ef54",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/assets/icons/chevron-right.svg": {
+      "sha256": "77be848786e7ab682840a486c1b541e483908adaf501ecacbd30d6be4c7cc4f8",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/assets/icons/dot.svg": {
+      "sha256": "4316ebe3de8992b85f55f8e907239350f65c29a53ffecabfe367eed60bef529e",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/assets/icons/external-link.svg": {
+      "sha256": "e5d98fe3905e34fc0700504997907a0c373af8cd399049ac207a3a09e556eb73",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/assets/icons/headphones.svg": {
+      "sha256": "7ae6204f01db4e531c0b9b6d5bed01929979e5d74327fb971b33af3fa51204b2",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/assets/icons/info.svg": {
+      "sha256": "0b917f67708f8594731dd40b86a1e676d0385cc2a23d2715f4d395a089b588a6",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/assets/icons/mail.svg": {
+      "sha256": "cd078dfacf07c99a8abd16cef2fcb359d352ea4e5960e03490e5787717c51d4e",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/assets/icons/map-pin.svg": {
+      "sha256": "cbe4657d1f1133a93e09e42ea63b55d551b990de57a1c4bf5fd219aa74897393",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/assets/icons/menu.svg": {
+      "sha256": "a289c9796ed144fa8560037078aa6454d5bb5ca68974182e7e1b071128c86763",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/assets/icons/music-note.svg": {
+      "sha256": "009f862dfb996f862634c583994a25ec483a39969823357d096552274092b960",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/assets/icons/pause.svg": {
+      "sha256": "4e7c50b801181e1ec308e168c538ea959e45da9bd8ae48dc2cb7618a48d7c7be",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/assets/icons/play.svg": {
+      "sha256": "af904e511d7c26fc3c6b8f3ff5192d60ef97c13c01d4c383ca1bc8689e8b8eac",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/assets/icons/search.svg": {
+      "sha256": "45873287ce6b6b4078d2a1090b66439ceba995125721da956f91d358411cf5ca",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/assets/icons/share.svg": {
+      "sha256": "e4e7b5fa06c08053a1bd6261f2df3974576f51e515f21b651c1942420042d471",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/assets/icons/volume.svg": {
+      "sha256": "ca24107d50d614831594d879bcc811467bcdd3ececcd165890fe8c6cc2c30c3a",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/assets/icons/x-close.svg": {
+      "sha256": "3e934aa7b6bc5a9ffecaef457bcfcae683cdd6fa3e51372f927b8381ee228e1d",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/licenses/SOURCE.md": {
+      "sha256": "3cf087ae8fdb9992d80845ab21cae9a655ec361481f0cec513949754a57d3d66",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/licenses/impeccable/LICENSE": {
+      "sha256": "02bb8c3b4e70190e3986c0404ad2fd8d639b4f534252d82379cc1b502b6d1812",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/licenses/lucide/LICENSE": {
+      "sha256": "b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/licenses/taste-skill/LICENSE": {
+      "sha256": "4575a543ab88dad12ccea7d97e563d0bce5b448b06072e65d3264497dad326df",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/locales/en-US.json": {
+      "sha256": "1c2d06a322a16f603e220ac574f9b3f77ed548b2e4470508c1484795e5f6d886",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/locales/zh-CN.json": {
+      "sha256": "6592abe516082d35ebb1b035c386f9e1f39380ebbd4a78ded6fc4e5f64f4df6f",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/panel.yaml": {
+      "sha256": "4713858e3c7d31664093098d4ffed9384f6dcf0024208138bfaa9e7b76983ac3",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/aesthetic_index.yaml": {
+      "sha256": "bf86ffc3068666f69f5f092b642bd64234d8a4d27cf2461dfe90a1126341b2b9",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/aesthetics/classic_blue_saas/DESIGN.md": {
+      "sha256": "af126b55739c65088d0952e195cd99d4a27914767f39f742f3aa566623283dc8",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/aesthetics/classic_blue_saas/tokens.css": {
+      "sha256": "b3e846f9e559e19ad8cce5a2f685bf0996f598ddb943062da9e963effdae69e4",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/aesthetics/clean_web/DESIGN.md": {
+      "sha256": "911544fd6546a64fd5017deea47c1aee9fcf87f1730eaf267a6085d615f812d8",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/aesthetics/clean_web/tokens.css": {
+      "sha256": "73ab32898f82a8c1573db7b5c74b3c93f5c5930543a70fa72a185769678edaa1",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/aesthetics/data_operations/DESIGN.md": {
+      "sha256": "245bb0bf9dea3fa03776a679b85dcdf20db94f6953876cb28b71c6440b642878",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/aesthetics/data_operations/tokens.css": {
+      "sha256": "3e36b54655a2020e68f73f01eb69b297fc195b0c4852ec5e257c0badda62bcdc",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/aesthetics/editorial_mono/DESIGN.md": {
+      "sha256": "46853b2f0bd3d2ec7b5f7aeb4569a4a87e4cb322f0e3e48c5f8885be19a36873",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/aesthetics/editorial_mono/tokens.css": {
+      "sha256": "ea7a41048c4e7fcc702f0fee3504c4ef547031fecc8d6161d58dd5adf43718e1",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/aesthetics/frosted_prism/DESIGN.md": {
+      "sha256": "61ca10176fdbe392bafa0bc53e271006e0eda3e934e767e761621e8ce877e96e",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/aesthetics/frosted_prism/tokens.css": {
+      "sha256": "da54bf1fa88efb65f53549df5182749cfca345282cca76030f10efb04af73d01",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/aesthetics/honey_twilight/DESIGN.md": {
+      "sha256": "e09eb34530b7b6d35f786b3ac1ed30bbe4529925543d1edba60f0e8e684e6679",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/aesthetics/honey_twilight/tokens.css": {
+      "sha256": "7321e8f3d3ff6283d6b2ca04480a972562ca309ac4c1b22e0054aaf7a1f8945e",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/aesthetics/morandi_still/DESIGN.md": {
+      "sha256": "dfc367bfed10e3300880b3b125429349be9777b59b3a942f60875049e06a8c5b",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/aesthetics/morandi_still/tokens.css": {
+      "sha256": "2a3179c9dc814c6d653b67ee2eda0c9dbd7048cbf48c8ea1d1b2e49785f886f5",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/aesthetics/neutral_workspace/DESIGN.md": {
+      "sha256": "fcfa30949f03c8c7ad2aa2f503282990f646a479760a5b97407915c39d0c0b2e",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/aesthetics/neutral_workspace/tokens.css": {
+      "sha256": "5c643660ae71d3a4da3c80d70166f517ca43516b8d1a205fb220e3be2efcf466",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/aesthetics/studio_noir/DESIGN.md": {
+      "sha256": "d0045480134f09010f0d9a47634cf8a555836be11b0622b554e6204d95bfb438",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/aesthetics/studio_noir/tokens.css": {
+      "sha256": "61fa07a6f16dcd19b7e3bc772a1e39f5dc856f0b6ca4ef276a053ce1eb8b92e6",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/aesthetics/trust_light/DESIGN.md": {
+      "sha256": "b5a242422aa7ceb776e571bf8c534115e25c028f627b1db56c74f0689cfd56ce",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/aesthetics/trust_light/tokens.css": {
+      "sha256": "661d0d390067d02fb10ca5500948aef13ad80b80a0162aaa96674fd81a375bf0",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/aesthetics/vermilion_festival/DESIGN.md": {
+      "sha256": "b821d289c2ebb5702225896a23c71c81e2cd0b6e52e9df366a4ad60af797e1aa",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/aesthetics/vermilion_festival/tokens.css": {
+      "sha256": "2543e48cfce78c6500bd5802207a76b4a86dd3015418ce76443f08c5dce725be",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/artifact-contract.md": {
+      "sha256": "3bff8132d48e8323d9d14f49648344a5a685cfe2ac69d4f6b65973507bcf9197",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/motion.md": {
+      "sha256": "2be4869701ca8019dec66b119563491f4734733ce13b2050c879242323faf1db",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/post_check.md": {
+      "sha256": "a51398eaed099f7b4e6bd6b3554905fcb85f143642a1a3e2b164dc4718d960bc",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/preview.json": {
+      "sha256": "52a05ef773333805f3bf1d63b79ff6fb64abce3be848a5eccf8b7d4128f3fd10",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/reference/quality_rubric.md": {
+      "sha256": "7ba0959ac167c75d79982a2a1b150cbd09f0de3689b520dfb59e164abbc968f3",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/schema.yaml": {
+      "sha256": "5cc966e20df38a6eadac81424cc923eebead590791adb25b56c589496e179b41",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/scripts/design-style.mjs": {
+      "sha256": "fe7801335c7e7bcd521727d449809bf77736e903633b3e28b807559b05f1bb30",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/skill.yaml": {
+      "sha256": "cac4dd182ca48ba7e0a81708d2a25d7d764532a5a21e92f4db438d78f6d1c13b",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/design_style/validation.yaml": {
+      "sha256": "4b0193b219f5a9fa523b432d33aaed7ea87bf7c137e2442b57d52ef3dc768364",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/SKILL.md": {
+      "sha256": "503dd6f04a54494d34611931e20359bd121d2ec5fd4dca3283a658f78c10602b",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/locales/en-US.json": {
+      "sha256": "0818194875ae4b73d9e98d5ff515b653a65a63caae8b7bb7c1256415b6bc1321",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/locales/zh-CN.json": {
+      "sha256": "26d8f9e84dfb8dbb90512db3b80b0f81d979808799a07e7e9dec6752d50a0386",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/panel.yaml": {
+      "sha256": "fdca20c1da14476221e0a1fd9e06c1d4c9d7a6044d4bee780692b31eba13679a",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/reference/artifact-contract.md": {
+      "sha256": "f1c86309e3cd47ea124fb9652f3379cabc48a825b76c8221792c60b81cb5e8a0",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/reference/bpmn_authoring.md": {
+      "sha256": "474781fb7e70a2146678453fe6789672a5f0711c5299c9aacf90777d80a53362",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/reference/canvas-guide.md": {
+      "sha256": "90cd4fc6f684c66f68fbc818cb263ac94f7ef965d27eac8e7290dd1e7210e772",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/reference/preview.json": {
+      "sha256": "168438af18c6ad22b53fce40186452373219d3ec2df1651dd81703f7128d1eca",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/schema.yaml": {
+      "sha256": "e8d77f65ac81ad6f8fbcf24acb6899a9c2d1e2b7c287198a9ea9b3b263f2f7f5",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/scripts/bpmn-validator.mjs": {
+      "sha256": "5c8673b5a499837c8a6d2e7c673dbd2b416ce6defd16d43214268e325a2198f1",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/scripts/channel-spacing.mjs": {
+      "sha256": "b8b81a21d880c24dc1332555898dbada8c7c9d0ca1302d73e7c8a7c482c65c46",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/scripts/cost.mjs": {
+      "sha256": "20a6d114204f0353b987432e3b1cab76f6fc04dd2f68cae1e5a4b66c269c0b93",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/scripts/feedback.mjs": {
+      "sha256": "f6755f21fbcb8d2bf528ffc391ec47449c141b362c81741891417c59a5d43a55",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/scripts/labels.mjs": {
+      "sha256": "b6ae5c8cd4645989c891b87475082d6cee268b0176afda8fefdc7144f16a2051",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/scripts/layout-metrics.mjs": {
+      "sha256": "03c53ee80dfa8480e8735c0dae8e11ef35a2798b4b11e4e8df2fac2efb2c8202",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/scripts/layout-policy.mjs": {
+      "sha256": "b321f26825212a2364c2f66eef422d56b33b4a095292cd8da9c8c1d475d74ec4",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/scripts/layout-regression.mjs": {
+      "sha256": "8ca70450d5a28cd68460aa8ce71305dfad31aed9f565e50df2b9f0ce2a0d8a28",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/scripts/layout-search.mjs": {
+      "sha256": "9525aa1dca2ee407a4e7d50d5029009fba382c0ec038b1b8c92b81c2f3ae643a",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/scripts/layout.mjs": {
+      "sha256": "e6178bfb3e116860d4f2175712477177a1398c2f8d425e493bb31a12de29edea",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/scripts/moves.mjs": {
+      "sha256": "aa0eb935e3ea6dc8b09e7f129742938bd784be91eb7faf5b2e5be9409ace0b7f",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/scripts/reading-order.mjs": {
+      "sha256": "b3f888002ea99b72696efc47598903f92d02c286229abde40716d4174c0bd9c3",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/scripts/router.mjs": {
+      "sha256": "0db60048413879feb7c77b26c61ed7e20f104cf0b2153f38089a75474e6d785f",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/scripts/search.mjs": {
+      "sha256": "985551d82d77e6eb2528de90806922787b0bf0d79dca43a0cdf8e466b1a66327",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/skill.yaml": {
+      "sha256": "7c840c8aa0b1d66571e352c0ec465cf6c2e5016bae1872cc146fbe7e48822f29",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/flow_design/validation.yaml": {
+      "sha256": "cf2f895aa586b98c2face7fc4335af22d21e5ea0d259f5c28e6bb21e7f0ed359",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/function_modules/SKILL.md": {
+      "sha256": "4416fb4a9cdb509b896ed1974fe4872f46096bb7e16443f49e875bbbfc5c2598",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/function_modules/locales/en-US.json": {
+      "sha256": "94dc4a0eb8c4ca2bc047c78ea69b1fa09e95c6b55f578e17be2f0ca48030bb6f",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/function_modules/locales/zh-CN.json": {
+      "sha256": "6d49236ba8efa86b0a98fff52f1843c0b2b33be23c266f6918e1c2c541a75145",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/function_modules/panel.yaml": {
+      "sha256": "825ac567eff7b593066dca69c7e7ab8561f4bbccb056006bef1f90b34d49cb50",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/function_modules/reference/artifact-contract.md": {
+      "sha256": "fd19360c20f932f3ee3bb07261f81613ca532298703ccc595a2d50f77c3ade01",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/function_modules/reference/canvas-guide.md": {
+      "sha256": "b8bf373a03be6f968c0387b72b660192bb86f74d3d6c96763a72e92f7990d261",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/function_modules/reference/preview.json": {
+      "sha256": "5a3c4d3a6510e29daf285c1ab9d33dc24440910f6e06ee4dd64e3faa9a7f6820",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/function_modules/schema.yaml": {
+      "sha256": "e471da02acabe567dc7e7b4ddbba2d5752b3e53768417af65220fdb19c74ceec",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/function_modules/scripts/merge-usage-scenario.mjs": {
+      "sha256": "4daa7b61f6818598bbe401eba14a6c56c9b8c1d48ac29cf79827c1583dc530ea",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/function_modules/skill.yaml": {
+      "sha256": "f64c18d80002ac66895ba156ef5bd8790d993ea09fcef86c8abc049f0638238d",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/function_modules/validation.yaml": {
+      "sha256": "5ee9caa11bd020022290b738a9d8855b8cb935d6e7ef72151e2c7ef579f66bef",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/integration_design/SKILL.md": {
+      "sha256": "16009531506a00ed81537945d9ef76e251623344663176e789c1dd56db82c83b",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/integration_design/locales/en-US.json": {
+      "sha256": "48edc487feba84941dcdcd77e766466a28abe0a6191d878a18a1c43cc531b338",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/integration_design/locales/zh-CN.json": {
+      "sha256": "605d8924e59164794ef8f2e4cf63c60b0ec9cbc806a7b1e23efd5c8bfcc8b87d",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/integration_design/panel.yaml": {
+      "sha256": "343871ec54e12efae37d4a49d535e92f21b3f7d67ffe1d07d1f4563735c0fb59",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/integration_design/reference/artifact-contract.md": {
+      "sha256": "c06577cc09a9465dd41fc5c2076d460c23547ac5d0db7791db1a4d6cff676e3c",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/integration_design/reference/preview.json": {
+      "sha256": "fb7d3c4ee8f7f1a600ed1bf98fcb7779805cd544a7b58d27f6b2ebe56ca83d9e",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/integration_design/schema.yaml": {
+      "sha256": "47f631bbc81a088a9ac2a6f2b07c2f977286866a5c2789f71e0cc4376127a791",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/integration_design/skill.yaml": {
+      "sha256": "4b4b440853e812e49c76986e8b1d7848d1dcc88325ab3e1cf077c9b181dd6997",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/integration_design/validation.yaml": {
+      "sha256": "463e71d564c824f9ec60f46a49386bff1bb93ad4402e771c03f0fd206fc57e16",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/notification_design/SKILL.md": {
+      "sha256": "6fa8c0709ed34a3108ea0b69bea1f1a9f21911386a1b6ae076de79fa8d0f0186",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/notification_design/locales/en-US.json": {
+      "sha256": "6a87c28a535ec43ac9ecaf033a11076d0576ef577a21245d7e8599e72214109e",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/notification_design/locales/zh-CN.json": {
+      "sha256": "9923531731830c6f03a6f5794ee612e6d58f3919e463668f31509ad65b5cbe70",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/notification_design/panel.yaml": {
+      "sha256": "1781dad4f88c30291a54c923acce97b2225fb28330e9cfdcb612c9ec90c70ab3",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/notification_design/reference/artifact-contract.md": {
+      "sha256": "6f7b313fff524897f73223489589a1b925deb4f460f0d71c9209f4b0ccbb3c0b",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/notification_design/reference/preview.json": {
+      "sha256": "21d2a27db6d9d08ef7499cc6df3692b33dec5e92b68cbbfed8eba4dc7f76c796",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/notification_design/schema.yaml": {
+      "sha256": "cae986d0901c9a70376496423902880972aad7a48f0c214c18f4d283471a0e33",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/notification_design/skill.yaml": {
+      "sha256": "8ab651dce9c6ed904d4319974c91fb20981dfd89cabe83a90c577168faade970",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/notification_design/validation.yaml": {
+      "sha256": "6d682f7e74a882e0652a6fb200c96bcb109c072322005b9cdbb0e5fd44bc4294",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/page_design/SKILL.md": {
+      "sha256": "56eaf32151e52c841e4769d7c9f9d033ac582d596f3f0f8d6fe2ad3b2d834814",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/page_design/locales/en-US.json": {
+      "sha256": "f7d2c6f2746c3be21320380116a37182e71266b2730954a4fa33976509b754a1",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/page_design/locales/zh-CN.json": {
+      "sha256": "e54a5464f0f7340b48858b71118a803790e16db5e40bc7bed9cda08209d0a4d3",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/page_design/panel.yaml": {
+      "sha256": "d5222083239662a652ba08a4b36eea83556f6a582de4fbb22a833c851acde9f1",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/page_design/reference/artifact-contract.md": {
+      "sha256": "467026450e7342d7288b33e8bda92e8f8fd45b597c9ed26c28ad3dbd7adde59f",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/page_design/reference/canvas-guide.md": {
+      "sha256": "c9b8fc4ef08f2b5f518205fdc351bdbc6182bf21cec4202a91db84c8ac17606d",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/page_design/reference/preview.json": {
+      "sha256": "96777663fb6e9cc7922ea30818b1f4725a3f5293bc6391203dd0148096594a83",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/page_design/reference/task-to-page-method.md": {
+      "sha256": "e95a360caa7fed26c2c0b68d158710698bce844c47072f21a6e45fb80add790a",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/page_design/schema.yaml": {
+      "sha256": "d66525f207918988a8fb1d0ab18ee64ff0f70cd5c732c5820b45335dde9c3f94",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/page_design/scripts/page-design.mjs": {
+      "sha256": "12f215de62b4a52e0e8723becd7e842314dffe6b20bca08a899d6e08613d8361",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/page_design/skill.yaml": {
+      "sha256": "5d8212131b32431ceadcdb715cfe75f791965b313ea64ebf59ae4b57da994a79",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/page_design/validation.yaml": {
+      "sha256": "80adcc397e11a7a416e0fe02e9fbbdcd53d87fc2fcf44b6b0c9ec2c8bacb8f77",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/quality_acceptance/SKILL.md": {
+      "sha256": "d5c17c6e713e5987aa4d9102c7fe57f1c81843aeffb33ac4ca47c239baf9e0d2",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/quality_acceptance/locales/en-US.json": {
+      "sha256": "4e28dc414bee7a0d0234bc1e3630f9d1f513bf01f7c71b68a597b74041808420",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/quality_acceptance/locales/zh-CN.json": {
+      "sha256": "7e0e21399dc4defd6eb130a5a34469d80d1c82e7bc4dd9ec5cd7b7e251cf6f50",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/quality_acceptance/panel.yaml": {
+      "sha256": "4d375ef9dbb0ec768f65fa6eb935b0fab7afd753b87eb65b064b82abe29f850d",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/quality_acceptance/reference/artifact-contract.md": {
+      "sha256": "1f7a6db005d1ba619c99c6ed3f091361805c3d440c6d773579877c903a71e55c",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/quality_acceptance/reference/preview.json": {
+      "sha256": "40c0a07c2025be1a02e860b2ac5d1e64000409c86f9b189c68e01752f4197b8e",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/quality_acceptance/schema.yaml": {
+      "sha256": "0b4738c34378b56b6c4afa6fee2b2be1a19ded83c79a8d94dad99e52d96ac408",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/quality_acceptance/skill.yaml": {
+      "sha256": "bd838a1137876bd5487523fb0aa35b9b8b77f43caf19af723a31328d111cbf67",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/quality_acceptance/validation.yaml": {
+      "sha256": "142dc2390a22564fbd060c91a2bfd3e58938faddad3a10f9d843bd2473e4fee5",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/research/SKILL.md": {
+      "sha256": "7111b3fbe7fe7bdac3a49ef6e46dc74fb459018300501ce5b26ed7ac178851f1",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/research/locales/en-US.json": {
+      "sha256": "bd17fb0d8915afd7a68daef3689ffa1736dccefe8e1611e34aae0dca8c041098",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/research/locales/zh-CN.json": {
+      "sha256": "a932ee843565c2a0a94561b841d76d34cda340b802699712e29a0e660196405d",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/research/panel.yaml": {
+      "sha256": "f39efd6fb76ca9c9ae814f10b87db2f1b9aff6445770eea216cb130dacc81441",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/research/reference/artifact-contract.md": {
+      "sha256": "ab59eeb9cbf30d4d04277359ee513889835d5b0473155a416af50bf6e0af87fe",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/research/reference/conclusion-example.html": {
+      "sha256": "2d80640c64bcc24b8f64001c2adba78abcdf6bfd3ac15ab24b44f9eed14fef97",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/research/reference/conclusion-template.html": {
+      "sha256": "a90a2c28759b7deacd6e551646f09353404c91cd56ff0bdf51be6fd37305da5e",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/research/reference/preview.json": {
+      "sha256": "e8b3c6805a13b1d1f827aca76e57ca1cd4dc85ae7446c4c340e7f2fd3f4d6ec4",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/research/reference/trusted_sources.md": {
+      "sha256": "b2e83346b2485086423237a61ef606e80bddb4472546ccd2cb614c221bf6ef0e",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/research/schema.yaml": {
+      "sha256": "5e860ea59c8184622779cd279d4c9bc7d34eac656519baaa63afcbece944516d",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/research/scripts/research.mjs": {
+      "sha256": "eef86802816112f93b81f373274c7a30cbc37292953a9bd2ff18deb1f28bc062",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/research/skill.yaml": {
+      "sha256": "2a75c77416d84bfa7752c0cb68b0d4ed75348d0a5034754834744dbc8dd6e4a3",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/research/validation.yaml": {
+      "sha256": "59e432d7ba9690d83f098c3af3addc4c20a01a1f29b9b96021ad82085f1ccb15",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/role_access/SKILL.md": {
+      "sha256": "1924b7e654f1d232a84ff980f5e12308c91c6f977908e219766074a902a442fa",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/role_access/locales/en-US.json": {
+      "sha256": "536f2c094b74682f7a80b7055f94893abf7a16f154371d89e7816a423531d59a",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/role_access/locales/zh-CN.json": {
+      "sha256": "bbd08d05f7608e40a1e4b92101f777b4e5891fa8fcbf2f5acfb555b483b4a449",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/role_access/panel.yaml": {
+      "sha256": "2e874d3c1d51c158859b8be118dcefef28e83d7713995ef95c84799b5494792f",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/role_access/reference/artifact-contract.md": {
+      "sha256": "fb02b733eb38b31d7809dbb9b88cbc08531e124210820e8d1b662f4b4358a053",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/role_access/reference/canvas-guide.md": {
+      "sha256": "c662d3ad8fe1b843f54cde58a3759d8d79fdbf2341187b6ceca88a97d55d6f29",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/role_access/reference/example.json": {
+      "sha256": "920354e24d77eacb24af7de94a9818504b4ae78918dd727835f1a11e68b0e6a9",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/role_access/reference/preview.json": {
+      "sha256": "920354e24d77eacb24af7de94a9818504b4ae78918dd727835f1a11e68b0e6a9",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/role_access/schema.yaml": {
+      "sha256": "29a59b981c2fbc383f50f478d12a22770885feb373624c282c9e178dcf39e85c",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/role_access/skill.yaml": {
+      "sha256": "6b0d766b2dbf1558f37f087c02701a5339954d382076c3d9cd9e277de5d62ec0",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/role_access/validation.yaml": {
+      "sha256": "1938c94cfe98531a301145c64547fb510b1c466e1bfacd199092c52e7a7187ac",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/smart_questions/SKILL.md": {
+      "sha256": "2e87ee86b84089438d3d6088a58f082c46c5383e4b8c6704c661a7912738e841",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/smart_questions/locales/en-US.json": {
+      "sha256": "1e7664ebb1301a7882f8b90bcef47471be967241885ba7f67aed78774812340b",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/smart_questions/locales/zh-CN.json": {
+      "sha256": "2ddf9cf9dc9cda8546ca2c185d615a342b14cdc9234690161005364dd3e8d9ad",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/smart_questions/panel.yaml": {
+      "sha256": "232ec5a19bb503690275a4c8bf994c6576367423d80b54f8cb419cd932179c85",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/smart_questions/reference/artifact-contract.md": {
+      "sha256": "0168fb2450ced94e826c614159579b7e07ff1bac4e5076e3848d5ca2872ff627",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/smart_questions/reference/preview.json": {
+      "sha256": "8618a8bb7008274ab83bae46b614df545ab05317d7b84a4350f7be8d9b22b9f2",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/smart_questions/schema.yaml": {
+      "sha256": "a2d7dcd2b1b74d626df0fe8985485e4873554516515bfc40bdeab4f1e429ecb4",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/smart_questions/skill.yaml": {
+      "sha256": "647ada1e624de57e2d9cdcd319b6221c4a7782f8a093413f6522fa8f7d46a77a",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/smart_questions/validation.yaml": {
+      "sha256": "463ce3317221e5b5cfc18d557bb0f4c044b043a96581b9b32c4645035d45eeac",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/web_app_prd_assembly/SKILL.md": {
+      "sha256": "755c91491a78eb2db91eee8f270c6209e646343822bbed08ddaf4c460ee9a91a",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/web_app_prd_assembly/locales/en-US.json": {
+      "sha256": "e51680f5a1a739c5d96a88b4b2b7a4084e18536798456566f6edd23e6f75fc62",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/web_app_prd_assembly/locales/zh-CN.json": {
+      "sha256": "053d3d0a95ae98c58733284858b56beb348d58cbd4019acd24482179d240d7ee",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/web_app_prd_assembly/panel.yaml": {
+      "sha256": "530f3e13c66e15dd1cffbb6059044f20c5959fb86ee1a8674dd7c33b387988de",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/web_app_prd_assembly/reference/artifact-contract.md": {
+      "sha256": "6381c383596ece8762c0b602038d66d6ce69ec1ea90afa952d440c79cb7169fd",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/web_app_prd_assembly/reference/prd-example.html": {
+      "sha256": "b0346d2744fc969e112cb349367192a9ecedd7ab34cb135ac2b9ea8b51ff41b1",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/web_app_prd_assembly/reference/prd-template.html": {
+      "sha256": "fc43a90278700e55d7e14e99602f1283eedf64866e3645ad9128c6f9b5f635e3",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/web_app_prd_assembly/reference/preview.json": {
+      "sha256": "dd9c3a0921925f9da92310e23cd772cd824e0bbd725fbe6769a34a4d92b01438",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/web_app_prd_assembly/schema.yaml": {
+      "sha256": "a216bf0e288faf3576486617823b130b9635abec93b4d7b261f4311509fb077d",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/web_app_prd_assembly/scripts/prd.mjs": {
+      "sha256": "1f1f44845f5ed8e9471d07215c639438ca008a81c7e902a1161281c0b3fbed04",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/web_app_prd_assembly/scripts/visual-renderer.mjs": {
+      "sha256": "5e9deac70fd6a921662117583731e18afb16d38c1e63e62bd96356b703b959bf",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/web_app_prd_assembly/scripts/whiteboard-export.mjs": {
+      "sha256": "a1a0e4bd16226b07297ef02e8d280b6f7b0645abd2b9fec454c5acb67ae2bf9d",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/web_app_prd_assembly/skill.yaml": {
+      "sha256": "879a81d095a4daeee20ceb66d88192f876191d9e01b299d0cff0f23ce26353f1",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/web_app_prd_assembly/validation.yaml": {
+      "sha256": "e75c416a62ada26da94cf3c61fad352eea90f89d50d305854e15f5b9b818de10",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/whiteboard/SKILL.md": {
+      "sha256": "5d031dc4e1caf787a644dd6df0cb4767e20107e2d88f0d1dd1186ed696e594de",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/whiteboard/locales/en-US.json": {
+      "sha256": "33f7f8f7cd6944e65ebb281ae051cf4cce1b2d8cc5219747d5a9c63889b5e18f",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/whiteboard/locales/zh-CN.json": {
+      "sha256": "4d62f87eba622a6e7800db32b2d674dfee695af4b2380de9e34581cc16916547",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/whiteboard/panel.yaml": {
+      "sha256": "7d864ab87c4f2d60d879adcd3cfe64ce178c61429d6c27c8b6deef83507478f1",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/whiteboard/reference/artifact-contract.md": {
+      "sha256": "26bc68860124ee0c808000b7ccb5437b94e2b7390240f51c28f919682b5ca7a9",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/whiteboard/reference/canvas-guide.md": {
+      "sha256": "0f4dadcf0ffd13dc6f1afcc9125791413807073a29053146d771dc2fe30d60ce",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/whiteboard/reference/drawing-method.md": {
+      "sha256": "353bf10a1ae8aba3dea6d165ef05137902fa94a75e51cde651156c4a21f3a206",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/whiteboard/reference/geometry.md": {
+      "sha256": "557b04b67659eff988e46802c05d1dbf4b84ed0b3c2ba62ccae0e7722a975df3",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/whiteboard/reference/preview.json": {
+      "sha256": "33fc661f02c626c861c0a3224b1ce569c868d0a110de9874a830cc76075aa4d5",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/whiteboard/schema.yaml": {
+      "sha256": "35af8ba68e60fbca411ef41fa58cb799e8eedf4e2aae107da765305e9234bebb",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/whiteboard/scripts/scene.d.mts": {
+      "sha256": "ae7a04699ff75181c1809817efcc754af05cced0f7ec27486a779c77edbebd4b",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/whiteboard/scripts/scene.mjs": {
+      "sha256": "df95fffab4a9cba4ddf9b42af39c72f2f53bfacf3ae51b34be27666441567391",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/whiteboard/scripts/text-geometry.mjs": {
+      "sha256": "773b1c6b7d724dd4388e05433ea8ca90203866ffe7a64f8e30525dbc18ae635c",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/whiteboard/scripts/validate.mjs": {
+      "sha256": "92a4d3bf8bd954696b6ea1b5ed6405999cfb9ee9a80e722a3586cac30a61e829",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/whiteboard/skill.yaml": {
+      "sha256": "f11da9f62e9cc1bb0f36a35ecc32e3c81437cdc1314376f09584d108426ea6f7",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/bundles/whiteboard/validation.yaml": {
+      "sha256": "df32839f037695ce60cfc15f9345fca06720033b800ccbcbf4443b926b657e75",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/kit/kit.yaml": {
+      "sha256": "95355214687158a583847c3f3a3206908753efb35e85d5804cf35748aac19216",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/kit/mindset.md": {
+      "sha256": "f181252098765f61fe8c953dc72d12fd890726d63a57510f5061a556806fefef",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/design_kit/source.json": {
+      "sha256": "891a41a51dbdebaa503f381ecbfd4c438b6f31787aa760bc8f13a1acfe38df81",
+      "mode": "100644"
+    },
+    "design/yugoo-design-5146bee1-6328-473e-97a2-7915a98cf289/project.json": {
+      "sha256": "262e1145bcc29739d33527f477764b10ea4c4003d79db29cf6ea456b9ffab32c",
       "mode": "100644"
     },
     "docs/README.md": {
@@ -332,7 +1316,7 @@
       "mode": "100644"
     },
     "docs/panel-uiux-standard.md": {
-      "sha256": "9de47e0d58f4df67771577b601016269d862579b917ed93546f68a6f105f11a1",
+      "sha256": "52c9a6767c4c18af489dcc078f66107867c45616f73144c8abdfe26373fbc7b2",
       "mode": "100644"
     },
     "docs/panel-unread.md": {
@@ -352,7 +1336,7 @@
       "mode": "100644"
     },
     "docs/public-document-sync.md": {
-      "sha256": "c94f6ea2931cc5ff4e618f9599f251a667ae79d4afbb3a04da8f7a98e64761e0",
+      "sha256": "7ab573902d7b06ebe5f64981a9f4c8381766501598d621a0ef8b39c2b0cd2852",
       "mode": "100644"
     },
     "docs/standalone-roadmap.md": {
@@ -364,7 +1348,7 @@
       "mode": "100644"
     },
     "docs/testing/agentic-e2e.md": {
-      "sha256": "23cbb72ca38855d70f87846d7656e730f0bbc979dca5d0605e77b0436d9d609a",
+      "sha256": "9f83fdd3c1ff638cabcb3d7faaa9660fed8b3e715e63464b2aec37b5df8b4a7b",
       "mode": "100644"
     },
     "docs/ust-score-explanations.md": {
@@ -408,7 +1392,7 @@
       "mode": "100644"
     },
     "docs/wiki/extending.en.md": {
-      "sha256": "523dbb4ea86447e18a4f1f3d3ab67e2272e1ba86f446a4651ffe12a9ffd2cb0e",
+      "sha256": "a6ae045518845245214dd8c5de39a6e0efb65038f26b8de040a0e34314b1283a",
       "mode": "100644"
     },
     "docs/wiki/extending.md": {
@@ -1716,7 +2700,7 @@
       "mode": "100644"
     },
     "packages/companion/src/studio.mjs": {
-      "sha256": "e28a0307affe8d7dfee3f1179161adb2b38f5f2afd1cd5d5024b44a1e9f40684",
+      "sha256": "abd724a22114406e6f82990e2090e650a65b6a91ac38aff43e4cbd5f11303dcb",
       "mode": "100644"
     },
     "packages/companion/src/trial-panel-bridge.ts": {
@@ -2424,7 +3408,7 @@
       "mode": "100644"
     },
     "packages/companion/test/studio-instance-composition.test.mjs": {
-      "sha256": "e97b87a6bf44d1c7c8bacdb447098e6f139d73931f4e67093cd36f43d6bb3ff9",
+      "sha256": "f5da09a09cafc009777a9fa208dd47eed6c3b6da678c3d62e85c436908b17eda",
       "mode": "100644"
     },
     "packages/companion/test/studio-instances-browser.mjs": {
@@ -2464,7 +3448,7 @@
       "mode": "100644"
     },
     "packages/companion/test/studio.test.mjs": {
-      "sha256": "3cc24a945b15fc387ac967630771b6ab0fadcffceb44c5242ddf020d087c12ac",
+      "sha256": "539f6222a7a24ae5c8e4599868973fc66e23d8b41b0f1a5003bef0d712c94c92",
       "mode": "100644"
     },
     "packages/companion/test/style-loader-source-privacy.test.mjs": {
@@ -9412,7 +10396,7 @@
       "mode": "100644"
     },
     "packages/studio-ui/src/InstanceWorkbench.tsx": {
-      "sha256": "e7230a21e11543544eb6e2a004785cd4d20f32e176a997a63f4a4d44540de18c",
+      "sha256": "c59fa6a8647b14d7aa7f2c4357ce55b6a707f2c6a964d30004feddc25837312d",
       "mode": "100644"
     },
     "packages/studio-ui/src/KitFiles.tsx": {
@@ -9544,7 +10528,7 @@
       "mode": "100644"
     },
     "packages/studio-ui/tests/instance-presentation.test.mjs": {
-      "sha256": "aaf2dae82ce31f1f164bf48315a7d41bd98ee0580692600abef0e2ec78e9722e",
+      "sha256": "d52c427f5a7ff4148a88f70249d7dabe947713f72a5d7bd6b97c559187fe675a",
       "mode": "100644"
     },
     "packages/studio-ui/tests/instance-source-changes.test.mjs": {
@@ -9608,7 +10592,7 @@
       "mode": "100644"
     },
     "packages/studio/README.md": {
-      "sha256": "00ed4092b9a0d79ee3035c7fcec19b72fa5f31cb3a1c0168f2df91574fee103e",
+      "sha256": "a50d8a235c8a25b95e13538f1eb17210f4f9a1299cb24b17d0c02ec874b0b6c3",
       "mode": "100644"
     },
     "packages/studio/THIRD_PARTY_NOTICES.md": {
@@ -9668,7 +10652,7 @@
       "mode": "100644"
     },
     "packages/studio/src/node/studio-instance-composition.mjs": {
-      "sha256": "a4f7dfa9d6de993d7153f4820f1d4b9a25d379fb885a907f2acb519d7ba1c951",
+      "sha256": "affff15b51c5aea80bd9484b1c08ae9e4bf246f85bb95a148aa3b42ff95e95b4",
       "mode": "100644"
     },
     "packages/studio/src/node/studio-instances.d.mts": {
@@ -9704,7 +10688,7 @@
       "mode": "100644"
     },
     "packages/studio/src/panel-preview.ts": {
-      "sha256": "da59fa5ae7d47249148b1295a3517f2288e7079441c3d277d2e18720128e6d1b",
+      "sha256": "9bf43ffb627d82a5d79f6200863edffdd404456e7e1095de5e88a5696d7c97c1",
       "mode": "100644"
     },
     "packages/studio/src/snapshot.ts": {
@@ -9776,7 +10760,7 @@
       "mode": "100644"
     },
     "packages/studio/tests/panel-preview.test.mjs": {
-      "sha256": "dcbba5eb60e452a5d3ebfaab8858e944c038b05f5d14122e17d21addc81e54d5",
+      "sha256": "06273391a1e24c72dec9c02f01049985c289c0e0a4887f89008bc6184f8c359f",
       "mode": "100644"
     },
     "packages/studio/tests/sample-artifacts.test.mjs": {
@@ -9816,7 +10800,7 @@
       "mode": "100644"
     },
     "release/product.json": {
-      "sha256": "11c5ff967681aab6137c3e0c5e45e4284ef5505f7ace9410f8d308231bf5a323",
+      "sha256": "840e721f810b9b4baa0b385f56103c9d169959aa469ba75967800765cb40baf3",
       "mode": "100644"
     },
     "release/public-source-baseline.json": {
@@ -9824,7 +10808,7 @@
       "mode": "100644"
     },
     "release/public-source-policy.json": {
-      "sha256": "3595cb493c4d91dabeb180d088b8cde6184a812111ef447e3348fc5c6f45931a",
+      "sha256": "9b80a5d2c5ff256088f18ddc3ae31affea84f7690675da73136a68368bab8d0c",
       "mode": "100644"
     },
     "release/public-source-test-selection.json": {

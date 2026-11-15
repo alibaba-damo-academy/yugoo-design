@@ -1,0 +1,475 @@
+{
+  "skill_name": "function_modules",
+  "functions": {
+    "F-001": {
+      "function_id": "F-001",
+      "function_name": "管理本地设计项目",
+      "function_description": "创建、打开和切换有独立身份及版本记录的本地设计项目，让设计持续存在于会话之外。",
+      "function_epic": "项目与设计资料",
+      "source": "ai",
+      "reason": "依据：docs/system-design-baseline.md“Design projects and persistence”；docs/wiki/project-files.md；Core项目命令。",
+      "details": {
+        "situation": "用户开始一个产品设计，或在另一原生会话继续已有设计。",
+        "behaviors": {
+          "B-001": {
+            "description": "显式选择项目，文件、面板、执行和建议都围绕同一项目。"
+          },
+          "B-002": {
+            "description": "打开已有项目恢复已保存资料；切换工作目录不自动切换项目。"
+          },
+          "B-003": {
+            "description": "从项目列表删除登记不递归删除原文件和历史。"
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "会话与项目绑定由宿主管理，不能用最近打开的目录猜项目；本地项目以自身文件和Git记录为依据。"
+          }
+        },
+        "exceptions": {
+          "E-001": {
+            "condition": "项目资料缺失或Kit暂不可用",
+            "response": "仍可恢复会话和项目身份，说明具体不可用的操作，保留浏览、普通修订与修复入口。"
+          }
+        }
+      }
+    },
+    "F-002": {
+      "function_id": "F-002",
+      "function_name": "选择与维护项目设计方法",
+      "function_description": "为项目采用Kit和Bundle，并在不覆盖既有设计的前提下维护项目自己的完整定义。",
+      "function_epic": "项目与设计资料",
+      "source": "ai",
+      "reason": "依据：docs/project-content-upgrade.md；AGENTS项目自有定义与Studio库隔离约定。",
+      "details": {
+        "situation": "用户为产品选择设计方法，或需要调整项目中的领域方法与字段。",
+        "behaviors": {
+          "B-001": {
+            "description": "项目保有自己的方法、schema、Panel、校验与资源。"
+          },
+          "B-002": {
+            "description": "内容库修改不会悄悄替换已有项目的定义。"
+          },
+          "B-003": {
+            "description": "获准的项目定义修改沿普通文件编辑和现有校验完成，保留用户定制与引用。"
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "来源版本是溯源信息，不把版本升级、重新挂载或另行发布变成本地修改的前提。"
+          }
+        }
+      }
+    },
+    "F-003": {
+      "function_id": "F-003",
+      "function_name": "按需协作完成设计",
+      "function_description": "在原生Agent会话中按用户目标选择合适Bundle，生成或修订对应设计并交回可继续工作的结果。",
+      "function_epic": "人机协作",
+      "source": "ai",
+      "reason": "依据：Web App Kit mindset；docs/system-design-baseline.md执行责任边界。",
+      "details": {
+        "situation": "用户提出一个明确设计结果或希望修订当前产品的一部分。",
+        "behaviors": {
+          "B-001": {
+            "description": "Bundle彼此独立，选择依据是当前任务及所需证据，而非固定阶段清单。"
+          },
+          "B-002": {
+            "description": "执行位置遵循当前Bundle声明，主会话或真实原生子Agent承担同一领域方法。"
+          },
+          "B-003": {
+            "description": "执行者阅读方法与输出契约，在授权范围内维护规范数据，校验后记录结果。"
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "工具可见、schema存在或一个关键词都不等于用户授权；不新增第二模型客户端或一般权限层。"
+          }
+        },
+        "exceptions": {
+          "E-001": {
+            "condition": "必要资料或Host能力不可用",
+            "response": "说明缺口并保留现有内容；允许继续不依赖该能力的设计，不假造子Agent或成功执行。"
+          }
+        }
+      }
+    },
+    "F-004": {
+      "function_id": "F-004",
+      "function_name": "在共享面板阅读和改写设计",
+      "function_description": "以适合真实信息的表单、卡片、图形及详情，让用户直接理解并修改同一份设计。",
+      "function_epic": "人机协作",
+      "source": "ai",
+      "reason": "依据：docs/panel-uiux-standard.md；AGENTS共享Panel与独立字段价值约定。",
+      "details": {
+        "situation": "用户审阅Agent结果，选择记录并补充或改写内容。",
+        "behaviors": {
+          "B-001": {
+            "description": "所有Kit共用导航、文字、间距、控件及状态基础。"
+          },
+          "B-002": {
+            "description": "图和详情编辑同一规范数据，选择、折叠与视图切换保留当前上下文。"
+          },
+          "B-003": {
+            "description": "每个独立编辑字段服务具体决定；普通说明、依据与未决问题优先由同一备注承载。 必填标记按既有required/required_in及所属分区表达，须与实际schema/validation的条件和阶段一致，不能根据空值推断要求。字段帮助只补充标签无法表达且有助判断的格式、边界、后果或例子；操作必需的信息直接可见，补充解释才按需打开。"
+          },
+          "B-004": {
+            "description": "保存前可取消当前编辑；长内容有可到达末尾的正常滚动路径。"
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "不因存储分区创建多层内部Tab；领域作者不能复制公共控件或用局部CSS重造基础。"
+          }
+        }
+      }
+    },
+    "F-005": {
+      "function_id": "F-005",
+      "function_name": "保存修改并交回原生会话",
+      "function_description": "把修改持久保存，并将本次已保存的变化交给原会话继续协作。",
+      "function_epic": "人机协作",
+      "source": "ai",
+      "reason": "依据：docs/system-design-baseline.md保存与交接；docs/panel-uiux-standard.md反馈映射；H05/普通接续修复契约。",
+      "details": {
+        "situation": "用户在Panel修改设计后选择保存并继续。",
+        "behaviors": {
+          "B-001": {
+            "description": "保存校验与持久化使用现有项目版本流程，保留用户输入。"
+          },
+          "B-002": {
+            "description": "保存结果与会话通知结果分别呈现。"
+          },
+          "B-003": {
+            "description": "确认未提交的通知沿既有会话操作恢复，不重复保存；真实发送后结果未知时不自动重放。"
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "不增加常驻接续恢复条、不因通知失败撤销保存，也不以“排入队列”宣称原Agent已消费。"
+          }
+        },
+        "exceptions": {
+          "E-001": {
+            "condition": "文件已保存但原生输入通道不可用",
+            "response": "在原保存操作已有反馈位置说明已保存及确定未提交事实；通道不可用时不假称消息已发到原对话，不占项目名或U/S/T标题栏、不增加常驻恢复条。通道恢复后只处理原通知；若真实发送已开始但结果未知，不自动重放。"
+          }
+        }
+      }
+    },
+    "F-006": {
+      "function_id": "F-006",
+      "function_name": "阅读产物与体验场景",
+      "function_description": "在设计上下文中查看报告、页面及场景，并把讨论返回对应设计。",
+      "function_epic": "人机协作",
+      "source": "ai",
+      "reason": "依据：Kit mindset体验与页面责任；docs/panel-uiux-standard.md报告/预览/Scene约定。",
+      "details": {
+        "situation": "用户需要判断设计方案是否表达自己的意图。",
+        "behaviors": {
+          "B-001": {
+            "description": "区分规范事实与由其组装的报告、PRD、预览和体验产物。"
+          },
+          "B-002": {
+            "description": "普通阅读、局部缩放和视图切换不改写规范事实。"
+          },
+          "B-003": {
+            "description": "对产物的反馈由原会话协调回所属设计，不另存一套图形详情数据。"
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "示例交互不代表真实业务服务或已完成运行验收；工具明暗不覆盖产物自身的品牌与内容颜色。"
+          }
+        }
+      }
+    },
+    "F-007": {
+      "function_id": "F-007",
+      "function_name": "统一界面语言和外观",
+      "function_description": "显式切换系统公共界面的中英文与浅深主题，保留设计内容和工作位置。",
+      "function_epic": "界面与可用性",
+      "source": "ai",
+      "reason": "依据：用户国际化与图标反馈；docs/panel-uiux-standard.md界面偏好及按钮尺度。",
+      "details": {
+        "situation": "用户在DSH、Companion或Studio中希望自己选择界面语言和明暗。",
+        "behaviors": {
+          "B-001": {
+            "description": "语言与主题入口沿各宿主既有共享控件和设置owner保存。"
+          },
+          "B-002": {
+            "description": "语言只作用于系统公共部分，不翻译Agent产物或用户填写的设计。"
+          },
+          "B-003": {
+            "description": "关系画布初始跟随页面，允许已有局部外观选择和恢复跟随。"
+          },
+          "B-004": {
+            "description": "普通操作图标按16px可见图形与32px点击目标区分；已确认的紧凑动作和身份图标保留各自角色。 Panel顶部保持固定高度；宽度不足时整体隐藏项目名、U/S/T及过期提示组成的信息行，不换行撑高，也不把错误放进该位置。"
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "16px图形与32px点击目标是已确认并在共享源码修正的普通操作尺度；不据此宣称全部已发布包或Host已验收。"
+          }
+        },
+        "exceptions": {
+          "E-001": {
+            "condition": "偏好保存失败",
+            "response": "保留当前工作，以一条可读说明和原有重试入口表达未保存影响；Companion仅面板模式展开原侧栏容纳反馈。"
+          }
+        }
+      }
+    },
+    "F-008": {
+      "function_id": "F-008",
+      "function_name": "查询可追溯的设计知识",
+      "function_description": "从原生设计事实、产物及有依据的关系中定位相关内容，并能回到原始来源核对。",
+      "function_epic": "知识与质量",
+      "source": "ai",
+      "reason": "依据：docs/design-project-knowledge-lifecycle.md；docs/design-knowledge-source-policy.md；AGENTS的KAG来源约定。",
+      "details": {
+        "situation": "用户或Agent需要理解跨设计项的联系，判断某条结论是否有依据。",
+        "behaviors": {
+          "B-001": {
+            "description": "KAG区分原生设计来源、派生关系、提议及人的决定。"
+          },
+          "B-002": {
+            "description": "查询保持项目、版本和来源范围，不能把相似度或缺少命中当作确认或不存在。"
+          },
+          "B-003": {
+            "description": "原生设计与中立知识归档随项目保留；本机数据库与向量索引可重建。"
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "PRD和模型摘要不是新增独立知识源；知识不可用不阻止读取DesignFiles继续工作。"
+          }
+        },
+        "exceptions": {
+          "E-001": {
+            "condition": "图谱部分、过期或语义能力不可用",
+            "response": "说明覆盖范围与新鲜度，沿原始设计文件查证，不虚构完整结果或为了读文件强制重建。"
+          }
+        }
+      }
+    },
+    "F-009": {
+      "function_id": "F-009",
+      "function_name": "查看构思完成度",
+      "function_description": "在原有位置了解U/S/T评估、评估依据和失效状态，判断设计还缺什么。",
+      "function_epic": "知识与质量",
+      "source": "ai",
+      "reason": "依据：docs/system-design-baseline.md Clarity；docs/panel-uiux-standard.md构思完成度。",
+      "details": {
+        "situation": "用户希望了解当前设计的可理解、结构化和可验证程度。",
+        "behaviors": {
+          "B-001": {
+            "description": "评估依据实际设计与已有版本，不从聊天中猜分数。"
+          },
+          "B-002": {
+            "description": "未成功得到新评估时保留原记录并标明上次结果；从未评估不显示虚构零分。"
+          },
+          "B-003": {
+            "description": "评估结果、进行中状态及详细理由清楚区分。"
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "评分是辅助判断，不是执行、保存、发布或继续设计的门槛；此整理没有产生评分。"
+          }
+        }
+      }
+    },
+    "F-010": {
+      "function_id": "F-010",
+      "function_name": "审阅并处理设计建议",
+      "function_description": "阅读Grounding、Reflection和Alignment建议，在理解依据后决定接受、拒绝或延后。",
+      "function_epic": "知识与质量",
+      "source": "ai",
+      "reason": "依据：docs/design-project-knowledge-lifecycle.md；docs/system-design-baseline.md GRA与建议处理。",
+      "details": {
+        "situation": "用户需要发现事实不一致、遗漏线索或意图偏离，而不希望后台直接改设计。",
+        "behaviors": {
+          "B-001": {
+            "description": "G/R/A独立审阅已保存证据，结果进入现有建议区。"
+          },
+          "B-002": {
+            "description": "建议、用户处理决定和规范设计修改是不同事实。"
+          },
+          "B-003": {
+            "description": "接受建议通过普通原生会话交接，只有授权目标执行才改所属设计。"
+          },
+          "B-004": {
+            "description": "保留用户现有审查策略，后台状态读取不自行启动审阅。"
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "后台评审不能修改规范设计、提问状态或把结果自动当成用户确认；能力不可用要如实呈现。"
+          }
+        },
+        "exceptions": {
+          "E-001": {
+            "condition": "审阅状态或存储不可读",
+            "response": "在受影响的原状态区显示错误，不显示健康空队列，也不阻止无关编辑与保存。"
+          }
+        }
+      }
+    },
+    "F-011": {
+      "function_id": "F-011",
+      "function_name": "在Studio创作和维护设计方法",
+      "function_description": "创建、编辑、保存、预览及分享Kit和Bundle，让领域方法在项目之外可复用。",
+      "function_epic": "创作与交付",
+      "source": "ai",
+      "reason": "依据：CONTRIBUTING.md Studio边界；docs/system-design-baseline.md Studio；AGENTS原地修复与项目定义隔离。",
+      "details": {
+        "situation": "作者希望整理新的领域方法或改善现有Bundle表达。",
+        "behaviors": {
+          "B-001": {
+            "description": "Kit和Bundle源文件由同一当前保存状态维护，草稿可保存并原地修正。"
+          },
+          "B-002": {
+            "description": "原生Agent协助创作，源码、预览和错误反馈保持同一上下文。"
+          },
+          "B-003": {
+            "description": "导入导出保留完整方法、schema、Panel、示例和许可信息。"
+          },
+          "B-004": {
+            "description": "项目采用定义后与内容库隔离，库中后续修改不静默影响该项目。"
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "共享Panel缺口在共享owner修，不因单一Bundle重建基础样式；未完成不等于不能保存。"
+          }
+        }
+      }
+    },
+    "F-012": {
+      "function_id": "F-012",
+      "function_name": "跨设计项协调修订",
+      "function_description": "在保留各Bundle事实所有权的前提下，发现并协调需要同步的设计修改。",
+      "function_epic": "人机协作",
+      "source": "ai",
+      "reason": "依据：Kit mindset事实所有权；AGENTS合作指南约定。",
+      "details": {
+        "situation": "一处事实变化影响功能、流程、数据、页面或验收等相关设计。",
+        "behaviors": {
+          "B-001": {
+            "description": "调用方说明冲突来源和需要目标owner处理的结果。"
+          },
+          "B-002": {
+            "description": "所属Bundle采用自己的方法与校验修订目标事实。"
+          },
+          "B-003": {
+            "description": "保留原标识、来源与人的决定，不把汇总报告作为反向覆盖依据。"
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "跨Bundle引用和图中连边不是写入其他Bundle的授权；没有事实冲突时不自动跑全链。"
+          }
+        }
+      }
+    },
+    "F-013": {
+      "function_id": "F-013",
+      "function_name": "从设计资料继续开发",
+      "function_description": "按本次开发任务读取已保存设计，形成可追溯的实现范围及验收依据。",
+      "function_epic": "创作与交付",
+      "source": "ai",
+      "reason": "依据：docs/system-design-baseline.md Design-to-development；native-execution开发交接说明。",
+      "details": {
+        "situation": "开发Agent依据设计实现或修订产品的一部分。",
+        "behaviors": {
+          "B-001": {
+            "description": "先核项目身份与已保存版本，读取与任务相关的能力、数据、权限、异常和反馈。"
+          },
+          "B-002": {
+            "description": "KAG可帮助定位，关键结论回到原DesignFiles与产物。"
+          },
+          "B-003": {
+            "description": "沿目标代码仓既有规约组织任务；缺失决定保持显式。"
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "设计资料不是自动代码授权；实现方案和派生开发规约不反向覆盖规范设计。"
+          }
+        }
+      }
+    },
+    "F-014": {
+      "function_id": "F-014",
+      "function_name": "分享和恢复本地设计资料",
+      "function_description": "携带完整项目资料继续设计，并区分持久事实与本机运行状态。",
+      "function_epic": "项目与设计资料",
+      "source": "ai",
+      "reason": "依据：docs/wiki/project-files.md；docs/design-project-knowledge-lifecycle.md。",
+      "details": {
+        "situation": "用户复制项目、迁移到另一台机器，或恢复一个已有设计。",
+        "behaviors": {
+          "B-001": {
+            "description": "保留项目身份、完整定义、规范设计、产物及实际产生的持久系统记录。"
+          },
+          "B-002": {
+            "description": "知识归档保留不可仅由原生文件重建的关系、提议及决定。"
+          },
+          "B-003": {
+            "description": "连接凭据、活跃执行句柄、投递状态和数据库缓存留在本机。"
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "复制项目不授予恢复旧原生任务的权利；归档文件存在也不证明当前Host能力或模型可用。"
+          }
+        }
+      }
+    },
+    "F-015": {
+      "function_id": "F-015",
+      "function_name": "在既有原生Host中使用设计能力",
+      "function_description": "通过已支持的Host入口使用同一项目格式和共享Panel，由Host管理模型与权限。",
+      "function_epic": "创作与交付",
+      "source": "ai",
+      "reason": "依据：docs/system-design-baseline.md Portable Kernel / Host Provider；CONTRIBUTING.md安装与验证边界。",
+      "details": {
+        "situation": "用户希望在日常Agent工具内完成设计，而不是为设计再配置一套账号和模型。",
+        "behaviors": {
+          "B-001": {
+            "description": "宿主负责会话身份、原生工具、子Agent及凭据；Core负责项目、设计语义与保存。"
+          },
+          "B-002": {
+            "description": "本地安装与升级沿正式已构建包和现有Host集成，不要求用户为了普通使用构建源码。"
+          },
+          "B-003": {
+            "description": "各Host分别说明已支持的能力与实际验证范围。"
+          }
+        },
+        "limits": {
+          "L-001": {
+            "description": "不把命令登记、页面打开、Hook收件等同完整设计消费；不同Host不得相互代证。"
+          }
+        }
+      }
+    }
+  },
+  "function_order": [
+    "F-001",
+    "F-002",
+    "F-003",
+    "F-004",
+    "F-005",
+    "F-006",
+    "F-007",
+    "F-008",
+    "F-009",
+    "F-010",
+    "F-011",
+    "F-012",
+    "F-013",
+    "F-014",
+    "F-015"
+  ]
+}

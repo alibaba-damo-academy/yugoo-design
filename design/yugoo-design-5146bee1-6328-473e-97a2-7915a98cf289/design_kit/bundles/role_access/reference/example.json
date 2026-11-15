@@ -1,0 +1,90 @@
+{
+  "schema_version": 5,
+  "title": "合成预览示例：请求处理角色",
+  "summary": "合成示例：单父多级继承保留原权限条件与验证；不是用户项目的授权事实。",
+  "roles": {
+    "ROLE-001": {
+      "id": "ROLE-001",
+      "title": "申请人",
+      "assignment_rule": "注册后自动拥有"
+    },
+    "ROLE-002": {
+      "id": "ROLE-002",
+      "title": "审核人",
+      "assignment_rule": "由管理员授予"
+    },
+    "ROLE-003": {
+      "id": "ROLE-003",
+      "title": "主审核人",
+      "assignment_rule": "由管理员明确授予主审角色"
+    }
+  },
+  "role_order": [
+    "ROLE-001",
+    "ROLE-002",
+    "ROLE-003"
+  ],
+  "policies": {
+    "AP-001": {
+      "id": "AP-001",
+      "title": "允许修改请求",
+      "role_ref": "ROLE-001",
+      "capability": "修改请求",
+      "effect": "allow",
+      "applies_when": "仅限本人创建且尚未通过的请求",
+      "requirements": [
+        "confirm",
+        "reauthenticate",
+        "custom"
+      ],
+      "custom_requirement": "核对请求归属后才能修改"
+    },
+    "AP-002": {
+      "id": "AP-002",
+      "title": "允许审核请求",
+      "role_ref": "ROLE-002",
+      "capability": "审核请求",
+      "effect": "allow",
+      "applies_when": "请求处于待审核状态",
+      "requirements": [
+        "confirm"
+      ],
+      "custom_requirement": ""
+    },
+    "AP-003": {
+      "id": "AP-003",
+      "title": "允许导出审核记录",
+      "role_ref": "ROLE-003",
+      "capability": "导出审核记录",
+      "effect": "allow",
+      "applies_when": "仅限本人负责的审核范围",
+      "requirements": [
+        "confirm"
+      ],
+      "custom_requirement": ""
+    }
+  },
+  "policy_order": [
+    "AP-001",
+    "AP-002",
+    "AP-003"
+  ],
+  "inheritances": {
+    "RI-001": {
+      "id": "RI-001",
+      "title": "继承权限",
+      "kind": "inherits",
+      "source": "ROLE-002",
+      "target": "ROLE-001",
+      "description": "合成例：审核人保留申请人自有请求的操作条件与验证要求。"
+    },
+    "RI-002": {
+      "id": "RI-002",
+      "title": "继承权限",
+      "kind": "inherits",
+      "source": "ROLE-003",
+      "target": "ROLE-002",
+      "description": "合成例：主审核人复用审核权限，不继承审核人的授予规则。"
+    }
+  }
+}

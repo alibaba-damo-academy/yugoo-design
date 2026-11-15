@@ -1,0 +1,43 @@
+# business_rules semantic validation translated from schema.py and deliverables.py.
+skill: business_rules
+
+rules:
+  - id: empty
+    scope: [state]
+    code: business_rules.empty
+    message: "At least one business rule is required."
+    check: { non_empty_map: rules }
+
+  - id: empty_order
+    scope: [state]
+    code: business_rules.empty_order
+    message: "rule_order is empty, so no business rule can render."
+    check: { non_empty_list: rule_order }
+
+  - id: rule_key_mismatch
+    scope: [state]
+    code: business_rules.rule_key_mismatch
+    message: "business rule mapping key {key} must equal its id"
+    check: { map_keys_match_field: { map: rules, field: id } }
+
+  - id: invalid_rule_order
+    scope: [state]
+    code: business_rules.invalid_rule_order
+    message: "rule_order must contain business rule {key} exactly once"
+    check: { order_exactly_covers_map: { order: rule_order, map: rules } }
+
+  - id: empty_title
+    scope: [completion]
+    code: business_rules.empty_title
+    message: "business rule {key} has no title"
+    check:
+      for_each_in_order: { order: rule_order, map: rules }
+      non_empty_string: title
+
+  - id: empty_outcome
+    scope: [completion]
+    code: business_rules.empty_outcome
+    message: "business rule {key} has no outcome"
+    check:
+      for_each_in_order: { order: rule_order, map: rules }
+      non_empty_string: outcome
