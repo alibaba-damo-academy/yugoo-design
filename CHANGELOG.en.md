@@ -4,7 +4,15 @@
 
 This log summarizes major features, noticeable experience changes, and installation or upgrade improvements in the Yugoo Design repository, organized by version. It omits small adjustments and internal refactoring. See the [Git commit history](https://github.com/alibaba-damo-academy/yugoo-design/commits/main/) for the full changes.
 
-## [0.3.7](https://github.com/alibaba-damo-academy/yugoo-design/tree/v0.3.7)
+## [0.3.9](https://github.com/alibaba-damo-academy/yugoo-design/tree/4712577bca4d62e2dfc5e188680d812bb68b6381)
+
+- Remove redundant fixed short timeouts in the installer, reducing premature interruptions during slow installations while retaining actual failure handling and explicit cancellation.
+- When a capability is unavailable in Companion, only the operation that needs it is affected; the Panel remains available for browsing and repair. Report saving and sending to the original conversation as separate outcomes.
+- Improve narrow Panels and light/dark themes: keep the header height stable by hiding the project name, ideation index and reassessment prompt as their respective complete information groups when space is insufficient, rather than wrapping onto extra lines. Use shared typography and semantic colors for the Scene shell, and standardize glyph and click-target sizes for ordinary icon actions. Keep language and theme settings in the sidebar in Companion's Panel-only mode.
+- Browse read-only source and previews for mounted Bundles in Studio. Source views retain the original file content while previews use resolved content; an unavailable sample no longer hides source that has already been read.
+- Derive a Kit's Bundle list from its actual mount configuration instead of requiring a duplicate list in the Mindset. Preserve domain-method prose when editing mounts. Existing projects retain their own definitions, which can be revised as needed through the host's file editing; plugin updates do not replace them automatically.
+
+## [0.3.7](https://github.com/alibaba-damo-academy/yugoo-design/tree/1d44da63c1de6e49333a84f248cbd0dc38218819)
 
 - Let background reviews and WorkBuddy continuations wait for actual completion or connection closure, and keep active Panels open without a fixed lifetime. Preserve accurate not-submitted or unknown outcomes when a connection is lost, avoiding duplicate delivery.
 - Distinguish Studio draft saving from content validation, keeping unfinished changes saveable. Mount counts and selections reflect the actual source; independent imported snapshots no longer switch to same-name library content.
