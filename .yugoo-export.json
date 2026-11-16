@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "d2028869fe95e3c3a4778c1b07254ae81be1524f",
+  "revision": "be4cc2d649adadea787d96bdf3762f1439afd04e",
   "policySha256": "69deba1307e600a9b0405596e8d73df3e63f488f50c9e9d708ee09591f7ea269",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -1344,7 +1344,7 @@
       "mode": "100644"
     },
     "docs/system-design-baseline.md": {
-      "sha256": "96f4af862c95cdd2144951f78a2f499bb5683b5502d39f4ddf4b2b7f132ac586",
+      "sha256": "f1bb467cca42ca2b78f4733b724b33ad7aab7ff7786ccf5fe9cc7bfd71f790d2",
       "mode": "100644"
     },
     "docs/testing/agentic-e2e.md": {
@@ -2968,7 +2968,7 @@
       "mode": "100644"
     },
     "packages/companion/test/experience-review-boundary.test.mjs": {
-      "sha256": "91f52078b4f79c26d28a40df2e93af34cd794bd40774b69dffce1bbaf65241c9",
+      "sha256": "0befb74f4184dd06e73e53a64d3199f0a821fdf4cae9495818d079756a673671",
       "mode": "100644"
     },
     "packages/companion/test/fixture.mjs": {
@@ -4132,7 +4132,7 @@
       "mode": "100644"
     },
     "packages/core/src/git.ts": {
-      "sha256": "61f680582e7dcb08cd224107a52db758ba0a1e5c2e1a7bed3a476e5fc83cce6a",
+      "sha256": "d39c2128a1b38768fa6519d9afee327c3dc650792e6fc441e0cb9536cc7cfc61",
       "mode": "100644"
     },
     "packages/core/src/ground-assertions.ts": {
@@ -4212,7 +4212,7 @@
       "mode": "100644"
     },
     "packages/core/src/panel-worktree.ts": {
-      "sha256": "73d7ddf722f529294d4c4baed24252a4a8653fb0408f52ee11e6e786593d321d",
+      "sha256": "eb15d865b319874e6b2a29977362003f7f56332d1a13349a613df194b9bd3309",
       "mode": "100644"
     },
     "packages/core/src/producer-project-workspace.ts": {
@@ -4764,7 +4764,7 @@
       "mode": "100644"
     },
     "packages/core/test/git-native-library-routing.test.mjs": {
-      "sha256": "c44fdfba37593389e85eb0b659f04cc7afe61549b62fadd6f6fa13f9556f417b",
+      "sha256": "fe5dbe05fa03cac967396e2e3e9d45cb9eeb137f0b132f91742679cda8179f3e",
       "mode": "100644"
     },
     "packages/core/test/git-native-status.test.mjs": {
@@ -4916,7 +4916,7 @@
       "mode": "100644"
     },
     "packages/core/test/panel-worktree-presentation.test.mjs": {
-      "sha256": "de8e2620efe95feb309988401ff2337931fc6818538b47a25bb567f20294c411",
+      "sha256": "bd75367e8d668648ef9a8bf79eac55fc869222bf52f5ad2a5ccc9077b4d756eb",
       "mode": "100644"
     },
     "packages/core/test/project-content.test.mjs": {

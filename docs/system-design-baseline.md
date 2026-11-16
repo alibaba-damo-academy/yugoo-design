@@ -188,6 +188,9 @@ repository and exact-file publication. Owning Bundle facts remain in
 documents and fragments use the existing shared preview renderer. Writing
 confirms saved bytes; publication checks that the requested files and captured
 sources exist and match, without a wrapper-tag completion gate.
+Retained legacy `design_files/_experiences/` output is also derived and remains
+excluded from review evidence identity. Opening an older project does not move
+or delete those files; ordinary Design Files still invalidate stale reviews.
 
 A **Design Project** is the durable unit that contains one designed product's state. It is independent of an Agent Host working directory. DSH sessions can open it today; future Codex and Claude Code adapters must open the same format without changing its identity or persistence semantics. A plugin-owned binding store records which project a Host conversation selected, keyed by the Host Provider identity and opaque Host conversation id. This store lives outside every Design Project because it is the bootstrap authority used to find that project; it contains no Design File or Kit content. Every Design File, panel operation, Bundle execution, advisory input pin, and DesignJournal association resolves the selected project through that binding rather than deriving a path from the Host's current working directory. Persisted advisory publications, human dispositions and review policy belong to the Design Project and travel with its Git history; active review queues, native execution bindings and notification ownership remain Host-conversation scoped. Switching projects cancels queued analysis for the prior selection and clears its review projection; opening an existing project in a new conversation restores Design Files but does not inherit another conversation's review queue.
 

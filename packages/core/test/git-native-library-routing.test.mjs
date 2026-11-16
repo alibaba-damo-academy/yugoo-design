@@ -173,6 +173,15 @@ test('native evidence fingerprint includes project metadata beyond the facade sc
   const derivedOnly = await publish(metadataOnly, 'scenarios/preview.html', '<p>derived</p>')
   assert.equal(await f.git.designEvidenceRevisionAt(derivedOnly), revised)
   assert.equal(await cli.designEvidenceRevisionAt(derivedOnly), revised)
+  const legacyDerived = await publish(derivedOnly, 'design_files/_experiences/demo/view.json', '{"version":"retained"}')
+  assert.equal(await f.git.designEvidenceRevisionAt(legacyDerived), revised, 'Retained legacy Scenario output is still derived')
+  assert.equal(await cli.designEvidenceRevisionAt(legacyDerived), revised)
+  const trackedDraft = await publish(legacyDerived, 'design_files/_experiences/demo/old/draft.json', '{"sources":{}}')
+  assert.equal(await f.git.designEvidenceRevisionAt(trackedDraft), revised, 'Tracked legacy drafts are also derived')
+  assert.equal(await cli.designEvidenceRevisionAt(trackedDraft), revised)
+  const ordinaryDesign = await publish(trackedDraft, 'design_files/questions/scenario.html', '<p>Business artifact</p>')
+  assert.notEqual(await f.git.designEvidenceRevisionAt(ordinaryDesign), revised, 'Ordinary Design Files remain evidence')
+  assert.equal(await f.git.designEvidenceRevisionAt(ordinaryDesign), await cli.designEvidenceRevisionAt(ordinaryDesign))
 })
 
 test('native list entry subranges apply the cap before unrelated traversal and retain facade-relative literal paths', async t => {

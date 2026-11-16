@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { fixture, threadId } from './fixture.mjs'
 import { createCompanionReviews } from '../src/reviews.mjs'
 import { createManagedReviewScheduler } from '../src/managed-reviews.mjs'
-import { writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { readDesignClarityAuthority, designProjectRecordsRoot } from '../../core/lib/index.js'
 import { callCompanion } from '../src/connection-file.mjs'
@@ -18,6 +18,39 @@ async function until(check) {
   for (let i = 0; i < 300; i++) { if (await check()) return; await new Promise(r => setTimeout(r, 10)) }
   throw new Error('Timed out')
 }
+
+test('manual native review accepts unchanged evidence with retained legacy drafts and rejects a real artifact edit', async () => {
+  const f = await fixture()
+  const call = (method, params = {}) => callCompanion(f.server.connectionPath, { method, params })
+  try {
+    const project = f.server.project
+    await project.savePanel({ skill: 'smart_questions', state: { questions: {} }, eventId: 'legacy-baseline' })
+    const drafts = ['first', 'second'].map(version => join(project.store.rootDir, '_experiences/demo', version, 'draft.json'))
+    for (const path of drafts) {
+      await mkdir(join(path, '..'), { recursive: true })
+      await writeFile(path, '{"sources":{}}')
+    }
+    const nativeRun = { runId: '00000000-0000-4000-8000-000000000097', parentRunId: threadId, transcriptPath: join(f.root, 'legacy-child.jsonl') }
+    await writeFile(nativeRun.transcriptPath, JSON.stringify({ type: 'session_meta', payload: { id: nativeRun.runId, cwd: f.options.projectRoot, source: { subagent: { thread_spawn: { parent_thread_id: threadId } } } } }) + '\n')
+    const prepare = async requestId => {
+      const batch = await call('recheckReviews', { requestId, profiles: ['grounding'], executionMode: 'background' })
+      assert.equal(batch.requests[0].dispatch, true)
+      const reviewId = batch.requests[0].reviewId
+      assert.equal((await call('readReview', { reviewId })).revisionChanged, false)
+      await call('bindReviewRun', { reviewId, nativeRun })
+      return reviewId
+    }
+    const reviewId = await prepare('legacy-drafts-unchanged')
+    await derived(project, 1)
+    assert.equal((await call('readReview', { reviewId })).revisionChanged, false, 'Current scenarios/ publication remains derived')
+    assert.equal((await call('submitReview', { reviewId, nativeRun, result: { schemaVersion: 1, inconsistencies: [] } })).status, 'completed')
+    for (const path of drafts) assert.equal(await readFile(path, 'utf8'), '{"sources":{}}', 'Recovery never deletes legacy files')
+    const changed = await prepare('real-artifact-change')
+    await writeFile(join(project.store.rootDir, 'smart_questions/scenario.html'), '<p>Actual Bundle output</p>')
+    assert.equal((await call('readReview', { reviewId: changed })).revisionChanged, true)
+    assert.equal((await call('submitReview', { reviewId: changed, nativeRun, result: { schemaVersion: 1, inconsistencies: [] } })).status, 'stale')
+  } finally { await f.close() }
+})
 
 test('native in-flight result and persisted card pins survive derived changes, not source edits', async () => {
   const f = await fixture()

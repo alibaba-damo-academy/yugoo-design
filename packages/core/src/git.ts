@@ -506,8 +506,9 @@ export class GitVersioning {
     const cached = this.evidenceRevisions.get(commit)
     if (cached !== undefined) return cached
     // Keep path, type, mode and blob identity, including binary artifacts and
-    // project metadata. Only the system-owned derived namespace is excluded.
-    const prefix = 'scenarios'
+    // project metadata. Both current and retained legacy Scenario namespaces
+    // remain derived; opening an older project does not migrate its files.
+    const derivedPrefixes = ['scenarios', 'design_files/_experiences']
     const stdout = this.nativeEnabled
       ? (await this.nativeTreeRecords(commit, signal, { fullRepository: true })).map(record => `${record}\0`).join('')
       : (await this.requireSuccess(['git', 'ls-tree', '-r', '-z', commit], signal)).stdout
@@ -518,7 +519,7 @@ export class GitVersioning {
       if (tab < 0) throw new Error('design git: invalid evidence tree entry')
       const path = record.slice(tab + 1)
       requireListedPath(path)
-      return path !== prefix && !path.startsWith(`${prefix}/`) && !isDesignProjectAuxiliaryPath(path)
+      return !derivedPrefixes.some(prefix => path === prefix || path.startsWith(`${prefix}/`)) && !isDesignProjectAuxiliaryPath(path)
     }).sort()
     const revision = createHash('sha256').update(JSON.stringify(evidence)).digest('hex')
     this.evidenceRevisions.set(commit, revision)
