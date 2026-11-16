@@ -9,6 +9,7 @@ const { renderDesignReviewDepth } = await import('../src/design-review-depth.ts'
 const { DesignAdvisoryJournal } = await import('../src/design-advisory-journal.ts')
 const { DesignJournalStorage } = await import('../src/design-journal-storage.ts')
 const { parseDesignAdvisory } = await import('../src/design-advisory.ts')
+const { officialAdvisoryProfile, OFFICIAL_GROUNDING_PROFILE, OFFICIAL_REFLECTION_PROFILE, OFFICIAL_ALIGNMENT_PROFILE } = await import('../src/official-advisory-profiles.ts')
 const item = {id:'i1',title:'missing permission',detail:'source A lacks permission',references:['a#/permission']}
 const advisory = {schemaVersion:1,id:'a1',profile:'design.grounding',items:[item]}
 
@@ -107,6 +108,28 @@ test('review history preserves disposition locators without injecting past machi
     assert.match(prompt, /Respect a still-valid rejection or no-action reason/)
     assert.match(prompt, /recorded Agent choice, not necessarily a direct user statement/)
     assert.doesNotMatch(prompt, /Reuse valid existing advice|reuse the existing ID|Before treating old advice as coverage|Return no new findings when/)
+  }
+})
+
+test('official review context keeps a deferred proposal paused without silencing new findings', () => {
+  const entry = {
+    ...memoryEntry(49), status: 'deferred', selection: undefined, executionStatus: undefined,
+  }
+  const memory = renderAdvisoryReviewMemory([entry])
+  assert.equal(JSON.parse(memory.split('\n')[1])[0].status, 'deferred')
+  // This checks delivery of the handling boundary, not a model's judgment.
+  // A native reviewer received the disposition but repeated its unchanged
+  // research proposal after an unrelated page wording edit.
+  for (const id of [OFFICIAL_GROUNDING_PROFILE, OFFICIAL_REFLECTION_PROFILE, OFFICIAL_ALIGNMENT_PROFILE]) {
+    for (const depth of ['light', 'standard', 'thorough']) {
+      const prompt = `${officialAdvisoryProfile(id).prompt}\n${renderDesignReviewDepth(depth)}\n${memory}`
+      assert.match(prompt, /deferral postpones that proposal until explicit user reconsideration or materially new relevant source evidence/)
+      assert.match(prompt, /new input revision or unrelated edit alone does not reopen a deferred proposal/)
+      assert.match(prompt, /explain the concrete new basis in the existing result fields/)
+      assert.match(prompt, /different issue or materially changed current finding must not be withheld/)
+      assert.match(prompt, /Pending, deferred and accepted-but-unfinished states do not establish repair/)
+      assert.match(prompt, /Publication owns exact duplicate filtering/)
+    }
   }
 })
 

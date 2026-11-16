@@ -4,6 +4,10 @@
 
 This log summarizes major features, noticeable experience changes, and installation or upgrade improvements in the Yugoo Design repository, organized by version. It omits small adjustments and internal refactoring. See the [Git commit history](https://github.com/alibaba-damo-academy/yugoo-design/commits/main/) for the full changes.
 
+## 0.3.15
+
+Correct background reviews' handling of deferred suggestions: unrelated design edits should not cause the same proposal to reappear. Revisit it only when the user explicitly reconsiders it or materially new relevant evidence changes its necessity, explaining that basis. Deferral does not mark the issue resolved or suppress different findings about the same object.
+
 ## 0.3.14
 
 - Restore the original Design Project using the native conversation's current working directory in Companion, retaining its history and reading boundary. Moving or archiving a conversation does not create another project.

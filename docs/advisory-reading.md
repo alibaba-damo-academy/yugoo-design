@@ -19,6 +19,13 @@ Publication time is not changed by accepting, rejecting or deferring advice.
 - Removing the selected card picks the nearest survivor. When none remain,
   show the empty state. Acceptance and execution authority are unchanged.
 
+Deferred advice remains unresolved, but its proposal is paused. A later review
+revisits it only when the user explicitly reconsiders it or materially new,
+relevant source evidence changes its necessity, explaining that basis in the
+existing finding fields. An unrelated edit or a new input revision alone does
+not reopen it. Different or materially changed findings about the same object
+remain reportable; publication still filters only exact duplicates.
+
 Validation: Panel `test:advisory-reading`, Design Journal/repository smokes,
 Core and Panel typechecks/builds, Companion typecheck and review tests.
 

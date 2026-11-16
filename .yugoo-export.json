@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "1a70129e1bc31c6ae1faed0b33d70da7a19157fb",
+  "revision": "a3bc1933024bdc5aaea24e21700be3c010be61cc",
   "policySha256": "3aed3fbf9c7994d64fe71c3e768be46ed5ddfa903b2974e03f998e7503633f51",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -104,11 +104,11 @@
       "mode": "100644"
     },
     "CHANGELOG.en.md": {
-      "sha256": "64ed3711aa467e56a72e7168f3f6e8f124f07365fe1ef2024dd60ce9e0f135f2",
+      "sha256": "581ac4da1a94979c4ff88a913012c038e4eda7332af5052d43d4a8690eaf110c",
       "mode": "100644"
     },
     "CHANGELOG.md": {
-      "sha256": "64576b399ba325a5aac57999c0dfd478e27344c5c9052219be27e2ebe26b3fe0",
+      "sha256": "22ddf7b506e65ba78538429e2b092ab20c7d04a4a701de66973dc91b346ca6d7",
       "mode": "100644"
     },
     "CONTRIBUTING.md": {
@@ -1132,7 +1132,7 @@
       "mode": "100644"
     },
     "docs/advisory-reading.md": {
-      "sha256": "ab5a2ad1bfa270083cfa3774b2e62bb9c9e99388b95dc4f4f87047672acc8bda",
+      "sha256": "b6097ed2594dd0d8057a3560f9e4e8430fe17adbef40656b85b780211eaac938",
       "mode": "100644"
     },
     "docs/bundle-contract.md": {
@@ -1348,7 +1348,7 @@
       "mode": "100644"
     },
     "docs/testing/agentic-e2e.md": {
-      "sha256": "a2861dba3cad5c6e47589fcf5b2e8d2858f3055006dd57045474efb348ebc7d1",
+      "sha256": "1ea58fe9bc7041e12c8ab5cc806d960411f3a5f78fd35a7827b20b80a6c525b8",
       "mode": "100644"
     },
     "docs/ust-score-explanations.md": {
@@ -3616,7 +3616,7 @@
       "mode": "100644"
     },
     "packages/core/src/advisory-review-memory.ts": {
-      "sha256": "76027a7466ceac59c3f08a3cd5224ad902ab80eb7201099c0033f521e296fe1a",
+      "sha256": "e0354af544e7c8b1f4da01032f688ae26b20a8c176d8aea15e1e8ff86db8ae99",
       "mode": "100644"
     },
     "packages/core/src/advisory-runtime-status.ts": {
@@ -4180,7 +4180,7 @@
       "mode": "100644"
     },
     "packages/core/src/official-advisory-profiles.ts": {
-      "sha256": "98b5595234b75b8f704364c1488afd732fcf8d4bf5d82d88101c54b01145eb0d",
+      "sha256": "65ab01e73a48e346cd692b3f445f06443db7cb73f8539f2ecb8923668d2bed30",
       "mode": "100644"
     },
     "packages/core/src/panel-authoring-reference.ts": {
@@ -4328,7 +4328,7 @@
       "mode": "100644"
     },
     "packages/core/test/advisory-review-memory.test.mjs": {
-      "sha256": "4e028d9edd6ba04343ac0702cc20b05cb7c2c89aad1038954e7a4c2138249fcf",
+      "sha256": "0fb05d7c3e9482dc99ec84c19fb0262eeb2900b5baebdcc3d06d20608a1fedc3",
       "mode": "100644"
     },
     "packages/core/test/advisory-selection.test.mjs": {
@@ -10808,7 +10808,7 @@
       "mode": "100644"
     },
     "release/product.json": {
-      "sha256": "9b684ea71746aa8bd79b4f02691e1a68fa9b7957e2e13b92f8da47aea6618985",
+      "sha256": "69fd1ae45cc6185fae749b68b55ccd8a6bac9e15f6c736dd6b71b40ca5112d06",
       "mode": "100644"
     },
     "release/public-source-baseline.json": {
