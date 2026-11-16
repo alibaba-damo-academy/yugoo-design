@@ -31,7 +31,6 @@
     - id: dsh-design-execution
       name: dsh-design-core/execution
       config:
-        producerMaxTokens: 16384
         producerMaxDepth: 4
         delegation:
           provider: dsh-design-file-worker

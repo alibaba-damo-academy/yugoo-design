@@ -39,6 +39,16 @@ test('DSH distribution uses a compatible Host range without changing development
     const original = JSON.parse(await readFile(join(source, 'packages', directory, 'package.json'), 'utf8'))
     const packed = assembly.createDshDistributionManifest(report, original.name)
     const peers = Object.fromEntries(Object.entries(packed.peerDependencies).filter(([name]) => name.startsWith('@deepseek-ai/dsh-')))
+    const nativeExecutor = '@deepseek-ai/dsh-tool-executor-native'
+    if (Object.hasOwn(peers, nativeExecutor)) {
+      assert.equal(peers[nativeExecutor], '0.2.2-rc.3')
+      assert.equal(packed.peerDependenciesMeta[nativeExecutor].optional, true)
+      const optionalContract = { name: packed.name, peerDependencies: { [nativeExecutor]: peers[nativeExecutor] }, peerDependenciesMeta: packed.peerDependenciesMeta }
+      await assertRequiredPeers(optionalContract, () => { throw Object.assign(new Error('Peer absent'), { code: 'PEER_NOT_FOUND' }) }, satisfies)
+      await assertRequiredPeers(optionalContract, () => '0.2.2-rc.3', satisfies)
+      await assert.rejects(assertRequiredPeers(optionalContract, () => '0.2.1-rc.3', satisfies), /incompatible peer/)
+      delete peers[nativeExecutor]
+    }
     assert.ok(Object.keys(peers).length > 0)
     for (const [name, range] of Object.entries(peers)) {
       assert.equal(range, '0.2.0-rc.2 || ^0.2.1-rc.3')
@@ -116,6 +126,10 @@ test('default composition excludes internal Kits without promoting unrelated rel
   const patch = parse(await readFile(new URL('../packages/dsh/cordis.patch.yml', import.meta.url), 'utf8'))
   const rows = patch.flatMap(entry => entry.insert ?? [])
   assert.equal(rows.length, 11)
+  const execution = rows.find(row => row.id === 'dsh-design-execution')
+  // A shipped 16K override exhausted native reasoning before any design write.
+  // Default Producer execution must inherit the Host's output-token setting.
+  assert.equal(Object.hasOwn(execution.config, 'producerMaxTokens'), false)
   assert.deepEqual(rows.filter(row => row.name === 'dsh-design-core/kit-loader').map(row => row.config.packageName), ['dsh-design-skills-web-app'])
   const byName = new Map(Object.entries(report.candidates).map(([name, manifest]) => [manifest.name, name]))
   const visited = new Set()

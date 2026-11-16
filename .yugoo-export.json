@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "be4cc2d649adadea787d96bdf3762f1439afd04e",
+  "revision": "1855b8950bbbbc8d561d013f816cc99da7979583",
   "policySha256": "69deba1307e600a9b0405596e8d73df3e63f488f50c9e9d708ee09591f7ea269",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -1348,7 +1348,7 @@
       "mode": "100644"
     },
     "docs/testing/agentic-e2e.md": {
-      "sha256": "035c6937000e22f132ad7ee7477a0e2a5188e858955ad5e4c25be8f728a15ead",
+      "sha256": "428abb9a638f75f286dc74aec3d80a07a21fb60fbac3a50392c064a3c478ffea",
       "mode": "100644"
     },
     "docs/ust-score-explanations.md": {
@@ -5212,7 +5212,7 @@
       "mode": "100644"
     },
     "packages/dsh/README.md": {
-      "sha256": "97659c320906e07c43b8074f8c1f1fd881ab50088a8656b9dd9b2d52b546533d",
+      "sha256": "f9c6a8f7d0d05eab90f4562fd6b0ba8ba788bb6ba85d2fcaf07c77d4321ffd24",
       "mode": "100644"
     },
     "packages/dsh/THIRD_PARTY_NOTICES.md": {
@@ -5220,7 +5220,7 @@
       "mode": "100644"
     },
     "packages/dsh/cordis.patch.yml": {
-      "sha256": "632ed3823c93c5b763d0dde5257e7fc4e77a04a474a1e5eb0387d315d28facc6",
+      "sha256": "bb8e3e148ee1abdd0afa99003a8866314d7654b4de1186a1f542f00a1adb7321",
       "mode": "100644"
     },
     "packages/dsh/index.js": {
@@ -10824,7 +10824,7 @@
       "mode": "100644"
     },
     "scripts/assemble-dsh-distribution.test.mjs": {
-      "sha256": "5bb19b3c43bf63d18479e981088aeb91a600945efa93e49f3f65bc1c7c022c7e",
+      "sha256": "e7f10d7464670f91f65cb70bc5eccea8012da03d8ed863cabbbc6c467af1a808",
       "mode": "100644"
     },
     "scripts/build-companion-npm-candidate.mjs": {

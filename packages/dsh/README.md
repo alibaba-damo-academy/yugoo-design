@@ -70,6 +70,12 @@ children have real native Sessions and tool logs; they do not claim the
 Subagent Runtime's manager catalog, events or capacity pool. A failed start is
 reported rather than retried through a different backend.
 
+Foreground Producers inherit the Host's output-token configuration by default.
+The installed composition does not impose a separate Producer token ceiling.
+Deployments can still explicitly configure `producerMaxTokens` when needed.
+Without a completed publication receipt, exhausting the model limit is not a
+successful publication.
+
 Bounded Workers and read-only reviewers select native tool execution in their
 own child scope. Older Hosts use `tools.presentAs`; Hosts with the explicit
 executor API use their installed `@deepseek-ai/dsh-tool-executor-native` provider.
