@@ -51,11 +51,12 @@ Node override or previous receipt to that command. Either preparation route
 reports `hostRegistered: false`, `installed: false` and `loaded: false`; install
 and activate the prepared entry next.
 
-For an owned update, acquire the next exact npm version into a new durable
+For an owned update, acquire the selected exact npm release into a new durable
 directory, choose a new source directory, and add
 `--previous-receipt /absolute/old/desktop-marketplace.json` when preparing its
-plan. The transaction checks the previous receipt, immutable source and current
-owned entry before replacing only that entry's source. Preserve old directories
+plan. This also supports replacing a candidate source with the official npm source
+when both have the same version number. The transaction checks the previous
+receipt, immutable source and current owned entry before replacing only that entry's source. Preserve old directories
 and the receipt chain. An ownership conflict or edited source is reported and
 retained, rather than repaired by overwriting it.
 
@@ -81,6 +82,12 @@ help or project listing. A successful CLI install does not prove that an
 already-running conversation loaded the version. Creating a project, downloading
 embedding models and running a complete design regression are separate work;
 they are not prerequisites for ordinary installation completion.
+
+After a source update, explicitly install the selected source through that native
+entry; a passive refresh may skip a source with the same version number. Check
+the installed `codex-desktop.json` source `npmRoot` and runtime receipt against
+the selected acquisition, then verify the loaded tools. The version label alone
+does not prove the source changed.
 
 ## Start from the original conversation
 
@@ -133,6 +140,13 @@ or target-thread parameter is exposed. If the bridge exits or loses its lease,
 new submissions fail; a claimed message with no receipt stays unknown and is
 not replayed. An explicitly closed bridge can be replaced; after an unclean
 owner loss, reopen the bound service rather than taking over uncertain work.
+If the same idle bridge is still running after sleep, its next poll renews its
+heartbeat without a new admission. Until that heartbeat arrives, submission
+remains unavailable. Pending work that expired during the gap is settled as
+unsubmitted or unknown according to whether it was claimed; it is not replayed
+when the bridge resumes. A replaced bridge cannot renew the new owner's lease.
+If a native send fails during sleep, its uncertain result is not replayed; use
+the existing open-project path to restore a bridge that exited after that failure.
 Each ready admission returns a fresh generation carried by next/settle/stop;
 old long polls and cleanup cannot claim work or stop a later admission, even
 when a caller reuses its instance UUID.
@@ -235,8 +249,9 @@ detected change aborts and retains the candidate, backup and journal. This is
 not atomic compare-and-swap against native or other writers that do not use
 the lock. Keep those writers idle while preparing the local catalog.
 
-For an owned source update, keep the old closure unchanged and build the new
-exact version into a separate persistent directory. Run the new package's
+For an owned source update, keep the old closure unchanged and build the selected
+exact version into a separate persistent directory, even when its version number
+is unchanged. Run the new package's
 preparation entry with `--previous-receipt /exact/old/desktop-marketplace.json`.
 The saved plan reports `action: update`, both source paths, versions and complete
 tree hashes, and the exact catalog-entry difference. It checks the old private

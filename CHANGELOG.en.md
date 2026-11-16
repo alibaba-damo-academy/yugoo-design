@@ -4,6 +4,12 @@
 
 This log summarizes major features, noticeable experience changes, and installation or upgrade improvements in the Yugoo Design repository, organized by version. It omits small adjustments and internal refactoring. See the [Git commit history](https://github.com/alibaba-damo-academy/yugoo-design/commits/main/) for the full changes.
 
+## 0.3.14
+
+- Restore the original Design Project using the native conversation's current working directory in Companion, retaining its history and reading boundary. Moving or archiving a conversation does not create another project.
+- Allow the same surviving Codex Desktop notification bridge to resume heartbeats after idle sleep and wake. Messages with an unknown prior outcome are not automatically resent.
+- Allow the Desktop installer to update an installation source at the same version when a valid existing installation receipt is available. Activate the new source through the host's normal reload flow after installation.
+
 ## 0.3.13
 
 Fix design subtasks failing to start or invoke tools in DSH Desktop 0.2.2-rc.3, restoring native execution for file Workers and background read-only reviews. Use the host's tool capabilities while preserving the existing Panel and save-and-continue interaction.

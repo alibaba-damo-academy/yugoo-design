@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": "1855b8950bbbbc8d561d013f816cc99da7979583",
-  "policySha256": "69deba1307e600a9b0405596e8d73df3e63f488f50c9e9d708ee09591f7ea269",
+  "revision": "1a70129e1bc31c6ae1faed0b33d70da7a19157fb",
+  "policySha256": "3aed3fbf9c7994d64fe71c3e768be46ed5ddfa903b2974e03f998e7503633f51",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
       "sha256": "99c0ddca35a9a65ca9b097ee9072994a1ca2a4848ef6fe3ca07f5f29956806ed",
@@ -104,11 +104,11 @@
       "mode": "100644"
     },
     "CHANGELOG.en.md": {
-      "sha256": "10f11c64ca5d1f97a78d05f9ebffa18ee014fcb755a663e84da249ab34141e0e",
+      "sha256": "64ed3711aa467e56a72e7168f3f6e8f124f07365fe1ef2024dd60ce9e0f135f2",
       "mode": "100644"
     },
     "CHANGELOG.md": {
-      "sha256": "480bc886e7bdc95b9822d7cb6b3bc46254a6e6048788668c8e544b6ac58a2c99",
+      "sha256": "64576b399ba325a5aac57999c0dfd478e27344c5c9052219be27e2ebe26b3fe0",
       "mode": "100644"
     },
     "CONTRIBUTING.md": {
@@ -1344,11 +1344,11 @@
       "mode": "100644"
     },
     "docs/system-design-baseline.md": {
-      "sha256": "f1bb467cca42ca2b78f4733b724b33ad7aab7ff7786ccf5fe9cc7bfd71f790d2",
+      "sha256": "8c537497479492ee49872347dece9fb5f1b79dae45721ac1ad72a720ef429099",
       "mode": "100644"
     },
     "docs/testing/agentic-e2e.md": {
-      "sha256": "428abb9a638f75f286dc74aec3d80a07a21fb60fbac3a50392c064a3c478ffea",
+      "sha256": "a2861dba3cad5c6e47589fcf5b2e8d2858f3055006dd57045474efb348ebc7d1",
       "mode": "100644"
     },
     "docs/ust-score-explanations.md": {
@@ -2132,7 +2132,7 @@
       "mode": "100644"
     },
     "packages/companion/README.md": {
-      "sha256": "9b7743c77bc7f86df4a5227925731513e5de95d0131d38ea8124e1cddca1534c",
+      "sha256": "b41a009cf246c13b6c8cfa947fc27db4b895435b3cccdafd0ddf119cab23b51e",
       "mode": "100644"
     },
     "packages/companion/build-plugin.mjs": {
@@ -2148,7 +2148,7 @@
       "mode": "100644"
     },
     "packages/companion/hosts/codex-desktop/README.md": {
-      "sha256": "d8f2387e900c565bee9d1bfe6a6dcea7bd0edaad91c2f4ce5aed3f63a1dff92c",
+      "sha256": "ca97fc883f2494297e7bdb90adc29b4555175cb5588d56a44e7d3fad5b9ad2c3",
       "mode": "100644"
     },
     "packages/companion/hosts/qwenwork/README.md": {
@@ -2324,7 +2324,7 @@
       "mode": "100644"
     },
     "packages/companion/src/claude-transcript.mjs": {
-      "sha256": "52acf79ee7df831be6ee246fb01927805d3558c2261070bd91f3a2bb10431b37",
+      "sha256": "2ad38d882907a67fddf518d78ce14a6efb7828c18b4c583ba0863e3cb6440786",
       "mode": "100644"
     },
     "packages/companion/src/cli-lifecycle.mjs": {
@@ -2360,11 +2360,11 @@
       "mode": "100644"
     },
     "packages/companion/src/codex-desktop-relay.mjs": {
-      "sha256": "44eef5a2903064eb2ca104fb66fb09894bcc71176368aec822560780c4aadd84",
+      "sha256": "143fc40f0fa350a86caae71f742132f5a05d9d73ceff0942c7fb81a6bf1cfd01",
       "mode": "100644"
     },
     "packages/companion/src/codex-transcript.mjs": {
-      "sha256": "67ea62171f1feb79ad92a69f564c95ba0d8ec5775e71818ec323037fd0fa745c",
+      "sha256": "c8c1c9260adf9d89964658e46145913a89e12c468f8f7b966e7888fe656c1d9a",
       "mode": "100644"
     },
     "packages/companion/src/component-skill-resource.d.ts": {
@@ -2396,7 +2396,7 @@
       "mode": "100644"
     },
     "packages/companion/src/conversation-start.mjs": {
-      "sha256": "fecfa09eae0a99fc6811295fb09c6f3213a2360e31c392894847693d7fdafca8",
+      "sha256": "5d193aa7792271d62a19271a3616f01a6679d62157656f59e260b5c526f95a82",
       "mode": "100644"
     },
     "packages/companion/src/conversation.tsx": {
@@ -2492,11 +2492,15 @@
       "mode": "100644"
     },
     "packages/companion/src/native-run-resolution.mjs": {
-      "sha256": "e685cf6e6b929ffb60bf96ad592b4152a8ba2424be294896c3288ceb9073877c",
+      "sha256": "a918f2dbef4102dd50799a0a273560693d4975bff0836ea5e92a2dd2cad8e94d",
       "mode": "100644"
     },
     "packages/companion/src/native-runs.mjs": {
       "sha256": "70d77ee0d109528d24a02c6529f116b36fde1107fcd7656f64cc41498da55506",
+      "mode": "100644"
+    },
+    "packages/companion/src/native-working-directory.mjs": {
+      "sha256": "20dcd23bb3bedc0edee03d4d485bfdc277a9fa63630dd3e4320b801c6462ad24",
       "mode": "100644"
     },
     "packages/companion/src/notification-delivery.d.mts": {
@@ -2540,7 +2544,7 @@
       "mode": "100644"
     },
     "packages/companion/src/npm-installer-codex.mjs": {
-      "sha256": "82de719fe7b491ccb6feb489f0a5d4bb650b19e4ce922441e8c06899ca96b871",
+      "sha256": "b9d8a37a8796afc61e88805ca8e4294efd2fec97ab88326db72e9b153319def7",
       "mode": "100644"
     },
     "packages/companion/src/npm-installer-dsh-desktop.mjs": {
@@ -2596,7 +2600,7 @@
       "mode": "100644"
     },
     "packages/companion/src/qoder-transcript.mjs": {
-      "sha256": "3ac4dadbc8d59a2d595123b9f8f04fe6edca52d4f287316842d487d3e532987c",
+      "sha256": "cad7620dd9e00d4564af6d470b4dab493357f989c201fef123baefb2a85ef6e2",
       "mode": "100644"
     },
     "packages/companion/src/qwenwork-background.mjs": {
@@ -2616,7 +2620,7 @@
       "mode": "100644"
     },
     "packages/companion/src/qwenwork-transcript.mjs": {
-      "sha256": "d8da38ac287bf50a7ec9419be96875054f68543693d82d83f1d978cae5527e35",
+      "sha256": "ebf2a9a3fd5418ffe2d6e93813e8a91f7daaf5d8f924834a6df5cada7ea75a89",
       "mode": "100644"
     },
     "packages/companion/src/review-executor.mjs": {
@@ -2740,7 +2744,7 @@
       "mode": "100644"
     },
     "packages/companion/src/workbuddy-native.mjs": {
-      "sha256": "dc90f96c90c2248daed4d8f380e897fa42bf569da31cc1c64f5e7d8640cac610",
+      "sha256": "d0c269a3d8135f4e20e4d84d829105da291eeabac52db688f884129f57c9f3c5",
       "mode": "100644"
     },
     "packages/companion/src/workbuddy-panel-mcp.mjs": {
@@ -2760,7 +2764,7 @@
       "mode": "100644"
     },
     "packages/companion/src/workbuddy-transcript.mjs": {
-      "sha256": "144037cd3449ee0ff2fc176cf6ab05323dfb8a2bc4671b38335c218bbe77dcf1",
+      "sha256": "8a45106875c1553c6e4de1502601197fbb65d9a8e8664a899d3416ba45e7dcc5",
       "mode": "100644"
     },
     "packages/companion/src/workbuddy-ui-probes.mjs": {
@@ -2880,11 +2884,11 @@
       "mode": "100644"
     },
     "packages/companion/test/codex-desktop-installation.test.mjs": {
-      "sha256": "3cdc572c60a9f1e0c85f48a07f06749bd559a4c50291916e136dab3f842e364b",
+      "sha256": "79faac31446e68e53325344e6eccc966db4e0f5127b7a732afa804ebb7c74225",
       "mode": "100644"
     },
     "packages/companion/test/codex-desktop-relay.test.mjs": {
-      "sha256": "c35dd6ae32e17eb5377228431cdb78b9c02751829aa087d6b8912ee0df75b5d2",
+      "sha256": "0d9e49d2197e5952734bfbe88f84e205dfde488b0f30a066d5faa37bdf13e37f",
       "mode": "100644"
     },
     "packages/companion/test/codex-native-connection.test.mjs": {
@@ -2936,7 +2940,7 @@
       "mode": "100644"
     },
     "packages/companion/test/conversation-start.test.mjs": {
-      "sha256": "49ebf03a6f088df036c42af90acb9ed1ac0dca8677acee5c53f36740b416c441",
+      "sha256": "375b859604e2b461052aeaf8f493f06cec80bea60c1feaa16d3d4afc9f60080d",
       "mode": "100644"
     },
     "packages/companion/test/core-entry.test.mjs": {
@@ -3147,6 +3151,10 @@
       "sha256": "d7dae11eaf79ad0a4aa439d4ed85713db9f6c1db1dd744fe6d4ddca7f02398bd",
       "mode": "100644"
     },
+    "packages/companion/test/native-working-directory.test.mjs": {
+      "sha256": "3a8782035c6a51f1483a83c30f3107c50764a0e96c8073c5d0eae8cb23669d46",
+      "mode": "100644"
+    },
     "packages/companion/test/notification-feedback-owner.test.mjs": {
       "sha256": "3baae9803483dc65dd4e3f2debf59d29f756f8ed0a3753b628d8d6c006a0797a",
       "mode": "100644"
@@ -3156,7 +3164,7 @@
       "mode": "100644"
     },
     "packages/companion/test/npm-codex-desktop-source.test.mjs": {
-      "sha256": "6fb43448d28ee20ea2105f4e253fcf5def540db9c7c9a06afb8e955fcaaec8af",
+      "sha256": "195db9dfe10b24d74dbcb85cb9d14a9aee55e600ddf4e728bd9b0d8d2c83e9f1",
       "mode": "100644"
     },
     "packages/companion/test/npm-desktop-preparation.test.mjs": {
@@ -3504,7 +3512,7 @@
       "mode": "100644"
     },
     "packages/companion/test/workbuddy-transcript.test.mjs": {
-      "sha256": "b9de9afc39395c4ed146ef38e509ef019ed555c27f1b6e44783bda3f9e83db64",
+      "sha256": "0a9e894cad0dc90d203c815eb94ea0556a5be0b4ecfe7e9b2785ac8c019df3b8",
       "mode": "100644"
     },
     "packages/companion/test/workspace-poll.test.mjs": {
@@ -10800,7 +10808,7 @@
       "mode": "100644"
     },
     "release/product.json": {
-      "sha256": "3d44bc0bd103cba4b335c04912aafaac0646e26221112f5dc1efa5a51eb8aaa4",
+      "sha256": "9b684ea71746aa8bd79b4f02691e1a68fa9b7957e2e13b92f8da47aea6618985",
       "mode": "100644"
     },
     "release/public-source-baseline.json": {
@@ -10808,7 +10816,7 @@
       "mode": "100644"
     },
     "release/public-source-policy.json": {
-      "sha256": "9b80a5d2c5ff256088f18ddc3ae31affea84f7690675da73136a68368bab8d0c",
+      "sha256": "6f06fe232115cc2cbd64f1578244cd6133bea16436bd7e86a678b44e416218f4",
       "mode": "100644"
     },
     "release/public-source-test-selection.json": {

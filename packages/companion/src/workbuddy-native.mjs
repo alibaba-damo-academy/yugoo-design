@@ -3,6 +3,7 @@ import {open,realpath} from 'node:fs/promises'
 import {constants} from 'node:fs'
 import {dirname,join,resolve} from 'node:path'
 import {workBuddyBackgroundReceipt,workBuddyBackgroundReadiness} from './workbuddy-background.mjs'
+import {requireRecordedCwd,verifyNativeRecordWorkingDirectory} from './native-working-directory.mjs'
 
 const agentId=id=>{if(typeof id!=='string'||!/^agent-[a-zA-Z0-9_-]{1,100}$/.test(id))throw Error('Exact WorkBuddy Agent ID required.');return id}
 const nativeError=(code,message)=>Object.assign(Error(message),{code})
@@ -15,11 +16,12 @@ async function records(path){
  }finally{await file.close()}
 }
 const nativeTypes=new Set(['message','function_call','function_call_result'])
-async function validate(events,cwd,session){
- const expected=await realpath(cwd)
+async function validate(events,cwd,session,{child=false}={}){
  for(const e of events.filter(e=>nativeTypes.has(e.type))){
-  if(typeof e.sessionId!=='string'||e.sessionId!==session||typeof e.cwd!=='string'||await realpath(e.cwd)!==expected)throw Error('WorkBuddy native session or cwd mismatch.')
+  if(typeof e.sessionId!=='string'||e.sessionId!==session)throw Error('WorkBuddy native session identity mismatch.')
+  requireRecordedCwd(e.cwd)
  }
+ if(!child)await verifyNativeRecordWorkingDirectory(events,{host:'workbuddy',sessionId:session,expectedCwd:cwd})
 }
 export async function resolveWorkBuddyRun(input,{threadId,mainTranscriptPath}){
  agentId(input.runId)
@@ -46,7 +48,7 @@ export async function verifyWorkBuddyChild({runId,parentRunId,transcriptPath,pro
  const parent=await records(mainTranscriptPath),child=await records(transcriptPath)
  await validate(parent,projectRoot,sessionId)
  const first=child.find(e=>nativeTypes.has(e.type));if(!first)throw Error('WorkBuddy child identity is not ready.')
- await validate(child,projectRoot,first.sessionId)
+ await validate(child,projectRoot,first.sessionId,{child:true})
  if(requireBackground){
   const receipt=workBuddyBackgroundReceipt(parent,runId,sessionId,{notBefore,reviewId})
   if(['completed','failed','interrupted'].includes(receipt.recordedStatus)){

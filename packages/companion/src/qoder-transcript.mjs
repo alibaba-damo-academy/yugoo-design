@@ -7,6 +7,7 @@ import { nativeQuestions } from './native-questions.mjs'
 import { reviewOperation } from './background-reviews.mjs'
 import { mainReportOperation } from './native-main-report.mjs'
 import { verifyTranscriptBoundary, transcriptAnchor } from './conversation-start.mjs'
+import { verifyNativeWorkingDirectory } from './native-working-directory.mjs'
 
 export function requireQoderAgentId(id) {
   if (typeof id !== 'string' || !/^[a-zA-Z0-9][\w-]{0,127}$/.test(id)) throw new Error('Exact Qoder agent ID required.')
@@ -69,7 +70,7 @@ export function createQoderTranscript({ path, sessionId, agentId, projectRoot, t
 }
 
 /** Shared JSONL reader; host wrappers retain their own native identity proofs. */
-export function createClaudeStyleTranscript({ path, sessionId, agentId, projectRoot, taskPath, label='Qoder', source='qoder-native-transcript', nativeTaskStatus=true, classifyTurn = () => undefined, startBoundary, mainOnly = false, readHeader }) {
+export function createClaudeStyleTranscript({ path, sessionId, agentId, projectRoot, taskPath, host='qoder', label='Qoder', source='qoder-native-transcript', nativeTaskStatus=true, classifyTurn = () => undefined, startBoundary, mainOnly = false, readHeader }) {
   requireThreadId(sessionId)
   if (agentId) requireQoderAgentId(agentId)
   let offset=0, pending=Buffer.alloc(0), identity, verified=false, leaf, dropped=0, busy, userTurn=0
@@ -101,7 +102,10 @@ export function createClaudeStyleTranscript({ path, sessionId, agentId, projectR
         if((event.agentId??undefined)!==(agentId??undefined))throw new Error('Qoder agent identity mismatch.')
         // A child can legitimately inherit a changed Bash cwd. Native task,
         // session and parent dispatch prove identity, not a fixed directory.
-        if(!verified){if(!agentId && await realpath(event.cwd)!==await realpath(projectRoot))throw new Error('Qoder cwd mismatch.');verified=true}
+        if(!verified){
+          if(!agentId)await verifyNativeWorkingDirectory(file,{host,sessionId,initialCwd:event.cwd,expectedCwd:projectRoot})
+          verified=true
+        }
         const toolResults=blocks(event).filter(b=>b.type==='tool_result')
         // Visibility follows the selected native parent chain, not message text.
         // Keep it on nodes across incremental reads and bounded ancestor eviction.

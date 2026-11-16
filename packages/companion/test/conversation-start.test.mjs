@@ -41,15 +41,17 @@ test('design activation excludes old history, persists one concurrent winner, an
   if (process.platform !== 'win32') assert.equal((await stat(stored)).mode & 0o777, 0o600)
   assert.ok(!(await readFile(stored, 'utf8')).includes('New design message'))
   const other = join(options.stateRoot, 'another-cwd'); await mkdir(other)
-  await assert.rejects(establishConversationStart({ ...options, nativeCwd: other }), /another project/)
+  await assert.rejects(establishConversationStart({ ...options, nativeCwd: other }), /cwd mismatch/)
   const record = JSON.parse(await readFile(stored, 'utf8')); record.projectId = 'wrong-project'
   await writeFile(stored, JSON.stringify(record))
   await assert.rejects(establishConversationStart(options), /another project/)
 }))
 
-test('sparse gigabyte log activation reads only a bounded header and anchor, then reads new append bytes', async () => fixture(async ({ options, transcriptPath }) => {
+test('sparse gigabyte activation reads bounded header/current-context/anchor, then only new append bytes', async () => fixture(async ({ options, transcriptPath }) => {
   const file = await open(transcriptPath, 'r+')
   try { await file.truncate(1024 * 1024 * 1024); await file.write(Buffer.from('\n'), 0, 1, 1024 * 1024 * 1024 - 1) } finally { await file.close() }
+  const current = line({ type: 'turn_context', payload: { turn_id: threadId, cwd: options.nativeCwd } })
+  await appendFile(transcriptPath, current)
   let readBytes = 0
   const openFile = async (...args) => {
     const fd = await open(...args)
@@ -58,8 +60,8 @@ test('sparse gigabyte log activation reads only a bounded header and anchor, the
     } }
   }
   const boundary = await establishConversationStart({ ...options, openFile })
-  assert.equal(boundary.startOffset, 1024 * 1024 * 1024)
-  assert.ok(readBytes <= 4096 + 512, `${readBytes} bytes must not scan old history`)
+  assert.equal(boundary.startOffset, 1024 * 1024 * 1024 + Buffer.byteLength(current))
+  assert.ok(readBytes <= 8192 + 512, `${readBytes} bytes must not scan old history`)
   const live = createCodexTranscript({ path: transcriptPath, projectRoot: options.projectRoot, threadId, startBoundary: boundary, openFile })
   readBytes = 0
   assert.deepEqual((await live.read()).rows, [])

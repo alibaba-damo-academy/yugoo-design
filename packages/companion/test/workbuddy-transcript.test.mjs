@@ -40,7 +40,7 @@ test('WorkBuddy durable start skips old history, presents public turns/tools, re
 test('WorkBuddy rejects different session/cwd and changed durable files without granting authority',async t=>{
  const f=await setup(t)
  await assert.rejects(createDesignConversationObserver({...f.options,threadId:'00000000-0000-4000-8000-000000000002'}),/identity mismatch|session or cwd/)
- await assert.rejects(createDesignConversationObserver({...f.options,nativeCwd:tmpdir()}),/session or cwd/)
+ await assert.rejects(createDesignConversationObserver({...f.options,nativeCwd:tmpdir()}),/cwd mismatch/)
  const reader=await createDesignConversationObserver(f.options)
  await f.append(f.event('message','wrong',{sessionId:'another-session',role:'user',content:[]}))
  assert.equal((await reader.read()).available,false)

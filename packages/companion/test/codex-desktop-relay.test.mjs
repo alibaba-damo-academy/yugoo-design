@@ -69,11 +69,75 @@ test('the exact expired owner can release its admission without reviving it', as
   const relay = createCodexDesktopRelay(threadId, { now: () => time, leaseMs: 20 })
   t.after(() => relay.close())
   await call(relay, 'ready', { threadId }); time = 21
-  await assert.rejects(call(relay, 'next'), /BRIDGE_UNAVAILABLE/)
+  await assert.rejects(call(relay, 'next', { instance: other }), /BRIDGE_UNAVAILABLE/)
   await assert.rejects(call(relay, 'stop', { instance: other }), /BRIDGE_UNAVAILABLE/)
   assert.deepEqual(await call(relay, 'stop'), { stopped: true })
   assert.equal((await relay.probe()).status, 'unavailable')
   await call(relay, 'ready', { instance: other, threadId })
+  assert.equal((await relay.probe()).status, 'available')
+})
+
+for (const sleepingInPoll of [false, true]) {
+  test(`the current bridge resumes after sleep ${sleepingInPoll ? 'during' : 'between'} polls`, async t => {
+    let time = 0
+    const relay = createCodexDesktopRelay(threadId, { now: () => time, leaseMs: 20, waitMs: 1 })
+    t.after(() => relay.close())
+    const admission = await call(relay, 'ready', { threadId })
+    const waiting = sleepingInPoll ? call(relay, 'next') : undefined
+    time = 200
+    assert.equal((await relay.probe()).status, 'unavailable')
+    await assert.rejects(relay.send('while asleep'), error => error.notSubmitted === true)
+    assert.deepEqual(await (waiting ?? call(relay, 'next')), { message: null })
+    assert.equal((await relay.probe()).status, 'available')
+    assert.equal(admissions.get(relay), admission.generation)
+    const result = relay.send('new event after wake')
+    const { message } = await call(relay, 'next')
+    assert.equal(message.text, 'new event after wake')
+    await call(relay, 'settle', { messageId: message.id,
+      receipt: { accepted: true, status: 'submitted_unverified', threadId } })
+    assert.equal((await result).messageId, message.id)
+    assert.deepEqual(await call(relay, 'next'), { message: null })
+  })
+}
+
+for (const claimed of [false, true]) {
+  for (const expiry of ['heartbeat-gap', 'delivery-deadline']) {
+    test(`${expiry} settles ${claimed ? 'claimed' : 'unclaimed'} work before waking, even if timers are delayed`, async t => {
+      let time = 0
+      const relay = createCodexDesktopRelay(threadId, { now: () => time,
+        leaseMs: expiry === 'heartbeat-gap' ? 20 : 20000, deliveryMs: 10000, waitMs: 1 })
+      t.after(() => relay.close())
+      await call(relay, 'ready', { threadId })
+      const pending = relay.send('old event')
+      const rejected = assert.rejects(pending, error => claimed ? error.delivery === 'unknown' : error.notSubmitted === true)
+      const old = claimed ? (await call(relay, 'next')).message : undefined
+      // Only the injected clock advances; real delivery timers have not fired.
+      time = expiry === 'heartbeat-gap' ? 21 : 10001
+      assert.deepEqual(await call(relay, 'next'), { message: null })
+      await rejected
+      if (old) await assert.rejects(call(relay, 'settle', { messageId: old.id,
+        receipt: { accepted: true, status: 'submitted_unverified', threadId } }), /RECEIPT_MISMATCH/)
+      const fresh = relay.send('fresh event')
+      const { message } = await call(relay, 'next')
+      assert.equal(message.text, 'fresh event')
+      await call(relay, 'settle', { messageId: message.id,
+        receipt: { accepted: true, status: 'submitted_unverified', threadId } })
+      assert.equal((await fresh).messageId, message.id)
+    })
+  }
+}
+
+test('a long poll waking after sleep does not claim a notification whose timer has not resumed', async t => {
+  let time = 0
+  const relay = createCodexDesktopRelay(threadId, { now: () => time, leaseMs: 20, deliveryMs: 10000, waitMs: 1 })
+  t.after(() => relay.close())
+  await call(relay, 'ready', { threadId })
+  const waiting = call(relay, 'next')
+  const pending = relay.send('expired before the poll resumed')
+  const rejected = assert.rejects(pending, error => error.notSubmitted === true)
+  time = 200
+  assert.deepEqual(await waiting, { message: null })
+  await rejected
   assert.equal((await relay.probe()).status, 'available')
 })
 

@@ -1,9 +1,10 @@
 /** Claude Code native records: read-only, exact session/dispatch identity only. */
-import {open,realpath} from 'node:fs/promises'
+import {open} from 'node:fs/promises'
 import {constants} from 'node:fs'
 import {dirname,join,resolve} from 'node:path'
 import {requireThreadId} from './codex-connection.mjs'
 import {createClaudeStyleTranscript} from './qoder-transcript.mjs'
+import {verifyNativeRecordWorkingDirectory} from './native-working-directory.mjs'
 
 export function requireClaudeAgentId(id) {
   if(typeof id!=='string'||!/^[a-zA-Z0-9][\w-]{0,127}$/.test(id))throw new Error('Exact Claude Code agent ID required.')
@@ -20,7 +21,7 @@ export function createClaudeTranscript(options) {
   if(options.agentId)requireClaudeAgentId(options.agentId)
   // Null stop_reason occurs in real logs, including interrupted children. Only
   // explicit end_turn is terminal; elapsed time or assistant text is not proof.
-  return createClaudeStyleTranscript({...options,label:'Claude Code',source:'claude-native-transcript',nativeTaskStatus:false})
+  return createClaudeStyleTranscript({...options,host:'claude-code',label:'Claude Code',source:'claude-native-transcript',nativeTaskStatus:false})
 }
 
 export async function verifyClaudeChild({runId,parentRunId,transcriptPath,sessionId,projectRoot}) {
@@ -40,9 +41,9 @@ export async function verifyClaudeChild({runId,parentRunId,transcriptPath,sessio
   const dispatch=records.find(e=>e.type==='assistant'&&e.sessionId===sessionId&&(e.agentId??sessionId)===parentRunId&&
     blocks(e).some(b=>b.type==='tool_use'&&b.id===meta.toolUseId&&['Agent','Task'].includes(b.name)))
   if(!dispatch)throw new Error('Claude Code native parent dispatch does not match.')
-  // Enforce main-session cwd, but children may inherit a changed Bash cwd.
-  const initial=records.find(e=>e.sessionId===sessionId&&!e.agentId&&e.cwd)
-  if(parentRunId===sessionId&&(!initial||await realpath(initial.cwd)!==await realpath(projectRoot)))throw new Error('Claude Code parent cwd mismatch.')
+  // Native parent dispatch proves parentage; current main metadata proves cwd.
+  // Historical turns and children may legitimately use another directory.
+  if(parentRunId===sessionId)await verifyNativeRecordWorkingDirectory(records,{host:'claude-code',sessionId,expectedCwd:projectRoot})
   const log=await createClaudeTranscript({path:transcriptPath,sessionId,agentId:runId,projectRoot}).read()
   if(!log.available)throw new Error(log.error??'Claude Code child log is not yet readable.')
   return log

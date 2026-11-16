@@ -194,6 +194,18 @@ or delete those files; ordinary Design Files still invalidate stale reviews.
 
 A **Design Project** is the durable unit that contains one designed product's state. It is independent of an Agent Host working directory. DSH sessions can open it today; future Codex and Claude Code adapters must open the same format without changing its identity or persistence semantics. A plugin-owned binding store records which project a Host conversation selected, keyed by the Host Provider identity and opaque Host conversation id. This store lives outside every Design Project because it is the bootstrap authority used to find that project; it contains no Design File or Kit content. Every Design File, panel operation, Bundle execution, advisory input pin, and DesignJournal association resolves the selected project through that binding rather than deriving a path from the Host's current working directory. Persisted advisory publications, human dispositions and review policy belong to the Design Project and travel with its Git history; active review queues, native execution bindings and notification ownership remain Host-conversation scoped. Switching projects cancels queued analysis for the prior selection and clears its review projection; opening an existing project in a new conversation restores Design Files but does not inherit another conversation's review queue.
 
+Moving or archiving a conversation in its Host must not change its selected
+Design Project merely because the Host changes its execution working directory.
+Host/conversation identity, the selected project identity/root, and the current
+execution cwd have separate roles. Adapters verify a changed cwd against native
+context metadata, not message text or an immutable first-turn cwd. Historical
+transcript headers and design-session cursors remain historical evidence; a
+normal reopen preserves their bytes and verifies the same native source and
+cursor. A relocated transcript must retain that verified source/cursor rather
+than resetting history or selecting another conversation. Native process and
+notification bindings are reopened against the current verified context; old
+review readiness or uncertain deliveries do not become valid by moving a chat.
+
 Each managed Design Project is an independent Git repository. Selecting a Kit
 adds its definition files; the configured project's owned paths are:
 

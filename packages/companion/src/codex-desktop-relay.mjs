@@ -18,6 +18,14 @@ export function createCodexDesktopRelay(threadId, { now = Date.now, leaseMs = 20
     clearTimeout(item.timer)
     failure ? item.reject(failure) : item.resolve(value)
   }
+  const heartbeat = () => {
+    // Sleep can delay both the poll and delivery timer. Expired work must be
+    // settled before this same owner's heartbeat makes new submissions live.
+    if (pending && (!live() || now() >= pending.deadline)) settle(pending.claimed
+      ? unknownDeliveryError({ clientUserMessageId: pending.id, transportCategory: 'timeout' })
+      : error('CODEX_DESKTOP_BRIDGE_UNAVAILABLE'))
+    seen = now()
+  }
   const stop = () => {
     owner = undefined
     generation = undefined
@@ -33,7 +41,7 @@ export function createCodexDesktopRelay(threadId, { now = Date.now, leaseMs = 20
       if (pending) throw error('CODEX_DESKTOP_BRIDGE_BUSY')
       return new Promise((resolve, reject) => {
         const id = randomUUID()
-        pending = { id, text, resolve, reject, claimed: false, generation,
+        pending = { id, text, resolve, reject, claimed: false, generation, deadline: now() + deliveryMs,
           timer: setTimeout(() => settle(pending?.claimed ? unknownDeliveryError({ clientUserMessageId: id, transportCategory: 'timeout' }) : error('CODEX_DESKTOP_BRIDGE_UNAVAILABLE')), deliveryMs) }
         wake()
       })
@@ -52,14 +60,14 @@ export function createCodexDesktopRelay(threadId, { now = Date.now, leaseMs = 20
         owner = instance; generation = randomUUID(); seen = now()
         return { ready: true, threadId, generation }
       }
-      const admitted = () => live() && instance === owner && params.generation === generation
+      const admitted = () => !closed && !!owner && instance === owner && params.generation === generation
       if (operation === 'stop' && instance === owner && params.generation === generation) {
         stop(); return { stopped: true }
       }
       if (!admitted()) throw error('CODEX_DESKTOP_BRIDGE_UNAVAILABLE')
-      seen = now()
       if (operation === 'next') {
         if (waiter) throw error('CODEX_DESKTOP_BRIDGE_ALREADY_WAITING')
+        heartbeat()
         if (!pending || pending.claimed) await new Promise(resolve => {
           const timer = setTimeout(() => { waiter = undefined; resolve() }, waitMs)
           waiter = () => { clearTimeout(timer); resolve() }
@@ -67,11 +75,13 @@ export function createCodexDesktopRelay(threadId, { now = Date.now, leaseMs = 20
         // A stop can wake this request before a new owner (even the same
         // instance UUID) binds. Never let that old request cross admissions.
         if (!admitted()) throw error('CODEX_DESKTOP_BRIDGE_UNAVAILABLE')
-        seen = now()
+        heartbeat()
         if (!pending || pending.claimed) return { message: null }
         pending.claimed = true
         return { message: { id: pending.id, text: pending.text } }
       }
+      if (!live()) throw error('CODEX_DESKTOP_BRIDGE_UNAVAILABLE')
+      seen = now()
       if (operation === 'settle') {
         if (!pending?.claimed || pending.generation !== generation || params.messageId !== pending.id) throw error('CODEX_DESKTOP_RECEIPT_MISMATCH')
         const receipt = params.receipt

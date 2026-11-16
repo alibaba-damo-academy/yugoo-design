@@ -2,14 +2,15 @@
 import { open, realpath, mkdir, writeFile, link, unlink, rename } from 'node:fs/promises'
 import { constants } from 'node:fs'
 import { createHash, randomUUID } from 'node:crypto'
-import { join, dirname, basename } from 'node:path'
+import { join, dirname, basename, isAbsolute } from 'node:path'
 import { nativeScope } from './native-identity.mjs'
+import { recordedCwd, requireRecordedCwd, verifyNativeWorkingDirectory } from './native-working-directory.mjs'
 
 const HEADER_BYTES = 1024 * 1024
 const ANCHOR_BYTES = 256
 const digest = bytes => createHash('sha256').update(bytes).digest('hex')
 
-export async function readCodexHeader(file, { threadId, projectRoot, parentRunId }) {
+export async function readCodexHeader(file, { threadId, projectRoot, parentRunId, transcriptCwd }) {
   let bytes = Buffer.alloc(0), end = -1
   while (bytes.length < HEADER_BYTES && end < 0) {
     const block = Buffer.alloc(Math.min(4096, HEADER_BYTES - bytes.length))
@@ -27,9 +28,14 @@ export async function readCodexHeader(file, { threadId, projectRoot, parentRunId
   try { event = JSON.parse(bytes.subarray(0, end).toString('utf8')) }
   catch { throw new Error('Invalid native transcript metadata.') }
   if (event.type !== 'session_meta' || event.payload?.id !== threadId) throw new Error('Codex transcript UUID does not match the bound conversation.')
-  if (typeof event.payload.cwd !== 'string' || await realpath(event.payload.cwd) !== await realpath(projectRoot)) throw new Error('Codex transcript cwd does not match the bound project.')
+  if (transcriptCwd !== undefined) {
+    if (await recordedCwd(event.payload.cwd) !== await recordedCwd(transcriptCwd)) throw Error('Native transcript origin cwd was changed.')
+  } else if (parentRunId) requireRecordedCwd(event.payload.cwd)
+  else await verifyNativeWorkingDirectory(file, { host: 'codex', sessionId: threadId,
+    initialCwd: event.payload.cwd, expectedCwd: projectRoot })
   const child = event.payload.source?.subagent
   if (parentRunId ? child?.thread_spawn?.parent_thread_id !== parentRunId : child !== undefined) throw new Error('Codex transcript parent does not match the bound conversation.')
+  return { cwd: event.payload.cwd }
 }
 
 export async function transcriptAnchor(file, offset) {
@@ -71,12 +77,16 @@ export async function establishConversationStart({ stateRoot, projectId, project
       const record = JSON.parse(await stored.readFile('utf8'))
       if (record.version !== 1 || !Number.isFinite(Date.parse(record.activatedAt))
         || ![undefined, 'pending', 'active'].includes(record.status)
-        || Object.entries(binding).some(([key, value]) => record[key] !== value)
+        || Object.entries(binding).some(([key, value]) => !['nativeCwd', 'transcriptPath'].includes(key) && record[key] !== value)
+        || typeof record.nativeCwd !== 'string'
+        || typeof record.transcriptPath !== 'string' || !isAbsolute(record.transcriptPath) || /[\r\n\0]/u.test(record.transcriptPath)
         || !Number.isSafeInteger(record.startOffset) || record.startOffset < 0
         || typeof record.identity !== 'string' || !/^\d+:\d+$/.test(record.identity)
         || record.anchor?.length !== Math.min(ANCHOR_BYTES, record.startOffset)
         || typeof record.anchor.hash !== 'string' || !/^[a-f0-9]{64}$/.test(record.anchor.hash)
         || typeof record.anchor.partial !== 'boolean') throw new Error('Design conversation start belongs to another project or conversation, or is invalid.')
+      requireRecordedCwd(record.nativeCwd)
+      if (record.transcriptCwd !== undefined) requireRecordedCwd(record.transcriptCwd)
       return record
     } finally { await stored.close() }
   }
@@ -89,8 +99,11 @@ export async function establishConversationStart({ stateRoot, projectId, project
     const capturedAt = new Date().toISOString()
     if (!stat.isFile()) throw new Error('Codex transcript is not a regular file.')
     if (record) await verifyTranscriptBoundary(file, stat, record)
-    let incomplete
-    try { await readHeader(file, { threadId, projectRoot: binding.nativeCwd }) }
+    let incomplete, header
+    try {
+      header = await readHeader(file, { threadId, projectRoot: binding.nativeCwd })
+      if (record && record.status !== 'pending' && await recordedCwd(header?.cwd ?? record.nativeCwd) !== await recordedCwd(record.transcriptCwd ?? record.nativeCwd)) throw Error('Native transcript origin cwd was changed.')
+    }
     catch (error) { if (error.code !== 'DESIGN_TRANSCRIPT_PENDING') throw error; incomplete = error }
     const publish = async (next, replace = false) => {
       await mkdir(directory, { recursive: true, mode: 0o700 })
@@ -106,6 +119,7 @@ export async function establishConversationStart({ stateRoot, projectId, project
       const startOffset = !incomplete && purpose === 'main' ? await findStart(file, stat) : stat.size
       if (!Number.isSafeInteger(startOffset) || startOffset < 0 || startOffset > stat.size) throw new Error('Invalid native main conversation start.')
       record = await publish({ version: 1, ...binding, activatedAt: capturedAt,
+        ...(header?.cwd ? { transcriptCwd: header.cwd } : {}),
         status: incomplete ? 'pending' : 'active', identity: `${stat.dev}:${stat.ino}`,
         startOffset, anchor: await transcriptAnchor(file, startOffset) })
       await verifyTranscriptBoundary(file, await file.stat(), record)
@@ -113,9 +127,11 @@ export async function establishConversationStart({ stateRoot, projectId, project
     if (incomplete) throw incomplete
     if (record.status === 'pending') {
       const startOffset = purpose === 'main' ? await findStart(file, await file.stat()) : record.startOffset
-      record = await publish({ ...record, status: 'active', startOffset, anchor: await transcriptAnchor(file, startOffset) }, true)
+      record = await publish({ ...record, ...(header?.cwd ? { transcriptCwd: header.cwd } : {}), status: 'active', startOffset, anchor: await transcriptAnchor(file, startOffset) }, true)
     }
-    return record
+    // Retain the saved start and historical cwd byte-for-byte on reopen. The
+    // current service separately uses its verified nativeCwd and transcriptPath.
+    return header?.cwd && !record.transcriptCwd ? { ...record, transcriptCwd: header.cwd } : record
   } finally {
     await file?.close()
   }

@@ -149,7 +149,6 @@ export async function planCodexDesktopMarketplace({ pluginRoot, userRoot = homed
     assert.equal(existing.length, 1, 'Owned desktop update requires its exact existing entry')
     previous = await previousDesktopPreparation(previousReceipt, { home, selector, marketplacePath, currentEntry: existing[0], nextSource: source })
     assert.notEqual(source, previous.source, 'Desktop update requires a new immutable source')
-    assert.notEqual(manifest.version, previous.version, 'Desktop update requires a new exact version')
     entry = { ...existing[0], source: entry.source }
     action = 'update'
   } else if (existing.length) {

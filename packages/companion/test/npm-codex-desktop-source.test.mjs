@@ -168,14 +168,14 @@ test('real acquired npm A/B prepare, saved-plan apply, owned update and rejectio
     const parentAlias = join(home, 'source-alias'); await symlink(join(home, 'sources'), parentAlias, 'dir')
     await assert.rejects(prepareCodexDesktopNpmSource(input('B', join(parentAlias, 'nested'))), /symlink|Canonical/)
   })
-  await t.test('inventory tampering and same-version relocation preserve the existing catalog', async () => {
+  await t.test('inventory tampering and unowned same-version relocation preserve the existing catalog', async () => {
     const probe = join(home, 'sources/B-probe')
     await prepareCodexDesktopNpmSource(input('B', probe))
     const mapping = JSON.parse(await readFile(join(probe, 'codex-desktop.json')))
     const before = await readFile(catalog)
     await assert.rejects(verifyCodexDesktopNpmSource(probe, { ...mapping,
       source: { ...mapping.source, packageInventorySha256: '0'.repeat(64) } }), /inventory changed/)
-    await assert.rejects(planCodexDesktopMarketplace({ pluginRoot: probe, userRoot: home, previousReceipt: receiptB }), /new exact version/)
+    await assert.rejects(planCodexDesktopMarketplace({ pluginRoot: probe, userRoot: home }), /another source/)
     await writeFile(join(probe, 'scripts/design.mjs'), '// foreign edit retained\n')
     await assert.rejects(planCodexDesktopMarketplace({ pluginRoot: probe, userRoot: home }), /source changed/)
     assert.deepEqual(await readFile(catalog), before)
@@ -192,6 +192,24 @@ test('real acquired npm A/B prepare, saved-plan apply, owned update and rejectio
     assert.equal(await readFile(catalog, 'utf8'), bytes)
     for (const source of [sourceA, sourceB]) await verifyCodexDesktopNpmSource(source, JSON.parse(await readFile(join(source, 'codex-desktop.json'))))
     observations.finalCatalogSha256 = createHash('sha256').update(bytes).digest('hex')
+  })
+  await t.test('owned same-version source replacement preserves prior sources, receipts and foreign catalog data', async () => {
+    const nextSource = join(home, 'sources/B-replacement')
+    const before = JSON.parse(await readFile(catalog))
+    const previousBytes = await readFile(receiptB)
+    const applied = await installerMain([...args('B', nextSource), '--previous-receipt', receiptB], { npmRoot: config.B.npmRoot })
+    assert.equal(applied.action, 'update')
+    const receipt = JSON.parse(await readFile(applied.receiptPath))
+    assert.equal(receipt.changes.sourceBefore.version, receipt.changes.sourceAfter.version)
+    assert.equal(receipt.changes.sourceBefore.path, sourceB)
+    assert.equal(receipt.changes.sourceAfter.path, nextSource)
+    assert.deepEqual(JSON.parse(await readFile(catalog)), { ...before, plugins: before.plugins.map(entry =>
+      entry.name === 'yugoo-design' ? { ...entry, source: receipt.entry.source } : entry) })
+    assert.deepEqual(await readFile(receiptB), previousBytes)
+    for (const source of [sourceA, sourceB, nextSource])
+      await verifyCodexDesktopNpmSource(source, JSON.parse(await readFile(join(source, 'codex-desktop.json'))))
+    for (const key of ['hostRegistered', 'installed', 'loaded', 'usable']) assert.equal(applied[key], false)
+    observations.sameVersion = applied
   })
   observations.checks = ['See actual TAP subtest results; these observations do not imply native activation.']
   if (config.evidenceDirectory) await writeFile(join(directory, 'observations.json'), JSON.stringify(observations, null, 2) + '\n')

@@ -26,7 +26,7 @@ async function fixture(t) {
   return { root, home, source, market, foreign, config, put, receipts: join(root, 'receipts') }
 }
 
-async function ownedUpdateFixture(t) {
+async function ownedUpdateFixture(t, version = '0.1.0+desktop.next') {
   const f = await fixture(t)
   await configureCodexDesktopPackage(f.source, { nodeExecutable: process.execPath })
   const oldPlan = await planCodexDesktopMarketplace({ pluginRoot: f.source, userRoot: f.home })
@@ -36,7 +36,7 @@ async function ownedUpdateFixture(t) {
   await cp(f.source, nextSource, { recursive: true, force: false, errorOnExist: true })
   const manifestPath = join(nextSource, '.codex-plugin/plugin.json')
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'))
-  manifest.version = '0.1.0+desktop.next'
+  manifest.version = version
   await writeFile(manifestPath, JSON.stringify(manifest))
   return { ...f, previous, nextSource, options: { pluginRoot: nextSource, userRoot: f.home, previousReceipt: previous.receiptPath } }
 }
@@ -156,8 +156,9 @@ test('same-tool preparations in different receipt directories cannot overlap on 
   await assert.rejects(lstat(receipt.lock), { code: 'ENOENT' })
 })
 
-test('explicit owned-source update preserves unrelated catalog data, old closure and native configuration', async t => {
-  const f = await ownedUpdateFixture(t)
+for (const version of ['0.1.0+desktop.next', '0.1.0+desktop.fixture'])
+test(`owned-source update to ${version} preserves unrelated catalog data, old closure and native configuration`, async t => {
+  const f = await ownedUpdateFixture(t, version)
   await assert.rejects(planCodexDesktopMarketplace({ pluginRoot: f.nextSource, userRoot: f.home }), /another source/)
   const catalog = JSON.parse(await readFile(f.market, 'utf8'))
   catalog.extra = 'concurrent foreign metadata'
@@ -169,7 +170,9 @@ test('explicit owned-source update preserves unrelated catalog data, old closure
   assert.equal(plan.action, 'update')
   assert.equal(plan.changes.sourceBefore.path, f.source)
   assert.equal(plan.changes.sourceAfter.path, f.nextSource)
-  assert.notEqual(plan.changes.sourceBefore.version, plan.changes.sourceAfter.version)
+  assert.equal(plan.changes.sourceBefore.version, '0.1.0+desktop.fixture')
+  assert.equal(plan.changes.sourceAfter.version, version)
+  await assert.rejects(planCodexDesktopMarketplace({ ...f.options, pluginRoot: f.source }), /new immutable source/)
   const receipt = await applyCodexDesktopMarketplace(plan, { receiptDirectory: f.receipts })
   const next = JSON.parse(await readFile(f.market, 'utf8'))
   assert.deepEqual(next, { ...catalog, plugins: catalog.plugins.map(entry => entry.name === 'yugoo-design' ? { ...entry, source: plan.entry.source } : entry) })

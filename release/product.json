@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
   "name": "yugoo-design",
-  "version": "0.3.13",
+  "version": "0.3.14",
   "bin": "yugoo-design"
 }

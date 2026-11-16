@@ -1,13 +1,14 @@
 /** WorkBuddy native flat JSONL; observation never grants execution authority. */
-import {open, realpath} from 'node:fs/promises'
+import {open} from 'node:fs/promises'
 import {constants} from 'node:fs'
 import {verifyTranscriptBoundary,transcriptAnchor} from './conversation-start.mjs'
 import {mainReportOperation} from './native-main-report.mjs'
+import {recordedCwd,requireRecordedCwd,verifyNativeWorkingDirectory} from './native-working-directory.mjs'
 
 const observed = new Set(['message', 'function_call', 'function_call_result'])
 const pending = () => Object.assign(Error('WorkBuddy transcript identity is not ready.'), {code:'DESIGN_TRANSCRIPT_PENDING'})
 
-export async function readWorkBuddyHeader(file, {threadId, projectRoot}) {
+export async function readWorkBuddyHeader(file, {threadId, projectRoot, transcriptCwd}) {
   const bytes=Buffer.alloc(1024*1024), {bytesRead}=await file.read(bytes,0,bytes.length,0)
   const text=bytes.subarray(0,bytesRead).toString('utf8'), end=text.lastIndexOf('\n')
   for(const line of text.slice(0,end<0?0:end).split('\n')) {
@@ -15,8 +16,10 @@ export async function readWorkBuddyHeader(file, {threadId, projectRoot}) {
     const event=JSON.parse(line)
     if(event.sessionId!==undefined && event.sessionId!==threadId)throw Error('WorkBuddy session identity mismatch.')
     if(!observed.has(event.type))continue
-    if(event.sessionId!==threadId || typeof event.cwd!=='string' || await realpath(event.cwd)!==await realpath(projectRoot))throw Error('WorkBuddy session or cwd mismatch.')
-    return
+    if(event.sessionId!==threadId)throw Error('WorkBuddy session identity mismatch.')
+    if(transcriptCwd!==undefined){if(await recordedCwd(event.cwd)!==await recordedCwd(transcriptCwd))throw Error('Native transcript origin cwd was changed.')}
+    else await verifyNativeWorkingDirectory(file,{host:'workbuddy',sessionId:threadId,initialCwd:event.cwd,expectedCwd:projectRoot})
+    return {cwd:event.cwd}
   }
   if(bytesRead===bytes.length)throw Error('WorkBuddy identity exceeds observer limit.')
   throw pending()
@@ -34,7 +37,7 @@ export function createWorkBuddyTranscript({path, threadId, projectRoot, startBou
       if(!stat.isFile() || stat.size<offset)throw Error('WorkBuddy transcript was replaced or truncated.')
       await verifyTranscriptBoundary(file,stat,startBoundary)
       if(cursorGuard)await verifyTranscriptBoundary(file,stat,cursorGuard)
-      await readWorkBuddyHeader(file,{threadId,projectRoot})
+      await readWorkBuddyHeader(file,{threadId,projectRoot,transcriptCwd:startBoundary.transcriptCwd??startBoundary.nativeCwd})
       const bytes=Buffer.alloc(Math.min(2*1024*1024,stat.size-offset)), {bytesRead}=await file.read(bytes,0,bytes.length,offset)
       offset+=bytesRead;partial=Buffer.concat([partial,bytes.subarray(0,bytesRead)])
       for(let end=partial.indexOf(10);end>=0;end=partial.indexOf(10)) {
@@ -44,7 +47,8 @@ export function createWorkBuddyTranscript({path, threadId, projectRoot, startBou
         const event=JSON.parse(line)
         if(event.sessionId!==undefined && event.sessionId!==threadId)throw Error('WorkBuddy session identity mismatch.')
         if(!observed.has(event.type))continue
-        if(event.sessionId!==threadId || typeof event.cwd!=='string' || await realpath(event.cwd)!==await realpath(projectRoot))throw Error('WorkBuddy session or cwd mismatch.')
+        if(event.sessionId!==threadId)throw Error('WorkBuddy session identity mismatch.')
+        requireRecordedCwd(event.cwd)
         if(typeof event.id!=='string')continue
         const timestamp=typeof event.timestamp==='number'?new Date(event.timestamp).toISOString():event.timestamp
         activityEpoch=event.id;lastEventAt=timestamp

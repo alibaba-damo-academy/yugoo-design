@@ -1,6 +1,7 @@
 /** Read-only observer of an explicitly bound native Codex rollout (0.153.4). */
-import { open, realpath } from 'node:fs/promises'
+import { open } from 'node:fs/promises'
 import { constants } from 'node:fs'
+import { requireRecordedCwd, verifyNativeWorkingDirectory } from './native-working-directory.mjs'
 import { requireThreadId } from './codex-connection.mjs'
 import { nativeQuestions } from './native-questions.mjs'
 import { reviewOperation } from './background-reviews.mjs'
@@ -107,7 +108,8 @@ export function createCodexTranscript({ path, threadId, projectRoot, parentRunId
       }
       if (identity !== current || stat.size < offset) { reset(); identity = current }
       if (startBoundary) {
-        await readCodexHeader(file, { threadId, projectRoot, parentRunId })
+        await readCodexHeader(file, { threadId, projectRoot, parentRunId,
+          transcriptCwd: startBoundary.transcriptCwd ?? startBoundary.nativeCwd })
         verified = true
       }
       const buffer = Buffer.alloc(Math.min(READ_BYTES, Math.max(0, stat.size - offset)))
@@ -133,7 +135,11 @@ export function createCodexTranscript({ path, threadId, projectRoot, parentRunId
         if (!verified) {
           if (event.type !== 'session_meta' || event.payload?.id !== threadId) throw new Error('Codex transcript UUID does not match the bound conversation.')
           if (parentRunId && event.payload.source?.subagent?.thread_spawn?.parent_thread_id !== parentRunId) throw new Error('Codex transcript parent does not match the bound native child.')
-          if (typeof event.payload.cwd !== 'string' || await realpath(event.payload.cwd) !== await realpath(projectRoot)) throw new Error('Codex transcript cwd does not match the bound project.')
+          // Child identity comes from the exact native parent/child launch, not
+          // from inheriting the main conversation's current working directory.
+          if (parentRunId) requireRecordedCwd(event.payload.cwd)
+          else await verifyNativeWorkingDirectory(file, { host: 'codex', sessionId: threadId,
+            initialCwd: event.payload.cwd, expectedCwd: projectRoot })
           verified = true
           continue
         }

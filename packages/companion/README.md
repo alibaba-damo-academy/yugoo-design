@@ -22,6 +22,16 @@ server. Registry, selection, connection files and caches keep their existing
 locations. Previously registered projects remain at their exact roots; they are
 not moved, and opening them does not require the new Documents destination.
 
+Moving or archiving the originating conversation can change the Host's working
+directory without moving its Design Project. Reopening uses the same project
+and native conversation identity with the current native working directory.
+Changed working directories must be present in the Host's native context
+metadata. Original transcript headers and saved design-session cursors are
+retained; reopening does not rewrite them or reset the visible history boundary.
+An archived transcript can move while retaining its verified file identity and
+cursor. This is independent of installation, project migration and review
+readiness, each of which keeps its existing verification boundary.
+
 Each configured Design Project owns one editable definition tree at
 `design_kit/`: Kit files in `kit/` and complete mounted Bundle trees in
 `bundles/`, alongside its existing `design_files/`. Methods, schemas, Panels,
@@ -1304,11 +1314,15 @@ prove that an existing conversation loaded it. Ordinary installation does not
 require creating a project, downloading embedding models or running a full
 Panel save/reopen regression.
 
-For an owned update, acquire the next exact npm version in a new stable directory,
+For an owned update, acquire the selected exact npm release in a new stable directory,
 choose a new source directory, and pass the previous successful
 `--previous-receipt /absolute/receipt.desktop-marketplace.json`. The same selector
-is updated while the old source, npm version and receipt remain intact. Modified
-sources, runtime inputs or a conflicting Yugoo catalog entry are retained and rejected.
+is updated while the old source, npm version and receipt remain intact. This includes
+a new source with the same version number. Explicitly install the selected source
+through the native host and verify the installed `codex-desktop.json` source
+`npmRoot` and runtime receipt; a version label or passive refresh does not prove
+that the source changed. Modified sources, runtime inputs or a conflicting Yugoo
+catalog entry are retained and rejected.
 
 `--dry-run` prepares the source and saves a plan without updating the catalog.
 Apply it using `install --host codex-desktop --apply --plan /absolute/saved-plan

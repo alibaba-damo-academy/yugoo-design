@@ -1,10 +1,11 @@
 import {resolveWorkBuddyRun} from './workbuddy-native.mjs'
 /** Resolve exact native launch evidence, never a latest/name-based session. */
-import { open, readdir, realpath } from 'node:fs/promises'
+import { open, readdir } from 'node:fs/promises'
 import { constants } from 'node:fs'
 import { dirname, join, basename } from 'node:path'
 import { requireNativeId } from './native-identity.mjs'
 import { resolveClaudeRun } from './claude-transcript.mjs'
+import { verifyNativeWorkingDirectory } from './native-working-directory.mjs'
 
 async function records(path, limit=32*1024*1024) {
   const file=await open(path,constants.O_RDONLY|constants.O_NOFOLLOW|constants.O_NONBLOCK)
@@ -56,7 +57,8 @@ export async function resolveCodexMainTranscript({threadId, nativeCwd, sessionsR
     catch { throw new Error('Invalid main transcript header.') }
     if(event.type!=='session_meta' || event.payload?.id!==threadId)throw new Error('Main transcript UUID mismatch.')
     if(event.payload.source && typeof event.payload.source==='object' && Object.hasOwn(event.payload.source,'subagent'))throw new Error('Main transcript must not be a child session.')
-    if(typeof event.payload.cwd!=='string' || await realpath(event.payload.cwd)!==await realpath(nativeCwd))throw new Error('Main transcript cwd mismatch.')
+    await verifyNativeWorkingDirectory(file, { host: 'codex', sessionId: threadId,
+      initialCwd: event.payload.cwd, expectedCwd: nativeCwd })
     return transcriptPath
   } finally { await file.close() }
 }
