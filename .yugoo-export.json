@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "3623f862dbba9554dfd3f3b906f9c13beef49ae2",
+  "revision": "254fdf9fe671c377f126eef663401988efe38948",
   "policySha256": "3aed3fbf9c7994d64fe71c3e768be46ed5ddfa903b2974e03f998e7503633f51",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -104,15 +104,15 @@
       "mode": "100644"
     },
     "CHANGELOG.en.md": {
-      "sha256": "581ac4da1a94979c4ff88a913012c038e4eda7332af5052d43d4a8690eaf110c",
+      "sha256": "56a2beae12361a8c7d8659d72c21a996a564f2b93660ed2e61d5e08247e68d56",
       "mode": "100644"
     },
     "CHANGELOG.md": {
-      "sha256": "22ddf7b506e65ba78538429e2b092ab20c7d04a4a701de66973dc91b346ca6d7",
+      "sha256": "9a683ad0a3f7da774d0de94c83f00ba417fa48094746d1cbac534f6502aa1fb2",
       "mode": "100644"
     },
     "CONTRIBUTING.md": {
-      "sha256": "51bfce5f94539e6833cd469ede390718c27dd10345035a74edc82177a64e12a9",
+      "sha256": "d599c516aff72b45f74922769cf38ba3cd5b99a073c771495471f88b7595a76f",
       "mode": "100644"
     },
     "LICENSE": {

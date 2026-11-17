@@ -217,6 +217,13 @@ on the producing run: its original artifact may become unavailable. Missing,
 expired or ambiguous artifacts fail. Recovery never rebuilds or repacks them.
 Fresh preparation requires every exact release version to be absent.
 
+Creating the matching release tag also triggers the tag workflow, including
+through GitHub's create-ref API. When promoting an already tested build-only
+candidate, check that run's selected route before dispatching recovery: fresh
+preparation produces a different build. If the automatic run has not published
+anything, cancel that run and wait for its terminal result before dispatching
+recovery with the paired original IDs. Keep the original producing run intact.
+
 Recovery checks repository, workflow, permitted source ref and exact source SHA,
 including successful original build, seal and upload steps even when later
 publication failed. It verifies the downloaded ZIP digest and admits only the
