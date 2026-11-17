@@ -4,6 +4,10 @@
 
 按版本概述语构设计系统（Yugoo Design）代码仓库中的主要特性、明显体验变化，以及影响安装和升级的重要改进。细小调整和内部重构不逐项列出；完整改动见 [Git 提交历史](https://github.com/alibaba-damo-academy/yugoo-design/commits/main/)。
 
+## 0.3.17
+
+修复 DSH 桌面版 0.2.2-rc.3 中设计工作室（Studio）的 AI 创作无法启动的问题。
+
 ## 0.3.16
 
 - 修复 DSH 桌面版中设计工作室（Studio）链接的打开方式：在当前应用窗口打开，并可返回原对话和设计面板。

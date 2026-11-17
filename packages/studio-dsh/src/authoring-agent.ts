@@ -10,6 +10,7 @@ import { createUserMessage, type UserMessage } from '@deepseek-ai/dsh-llm'
 import { applyChildComposition, appendDelegatedPolicyOverrides, captureDelegatedPolicyOverrides,
   resolveChildAgentOptions, resolveChildDepth } from '@deepseek-ai/dsh-subagent'
 import { defineTool, type ToolDefinition, type ToolExecution } from '@deepseek-ai/dsh-tools'
+import { selectDshChildNativeTools } from 'dsh-design-core/execution'
 import type { StudioAuthoringObservation, StudioAuthoringReference, StudioAuthoringRequest,
   StudioAuthoringResumeRequest, StudioAuthoringRun, StudioAuthoringScope } from './authoring-agent.types.ts'
 import { readStudioAuthoringMaterial, readStudioPanelComponents, STUDIO_AUTHORING_METHOD_GUIDANCE } from './authoring-material.ts'
@@ -192,14 +193,14 @@ export function createStudioAuthoringAgent(ctx: Context) {
     const onAbort = () => queueMicrotask(() => {
       if (!finished && child && ctx.agents.get(child.id) === child) child.cancel({ kind: 'parent' })
     })
-    const setup = (childCtx: Context, agent: Agent) => {
+    const setup = async (childCtx: Context, agent: Agent) => {
       signal.throwIfAborted()
       assert.equal(agent.session.header.cwd, workspaceRoot, 'Native Studio workspace changed; explicit migration is required')
       child = agent
       appendDelegatedPolicyOverrides(agent.session, policy)
       appendDelegatedPolicyOverrides(agent.session, { sandboxMode: 'read-only', approvalPolicy: 'never', permissionPreset: undefined })
       applyChildComposition(childCtx, parent, { toolFilter: { allow: [] } })
-      childCtx.tools.presentAs('native')
+      await selectDshChildNativeTools(childCtx)
       childCtx.on('session/event', (session, event) => {
         if (session !== agent.session) return
         if (event.type === 'turn/start') currentTurn = event.data.turn

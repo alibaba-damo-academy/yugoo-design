@@ -67,13 +67,25 @@ test('restricted child reads the same creator index and rejects filesystem and m
 test('actual SDK prepares the same receipt while native completion remains separately observable', { timeout: 15000 }, async t => {
   const prepared = deferred(), finish = deferred(); t.after(() => finish.resolve())
   const f = await fixture(t, { async step(n) { if (n === 2) await finish.promise; return sequence(n) } })
-  f.parent.agent.ctx.tools.presentAs('ptc')
+  const parentTools = f.parent.agent.ctx.tools
+  const parentExecutor = {
+    describe() { return { schemas: [] } },
+    execute() { throw Error('Studio child must not execute through the parent transport') },
+  }
+  if (typeof parentTools.presentAs === 'function') parentTools.presentAs('ptc')
+  else parentTools.setExecutor(parentExecutor)
   const references = [], candidates = []
   const run = await f.adapter.start({ ...f.request, onReference: ref => references.push(ref), onPrepared: value => { candidates.push(value); prepared.resolve() } })
   await prepared.promise
   assert.equal(references.length, 1); assert.equal(references[0].sessionId, run.reference.sessionId)
   assert.deepEqual(run.readPrepared(), candidates[0]); assert.equal(candidates[0].candidate.valid, true)
   const during = await run.observe(); assert.equal(during.consumed, true); assert.equal(during.terminal, false); assert.equal(during.status, 'running')
+  const child = f.ctx.agents.get(run.reference.sessionId)
+  assert.equal(child.session.header.parentSession, f.parent.agent.id)
+  if (typeof parentTools.presentAs !== 'function') {
+    assert.notEqual(child.ctx.tools.selectExecutor(child), parentExecutor)
+    assert.equal(parentTools.selectExecutor(f.parent.agent), parentExecutor)
+  }
   assert.deepEqual(during.conversation.rows.map(row => [row.role, row.label, row.status]), [
     ['tool', 'studio_authoring_read', 'completed'], ['tool', 'studio_authoring_prepare', 'running'],
   ])

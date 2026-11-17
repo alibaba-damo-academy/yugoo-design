@@ -4,6 +4,10 @@
 
 This log summarizes major features, noticeable experience changes, and installation or upgrade improvements in the Yugoo Design repository, organized by version. It omits small adjustments and internal refactoring. See the [Git commit history](https://github.com/alibaba-damo-academy/yugoo-design/commits/main/) for the full changes.
 
+## 0.3.17
+
+Fix AI authoring failing to start in Design Studio on DSH Desktop 0.2.2-rc.3.
+
 ## 0.3.16
 
 - Fix Design Studio links in DSH Desktop so they open in the application window and return to the original conversation and Design Panel.

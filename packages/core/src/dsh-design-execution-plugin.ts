@@ -1,4 +1,5 @@
 /** Production DSH composition for the canonical attached Design Producer lifecycle. */
+export { selectDshChildNativeTools } from './dsh-subagent-backend.ts'
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { designSessionEvents } from './dsh-session-events.ts'
