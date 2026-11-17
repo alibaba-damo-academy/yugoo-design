@@ -109,9 +109,10 @@ The sidebar can collapse to an icon rail. Its conversation button toggles the
 message column without discarding the draft or reading position. The native
 project header stays at the top; connection details live inside the conversation.
 Enter sends a message; Shift+Enter inserts a newline, and input-method composition
-does not send. Confirmed user-input or queue acceptance notices disappear after
-five seconds, independent of host name. Unverified delivery, Hook-only receipts,
-resume-required queues and failures remain visible for follow-up. New actionable review suggestions automatically
+does not send. Normal informational notices disappear after five seconds and can also be
+closed manually. Errors have no auto-dismiss timer and remain available for manual
+closing or the operation’s existing recovery. Hiding a notice does not change
+delivery, resume requirements or Agent execution status. New actionable review suggestions automatically
 open the card above the composer. Expanded details grow above the composer to
 fit their content, bounded by the conversation region with a scrollable list;
 unchanged polling does not reopen a dismissed card.

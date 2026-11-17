@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "a3bc1933024bdc5aaea24e21700be3c010be61cc",
+  "revision": "3623f862dbba9554dfd3f3b906f9c13beef49ae2",
   "policySha256": "3aed3fbf9c7994d64fe71c3e768be46ed5ddfa903b2974e03f998e7503633f51",
   "files": {
     ".agents/skills/design-bundle-creator/SKILL.md": {
@@ -1316,7 +1316,7 @@
       "mode": "100644"
     },
     "docs/panel-uiux-standard.md": {
-      "sha256": "f5c6168ce4c28426bde12852e43711d0ba62eb8b0ea35e4f8d90e13f4d7c90b4",
+      "sha256": "f6c0e17743c69de8819c9e293ca87c68abb1377f04841a6189bc6d77cccc97e4",
       "mode": "100644"
     },
     "docs/panel-unread.md": {
@@ -1348,7 +1348,7 @@
       "mode": "100644"
     },
     "docs/testing/agentic-e2e.md": {
-      "sha256": "1ea58fe9bc7041e12c8ab5cc806d960411f3a5f78fd35a7827b20b80a6c525b8",
+      "sha256": "24f9d145ec1c33969a1bc988fea7639c5ea7e1e6a29fd99173a77ff4392d0c2b",
       "mode": "100644"
     },
     "docs/ust-score-explanations.md": {
@@ -2132,7 +2132,7 @@
       "mode": "100644"
     },
     "packages/companion/README.md": {
-      "sha256": "b41a009cf246c13b6c8cfa947fc27db4b895435b3cccdafd0ddf119cab23b51e",
+      "sha256": "e488fb4eac46ffa01f0a9b19dba6ac99a2d19c6970e8c84dcc1c0c4ab5d918b9",
       "mode": "100644"
     },
     "packages/companion/build-plugin.mjs": {
@@ -2332,7 +2332,7 @@
       "mode": "100644"
     },
     "packages/companion/src/client.tsx": {
-      "sha256": "8e9af029887dfb67881c9e1d65c0d7ce1bd16f2e80d9869721a9ab7deed212ac",
+      "sha256": "8c7dcd8811cf291dfefa57803f050d5f9e7efacfb560c03d59a38c52c021b475",
       "mode": "100644"
     },
     "packages/companion/src/codex-connection.mjs": {
@@ -2512,11 +2512,11 @@
       "mode": "100644"
     },
     "packages/companion/src/notification-result.d.mts": {
-      "sha256": "1beda591d4a41db0d19c2483d94a00da307639cf6102c5c7231269cd5970e19c",
+      "sha256": "25d7f4e0299f71b0f92e663ce010d12102e91e97e12453f877519ce45f087202",
       "mode": "100644"
     },
     "packages/companion/src/notification-result.mjs": {
-      "sha256": "644c0f45d2e97df05eb964beb9b017269eb9489c2b4f5948bbb4d4636152516b",
+      "sha256": "8d03c63cbf06dee1eedf038e284b6d3cad7c60e40d2e8cf0c6380262cbe27c58",
       "mode": "100644"
     },
     "packages/companion/src/npm-agent-installation.mjs": {
@@ -3056,7 +3056,7 @@
       "mode": "100644"
     },
     "packages/companion/test/locale-presentation.test.mjs": {
-      "sha256": "9921f8102988abb940ba59ea2befd6368e910a4cf434e776b8ae7da5cc31cdcb",
+      "sha256": "6b35324068010dd13926319d8693e88dd924c1566b27088158553fb633f552de",
       "mode": "100644"
     },
     "packages/companion/test/locale.test.mjs": {
@@ -3156,7 +3156,7 @@
       "mode": "100644"
     },
     "packages/companion/test/notification-feedback-owner.test.mjs": {
-      "sha256": "3baae9803483dc65dd4e3f2debf59d29f756f8ed0a3753b628d8d6c006a0797a",
+      "sha256": "288927b4b82ce55bfa9ec321ca56095b45785c1ade916ebb1c0c38e4978f3dbd",
       "mode": "100644"
     },
     "packages/companion/test/npm-agent-installation.test.mjs": {
@@ -3276,7 +3276,7 @@
       "mode": "100644"
     },
     "packages/companion/test/qwenwork-desktop-input.test.mjs": {
-      "sha256": "1bcfe34983d89f2e815cab90625ff54ee8e9d8bcf12ce226ce8806a008fefee9",
+      "sha256": "0e37cd98b3e43f323369738e1a333799d648c2d7267d0040414b87981adec29c",
       "mode": "100644"
     },
     "packages/companion/test/qwenwork-hook-transport.test.mjs": {
@@ -10132,7 +10132,7 @@
       "mode": "100644"
     },
     "packages/studio-dsh/README.md": {
-      "sha256": "282b9f3e8b45621471af2d3d7bc16330ce642334f965df16c841f511b2632abc",
+      "sha256": "30b49c1b49149224db8cf93c47cdc592bafc0042d2ed067a627dce6ec13c73d1",
       "mode": "100644"
     },
     "packages/studio-dsh/THIRD_PARTY_NOTICES.md": {
@@ -10204,11 +10204,11 @@
       "mode": "100644"
     },
     "packages/studio-dsh/src/client-adapter.tsx": {
-      "sha256": "5a10e999baacf1cc09489dbad86f8172190a8a93fa99525f05b828b7e98b3ab3",
+      "sha256": "0de6824e9da301b9212b0eb4d107dd6ec12740a0dba54675dccdae8bc2098a4f",
       "mode": "100644"
     },
     "packages/studio-dsh/src/client.tsx": {
-      "sha256": "46ba9c8a8b8da135637096cba687a0ee3577977a9c7fd5549c104516c4cc5d29",
+      "sha256": "2919ebd6eee74f67070126447413715110b4f78078d781f569cc7b874599b826",
       "mode": "100644"
     },
     "packages/studio-dsh/src/index.ts": {
@@ -10228,7 +10228,7 @@
       "mode": "100644"
     },
     "packages/studio-dsh/src/page-path.ts": {
-      "sha256": "09142c8337084e406523ed0da8908c87084376eacb1295e0e51c30a151bd80e6",
+      "sha256": "f8712546f1644c5824c7c8b19e5a74e37183e692bc10ec4f5ae0fee2612afae7",
       "mode": "100644"
     },
     "packages/studio-dsh/src/page-rpc.ts": {
@@ -10308,7 +10308,7 @@
       "mode": "100644"
     },
     "packages/studio-dsh/tests/client-boot.test.mjs": {
-      "sha256": "ad18588f4ea804ff3050d940ddaddf0c429cc2dad35c5dfa56f70766f182b6b9",
+      "sha256": "deb083cd28ff05f556cc592ba39df88f90527ea2c4ec9b5c1a0a6a262406a635",
       "mode": "100644"
     },
     "packages/studio-dsh/tests/client.test.mjs": {
@@ -10808,7 +10808,7 @@
       "mode": "100644"
     },
     "release/product.json": {
-      "sha256": "69fd1ae45cc6185fae749b68b55ccd8a6bac9e15f6c736dd6b71b40ca5112d06",
+      "sha256": "1a684cd615434cc5b9355f25c59c4612ca4ceaab1875ff03161609a227b4033e",
       "mode": "100644"
     },
     "release/public-source-baseline.json": {

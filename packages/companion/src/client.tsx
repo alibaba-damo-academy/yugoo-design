@@ -22,7 +22,7 @@ import { DOCK_CSS } from '../../panel/src/client/styles.ts'
 import { panelStore, setSaving } from '../../panel/src/client/store.ts'
 import { Conversation, type RecordedConversation } from './conversation.tsx'
 import { BackgroundReviewPanel, type BackgroundReviews } from './background-reviews.tsx'
-import { requireNotificationAccepted, notificationAutoDismiss } from './notification-result.mjs'
+import { requireNotificationAccepted } from './notification-result.mjs'
 import { notificationDeliveryReceipt } from './notification-delivery.mjs'
 import { ConversationResize, savedChatWidth, DEFAULT_CHAT_WIDTH } from './conversation-resize.tsx'
 import { StudioWorkspace } from '../../studio-ui/src/StudioWorkspace.tsx'
@@ -60,7 +60,7 @@ if (transport.removeFragment) history.replaceState(null, '', location.pathname +
 const studioPage = new URLSearchParams(location.search).get('view') === 'studio'
 const trialPanelPage = new URLSearchParams(location.search).get('view') === 'trial-panel'
 let onNotificationError = (_message: string) => {}
-let onNotice = (_message: string, _autoDismiss = false) => {}
+let onNotice = (_message: string) => {}
 let lastNotificationFailure: string | undefined
 type SavedContinuation = { eventId: string; commit?: string; status: string; retryable: boolean }
 async function rpc<T>(method: string, params = {}): Promise<T> {
@@ -158,7 +158,7 @@ const runtime: DesignRuntime = {
         if (!panel.saving && lastNotificationFailure !== undefined && panel.error === lastNotificationFailure) setSaving(false)
         lastNotificationFailure = undefined
         onNotificationError('')
-        onNotice(notice, notificationAutoDismiss(result))
+        onNotice(notice)
       }
       requestLivePoll()
     } catch (error) {
@@ -323,7 +323,7 @@ function App() {
           setContinuationAttempt({ key: continuationKey, sending: true })
           // Reuse the ordinary one-shot native submission and its exact feedback.
           // A resolved receipt is not proof of consumption; an error is not a retry.
-          void runtime.sendPrompt(thread, label, browserRandomUuid()).catch(error => onNotice(error instanceof Error ? error.message : String(error))).finally(() => {
+          void runtime.sendPrompt(thread, label, browserRandomUuid()).catch(error => setError(error instanceof Error ? error.message : String(error))).finally(() => {
             setContinuationAttempt(current => current?.key === continuationKey ? { ...current, sending: false } : current)
           })
         }} /> : null
@@ -376,10 +376,10 @@ function App() {
     let lastSnapshot: DesignPanelWorkspaceRead | undefined
     onNotificationError = setNotificationError
     let noticeTimer: ReturnType<typeof setTimeout> | undefined
-    onNotice = (message, autoDismiss = false) => {
+    onNotice = message => {
       clearTimeout(noticeTimer)
       setNotice(message)
-      if (autoDismiss) noticeTimer = setTimeout(() => setNotice(''), 5000)
+      if (message) noticeTimer = setTimeout(() => setNotice(''), 5000)
     }
     const poll = async () => {
       if (busy || disposed) return

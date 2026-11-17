@@ -1,8 +1,3 @@
-/** Only a confirmed normal delivery can dismiss itself; recovery stays visible. */
-export function notificationAutoDismiss(result) {
-  return result?.accepted === true && ['user_input_accepted', 'queued'].includes(result.status)
-}
-
 /** @param {Record<string, string>} [messages] Existing UI locale; standalone callers retain their original copy. */
 export function requireNotificationAccepted(result, hostLabel, messages) {
   const text = (key, fallback) => (messages?.[key] ?? fallback).replaceAll('{host}', hostLabel)

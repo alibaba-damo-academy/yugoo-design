@@ -5,7 +5,7 @@ import { readNativePrivateFile } from '../src/native-hook-transport.mjs'
 import { mkdtemp, mkdir, writeFile, readFile, chmod, symlink, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
-import { requireNotificationAccepted, notificationAutoDismiss } from '../src/notification-result.mjs'
+import { requireNotificationAccepted } from '../src/notification-result.mjs'
 
 async function macDesktopFixture(t){
  const home=await mkdtemp(join(tmpdir(),'qwen-mac-input-'));t.after(()=>rm(home,{recursive:true,force:true}))
@@ -77,11 +77,6 @@ test('default-disabled Mac endpoint is explicit and never creates host configura
  assert.equal(await readFile(f.tokenFile,'utf8'),before);assert.equal(f.calls.length,0)
 })
 
-test('notification lifetime follows confirmed delivery, not the host brand',()=>{
- for(const status of ['user_input_accepted','queued'])assert.equal(notificationAutoDismiss({accepted:true,status}),true)
- for(const status of ['submitted_unverified','queued_for_resume','hook_received','busy','unknown',undefined])assert.equal(notificationAutoDismiss({accepted:true,status}),false)
- assert.equal(notificationAutoDismiss({accepted:false,status:'user_input_accepted'}),false)
-})
 function fixture() {
  const calls=[]; const state={binding:'desktop-one',busy:false,fail:false,workspace:'C:\\test'}
  const request=async(method,p)=>{ calls.push({method,p});

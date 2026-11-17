@@ -2,7 +2,29 @@
 import { useSyncExternalStore, type CSSProperties, type ReactElement } from 'react'
 import type { SettingsSectionOwnerProps } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { StudioManagementClient, StudioAuthoringClient } from 'dsh-design-studio-ui'
-import { isDshDesktopLocation, STUDIO_PAGE_BASE, studioConversationReturnPath } from './page-path.ts'
+import { isDshDesktopLocation, STUDIO_PAGE_BASE, studioConversationReturnPath, studioDesktopNavigationPath } from './page-path.ts'
+
+/** Keep Studio out of Desktop's HTTP sidebar guest, which rejects its own Host. */
+export function installDshStudioLinkNavigation(): () => void {
+  const document = globalThis.document
+  const onClick = (event: MouseEvent) => {
+    if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return
+    const view = document.defaultView
+    if (!view || !(event.target instanceof view.Element)) return
+    const anchor = event.target.closest<HTMLAnchorElement>('a[href]')
+    if (!anchor) return
+    // Public ClientTransportHooks, populated by the Host before client injection.
+    const transport = (globalThis as { __DSH_TRANSPORT__?: { streamBaseUrl?: string } }).__DSH_TRANSPORT__
+    const path = studioDesktopNavigationPath(anchor.href, globalThis.location?.href, transport?.streamBaseUrl)
+    if (path === undefined) return
+    event.preventDefault()
+    event.stopPropagation()
+    globalThis.location.assign(path)
+  }
+  // Host Markdown opens HTTP links in React's bubble phase.
+  document.addEventListener('click', onClick, true)
+  return () => document.removeEventListener('click', onClick, true)
+}
 
 interface LocaleSnapshot {
   readonly active: string

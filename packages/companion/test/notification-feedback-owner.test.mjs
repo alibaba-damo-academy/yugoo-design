@@ -4,12 +4,13 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import vm from 'node:vm'
 import ts from 'typescript'
-import { requireNotificationAccepted, notificationAutoDismiss } from '../src/notification-result.mjs'
+import { requireNotificationAccepted } from '../src/notification-result.mjs'
 
 const source = await readFile(new URL('../src/client.tsx', import.meta.url), 'utf8')
 const tree = ts.createSourceFile('client.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
-let method, continuation
+let method, continuation, noticeHandler
 const visit = node => {
+  if (ts.isBinaryExpression(node) && node.left.getText(tree) === 'onNotice' && ts.isArrowFunction(node.right) && node.right.body.getText(tree).includes('setNotice')) noticeHandler = node.right
   if (ts.isVariableDeclaration(node) && node.name.getText(tree) === 'runtime') {
     method = node.initializer.properties.find(property => property.name?.getText(tree) === 'sendPrompt').initializer
   }
@@ -22,7 +23,7 @@ const compiled = ts.transpileModule(`(${method.getText(tree)})`, { compilerOptio
 function harness(result, failure) {
   const notices = [], notificationErrors = [], saving = [], polls = []
   const context = { Error, rpc: async () => { if (failure) throw failure; return result },
-    requireNotificationAccepted, notificationAutoDismiss, companionChromeMessages: () => undefined,
+    requireNotificationAccepted, companionChromeMessages: () => undefined,
     companionLocale: { getSnapshot: () => ({ active: 'en' }) },
     currentHostLabel: () => 'Codex', nativeHostLabel: 'Codex', hostInfo: { host: 'codex' },
     currentChrome: key => key, onNotice: (...args) => notices.push(args),
@@ -71,6 +72,41 @@ test('saved-event notification keeps failure recovery and clears only its own ac
   assert.equal(accepted.context.lastNotificationFailure, undefined)
 })
 
+test('all accepted save notifications use the same ordinary notice, independent of host processing status', async () => {
+  for (const status of ['user_input_accepted', 'queued', 'submitted_unverified', 'hook_received', 'queued_for_resume']) {
+    const h = harness({ accepted: true, status })
+    await h.send('', 'Saved changes', undefined, { eventId: 'saved-event' })
+    assert.deepEqual(h.notices.at(-1), [requireNotificationAccepted({ accepted: true, status }, 'Codex')])
+    assert.deepEqual(h.notificationErrors, [''])
+  }
+})
+
+test('ordinary notices expire five seconds after the latest notice and manual dismissal cancels the timer', () => {
+  assert.ok(noticeHandler)
+  let time = 0, nextId = 0, visible = ''
+  const pending = new Map()
+  const context = {
+    noticeTimer: undefined,
+    setNotice: value => { visible = value },
+    setTimeout: (callback, duration) => { const id = ++nextId; pending.set(id, { callback, due: time + duration }); return id },
+    clearTimeout: id => pending.delete(id),
+  }
+  const show = vm.runInNewContext(ts.transpileModule(`(${noticeHandler.getText(tree)})`, {
+    compilerOptions: { target: ts.ScriptTarget.ES2022 },
+  }).outputText, context)
+  const advance = elapsed => {
+    time += elapsed
+    for (const [id, timer] of pending) if (timer.due <= time) { pending.delete(id); timer.callback() }
+  }
+  show('First notice'); advance(3000); show('Later notice'); advance(2000)
+  assert.equal(visible, 'Later notice', 'an earlier timer must not close a later notice')
+  advance(2999); assert.equal(visible, 'Later notice')
+  advance(1); assert.equal(visible, '')
+  show('Dismiss manually'); show(''); assert.equal(pending.size, 0)
+  show('After dismissal'); advance(4999); assert.equal(visible, 'After dismissal')
+  advance(1); assert.equal(visible, '')
+})
+
 test('the continuation action owns its failed-send notice and keeps its one-shot admission', async () => {
   assert.ok(continuation)
   const notices = [], submitted = [], state = { value: undefined }
@@ -78,7 +114,7 @@ test('the continuation action owns its failed-send notice and keeps its one-shot
     trialControls: { current: { dirty: false, saving: false } }, panelStore: { getSnapshot: () => ({ saving: false }) },
     attemptedContinuation: { current: undefined }, browserRandomUuid: () => 'request',
     setContinuationAttempt: next => { state.value = typeof next === 'function' ? next(state.value) : next },
-    onNotice: text => notices.push(text),
+    setError: text => notices.push(text),
     runtime: { sendPrompt: async (...args) => { submitted.push(args); throw new Error('Continuation transport disconnected') } },
   }
   const callback = vm.runInNewContext(ts.transpileModule(`(${continuation.getText(tree)})`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, context)

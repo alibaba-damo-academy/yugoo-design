@@ -17,7 +17,7 @@ const { renderToStaticMarkup } = await import('react-dom/server')
 const { Conversation } = await loader.import('../src/conversation.tsx', import.meta.url)
 const { BackgroundReviewPanel } = await loader.import('../src/background-reviews.tsx', import.meta.url)
 const { companionChromeText, companionChromeMessages } = await loader.import('../src/locale.ts', import.meta.url)
-const { requireNotificationAccepted, notificationAutoDismiss } = await import('../src/notification-result.mjs')
+const { requireNotificationAccepted } = await import('../src/notification-result.mjs')
 const { transcriptRow } = await import('../src/codex-transcript.mjs')
 const render = (component, props) => renderToStaticMarkup(React.createElement(component, props))
 
@@ -89,7 +89,6 @@ test('notification locale does not change delivery admission or successful-resul
     const copy = requireNotificationAccepted(result, 'Codex', messages)
     assert.match(copy, /Codex/)
     assert.doesNotMatch(copy, /\p{Script=Han}/u)
-    assert.equal(notificationAutoDismiss(result), ['user_input_accepted', 'queued'].includes(status))
   }
   assert.match(requireNotificationAccepted({ accepted: true, status: 'queued' }, 'QwenWork', messages), /event notification, not a user message/)
 })

@@ -76,6 +76,20 @@ export function isDshDesktopLocation(href: string | undefined = globalThis.locat
   }
 }
 
+/** Route this Desktop instance's Studio links through its existing app proxy. */
+export function studioDesktopNavigationPath(href: string, locationHref: string | undefined, streamBaseUrl: string | undefined): string | undefined {
+  if (!isDshDesktopLocation(locationHref) || !streamBaseUrl) return undefined
+  try {
+    const origin = new URL(streamBaseUrl)
+    const target = new URL(href)
+    if (!['http:', 'https:'].includes(origin.protocol) || target.origin !== origin.origin
+      || (target.pathname !== STUDIO_PAGE_BASE && target.pathname !== STUDIO_PAGE_PATH)) return undefined
+    return target.pathname + target.search + target.hash
+  } catch {
+    return undefined
+  }
+}
+
 /** Desktop returns through the known application root; no caller-controlled redirect. */
 export function studioConversationReturnPath(href: string | undefined = globalThis.location?.href): '/' | undefined {
   if (!isDshDesktopLocation(href)) return undefined

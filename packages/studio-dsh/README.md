@@ -442,6 +442,18 @@ Run `test:page-authoring` for the shared reading-to-review/save path and the
 normal `test` script for built module registration and routes. These checks do
 not prove a real desktop return trip or installed authoring service.
 
+On official Desktop, an ordinary unmodified primary click on a Studio HTTP(S)
+link for the current Host opens its path in the same application window. The
+client compares the link's exact origin with the public
+`__DSH_TRANSPORT__.streamBaseUrl` at click time and accepts only `/design-studio`
+or `/design-studio/`; it preserves the query and fragment, including the Session
+and prepared-candidate locators. This avoids the Host's sidebar browser, which
+cannot load its own backend. Other instances, Web, modified clicks and other
+destinations keep the Host's existing handling. An absent or invalid public
+origin leaves the link untouched; the adapter does not discover ports or change
+the Host's guest-navigation policy. Its capture listener is removed on Cordis
+fiber disposal.
+
 The inspection Remote exposes exactly six read methods: `workspace`, `readKitWorkspace` (exact `name@version` pin required; a diverging response identity diagnoses), `readKitFiles` and `readKitFile` (the same exact Kit pin), `readBundleWorkspace`, and `readBundleFile`. Kit file inspection includes `kit.yaml`, `mindset.md` and other authored files beneath the selected Kit root, excluding `.git` and `node_modules`; the text viewer accepts regular UTF-8 files up to 1 MiB, with bounded tree traversal. Missing sources, forbidden paths, binary content and oversized files diagnose rather than falling back to another version. The catalog snapshot projects `ctx.design.listKits()`. Bundle source reads run through `ctx.fs`: the `kitSources` config lists installed content packages (`packageName`, resolved like the Design Core kit-loader) or absolute directories (`root`); every path resolves through the filesystem capability and must stay canonically contained in a configured root, so traversal and symlink escapes never read outside the authored trees and non-UTF-8 content diagnoses as binary. Invalid or ambiguous configuration — a missing root, a root without `mindset.md`, a relative path, a duplicate root, or one Kit/Bundle name declared by two roots — fails loud at startup. Without `kitSources` the catalog stays readable and Bundle reads diagnose `studio.source_not_configured`. Disposal rejects new work and drains admitted calls.
 
 The native `studio_customize` tool's `catalog` result also includes `currentKits`,
