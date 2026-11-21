@@ -123,14 +123,6 @@
       "sha256": "6b4eec391144fcbd96ec7b45a28764ab1932722a96325248377c3e28aac2c62d",
       "mode": "100644"
     },
-    "README.en.md": {
-      "sha256": "c96698f708cb23c4d88598b736c48262f2170671bd722fde4a5f5aa028706e8c",
-      "mode": "100644"
-    },
-    "README.md": {
-      "sha256": "9e33e9a2e256c4d7cdec71378bd151832a98d4ef9c5b4d355c2a7790fd31caa8",
-      "mode": "100644"
-    },
     "SECURITY.md": {
       "sha256": "716ef5c2575e9fbd784dd814aa7752ba9d8c9173c843cd8aae634c76197abfee",
       "mode": "100644"
@@ -13662,6 +13654,22 @@
     "packages/studio/package.json": {
       "sha256": "a9756be17e31425c29e10ddf82937a7dab2febee72fa0c6d6f3f5c45822c3aab",
       "mode": "100644"
+    },
+    "README.en.md": {
+      "sha256": "0df510b7ae1caa6ead57a7913bd4f9c76e5dd7cfbef64c7cd6ba98e7171d45be",
+      "mode": "100644"
+    },
+    "README.md": {
+      "sha256": "92172a4e90e3006d2df46f768f22c34199bc8309abeb7c692c5f6009dcb192cf",
+      "mode": "100644"
+    },
+    "docs/images/yugoo-design-concept-v3.en.png": {
+      "sha256": "31f708c146d1e11ffcd4b7bf1a3fa4303b619bab1271c9a067a9f6ef77273a4c",
+      "mode": "100644"
+    },
+    "docs/images/yugoo-design-concept-v3.zh.png": {
+      "sha256": "64baaec733d555f34d745f6aa2bb9bc31d73eb951feede65e1a65ba7f5553289",
+      "mode": "100644"
     }
   },
   "kind": "fixed-source-export-stage",
@@ -13770,5 +13778,27 @@
         "outputSHA256": "a9756be17e31425c29e10ddf82937a7dab2febee72fa0c6d6f3f5c45822c3aab"
       }
     ]
+  },
+  "documentSources": {
+    "README.en.md": {
+      "revision": "3d06a745022a8579a57fc85dd568f2becad1a181",
+      "policySha256": "098cc20463c2c287a22650f603d1b661c84ebe0ea6539fb0fd2caceba62f650d",
+      "sourceOid": "d29056707de8be0fa9cd87406534d16610e51a6e"
+    },
+    "README.md": {
+      "revision": "3d06a745022a8579a57fc85dd568f2becad1a181",
+      "policySha256": "098cc20463c2c287a22650f603d1b661c84ebe0ea6539fb0fd2caceba62f650d",
+      "sourceOid": "bd390a19dc1b32e3e5088703b9a98e95366af2c4"
+    },
+    "docs/images/yugoo-design-concept-v3.en.png": {
+      "revision": "3d06a745022a8579a57fc85dd568f2becad1a181",
+      "policySha256": "098cc20463c2c287a22650f603d1b661c84ebe0ea6539fb0fd2caceba62f650d",
+      "sourceOid": "d6418cdaf6b532f89f45ff30cd2af4065aeb95b6"
+    },
+    "docs/images/yugoo-design-concept-v3.zh.png": {
+      "revision": "3d06a745022a8579a57fc85dd568f2becad1a181",
+      "policySha256": "098cc20463c2c287a22650f603d1b661c84ebe0ea6539fb0fd2caceba62f650d",
+      "sourceOid": "e1a00cbf57ee53cc22882ac02781158fe7f44178"
+    }
   }
 }
