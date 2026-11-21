@@ -4,7 +4,7 @@
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek_Harness-3964FE)](docs/wiki/hosts.en.md#deepseek-harness)
-[![Codex Desktop](https://img.shields.io/badge/Codex_Desktop-0D0D0D)](packages/companion/hosts/codex-desktop/README.md)
+[![ChatGPT](https://img.shields.io/badge/ChatGPT-0D0D0D)](packages/companion/hosts/codex-desktop/README.md)
 [![Codex CLI](https://img.shields.io/badge/Codex_CLI-0D0D0D)](docs/wiki/hosts.en.md#codex-cli)
 [![Claude Code CLI](https://img.shields.io/badge/Claude_Code_CLI-D97757)](docs/wiki/hosts.en.md#claude-code-cli)
 [![Qoder CLI](https://img.shields.io/badge/Qoder_CLI-6AD86C)](docs/wiki/hosts.en.md#qoder-cli)
@@ -14,31 +14,27 @@
 
 **Turn your AI agent into a proactive design consultant.**
 
-Yugoo Design (语构设计系统) is an open-source plugin that helps your familiar AI agent act as a professional design consultant: understand your goal, examine the work so far, find gaps and recommend what to explore next.
+Yugoo Design is an open-source plugin for the AI agent you already use. Bring it a rough idea, and your agent works with you like a design consultant. It helps you clarify what you want, asks about details you might have overlooked, and adapts its advice as you make decisions. It works with DeepSeek Harness (DSH), ChatGPT, Claude Code, WorkBuddy, and QwenWork, among others.
 
-An interactive ideation and design workbench supports this collaboration. It pairs Agent Skills with Design Panels, so you can discuss a proposal while examining diagrams, tables, cards and prototypes. Understand the options, think through the details, edit them and express your judgment directly.
+Some ideas are easier to explain once you can see them. Yugoo pairs agent skills with interactive panels, turning a workflow into a diagram or a set of rules into a table. You can point to a step that feels wrong or edit a rule yourself. Your agent can then work from that decision.
 
-You help define the problem, express intent and make decisions. AI contributes professional methods, clarifies questions and spots gaps as the parts come together. See your ideas. Shape the details.
-
-Your designs, supporting material and outputs stay in their own project folder. When your ideas change or you want to explore further, return to the project, make changes, compare versions and build on the work you have already done.
+A knowledge graph connects related parts of the design, and reviews can flag inconsistencies as things change. Your project keeps the design and its history so you can pick up where you left off.
 
 ![Yugoo Design concept: tangled yarn becomes a sweater through human refinement, AI collaboration and weaving; the lower tier maps this to ideas and materials, interactive Panels, the Gap-driven Agent Loop, KAG/GRA and coherent design outputs, with feedback and revision](docs/images/yugoo-design-concept-v3.en.png)
-
-*From tangled yarn to a sweater that fits: the upper story illustrates the idea, while the lower tier shows the corresponding collaboration mechanisms, connected through feedback and revision. [View full size](docs/images/yugoo-design-concept-v3.en.png). The walkthrough below shows the actual interface.*
 
 The included **Web App Kit** demonstrates this way of working through application design before vibe coding. Start with your needs and work through features, flows, rules and interfaces. Adapt this Kit or create new Kits and panels for event planning, game rules, scheduling optimization and other tasks. See the [Kit list and installation guide](docs/wiki/kit-sharing.en.md#official-kits) for current availability and how to get started.
 
 [Website](https://yugoo.org/) · [FAQ](https://yugoo.org/faq/) · [Product Hunt](https://www.producthunt.com/products/yugoo-design?launch=yugoo-design)
 
-[Quick start](#quick-start) · [Why use it](#why-use-it) · [Core capabilities](#core-capabilities) · [Walkthrough](#a-complete-collaboration) · [Extend it](#start-with-software-design-then-extend-it) · [Wiki](docs/wiki/README.en.md) · [Changelog](CHANGELOG.en.md) · [Contributing and feedback](#contributing-and-feedback)
+[Quick start](#quick-start) · [Why we built Yugoo](#why-we-built-yugoo) · [Core capabilities](#core-capabilities) · [Walkthrough](#a-complete-collaboration) · [Extend it](#start-with-software-design-then-extend-it) · [Wiki](docs/wiki/README.en.md) · [Changelog](CHANGELOG.en.md) · [Contributing and feedback](#contributing-and-feedback)
 
 ## Quick start
 
-You need **Node.js `>=22.19.0`** and an Agent Host with a configured model. The plugin uses your host's existing model, conversation, and tools; see [getting started](docs/wiki/getting-started.en.md) for environment setup.
+**Where do I use Yugoo?** Yugoo runs as a plugin in your agent app. In DSH or ChatGPT, you can talk to your agent in the chat and explore design ideas interactively in the panel alongside it. Depending on the host, the plugin uses a native panel, an embedded browser, or an external browser. In each case, you can save your edits and pick up the conversation where you left off.
 
-The released npm product package and CLI are both `yugoo-design`. Check the [release status](docs/wiki/preview-status.md#current-release-and-use) before installation; stop if the required version is unavailable. The steps below describe installation and first use.
+Before installing, check that your host agent is working. During installation, **your agent checks for Node.js (`>=22.19.0`) and sets it up if needed**. Yugoo relies on the host app for model access, permissions, and tools such as web search. [Setup requirements](docs/wiki/getting-started.en.md) · [Release status](docs/wiki/preview-status.md#current-release-and-use)
 
-1. **Install the plugin.** Copy this [universal prompt](packages/companion/HOSTS.md#default-prompt-any-supported-host) into your current Agent host. It acquires the npm product package, then connects and activates it in that host.
+1. **Install the plugin.** [Choose your agent app on the website](https://yugoo.org/#host-guides), then paste the install prompt into a chat in that app and send it. You can also use the [universal install prompt](packages/companion/HOSTS.md#default-prompt-any-supported-host) below.
 
    ```text
    Install or update Yugoo Design in my current Agent host.
@@ -47,17 +43,17 @@ The released npm product package and CLI are both `yugoo-design`. Check the [rel
    Preserve projects, settings and receipts. Consult GitHub only for a specific question unanswered by the packaged help; no clone or source build. Report acquired/loaded versions and remaining setup, then provide a first Web App Kit project request.
    ```
 
-   Choose the host you actually use. DSH places conversation and Design Panels in one workspace; Codex Desktop uses its native plugin entry on macOS arm64. Installation steps, panel presentation and background review support differ across Codex CLI, Claude Code CLI, Qoder CLI, QwenWork and WorkBuddy; see the [host guide](docs/wiki/hosts.en.md).
+   The [host guide](docs/wiki/hosts.en.md) covers installation and background review support for each app.
 
-2. **Create a Design Project.** Invoke the installed `yugoo` entry and ask:
+2. **Create a design project.** Once Yugoo is installed, enter this in your host app’s chat.
 
    ```text
-   Create a Design Project named expense-app using the Web App Kit.
+   Use Yugoo Design to create a project named expense-app with the Web App Kit.
    ```
 
-   In DeepSeek Harness, you can also use `/yugoo new expense-app` and `/yugoo kit web_app`. See the [command reference (中文)](docs/wiki/commands.md) for all commands and parameters.
+   Some hosts also offer native Yugoo commands. In DSH, use `/yugoo new expense-app` to create the project, then `/yugoo kit web_app` to select the Kit. [DSH command reference (in Chinese)](docs/wiki/commands.md)
 
-   For an existing application, [reconstruct its design from a code repository](#reconstruct-design-from-an-existing-code-repository) to create a separate Design Project directly. There is no need to create an empty project first.
+   Want to build on existing work without starting your design project from scratch? In DSH, use `/yugoo reconstruct <absolute-path-to-repo>` to [start from its existing code](#reconstruct-design-from-an-existing-code-repository).
 3. **Describe this round's goal.** For example:
 
    ```text
@@ -71,47 +67,37 @@ The released npm product package and CLI are both `yugoo-design`. Check the [rel
 
 ### Reconstruct design from an existing code repository
 
-When taking over an application, filling gaps in its design documentation, or planning changes, start from the existing implementation. Give the installed `yugoo` entry the repository's absolute path and ask AI to reconstruct its current design. The agent examines actual entry points and relevant implementation within your scope, then organizes supported features, processes, rules, data, and interfaces into a new Design Project for you to inspect, edit, and develop further in Panels.
+When vibe coding, you can reconstruct a product’s design from its existing codebase. Yugoo systematically extracts the foundations of the product’s design, going beyond UI/UX to include business models, roles and permissions, workflows, and more. You can then use the design to guide further development and iteration, with control over the details. [Reconstruction guide](docs/wiki/usage.en.md#5-reconstruct-a-design-from-existing-materials)
 
-Understanding how the application works gives you a basis for deciding what to change. The source repository stays read-only; reconstruction does not execute or modify product code. Unexamined areas, behavior that source alone cannot establish, and inferences remain explicit. The result is not an exhaustive scan or proof of runtime behavior. See the [reconstruction guide](docs/wiki/usage.en.md#5-reconstruct-a-design-from-existing-materials) for entry points, examples, and result checks. Use migration for existing Yugoo Design Files.
+## Why we built Yugoo
 
-## Why use it
+Vibe coding and vibe working can produce results quickly. **How can people take an active part in designing a solution and stay in control of the outcome, so AI's output better reflects what they actually need?**
 
-Vibe coding and vibe working can produce results quickly. **How can people participate effectively as a solution takes shape, so AI's output better reflects what they actually need?**
+Questions and answers help gather and clarify requirements. But when a design is highly tailored and many decisions affect one another, those relationships are hard to follow in conversation alone. In AI-assisted design, visual interaction is most common in UI/UX and other graphic design work. We want to bring **human-in-the-loop (HITL) design** to more of that work. You can see the options in a panel and decide what fits. Your agent revises the design based on your feedback, and you can review it or make another change.
 
-Thinking through a design means working through the details while also seeing the whole: organizing information and understanding how the parts fit together. We need methods and expert guidance, alongside room to express our own ideas, add context and exercise judgment.
+Say you’re designing an expense app for your team. As you look at the approval flowchart together, your agent asks a question a design consultant might raise. “Can employees change the amount after they submit a claim?” You add a rule in the panel and save it. Employees can edit the amount before approval, but any change after approval means the claim must be resubmitted. Using that rule, your agent suggests checking the permissions table together to see whether employees still have editing rights after approval.
 
-Conversation can clarify a great deal. But when several flows, interdependent rules or competing options are involved, text alone can make relationships, omissions and trade-offs hard to see. Some needs only become clear once you see the result, leading to round after round of revisions. Decisions are scattered across chats, making the whole solution difficult to revisit and maintain as requirements change.
-
-Suppose you are building an expense reimbursement app for your team. Its fields, rules for editing a submission and choice of approver all need to fit how your team works. A flow diagram alongside the rules makes it easier to say, “You can edit before approval; a change after approval needs to be resubmitted.” When the approval process changes, you can check whether forms, permissions and notifications need to change with it. **Even when features are quick to build, your judgment is still needed to make the solution fit your team's work.**
-
-Yugoo explores a more tangible form of **human–AI interaction and collaboration (Human-in-the-loop, HITL)**. We use suitable interactions to help people understand, think and express themselves. The agent draws on professional methods to guide next steps, using automatic linking and review to help coordinate and improve the different parts. Projects keep the results organized and available to revisit. The framework can be adapted with methods and panels from different fields. Software design is a starting point; event planning, game mechanics and operations research modeling can use the same approach. See the [product principles](docs/product-vision.en.md) for more background.
+We started with vibe coding, but this way of exploring ideas and designing with AI extends naturally to other fields. With custom Kits and interactive panels, you can also use Yugoo to plan events, design game mechanics, or build operations research models. Read more about our [design philosophy](docs/product-vision.en.md).
 
 ## Core capabilities
 
-### Interactive Skill Bundles: the right form for the information
+### Interactive Skill Bundles · The right form for each kind of information
 
-A process can become a diagram, rules can go into a table, options can sit side by side on cards, and a prototype can make an interface tangible. We aim to give each kind of information a suitable form and interaction, helping you understand the details, consider how they relate and express your judgment.
+Follow an approval branch in a flowchart, edit who can change a claim in a permissions table, or try submitting a claim in a prototype. The panel and the agent share the same design data. When you save a decision, the agent can use it in the next step.
 
-Yugoo combines professional methods, a structured data contract and a UI definition in a **Bundle**:
+Each **Bundle** focuses on one task. For a Bundle with an interactive panel, the pieces fit together like this:
 
 **Bundle = Skill + structured data contract + UI definition → interactive design output.**
 
-Each Bundle focuses on a task or one part of a design, retaining its data validation and execution declarations. A UI can be predefined with **declarative UI** such as `panel.yaml`, or generated by AI through **A2UI** from the shared component catalog in supported hosts. The available form depends on the Bundle and host.
+The Bundle defines how the task runs and how to validate its output. A panel can be predefined with **declarative UI** such as `panel.yaml`. In supported hosts, AI can also generate a panel from the shared component catalog using **A2UI**.
 
-For an expense app, inspect approval steps in a process diagram and edit what employees, leads and finance can do in a permissions table. These forms make the decisions easier to check and express than a description of the approval logic alone.
+### Proactive guidance · Your goals and gaps guide the next step
 
-The Panel and agent use the same design data. Discuss what you see or edit it directly; validated, saved changes become the basis for the agent's next work.
+A **Kit** brings together a domain prompt (**Mindset**) and related Bundles. The agent uses your goal, saved work and feedback to identify an open question and suggest a next step. This is the **Gap-driven Agent Loop**.
 
-### Proactive guidance: let goals and gaps guide the next step
+Suppose you’ve decided that a claim edited after approval must be resubmitted. The agent can suggest using the Roles and Access Bundle to check who can resubmit it. You can follow that suggestion or take up a different question first.
 
-A good consultant understands your goals, what you have already done and what remains unresolved, then **proactively recommends** methods that help you make progress.
-
-Yugoo uses the Gap-driven Agent Loop to support this consultative way of working. It draws on existing results and feedback to propose purposeful next steps. After clarifying the context through questions, it can recommend external research or explore part of the design in more detail. For example, the approver may be known while the rules for editing an approved amount remain undecided. The consultant can recommend a Business Rules or Flow Design Bundle to explore that gap. As you add context, revise a proposal or make a choice, the agent adjusts its suggestions.
-
-A **Kit** brings related Bundles together with a **domain prompt (Mindset)**, providing AI with professional methods, criteria for judgment and tools. Choose where to explore first, or let AI move ahead independently where the goal is clear. The methods provide guidance while leaving you free to add context, introduce an idea or change direction. The Kit's methods, your current goal and your feedback shape how the work develops.
-
-### Information linking and automatic review: KAG and GRA
+### Information linking & automatic review · KAG & GRA · From parts to a whole
 
 Parts that seem reasonable on their own can still leave gaps or conflict when put together—a common challenge in complex design work. A process change may also affect permissions, notifications and pages, and AI may not make every related change needed to keep the whole solution consistent.
 
@@ -123,11 +109,9 @@ Parts that seem reasonable on their own can still leave gaps or conflict when pu
 - **Reflection:** Identify uncertainties that need research or verification.
 - **Alignment:** Raise questions that need your context or judgment.
 
-Request a review when you need one, or enable automatic review in a host that supports background execution.
+Request a review when you need one, or enable automatic review in a host that supports background execution. You decide how to act on its suggestions.
 
-Explore processes, rules, and prototypes in concrete scenarios to assess how the decisions work together. When it is time to hand off the work, assemble the separate designs into a **Product Requirements Document (PRD)** or other deliverable, retaining the original design sources.
-
-### Turn ideas into lasting projects: organized work and traceable changes
+### Turn ideas into lasting projects · Organized outputs and traceable changes
 
 Each **Design Project** has its own folder containing design files, supporting material, outputs and its own Kit and Bundle definitions. Organize the work in the project and use Git to record versions and changes, preserving how the solution develops.
 
@@ -135,13 +119,9 @@ When you return to the discussion, open the same project and continue from the s
 
 ## A complete collaboration
 
-The existing client-feedback example below shows real conversations, Panels and saved edits. It is a separate project from the expense app concept above: turn the team’s agreements for handling client changes into a delivery platform’s processes, rules, permissions and pages. In DeepSeek Harness, discuss the design with AI on the left and edit the corresponding Panel on the right. Open Studio when you want to customize a Kit.
+The walkthrough follows a different project. When a client requests a change, who assesses its scope and who confirms the delivery date? The screenshots show the **Web App Kit** in use in DeepSeek Harness with fictional client data. Each README uses a separate project in its own language. The interface depends on the [installed version and host](docs/wiki/preview-status.md).
 
-The business data is fictional. Describe your own goal as in the [quick start](#quick-start), or copy the [complete example project (中文)](examples/design-team-delivery/README.md), migrate it as instructed, and continue with the [tutorial](docs/wiki/web-app-demo.en.md).
-
-The screenshots come from an independent English project for a fictional client-feedback tool, showing how conversation, Panel edits and subsequent advice work together. The Chinese README uses its corresponding Chinese project and interface. Exact layouts and available features depend on the [installed version and host](docs/wiki/preview-status.md).
-
-This walkthrough shows one way to use the **Web App Kit**, not the framework's only use or a mandatory sequence of panels. You can [customize your own Kits, Bundles, and interactive interfaces](#start-with-software-design-then-extend-it) to adapt the professional methods, information presentation, and interaction experience to your domain and goals.
+Start with your own goal in the [quick start](#quick-start), or copy and migrate the [complete example project (中文)](examples/design-team-delivery/README.md) and follow the [tutorial](docs/wiki/web-app-demo.en.md). For other domains, you can [customize Kits, Bundles and interactive panels](#start-with-software-design-then-extend-it).
 
 ### 1. Confirm the important context in a panel
 
@@ -163,7 +143,7 @@ Start with the whole process, then zoom into the decisions: which small changes 
 
 ### 3. Save your decisions and continue with AI
 
-After saving, ask: “Continue from the rules I just saved and check whether the other designs express the same intent.” AI proceeds from those changes, while **automatic review (GRA)** helps identify parts that are not yet aligned.
+After saving, ask “Continue from the rules I just saved and check whether the other designs reflect them.” The agent can now work from your edits. To check whether the process and rules agree, you can also request a **Grounding review**.
 
 For example, a Grounding suggestion can identify a specific gap:
 

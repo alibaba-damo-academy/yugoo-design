@@ -13655,20 +13655,20 @@
       "sha256": "a9756be17e31425c29e10ddf82937a7dab2febee72fa0c6d6f3f5c45822c3aab",
       "mode": "100644"
     },
-    "README.en.md": {
-      "sha256": "0df510b7ae1caa6ead57a7913bd4f9c76e5dd7cfbef64c7cd6ba98e7171d45be",
-      "mode": "100644"
-    },
-    "README.md": {
-      "sha256": "92172a4e90e3006d2df46f768f22c34199bc8309abeb7c692c5f6009dcb192cf",
-      "mode": "100644"
-    },
     "docs/images/yugoo-design-concept-v3.en.png": {
       "sha256": "31f708c146d1e11ffcd4b7bf1a3fa4303b619bab1271c9a067a9f6ef77273a4c",
       "mode": "100644"
     },
     "docs/images/yugoo-design-concept-v3.zh.png": {
       "sha256": "64baaec733d555f34d745f6aa2bb9bc31d73eb951feede65e1a65ba7f5553289",
+      "mode": "100644"
+    },
+    "README.en.md": {
+      "sha256": "40dba0025fdd16add93d5e6c48eee6839c60b301a1eedbf7301c46a900979304",
+      "mode": "100644"
+    },
+    "README.md": {
+      "sha256": "d616a6be74412cb60d2b8c11c4db2df00a4368b371c4adde7793ad7e9512fffa",
       "mode": "100644"
     }
   },
@@ -13781,14 +13781,14 @@
   },
   "documentSources": {
     "README.en.md": {
-      "revision": "3d06a745022a8579a57fc85dd568f2becad1a181",
+      "revision": "bbdb0fcb474ecb461a1810b901d30f3061de3db5",
       "policySha256": "098cc20463c2c287a22650f603d1b661c84ebe0ea6539fb0fd2caceba62f650d",
-      "sourceOid": "d29056707de8be0fa9cd87406534d16610e51a6e"
+      "sourceOid": "3911eaeeda4d501ac8a9c5524c94509aa01a6551"
     },
     "README.md": {
-      "revision": "3d06a745022a8579a57fc85dd568f2becad1a181",
+      "revision": "bbdb0fcb474ecb461a1810b901d30f3061de3db5",
       "policySha256": "098cc20463c2c287a22650f603d1b661c84ebe0ea6539fb0fd2caceba62f650d",
-      "sourceOid": "bd390a19dc1b32e3e5088703b9a98e95366af2c4"
+      "sourceOid": "4012a2e4cb6483146329e763510aa8b2e330ed51"
     },
     "docs/images/yugoo-design-concept-v3.en.png": {
       "revision": "3d06a745022a8579a57fc85dd568f2becad1a181",
